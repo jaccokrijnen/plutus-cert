@@ -1,0 +1,392 @@
+DIGEST 243a69011d642c1219beaa407f4ef590
+FPlutusCert.Language.PlutusIR.Transform.Let
+R31:47 PlutusCert.Language.PlutusIR <> <> lib
+R81:118 PlutusCert.Language.PlutusIR.Transform.Congruence <> <> lib
+R152:186 PlutusCert.Language.PlutusIR.Analysis.FreeVars <> <> lib
+R204:221 Coq.Strings.String <> <> lib
+R239:252 Coq.Lists.List <> <> lib
+R270:287 Coq.Program.Basics <> <> lib
+ind 439:446 <> CNR_Term
+constr 478:484 <> CNR_Let
+constr 659:666 <> CNR_Cong
+ind 1201:1212 <> CNR_Bindings
+constr 1267:1273 <> CNR_Nil
+constr 1309:1316 <> CNR_Cons
+ind 1611:1621 <> CNR_Binding
+constr 1666:1676 <> CNR_Desugar
+R454:457 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R462:465 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R458:461 PlutusCert.Language.PlutusIR <> Term syndef
+R450:453 PlutusCert.Language.PlutusIR <> Term syndef
+R1228:1231 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1251:1254 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1232:1235 Coq.Init.Datatypes <> list ind
+R1242:1245 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1246:1249 PlutusCert.Language.PlutusIR <> Term syndef
+R1238:1241 PlutusCert.Language.PlutusIR <> Term syndef
+R1216:1219 Coq.Init.Datatypes <> list ind
+R1221:1227 PlutusCert.Language.PlutusIR <> Binding syndef
+R1632:1635 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1636:1636 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1649:1653 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1641:1644 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1645:1648 PlutusCert.Language.PlutusIR <> Term syndef
+R1637:1640 PlutusCert.Language.PlutusIR <> Term syndef
+R1625:1631 PlutusCert.Language.PlutusIR <> Binding syndef
+binder 496:497 <> bs:7
+binder 499:504 <> t_body:8
+binder 506:512 <> t_body':9
+binder 514:517 <> f_bs:10
+R550:559 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R580:589 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R590:597 PlutusCert.Language.PlutusIR.Transform.Let <> CNR_Term:1 ind
+R623:632 Coq.Lists.List <> fold_right def
+R648:651 PlutusCert.Language.PlutusIR.Transform.Let <> f_bs:10 var
+R640:646 PlutusCert.Language.PlutusIR.Transform.Let <> t_body':9 var
+R634:638 Coq.Program.Basics <> apply def
+R600:602 PlutusCert.Language.PlutusIR <> Let constr
+R614:619 PlutusCert.Language.PlutusIR.Transform.Let <> t_body:8 var
+R611:612 PlutusCert.Language.PlutusIR.Transform.Let <> bs:7 var
+R604:609 PlutusCert.Language.PlutusIR <> NonRec constr
+R560:571 PlutusCert.Language.PlutusIR.Transform.Let <> CNR_Bindings:2 ind
+R576:579 PlutusCert.Language.PlutusIR.Transform.Let <> f_bs:10 var
+R573:574 PlutusCert.Language.PlutusIR.Transform.Let <> bs:7 var
+R527:534 PlutusCert.Language.PlutusIR.Transform.Let <> CNR_Term:1 ind
+R543:549 PlutusCert.Language.PlutusIR.Transform.Let <> t_body':9 var
+R536:541 PlutusCert.Language.PlutusIR.Transform.Let <> t_body:8 var
+binder 678:678 <> t:11
+binder 680:681 <> t':12
+R709:718 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R719:726 PlutusCert.Language.PlutusIR.Transform.Let <> CNR_Term:1 ind
+R730:731 PlutusCert.Language.PlutusIR.Transform.Let <> t':12 var
+R728:728 PlutusCert.Language.PlutusIR.Transform.Let <> t:11 var
+R691:694 PlutusCert.Language.PlutusIR.Transform.Congruence <> Cong ind
+R707:708 PlutusCert.Language.PlutusIR.Transform.Let <> t':12 var
+R705:705 PlutusCert.Language.PlutusIR.Transform.Let <> t:11 var
+R696:703 PlutusCert.Language.PlutusIR.Transform.Let <> CNR_Term:1 ind
+R1284:1295 PlutusCert.Language.PlutusIR.Transform.Let <> CNR_Bindings:2 ind
+R1301:1303 Coq.Init.Datatypes <> nil constr
+R1297:1299 Coq.Init.Datatypes <> nil constr
+binder 1328:1328 <> b:13
+binder 1330:1331 <> bs:14
+binder 1333:1335 <> f_b:15
+binder 1337:1340 <> f_bs:16
+R1376:1385 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1413:1422 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1423:1434 PlutusCert.Language.PlutusIR.Transform.Let <> CNR_Bindings:2 ind
+R1450:1453 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1447:1449 PlutusCert.Language.PlutusIR.Transform.Let <> f_b:15 var
+R1454:1457 PlutusCert.Language.PlutusIR.Transform.Let <> f_bs:16 var
+R1438:1441 Coq.Init.Datatypes <> ::list_scope:x_'::'_x not
+R1437:1437 PlutusCert.Language.PlutusIR.Transform.Let <> b:13 var
+R1442:1443 PlutusCert.Language.PlutusIR.Transform.Let <> bs:14 var
+R1386:1397 PlutusCert.Language.PlutusIR.Transform.Let <> CNR_Bindings:2 ind
+R1409:1412 PlutusCert.Language.PlutusIR.Transform.Let <> f_bs:16 var
+R1405:1406 PlutusCert.Language.PlutusIR.Transform.Let <> bs:14 var
+R1350:1360 PlutusCert.Language.PlutusIR.Transform.Let <> CNR_Binding:3 ind
+R1373:1375 PlutusCert.Language.PlutusIR.Transform.Let <> f_b:15 var
+R1369:1369 PlutusCert.Language.PlutusIR.Transform.Let <> b:13 var
+binder 1688:1688 <> v:17
+binder 1690:1696 <> t_bound:18
+binder 1698:1705 <> t_bound':19
+binder 1707:1708 <> ty:20
+R1743:1752 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1753:1763 PlutusCert.Language.PlutusIR.Transform.Let <> CNR_Binding:3 ind
+binder 1814:1817 <> t_bs:21
+R1822:1826 PlutusCert.Language.PlutusIR <> Apply constr
+R1847:1854 PlutusCert.Language.PlutusIR.Transform.Let <> t_bound':19 var
+R1829:1834 PlutusCert.Language.PlutusIR <> LamAbs constr
+R1841:1844 PlutusCert.Language.PlutusIR.Transform.Let <> t_bs:21 var
+R1838:1839 PlutusCert.Language.PlutusIR.Transform.Let <> ty:20 var
+R1836:1836 PlutusCert.Language.PlutusIR.Transform.Let <> v:17 var
+R1774:1781 PlutusCert.Language.PlutusIR <> TermBind constr
+R1792:1798 PlutusCert.Language.PlutusIR.Transform.Let <> t_bound:18 var
+R1790:1790 PlutusCert.Language.PlutusIR.Transform.Let <> v:17 var
+R1783:1788 PlutusCert.Language.PlutusIR <> Strict constr
+R1718:1725 PlutusCert.Language.PlutusIR.Transform.Let <> CNR_Term:1 ind
+R1735:1742 PlutusCert.Language.PlutusIR.Transform.Let <> t_bound':19 var
+R1727:1733 PlutusCert.Language.PlutusIR.Transform.Let <> t_bound:18 var
+def 2012:2019 <> C_TyAbs'
+binder 2030:2030 <> R:22
+R2040:2043 PlutusCert.Language.PlutusIR <> Term syndef
+binder 2033:2033 <> t:23
+binder 2035:2036 <> t':24
+R2054:2059 PlutusCert.Language.PlutusIR <> tyname syndef
+binder 2047:2047 <> n:25
+binder 2049:2050 <> n':26
+R2070:2073 PlutusCert.Language.PlutusIR <> Kind def
+binder 2063:2063 <> k:27
+binder 2065:2066 <> k':28
+R2097:2100 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2107:2124 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2131:2134 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2135:2138 PlutusCert.Language.PlutusIR.Transform.Congruence <> Cong ind
+R2157:2161 PlutusCert.Language.PlutusIR <> TyAbs constr
+R2169:2170 PlutusCert.Language.PlutusIR.Transform.Let <> t':24 var
+R2166:2167 PlutusCert.Language.PlutusIR.Transform.Let <> k':28 var
+R2163:2164 PlutusCert.Language.PlutusIR.Transform.Let <> n':26 var
+R2143:2147 PlutusCert.Language.PlutusIR <> TyAbs constr
+R2153:2153 PlutusCert.Language.PlutusIR.Transform.Let <> t:23 var
+R2151:2151 PlutusCert.Language.PlutusIR.Transform.Let <> k:27 var
+R2149:2149 PlutusCert.Language.PlutusIR.Transform.Let <> n:25 var
+R2140:2140 PlutusCert.Language.PlutusIR.Transform.Let <> R:22 var
+R2125:2125 PlutusCert.Language.PlutusIR.Transform.Let <> R:22 var
+R2129:2130 PlutusCert.Language.PlutusIR.Transform.Let <> t':24 var
+R2127:2127 PlutusCert.Language.PlutusIR.Transform.Let <> t:23 var
+R2102:2104 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R2101:2101 PlutusCert.Language.PlutusIR.Transform.Let <> k:27 var
+R2105:2106 PlutusCert.Language.PlutusIR.Transform.Let <> k':28 var
+R2092:2094 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R2091:2091 PlutusCert.Language.PlutusIR.Transform.Let <> n:25 var
+R2095:2096 PlutusCert.Language.PlutusIR.Transform.Let <> n':26 var
+def 2212:2220 <> C_LamAbs'
+binder 2231:2231 <> R:29
+R2241:2244 PlutusCert.Language.PlutusIR <> Term syndef
+binder 2234:2234 <> t:30
+binder 2236:2237 <> t':31
+R2255:2260 PlutusCert.Language.PlutusIR <> tyname syndef
+binder 2248:2248 <> n:32
+binder 2250:2251 <> n':33
+R2272:2273 PlutusCert.Language.PlutusIR <> Ty def
+binder 2264:2265 <> ty:34
+binder 2267:2269 <> ty':35
+R2299:2302 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2311:2314 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2321:2324 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2325:2328 PlutusCert.Language.PlutusIR.Transform.Congruence <> Cong ind
+R2349:2354 PlutusCert.Language.PlutusIR <> LamAbs constr
+R2363:2364 PlutusCert.Language.PlutusIR.Transform.Let <> t':31 var
+R2359:2361 PlutusCert.Language.PlutusIR.Transform.Let <> ty':35 var
+R2356:2357 PlutusCert.Language.PlutusIR.Transform.Let <> n':33 var
+R2333:2338 PlutusCert.Language.PlutusIR <> LamAbs constr
+R2345:2345 PlutusCert.Language.PlutusIR.Transform.Let <> t:30 var
+R2342:2343 PlutusCert.Language.PlutusIR.Transform.Let <> ty:34 var
+R2340:2340 PlutusCert.Language.PlutusIR.Transform.Let <> n:32 var
+R2330:2330 PlutusCert.Language.PlutusIR.Transform.Let <> R:29 var
+R2315:2315 PlutusCert.Language.PlutusIR.Transform.Let <> R:29 var
+R2319:2320 PlutusCert.Language.PlutusIR.Transform.Let <> t':31 var
+R2317:2317 PlutusCert.Language.PlutusIR.Transform.Let <> t:30 var
+R2305:2307 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R2303:2304 PlutusCert.Language.PlutusIR.Transform.Let <> ty:34 var
+R2308:2310 PlutusCert.Language.PlutusIR.Transform.Let <> ty':35 var
+R2294:2296 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R2293:2293 PlutusCert.Language.PlutusIR.Transform.Let <> n:32 var
+R2297:2298 PlutusCert.Language.PlutusIR.Transform.Let <> n':33 var
+def 2406:2411 <> C_Var'
+binder 2422:2422 <> R:36
+R2432:2437 PlutusCert.Language.PlutusIR <> tyname syndef
+binder 2425:2425 <> n:37
+binder 2427:2428 <> n':38
+R2441:2441 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2448:2452 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2453:2456 PlutusCert.Language.PlutusIR.Transform.Congruence <> Cong ind
+R2469:2471 PlutusCert.Language.PlutusIR <> Var constr
+R2473:2474 PlutusCert.Language.PlutusIR.Transform.Let <> n':38 var
+R2461:2463 PlutusCert.Language.PlutusIR <> Var constr
+R2465:2465 PlutusCert.Language.PlutusIR.Transform.Let <> n:37 var
+R2458:2458 PlutusCert.Language.PlutusIR.Transform.Let <> R:36 var
+R2443:2445 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R2442:2442 PlutusCert.Language.PlutusIR.Transform.Let <> n:37 var
+R2446:2447 PlutusCert.Language.PlutusIR.Transform.Let <> n':38 var
+def 2516:2521 <> C_Let'
+binder 2532:2532 <> R:39
+R2544:2547 Coq.Init.Datatypes <> list ind
+R2549:2555 PlutusCert.Language.PlutusIR <> Binding syndef
+binder 2535:2536 <> bs:40
+binder 2538:2540 <> bs':41
+R2566:2569 PlutusCert.Language.PlutusIR <> Term syndef
+binder 2559:2559 <> t:42
+binder 2561:2562 <> t':43
+R2580:2590 PlutusCert.Language.PlutusIR <> Recursivity ind
+binder 2573:2573 <> r:44
+binder 2575:2576 <> r':45
+R2613:2629 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2652:2668 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2675:2678 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2679:2682 PlutusCert.Language.PlutusIR.Transform.Congruence <> Cong ind
+R2700:2702 PlutusCert.Language.PlutusIR <> Let constr
+R2711:2712 PlutusCert.Language.PlutusIR.Transform.Let <> t':43 var
+R2707:2709 PlutusCert.Language.PlutusIR.Transform.Let <> bs':41 var
+R2704:2705 PlutusCert.Language.PlutusIR.Transform.Let <> r':45 var
+R2687:2689 PlutusCert.Language.PlutusIR <> Let constr
+R2696:2696 PlutusCert.Language.PlutusIR.Transform.Let <> t:42 var
+R2693:2694 PlutusCert.Language.PlutusIR.Transform.Let <> bs:40 var
+R2691:2691 PlutusCert.Language.PlutusIR.Transform.Let <> r:44 var
+R2684:2684 PlutusCert.Language.PlutusIR.Transform.Let <> R:39 var
+R2669:2669 PlutusCert.Language.PlutusIR.Transform.Let <> R:39 var
+R2673:2674 PlutusCert.Language.PlutusIR.Transform.Let <> t':43 var
+R2671:2671 PlutusCert.Language.PlutusIR.Transform.Let <> t:42 var
+R2630:2642 PlutusCert.Language.PlutusIR.Transform.Congruence <> Cong_Bindings ind
+R2649:2651 PlutusCert.Language.PlutusIR.Transform.Let <> bs':41 var
+R2646:2647 PlutusCert.Language.PlutusIR.Transform.Let <> bs:40 var
+R2644:2644 PlutusCert.Language.PlutusIR.Transform.Let <> R:39 var
+R2608:2610 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R2607:2607 PlutusCert.Language.PlutusIR.Transform.Let <> r:44 var
+R2611:2612 PlutusCert.Language.PlutusIR.Transform.Let <> r':45 var
+def 2754:2761 <> C_Apply'
+binder 2772:2772 <> R:46
+R2787:2790 PlutusCert.Language.PlutusIR <> Term syndef
+binder 2775:2775 <> s:47
+binder 2777:2778 <> s':48
+binder 2780:2780 <> t:49
+binder 2782:2783 <> t':50
+R2815:2818 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2825:2828 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2829:2832 PlutusCert.Language.PlutusIR.Transform.Congruence <> Cong ind
+R2849:2853 PlutusCert.Language.PlutusIR <> Apply constr
+R2858:2859 PlutusCert.Language.PlutusIR.Transform.Let <> t':50 var
+R2855:2856 PlutusCert.Language.PlutusIR.Transform.Let <> s':48 var
+R2837:2841 PlutusCert.Language.PlutusIR <> Apply constr
+R2845:2845 PlutusCert.Language.PlutusIR.Transform.Let <> t:49 var
+R2843:2843 PlutusCert.Language.PlutusIR.Transform.Let <> s:47 var
+R2834:2834 PlutusCert.Language.PlutusIR.Transform.Let <> R:46 var
+R2819:2819 PlutusCert.Language.PlutusIR.Transform.Let <> R:46 var
+R2823:2824 PlutusCert.Language.PlutusIR.Transform.Let <> t':50 var
+R2821:2821 PlutusCert.Language.PlutusIR.Transform.Let <> t:49 var
+R2809:2809 PlutusCert.Language.PlutusIR.Transform.Let <> R:46 var
+R2813:2814 PlutusCert.Language.PlutusIR.Transform.Let <> s':48 var
+R2811:2811 PlutusCert.Language.PlutusIR.Transform.Let <> s:47 var
+def 2900:2910 <> C_Constant'
+binder 2921:2921 <> R:51
+R2931:2934 PlutusCert.Language.PlutusIR <> some ind
+binder 2924:2924 <> v:52
+binder 2926:2927 <> v':53
+R2944:2947 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2948:2951 PlutusCert.Language.PlutusIR.Transform.Congruence <> Cong ind
+R2969:2976 PlutusCert.Language.PlutusIR <> Constant constr
+R2978:2979 PlutusCert.Language.PlutusIR.Transform.Let <> v':53 var
+R2956:2963 PlutusCert.Language.PlutusIR <> Constant constr
+R2965:2965 PlutusCert.Language.PlutusIR.Transform.Let <> v:52 var
+R2953:2953 PlutusCert.Language.PlutusIR.Transform.Let <> R:51 var
+R2939:2941 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R2938:2938 PlutusCert.Language.PlutusIR.Transform.Let <> v:52 var
+R2942:2943 PlutusCert.Language.PlutusIR.Transform.Let <> v':53 var
+def 3020:3029 <> C_Builtin'
+binder 3040:3040 <> R:54
+R3050:3053 PlutusCert.Language.PlutusIR <> func syndef
+binder 3043:3043 <> f:55
+binder 3045:3046 <> f':56
+R3063:3066 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3067:3070 PlutusCert.Language.PlutusIR.Transform.Congruence <> Cong ind
+R3087:3093 PlutusCert.Language.PlutusIR <> Builtin constr
+R3095:3096 PlutusCert.Language.PlutusIR.Transform.Let <> f':56 var
+R3075:3081 PlutusCert.Language.PlutusIR <> Builtin constr
+R3083:3083 PlutusCert.Language.PlutusIR.Transform.Let <> f:55 var
+R3072:3072 PlutusCert.Language.PlutusIR.Transform.Let <> R:54 var
+R3058:3060 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3057:3057 PlutusCert.Language.PlutusIR.Transform.Let <> f:55 var
+R3061:3062 PlutusCert.Language.PlutusIR.Transform.Let <> f':56 var
+def 3137:3145 <> C_TyInst'
+binder 3156:3156 <> R:57
+R3166:3169 PlutusCert.Language.PlutusIR <> Term syndef
+binder 3159:3159 <> t:58
+binder 3161:3162 <> t':59
+R3182:3183 PlutusCert.Language.PlutusIR <> Ty def
+binder 3173:3174 <> ty:60
+binder 3176:3178 <> ty':61
+R3211:3214 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3221:3224 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3225:3228 PlutusCert.Language.PlutusIR.Transform.Congruence <> Cong ind
+R3247:3252 PlutusCert.Language.PlutusIR <> TyInst constr
+R3257:3259 PlutusCert.Language.PlutusIR.Transform.Let <> ty':61 var
+R3254:3255 PlutusCert.Language.PlutusIR.Transform.Let <> t':59 var
+R3233:3238 PlutusCert.Language.PlutusIR <> TyInst constr
+R3242:3243 PlutusCert.Language.PlutusIR.Transform.Let <> ty:60 var
+R3240:3240 PlutusCert.Language.PlutusIR.Transform.Let <> t:58 var
+R3230:3230 PlutusCert.Language.PlutusIR.Transform.Let <> R:57 var
+R3215:3215 PlutusCert.Language.PlutusIR.Transform.Let <> R:57 var
+R3219:3220 PlutusCert.Language.PlutusIR.Transform.Let <> t':59 var
+R3217:3217 PlutusCert.Language.PlutusIR.Transform.Let <> t:58 var
+R3205:3207 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3203:3204 PlutusCert.Language.PlutusIR.Transform.Let <> ty:60 var
+R3208:3210 PlutusCert.Language.PlutusIR.Transform.Let <> ty':61 var
+def 3301:3308 <> C_Error'
+binder 3319:3319 <> R:62
+R3331:3332 PlutusCert.Language.PlutusIR <> Ty def
+binder 3322:3323 <> ty:63
+binder 3325:3327 <> ty':64
+R3344:3347 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3348:3351 PlutusCert.Language.PlutusIR.Transform.Congruence <> Cong ind
+R3367:3371 PlutusCert.Language.PlutusIR <> Error constr
+R3373:3375 PlutusCert.Language.PlutusIR.Transform.Let <> ty':64 var
+R3356:3360 PlutusCert.Language.PlutusIR <> Error constr
+R3362:3363 PlutusCert.Language.PlutusIR.Transform.Let <> ty:63 var
+R3353:3353 PlutusCert.Language.PlutusIR.Transform.Let <> R:62 var
+R3338:3340 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3336:3337 PlutusCert.Language.PlutusIR.Transform.Let <> ty:63 var
+R3341:3343 PlutusCert.Language.PlutusIR.Transform.Let <> ty':64 var
+def 3417:3424 <> C_IWrap'
+binder 3435:3435 <> R:65
+R3445:3448 PlutusCert.Language.PlutusIR <> Term syndef
+binder 3438:3438 <> t:66
+binder 3440:3441 <> t':67
+R3472:3473 PlutusCert.Language.PlutusIR <> Ty def
+binder 3452:3454 <> ty1:68
+binder 3456:3459 <> ty1':69
+binder 3461:3463 <> ty2:70
+binder 3465:3468 <> ty2':71
+R3502:3505 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3516:3519 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3526:3529 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3530:3533 PlutusCert.Language.PlutusIR.Transform.Congruence <> Cong ind
+R3556:3560 PlutusCert.Language.PlutusIR <> IWrap constr
+R3572:3573 PlutusCert.Language.PlutusIR.Transform.Let <> t':67 var
+R3567:3570 PlutusCert.Language.PlutusIR.Transform.Let <> ty2':71 var
+R3562:3565 PlutusCert.Language.PlutusIR.Transform.Let <> ty1':69 var
+R3538:3542 PlutusCert.Language.PlutusIR <> IWrap constr
+R3552:3552 PlutusCert.Language.PlutusIR.Transform.Let <> t:66 var
+R3548:3550 PlutusCert.Language.PlutusIR.Transform.Let <> ty2:70 var
+R3544:3546 PlutusCert.Language.PlutusIR.Transform.Let <> ty1:68 var
+R3535:3535 PlutusCert.Language.PlutusIR.Transform.Let <> R:65 var
+R3520:3520 PlutusCert.Language.PlutusIR.Transform.Let <> R:65 var
+R3524:3525 PlutusCert.Language.PlutusIR.Transform.Let <> t':67 var
+R3522:3522 PlutusCert.Language.PlutusIR.Transform.Let <> t:66 var
+R3509:3511 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3506:3508 PlutusCert.Language.PlutusIR.Transform.Let <> ty2:70 var
+R3512:3515 PlutusCert.Language.PlutusIR.Transform.Let <> ty2':71 var
+R3495:3497 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3492:3494 PlutusCert.Language.PlutusIR.Transform.Let <> ty1:68 var
+R3498:3501 PlutusCert.Language.PlutusIR.Transform.Let <> ty1':69 var
+def 3614:3622 <> C_Unwrap'
+binder 3633:3633 <> R:72
+R3643:3646 PlutusCert.Language.PlutusIR <> Term syndef
+binder 3636:3636 <> t:73
+binder 3638:3639 <> t':74
+R3656:3659 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3660:3663 PlutusCert.Language.PlutusIR.Transform.Congruence <> Cong ind
+R3679:3684 PlutusCert.Language.PlutusIR <> Unwrap constr
+R3686:3687 PlutusCert.Language.PlutusIR.Transform.Let <> t':74 var
+R3668:3673 PlutusCert.Language.PlutusIR <> Unwrap constr
+R3675:3675 PlutusCert.Language.PlutusIR.Transform.Let <> t:73 var
+R3665:3665 PlutusCert.Language.PlutusIR.Transform.Let <> R:72 var
+R3650:3650 PlutusCert.Language.PlutusIR.Transform.Let <> R:72 var
+R3654:3655 PlutusCert.Language.PlutusIR.Transform.Let <> t':74 var
+R3652:3652 PlutusCert.Language.PlutusIR.Transform.Let <> t:73 var
+def 4168:4179 <> CNR_Desugar'
+binder 4194:4194 <> v:75
+binder 4196:4197 <> v':76
+binder 4199:4205 <> t_bound:77
+binder 4207:4214 <> t_bound':78
+binder 4216:4217 <> ty:79
+R4234:4245 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4271:4282 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4283:4293 PlutusCert.Language.PlutusIR.Transform.Let <> CNR_Binding ind
+binder 4348:4351 <> t_bs:80
+R4356:4360 PlutusCert.Language.PlutusIR <> Apply constr
+R4382:4389 PlutusCert.Language.PlutusIR.Transform.Let <> t_bound':78 var
+R4363:4368 PlutusCert.Language.PlutusIR <> LamAbs constr
+R4376:4379 PlutusCert.Language.PlutusIR.Transform.Let <> t_bs:80 var
+R4373:4374 PlutusCert.Language.PlutusIR.Transform.Let <> ty:79 var
+R4370:4371 PlutusCert.Language.PlutusIR.Transform.Let <> v':76 var
+R4306:4313 PlutusCert.Language.PlutusIR <> TermBind constr
+R4324:4330 PlutusCert.Language.PlutusIR.Transform.Let <> t_bound:77 var
+R4322:4322 PlutusCert.Language.PlutusIR.Transform.Let <> v:75 var
+R4315:4320 PlutusCert.Language.PlutusIR <> Strict constr
+R4246:4253 PlutusCert.Language.PlutusIR.Transform.Let <> CNR_Term ind
+R4263:4270 PlutusCert.Language.PlutusIR.Transform.Let <> t_bound':78 var
+R4255:4261 PlutusCert.Language.PlutusIR.Transform.Let <> t_bound:77 var
+R4229:4231 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R4228:4228 PlutusCert.Language.PlutusIR.Transform.Let <> v:75 var
+R4232:4233 PlutusCert.Language.PlutusIR.Transform.Let <> v':76 var
+R4423:4433 PlutusCert.Language.PlutusIR.Transform.Let <> CNR_Desugar constr
+R4423:4433 PlutusCert.Language.PlutusIR.Transform.Let <> CNR_Desugar constr
