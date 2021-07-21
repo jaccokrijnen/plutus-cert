@@ -1,0 +1,3 @@
+[submodule "iohk/plutus"]
+	path = iohk/plutus
+	url = git@github.com:jaccokrijnen/plutus.git
