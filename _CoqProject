@@ -1,7 +1,7 @@
 -Q src PlutusCert
 
 src/Util.v
-src/Meta.v
+src/Examples/Timelock.v
 src/Language/PlutusIR.v
 src/Language/PlutusIR/Folds.v
 src/Language/PlutusIR/Examples.v
