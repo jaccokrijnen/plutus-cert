@@ -20,7 +20,7 @@ From PlutusCert Require Import Language.PlutusIR.Transform.Congruence.
 From PlutusCert Require Import Language.PlutusIR.Transform.Universal.
 From PlutusCert Require Import Language.PlutusIR.Transform.Compose.
 From PlutusCert Require Import Language.PlutusIR.Transform.FloatLet.
-From PlutusCert Require Import Language.PlutusIR.Transform.LetNonStrict.
+From PlutusCert Require Import Language.PlutusIR.Transform.LetNonRec.
 From PlutusCert Require Import Language.PlutusIR.Transform.Desugar.DecideBool.
 (* From PlutusCert Require Import Language.PlutusIR.Transform.ScottEnc. *)
 From PlutusCert Require Import Language.PlutusIR.Optimizer.DeadBindings.

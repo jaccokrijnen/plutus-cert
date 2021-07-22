@@ -9,7 +9,7 @@ From PlutusCert Require Import
   Language.PlutusIR
   Language.PlutusIR.Analysis.Equality
   Language.PlutusIR.Transform.Congruence
-  Language.PlutusIR.Transform.LetNonStrict.
+  Language.PlutusIR.Transform.LetNonRec.
 
 
 (*
