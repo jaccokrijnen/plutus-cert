@@ -1,0 +1,64 @@
+(program
+  (let
+    (nonrec)
+    (datatypebind
+      (datatype
+        (tyvardecl EndDate (type))
+        
+        EndDate_match
+        (vardecl Fixed (fun (con integer) EndDate)) (vardecl Never EndDate)
+      )
+    )
+    (datatypebind
+      (datatype
+        (tyvardecl Bool (type))
+        
+        Bool_match
+        (vardecl True Bool) (vardecl False Bool)
+      )
+    )
+    (termbind
+      (strict)
+      (vardecl lessThanEqInteger (fun (con integer) (fun (con integer) Bool)))
+      (lam
+        arg
+        (con integer)
+        (lam
+          arg
+          (con integer)
+          [
+            (lam
+              b
+              (con bool)
+              [ [ [ { (builtin ifThenElse) Bool } b ] True ] False ]
+            )
+            [ [ (builtin lessThanEqualsInteger) arg ] arg ]
+          ]
+        )
+      )
+    )
+    (datatypebind
+      (datatype (tyvardecl Unit (type))  Unit_match (vardecl Unit Unit))
+    )
+    (lam
+      ds
+      EndDate
+      (lam
+        ds
+        (con integer)
+        [
+          [
+            [
+              { [ EndDate_match ds ] (fun Unit Bool) }
+              (lam
+                n (con integer) (lam thunk Unit [ [ lessThanEqInteger n ] ds ])
+              )
+            ]
+            (lam thunk Unit False)
+          ]
+          Unit
+        ]
+      )
+    )
+  )
+)

@@ -1,0 +1,698 @@
+(let
+  (nonrec)
+  (typebind (tyvardecl ByteString (type)) (con bytestring))
+  (let
+    (nonrec)
+    (datatypebind
+      (datatype
+        (tyvardecl Bool (type))
+        
+        Bool_match
+        (vardecl True Bool) (vardecl False Bool)
+      )
+    )
+    (let
+      (nonrec)
+      (termbind
+        (strict)
+        (vardecl
+          verifySignature
+          (fun (con bytestring) (fun (con bytestring) (fun (con bytestring) Bool)))
+        )
+        (lam
+          arg
+          (con bytestring)
+          (lam
+            arg
+            (con bytestring)
+            (lam
+              arg
+              (con bytestring)
+              [
+                (lam
+                  b
+                  (con bool)
+                  [ [ [ { (builtin ifThenElse) Bool } b ] True ] False ]
+                )
+                [ [ [ (builtin verifySignature) arg ] arg ] arg ]
+              ]
+            )
+          )
+        )
+      )
+      (let
+        (nonrec)
+        (typebind (tyvardecl String (type)) (con string))
+        (let
+          (nonrec)
+          (datatypebind
+            (datatype (tyvardecl Unit (type))  Unit_match (vardecl Unit Unit))
+          )
+          (let
+            (nonrec)
+            (termbind
+              (strict)
+              (vardecl trace (fun (con string) Unit))
+              (lam
+                arg
+                (con string)
+                [ (lam b (con unit) Unit) [ (builtin trace) arg ] ]
+              )
+            )
+            (let
+              (nonrec)
+              (typebind (tyvardecl Integer (type)) (con integer))
+              (let
+                (nonrec)
+                (termbind
+                  (strict)
+                  (vardecl
+                    takeByteString
+                    (fun (con integer) (fun (con bytestring) (con bytestring)))
+                  )
+                  (builtin takeByteString)
+                )
+                (let
+                  (nonrec)
+                  (termbind
+                    (strict)
+                    (vardecl
+                      subtractInteger
+                      (fun (con integer) (fun (con integer) (con integer)))
+                    )
+                    (builtin subtractInteger)
+                  )
+                  (let
+                    (nonrec)
+                    (termbind
+                      (strict)
+                      (vardecl sha3_ (fun (con bytestring) (con bytestring)))
+                      (builtin sha3_256)
+                    )
+                    (let
+                      (nonrec)
+                      (termbind
+                        (strict)
+                        (vardecl sha2_ (fun (con bytestring) (con bytestring)))
+                        (builtin sha2_256)
+                      )
+                      (let
+                        (nonrec)
+                        (termbind
+                          (strict)
+                          (vardecl
+                            remainderInteger
+                            (fun (con integer) (fun (con integer) (con integer)))
+                          )
+                          (builtin remainderInteger)
+                        )
+                        (let
+                          (nonrec)
+                          (termbind
+                            (strict)
+                            (vardecl
+                              quotientInteger
+                              (fun (con integer) (fun (con integer) (con integer)))
+                            )
+                            (builtin quotientInteger)
+                          )
+                          (let
+                            (nonrec)
+                            (termbind
+                              (strict)
+                              (vardecl
+                                multiplyInteger
+                                (fun (con integer) (fun (con integer) (con integer)))
+                              )
+                              (builtin multiplyInteger)
+                            )
+                            (let
+                              (nonrec)
+                              (termbind
+                                (strict)
+                                (vardecl
+                                  modInteger
+                                  (fun (con integer) (fun (con integer) (con integer)))
+                                )
+                                (builtin modInteger)
+                              )
+                              (let
+                                (nonrec)
+                                (termbind
+                                  (strict)
+                                  (vardecl
+                                    lessThanInteger
+                                    (fun (con integer) (fun (con integer) Bool))
+                                  )
+                                  (lam
+                                    arg
+                                    (con integer)
+                                    (lam
+                                      arg
+                                      (con integer)
+                                      [
+                                        (lam
+                                          b
+                                          (con bool)
+                                          [
+                                            [
+                                              [
+                                                { (builtin ifThenElse) Bool } b
+                                              ]
+                                              True
+                                            ]
+                                            False
+                                          ]
+                                        )
+                                        [
+                                          [ (builtin lessThanInteger) arg ] arg
+                                        ]
+                                      ]
+                                    )
+                                  )
+                                )
+                                (let
+                                  (nonrec)
+                                  (termbind
+                                    (strict)
+                                    (vardecl
+                                      lessThanEqInteger
+                                      (fun (con integer) (fun (con integer) Bool))
+                                    )
+                                    (lam
+                                      arg
+                                      (con integer)
+                                      (lam
+                                        arg
+                                        (con integer)
+                                        [
+                                          (lam
+                                            b
+                                            (con bool)
+                                            [
+                                              [
+                                                [
+                                                  { (builtin ifThenElse) Bool }
+                                                  b
+                                                ]
+                                                True
+                                              ]
+                                              False
+                                            ]
+                                          )
+                                          [
+                                            [
+                                              (builtin lessThanEqualsInteger)
+                                              arg
+                                            ]
+                                            arg
+                                          ]
+                                        ]
+                                      )
+                                    )
+                                  )
+                                  (let
+                                    (nonrec)
+                                    (termbind
+                                      (strict)
+                                      (vardecl
+                                        lessThanByteString
+                                        (fun (con bytestring) (fun (con bytestring) Bool))
+                                      )
+                                      (lam
+                                        arg
+                                        (con bytestring)
+                                        (lam
+                                          arg
+                                          (con bytestring)
+                                          [
+                                            (lam
+                                              b
+                                              (con bool)
+                                              [
+                                                [
+                                                  [
+                                                    {
+                                                      (builtin ifThenElse) Bool
+                                                    }
+                                                    b
+                                                  ]
+                                                  True
+                                                ]
+                                                False
+                                              ]
+                                            )
+                                            [
+                                              [
+                                                (builtin lessThanByteString) arg
+                                              ]
+                                              arg
+                                            ]
+                                          ]
+                                        )
+                                      )
+                                    )
+                                    (let
+                                      (nonrec)
+                                      (termbind
+                                        (strict)
+                                        (vardecl
+                                          greaterThanInteger
+                                          (fun (con integer) (fun (con integer) Bool))
+                                        )
+                                        (lam
+                                          arg
+                                          (con integer)
+                                          (lam
+                                            arg
+                                            (con integer)
+                                            [
+                                              (lam
+                                                b
+                                                (con bool)
+                                                [
+                                                  [
+                                                    [
+                                                      {
+                                                        (builtin ifThenElse)
+                                                        Bool
+                                                      }
+                                                      b
+                                                    ]
+                                                    True
+                                                  ]
+                                                  False
+                                                ]
+                                              )
+                                              [
+                                                [
+                                                  (builtin greaterThanInteger)
+                                                  arg
+                                                ]
+                                                arg
+                                              ]
+                                            ]
+                                          )
+                                        )
+                                      )
+                                      (let
+                                        (nonrec)
+                                        (termbind
+                                          (strict)
+                                          (vardecl
+                                            greaterThanEqInteger
+                                            (fun (con integer) (fun (con integer) Bool))
+                                          )
+                                          (lam
+                                            arg
+                                            (con integer)
+                                            (lam
+                                              arg
+                                              (con integer)
+                                              [
+                                                (lam
+                                                  b
+                                                  (con bool)
+                                                  [
+                                                    [
+                                                      [
+                                                        {
+                                                          (builtin ifThenElse)
+                                                          Bool
+                                                        }
+                                                        b
+                                                      ]
+                                                      True
+                                                    ]
+                                                    False
+                                                  ]
+                                                )
+                                                [
+                                                  [
+                                                    (builtin
+                                                      greaterThanEqualsInteger
+                                                    )
+                                                    arg
+                                                  ]
+                                                  arg
+                                                ]
+                                              ]
+                                            )
+                                          )
+                                        )
+                                        (let
+                                          (nonrec)
+                                          (termbind
+                                            (strict)
+                                            (vardecl
+                                              greaterThanByteString
+                                              (fun (con bytestring) (fun (con bytestring) Bool))
+                                            )
+                                            (lam
+                                              arg
+                                              (con bytestring)
+                                              (lam
+                                                arg
+                                                (con bytestring)
+                                                [
+                                                  (lam
+                                                    b
+                                                    (con bool)
+                                                    [
+                                                      [
+                                                        [
+                                                          {
+                                                            (builtin ifThenElse)
+                                                            Bool
+                                                          }
+                                                          b
+                                                        ]
+                                                        True
+                                                      ]
+                                                      False
+                                                    ]
+                                                  )
+                                                  [
+                                                    [
+                                                      (builtin
+                                                        greaterThanByteString
+                                                      )
+                                                      arg
+                                                    ]
+                                                    arg
+                                                  ]
+                                                ]
+                                              )
+                                            )
+                                          )
+                                          (let
+                                            (nonrec)
+                                            (termbind
+                                              (strict)
+                                              (vardecl
+                                                error
+                                                (all a (type) (fun Unit a))
+                                              )
+                                              (abs
+                                                e
+                                                (type)
+                                                (lam thunk Unit (error e))
+                                              )
+                                            )
+                                            (let
+                                              (nonrec)
+                                              (termbind
+                                                (strict)
+                                                (vardecl
+                                                  equalsInteger
+                                                  (fun (con integer) (fun (con integer) Bool))
+                                                )
+                                                (lam
+                                                  arg
+                                                  (con integer)
+                                                  (lam
+                                                    arg
+                                                    (con integer)
+                                                    [
+                                                      (lam
+                                                        b
+                                                        (con bool)
+                                                        [
+                                                          [
+                                                            [
+                                                              {
+                                                                (builtin
+                                                                  ifThenElse
+                                                                )
+                                                                Bool
+                                                              }
+                                                              b
+                                                            ]
+                                                            True
+                                                          ]
+                                                          False
+                                                        ]
+                                                      )
+                                                      [
+                                                        [
+                                                          (builtin equalsInteger
+                                                          )
+                                                          arg
+                                                        ]
+                                                        arg
+                                                      ]
+                                                    ]
+                                                  )
+                                                )
+                                              )
+                                              (let
+                                                (nonrec)
+                                                (termbind
+                                                  (strict)
+                                                  (vardecl
+                                                    equalsByteString
+                                                    (fun (con bytestring) (fun (con bytestring) Bool))
+                                                  )
+                                                  (lam
+                                                    arg
+                                                    (con bytestring)
+                                                    (lam
+                                                      arg
+                                                      (con bytestring)
+                                                      [
+                                                        (lam
+                                                          b
+                                                          (con bool)
+                                                          [
+                                                            [
+                                                              [
+                                                                {
+                                                                  (builtin
+                                                                    ifThenElse
+                                                                  )
+                                                                  Bool
+                                                                }
+                                                                b
+                                                              ]
+                                                              True
+                                                            ]
+                                                            False
+                                                          ]
+                                                        )
+                                                        [
+                                                          [
+                                                            (builtin
+                                                              equalsByteString
+                                                            )
+                                                            arg
+                                                          ]
+                                                          arg
+                                                        ]
+                                                      ]
+                                                    )
+                                                  )
+                                                )
+                                                (let
+                                                  (nonrec)
+                                                  (termbind
+                                                    (strict)
+                                                    (vardecl
+                                                      emptyString (con string)
+                                                    )
+                                                    (con string "")
+                                                  )
+                                                  (let
+                                                    (nonrec)
+                                                    (termbind
+                                                      (strict)
+                                                      (vardecl
+                                                        emptyByteString
+                                                        (con bytestring)
+                                                      )
+                                                      (con bytestring #)
+                                                    )
+                                                    (let
+                                                      (nonrec)
+                                                      (termbind
+                                                        (strict)
+                                                        (vardecl
+                                                          dropByteString
+                                                          (fun (con integer) (fun (con bytestring) (con bytestring)))
+                                                        )
+                                                        (builtin dropByteString)
+                                                      )
+                                                      (let
+                                                        (nonrec)
+                                                        (termbind
+                                                          (strict)
+                                                          (vardecl
+                                                            divideInteger
+                                                            (fun (con integer) (fun (con integer) (con integer)))
+                                                          )
+                                                          (builtin divideInteger
+                                                          )
+                                                        )
+                                                        (let
+                                                          (nonrec)
+                                                          (termbind
+                                                            (strict)
+                                                            (vardecl
+                                                              concatenate
+                                                              (fun (con bytestring) (fun (con bytestring) (con bytestring)))
+                                                            )
+                                                            (builtin concatenate
+                                                            )
+                                                          )
+                                                          (let
+                                                            (nonrec)
+                                                            (typebind
+                                                              (tyvardecl
+                                                                Char (type)
+                                                              )
+                                                              (con char)
+                                                            )
+                                                            (let
+                                                              (nonrec)
+                                                              (termbind
+                                                                (strict)
+                                                                (vardecl
+                                                                  charToString
+                                                                  (fun (con char) (con string))
+                                                                )
+                                                                (builtin
+                                                                  charToString
+                                                                )
+                                                              )
+                                                              (let
+                                                                (nonrec)
+                                                                (termbind
+                                                                  (strict)
+                                                                  (vardecl
+                                                                    appendString
+                                                                    (fun (con string) (fun (con string) (con string)))
+                                                                  )
+                                                                  (builtin
+                                                                    append
+                                                                  )
+                                                                )
+                                                                (let
+                                                                  (nonrec)
+                                                                  (termbind
+                                                                    (strict)
+                                                                    (vardecl
+                                                                      addInteger
+                                                                      (fun (con integer) (fun (con integer) (con integer)))
+                                                                    )
+                                                                    (builtin
+                                                                      addInteger
+                                                                    )
+                                                                  )
+                                                                  (let
+                                                                    (nonrec)
+                                                                    (datatypebind
+                                                                      (datatype
+                                                                        (tyvardecl
+                                                                          EndDate
+                                                                          (type)
+                                                                        )
+                                                                        
+                                                                        EndDate_match
+                                                                        (vardecl
+                                                                          Fixed
+                                                                          (fun (con integer) EndDate)
+                                                                        )
+                                                                        (vardecl
+                                                                          Never
+                                                                          EndDate
+                                                                        )
+                                                                      )
+                                                                    )
+                                                                    (lam
+                                                                      ds
+                                                                      EndDate
+                                                                      (lam
+                                                                        ds
+                                                                        (con integer)
+                                                                        (let
+                                                                          (nonrec
+                                                                          )
+                                                                          (termbind
+                                                                            (nonstrict
+                                                                            )
+                                                                            (vardecl
+                                                                              wild
+                                                                              EndDate
+                                                                            )
+                                                                            ds
+                                                                          )
+                                                                          [
+                                                                            [
+                                                                              [
+                                                                                {
+                                                                                  [
+                                                                                    EndDate_match
+                                                                                    ds
+                                                                                  ]
+                                                                                  (fun Unit Bool)
+                                                                                }
+                                                                                (lam
+                                                                                  n
+                                                                                  (con integer)
+                                                                                  (lam
+                                                                                    thunk
+                                                                                    Unit
+                                                                                    [
+                                                                                      [
+                                                                                        lessThanEqInteger
+                                                                                        n
+                                                                                      ]
+                                                                                      ds
+                                                                                    ]
+                                                                                  )
+                                                                                )
+                                                                              ]
+                                                                              (lam
+                                                                                thunk
+                                                                                Unit
+                                                                                False
+                                                                              )
+                                                                            ]
+                                                                            Unit
+                                                                          ]
+                                                                        )
+                                                                      )
+                                                                    )
+                                                                  )
+                                                                )
+                                                              )
+                                                            )
+                                                          )
+                                                        )
+                                                      )
+                                                    )
+                                                  )
+                                                )
+                                              )
+                                            )
+                                          )
+                                        )
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+)

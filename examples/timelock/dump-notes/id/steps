@@ -1,0 +1,18 @@
+[nix-shell:~/uni/research/projects/example]$ cat Fooverbose-core2core | grep "==="
+
+==================== Simplifier ====================
+==================== Core plugin:  Core to PLC ====================
+==================== Simplifier ====================
+==================== Levels added: ====================
+==================== Float out(FOS {Lam = Just 0, Consts = True, OverSatApps = False}) ====================
+==================== Simplifier ====================
+==================== Simplifier ====================
+==================== Simplifier ====================
+==================== Float inwards ====================
+==================== Simplifier ====================
+==================== Simplifier ====================
+==================== Levels added: ====================
+==================== Float out(FOS {Lam = Just 0, Consts = True, OverSatApps = True}) ====================
+==================== Float inwards ====================
+==================== Simplifier ====================
+
