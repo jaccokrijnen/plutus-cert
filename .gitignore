@@ -6,6 +6,9 @@ CoqMakefile.conf
 *.vos
 *.glob
 *.aux
+*.lia.cache
+*.CoqMakefile.d
+Makefile.coq
 
 # vim
 *.swp
