@@ -11,7 +11,7 @@ From PlutusCert Require Import Language.PlutusIR.
 From PlutusCert Require Import Language.PlutusIR.Analysis.FreeVars.
 From PlutusCert Require Import Language.PlutusIR.Analysis.Equality.
 From PlutusCert Require Import Language.PlutusIR.Transform.Congruence.
-From PlutusCert Require Import Language.PlutusIR.Examples.
+(* EDIT_JORIS : From PlutusCert Require Import Language.PlutusIR.Examples. *)
 
 
 (* DBE_Term relates terms t and t' such that t' is the result of eliminating dead bindings in t *)
