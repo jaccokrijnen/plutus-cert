@@ -24,8 +24,7 @@ From PlutusCert Require Import Language.PlutusIR.Transform.LetNonRec.
 From PlutusCert Require Import Language.PlutusIR.Transform.Desugar.DecideBool.
 (* From PlutusCert Require Import Language.PlutusIR.Transform.ScottEnc. *)
 From PlutusCert Require Import Language.PlutusIR.Optimizer.DeadBindings.
-(* EDIT_JORIS : From PlutusCert Require Import Language.PlutusIR.Examples. *)
-(* EDIT_JORIS : *) From PlutusCert Require Import Examples.TimelockDumps.
+From PlutusCert Require Import Examples.TimelockDumps.
 
 Local Open Scope string_scope.
 
