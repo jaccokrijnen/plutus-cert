@@ -17,7 +17,6 @@ From PlutusCert Require Import Language.PlutusIR.
 From PlutusCert Require Import Language.PlutusIR.Analysis.FreeVars.
 From PlutusCert Require Import Language.PlutusIR.Analysis.Equality.
 From PlutusCert Require Import Language.PlutusIR.Transform.Congruence.
-(* EDIT_JORIS : From PlutusCert Require Import Language.PlutusIR.Examples. *)
 From PlutusCert Require Import Language.PlutusIR.Optimizer.DeadBindings.
 
 Tactic Notation "step" hyp(n) :=
