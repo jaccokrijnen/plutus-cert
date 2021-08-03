@@ -171,6 +171,235 @@ Definition constructorName : constructor -> string := fun c => match c with
 
 Inductive DTDecl := Datatype : TVDecl -> list TVDecl -> name -> list constructor -> DTDecl.
 
+(* JORIS: START *)
+Section Types.
+
+Open Scope string_scope.
+
+(** ** Kinds *)
+
+Inductive Kind' :=
+  | Kind_Base : Kind' 
+  | Kind_Arrow : Kind' -> Kind' -> Kind'.
+
+(** ** Types *)
+Inductive Ty' :=
+  | Ty_Var : string -> Ty'
+  | Ty_Fun : Ty' -> Ty' -> Ty'
+  | Ty_IFix : Ty' -> Ty' -> Ty'
+  | Ty_Forall : tyname -> Kind' -> Ty' -> Ty'
+  | Ty_Builtin : uni -> Ty'
+  | Ty_Lam : tyname -> Kind' -> Ty' -> Ty'
+  | Ty_App : Ty' -> Ty' -> Ty'.
+
+(** ** Contexts and lookups *)
+Inductive Context :=
+  | Nil : Context
+  | ConsType : (string * Ty') -> Context -> Context
+  | ConsKind : (string * Kind') -> Context -> Context.
+
+Fixpoint lookupK (ctx : Context) (X : string) : option Kind' := 
+  match ctx with
+  | ConsKind (Y, K) ctx' => 
+    if X =? Y then Coq.Init.Datatypes.Some K else lookupK ctx' X
+  | _ => None
+  end.
+
+Fixpoint lookupT (ctx : Context) (x : string) : option Ty' :=
+  match ctx with
+  | ConsType (y, T) ctx' =>
+    if x =? y then Coq.Init.Datatypes.Some T else lookupT ctx' x
+  | _ => None
+  end.
+
+(** ** Kinding of types *)
+Reserved Notation "ctx '|-*' ty ':' K" (at level 40, ty at level 0, K at level 0).
+Inductive has_kind : Context -> Ty' -> Kind' -> Prop :=
+  | K_Var : forall ctx X K,
+      lookupK ctx X = Coq.Init.Datatypes.Some K ->
+      ctx |-* (Ty_Var X) : K
+  | K_Fun : forall ctx T1 T2,
+      ctx |-* T1 : Kind_Base ->
+      ctx |-* T2 : Kind_Base ->
+      ctx |-* (Ty_Fun T1 T2) : Kind_Base
+  | K_IFix  : forall ctx F T K,
+      ctx |-* T : K ->
+      ctx |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
+      ctx |-* (Ty_IFix F T) : Kind_Base
+  | K_Forall : forall ctx X K T,
+      (ConsKind (X, K) ctx) |-* T : Kind_Base ->
+      ctx |-* (Ty_Forall X K T) : Kind_Base
+  (* Note on builtins: At the moment of writing this, all built-in types are of base kind. *)
+  | K_Builtin : forall ctx u,
+      ctx |-* (Ty_Builtin u) : Kind_Base 
+  | K_Lam : forall ctx X K1 T K2,
+      (ConsKind (X, K1) ctx) |-* T : K2 ->
+      ctx |-* (Ty_Lam X K1 T) : (Kind_Arrow K1 K2)
+  | K_App : forall ctx T1 T2 K1 K2,
+      ctx |-* T1 : (Kind_Arrow K1 K2) ->
+      ctx |-* T2 : K1 ->
+      ctx |-* (Ty_App T1 T2) : K2
+where "ctx '|-*' ty ':' K" := (has_kind ctx ty K).
+
+(** ** Substitution in types *)
+Fixpoint substituteT (X : string) (S T : Ty') : Ty' :=
+  match T with
+  | Ty_Var Y => 
+    if X =? Y then S else Ty_Var Y
+  | Ty_Fun T1 T2 =>
+    Ty_Fun (substituteT X S T1) (substituteT X S T2)
+  | Ty_IFix F T =>
+    Ty_IFix (substituteT X S F) (substituteT X S T)
+  | Ty_Forall Y K T' =>
+    if X =? Y then Ty_Forall Y K T' else Ty_Forall Y K (substituteT X S T')
+  | Ty_Builtin u => 
+    Ty_Builtin u
+  | Ty_Lam Y K1 T' =>
+    if X =? Y then Ty_Lam Y K1 T' else Ty_Lam Y K1 (substituteT X S T')
+  | Ty_App T1 T2 =>
+    Ty_App (substituteT X S T1) (substituteT X S T2)
+  end.
+
+(** ** Type equality *)
+Reserved Notation "T1 '=b' T2" (at level 40).
+Inductive EqT : Ty' -> Ty' -> Prop :=
+  (* Beta-reduction *)
+  | EqT_Beta : forall X K T1 T2,
+      Ty_App (Ty_Lam X K T1) T2 =b substituteT X T2 T1
+  (* Reflexivity, Symmetry and Transitivity*)
+  | EqT_Refl : forall T,
+      T =b T
+  | EqT_Symm : forall T S,
+      T =b S ->
+      S =b T
+  | EqT_Trans : forall S U T,
+      S =b U ->
+      U =b T ->
+      S =b T
+  (* Congruence *)
+  | EqT_Fun : forall S1 S2 T1 T2,
+      S1 =b S2 ->
+      T1 =b T2 ->
+      Ty_Fun S1 T1 =b Ty_Fun S2 T2
+  | EqT_Forall : forall X K S T,
+      S =b T ->
+      Ty_Forall X K S =b Ty_Forall X K T
+  | EqT_Lam : forall X K S T,
+      S =b T ->
+      Ty_Lam X K S =b Ty_Lam X K T
+  | EqT_App : forall S1 S2 T1 T2,
+      S1 =b S2 ->
+      T1 =b T2 ->
+      Ty_App S1 T1 =b Ty_App S2 T2
+where "T1 '=b' T2" := (EqT T1 T2).
+
+(** ** Terms *)
+Section Terms.
+Context (name : Set).
+
+Inductive term :=
+  | Let      : Recursivity -> list binding -> term -> term
+  | Var      : name -> term
+  | TyAbs    : tyname -> Kind' -> term -> term
+  | LamAbs   : name -> Ty' -> term -> term
+  | Apply    : term -> term -> term
+  | Constant : some -> term
+  | Builtin  : func -> term
+  | TyInst   : term -> Ty' -> term
+  | Error    : Ty' -> term
+  | IWrap    : Ty' -> Ty' -> term -> term
+  | Unwrap   : term -> term
+
+with binding :=
+  | TermBind : Strictness -> VDecl -> term -> binding
+  | TypeBind : TVDecl -> Ty -> binding
+  | DatatypeBind : DTDecl -> binding
+.
+
+End Terms.
+
+(** Types of builtin-functions *)
+Definition lookupBuiltinTy (f : DefaultFun) : Ty' :=
+  let Ty_Int := Ty_Builtin DefaultUniInteger in
+  let Ty_Bool := Ty_Builtin DefaultUniBool in
+  let Ty_BS := Ty_Builtin DefaultUniByteString in
+  let T_Int_Bin := Ty_Fun Ty_Int (Ty_Fun Ty_Int Ty_Int) in
+  let T_Int_BinPredicate := Ty_Fun Ty_Int (Ty_Fun Ty_Int Ty_Bool) in
+  let T_BS_Bin := Ty_Fun Ty_BS (Ty_Fun Ty_BS Ty_BS) in
+  let T_BS_BinPredicate := Ty_Fun Ty_BS (Ty_Fun Ty_BS Ty_Bool) in
+  let Ty_Char := Ty_Builtin DefaultUniChar in
+  let Ty_String := Ty_Builtin DefaultUniString in
+  let Ty_Unit := Ty_Builtin DefaultUniUnit in
+  match f with
+  | AddInteger => T_Int_Bin
+  | SubtractInteger => T_Int_Bin
+  | MultiplyInteger => T_Int_Bin
+  | DivideInteger => T_Int_Bin
+  | QuotientInteger => T_Int_Bin
+  | RemainderInteger => T_Int_Bin
+  | ModInteger => T_Int_Bin
+  | LessThanInteger => T_Int_BinPredicate
+  | LessThanEqInteger => T_Int_BinPredicate
+  | GreaterThanInteger => T_Int_BinPredicate
+  | GreaterThanEqInteger => T_Int_BinPredicate
+  | EqInteger => T_Int_BinPredicate
+  | Concatenate => T_BS_Bin
+  | TakeByteString => Ty_Fun Ty_Int (Ty_Fun Ty_BS Ty_BS)
+  | DropByteString => Ty_Fun Ty_Int (Ty_Fun Ty_BS Ty_BS)
+  | SHA2 => Ty_Fun Ty_BS Ty_BS
+  | SHA3 => Ty_Fun Ty_BS Ty_BS
+  | VerifySignature => Ty_Fun Ty_BS (Ty_Fun Ty_BS (Ty_Fun Ty_BS Ty_Bool))
+  | EqByteString => T_BS_BinPredicate
+  | LtByteString => T_BS_BinPredicate
+  | GtByteString => T_BS_BinPredicate
+  | IfThenElse => Ty_Forall "a" Kind_Base (Ty_Fun Ty_Bool (Ty_Fun (Ty_Var "a") (Ty_Var "a")))
+  | CharToString => Ty_Fun Ty_Char Ty_String
+  | Append => Ty_Fun Ty_String (Ty_Fun Ty_String Ty_String)
+  | Trace => Ty_Fun Ty_String Ty_Unit (* TODO: figure out if it is the correct type*)
+  end.
+
+(** Typing of terms *)
+Reserved Notation "ctx '|-' tm ':' T" (at level 40, tm at level 0, T at level 0).
+Inductive has_type : Context -> term string -> Ty' -> Prop :=
+  (* TODO : Let-bindings *)
+  (* 
+  | T_Let 
+  *)
+  | T_Var : forall ctx x T,
+      lookupT ctx x = Coq.Init.Datatypes.Some T ->
+      ctx |- (Var x) : T
+  | T_TyAbs : forall ctx X K t T,
+      (ConsKind (X, K) ctx) |- t : T ->
+      ctx |- (TyAbs X K t) : (Ty_Forall X K T)
+  | T_LamAbs : forall ctx x T1 t T2,
+      (ConsType (x, T1) ctx) |- t : T2 -> 
+      ctx |-* T1 : Kind_Base ->
+      ctx |- (LamAbs x T1 t) : (Ty_Fun T1 T2)
+  | T_Apply : forall ctx t1 t2 T1 T2,
+      ctx |- t1 : (Ty_Fun T1 T2) ->
+      ctx |- t2 : T1 ->
+      ctx |- (Apply t1 t2) : T2
+  | T_Constant : forall ctx u type,
+      ctx |- (Constant _ (Some (ValueOf u type))) : (Ty_Builtin u) (* TODO *)
+  | T_Builtin : forall ctx f,
+      ctx |- (Builtin _ f) : (lookupBuiltinTy f)
+  | T_TyInst : forall ctx t1 T2 T1 X K2,
+      ctx |- t1 : (Ty_Forall X K2 T1) ->
+      ctx |-* T2 : K2 ->
+      ctx |- (TyInst t1 T2) : (substituteT X T2 T1)
+  | T_Error : forall ctx T,
+      ctx |-* T : Kind_Base ->
+      ctx |- (Error _ T) : T 
+  (* TODO : Recursive types *)
+  (*
+  | T_IWrap
+  | T_Unwrap 
+  *)
+where "ctx '|-' tm ':' T" := (has_type ctx tm T).
+
+End Types.
+(* JORIS: END *)
+
 
 Section AST_term.
 Context (name : Set).
