@@ -160,6 +160,13 @@ Inductive Context :=
   | ConsType : (string * Ty) -> Context -> Context
   | ConsKind : (string * Kind) -> Context -> Context.
 
+Fixpoint appendContexts (ctx1 ctx2 : Context) :=
+  match ctx1 with
+  | Nil => ctx2
+  | ConsType x ctx1' => ConsType x (appendContexts ctx1' ctx2)
+  | ConsKind x ctx1' => ConsKind x (appendContexts ctx1' ctx2)
+  end.
+
 Open Scope string_scope.
 
 Fixpoint lookupK (ctx : Context) (X : string) : option Kind := 
@@ -269,9 +276,104 @@ where "T1 '=b' T2" := (EqT T1 T2).
   in each constructor (have to add types for the possible values that can occur when dumping)
 *)
 
+(* Grammar from Kereev et al. included below. *)
+(* bindings b     ::= x : T = t     *)
 Inductive VDecl := VarDecl : name -> Ty -> VDecl.
+(*                    X :: K = T    *)
 Inductive TVDecl := TyVarDecl : tyname -> Kind -> TVDecl.
+(*                    data X = (<ol> Y :: K <\ol>) = <ol> c <\ol> with x          *)
 Inductive DTDecl := Datatype : TVDecl -> list TVDecl -> name -> list VDecl -> DTDecl.
+
+(** *** Auxiliary functions *)
+Definition getName (vd : VDecl) :=
+  match vd with
+  | VarDecl x _ => x
+  end.
+
+Definition getTy (vd : VDecl) :=
+  match vd with
+  | VarDecl _ T => T
+  end.
+
+Definition getTyname (tvd : TVDecl) :=
+  match tvd with
+  | TyVarDecl X _ => X
+  end.
+
+Definition getKind (tvd : TVDecl) :=
+  match tvd with
+  | TyVarDecl _ K => K
+  end.
+
+Definition getMatchFunc (d : DTDecl) :=
+  match d with
+  | Datatype _ _ matchFunc _ => matchFunc
+  end.
+
+Definition branchTy (c : VDecl) (R : Ty) : Ty :=
+  match c with
+  | VarDecl x T => Ty_Fun T R
+  end.
+
+Require Import Coq.Program.Basics.
+
+Definition dataTy (d : DTDecl) : Ty :=
+  match d with
+  | Datatype X YKs matchFunc cs =>
+    let branchTypes := map (fun c => branchTy c (Ty_Var "R")) cs in
+    let branchTypesFolded := fold_right Ty_Fun (Ty_Var "R") branchTypes in
+    let indexKinds := map (fun YK => Ty_Lam (getTyname YK) (getKind YK)) YKs in
+    fold_right apply (Ty_Forall "R" Kind_Base branchTypesFolded) indexKinds
+  end.
+
+Definition YK1 := TyVarDecl "X" (Kind_Arrow Kind_Base Kind_Base).
+Definition YK2 := TyVarDecl "Y" (Kind_Base). 
+Definition c1 := VarDecl "c1" (Ty_Fun (Ty_Var "b") (Ty_Var "b")).
+Definition c2 := VarDecl "c2" (Ty_Fun (Ty_Fun (Ty_Var "b") (Ty_Var "b")) (Ty_Fun (Ty_Var "b") (Ty_Var "b"))).
+Definition d1 := Datatype (TyVarDecl "d1" Kind_Base) (cons YK1 (cons YK2 nil)) "match_d1" (cons c1 (cons c2 nil)).
+Definition d2 := Datatype (TyVarDecl "d2" Kind_Base) (cons YK2 nil) "match_d2" (cons c1 nil).
+
+Example test_dataTy : 
+  dataTy d1 =
+    Ty_Lam "X" (Kind_Arrow Kind_Base Kind_Base) (
+      Ty_Lam "Y" Kind_Base (
+        Ty_Forall "R" Kind_Base (Ty_Fun (branchTy c1 (Ty_Var "R")) (Ty_Fun (branchTy c2 (Ty_Var "R")) (Ty_Var "R")))
+      )
+    ).
+Proof. auto. Qed.
+
+Definition dataKind (d : DTDecl) : Kind :=
+  match d with
+  | Datatype X YKs matchFunc cs =>
+    fold_right Kind_Arrow Kind_Base (map getKind YKs)
+  end.
+
+Compute (dataKind d1).
+
+Definition constrTy (d : DTDecl) (c : VDecl) : Ty :=
+  match d, c with
+  | Datatype X YKs matchFunc cs, VarDecl x T =>
+    let indexTyVars := map (compose Ty_Var getTyname) YKs in
+    let indexTyVarsAppliedToX := fold_left Ty_App indexTyVars (Ty_Var (getTyname X)) in
+    let branchType := branchTy c indexTyVarsAppliedToX in
+    let indexForalls := map (fun YK => Ty_Forall (getTyname YK) (getKind YK)) YKs in
+    fold_right apply branchType indexForalls
+  end.
+
+Compute (constrTy d1 c1).
+Compute (constrTy d1 c2).
+
+Definition matchTy (d : DTDecl) : Ty :=
+  match d with
+  | Datatype X YKs matchFunc cs =>
+    let indexTyVars := map (compose Ty_Var getTyname) YKs in
+    let indexTyVarsAppliedToX := fold_left Ty_App indexTyVars (Ty_Var (getTyname X)) in
+    let indexForalls := map (fun YK => Ty_Forall (getTyname YK) (getKind YK)) YKs in
+    fold_right apply (Ty_Fun indexTyVarsAppliedToX (fold_left Ty_App indexTyVars (dataTy d))) indexForalls 
+  end.
+
+Compute (matchTy d1).
+Compute (matchTy d2).
 
 (** ** Terms *)
 Section AST_term.
@@ -310,6 +412,43 @@ Arguments DatatypeBind [name]%type_scope.
 
 Notation Term := (term string).
 Notation Binding := (binding string).
+
+(** *** Binder functions *)
+Definition dataBind (d : DTDecl) : string * Kind :=
+  match d with
+  | Datatype X YKs matchFunc cs =>
+    (getTyname X, dataKind d)
+  end.
+
+Definition constrBind (d : DTDecl) (c : VDecl) : string * Ty :=
+  match d, c with
+  | Datatype X YKs matchFunc cs, VarDecl x T =>
+    (x, constrTy d c)
+  end.
+
+Definition constrBinds (d : DTDecl) : list (string * Ty) :=
+  match d with
+  | Datatype X YKs matchFunc cs =>
+    map (constrBind d) cs
+  end.
+
+Definition matchBind (d : DTDecl) : string * Ty :=
+  match d with
+  | Datatype X YKs matchFunc cs =>
+    (matchFunc, matchTy d)
+  end.
+
+Definition binds (b : Binding) : Context :=
+  match b with
+  | TermBind _ vd _ => ConsType (getName vd, getTy vd) Nil
+  | TypeBind tvd ty => ConsKind (getTyname tvd, getKind tvd) Nil
+  | DatatypeBind d =>
+    let dataB := dataBind d in 
+    let constrBs := constrBinds d in
+    let constrBs_ctx := fold_right ConsType Nil constrBs in
+    let matchB := matchBind d in
+    ConsType (getMatchFunc d, matchTy d) (ConsType matchB (appendContexts constrBs_ctx (ConsKind dataB Nil)))
+  end.
 
 (** ** Trace of compilation *)
 Inductive Pass :=
@@ -374,12 +513,14 @@ Definition lookupBuiltinTy (f : DefaultFun) : Ty :=
   end.
 
 (** Typing of terms *)
+(* TODO: Should I include normalisation in type rules? They are not type directed at the moment. *)
 Reserved Notation "ctx '|-' tm ':' T" (at level 40, tm at level 0, T at level 0).
 Inductive has_type : Context -> Term -> Ty -> Prop :=
   (* TODO : Let-bindings *)
   (* 
   | T_Let 
   *)
+  (* Basic constructs *)
   | T_Var : forall ctx x T,
       lookupT ctx x = Coq.Init.Datatypes.Some T ->
       ctx |- (Var x) : T
@@ -405,11 +546,21 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
   | T_Error : forall ctx T,
       ctx |-* T : Kind_Base ->
       ctx |- (Error T) : T 
-  (* TODO : Recursive types *)
-  (*
-  | T_IWrap
-  | T_Unwrap 
-  *)
+  (* Recursive types *)
+  | T_IWrap : forall ctx F T M X K,
+      ctx |- M : (Ty_App (Ty_App F (Ty_Lam X K (Ty_IFix F (Ty_Var X)))) T) ->
+      ctx |-* T : K ->
+      ctx |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
+      ctx |- (IWrap F T M) : (Ty_IFix F T)
+  | T_Unwrap : forall ctx M F X K T,
+      ctx |- M : (Ty_IFix F T) ->
+      ctx |-* T : K ->
+      ctx |- (Unwrap M) : (Ty_App (Ty_App F (Ty_Lam X K (Ty_IFix F (Ty_Var X)))) T)
+  (* Type equality *)
+  | T_Eq : forall ctx t T S,
+      ctx |- t : S ->
+      S =b T ->
+      ctx |- t : T
 where "ctx '|-' tm ':' T" := (has_type ctx tm T).
 
 Section Term_rect.

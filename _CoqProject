@@ -31,3 +31,4 @@ src/Language/PlutusIR/Transform/ScottEnc.v
 src/Language/PlutusIR/Transform.v
 src/Language/PlutusIR/Optimizer/DeadBindings.v
 
+src/Language/PlutusIR_2.v
