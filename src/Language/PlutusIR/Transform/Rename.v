@@ -12,11 +12,11 @@ From PlutusCert Require Import
 
 Section Rename.
 Context
-  {var : Set}
+  {var tyvar : Set}
   (var_eqb : var -> var -> bool).
 
 (* Alpha renaming of variables *)
-Polymorphic Inductive Rename env : term var -> term var -> Type :=
+Polymorphic Inductive Rename env : term var tyvar -> term var tyvar -> Type :=
 
   | RenameVar       : forall v w,
       In (v, w) env ->
@@ -76,8 +76,8 @@ Polymorphic Inductive Rename env : term var -> term var -> Type :=
 
 with RenameBindingsNonRec env :
   list (var * var) ->
-  list (binding var) ->
-  list (binding var) ->
+  list (binding var tyvar) ->
+  list (binding var tyvar) ->
   Type :=
   | NonRecCons : forall env' env'' b b' bs bs',
       RenameBindingNonRec  env  env'   b         b'        ->
@@ -87,8 +87,8 @@ with RenameBindingsNonRec env :
 
 with RenameBindingNonRec env :
   list (var * var) -> (* The extended environment *)
-  binding var ->
-  binding var -> Type :=
+  binding var tyvar ->
+  binding var tyvar -> Type :=
   | BindEq     : forall s v t t',
       Rename env t t' -> RenameBindingNonRec env env (TermBind s v t) (TermBind s v t')
 
@@ -102,14 +102,14 @@ with RenameBindingNonRec env :
 
 with RenameBindingsRec env :
   list (var * var) ->
-  list (binding var) ->
-  list (binding var) ->
+  list (binding var tyvar) ->
+  list (binding var tyvar) ->
   Type :=
   (* TODO: recursive bindings, different scoping *)
   .
 
 End Rename.
-Definition Rename_string := Rename (var := string) String.eqb nil.
+Definition Rename_string := Rename (var := string) (tyvar := string) String.eqb nil.
 
 (* TODO: recursive bindings, different scoping *)
 (*

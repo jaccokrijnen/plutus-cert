@@ -47,7 +47,7 @@ Inductive DBE_Term : Term -> Term -> Type :=
 
 (* TODO: Does not consider types, tt is mapped to built-in strings *)
 Definition tt := Ty_Builtin (Some (@TypeIn DefaultUniString)).
-Definition subTerm :=
+Definition subTerm : Term :=
        (LamAbs (Name "ds" (Unique 75)) tt
           (LamAbs (Name "ds" (Unique 76)) tt
              (Apply

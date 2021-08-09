@@ -118,7 +118,7 @@ Eval compute in is_inline (term_size pir_3_inlined_keep) pir_3_inlined_keep pir_
 
 (* it should recognize the identity transformation *)
 Eval cbv in is_inline (term_size pir_4_inlined) pir_4_inlined pir_4_inlined.
-Definition slow_subterm := (Let NonRec
+Definition slow_subterm : Term := (Let NonRec
                     [TermBind NonStrict
                        (VarDecl (Name "keep" (Unique 77)) tt)
                        (Var (Name "a" (Unique 3)))]

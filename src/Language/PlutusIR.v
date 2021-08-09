@@ -275,7 +275,7 @@ where "T1 '=b' T2" := (EqT T1 T2).
   in each constructor (have to add types for the possible values that can occur when dumping)
 *)
 Section AST_term.
-Context (name : Set).
+Context (name tyname : Set).
 
 Inductive vdecl := VarDecl : name -> Ty -> vdecl.
 Inductive tvdecl := TyVarDecl : tyname -> Kind -> tvdecl.
@@ -316,19 +316,21 @@ End AST_term.
    constructors. *)
 
 Arguments VarDecl [name]%type_scope.
-Arguments Datatype [name]%type_scope.
-Arguments Constant [name]%type_scope.
-Arguments Builtin [name]%type_scope.
-Arguments Error [name]%type_scope.
-Arguments TypeBind [name]%type_scope.
-Arguments DatatypeBind [name]%type_scope.
+Arguments TyVarDecl [tyname]%type_scope.
+Arguments Datatype [name]%type_scope [tyname]%type_scope.
+Arguments Var [name]%type_scope [tyname]%type_scope.
+Arguments Constant [name]%type_scope [tyname]%type_scope.
+Arguments Builtin [name]%type_scope [tyname]%type_scope.
+Arguments Error [name]%type_scope [tyname]%type_scope.
+Arguments TypeBind [name]%type_scope [tyname]%type_scope.
+Arguments DatatypeBind [name]%type_scope [tyname]%type_scope.
 
-Notation VDecl := (vdecl string).
-Notation TVDecl := (tvdecl).
-Notation DTDecl := (dtdecl string).
-Notation constructor := (_constructor string).
-Notation Term := (term string).
-Notation Binding := (binding string).
+Notation VDecl := (vdecl name).
+Notation TVDecl := (tvdecl tyname).
+Notation DTDecl := (dtdecl name tyname).
+Notation constructor := (_constructor name).
+Notation Term := (term name tyname).
+Notation Binding := (binding name tyname).
 
 Definition constructorName : constructor -> name := 
   fun c => match c with
@@ -466,7 +468,7 @@ Inductive Pass :=
 Inductive CompTrace :=
   | CompilationTrace : Term -> list (Pass * Term) -> CompTrace.
 
-(** Types of builtin-functions *)
+(** ** Types of builtin-functions *)
 Definition lookupBuiltinTy (f : DefaultFun) : Ty :=
   let Ty_Int := Ty_Builtin (Some (TypeIn DefaultUniInteger)) in
   let Ty_Bool := Ty_Builtin (Some (TypeIn DefaultUniBool)) in
@@ -506,14 +508,14 @@ Definition lookupBuiltinTy (f : DefaultFun) : Ty :=
   | Trace => Ty_Fun Ty_String Ty_Unit (* TODO: figure out if it is the correct type*)
   end.
 
-(** Well-formedness of constructors and bindings *)
+(** ** Well-formedness of constructors and bindings *)
 Fixpoint typeList (T : Ty) : list Ty :=
   match T with
   | Ty_Fun T1 T2 => cons T1 (typeList T2)
   | _ => nil
   end.
 
-(** Typing of terms *)
+(** ** Typing of terms *)
 Reserved Notation "ctx '|-+' tm ':' T" (at level 40, tm at level 0, T at level 0).
 Inductive has_type : Context -> Term -> Ty -> Prop :=
   (* Let-bindings *)
@@ -598,6 +600,8 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
 #[export] Hint Constructors constructor_well_formed : core.
 #[export] Hint Constructors binding_well_formed : core. 
 
+
+
 Section Term_rect.
   Unset Implicit Arguments.
 
@@ -653,24 +657,24 @@ End Term_rect.
 
 
 Section term_rect.
-  Variable (v : Set).
-  Variable (P : term v -> Type).
-  Variable (Q : binding v -> Type).
-  Variable (R : list (binding v) -> Type).
+  Variable (v v': Set).
+  Variable (P : term v v' -> Type).
+  Variable (Q : binding v v' -> Type).
+  Variable (R : list (binding v v') -> Type).
 
   Context
     (* (H_Let      : forall rec bs t, ForallT Q bs -> P t -> P (Let rec bs t)) *)
     (H_Let      : forall rec bs t, R bs -> P t -> P (Let rec bs t))
     (H_Var      : forall s : v, P (Var s))
-    (H_TyAbs    : forall (s : tyname) (k : Kind) (t : term v), P t -> P (TyAbs s k t))
-    (H_LamAbs   : forall (s : v) (t : Ty) (t0 : term v), P t0 -> P (LamAbs s t t0))
-    (H_Apply    : forall t : term v, P t -> forall t0 : term v, P t0 -> P (Apply t t0))
+    (H_TyAbs    : forall (s : v') (k : Kind) (t : term v v'), P t -> P (TyAbs s k t))
+    (H_LamAbs   : forall (s : v) (t : Ty) (t0 : term v v'), P t0 -> P (LamAbs s t t0))
+    (H_Apply    : forall t : term v v', P t -> forall t0 : term v v', P t0 -> P (Apply t t0))
     (H_Constant : forall s : some, P (Constant s))
     (H_Builtin  : forall d : func, P (Builtin d))
-    (H_TyInst   : forall t : term v, P t -> forall t0 : Ty, P (TyInst t t0))
+    (H_TyInst   : forall t : term v v', P t -> forall t0 : Ty, P (TyInst t t0))
     (H_Error    : forall t : Ty, P (Error t))
-    (H_IWrap    : forall (t t0 : Ty) (t1 : term v), P t1 -> P (IWrap t t0 t1))
-    (H_Unwrap   : forall t : term v, P t -> P (Unwrap t)).
+    (H_IWrap    : forall (t t0 : Ty) (t1 : term v v'), P t1 -> P (IWrap t t0 t1))
+    (H_Unwrap   : forall t : term v v', P t -> P (Unwrap t)).
 
   Context
     (H_TermBind     : forall s v t, P t -> Q (TermBind s v t))
@@ -690,14 +694,14 @@ Section term_rect.
     end.
     *)
 
-  Definition bindings_rect' (binding_rect' : forall (b : binding v), Q b) :=
+  Definition bindings_rect' (binding_rect' : forall (b : binding v v'), Q b) :=
     fix bindings_rect' bs :=
     match bs return R bs with
       | nil       => @H_nil
       | cons b bs => @H_cons _ bs (binding_rect' b) (bindings_rect' bs)
     end.
 
-  Fixpoint term_rect' (t : term v) : P t :=
+  Fixpoint term_rect' (t : term v v') : P t :=
     match t with
       | Let rec bs t    => @H_Let rec bs t (bindings_rect' binding_rect' bs) (term_rect' t)
       | Var n           => @H_Var n
@@ -711,7 +715,7 @@ Section term_rect.
       | Constant v      => @H_Constant v
       | Builtin f       => @H_Builtin f
     end
-  with binding_rect' (b : binding v) : Q b :=
+  with binding_rect' (b : binding v v') : Q b :=
     match b with
       | TermBind s v t   => @H_TermBind s v t (term_rect' t)
       | TypeBind v ty    => @H_TypeBind v ty
