@@ -118,16 +118,16 @@ Eval compute in is_inline (term_size pir_3_inlined_keep) pir_3_inlined_keep pir_
 
 (* it should recognize the identity transformation *)
 Eval cbv in is_inline (term_size pir_4_inlined) pir_4_inlined pir_4_inlined.
-Definition slow_subterm : Term := (Let NonRec
+Definition slow_subterm := (Let NonRec
                     [TermBind NonStrict
                        (VarDecl (Name "keep" (Unique 77)) tt)
                        (Var (Name "a" (Unique 3)))]
                     (Builtin SHA3)).
 Eval lazy in (term_size slow_subterm).
 Eval lazy in is_inline (term_size slow_subterm) slow_subterm slow_subterm.
-(*Eval lazy in is_inline (term_size pir_3_inlined_keep)
+Eval lazy in is_inline (term_size pir_3_inlined_keep)
   pir_3_deadcode
-  pir_3_inlined_keep.*)
+  pir_3_inlined_keep.
 
 Lemma pir4_5 : pir_4_inlined = pir_5_thunkrec.
 Proof. reflexivity. Qed.

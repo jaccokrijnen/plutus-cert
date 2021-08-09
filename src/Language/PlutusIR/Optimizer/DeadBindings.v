@@ -30,7 +30,7 @@ Inductive DBE_Term : Term -> Term -> Type :=
   (* To check if a term-binding `x = e` can be eliminated,
      we check that its variable is not free in the resulting term*)
     | DBE_RemoveTermBind : `{ ~ In n (fv' t) ->
-             DBE_Binding (TermBind stric (VarDecl n T) s) t}
+             DBE_Binding (TermBind stric n s) t}
 
    (* For type or datatype bindings, we allow that these are eliminated, since the AST currently
       contains no types (hence they are always dead bindings).
@@ -45,9 +45,9 @@ Inductive DBE_Term : Term -> Term -> Type :=
     .
 
 
-(* TODO: Does not consider types, tt is mapped to built-in strings *)
-Definition tt := Ty_Builtin (Some (@TypeIn DefaultUniString)).
-Definition subTerm : Term :=
+
+
+Definition subTerm :=
        (LamAbs (Name "ds" (Unique 75)) tt
           (LamAbs (Name "ds" (Unique 76)) tt
              (Apply
@@ -119,7 +119,7 @@ end.
 
 Fixpoint dbe_dec_Binding (b : Binding) (t : Term) {struct b} : option (DBE_Binding b t) :=
     match b with
-      | TermBind stric (VarDecl n T) t'   =>
+      | TermBind stric n t'   =>
           DBE_RemoveTermBind <$> in_dec_option n (fv' t)
 
       | TypeBind (TyVarDecl n k) ty        =>

@@ -12,11 +12,11 @@ From PlutusCert Require Import
 
 Section Rename.
 Context
-  {var tyvar : Set}
+  {var : Set}
   (var_eqb : var -> var -> bool).
 
 (* Alpha renaming of variables *)
-Polymorphic Inductive Rename env : term var tyvar -> term var tyvar -> Type :=
+Polymorphic Inductive Rename env : term var -> term var -> Type :=
 
   | RenameVar       : forall v w,
       In (v, w) env ->
@@ -76,8 +76,8 @@ Polymorphic Inductive Rename env : term var tyvar -> term var tyvar -> Type :=
 
 with RenameBindingsNonRec env :
   list (var * var) ->
-  list (binding var tyvar) ->
-  list (binding var tyvar) ->
+  list (binding var) ->
+  list (binding var) ->
   Type :=
   | NonRecCons : forall env' env'' b b' bs bs',
       RenameBindingNonRec  env  env'   b         b'        ->
@@ -87,29 +87,29 @@ with RenameBindingsNonRec env :
 
 with RenameBindingNonRec env :
   list (var * var) -> (* The extended environment *)
-  binding var tyvar ->
-  binding var tyvar -> Type :=
+  binding var ->
+  binding var -> Type :=
   | BindEq     : forall s v t t',
       Rename env t t' -> RenameBindingNonRec env env (TermBind s v t) (TermBind s v t')
 
-  | BindRename : forall s v w t t' ty,
+  | BindRename : forall s v w t t',
       v <> w ->
       ~ (In w (freeVars var_eqb t)) -> (* w cannot occur free in t, otherwise the new binding would capture it *)
-      Rename env t t' -> RenameBindingNonRec env ((v, w) :: env) (TermBind s (VarDecl v ty) t) (TermBind s (VarDecl w ty) t')
+      Rename env t t' -> RenameBindingNonRec env ((v, w) :: env) (TermBind s v t) (TermBind s w t')
 
   | TypeEq : forall t ty, RenameBindingNonRec env env (TypeBind t ty) (TypeBind t ty)
   | DataEq : forall d , RenameBindingNonRec env env (DatatypeBind d) (DatatypeBind d)
 
 with RenameBindingsRec env :
   list (var * var) ->
-  list (binding var tyvar) ->
-  list (binding var tyvar) ->
+  list (binding var) ->
+  list (binding var) ->
   Type :=
   (* TODO: recursive bindings, different scoping *)
   .
 
 End Rename.
-Definition Rename_string := Rename (var := string) (tyvar := string) String.eqb nil.
+Definition Rename_string := Rename (var := string) String.eqb nil.
 
 (* TODO: recursive bindings, different scoping *)
 (*

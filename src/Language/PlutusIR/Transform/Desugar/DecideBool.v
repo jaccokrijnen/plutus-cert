@@ -35,8 +35,8 @@ Definition Bindings_desugar' :=
             (bs : list Binding) (t : Term) {struct bs} := match bs with
             | nil       => Just t
             | cons b bs => match b, t with
-              | TermBind Strict (VarDecl v ty) rhs, Apply (LamAbs v' ty' body') rhs' =>
-                if (String.eqb v v' && Ty_eqb ty ty' && Term_desugar rhs rhs')
+              | TermBind Strict v rhs, Apply (LamAbs v' _ body') rhs' =>
+                if (String.eqb v v' && Term_desugar rhs rhs')
                   then Bindings_desugar' bs body'
                   else None
                 (* Notation scope analysis fails, not sure why....*)
@@ -70,7 +70,7 @@ Fixpoint Term_desugar (x y : Term) {struct x} : bool := match x, y with
   | TyAbs n k t    , TyAbs n' k' t'     => String.eqb n n' && Kind_eqb k k' && Term_desugar t t'
   | LamAbs n ty t  , LamAbs n' ty' t'   => String.eqb n n' && Ty_eqb ty ty' && Term_desugar t t'
   | Apply s t      , Apply s' t'        => Term_desugar s s' && Term_desugar t t'
-  | Constant c     , Constant c'        => some_valueOf_eqb c c'
+  | Constant c     , Constant c'        => some_eqb c c'
   | Builtin f      , Builtin f'         => func_eqb f f'
   | TyInst t ty    , TyInst t' ty'      => Term_desugar t t' && Ty_eqb ty ty'
   | Error ty       , Error ty'          => Ty_eqb ty ty'
@@ -139,8 +139,7 @@ Lemma sound_dec_bindings {bs t_let_body' t_result}
   ( dec_true : Bindings_desugar' Term_desugar bs t_result = Just t_let_body' )
   : {bs_fs & CNR_Bindings bs bs_fs
            & fold_right apply t_let_body' bs_fs = t_result}.
-Proof. Admitted.
-  (*
+Proof.
   generalize dependent t_result.
   induction bs as [ | b bs].
     (* nil *)
@@ -219,12 +218,12 @@ Proof. Admitted.
         }
       }
       all: inversion dec_b_bs_true.
-Defined.*)
+Defined.
 
 
 
 Definition Term_desugar_sound t t' : Term_desugar t t' = true -> CNR_Term t t'.
-Proof. Admitted. (*
+Proof.
   intro H.
   generalize dependent t'.
 
@@ -409,7 +408,7 @@ all:
   try destruct s0;
   try destruct s;
   inversion H_dec_true.
-Defined.*)
+Defined.
 
 
 
