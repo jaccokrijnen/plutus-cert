@@ -590,6 +590,8 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
 
   where "ctx '|-+' tm ':' T" := (has_type ctx tm T).
 
+#[export] Hint Constructors Kind : core.
+#[export] Hint Constructors Ty : core.
 #[export] Hint Constructors has_kind : core.
 #[export] Hint Constructors EqT : core.
 #[export] Hint Constructors has_type : core.

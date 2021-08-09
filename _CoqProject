@@ -30,3 +30,5 @@ src/Language/PlutusIR/Transform/LetTypes.v
 #src/Language/PlutusIR/Transform/ScottEnc.v
 src/Language/PlutusIR/Transform.v
 src/Language/PlutusIR/Optimizer/DeadBindings.v
+
+src/Examples/Timelock/Typing.v
