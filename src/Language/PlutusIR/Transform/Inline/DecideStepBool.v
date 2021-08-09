@@ -216,7 +216,7 @@ refine (
     Unwrap t' => ?[unwrap]
 
   | Constant c,
-    Constant c' => match some_dec c c' with
+    Constant c' => match some_valueOf_dec c c' with
       | left Hs => ?[constant]
       | _ => false
       end
@@ -286,7 +286,7 @@ refine (
   refine(
   match b, b' with
     | TermBind s  v  t
-    , TermBind s' v' t' => match Strictness_dec s s', string_dec v v' with
+    , TermBind s' v' t' => match Strictness_dec s s', VDecl_dec v v' with
       | left Hs, left Hv => ?[termbind]
       | _, _ => false
       end

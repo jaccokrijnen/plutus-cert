@@ -21,7 +21,7 @@ Record AlgTerm: Type := mkTermAlg
   ; a_TyAbs    : tyname -> Kind -> rTerm -> rTerm
   ; a_LamAbs   : name -> Ty -> rTerm -> rTerm
   ; a_Apply    : rTerm -> rTerm -> rTerm
-  ; a_Constant : some -> rTerm
+  ; a_Constant : @some valueOf -> rTerm
   ; a_Builtin  : func -> rTerm
   ; a_TyInst   : rTerm -> Ty -> rTerm
   ; a_Error    : Ty -> rTerm
@@ -364,19 +364,19 @@ Inductive con_term :=
   | con_Unwrap
   .
 
-Definition con_type (v : Set) P Q : con_term -> Type :=
+Definition con_type (v v' : Set) P Q : con_term -> Type :=
   fun c => match c with
     | con_Let       => forall rec bs t, ForallT Q bs -> P t -> P (Let rec bs t)
     | con_Var       => forall s : v, P (Var s)
-    | con_TyAbs     => forall (s : tyname) (k : Kind) (t : term v), P t -> P (TyAbs s k t)
-    | con_LamAbs    => forall (s : v) (t : Ty) (t0 : term v), P t0 -> P (LamAbs s t t0)
-    | con_Apply     => forall t : term v, P t -> forall t0 : term v, P t0 -> P (Apply t t0)
+    | con_TyAbs     => forall (s : v') (k : Kind) (t : term v v'), P t -> P (TyAbs s k t)
+    | con_LamAbs    => forall (s : v) (t : Ty) (t0 : term v v'), P t0 -> P (LamAbs s t t0)
+    | con_Apply     => forall t : term v v', P t -> forall t0 : term v v', P t0 -> P (Apply t t0)
     | con_Constant  => forall s : some, P (Constant s)
     | con_Builtin   => forall d : func, P (Builtin d)
-    | con_TyInst    => forall t : term v, P t -> forall t0 : Ty, P (TyInst t t0)
+    | con_TyInst    => forall t : term v v', P t -> forall t0 : Ty, P (TyInst t t0)
     | con_Error     => forall t : Ty, P (Error t)
-    | con_IWrap     => forall (t t0 : Ty) (t1 : term v), P t1 -> P (IWrap t t0 t1)
-    | con_Unwrap    => forall t : term v, P t -> P (Unwrap t)
+    | con_IWrap     => forall (t t0 : Ty) (t1 : term v v'), P t1 -> P (IWrap t t0 t1)
+    | con_Unwrap    => forall t : term v v', P t -> P (Unwrap t)
     end.
 
 Inductive con_binding :=
@@ -385,7 +385,7 @@ Inductive con_binding :=
   | con_DatatypeBind
   .
 
-Definition con_type_binding (name : Set) (P : term name -> Type) (Q : binding name -> Type) : con_binding -> Type :=
+Definition con_type_binding (name tyname : Set) (P : term name tyname -> Type) (Q : binding name tyname -> Type) : con_binding -> Type :=
   fun c => match c with
     | con_TermBind => forall s v t, P t -> Q (TermBind s v t)
     | con_TypeBind => forall v ty, Q (TypeBind v ty)

@@ -78,7 +78,7 @@ Inductive SwapsIn {a : Type} (R : a -> a -> Type) : list a -> list a -> Type :=
  ?
 *)
 Inductive Bindings_NonRec_Commute : Binding -> Binding -> Type :=
-  | BC_NonStrict:  forall x y xt yt,
+  | BC_NonStrict:  forall x y xt yt T,
        ~ (x = y)         -> (* They can't bind the same name.
                                Although this could be allowed in specific cases,
                                when both are dead bindings, or are binding
@@ -87,14 +87,14 @@ Inductive Bindings_NonRec_Commute : Binding -> Binding -> Type :=
        ~ (In y (fv' xt)) -> (* if xt has a free var y, swapping would shadow that variable *)
 
        Bindings_NonRec_Commute
-         (TermBind NonStrict x xt)
-         (TermBind NonStrict y yt)
+         (TermBind NonStrict (VarDecl x T) xt)
+         (TermBind NonStrict (VarDecl y T) yt)
 
-  | BC_DatatypeL: forall ty args matchf constructors strictness x xt,
+  | BC_DatatypeL: forall ty args matchf constructors strictness x xt T,
        Forall (fun v => ~(In v (fv' xt))) (matchf :: (map constructorName constructors)) ->
        Bindings_NonRec_Commute
          (DatatypeBind (Datatype ty args matchf constructors))
-         (TermBind strictness x xt)
+         (TermBind strictness (VarDecl x T) xt)
 
   (* e.g. BC_DatatypeR := BC_Symm (BC_DatatypeL) *)
   | BC_Symm : forall x y,
