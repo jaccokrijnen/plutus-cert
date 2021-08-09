@@ -31,7 +31,7 @@ Fixpoint bv_term {v} (t : term v) : list v :=
   end
 with bv_binding {v} (b : binding v) : list v:=
   match b with
-  | TermBind _ v t => [v] ++ bv_term t
+  | TermBind _ (VarDecl v _) t => [v] ++ bv_term t
   | TypeBind _ _   => []
   | DatatypeBind _ => []
   end
@@ -54,7 +54,7 @@ Section UniqueVars.
     | UV_Unwrap : forall t, UniqueVars t -> UniqueVars (Unwrap t)
 
     with UniqueVars_binding : binding name -> Type :=
-    | UV_TermBind : forall s v t, ~(In v (bv_term t)) -> UniqueVars t -> UniqueVars_binding (TermBind s v t)
+    | UV_TermBind : forall s v t ty, ~(In v (bv_term t)) -> UniqueVars t -> UniqueVars_binding (TermBind s (VarDecl v ty) t)
     | UV_TypeBind : forall tvd ty, UniqueVars_binding (TypeBind tvd ty)
     | UV_DatatypeBind : forall dtd, UniqueVars_binding (DatatypeBind dtd)
     .

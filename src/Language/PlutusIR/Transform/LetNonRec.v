@@ -48,7 +48,7 @@ with CNR_Binding : Binding -> (Term -> Term) -> Type :=
   | CNR_Desugar : forall {v t_bound t_bound' ty},
       CNR_Term t_bound t_bound' ->
       CNR_Binding
-        (TermBind Strict v t_bound)
+        (TermBind Strict (VarDecl v ty) t_bound)
         (fun t_bs => Apply (LamAbs v ty t_bs) t_bound')
   .
 
@@ -118,7 +118,7 @@ Definition CNR_Desugar'
         v = v' ->
         CNR_Term t_bound t_bound' ->
         CNR_Binding
-          (TermBind Strict v t_bound)
+          (TermBind Strict (VarDecl v ty) t_bound)
           (fun t_bs => Apply (LamAbs v' ty t_bs) t_bound').
 Proof.
   intros. subst. apply CNR_Desugar. assumption.

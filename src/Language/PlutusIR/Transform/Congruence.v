@@ -100,7 +100,7 @@ Section Congruence.
        | _  := Nothing};
 
     cong_dec (Constant v) (Constant v')
-      with some_dec v v' =>
+      with some_valueOf_dec v v' =>
      { | left eq_refl := Just C_Constant;
        | _       := Nothing};
 

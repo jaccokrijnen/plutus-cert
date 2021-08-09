@@ -21,7 +21,7 @@ Record AlgTerm: Type := mkTermAlg
   ; a_TyAbs    : tyname -> Kind -> rTerm -> rTerm
   ; a_LamAbs   : name -> Ty -> rTerm -> rTerm
   ; a_Apply    : rTerm -> rTerm -> rTerm
-  ; a_Constant : some -> rTerm
+  ; a_Constant : @some valueOf -> rTerm
   ; a_Builtin  : func -> rTerm
   ; a_TyInst   : rTerm -> Ty -> rTerm
   ; a_Error    : Ty -> rTerm

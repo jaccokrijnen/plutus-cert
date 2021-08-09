@@ -125,9 +125,9 @@ Definition slow_subterm := (Let NonRec
                     (Builtin SHA3)).
 Eval lazy in (term_size slow_subterm).
 Eval lazy in is_inline (term_size slow_subterm) slow_subterm slow_subterm.
-Eval lazy in is_inline (term_size pir_3_inlined_keep)
+(*Eval lazy in is_inline (term_size pir_3_inlined_keep)
   pir_3_deadcode
-  pir_3_inlined_keep.
+  pir_3_inlined_keep.*)
 
 Lemma pir4_5 : pir_4_inlined = pir_5_thunkrec.
 Proof. reflexivity. Qed.

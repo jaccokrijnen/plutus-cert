@@ -92,10 +92,10 @@ with RenameBindingNonRec env :
   | BindEq     : forall s v t t',
       Rename env t t' -> RenameBindingNonRec env env (TermBind s v t) (TermBind s v t')
 
-  | BindRename : forall s v w t t',
+  | BindRename : forall s v w t t' ty,
       v <> w ->
       ~ (In w (freeVars var_eqb t)) -> (* w cannot occur free in t, otherwise the new binding would capture it *)
-      Rename env t t' -> RenameBindingNonRec env ((v, w) :: env) (TermBind s v t) (TermBind s w t')
+      Rename env t t' -> RenameBindingNonRec env ((v, w) :: env) (TermBind s (VarDecl v ty) t) (TermBind s (VarDecl w ty) t')
 
   | TypeEq : forall t ty, RenameBindingNonRec env env (TypeBind t ty) (TypeBind t ty)
   | DataEq : forall d , RenameBindingNonRec env env (DatatypeBind d) (DatatypeBind d)
