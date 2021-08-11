@@ -151,37 +151,30 @@ Inductive Ty :=
   | Ty_App : Ty -> Ty -> Ty.
 
 (** ** Contexts and lookups *)
-Inductive Context :=
-  | Nil : Context
-  | ConsType : (name * Ty) -> Context -> Context
-  | ConsKind : (tyname * Kind) -> Context -> Context.
-
-Delimit Scope context_scope with Context.
-Infix ":T:" := ConsType (at level 60, right associativity) : context_scope.
-Infix ":K:" := ConsKind (at level 60, right associativity) : context_scope.
-
-Fixpoint appendContexts (ctx1 ctx2 : Context) :=
-  match ctx1 with
-  | Nil => ctx2
-  | ConsType x ctx1' => ConsType x (appendContexts ctx1' ctx2)
-  | ConsKind x ctx1' => ConsKind x (appendContexts ctx1' ctx2)
-  end.
+Definition Context := list (name * Ty + tyname * Kind).
 
 Fixpoint lookupK (ctx : Context) (X : name) : option Kind := 
   match ctx with
-  | ConsKind (Y, K) ctx' => 
-    if X =? Y then Coq.Init.Datatypes.Some K else lookupK ctx' X
-  | ConsType _ ctx' => lookupK ctx' X
-  | Nil => None
+  | inr (Y, K) :: ctx'  => if X =? Y then Coq.Init.Datatypes.Some K else lookupK ctx' X
+  | inl _ :: ctx' => lookupK ctx' X
+  | nil => None
   end.
-
+  
 Fixpoint lookupT (ctx : Context) (x : tyname) : option Ty :=
   match ctx with
-  | ConsKind _ ctx' => lookupT ctx' x
-  | ConsType (y, T) ctx' =>
-    if x =? y then Coq.Init.Datatypes.Some T else lookupT ctx' x
-  | _ => None
+  | inl (y, T) :: ctx' => if x =? y then Coq.Init.Datatypes.Some T else lookupT ctx' x 
+  | inr _ :: ctx' => lookupT ctx' x
+  | nil => None
   end.
+
+Require Import Coq.Program.Basics.
+
+Delimit Scope context_scope with Context.
+Infix ":T:" := (compose cons inl) (at level 60, right associativity) : context_scope.
+Infix ":K:" := (compose cons inr) (at level 60, right associativity) : context_scope.
+  
+Definition concat_rev_ctx (ctxs : list Context) : Context := concat (rev ctxs).
+Local Open Scope context_scope.
   
 (** ** Kinding of types *)
 Reserved Notation "ctx '|-*' ty ':' K" (at level 40, ty at level 0, K at level 0).
@@ -198,13 +191,13 @@ Inductive has_kind : Context -> Ty -> Kind -> Prop :=
       ctx |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
       ctx |-* (Ty_IFix F T) : Kind_Base
   | K_Forall : forall ctx X K T,
-      (ConsKind (X, K) ctx) |-* T : Kind_Base ->
+      ((X, K) :K: ctx) |-* T : Kind_Base ->
       ctx |-* (Ty_Forall X K T) : Kind_Base
   (* Note on builtins: At the moment of writing this, all built-in types are of base kind. *)
   | K_Builtin : forall ctx u,
       ctx |-* (Ty_Builtin u) : Kind_Base 
   | K_Lam : forall ctx X K1 T K2,
-      (ConsKind (X, K1) ctx) |-* T : K2 ->
+      ((X, K1) :K: ctx) |-* T : K2 ->
       ctx |-* (Ty_Lam X K1 T) : (Kind_Arrow K1 K2)
   | K_App : forall ctx T1 T2 K1 K2,
       ctx |-* T1 : (Kind_Arrow K1 K2) ->
@@ -378,7 +371,6 @@ Definition branchTy (c : constructor) (R : Ty) : Ty :=
     end
   end.
 
-Require Import Coq.Program.Basics.
 Open Scope string_scope.
 
 Definition dataTy (d : DTDecl) : Ty :=
@@ -440,16 +432,19 @@ Definition matchBind (d : DTDecl) : name * Ty :=
     (matchFunc, matchTy d)
   end.
 
+Import ListNotations.
+Open Scope list_scope.
+
 Definition binds (b : Binding) : Context :=
   match b with
-  | TermBind _ vd _ => ConsType (getName vd, getTy vd) Nil
-  | TypeBind tvd ty => ConsKind (getTyname tvd, getKind tvd) Nil
+  | TermBind _ vd _ => (getName vd, getTy vd) :T: nil
+  | TypeBind tvd ty => (getTyname tvd, getKind tvd) :K: nil
   | DatatypeBind d =>
     let dataB := dataBind d in 
     let constrBs := constrBinds d in
-    let constrBs_ctx := fold_right ConsType Nil constrBs in
+    let constrBs_ctx := fold_right (compose cons inl) nil constrBs in
     let matchB := matchBind d in
-    ConsType matchB (appendContexts constrBs_ctx (ConsKind dataB Nil))
+    matchB :T: constrBs_ctx ++ (dataB :K: nil)
   end.
 
 (** ** Trace of compilation *)
@@ -522,11 +517,11 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
   | T_Let : forall ctx bs t T,
       ctx |-* T : Kind_Base ->
       (forall b, In b bs -> binding_well_formed ctx b) ->
-      (appendContexts (fold_right appendContexts Nil (map binds bs)) ctx) |-+ t : T ->
+      (concat_rev_ctx (map binds bs) ++ ctx) |-+ t : T ->
       ctx |-+ (Let NonRec bs t) : T
   | T_LetRec : forall ctx bs t T ctx',
       ctx |-* T : Kind_Base ->
-      ctx' = appendContexts (fold_right appendContexts Nil (map binds bs)) ctx ->
+      ctx' = concat_rev_ctx (map binds bs) ++ ctx ->
       (forall b, In b bs -> binding_well_formed ctx' b) ->
       ctx' |-+ t : T ->
       ctx |-+ (Let Rec bs t) : T
@@ -535,10 +530,10 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
       lookupT ctx x = Coq.Init.Datatypes.Some T ->
       ctx |-+ (Var x) : T
   | T_TyAbs : forall ctx X K t T,
-      (ConsKind (X, K) ctx) |-+ t : T ->
+      ((X, K) :K: ctx) |-+ t : T ->
       ctx |-+ (TyAbs X K t) : (Ty_Forall X K T)
   | T_LamAbs : forall ctx x T1 t T2,
-      (ConsType (x, T1) ctx) |-+ t : T2 -> 
+      ((x, T1) :T: ctx) |-+ t : T2 -> 
       ctx |-* T1 : Kind_Base ->
       ctx |-+ (LamAbs x T1 t) : (Ty_Fun T1 T2)
   | T_Apply : forall ctx t1 t2 T1 T2,
@@ -586,11 +581,13 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
         ctx |-* T : K ->
         binding_well_formed ctx (TypeBind (TyVarDecl X K) T)
     | W_Data : forall ctx X YKs cs matchFunc ctx',
-        ctx' = fold_right apply ctx (map (fun YK => ConsKind (getTyname YK, getKind YK)) YKs) ->
+        ctx' = concat_rev_ctx (map (fun YK => inr (getTyname YK, getKind YK) :: nil) YKs) ++ ctx ->
         (forall c, In c cs -> constructor_well_formed ctx' c) ->
         binding_well_formed ctx (DatatypeBind (Datatype X YKs matchFunc cs))
 
   where "ctx '|-+' tm ':' T" := (has_type ctx tm T).
+
+Notation "ctx '|-ok' tm" := (binding_well_formed ctx tm) (at level 40, tm at level 0).
 
 #[export] Hint Constructors Kind : core.
 #[export] Hint Constructors Ty : core.

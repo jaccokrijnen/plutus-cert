@@ -13,7 +13,7 @@ Definition boolTy := dataTy ((Datatype (TyVarDecl (TyName (Name ("Bool") (Unique
 Axiom cheat: forall P, P.
 (* TODO: Should the context be non-empty? *)
 Example pir_0_original_shadowfix__typable :
-  (("Bool", Kind_Base) :K: ("EndDate", Kind_Base) :K: Nil) |-+ pir_0_original_shadowfix : (Ty_Fun (Ty_Var "EndDate") (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniInteger))) (Ty_Var "Bool"))).
+  (("Bool", Kind_Base) :K: ("EndDate", Kind_Base) :K: nil) |-+ pir_0_original_shadowfix : (Ty_Fun (Ty_Var "EndDate") (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniInteger))) (Ty_Var "Bool"))).
 Proof.
   eapply T_Let. {
     auto.
