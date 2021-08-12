@@ -8,6 +8,8 @@ Require Import Eqdep.
 From PlutusCert Require Import Util.
 Set Implicit Arguments.
 
+Require Import Coq.Program.Basics.
+
 (*
   Simplification of the names in the AST
 
@@ -125,138 +127,12 @@ Inductive some {f : uni -> Type} :=
   Some : forall {u : uni}, f u -> some.
 (*Inductive some := Some : forall a, valueOf a -> some.*)
 
-
-
-(** * Kinds and types *)
-Local Open Scope string_scope.
-
-(** ** Kinds *)
-Inductive Kind :=
-  | Kind_Base : Kind
-  | Kind_Arrow : Kind -> Kind -> Kind.
-
 (** ** Builtin types *)
 Inductive typeIn (u : uni) :=
   TypeIn : typeIn u.
 Arguments TypeIn _ : clear implicits.
 
-(** ** Types *)
-Inductive Ty :=
-  | Ty_Var : name -> Ty
-  | Ty_Fun : Ty -> Ty -> Ty
-  | Ty_IFix : Ty -> Ty -> Ty
-  | Ty_Forall : tyname -> Kind -> Ty -> Ty
-  | Ty_Builtin : @some typeIn -> Ty
-  | Ty_Lam : tyname -> Kind -> Ty -> Ty
-  | Ty_App : Ty -> Ty -> Ty.
 
-(** ** Contexts and lookups *)
-Definition Context := list (name * Ty + tyname * Kind).
-
-Fixpoint lookupK (ctx : Context) (X : name) : option Kind := 
-  match ctx with
-  | inr (Y, K) :: ctx'  => if X =? Y then Coq.Init.Datatypes.Some K else lookupK ctx' X
-  | inl _ :: ctx' => lookupK ctx' X
-  | nil => None
-  end.
-  
-Fixpoint lookupT (ctx : Context) (x : tyname) : option Ty :=
-  match ctx with
-  | inl (y, T) :: ctx' => if x =? y then Coq.Init.Datatypes.Some T else lookupT ctx' x 
-  | inr _ :: ctx' => lookupT ctx' x
-  | nil => None
-  end.
-
-Require Import Coq.Program.Basics.
-
-Delimit Scope context_scope with Context.
-Infix ":T:" := (compose cons inl) (at level 60, right associativity) : context_scope.
-Infix ":K:" := (compose cons inr) (at level 60, right associativity) : context_scope.
-  
-Definition concat_rev_ctx (ctxs : list Context) : Context := concat (rev ctxs).
-Local Open Scope context_scope.
-  
-(** ** Kinding of types *)
-Reserved Notation "ctx '|-*' ty ':' K" (at level 40, ty at level 0, K at level 0).
-Inductive has_kind : Context -> Ty -> Kind -> Prop :=
-  | K_Var : forall ctx X K,
-      lookupK ctx X = Coq.Init.Datatypes.Some K ->
-      ctx |-* (Ty_Var X) : K
-  | K_Fun : forall ctx T1 T2,
-      ctx |-* T1 : Kind_Base ->
-      ctx |-* T2 : Kind_Base ->
-      ctx |-* (Ty_Fun T1 T2) : Kind_Base
-  | K_IFix  : forall ctx F T K,
-      ctx |-* T : K ->
-      ctx |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
-      ctx |-* (Ty_IFix F T) : Kind_Base
-  | K_Forall : forall ctx X K T,
-      ((X, K) :K: ctx) |-* T : Kind_Base ->
-      ctx |-* (Ty_Forall X K T) : Kind_Base
-  (* Note on builtins: At the moment of writing this, all built-in types are of base kind. *)
-  | K_Builtin : forall ctx u,
-      ctx |-* (Ty_Builtin u) : Kind_Base 
-  | K_Lam : forall ctx X K1 T K2,
-      ((X, K1) :K: ctx) |-* T : K2 ->
-      ctx |-* (Ty_Lam X K1 T) : (Kind_Arrow K1 K2)
-  | K_App : forall ctx T1 T2 K1 K2,
-      ctx |-* T1 : (Kind_Arrow K1 K2) ->
-      ctx |-* T2 : K1 ->
-      ctx |-* (Ty_App T1 T2) : K2
-where "ctx '|-*' ty ':' K" := (has_kind ctx ty K).
-
-(** ** Substitution in types *)
-Fixpoint substituteT (X : tyname) (S T : Ty) : Ty :=
-  match T with
-  | Ty_Var Y => 
-    if X =? Y then S else Ty_Var Y
-  | Ty_Fun T1 T2 =>
-    Ty_Fun (substituteT X S T1) (substituteT X S T2)
-  | Ty_IFix F T =>
-    Ty_IFix (substituteT X S F) (substituteT X S T)
-  | Ty_Forall Y K T' =>
-    if X =? Y then Ty_Forall Y K T' else Ty_Forall Y K (substituteT X S T')
-  | Ty_Builtin u => 
-    Ty_Builtin u
-  | Ty_Lam Y K1 T' =>
-    if X =? Y then Ty_Lam Y K1 T' else Ty_Lam Y K1 (substituteT X S T')
-  | Ty_App T1 T2 =>
-    Ty_App (substituteT X S T1) (substituteT X S T2)
-  end.
-
-(** ** Type equality *)
-Reserved Notation "T1 '=b' T2" (at level 40).
-Inductive EqT : Ty -> Ty -> Prop :=
-  (* Beta-reduction *)
-  | EqT_Beta : forall X K T1 T2,
-      Ty_App (Ty_Lam X K T1) T2 =b substituteT X T2 T1
-  (* Reflexivity, Symmetry and Transitivity*)
-  | EqT_Refl : forall T,
-      T =b T
-  | EqT_Symm : forall T S,
-      T =b S ->
-      S =b T
-  | EqT_Trans : forall S U T,
-      S =b U ->
-      U =b T ->
-      S =b T
-  (* Congruence *)
-  | EqT_Fun : forall S1 S2 T1 T2,
-      S1 =b S2 ->
-      T1 =b T2 ->
-      Ty_Fun S1 T1 =b Ty_Fun S2 T2
-  | EqT_Forall : forall X K S T,
-      S =b T ->
-      Ty_Forall X K S =b Ty_Forall X K T
-  | EqT_Lam : forall X K S T,
-      S =b T ->
-      Ty_Lam X K S =b Ty_Lam X K T
-  | EqT_App : forall S1 S2 T1 T2,
-      S1 =b S2 ->
-      T1 =b T2 ->
-      Ty_App S1 T1 =b Ty_App S2 T2
-where "T1 '=b' T2" := (EqT T1 T2).
-  
 (*
   Simplification of attached values in the AST
 
@@ -270,8 +146,25 @@ where "T1 '=b' T2" := (EqT T1 T2).
 Section AST_term.
 Context (name tyname : Set).
 
-Inductive vdecl := VarDecl : name -> Ty -> vdecl.
-Inductive tvdecl := TyVarDecl : tyname -> Kind -> tvdecl.
+(** * Kinds and types *)
+
+(** ** Kinds *)
+Inductive kind :=
+  | Kind_Base : kind
+  | Kind_Arrow : kind -> kind -> kind.
+
+(** ** Types *)
+Inductive ty :=
+  | Ty_Var : tyname -> ty
+  | Ty_Fun : ty -> ty -> ty
+  | Ty_IFix : ty -> ty -> ty
+  | Ty_Forall : tyname -> kind -> ty -> ty
+  | Ty_Builtin : @some typeIn -> ty
+  | Ty_Lam : tyname -> kind -> ty -> ty
+  | Ty_App : ty -> ty -> ty.
+
+Inductive vdecl := VarDecl : name -> ty -> vdecl.
+Inductive tvdecl := TyVarDecl : tyname -> kind -> tvdecl.
 
 (* Inductive DTDecl := Datatype : TVDecl -> list TVDecl -> name -> list VDecl -> DTDecl.*)
 
@@ -285,19 +178,19 @@ Inductive dtdecl := Datatype : tvdecl -> list tvdecl -> name -> list _constructo
 Inductive term :=
   | Let      : Recursivity -> list binding -> term -> term
   | Var      : name -> term
-  | TyAbs    : tyname -> Kind -> term -> term
-  | LamAbs   : name -> Ty -> term -> term
+  | TyAbs    : tyname -> kind -> term -> term
+  | LamAbs   : name -> ty -> term -> term
   | Apply    : term -> term -> term
   | Constant : @some valueOf -> term
   | Builtin  : func -> term
-  | TyInst   : term -> Ty -> term
-  | Error    : Ty -> term
-  | IWrap    : Ty -> Ty -> term -> term
+  | TyInst   : term -> ty -> term
+  | Error    : ty -> term
+  | IWrap    : ty -> ty -> term -> term
   | Unwrap   : term -> term
 
 with binding :=
   | TermBind : Strictness -> vdecl -> term -> binding
-  | TypeBind : tvdecl -> Ty -> binding
+  | TypeBind : tvdecl -> ty -> binding
   | DatatypeBind : dtdecl -> binding
 .
 
@@ -308,7 +201,12 @@ End AST_term.
    as implicit too (this is already correctly generated for the recursive
    constructors. *)
 
-Arguments VarDecl [name]%type_scope.
+Arguments Ty_Var [tyname]%type_scope.
+Arguments Ty_Fun [tyname]%type_scope.
+Arguments Ty_Forall [tyname]%type_scope.
+Arguments Ty_Builtin [tyname]%type_scope.
+Arguments Ty_Lam [tyname]%type_scope.
+Arguments VarDecl [name]%type_scope [tyname]%type_scope.
 Arguments TyVarDecl [tyname]%type_scope.
 Arguments Datatype [name]%type_scope [tyname]%type_scope.
 Arguments Var [name]%type_scope [tyname]%type_scope.
@@ -318,10 +216,12 @@ Arguments Error [name]%type_scope [tyname]%type_scope.
 Arguments TypeBind [name]%type_scope [tyname]%type_scope.
 Arguments DatatypeBind [name]%type_scope [tyname]%type_scope.
 
-Notation VDecl := (vdecl name).
+Notation Kind := (kind).
+Notation Ty := (ty tyname).
+Notation VDecl := (vdecl name tyname).
 Notation TVDecl := (tvdecl tyname).
 Notation DTDecl := (dtdecl name tyname).
-Notation constructor := (_constructor name).
+Notation constructor := (_constructor name tyname).
 Notation Term := (term name tyname).
 Notation Binding := (binding name tyname).
 
@@ -330,122 +230,6 @@ Definition constructorName : constructor -> name :=
   | Constructor (VarDecl n _) _ => n
   end
   .
-
-Definition constructorDecl : constructor -> VDecl :=
-  fun c => match c with
-  | Constructor vd _ => vd
-  end.
-
-(** *** Auxiliary functions *)
-Definition getName (vd : VDecl) :=
-  match vd with
-  | VarDecl x _ => x
-  end.
-
-Definition getTy (vd : VDecl) :=
-  match vd with
-  | VarDecl _ T => T
-  end.
-
-Definition getTyname (tvd : TVDecl) :=
-  match tvd with
-  | TyVarDecl X _ => X
-  end.
-
-Definition getKind (tvd : TVDecl) :=
-  match tvd with
-  | TyVarDecl _ K => K
-  end.
-
-Definition getMatchFunc (d : DTDecl) :=
-  match d with
-  | Datatype _ _ matchFunc _ => matchFunc
-  end.
-
-Definition branchTy (c : constructor) (R : Ty) : Ty :=
-  match c with
-  | Constructor (VarDecl x T) _ => 
-    match T with
-    | Ty_Fun T1 T2 => Ty_Fun T1 R
-    | _ => R
-    end
-  end.
-
-Open Scope string_scope.
-
-Definition dataTy (d : DTDecl) : Ty :=
-  match d with
-  | Datatype X YKs matchFunc cs =>
-    let branchTypes := map (fun c => branchTy c (Ty_Var "R")) cs in
-    let branchTypesFolded := fold_right Ty_Fun (Ty_Var "R") branchTypes in
-    let indexKinds := map (fun YK => Ty_Lam (getTyname YK) (getKind YK)) YKs in
-    fold_right apply (Ty_Forall "R" Kind_Base branchTypesFolded) indexKinds
-  end.
-
-Definition dataKind (d : DTDecl) : Kind :=
-  match d with
-  | Datatype X YKs matchFunc cs =>
-    fold_right Kind_Arrow Kind_Base (map getKind YKs)
-  end.
-
-Definition constrTy (d : DTDecl) (c : constructor) : Ty :=
-  match d, c with
-  | Datatype X YKs matchFunc cs, Constructor (VarDecl x T) _ =>
-    let indexTyVars := map (compose Ty_Var getTyname) YKs in
-    let indexTyVarsAppliedToX := fold_left Ty_App indexTyVars (Ty_Var (getTyname X)) in
-    let branchType := branchTy c indexTyVarsAppliedToX in
-    let indexForalls := map (fun YK => Ty_Forall (getTyname YK) (getKind YK)) YKs in
-    fold_right apply branchType indexForalls
-  end.
-
-Definition matchTy (d : DTDecl) : Ty :=
-  match d with
-  | Datatype X YKs matchFunc cs =>
-    let indexTyVars := map (compose Ty_Var getTyname) YKs in
-    let indexTyVarsAppliedToX := fold_left Ty_App indexTyVars (Ty_Var (getTyname X)) in
-    let indexForalls := map (fun YK => Ty_Forall (getTyname YK) (getKind YK)) YKs in
-    fold_right apply (Ty_Fun indexTyVarsAppliedToX (fold_left Ty_App indexTyVars (dataTy d))) indexForalls 
-  end.
-
-(** *** Binder functions *)
-Definition dataBind (d : DTDecl) : tyname * Kind :=
-  match d with
-  | Datatype X YKs matchFunc cs =>
-    (getTyname X, dataKind d)
-  end.
-
-Definition constrBind (d : DTDecl) (c : constructor) : name * Ty :=
-  match d, c with
-  | Datatype X YKs matchFunc cs, Constructor (VarDecl x T) _ =>
-    (x, constrTy d c)
-  end.
-
-Definition constrBinds (d : DTDecl) : list (name * Ty) :=
-  match d with
-  | Datatype X YKs matchFunc cs =>
-    map (constrBind d) cs
-  end.
-
-Definition matchBind (d : DTDecl) : name * Ty :=
-  match d with
-  | Datatype X YKs matchFunc cs =>
-    (matchFunc, matchTy d)
-  end.
-
-Import ListNotations.
-Open Scope list_scope.
-
-Definition binds (b : Binding) : Context :=
-  match b with
-  | TermBind _ vd _ => (getName vd, getTy vd) :T: nil
-  | TypeBind tvd ty => (getTyname tvd, getKind tvd) :K: nil
-  | DatatypeBind d =>
-    let dataB := dataBind d in 
-    let constrBs := constrBinds d in
-    let constrBs_ctx := fold_right (compose cons inl) nil constrBs in
-    let matchB := matchBind d in
-    matchB :T: constrBs_ctx ++ (dataB :K: nil)
-  end.
 
 (** ** Trace of compilation *)
 Inductive Pass :=
@@ -462,142 +246,6 @@ Inductive Pass :=
 
 Inductive CompTrace :=
   | CompilationTrace : Term -> list (Pass * Term) -> CompTrace.
-
-(** ** Types of builtin-functions *)
-Definition lookupBuiltinTy (f : DefaultFun) : Ty :=
-  let Ty_Int := Ty_Builtin (Some (TypeIn DefaultUniInteger)) in
-  let Ty_Bool := Ty_Builtin (Some (TypeIn DefaultUniBool)) in
-  let Ty_BS := Ty_Builtin (Some (TypeIn DefaultUniByteString)) in
-  let T_Int_Bin := Ty_Fun Ty_Int (Ty_Fun Ty_Int Ty_Int) in
-  let T_Int_BinPredicate := Ty_Fun Ty_Int (Ty_Fun Ty_Int Ty_Bool) in
-  let T_BS_Bin := Ty_Fun Ty_BS (Ty_Fun Ty_BS Ty_BS) in
-  let T_BS_BinPredicate := Ty_Fun Ty_BS (Ty_Fun Ty_BS Ty_Bool) in
-  let Ty_Char := Ty_Builtin (Some (TypeIn DefaultUniChar)) in
-  let Ty_String := Ty_Builtin (Some (TypeIn DefaultUniString)) in
-  let Ty_Unit := Ty_Builtin (Some (TypeIn DefaultUniUnit)) in
-  match f with
-  | AddInteger => T_Int_Bin
-  | SubtractInteger => T_Int_Bin
-  | MultiplyInteger => T_Int_Bin
-  | DivideInteger => T_Int_Bin
-  | QuotientInteger => T_Int_Bin
-  | RemainderInteger => T_Int_Bin
-  | ModInteger => T_Int_Bin
-  | LessThanInteger => T_Int_BinPredicate
-  | LessThanEqInteger => T_Int_BinPredicate
-  | GreaterThanInteger => T_Int_BinPredicate
-  | GreaterThanEqInteger => T_Int_BinPredicate
-  | EqInteger => T_Int_BinPredicate
-  | Concatenate => T_BS_Bin
-  | TakeByteString => Ty_Fun Ty_Int (Ty_Fun Ty_BS Ty_BS)
-  | DropByteString => Ty_Fun Ty_Int (Ty_Fun Ty_BS Ty_BS)
-  | SHA2 => Ty_Fun Ty_BS Ty_BS
-  | SHA3 => Ty_Fun Ty_BS Ty_BS
-  | VerifySignature => Ty_Fun Ty_BS (Ty_Fun Ty_BS (Ty_Fun Ty_BS Ty_Bool))
-  | EqByteString => T_BS_BinPredicate
-  | LtByteString => T_BS_BinPredicate
-  | GtByteString => T_BS_BinPredicate
-  | IfThenElse => Ty_Forall "a" Kind_Base (Ty_Fun Ty_Bool (Ty_Fun (Ty_Var "a") (Ty_Fun (Ty_Var "a") (Ty_Var "a"))))
-  | CharToString => Ty_Fun Ty_Char Ty_String
-  | Append => Ty_Fun Ty_String (Ty_Fun Ty_String Ty_String)
-  | Trace => Ty_Fun Ty_String Ty_Unit (* TODO: figure out if it is the correct type*)
-  end.
-
-(** ** Well-formedness of constructors and bindings *)
-Fixpoint typeList (T : Ty) : list Ty :=
-  match T with
-  | Ty_Fun T1 T2 => cons T1 (typeList T2)
-  | _ => nil
-  end.
-
-(** ** Typing of terms *)
-Reserved Notation "ctx '|-+' tm ':' T" (at level 40, tm at level 0, T at level 0).
-Inductive has_type : Context -> Term -> Ty -> Prop :=
-  (* Let-bindings *)
-  | T_Let : forall ctx bs t T,
-      ctx |-* T : Kind_Base ->
-      (forall b, In b bs -> binding_well_formed ctx b) ->
-      (concat_rev_ctx (map binds bs) ++ ctx) |-+ t : T ->
-      ctx |-+ (Let NonRec bs t) : T
-  | T_LetRec : forall ctx bs t T ctx',
-      ctx |-* T : Kind_Base ->
-      ctx' = concat_rev_ctx (map binds bs) ++ ctx ->
-      (forall b, In b bs -> binding_well_formed ctx' b) ->
-      ctx' |-+ t : T ->
-      ctx |-+ (Let Rec bs t) : T
-  (* Basic constructs *)
-  | T_Var : forall ctx x T,
-      lookupT ctx x = Coq.Init.Datatypes.Some T ->
-      ctx |-+ (Var x) : T
-  | T_TyAbs : forall ctx X K t T,
-      ((X, K) :K: ctx) |-+ t : T ->
-      ctx |-+ (TyAbs X K t) : (Ty_Forall X K T)
-  | T_LamAbs : forall ctx x T1 t T2,
-      ((x, T1) :T: ctx) |-+ t : T2 -> 
-      ctx |-* T1 : Kind_Base ->
-      ctx |-+ (LamAbs x T1 t) : (Ty_Fun T1 T2)
-  | T_Apply : forall ctx t1 t2 T1 T2,
-      ctx |-+ t1 : (Ty_Fun T1 T2) ->
-      ctx |-+ t2 : T1 ->
-      ctx |-+ (Apply t1 t2) : T2
-  | T_Constant : forall ctx u type,
-      ctx |-+ (Constant (Some (ValueOf u type))) : (Ty_Builtin (Some (TypeIn u))) (* TODO *)
-  | T_Builtin : forall ctx f,
-      ctx |-+ (Builtin f) : (lookupBuiltinTy f)
-  | T_TyInst : forall ctx t1 T2 T1 X K2,
-      ctx |-+ t1 : (Ty_Forall X K2 T1) ->
-      ctx |-* T2 : K2 ->
-      ctx |-+ (TyInst t1 T2) : (substituteT X T2 T1)
-  | T_Error : forall ctx T,
-      ctx |-* T : Kind_Base ->
-      ctx |-+ (Error T) : T 
-  (* Recursive types *)
-  | T_IWrap : forall ctx F T M X K,
-      ctx |-+ M : (Ty_App (Ty_App F (Ty_Lam X K (Ty_IFix F (Ty_Var X)))) T) ->
-      ctx |-* T : K ->
-      ctx |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
-      ctx |-+ (IWrap F T M) : (Ty_IFix F T)
-  | T_Unwrap : forall ctx M F X K T,
-      ctx |-+ M : (Ty_IFix F T) ->
-      ctx |-* T : K ->
-      ctx |-+ (Unwrap M) : (Ty_App (Ty_App F (Ty_Lam X K (Ty_IFix F (Ty_Var X)))) T)
-  (* Type equality *)
-  | T_Eq : forall ctx t T S,
-      ctx |-+ t : S ->
-      S =b T ->
-      ctx |-+ t : T
-
-  with constructor_well_formed : Context -> constructor -> Prop :=
-    | W_Con : forall ctx x T ar,
-        (forall U, In U (typeList T) -> ctx |-* U : Kind_Base) ->
-        constructor_well_formed ctx (Constructor (VarDecl x T) ar)
-  
-  with binding_well_formed : Context -> Binding -> Prop :=
-    | W_Term : forall ctx s x T t,
-        ctx |-* T : Kind_Base ->
-        ctx |-+ t : T ->
-        binding_well_formed ctx (TermBind s (VarDecl x T) t)
-    | W_Type : forall ctx X K T,
-        ctx |-* T : K ->
-        binding_well_formed ctx (TypeBind (TyVarDecl X K) T)
-    | W_Data : forall ctx X YKs cs matchFunc ctx',
-        ctx' = concat_rev_ctx (map (fun YK => inr (getTyname YK, getKind YK) :: nil) YKs) ++ ctx ->
-        (forall c, In c cs -> constructor_well_formed ctx' c) ->
-        binding_well_formed ctx (DatatypeBind (Datatype X YKs matchFunc cs))
-
-  where "ctx '|-+' tm ':' T" := (has_type ctx tm T).
-
-Notation "ctx '|-ok' tm" := (binding_well_formed ctx tm) (at level 40, tm at level 0).
-
-#[export] Hint Constructors Kind : core.
-#[export] Hint Constructors Ty : core.
-#[export] Hint Constructors has_kind : core.
-#[export] Hint Constructors EqT : core.
-#[export] Hint Constructors has_type : core.
-#[export] Hint Constructors constructor_well_formed : core.
-#[export] Hint Constructors binding_well_formed : core. 
-
-
 
 Section Term_rect.
   Unset Implicit Arguments.
@@ -664,13 +312,13 @@ Section term_rect.
     (H_Let      : forall rec bs t, R bs -> P t -> P (Let rec bs t))
     (H_Var      : forall s : v, P (Var s))
     (H_TyAbs    : forall (s : v') (k : Kind) (t : term v v'), P t -> P (TyAbs s k t))
-    (H_LamAbs   : forall (s : v) (t : Ty) (t0 : term v v'), P t0 -> P (LamAbs s t t0))
+    (H_LamAbs   : forall (s : v) (t : ty v') (t0 : term v v'), P t0 -> P (LamAbs s t t0))
     (H_Apply    : forall t : term v v', P t -> forall t0 : term v v', P t0 -> P (Apply t t0))
     (H_Constant : forall s : some, P (Constant s))
     (H_Builtin  : forall d : func, P (Builtin d))
-    (H_TyInst   : forall t : term v v', P t -> forall t0 : Ty, P (TyInst t t0))
-    (H_Error    : forall t : Ty, P (Error t))
-    (H_IWrap    : forall (t t0 : Ty) (t1 : term v v'), P t1 -> P (IWrap t t0 t1))
+    (H_TyInst   : forall t : term v v', P t -> forall t0 : ty v', P (TyInst t t0))
+    (H_Error    : forall t : ty v', P (Error t))
+    (H_IWrap    : forall (t t0 : ty v') (t1 : term v v'), P t1 -> P (IWrap t t0 t1))
     (H_Unwrap   : forall t : term v v', P t -> P (Unwrap t)).
 
   Context

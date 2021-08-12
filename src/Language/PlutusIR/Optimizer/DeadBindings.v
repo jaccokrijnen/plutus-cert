@@ -35,7 +35,7 @@ Inductive DBE_Term : Term -> Term -> Type :=
    (* For type or datatype bindings, we allow that these are eliminated, since the AST currently
       contains no types (hence they are always dead bindings).
    *)
-    | DBE_RemoveTypeBind : `{ DBE_Binding (TypeBind d ty) t}
+    | DBE_RemoveTypeBind : `{ DBE_Binding (TypeBind d T) t}
     | DBE_RemoveDatatype : `{ DBE_Binding (DatatypeBind (Datatype tv ds n vs)) t}
 
   with DBE_Bindings : list Binding -> list Binding -> Term -> Type :=
@@ -46,7 +46,7 @@ Inductive DBE_Term : Term -> Term -> Type :=
 
 
 (* TODO: Does not consider types, tt is mapped to built-in strings *)
-Definition tt := Ty_Builtin (Some (@TypeIn DefaultUniString)).
+Definition tt := @Ty_Builtin tyname (Some (@TypeIn DefaultUniString)).
 Definition subTerm : Term :=
        (LamAbs (Name "ds" (Unique 75)) tt
           (LamAbs (Name "ds" (Unique 76)) tt

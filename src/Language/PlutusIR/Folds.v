@@ -368,14 +368,14 @@ Definition con_type (v v' : Set) P Q : con_term -> Type :=
   fun c => match c with
     | con_Let       => forall rec bs t, ForallT Q bs -> P t -> P (Let rec bs t)
     | con_Var       => forall s : v, P (Var s)
-    | con_TyAbs     => forall (s : v') (k : Kind) (t : term v v'), P t -> P (TyAbs s k t)
-    | con_LamAbs    => forall (s : v) (t : Ty) (t0 : term v v'), P t0 -> P (LamAbs s t t0)
+    | con_TyAbs     => forall (s : v') (k : kind) (t : term v v'), P t -> P (TyAbs s k t)
+    | con_LamAbs    => forall (s : v) (t : ty v') (t0 : term v v'), P t0 -> P (LamAbs s t t0)
     | con_Apply     => forall t : term v v', P t -> forall t0 : term v v', P t0 -> P (Apply t t0)
     | con_Constant  => forall s : some, P (Constant s)
     | con_Builtin   => forall d : func, P (Builtin d)
-    | con_TyInst    => forall t : term v v', P t -> forall t0 : Ty, P (TyInst t t0)
-    | con_Error     => forall t : Ty, P (Error t)
-    | con_IWrap     => forall (t t0 : Ty) (t1 : term v v'), P t1 -> P (IWrap t t0 t1)
+    | con_TyInst    => forall t : term v v', P t -> forall t0 : ty v', P (TyInst t t0)
+    | con_Error     => forall t : ty v', P (Error t)
+    | con_IWrap     => forall (t t0 : ty v') (t1 : term v v'), P t1 -> P (IWrap t t0 t1)
     | con_Unwrap    => forall t : term v v', P t -> P (Unwrap t)
     end.
 

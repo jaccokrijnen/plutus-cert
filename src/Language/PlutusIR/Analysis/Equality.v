@@ -405,11 +405,11 @@ Fixpoint Ty_eqb (x y : Ty) : bool := match x, y with
   end.
 
 Definition Ty_eqb_eq : Eqb_eq Ty_eqb.
-Proof. eqb_eq_tac; try (inversion H).
-  - assert (s =? s = true) by eauto with reflection.
+Proof. Local Open Scope string_scope. eqb_eq_tac; try (inversion H).
+  - assert (t =? t = true) by eauto with reflection.
     assert (Kind_eqb k k = true) by eauto with reflection.
     rewrite H. rewrite H0. rewrite IHy. auto.
-  - assert (s =? s = true) by eauto with reflection.
+  - assert (t =? t = true) by eauto with reflection.
     assert (Kind_eqb k k = true) by eauto with reflection.
     rewrite H. rewrite H0. rewrite IHy. auto.
 Defined.
