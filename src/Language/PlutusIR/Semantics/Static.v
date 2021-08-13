@@ -1,5 +1,5 @@
 Require Export PlutusCert.Language.PlutusIR.
-Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Context.
+(* Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Context. *)
 
 
 
@@ -10,29 +10,35 @@ Import Coq.Strings.String.
 Local Open Scope string_scope.
 
 
-Context (Name Tyname : Set).
+Context (Name Tyname BinderName BinderTyname : Set).
 
 Definition Kind := kind.
-Definition Ty := ty Tyname.
-Definition Term := term Name Tyname.
-Definition Binding := binding Name Tyname.
+Definition Ty := ty Tyname BinderTyname.
+Definition Term := term Name Tyname BinderName BinderTyname.
+Definition Binding := binding Name Tyname BinderName BinderTyname.
+Notation VDecl := (vdecl Name Tyname BinderName).
+Notation TVDecl := (tvdecl BinderTyname).
+Notation DTDecl := (dtdecl Name Tyname BinderTyname).
+Notation constructor := (constr Tyname BinderName BinderTyname).
 
 (* Typing/kinding contexts *)
 Context (Context : Set) 
         (empty : Context)
         (lookupT : Context -> Name -> option Ty)
         (lookupK : Context -> Tyname -> option Kind) 
-        (extendT : Name -> Ty -> Context -> Context)
-        (extendK : Tyname -> Kind -> Context -> Context).
+        (extendT : BinderName -> Ty -> Context -> Context)
+        (extendK : BinderTyname -> Kind -> Context -> Context).
 Context (flatten : list Context -> Context)
         (append : Context -> Context -> Context)
         (binds : Binding -> Context)
-        (fromDecl : tvdecl Tyname -> Context).
+        (fromDecl : TVDecl -> Context).
 
 (* Builtins *)
 Context (lookupBuiltinTy : DefaultFun -> Ty). 
-Context (substituteT : Tyname -> Ty -> Ty -> Ty).
+Context (substituteT : BinderTyname -> Ty -> Ty -> Ty).
 Context (listOfArgumentTypes : Ty -> list Ty).
+
+Context (unwrapIFix : Ty -> BinderTyname -> Kind -> Ty -> Ty).
 
 (** ** Kinding of types *)
 Reserved Notation "ctx '|-*' ty ':' K" (at level 40, ty at level 0, K at level 0).
@@ -141,21 +147,21 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
       ctx |-+ (Error T) : T 
   (* Recursive types *)
   | T_IWrap : forall ctx F T M X K,
-      ctx |-+ M : (Ty_App (Ty_App F (Ty_Lam X K (Ty_IFix F (Ty_Var X)))) T) ->
+      ctx |-+ M : (unwrapIFix F X K T) ->
       ctx |-* T : K ->
       ctx |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
       ctx |-+ (IWrap F T M) : (Ty_IFix F T)
   | T_Unwrap : forall ctx M F X K T,
       ctx |-+ M : (Ty_IFix F T) ->
       ctx |-* T : K ->
-      ctx |-+ (Unwrap M) : (Ty_App (Ty_App F (Ty_Lam X K (Ty_IFix F (Ty_Var X)))) T)
+      ctx |-+ (Unwrap M) : (unwrapIFix F X K T)
   (* Type equality *)
   | T_Eq : forall ctx t T S,
       ctx |-+ t : S ->
       S =b T ->
       ctx |-+ t : T
 
-  with constructor_well_formed : Context -> _constructor Name Tyname -> Prop :=
+  with constructor_well_formed : Context -> constructor -> Prop :=
     | W_Con : forall ctx x T ar,
         (forall U, In U (listOfArgumentTypes T) -> ctx |-* U : Kind_Base) ->
         constructor_well_formed ctx (Constructor (VarDecl x T) ar)

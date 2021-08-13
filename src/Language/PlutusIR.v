@@ -229,7 +229,7 @@ Notation Ty := (ty tyname binderTyname).
 Notation VDecl := (vdecl name tyname binderName).
 Notation TVDecl := (tvdecl binderTyname).
 Notation DTDecl := (dtdecl name tyname binderTyname).
-Notation constructor := (constr name tyname binderTyname).
+Notation constructor := (constr tyname binderName binderTyname).
 Notation Term := (term name tyname binderName binderTyname).
 Notation Binding := (binding name tyname binderName binderTyname).
 
@@ -262,6 +262,36 @@ End NamedTerm.
 (** * De Bruijn terms *)
 Module DeBruijnTerm.
 
+Notation name := nat.
+Notation tyname := nat.
+Notation binderName := unit.
+Notation binderTyname := unit.
+
+Arguments Ty_Var [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Fun [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Forall [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Builtin [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Lam [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Var [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments Constant [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments Builtin [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments Error [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments TypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments DatatypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+
+Arguments VarDecl [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments TyVarDecl [binderTyname]%type_scope.
+Arguments Datatype [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+
+
+Notation Kind := (kind).
+Notation Ty := (ty tyname binderTyname).
+Notation VDecl := (vdecl tyname binderName binderTyname).
+Notation TVDecl := (tvdecl binderTyname).
+Notation DTDecl := (dtdecl tyname binderName binderTyname).
+Notation constructor := (constr tyname binderName binderTyname).
+Notation Term := (term name tyname binderName binderTyname).
+Notation Binding := (binding name tyname binderName binderTyname).
 
 End DeBruijnTerm.
 
