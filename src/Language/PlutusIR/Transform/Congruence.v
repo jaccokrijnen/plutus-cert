@@ -7,6 +7,7 @@ Require Import Coq.Strings.String.
 Generalizable All Variables.
 
 Section Congruence.
+  Import NamedTerm.
   Variables (R : Term -> Term -> Type) (S : list Binding -> list Binding -> Type).
 
   Inductive Cong_Binding : Binding -> Binding -> Type :=

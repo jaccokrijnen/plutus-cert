@@ -5,6 +5,8 @@ From PlutusCert Require Import
   Util
   Language.PlutusIR.
 
+Import NamedTerm.
+
 Set Implicit Arguments.
 
 
@@ -22,7 +24,7 @@ Record AlgTerm: Type := mkTermAlg
   ; a_LamAbs   : name -> Ty -> rTerm -> rTerm
   ; a_Apply    : rTerm -> rTerm -> rTerm
   ; a_Constant : @some valueOf -> rTerm
-  ; a_Builtin  : func -> rTerm
+  ; a_Builtin  : DefaultFun -> rTerm
   ; a_TyInst   : rTerm -> Ty -> rTerm
   ; a_Error    : Ty -> rTerm
   ; a_IWrap    : Ty -> Ty -> rTerm -> rTerm
@@ -273,7 +275,7 @@ Section Use. (* name comes from "use" rules in attribute grammars *)
     a_LamAbs := fun (_ : name) (_ : Ty) (X : a) => f [X];
     a_Apply := fun X X0 : a => f [X; X0];
     a_Constant := fun _ : some => f [];
-    a_Builtin := fun _ : func => f [];
+    a_Builtin := fun _ : DefaultFun => f [];
     a_TyInst := fun (X : a) (_ : Ty) => f [X];
     a_Error := fun _ : Ty => f [];
     a_IWrap := fun (_ _ : Ty) (X : a) => f [X];
@@ -364,19 +366,19 @@ Inductive con_term :=
   | con_Unwrap
   .
 
-Definition con_type (v v' : Set) P Q : con_term -> Type :=
+Definition con_type (v v' b b': Set) P Q : con_term -> Type :=
   fun c => match c with
     | con_Let       => forall rec bs t, ForallT Q bs -> P t -> P (Let rec bs t)
     | con_Var       => forall s : v, P (Var s)
-    | con_TyAbs     => forall (s : v') (k : kind) (t : term v v'), P t -> P (TyAbs s k t)
-    | con_LamAbs    => forall (s : v) (t : ty v') (t0 : term v v'), P t0 -> P (LamAbs s t t0)
-    | con_Apply     => forall t : term v v', P t -> forall t0 : term v v', P t0 -> P (Apply t t0)
+    | con_TyAbs     => forall (s : b') (k : kind) (t : term v v' b b'), P t -> P (TyAbs s k t)
+    | con_LamAbs    => forall (s : b) (t : ty v' b') (t0 : term v v' b b'), P t0 -> P (LamAbs s t t0)
+    | con_Apply     => forall t : term v v' b b', P t -> forall t0 : term v v' b b', P t0 -> P (Apply t t0)
     | con_Constant  => forall s : some, P (Constant s)
-    | con_Builtin   => forall d : func, P (Builtin d)
-    | con_TyInst    => forall t : term v v', P t -> forall t0 : ty v', P (TyInst t t0)
-    | con_Error     => forall t : ty v', P (Error t)
-    | con_IWrap     => forall (t t0 : ty v') (t1 : term v v'), P t1 -> P (IWrap t t0 t1)
-    | con_Unwrap    => forall t : term v v', P t -> P (Unwrap t)
+    | con_Builtin   => forall d : DefaultFun, P (Builtin d)
+    | con_TyInst    => forall t : term v v' b b', P t -> forall t0 : ty v' b', P (TyInst t t0)
+    | con_Error     => forall t : ty v' b', P (Error t)
+    | con_IWrap     => forall (t t0 : ty v' b') (t1 : term v v' b b'), P t1 -> P (IWrap t t0 t1)
+    | con_Unwrap    => forall t : term v v' b b', P t -> P (Unwrap t)
     end.
 
 Inductive con_binding :=
@@ -385,7 +387,7 @@ Inductive con_binding :=
   | con_DatatypeBind
   .
 
-Definition con_type_binding (name tyname : Set) (P : term name tyname -> Type) (Q : binding name tyname -> Type) : con_binding -> Type :=
+Definition con_type_binding (name tyname : Set) (P : term name tyname binderName binderTyname -> Type) (Q : binding name tyname binderName binderTyname -> Type) : con_binding -> Type :=
   fun c => match c with
     | con_TermBind => forall s v t, P t -> Q (TermBind s v t)
     | con_TypeBind => forall v ty, Q (TypeBind v ty)

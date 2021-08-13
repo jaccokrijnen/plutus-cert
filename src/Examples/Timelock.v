@@ -11,6 +11,7 @@ Set Printing Universes.
 
 From PlutusCert Require Import Util.
 From PlutusCert Require Import Language.PlutusIR.
+Import NamedTerm.
 From PlutusCert Require Import Language.PlutusIR.Folds.
 From PlutusCert Require Import Language.PlutusIR.Analysis.FreeVars.
 From PlutusCert Require Import Language.PlutusIR.Analysis.Size.

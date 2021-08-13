@@ -18,7 +18,7 @@ From PlutusCert Require Import
   Language.PlutusIR.Transform.LetRec
   Language.PlutusIR.Transform.LetTypes
   .
-
+Import NamedTerm.
 
 
 Definition simplifier : list (Term -> Term -> Type) :=

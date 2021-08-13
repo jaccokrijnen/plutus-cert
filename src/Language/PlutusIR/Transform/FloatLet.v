@@ -3,6 +3,7 @@ From PlutusCert Require Import
   Language.PlutusIR.Transform.Congruence
   Language.PlutusIR.Analysis.Equality
   Language.PlutusIR.Analysis.FreeVars.
+Import NamedTerm.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
 Import Coq.Lists.List.ListNotations.

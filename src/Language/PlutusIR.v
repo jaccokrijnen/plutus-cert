@@ -104,17 +104,9 @@ Inductive DefaultFun :=
 Set Implicit Arguments.
 
 
-(* Perhaps parametrize to mimic original AST in haskell more closely? We really only need one instantiation for now. *)
-(* Context {func : Type} {uni : Type -> Type} {name : Type} {tyname : Type}. *)
 
-(* TODO: Coq prints wrong notation for LamAbs type, perhaps just use string
-    everywhere? *)
-Notation name := string.
-Notation tyname := string.
-Notation uni := DefaultUni.
-Notation func := DefaultFun.
 
-Inductive valueOf (u : uni) :=
+Inductive valueOf (u : DefaultUni) :=
   ValueOf : uniType u -> valueOf u.
 Arguments ValueOf _ _ : clear implicits.
 
@@ -123,28 +115,19 @@ Arguments ValueOf _ _ : clear implicits.
 Arguments ValueOf {_} {_}.
 *)
 
-Inductive some {f : uni -> Type} :=
-  Some : forall {u : uni}, f u -> some.
+Inductive some {f : DefaultUni -> Type} :=
+  Some : forall {u : DefaultUni}, f u -> some.
 (*Inductive some := Some : forall a, valueOf a -> some.*)
 
 (** ** Builtin types *)
-Inductive typeIn (u : uni) :=
+Inductive typeIn (u : DefaultUni) :=
   TypeIn : typeIn u.
 Arguments TypeIn _ : clear implicits.
 
 
-(*
-  Simplification of attached values in the AST
-
-  In the Haskell AST, Term is a functor and each constructor may have a field of the type parameter
-  `a`. Since this seems to be used only for storing intermediate compiler data, it is ignored here.
-  (this works because the dumping code is ignoring it)
-
-  TODO: perhaps use a similar approach to the simplification of names, by ignoring the argument
-  in each constructor (have to add types for the possible values that can occur when dumping)
-*)
 Section AST_term.
 Context (name tyname : Set).
+Context (binderName binderTyname : Set).
 
 (** * Kinds and types *)
 
@@ -158,31 +141,43 @@ Inductive ty :=
   | Ty_Var : tyname -> ty
   | Ty_Fun : ty -> ty -> ty
   | Ty_IFix : ty -> ty -> ty
-  | Ty_Forall : tyname -> kind -> ty -> ty
+  | Ty_Forall : binderTyname -> kind -> ty -> ty
   | Ty_Builtin : @some typeIn -> ty
-  | Ty_Lam : tyname -> kind -> ty -> ty
+  | Ty_Lam : binderTyname -> kind -> ty -> ty
   | Ty_App : ty -> ty -> ty.
 
-Inductive vdecl := VarDecl : name -> ty -> vdecl.
-Inductive tvdecl := TyVarDecl : tyname -> kind -> tvdecl.
+
+(*
+  Simplification of attached values in the AST
+
+  In the Haskell AST, Term is a functor and each constructor may have a field of the type parameter
+  `a`. Since this seems to be used only for storing intermediate compiler data, it is ignored here.
+  (this works because the dumping code is ignoring it)
+
+  TODO: perhaps use a similar approach to the simplification of names, by ignoring the argument
+  in each constructor (have to add types for the possible values that can occur when dumping)
+*)
+
+Inductive vdecl := VarDecl : binderName -> ty -> vdecl.
+Inductive tvdecl := TyVarDecl : binderTyname -> kind -> tvdecl.
 
 (* Inductive DTDecl := Datatype : TVDecl -> list TVDecl -> name -> list VDecl -> DTDecl.*)
 
 (* This is a bit in-between hack of having types in the AST and completely ignoring them*)
 (* Constructor name and arity, needed for Scott encoding *)
-Inductive _constructor :=
-  | Constructor : vdecl -> nat -> _constructor.
+Inductive constr :=
+  | Constructor : vdecl -> nat -> constr.
 
-Inductive dtdecl := Datatype : tvdecl -> list tvdecl -> name -> list _constructor -> dtdecl.
+Inductive dtdecl := Datatype : tvdecl -> list tvdecl -> binderName -> list constr -> dtdecl.
 
 Inductive term :=
   | Let      : Recursivity -> list binding -> term -> term
   | Var      : name -> term
-  | TyAbs    : tyname -> kind -> term -> term
-  | LamAbs   : name -> ty -> term -> term
+  | TyAbs    : binderTyname -> kind -> term -> term
+  | LamAbs   : binderName -> ty -> term -> term
   | Apply    : term -> term -> term
   | Constant : @some valueOf -> term
-  | Builtin  : func -> term
+  | Builtin  : DefaultFun -> term
   | TyInst   : term -> ty -> term
   | Error    : ty -> term
   | IWrap    : ty -> ty -> term -> term
@@ -194,36 +189,49 @@ with binding :=
   | DatatypeBind : dtdecl -> binding
 .
 
-
 End AST_term.
+
+(** * Named terms (all variables and binders are strings) *)
+Module NamedTerm.
+
+(* Perhaps parametrize to mimic original AST in haskell more closely? We really only need one instantiation for now. *)
+(* Context {func : Type} {uni : Type -> Type} {name : Type} {tyname : Type}. *)
+
+(* TODO: Coq prints wrong notation for LamAbs type, perhaps just use string
+    everywhere? *)
+Notation name := string.
+Notation tyname := string.
+Notation binderName := string.
+Notation binderTyname := string.
 
 (* These constructors should treat the type parameter
    as implicit too (this is already correctly generated for the recursive
    constructors. *)
 
-Arguments Ty_Var [tyname]%type_scope.
-Arguments Ty_Fun [tyname]%type_scope.
-Arguments Ty_Forall [tyname]%type_scope.
-Arguments Ty_Builtin [tyname]%type_scope.
-Arguments Ty_Lam [tyname]%type_scope.
-Arguments VarDecl [name]%type_scope [tyname]%type_scope.
-Arguments TyVarDecl [tyname]%type_scope.
-Arguments Datatype [name]%type_scope [tyname]%type_scope.
-Arguments Var [name]%type_scope [tyname]%type_scope.
-Arguments Constant [name]%type_scope [tyname]%type_scope.
-Arguments Builtin [name]%type_scope [tyname]%type_scope.
-Arguments Error [name]%type_scope [tyname]%type_scope.
-Arguments TypeBind [name]%type_scope [tyname]%type_scope.
-Arguments DatatypeBind [name]%type_scope [tyname]%type_scope.
+Arguments Ty_Var [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Fun [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Forall [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Builtin [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Lam [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Var [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments Constant [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments Builtin [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments Error [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments TypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments DatatypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+
+Arguments VarDecl [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments TyVarDecl [binderTyname]%type_scope.
+Arguments Datatype [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
 
 Notation Kind := (kind).
-Notation Ty := (ty tyname).
-Notation VDecl := (vdecl name tyname).
-Notation TVDecl := (tvdecl tyname).
-Notation DTDecl := (dtdecl name tyname).
-Notation constructor := (_constructor name tyname).
-Notation Term := (term name tyname).
-Notation Binding := (binding name tyname).
+Notation Ty := (ty tyname binderTyname).
+Notation VDecl := (vdecl name tyname binderName).
+Notation TVDecl := (tvdecl binderTyname).
+Notation DTDecl := (dtdecl name tyname binderTyname).
+Notation constructor := (constr name tyname binderTyname).
+Notation Term := (term name tyname binderName binderTyname).
+Notation Binding := (binding name tyname binderName binderTyname).
 
 Definition constructorName : constructor -> name := 
   fun c => match c with
@@ -247,7 +255,21 @@ Inductive Pass :=
 Inductive CompTrace :=
   | CompilationTrace : Term -> list (Pass * Term) -> CompTrace.
 
+End NamedTerm.
+
+
+
+(** * De Bruijn terms *)
+Module DeBruijnTerm.
+
+
+End DeBruijnTerm.
+
+
+
 Section Term_rect.
+  Import NamedTerm.
+
   Unset Implicit Arguments.
 
   Variable (P : Term -> Type).
@@ -260,7 +282,7 @@ Section Term_rect.
     (H_LamAbs   : forall (s : tyname) (t : Ty) (t0 : Term), P t0 -> P (LamAbs s t t0))
     (H_Apply    : forall t : Term, P t -> forall t0 : Term, P t0 -> P (Apply t t0))
     (H_Constant : forall s : some, P (Constant s))
-    (H_Builtin  : forall d : func, P (Builtin d))
+    (H_Builtin  : forall d : DefaultFun, P (Builtin d))
     (H_TyInst   : forall t : Term, P t -> forall t0 : Ty, P (TyInst t t0))
     (H_Error    : forall t : Ty, P (Error t))
     (H_IWrap    : forall (t t0 : Ty) (t1 : Term), P t1 -> P (IWrap t t0 t1))
@@ -302,24 +324,24 @@ End Term_rect.
 
 
 Section term_rect.
-  Variable (v v': Set).
-  Variable (P : term v v' -> Type).
-  Variable (Q : binding v v' -> Type).
-  Variable (R : list (binding v v') -> Type).
+  Variable (v v' b b': Set).
+  Variable (P : term v v' b b' -> Type).
+  Variable (Q : binding v v' b b' -> Type).
+  Variable (R : list (binding v v' b b') -> Type).
 
   Context
     (* (H_Let      : forall rec bs t, ForallT Q bs -> P t -> P (Let rec bs t)) *)
     (H_Let      : forall rec bs t, R bs -> P t -> P (Let rec bs t))
     (H_Var      : forall s : v, P (Var s))
-    (H_TyAbs    : forall (s : v') (k : Kind) (t : term v v'), P t -> P (TyAbs s k t))
-    (H_LamAbs   : forall (s : v) (t : ty v') (t0 : term v v'), P t0 -> P (LamAbs s t t0))
-    (H_Apply    : forall t : term v v', P t -> forall t0 : term v v', P t0 -> P (Apply t t0))
+    (H_TyAbs    : forall (s : b') (k : kind) (t : term v v' b b'), P t -> P (TyAbs s k t))
+    (H_LamAbs   : forall (s : b) (t : ty v' b') (t0 : term v v' b b'), P t0 -> P (LamAbs s t t0))
+    (H_Apply    : forall t : term v v' b b', P t -> forall t0 : term v v' b b', P t0 -> P (Apply t t0))
     (H_Constant : forall s : some, P (Constant s))
-    (H_Builtin  : forall d : func, P (Builtin d))
-    (H_TyInst   : forall t : term v v', P t -> forall t0 : ty v', P (TyInst t t0))
-    (H_Error    : forall t : ty v', P (Error t))
-    (H_IWrap    : forall (t t0 : ty v') (t1 : term v v'), P t1 -> P (IWrap t t0 t1))
-    (H_Unwrap   : forall t : term v v', P t -> P (Unwrap t)).
+    (H_Builtin  : forall d : DefaultFun, P (Builtin d))
+    (H_TyInst   : forall t : term v v' b b', P t -> forall t0 : ty v' b', P (TyInst t t0))
+    (H_Error    : forall t : ty v' b', P (Error t))
+    (H_IWrap    : forall (t t0 : ty v' b') (t1 : term v v' b b'), P t1 -> P (IWrap t t0 t1))
+    (H_Unwrap   : forall t : term v v' b b', P t -> P (Unwrap t)).
 
   Context
     (H_TermBind     : forall s v t, P t -> Q (TermBind s v t))
@@ -339,14 +361,14 @@ Section term_rect.
     end.
     *)
 
-  Definition bindings_rect' (binding_rect' : forall (b : binding v v'), Q b) :=
+  Definition bindings_rect' (binding_rect' : forall (b : binding v v' b b'), Q b) :=
     fix bindings_rect' bs :=
     match bs return R bs with
       | nil       => @H_nil
       | cons b bs => @H_cons _ bs (binding_rect' b) (bindings_rect' bs)
     end.
 
-  Fixpoint term_rect' (t : term v v') : P t :=
+  Fixpoint term_rect' (t : term v v' b b') : P t :=
     match t with
       | Let rec bs t    => @H_Let rec bs t (bindings_rect' binding_rect' bs) (term_rect' t)
       | Var n           => @H_Var n
@@ -360,7 +382,7 @@ Section term_rect.
       | Constant v      => @H_Constant v
       | Builtin f       => @H_Builtin f
     end
-  with binding_rect' (b : binding v v') : Q b :=
+  with binding_rect' (b : binding v v' b b') : Q b :=
     match b with
       | TermBind s v t   => @H_TermBind s v t (term_rect' t)
       | TypeBind v ty    => @H_TypeBind v ty
@@ -390,7 +412,7 @@ with Binding termR bindingR :=
 *)
 Definition Mu (f : Type -> Type) (g : Type -> Type) := forall a, (f a -> a) -> (g a -> a) -> a.
 
-Definition unitVal : Term := Constant (Some (ValueOf DefaultUniUnit tt)).
+Definition unitVal : NamedTerm.Term := Constant (Some (ValueOf DefaultUniUnit tt)).
 
 
 Inductive ZipWith {a} (P : a -> a -> Type) : list a -> list a -> Type :=
@@ -398,7 +420,7 @@ Inductive ZipWith {a} (P : a -> a -> Type) : list a -> list a -> Type :=
   | ZipWithNil  : ZipWith P nil nil.
 
 (* Helper for optionally relating term-bindings, by relating the bound terms *)
-Inductive BindingBy (R : Term -> Term -> Type) : Binding -> Binding -> Type :=
+Inductive BindingBy (R : NamedTerm.Term -> NamedTerm.Term -> Type) : NamedTerm.Binding -> NamedTerm.Binding -> Type :=
   | BB_TermBind: forall t t' s v,
       R t t' ->
       BindingBy R

@@ -10,7 +10,7 @@ From PlutusCert Require Import
   Language.PlutusIR.Analysis.Equality
   Language.PlutusIR.Transform.Congruence
   Language.PlutusIR.Transform.LetNonRec.
-
+Import NamedTerm.
 
 (*
    Returns `Just t'` if bindings were desugared correctly, where t' is the rest

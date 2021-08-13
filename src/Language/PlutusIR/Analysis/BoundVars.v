@@ -15,7 +15,7 @@ From PlutusCert Require Import
 
 Set Polymorphic Universes.
 
-Fixpoint bv_term {v v'} (t : term v v') : list v :=
+Fixpoint bv_term {v v'} (t : term v v' v v') : list v :=
   match t with
   | Let _ bs t  => concat (map bv_binding bs)
   | Var _       => []
@@ -29,7 +29,7 @@ Fixpoint bv_term {v v'} (t : term v v') : list v :=
   | IWrap _ _ t => bv_term t
   | Unwrap t => bv_term t
   end
-with bv_binding {v v'} (b : binding v v') : list v:=
+with bv_binding {v v'} (b : binding v v' v v') : list v:=
   match b with
   | TermBind _ (VarDecl v _) t => [v] ++ bv_term t
   | TypeBind _ _   => []
@@ -40,7 +40,7 @@ with bv_binding {v v'} (b : binding v v') : list v:=
 Section UniqueVars.
   Context (name tyname : Set).
 
-  Inductive UniqueVars : term name tyname -> Type :=
+  Inductive UniqueVars : term name tyname name tyname -> Type :=
     | UV_Let : forall {r bs t}, ForallT (UniqueVars_binding) bs -> UniqueVars t -> UniqueVars (Let r bs t)
     | UV_Var : forall v, UniqueVars (Var v)
     | UV_TyAbs : forall v k t, UniqueVars t -> UniqueVars (TyAbs v k t)
@@ -53,7 +53,7 @@ Section UniqueVars.
     | UV_IWrap : forall ty1 ty2 t, UniqueVars t -> UniqueVars (IWrap ty1 ty2 t)
     | UV_Unwrap : forall t, UniqueVars t -> UniqueVars (Unwrap t)
 
-    with UniqueVars_binding : binding name tyname -> Type :=
+    with UniqueVars_binding : binding name tyname name tyname -> Type :=
     | UV_TermBind : forall s v t ty, ~(In v (bv_term t)) -> UniqueVars t -> UniqueVars_binding (TermBind s (VarDecl v ty) t)
     | UV_TypeBind : forall tvd ty, UniqueVars_binding (TypeBind tvd ty)
     | UV_DatatypeBind : forall dtd, UniqueVars_binding (DatatypeBind dtd)

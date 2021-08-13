@@ -7,6 +7,7 @@ Require Import Eqdep.
 Set Implicit Arguments.
 
 From PlutusCert Require Import Language.PlutusIR.
+Import NamedTerm.
 
 Definition EqDec := fun A : Type => forall x y : A, {x = y} + {x <> y}.
 
@@ -28,7 +29,7 @@ Definition Strictness_dec: EqDec Strictness. solveEq. Defined.
   Definition Recursivity_dec : EqDec Recursivity. Proof. solveEq. Defined.
   Hint Resolve Recursivity_dec : Eqs.
 
-Definition func_dec : EqDec func. Proof. solveEq. Defined.
+Definition func_dec : EqDec DefaultFun. Proof. solveEq. Defined.
   Hint Resolve func_dec: Eqs.
 
 Definition DefaultUni_dec : EqDec DefaultUni. solveEq. Defined.
@@ -235,7 +236,7 @@ Proof. eqb_eq_tac. Qed.
 Hint Resolve -> Recursivity_eqb_eq : reflection.
 Hint Resolve <- Recursivity_eqb_eq : reflection.
 
-Definition func_eqb : Eqb func := fun x y => match x, y with
+Definition func_eqb : Eqb DefaultFun := fun x y => match x, y with
   | AddInteger , AddInteger => true
   | SubtractInteger , SubtractInteger => true
   | MultiplyInteger , MultiplyInteger => true
@@ -406,10 +407,10 @@ Fixpoint Ty_eqb (x y : Ty) : bool := match x, y with
 
 Definition Ty_eqb_eq : Eqb_eq Ty_eqb.
 Proof. Local Open Scope string_scope. eqb_eq_tac; try (inversion H).
-  - assert (t =? t = true) by eauto with reflection.
+  - assert (b =? b = true) by eauto with reflection.
     assert (Kind_eqb k k = true) by eauto with reflection.
     rewrite H. rewrite H0. rewrite IHy. auto.
-  - assert (t =? t = true) by eauto with reflection.
+  - assert (b =? b = true) by eauto with reflection.
     assert (Kind_eqb k k = true) by eauto with reflection.
     rewrite H. rewrite H0. rewrite IHy. auto.
 Defined.

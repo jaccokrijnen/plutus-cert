@@ -12,6 +12,7 @@ Set Equations Transparent.
 
 From PlutusCert Require Import Util.
 From PlutusCert Require Import Language.PlutusIR.
+Import NamedTerm.
 From PlutusCert Require Import Language.PlutusIR.Analysis.FreeVars.
 From PlutusCert Require Import Language.PlutusIR.Transform.Congruence.
 From PlutusCert Require Import Language.PlutusIR.Optimizer.DeadBindings.

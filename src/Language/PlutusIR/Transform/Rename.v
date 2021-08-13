@@ -16,7 +16,7 @@ Context
   (var_eqb : var -> var -> bool).
 
 (* Alpha renaming of variables *)
-Polymorphic Inductive Rename env : term var tyvar -> term var tyvar -> Type :=
+Polymorphic Inductive Rename env : term var tyvar var tyvar -> term var tyvar var tyvar -> Type :=
 
   | RenameVar       : forall v w,
       In (v, w) env ->
@@ -76,8 +76,8 @@ Polymorphic Inductive Rename env : term var tyvar -> term var tyvar -> Type :=
 
 with RenameBindingsNonRec env :
   list (var * var) ->
-  list (binding var tyvar) ->
-  list (binding var tyvar) ->
+  list (binding var tyvar var tyvar) ->
+  list (binding var tyvar var tyvar) ->
   Type :=
   | NonRecCons : forall env' env'' b b' bs bs',
       RenameBindingNonRec  env  env'   b         b'        ->
@@ -87,8 +87,8 @@ with RenameBindingsNonRec env :
 
 with RenameBindingNonRec env :
   list (var * var) -> (* The extended environment *)
-  binding var tyvar ->
-  binding var tyvar -> Type :=
+  binding var tyvar var tyvar ->
+  binding var tyvar var tyvar -> Type :=
   | BindEq     : forall s v t t',
       Rename env t t' -> RenameBindingNonRec env env (TermBind s v t) (TermBind s v t')
 
@@ -102,8 +102,8 @@ with RenameBindingNonRec env :
 
 with RenameBindingsRec env :
   list (var * var) ->
-  list (binding var tyvar) ->
-  list (binding var tyvar) ->
+  list (binding var tyvar var tyvar) ->
+  list (binding var tyvar var tyvar) ->
   Type :=
   (* TODO: recursive bindings, different scoping *)
   .

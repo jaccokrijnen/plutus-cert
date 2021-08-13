@@ -8,6 +8,7 @@ Set Equations Transparent.
 
 From PlutusCert Require Import Util.
 From PlutusCert Require Import Language.PlutusIR.
+Import NamedTerm.
 From PlutusCert Require Import Language.PlutusIR.Analysis.FreeVars.
 From PlutusCert Require Import Language.PlutusIR.Analysis.Equality.
 From PlutusCert Require Import Language.PlutusIR.Transform.Congruence.
@@ -46,7 +47,7 @@ Inductive DBE_Term : Term -> Term -> Type :=
 
 
 (* TODO: Does not consider types, tt is mapped to built-in strings *)
-Definition tt := @Ty_Builtin tyname (Some (@TypeIn DefaultUniString)).
+Definition tt := @Ty_Builtin tyname binderTyname (Some (@TypeIn DefaultUniString)).
 Definition subTerm : Term :=
        (LamAbs (Name "ds" (Unique 75)) tt
           (LamAbs (Name "ds" (Unique 76)) tt
