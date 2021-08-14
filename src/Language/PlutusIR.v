@@ -262,6 +262,8 @@ End NamedTerm.
 (** * De Bruijn terms *)
 Module DeBruijnTerm.
 
+From Equations Require Import Equations.
+
 Notation name := nat.
 Notation tyname := nat.
 Notation binderName := unit.
@@ -292,6 +294,46 @@ Notation DTDecl := (dtdecl tyname binderName binderTyname).
 Notation constructor := (constr tyname binderName binderTyname).
 Notation Term := (term name tyname binderName binderTyname).
 Notation Binding := (binding name tyname binderName binderTyname).
+
+
+Fixpoint shift_ty' (k c : nat) (T : Ty) : Ty :=
+  match T with
+  | Ty_Var X => if X <? c then Ty_Var X else Ty_Var (k + X)
+  | Ty_Fun T1 T2 => Ty_Fun (shift_ty' k c T1) (shift_ty' k c T2)
+  | Ty_IFix F T0 => Ty_IFix (shift_ty' k c F) (shift_ty' k c T0)
+  | Ty_Forall bX K T => Ty_Forall bX K (shift_ty' k (S c) T)
+  | Ty_Builtin u => Ty_Builtin u
+  | Ty_Lam bX K1 T => Ty_Lam bX K1 (shift_ty' k (S c) T)
+  | Ty_App T1 T2 => Ty_App (shift_ty' k c T1) (shift_ty' k c T2)
+  end.
+
+Definition shift_ty (T : Ty) := shift_ty' 1 0 T.
+
+Equations shift_term' : nat -> nat -> Term -> Term := {
+  shift_term' k c (Let NonRec bs t0) => Let NonRec (shift_bindings' k c bs) (shift_term' k (length bs + c) t0) ;
+  shift_term' k c (Let Rec bs t0) => Let Rec (shift_bindings' k c bs (* TODO: shift by c or more? *)) (shift_term' k (length bs + c) t0) ;
+  shift_term' k c (Var x) => if x <? c then Var x else Var (k + x) ;
+  shift_term' k c (TyAbs bx K t0) => TyAbs bx K (shift_term' k (S c) t0) ;
+  shift_term' k c (LamAbs bx T t0) => LamAbs bx (shift_ty' k c T) (shift_term' k (S c) t0) ;
+  shift_term' k c (Apply t1 t2) => Apply (shift_term' k c t1) (shift_term' k c t2) ;
+  shift_term' k c (Constant u) => Constant u ;
+  shift_term' k c (Builtin d) => Builtin d ;
+  shift_term' k c (TyInst t0 T) => TyInst (shift_term' k c t0) (shift_ty' k c T) ;
+  shift_term' k c (Error T) => Error (shift_ty' k c T) ;
+  shift_term' k c (IWrap F T t0) => IWrap (shift_ty' k c F) (shift_ty' k c T) (shift_term' k c t0) ;
+  shift_term' k c (Unwrap t0) => Unwrap (shift_term' k c t0) }
+
+where shift_bindings' : nat -> nat -> list Binding -> list Binding := {
+  shift_bindings' k c nil => nil ;
+  shift_bindings' k c (TermBind s (VarDecl bn T) t :: bs) => TermBind s (VarDecl bn (shift_ty' k c T)) (shift_term' k c t) :: shift_bindings' k c bs ;
+  shift_bindings' k c (TypeBind tvd T :: bs) => TypeBind tvd (shift_ty' k c T) :: shift_bindings' k c bs ;
+  shift_bindings' k c (DatatypeBind (Datatype X YKs matchFunc cs) :: bs) => DatatypeBind (Datatype X YKs matchFunc (shift_constructors' k c cs)) :: shift_bindings' k c bs} 
+
+where shift_constructors' : nat -> nat -> list constructor -> list constructor := {
+  shift_constructors' k c nil => nil ;
+  shift_constructors' k c (Constructor (VarDecl bn T) ar :: cs) => Constructor (VarDecl bn (shift_ty' k c T)) ar :: shift_constructors' k c cs }. 
+
+Definition shift_term (t : Term) := shift_term' 1 0 t.
 
 End DeBruijnTerm.
 

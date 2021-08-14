@@ -29,7 +29,7 @@ Context (flatten : list Context -> Context)
 
 (* Builtins *)
 Context (lookupBuiltinTy : DefaultFun -> Ty). 
-Context (substituteT : BinderTyname -> Ty -> Ty -> Ty).
+Context (substituteT_reduc : BinderTyname -> Ty -> Ty -> Ty).
 Context (listOfArgumentTypes : Ty -> list Ty).
 
 Context (unwrapIFix : Ty -> BinderTyname -> Kind -> Ty -> Ty).
@@ -70,7 +70,7 @@ Reserved Notation "T1 '=b' T2" (at level 40).
 Inductive EqT : Ty -> Ty -> Prop :=
   (* Beta-reduction *)
   | Q_Beta : forall X K T1 T2,
-      Ty_App (Ty_Lam X K T1) T2 =b substituteT X T2 T1
+      Ty_App (Ty_Lam X K T1) T2 =b substituteT_reduc X T2 T1
   (* Reflexivity, Symmetry and Transitivity*)
   | Q_Refl : forall T,
       T =b T
@@ -135,7 +135,7 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
   | T_TyInst : forall ctx t1 T2 T1 X K2,
       ctx |-+ t1 : (Ty_Forall X K2 T1) ->
       ctx |-* T2 : K2 ->
-      ctx |-+ (TyInst t1 T2) : (substituteT X T2 T1)
+      ctx |-+ (TyInst t1 T2) : (substituteT_reduc X T2 T1)
   | T_Error : forall ctx T,
       ctx |-* T : Kind_Base ->
       ctx |-+ (Error T) : T 

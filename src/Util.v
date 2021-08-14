@@ -169,3 +169,10 @@ Ltac notIn2 :=
   match goal with
     | [ |- ~(In ?x ?xs)] => exact (sumboolOut (in_dec string_dec x xs))
   end.
+
+(* Creates a list of nats of 0 up to and not including i *)
+Fixpoint listNats (i : nat) : list nat :=
+  match i with
+  | O => nil
+  | S i' => cons i' (listNats i')
+  end.
