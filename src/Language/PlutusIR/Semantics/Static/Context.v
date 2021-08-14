@@ -14,20 +14,18 @@ Import Coq.Lists.List.
 Import PlutusCert.Language.PlutusIR.
 
 (** Types of variables, binders, kinds and types *)
-Parameter (Name Tyname : Set). (* Kind Ty : Set*)
-Parameter compareT : Name -> Name -> bool.
-Parameter compareK : Tyname -> Tyname -> bool.
+Parameter (Name Tyname BinderName BinderTyname : Set). (* Kind Ty : Set*)
 
 Definition Kind := kind.
-Definition Ty := ty Tyname.
+Definition Ty := ty Tyname BinderTyname.
 
 (** The [Context] type and its operations *)
 Parameter Context : Set.
 Parameter empty : Context.
 Parameter lookupK : Context -> Tyname -> option Kind.
 Parameter lookupT : Context -> Name -> option Ty.
-Parameter extendK : Tyname -> Kind -> Context -> Context.
-Parameter extendT : Name -> Ty -> Context -> Context.
+Parameter extendK : BinderTyname -> Kind -> Context -> Context.
+Parameter extendT : BinderName -> Ty -> Context -> Context.
 Parameter append : Context -> Context -> Context.
 Parameter flatten : list Context -> Context.
 
@@ -53,11 +51,10 @@ Local Open Scope string_scope.
 
 Definition Name := string.
 Definition Tyname := string.
+Definition BinderName := string.
+Definition BinderTyname := string.
 Definition Kind := kind.
-Definition Ty := ty Tyname.
-
-Definition compareT := String.eqb.
-Definition compareK := String.eqb.
+Definition Ty := ty Tyname BinderTyname.
 
 Definition Context := list (Name * Ty + Tyname * Kind).
 

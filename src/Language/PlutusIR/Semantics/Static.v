@@ -1,21 +1,15 @@
 Require Export PlutusCert.Language.PlutusIR.
-(* Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Context. *)
-
-
+Import Coq.Lists.List.
+Import Coq.Strings.String.
 
 Section Typing.
 
-Import Coq.Lists.List.
-Import Coq.Strings.String.
-Local Open Scope string_scope.
-
-
 Context (Name Tyname BinderName BinderTyname : Set).
 
-Definition Kind := kind.
-Definition Ty := ty Tyname BinderTyname.
-Definition Term := term Name Tyname BinderName BinderTyname.
-Definition Binding := binding Name Tyname BinderName BinderTyname.
+Notation Kind := kind.
+Notation Ty := (ty Tyname BinderTyname).
+Notation Term := (term Name Tyname BinderName BinderTyname).
+Notation Binding := (binding Name Tyname BinderName BinderTyname).
 Notation VDecl := (vdecl Name Tyname BinderName).
 Notation TVDecl := (tvdecl BinderTyname).
 Notation DTDecl := (dtdecl Name Tyname BinderTyname).
@@ -180,5 +174,9 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
         binding_well_formed ctx (DatatypeBind (Datatype X YKs matchFunc cs))
 
   where "ctx '|-+' tm ':' T" := (has_type ctx tm T).
+
+Scheme has_type_rec := Induction for has_type Sort Prop
+  with constructor_well_formed_rec := Induction for constructor_well_formed Sort Prop
+  with binding_well_formed_rec := Induction for binding_well_formed Sort Prop.
 
 End Typing.
