@@ -311,9 +311,9 @@ Definition shift_ty (T : Ty) := shift_ty' 1 0 T.
 
 Equations shift_term' : nat -> nat -> Term -> Term := {
   shift_term' k c (Let NonRec bs t0) => Let NonRec (shift_bindings' k c bs) (shift_term' k (length bs + c) t0) ;
-  shift_term' k c (Let Rec bs t0) => Let Rec (shift_bindings' k c bs (* TODO: shift by c or more? *)) (shift_term' k (length bs + c) t0) ;
+  shift_term' k c (Let Rec bs t0) => Let Rec (shift_bindings' k (length bs + c) bs (* TODO: shift by c or more? *)) (shift_term' k (length bs + c) t0) ;
   shift_term' k c (Var x) => if x <? c then Var x else Var (k + x) ;
-  shift_term' k c (TyAbs bx K t0) => TyAbs bx K (shift_term' k (S c) t0) ;
+  shift_term' k c (TyAbs bX K t0) => TyAbs bX K (shift_term' k (S c) t0) ;
   shift_term' k c (LamAbs bx T t0) => LamAbs bx (shift_ty' k c T) (shift_term' k (S c) t0) ;
   shift_term' k c (Apply t1 t2) => Apply (shift_term' k c t1) (shift_term' k c t2) ;
   shift_term' k c (Constant u) => Constant u ;

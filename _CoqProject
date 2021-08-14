@@ -32,7 +32,9 @@ src/Language/PlutusIR/Transform/LetTypes.v
 src/Language/PlutusIR/Transform.v
 src/Language/PlutusIR/Optimizer/DeadBindings.v
 
+src/Language/PlutusIR/Conversion.v
 src/Language/PlutusIR/Semantics/Static.v
 src/Language/PlutusIR/Semantics/Static/Implementations/Named.v
+src/Language/PlutusIR/Semantics/Static/Implementations/DeBruijn.v
 #src/Language/PlutusIR/Semantics/Static/Context.v
 #src/Examples/Timelock/Typing.v
