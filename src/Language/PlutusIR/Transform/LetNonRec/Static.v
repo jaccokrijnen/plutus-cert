@@ -33,8 +33,7 @@ Definition R ctx b1 :=
     ConvertBinding vars b2' b2 ->
     ctx |-ok b2.
 
-Axiom skip : forall P, P.
-
+(*
 Theorem CNR_Term__preserves_typing : forall ctx t1 T,
     ctx |-+ t1 : T ->
     P ctx t1 T.
@@ -64,6 +63,8 @@ Proof.
       unfold R in H2.
 Abort.
 
+*)
+
 End DB.
 
 
@@ -82,17 +83,36 @@ Definition P_term ctx t1 T :=
 Definition P_constructor ctx c := ctx |-ok_c c.
 
 Definition P_bindings ctx bs1 :=
-    forall bs2,
-      (ctx |-oks bs1 ->
+    forall bs2, (
+      ctx |-oks bs1 ->
       Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
-      ctx |-oks bs2) /\
-      (Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
-      map binds bs1 = map binds bs2).
+      ctx |-oks bs2
+    ) /\ (
+      Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
+      map binds bs1 = map binds bs2
+    ) /\ (
+      forall f_bs2 t T,
+        ctx |-oks bs1 -> 
+        CNR_Bindings bs1 f_bs2 ->
+        ((flatten (map binds bs1)) ++ ctx) |-+ t : T ->
+        ctx |-+ (fold_right apply t f_bs2) : T
+    ).
 
 Definition P_binding ctx b1 := 
-  forall b2,
-    Congruence.Cong_Binding CNR_Term b1 b2 ->
-    ctx |-ok b2.
+  forall b2, (
+      ctx |-ok b1 ->
+      Congruence.Cong_Binding CNR_Term b1 b2 ->
+      ctx |-ok b2
+    ) /\ (
+      Congruence.Cong_Binding CNR_Term b1 b2 ->
+      binds b1 = binds b2
+    ) /\ (
+      forall f_b2 t T,
+        ctx |-ok b1 ->
+        CNR_Binding b1 f_b2 ->
+        (binds b1 ++ ctx) |-+ t : T ->
+        ctx |-+ (f_b2 t) : T  
+    ).
 
 Axiom skip : forall P, P.
 
@@ -101,34 +121,200 @@ Theorem CNR_Term__preserves_typing : forall ctx t1 T,
     P_term ctx t1 T.
 Proof.
   apply has_type_rec with (P := P_term) (P0 := P_constructor) (P1 := P_bindings) (P2 := P_binding).
-  - intros.  
-    unfold P_term.
-    intros.
+  - (* T_Let *)
+    intros. unfold P_term. intros.
     inversion X; subst.
-    + apply skip.
+    + apply H1.
+      * apply bs.
+      * assumption.
+      * assumption.
+      * apply H3.
+        assumption.
     + inversion X0. subst. 
       apply T_Let.
       * assumption.
       * apply H1. assumption. assumption.
-      * unfold P_bindings in H1. edestruct H1 as [_ Heq]. apply Heq in X1. rewrite <- X1. apply H3. assumption. 
-  - intros.
-    unfold P_term.
-    intros.
+      * unfold P_bindings in H1. edestruct H1 as [_ [Heq _]]. apply Heq in X1. rewrite <- X1. apply H3. assumption. 
+  - (* T_LetRec *)
+    intros. unfold P_term. intros.
     inversion X. subst.
     inversion X0. subst.
     eapply T_LetRec.
     + auto.
     + reflexivity.
     + unfold P_bindings in H2.
-      edestruct H2 as [IHH Heq].
+      edestruct H2 as [IHH [Heq _]].
       apply Heq in X1 as Hsu.
       rewrite <- Hsu.
       apply IHH. auto. auto.
     + unfold P_bindings in H2.
-      edestruct H2 as [_ Heq].
+      edestruct H2 as [_ [Heq _]].
       apply Heq in X1 as Hsu.
       rewrite <- Hsu.
       apply H4.
       assumption.
-  - 
-Abort.
+  - (* T_Var *)
+    intros. unfold P_term. intros.
+    inversion X. subst.
+    inversion X0. subst.
+    apply T_Var. assumption.
+  - (* T_TyAbs *)
+    intros. unfold P_term. intros.
+    inversion X0. subst.
+    inversion X1. subst.
+    apply T_TyAbs.
+    unfold P_term in H0.
+    apply H0.
+    apply X2.
+  - (* T_LamAbs *)
+    intros. unfold P_term. intros.
+    inversion X. subst.
+    inversion X0. subst.
+    apply T_LamAbs.
+    + apply H0. assumption.
+    + assumption.
+  - (* T_Apply *)
+    intros. unfold P_term. intros.
+    inversion X. subst.
+    inversion X0. subst.
+    apply T_Apply with T1.
+    + apply H0. assumption.
+    + apply H2. assumption.
+  - (* T_Constant *)
+    intros. unfold P_term. intros.
+    inversion X. subst.
+    inversion X0. subst.
+    apply T_Constant.
+  - (* T_Builtin *)
+    intros. unfold P_term. intros.
+    inversion X. subst.
+    inversion X0. subst.
+    apply T_Builtin.
+  - (* T_TyInst *)
+    intros. unfold P_term. intros.
+    inversion X0. subst.
+    inversion X1. subst.
+    apply T_TyInst with K2.
+    + apply H0. assumption.
+    + assumption.
+  - (* T_Error *)
+    intros. unfold P_term. intros.
+    inversion X. subst.
+    inversion X0. subst.
+    apply T_Error.
+    apply H.
+  - (* T_IWrap *)
+    intros. unfold P_term. intros.
+    inversion X0. subst.
+    inversion X1. subst.
+    apply T_IWrap with (X := X) (K := K).
+    + apply H0. assumption.
+    + assumption.
+    + assumption.
+  - (* T_Unwrap *)
+    intros. unfold P_term. intros.
+    inversion X0. subst.
+    inversion X1. subst.
+    apply T_Unwrap.
+    + apply H0. assumption.
+    + assumption.
+  - (* T_Eq *)
+    intros. unfold P_term. intros.
+    apply T_Eq with S.
+    + apply H0. assumption.
+    + assumption.
+
+  - (* W_Con *)
+    intros. unfold P_constructor. intros.
+    apply W_Con. assumption.
+
+  - (* W_NilB *)
+    intros. unfold P_bindings. intros.
+    split.
+    + intros.
+      inversion X. subst.
+      assumption.
+    + split.
+      * intros.
+        inversion X. subst.
+        reflexivity.
+      * intros.
+        inversion X. subst.
+        assumption.
+  - (* W_ConsB *)
+    intros. unfold P_bindings. intros.
+    split.
+    + intros.
+      inversion X. subst.
+      apply W_ConsB.
+      * apply H0. assumption. assumption.
+      * apply H2. assumption. assumption.
+    + split.
+      * intros.
+        inversion X. subst.
+        simpl.
+        f_equal.
+        -- apply H0. assumption.
+        -- apply H2. assumption.
+      * intros.
+        inversion X. subst.
+        unfold P_bindings in H2.
+        edestruct H2 as [_ [_ J]].
+        inversion X0. subst.
+        simpl. (*unfold apply.*)
+        apply H0.
+        -- apply (TermBind Strict (VarDecl v ty) t_bound).
+        -- assumption.
+        -- assumption.
+        -- simpl. apply skip.
+  
+  - (* W_Term *)
+    intros. unfold P_binding. intros.
+    split.
+    + intros. 
+      inversion X. subst.
+      apply W_Term.
+      * assumption.
+      * apply H1. assumption.
+    + split. 
+      * intros.
+        inversion X. subst.
+        reflexivity.
+      * intros.
+        inversion X. subst.
+        eapply T_Apply.
+        -- apply T_LamAbs.
+          ++ assumption.
+          ++ assumption.
+        -- apply H1.
+           assumption.
+  - (* W_Type *)
+    intros. unfold P_binding. intros.
+    split.
+    + intros. 
+      inversion X0. subst.
+      apply W_Type.
+      assumption.
+    + split.
+      * intros.
+        inversion X0. subst.
+        reflexivity.
+      * intros.
+        inversion X0.
+  - (* W_Data *)
+    intros. unfold P_binding. intros.
+    split.
+    + intros.
+      inversion X0. subst.
+      assumption.
+    + split.
+      * intros.
+        inversion X0. subst.
+        reflexivity.
+      * intros.
+        inversion X0.
+
+  Unshelve. auto.
+Qed. 
+
+End Named.
