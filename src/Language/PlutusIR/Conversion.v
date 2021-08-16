@@ -81,14 +81,42 @@ Qed.
 
 
 
-Module ConvertFunc.
+Module ConvertUtilities.
 
 Import PlutusCert.Language.PlutusIR.
 
+Definition var_bound_by_constructor (c : NamedTerm.constructor) : string :=
+  match c with
+  | Constructor (VarDecl x _) _ => x
+  end.
+
+Definition vars_bound_by_binding (b : NamedTerm.Binding) : list string :=
+  match b with
+  | TermBind _ (VarDecl x _) _ => [x]
+  | TypeBind (TyVarDecl X _) _ => [X]
+  | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => matchFunc :: (rev (map var_bound_by_constructor cs)) ++ [X]
+  end.
+
+Definition var_bound_by_tvdecl (tvd : NamedTerm.TVDecl) : string :=
+  match tvd with
+  | TyVarDecl X _ => X
+  end.
+
+Definition vars_bound_by_bindings (bs : list NamedTerm.Binding) : list string := List.concat (List.rev (map vars_bound_by_binding bs)).
+
+Definition tvdecl_to (tvd : NamedTerm.TVDecl) : DeBruijnTerm.TVDecl := match tvd with | TyVarDecl X K => TyVarDecl tt K end.
+
+
+End ConvertUtilities.
+
+
+
+Module ConvertFunc.
+
+Import PlutusCert.Language.PlutusIR.
 Import Coq.Init.Datatypes.
-
 Import Equations.
-
+Import ConvertUtilities.
 
 Equations ty_to' (vars : list string) (T : NamedTerm.Ty) : option DeBruijnTerm.Ty :=
   ty_to' vars (Ty_Var X) := 
@@ -121,28 +149,8 @@ Equations ty_to' (vars : list string) (T : NamedTerm.Ty) : option DeBruijnTerm.T
     match ty_to' vars T1, ty_to' vars T2 with
     | Some T1', Some T2' => Some (Ty_App T1' T2')
     | _, _ => None
-    end.
+    end. 
 
-Definition var_bound_by_constructor (c : NamedTerm.constructor) : string :=
-  match c with
-  | Constructor (VarDecl x _) _ => x
-  end.
-
-Definition vars_bound_by_binding (b : NamedTerm.Binding) : list string :=
-  match b with
-  | TermBind _ (VarDecl x _) _ => [x]
-  | TypeBind (TyVarDecl X _) _ => [X]
-  | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => matchFunc :: (rev (map var_bound_by_constructor cs)) ++ [X]
-  end.
-
-Definition var_bound_by_tvdecl (tvd : NamedTerm.TVDecl) : string :=
-  match tvd with
-  | TyVarDecl X _ => X
-  end.
-
-Definition vars_bound_by_bindings (bs : list NamedTerm.Binding) : list string := List.concat (List.rev (map vars_bound_by_binding bs)).
-
-Definition tvdecl_to (tvd : NamedTerm.TVDecl) : DeBruijnTerm.TVDecl := match tvd with | TyVarDecl X K => TyVarDecl tt K end.
 
 Equations term_to' (vars : list string) (t : NamedTerm.Term) : option DeBruijnTerm.Term := {
   term_to' vars (Let NonRec bs t0) =>
@@ -234,6 +242,115 @@ End ConvertFunc.
 
 Module ConvertInductive.
 
+Import PlutusCert.Language.PlutusIR.
+Import Coq.Init.Datatypes.
+Import ConvertUtilities.
 
+Inductive ConvertTy : list string -> NamedTerm.Ty -> DeBruijnTerm.Ty -> Prop :=
+  | ConvertTy_TyVar : forall vars X ind,
+      find_index (eqb X) vars = Some ind ->
+      ConvertTy vars (Ty_Var X) (Ty_Var ind)
+  | ConvertTy_TyFun : forall vars T1 T2 T1' T2',
+      ConvertTy vars T1 T1' ->
+      ConvertTy vars T2 T2' ->
+      ConvertTy vars (Ty_Fun T1 T2) (Ty_Fun T1' T2')
+  | ConvertTy_TyIFix : forall vars F T F' T',
+      ConvertTy vars F F' ->
+      ConvertTy vars T T' ->
+      ConvertTy vars (Ty_IFix F T) (Ty_IFix F' T')
+  | ConvertTy_TyForall : forall vars X K T T',
+      ConvertTy (X :: vars) T T' ->
+      ConvertTy vars (Ty_Forall X K T) (Ty_Forall tt K T') 
+  | ConvertTy_TyBuiltin : forall vars u,
+      ConvertTy vars (Ty_Builtin u) (Ty_Builtin u)
+  | ConvertTy_TyLam : forall vars X K T T',
+      ConvertTy (X :: vars) T T' ->
+      ConvertTy vars (Ty_Lam X K T) (Ty_Lam tt K T')
+  | ConvertTy_TyApp : forall vars T1 T2 T1' T2',
+      ConvertTy vars T1 T1' ->
+      ConvertTy vars T2 T2' ->
+      ConvertTy vars (Ty_App T1 T2) (Ty_App T1' T2')
+  .
+  
+Inductive ConvertTerm : list string -> NamedTerm.Term -> DeBruijnTerm.Term -> Prop :=
+  | ConvertTerm_LetNonRec : forall vars bs t0 bs' t0',
+      ConvertBindings vars bs bs' ->
+      ConvertTerm (vars_bound_by_bindings bs ++ vars) t0 t0' ->
+      ConvertTerm vars (Let NonRec bs t0) (Let NonRec bs' t0')
+  | ConvertTerm_LetRec : forall vars bs t0 bs' t0',
+      ConvertBindings (vars_bound_by_bindings bs ++ vars) bs bs' ->
+      ConvertTerm (vars_bound_by_bindings bs ++ vars) t0 t0' ->
+      ConvertTerm vars (Let Rec bs t0) (Let Rec bs' t0')
+  | ConvertTerm_Var : forall vars x ind,
+      find_index (eqb x) vars = Some ind ->
+      ConvertTerm vars (Var x) (Var ind)
+  | ConvertTerm_TyAbs : forall vars X K t0 t0',
+      ConvertTerm (X :: vars) t0 t0' ->
+      ConvertTerm vars (TyAbs X K t0) (TyAbs tt K t0')
+  | ConvertTerm_LamAbs : forall vars x T t0 T' t0',
+      ConvertTy vars T T' ->
+      ConvertTerm (x :: vars) t0 t0' ->
+      ConvertTerm vars (LamAbs x T t0) (LamAbs tt T' t0')
+  | ConvertTerm_Apply : forall vars t1 t2 t1' t2',
+      ConvertTerm vars t1 t1' ->
+      ConvertTerm vars t2 t2' ->
+      ConvertTerm vars (Apply t1 t2) (Apply t1' t2')
+  | ConvertTerm_Constant : forall vars u,
+      ConvertTerm vars (Constant u) (Constant u)
+  | ConvertTerm_Builtin : forall vars d,
+      ConvertTerm vars (Builtin d) (Builtin d)
+  | ConvertTerm_TyInst : forall vars t0 T t0' T',
+      ConvertTerm vars t0 t0' ->
+      ConvertTy vars T T' ->
+      ConvertTerm vars (TyInst t0 T) (TyInst t0' T')
+  | ConvertTerm_Error : forall vars T T',
+      ConvertTy vars T T' ->
+      ConvertTerm vars (Error T) (Error T')
+  | ConvertTerm_IWrap : forall vars F T t0 F' T' t0',
+      ConvertTy vars F F' ->
+      ConvertTy vars T T' ->
+      ConvertTerm vars t0 t0' ->
+      ConvertTerm vars (IWrap F T t0) (IWrap F' T' t0')
+  | ConvertTerm_Unwrap : forall vars t0 t0',
+      ConvertTerm vars t0 t0' ->
+      ConvertTerm vars (Unwrap t0) (Unwrap t0')
+
+with ConvertBindings : list string -> list NamedTerm.Binding -> list DeBruijnTerm.Binding -> Prop :=
+  | ConvertBindings_Nil : forall vars,
+      ConvertBindings vars nil nil
+  | ConvertBindings_Cons : forall vars b bs b' bs',
+      ConvertBinding vars b b' ->
+      ConvertBindings vars bs bs' ->
+      ConvertBindings vars (b :: bs) (b' :: bs')
+
+with ConvertBinding : list string -> NamedTerm.Binding -> DeBruijnTerm.Binding -> Prop :=
+  | ConvertBindings_TermBind : forall vars s x T t T' t',
+      ConvertTy vars T T' ->
+      ConvertTerm vars t t' ->
+      ConvertBinding vars (TermBind s (VarDecl x T) t) (TermBind s (VarDecl tt T') t')
+  | ConvertBindings_TypeBind : forall vars X K T T',
+      ConvertTy vars T T' ->
+      ConvertBinding vars (TypeBind (TyVarDecl X K) T) (TypeBind (TyVarDecl tt K) T')
+  | ConvertBindings_DatatypeBind : forall vars X YKs matchFunc cs cs',
+      ConvertConstructors ((rev (map var_bound_by_tvdecl YKs)) ++ [var_bound_by_tvdecl X] ++ vars) cs cs' ->
+      ConvertBinding vars (DatatypeBind (Datatype X YKs matchFunc cs)) (DatatypeBind (Datatype (tvdecl_to X) (map tvdecl_to YKs) tt cs'))
+
+with ConvertConstructors : list string -> list NamedTerm.constructor -> list DeBruijnTerm.constructor -> Prop :=
+  | ConvertConstructors_Nil : forall vars,
+      ConvertConstructors vars nil nil
+  | ConvertConstructors_Cons : forall vars x T ar cs T' cs',
+      ConvertTy vars T T' ->
+      ConvertConstructors vars cs cs' ->
+      ConvertConstructors vars (Constructor (VarDecl x T) ar :: cs) (Constructor (VarDecl tt T') ar :: cs') 
+.
+
+Import ConvertFunc.
+
+Theorem reflect_convert : forall vars t t',
+    term_to' vars t = Some t' ->
+    ConvertTerm vars t t'.
+Proof. Admitted.
 
 End ConvertInductive.
+
+

@@ -16,16 +16,18 @@ Notation DTDecl := (dtdecl Name Tyname BinderTyname).
 Notation constructor := (constr Tyname BinderName BinderTyname).
 
 (* Typing/kinding contexts *)
-Context (Context : Set) 
-        (empty : Context)
-        (lookupT : Context -> Name -> option Ty)
-        (lookupK : Context -> Tyname -> option Kind) 
-        (extendT : BinderName -> Ty -> Context -> Context)
-        (extendK : BinderTyname -> Kind -> Context -> Context).
-Context (flatten : list Context -> Context)
-        (append : Context -> Context -> Context)
-        (binds : Binding -> Context)
-        (fromDecl : TVDecl -> Context).
+Context 
+  (Context : Set) 
+  (empty : Context)
+  (lookupT : Context -> Name -> option Ty)
+  (lookupK : Context -> Tyname -> option Kind) 
+  (extendT : BinderName -> Ty -> Context -> Context)
+  (extendK : BinderTyname -> Kind -> Context -> Context).
+Context 
+  (flatten : list Context -> Context)
+  (append : Context -> Context -> Context)
+  (binds : Binding -> Context)
+  (fromDecl : TVDecl -> Context).
 
 (* Builtins *)
 Context (lookupBuiltinTy : DefaultFun -> Ty). 
@@ -104,13 +106,13 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
   (* Let-bindings *)
   | T_Let : forall ctx bs t T,
       ctx |-* T : Kind_Base ->
-      (forall b, In b bs -> binding_well_formed ctx b) ->
+      bindings_well_formed ctx bs ->
       (append (flatten (map binds bs)) ctx) |-+ t : T ->
       ctx |-+ (Let NonRec bs t) : T
   | T_LetRec : forall ctx bs t T ctx',
       ctx |-* T : Kind_Base ->
       ctx' = append (flatten (map binds bs)) ctx ->
-      (forall b, In b bs -> binding_well_formed ctx' b) ->
+      bindings_well_formed ctx' bs ->
       ctx' |-+ t : T ->
       ctx |-+ (Let Rec bs t) : T
   (* Basic constructs *)
@@ -159,7 +161,15 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
     | W_Con : forall ctx x T ar,
         (forall U, In U (listOfArgumentTypes T) -> ctx |-* U : Kind_Base) ->
         constructor_well_formed ctx (Constructor (VarDecl x T) ar)
-  
+
+  with bindings_well_formed : Context -> list Binding -> Prop :=
+    | W_NilB : forall ctx,
+        bindings_well_formed ctx nil
+    | W_ConsB : forall ctx b bs,
+        binding_well_formed ctx b ->
+        bindings_well_formed ctx bs ->
+        bindings_well_formed ctx (b :: bs)
+ 
   with binding_well_formed : Context -> Binding -> Prop :=
     | W_Term : forall ctx s x T t,
         ctx |-* T : Kind_Base ->
@@ -175,8 +185,9 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
 
   where "ctx '|-+' tm ':' T" := (has_type ctx tm T).
 
-Scheme has_type_rec := Induction for has_type Sort Prop
-  with constructor_well_formed_rec := Induction for constructor_well_formed Sort Prop
-  with binding_well_formed_rec := Induction for binding_well_formed Sort Prop.
+Scheme has_type_rec := Minimality for has_type Sort Prop
+  with constructor_well_formed_rec := Minimality for constructor_well_formed Sort Prop
+  with bindings_well_formed_rec := Minimality for bindings_well_formed Sort Prop
+  with binding_well_formed_rec := Minimality for binding_well_formed Sort Prop.
 
 End Typing.

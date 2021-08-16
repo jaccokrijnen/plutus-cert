@@ -244,6 +244,10 @@ Definition constructor_well_formed__named : Context -> constructor -> Prop := co
 
 Notation "ctx '|-ok_c' c" := (constructor_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinTy substituteT listOfArgumentTypes unwrapIFix ctx c) (at level 40, c at level 0).
 
+Definition bindings_well_formed__named : Context -> list Binding -> Prop := bindings_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinTy substituteT listOfArgumentTypes unwrapIFix.
+
+Notation "ctx '|-oks' bs" := (bindings_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinTy substituteT listOfArgumentTypes unwrapIFix ctx bs) (at level 40, bs at level 0).
+
 Definition binding_well_formed__named : Context -> Binding -> Prop := binding_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinTy substituteT listOfArgumentTypes unwrapIFix.
 
 Notation "ctx '|-ok' tm" := (binding_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinTy substituteT listOfArgumentTypes unwrapIFix ctx tm) (at level 40, tm at level 0).
