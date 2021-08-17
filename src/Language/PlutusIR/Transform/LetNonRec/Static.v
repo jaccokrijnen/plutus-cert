@@ -91,11 +91,11 @@ Definition P_bindings ctx bs1 :=
       Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
       map binds bs1 = map binds bs2
     ) /\ (
-      forall f_bs2 t T,
+      forall f_bs2 t T ctx',
         ctx |-oks bs1 -> 
         CNR_Bindings bs1 f_bs2 ->
-        ((flatten (map binds bs1)) ++ ctx) |-+ t : T ->
-        ctx |-+ (fold_right apply t f_bs2) : T
+        ((flatten (map binds bs1)) ++ ctx' ++ ctx) |-+ t : T ->
+        (ctx' ++ ctx) |-+ (fold_right apply t f_bs2) : T
     ).
 
 Definition P_binding ctx b1 := 
@@ -107,11 +107,11 @@ Definition P_binding ctx b1 :=
       Congruence.Cong_Binding CNR_Term b1 b2 ->
       binds b1 = binds b2
     ) /\ (
-      forall f_b2 t T,
+      forall f_b2 t T ctx',
         ctx |-ok b1 ->
         CNR_Binding b1 f_b2 ->
-        (binds b1 ++ ctx) |-+ t : T ->
-        ctx |-+ (f_b2 t) : T  
+        (binds b1 ++ ctx' ++ ctx) |-+ t : T ->
+        (ctx' ++ ctx) |-+ (f_b2 t) : T  
     ).
 
 Axiom skip : forall P, P.
@@ -124,7 +124,8 @@ Proof.
   - (* T_Let *)
     intros. unfold P_term. intros.
     inversion X; subst.
-    + apply H1.
+    + replace ctx with ([] ++ ctx) by reflexivity. 
+      apply H1.
       * apply bs.
       * assumption.
       * assumption.
@@ -258,16 +259,27 @@ Proof.
         -- apply H2. assumption.
       * intros.
         inversion X. subst.
-        unfold P_bindings in H2.
         edestruct H2 as [_ [_ J]].
         inversion X0. subst.
-        simpl. (*unfold apply.*)
-        apply H0.
-        -- apply (TermBind Strict (VarDecl v ty) t_bound).
+        simpl.
+        edestruct H0 as [_ [_ J2]]. 
+        apply J2.
         -- assumption.
         -- assumption.
-        -- simpl. apply skip.
-  
+        -- rewrite app_assoc.
+           apply J.
+           ++ assumption.
+           ++ assumption.
+           ++ simpl.
+              simpl in H4. 
+              unfold flatten in H4. 
+              simpl in H4. 
+              rewrite concat_app in H4.
+              simpl in H4.
+              rewrite <- app_assoc in H4.
+              simpl in H4.
+              apply H4.
+           
   - (* W_Term *)
     intros. unfold P_binding. intros.
     split.
@@ -284,10 +296,12 @@ Proof.
         inversion X. subst.
         eapply T_Apply.
         -- apply T_LamAbs.
-          ++ assumption.
-          ++ assumption.
-        -- apply H1.
-           assumption.
+          ++ assumption. 
+          ++ apply skip. 
+            (* assumption.*)
+        -- apply skip. 
+          (* apply H1.
+           assumption.*)
   - (* W_Type *)
     intros. unfold P_binding. intros.
     split.
@@ -314,7 +328,7 @@ Proof.
       * intros.
         inversion X0.
 
-  Unshelve. auto.
+  Unshelve. auto. apply (TermBind Strict (VarDecl v ty) t_bound).
 Qed. 
 
 End Named.
