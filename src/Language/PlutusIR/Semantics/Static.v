@@ -30,8 +30,9 @@ Context
   (fromDecl : TVDecl -> Context).
 
 (* Builtins *)
+Context (lookupBuiltinKind : DefaultUni -> Kind).
 Context (lookupBuiltinTy : DefaultFun -> Ty). 
-Context (substituteT_reduc : BinderTyname -> Ty -> Ty -> Ty).
+Context (substituteT : BinderTyname -> Ty -> Ty -> Ty).
 Context (listOfArgumentTypes : Ty -> list Ty).
 
 Context (unwrapIFix : Ty -> BinderTyname -> Kind -> Ty -> Ty).
@@ -53,9 +54,8 @@ Inductive has_kind : Context -> Ty -> Kind -> Prop :=
   | K_Forall : forall ctx X K T,
       (extendK X K ctx) |-* T : Kind_Base ->
       ctx |-* (Ty_Forall X K T) : Kind_Base
-  (* Note on builtins: At the moment of writing this, all built-in types are of base kind. *)
   | K_Builtin : forall ctx u,
-      ctx |-* (Ty_Builtin u) : Kind_Base 
+      ctx |-* (Ty_Builtin (Some (TypeIn u))) : (lookupBuiltinKind u)
   | K_Lam : forall ctx X K1 T K2,
       (extendK X K1 ctx) |-* T : K2 ->
       ctx |-* (Ty_Lam X K1 T) : (Kind_Arrow K1 K2)
@@ -72,7 +72,7 @@ Reserved Notation "T1 '=b' T2" (at level 40).
 Inductive EqT : Ty -> Ty -> Prop :=
   (* Beta-reduction *)
   | Q_Beta : forall X K T1 T2,
-      Ty_App (Ty_Lam X K T1) T2 =b substituteT_reduc X T2 T1
+      Ty_App (Ty_Lam X K T1) T2 =b substituteT X T2 T1
   (* Reflexivity, Symmetry and Transitivity*)
   | Q_Refl : forall T,
       T =b T
@@ -103,16 +103,22 @@ where "T1 '=b' T2" := (EqT T1 T2).
 (** ** Typing of terms *)
 Reserved Notation "ctx '|-+' tm ':' T" (at level 40, tm at level 0, T at level 0).
 Inductive has_type : Context -> Term -> Ty -> Prop :=
-  (* Let-bindings *)
-  | T_Let : forall ctx bs t T,
-      ctx |-* T : Kind_Base ->
-      bindings_well_formed ctx bs ->
-      (append (flatten (map binds bs)) ctx) |-+ t : T ->
+  (** Let-bindings
+      Note: The rules for let-constructs differ significantly from the paper definitions
+      because we had to adapt the typing rules to the compiler implementation of type checking.
+      Reference: The Haskell module Language.PlutusIR.TypeCheck.Internal in the 
+      iohk/plutus/plutus-core/plutus-ir project.
+  **)
+  | T_Let : forall ctx bs t T ctx',
+      ctx' = append (flatten (map binds bs)) ctx ->
+      ctx' |-* T : Kind_Base ->
+      bindings_well_formed_nonrec ctx bs ->
+      ctx' |-+ t : T ->
       ctx |-+ (Let NonRec bs t) : T
   | T_LetRec : forall ctx bs t T ctx',
-      ctx |-* T : Kind_Base ->
       ctx' = append (flatten (map binds bs)) ctx ->
-      bindings_well_formed ctx' bs ->
+      ctx' |-* T : Kind_Base ->
+      bindings_well_formed_rec ctx' bs ->
       ctx' |-+ t : T ->
       ctx |-+ (Let Rec bs t) : T
   (* Basic constructs *)
@@ -131,13 +137,13 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
       ctx |-+ t2 : T1 ->
       ctx |-+ (Apply t1 t2) : T2
   | T_Constant : forall ctx u type,
-      ctx |-+ (Constant (Some (ValueOf u type))) : (Ty_Builtin (Some (TypeIn u))) (* TODO *)
+      ctx |-+ (Constant (Some (ValueOf u type))) : (Ty_Builtin (Some (TypeIn u)))
   | T_Builtin : forall ctx f,
       ctx |-+ (Builtin f) : (lookupBuiltinTy f)
   | T_TyInst : forall ctx t1 T2 T1 X K2,
       ctx |-+ t1 : (Ty_Forall X K2 T1) ->
       ctx |-* T2 : K2 ->
-      ctx |-+ (TyInst t1 T2) : (substituteT_reduc X T2 T1)
+      ctx |-+ (TyInst t1 T2) : (substituteT X T2 T1)
   | T_Error : forall ctx T,
       ctx |-* T : Kind_Base ->
       ctx |-+ (Error T) : T 
@@ -162,14 +168,22 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
         (forall U, In U (listOfArgumentTypes T) -> ctx |-* U : Kind_Base) ->
         constructor_well_formed ctx (Constructor (VarDecl x T) ar)
 
-  with bindings_well_formed : Context -> list Binding -> Prop :=
-    | W_NilB : forall ctx,
-        bindings_well_formed ctx nil
-    | W_ConsB : forall ctx b bs,
+  with bindings_well_formed_nonrec : Context -> list Binding -> Prop :=
+    | W_NilB_NonRec : forall ctx,
+        bindings_well_formed_nonrec ctx nil
+    | W_ConsB_NonRec : forall ctx b bs,
         binding_well_formed ctx b ->
-        bindings_well_formed ctx bs ->
-        bindings_well_formed ctx (b :: bs)
- 
+        bindings_well_formed_nonrec (append (binds b) ctx) bs ->
+        bindings_well_formed_nonrec ctx (b :: bs)
+
+  with bindings_well_formed_rec : Context -> list Binding -> Prop :=
+    | W_NilB_Rec : forall ctx,
+        bindings_well_formed_rec ctx nil
+    | W_ConsB_Rec : forall ctx b bs,
+        binding_well_formed ctx b ->
+        bindings_well_formed_rec ctx bs ->
+        bindings_well_formed_rec ctx (b :: bs)
+
   with binding_well_formed : Context -> Binding -> Prop :=
     | W_Term : forall ctx s x T t,
         ctx |-* T : Kind_Base ->
@@ -185,9 +199,10 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
 
   where "ctx '|-+' tm ':' T" := (has_type ctx tm T).
 
-Scheme has_type_rec := Minimality for has_type Sort Prop
-  with constructor_well_formed_rec := Minimality for constructor_well_formed Sort Prop
-  with bindings_well_formed_rec := Minimality for bindings_well_formed Sort Prop
-  with binding_well_formed_rec := Minimality for binding_well_formed Sort Prop.
+Scheme has_type__rect := Minimality for has_type Sort Prop
+  with constructor_well_formed__rect := Minimality for constructor_well_formed Sort Prop
+  with bindings_well_formed_nonrec__rect := Minimality for bindings_well_formed_nonrec Sort Prop
+  with bindings_well_formed_rec__rect := Minimality for bindings_well_formed_rec Sort Prop
+  with binding_well_formed__rect := Minimality for binding_well_formed Sort Prop.
 
 End Typing.

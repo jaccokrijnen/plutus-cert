@@ -82,21 +82,31 @@ Definition P_term ctx t1 T :=
 
 Definition P_constructor ctx c := ctx |-ok_c c.
 
-Definition P_bindings ctx bs1 :=
+Definition P_bindings_nonrec ctx bs1 :=
     forall bs2, (
-      ctx |-oks bs1 ->
+      ctx |-oks_nr bs1 ->
       Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
-      ctx |-oks bs2
+      ctx |-oks_nr bs2
     ) /\ (
       Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
       map binds bs1 = map binds bs2
     ) /\ (
-      forall f_bs2 t T ctx',
-        ctx |-oks bs1 -> 
+      forall f_bs2 t T,
+        ctx |-oks_nr bs1 -> 
         CNR_Bindings bs1 f_bs2 ->
-        ((flatten (map binds bs1)) ++ ctx' ++ ctx) |-+ t : T ->
-        (ctx' ++ ctx) |-+ (fold_right apply t f_bs2) : T
+        ((flatten (map binds bs1)) ++ ctx) |-+ t : T ->
+        ctx |-+ (fold_right apply t f_bs2) : T
     ).
+
+Definition P_bindings_rec ctx bs1 :=
+  forall bs2, (
+    ctx |-oks_r bs1 ->
+    Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
+    ctx |-oks_r bs2
+  ) /\ (
+    Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
+    map binds bs1 = map binds bs2
+  ).
 
 Definition P_binding ctx b1 := 
   forall b2, (
@@ -107,49 +117,53 @@ Definition P_binding ctx b1 :=
       Congruence.Cong_Binding CNR_Term b1 b2 ->
       binds b1 = binds b2
     ) /\ (
-      forall f_b2 t T ctx',
+      forall f_b2 t T,
         ctx |-ok b1 ->
         CNR_Binding b1 f_b2 ->
-        (binds b1 ++ ctx' ++ ctx) |-+ t : T ->
-        (ctx' ++ ctx) |-+ (f_b2 t) : T  
+        (binds b1 ++ ctx) |-+ t : T ->
+        ctx |-+ (f_b2 t) : T  
     ).
 
-Axiom skip : forall P, P.
 
 Theorem CNR_Term__preserves_typing : forall ctx t1 T,
     ctx |-+ t1 : T ->
     P_term ctx t1 T.
 Proof.
-  apply has_type_rec with (P := P_term) (P0 := P_constructor) (P1 := P_bindings) (P2 := P_binding).
+  apply has_type__rect with (P := P_term) (P0 := P_constructor) (P1 := P_bindings_nonrec) (P2 := P_bindings_rec) (P3 := P_binding).
   - (* T_Let *)
     intros. unfold P_term. intros.
     inversion X; subst.
     + replace ctx with ([] ++ ctx) by reflexivity. 
-      apply H1.
+      apply H2.
       * apply bs.
       * assumption.
       * assumption.
-      * apply H3.
+      * apply H4.
         assumption.
     + inversion X0. subst. 
-      apply T_Let.
-      * assumption.
-      * apply H1. assumption. assumption.
-      * unfold P_bindings in H1. edestruct H1 as [_ [Heq _]]. apply Heq in X1. rewrite <- X1. apply H3. assumption. 
+      eapply T_Let.
+      * reflexivity.
+      * unfold P_bindings_rec in H2. edestruct H2 as [_ [Heq _]]. apply Heq in X1. rewrite <- X1. assumption.
+      * apply H2. assumption. assumption.
+      * unfold P_bindings_rec in H2. edestruct H2 as [_ [Heq _]]. apply Heq in X1. rewrite <- X1. apply H4. assumption. 
   - (* T_LetRec *)
     intros. unfold P_term. intros.
     inversion X. subst.
     inversion X0. subst.
     eapply T_LetRec.
-    + auto.
     + reflexivity.
-    + unfold P_bindings in H2.
-      edestruct H2 as [IHH [Heq _]].
+    + unfold P_bindings_rec in H2.
+      edestruct H2 as [IHH Heq].
+      apply Heq in X1 as Hsu.
+      rewrite <- Hsu.
+      assumption.
+    + unfold P_bindings_rec in H2.
+      edestruct H2 as [IHH Heq].
       apply Heq in X1 as Hsu.
       rewrite <- Hsu.
       apply IHH. auto. auto.
-    + unfold P_bindings in H2.
-      edestruct H2 as [_ [Heq _]].
+    + unfold P_bindings_rec in H2.
+      edestruct H2 as [IHH Heq].
       apply Heq in X1 as Hsu.
       rewrite <- Hsu.
       apply H4.
@@ -229,8 +243,8 @@ Proof.
     intros. unfold P_constructor. intros.
     apply W_Con. assumption.
 
-  - (* W_NilB *)
-    intros. unfold P_bindings. intros.
+  - (* W_NilB_NonRec *)
+    intros. unfold P_bindings_nonrec. intros.
     split.
     + intros.
       inversion X. subst.
@@ -242,14 +256,18 @@ Proof.
       * intros.
         inversion X. subst.
         assumption.
-  - (* W_ConsB *)
-    intros. unfold P_bindings. intros.
+  - (* W_ConsB_NonRec *)
+    intros. unfold P_bindings_nonrec. intros.
     split.
     + intros.
       inversion X. subst.
-      apply W_ConsB.
+      apply W_ConsB_NonRec.
       * apply H0. assumption. assumption.
-      * apply H2. assumption. assumption.
+      * unfold P_binding in H0.
+        edestruct H0 as [_ [Heq _]].
+        apply Heq in X0.
+        rewrite <- X0.
+        apply H2. assumption. assumption.
     + split.
       * intros.
         inversion X. subst.
@@ -259,15 +277,16 @@ Proof.
         -- apply H2. assumption.
       * intros.
         inversion X. subst.
-        edestruct H2 as [_ [_ J]].
         inversion X0. subst.
+        edestruct H2 as [_ [_ J]].
+        
         simpl.
-        edestruct H0 as [_ [_ J2]]. 
+        edestruct H0 as [_ [_ J2]].
+        replace ctx with ([] ++ ctx) by reflexivity. 
         apply J2.
         -- assumption.
         -- assumption.
-        -- rewrite app_assoc.
-           apply J.
+        -- apply J.
            ++ assumption.
            ++ assumption.
            ++ simpl.
@@ -279,6 +298,30 @@ Proof.
               rewrite <- app_assoc in H4.
               simpl in H4.
               apply H4.
+    
+  - (* W_NilB_Rec *)
+    intros. unfold P_bindings_rec. intros.
+    split.
+    + intros.
+      inversion X. subst.
+      assumption.
+    + intros.
+      inversion X. subst.
+      reflexivity.
+  - (* W_ConsB_Rec*)
+    intros. unfold P_bindings_rec. intros.
+    split.
+    + intros.
+      inversion X. subst.
+      apply W_ConsB_Rec.
+      * apply H0. assumption. assumption.
+      * apply H2. assumption. assumption.
+    + intros.
+      inversion X. subst.
+      simpl.
+      f_equal.
+      -- apply H0. assumption.
+      -- apply H2. assumption.
            
   - (* W_Term *)
     intros. unfold P_binding. intros.
@@ -297,11 +340,8 @@ Proof.
         eapply T_Apply.
         -- apply T_LamAbs.
           ++ assumption. 
-          ++ apply skip. 
-            (* assumption.*)
-        -- apply skip. 
-          (* apply H1.
-           assumption.*)
+          ++ assumption.
+        -- apply H1. assumption.
   - (* W_Type *)
     intros. unfold P_binding. intros.
     split.
