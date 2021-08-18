@@ -1,4 +1,4 @@
-Require Export PlutusCert.Language.PlutusIR.
+Require Import PlutusCert.Language.PlutusIR.
 Import Coq.Lists.List.
 Import Coq.Strings.String.
 
