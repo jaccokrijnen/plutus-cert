@@ -154,3 +154,32 @@ with substitute_bindings_nonrec : (x : name) (s : Term) (bs : list Binding) : li
     if existsb (String.eqb x) (vars_bound_by_binding (DatatypeBind dtd))
       then DatatypeBind dtd :: bs
       else DatatypeBind dtd :: substitute_bindings_nonrec x s bs }.
+
+
+
+
+(** * Big-step operational semantics *)
+
+Inductive value : Term -> Prop :=
+  | V_TyAbs : forall bX K t0,
+      (* TODO: Should the line below be included? *)
+      value t0 ->
+      value (TyAbs bX K t0)
+  | V_LamAbs : forall bx T t0,
+      value (LamAbs bx T t0)
+  | V_Constant : forall u,
+      value (Constant u)
+  | V_Builtin : forall f,
+      value (Builtin f)
+  | V_Error : forall T,
+      value (Error T)
+  | V_IWrap : forall F T t0,
+      (* TODO: Should the line below be included? *)
+      value t0 ->
+      value (IWrap F T t0).
+
+(*
+Inductive eval : Term -> Term -> Prop :=
+
+with eval_binding : Term -> Term -> Prop.
+*)
