@@ -136,8 +136,8 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
       ctx |-+ t1 : (Ty_Fun T1 T2) ->
       ctx |-+ t2 : T1 ->
       ctx |-+ (Apply t1 t2) : T2
-  | T_Constant : forall ctx u type,
-      ctx |-+ (Constant (Some (ValueOf u type))) : (Ty_Builtin (Some (TypeIn u)))
+  | T_Constant : forall ctx u a,
+      ctx |-+ (Constant (Some (ValueOf u a))) : (Ty_Builtin (Some (TypeIn u)))
   | T_Builtin : forall ctx f,
       ctx |-+ (Builtin f) : (lookupBuiltinTy f)
   | T_TyInst : forall ctx t1 T2 T1 X K2,

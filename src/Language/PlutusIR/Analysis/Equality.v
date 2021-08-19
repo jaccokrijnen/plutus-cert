@@ -1,5 +1,6 @@
 Require Import Coq.Strings.String.
 Require Import Coq.Arith.PeanoNat.
+Require Import Coq.ZArith.BinInt.
 Require Import Coq.Bool.BoolEq.
 Require Import Coq.Lists.List.
 Require Import Ascii.
@@ -13,7 +14,7 @@ Definition EqDec := fun A : Type => forall x y : A, {x = y} + {x <> y}.
 
 
 Create HintDb Eqs.
-Hint Resolve Nat.eq_dec ascii_dec bool_dec string_dec list_eq_dec : Eqs.
+Hint Resolve Nat.eq_dec Z.eq_dec ascii_dec bool_dec string_dec list_eq_dec : Eqs.
 
 Ltac solveEq :=
   intros;
@@ -35,7 +36,7 @@ Definition func_dec : EqDec DefaultFun. Proof. solveEq. Defined.
 Definition DefaultUni_dec : EqDec DefaultUni. solveEq. Defined.
   Hint Resolve DefaultUni_dec : Eqs.
 
-Definition uniType_dec : forall t, EqDec (uniType t). intro t. destruct t; simpl; solveEq. Defined.
+Definition uniType_dec : forall t, EqDec (uniType t). intro t. destruct t; simpl; solveEq; solveEq. Defined.
   Hint Resolve uniType_dec : Eqs.
 
 Definition valueOf_dec : forall t, EqDec (valueOf t). solveEq. apply uniType_dec. Defined.
@@ -144,11 +145,13 @@ Create HintDb reflection.
   Current work-around is to alias the imported functions.
 *)
 (* Note [Hints and name-collision] *)
+Definition Z_eqb_eq := Z.eqb_eq.
 Definition nat_eqb_eq := Nat.eqb_eq.
 Definition string_eqb_eq := String.eqb_eq.
 Hint Resolve ->
   andb_true_iff
   nat_eqb_eq
+  Z_eqb_eq
   string_eqb_eq
   Ascii.eqb_eq
   Bool.eqb_true_iff
@@ -157,6 +160,7 @@ Hint Resolve ->
 Hint Resolve <-
   andb_true_iff
   nat_eqb_eq
+  Z_eqb_eq
   string_eqb_eq
   Ascii.eqb_eq
   Bool.eqb_true_iff
@@ -287,7 +291,7 @@ Hint Resolve <- DefaultUni_eqb_eq : reflection.
 
 Definition uniType_eqb : forall t, Eqb (uniType t) := fun ty =>
   match ty return Eqb (uniType ty) with
-  | DefaultUniInteger => Nat.eqb
+  | DefaultUniInteger => Z.eqb
   | DefaultUniChar    => Strings.Ascii.eqb
   | DefaultUniUnit    => unit_eqb
   | DefaultUniBool    => Bool.eqb
@@ -300,7 +304,7 @@ Proof.
   intro t.
   destruct t;
   unfold Eqb_eq;
-  auto using string_eqb_eq, unit_eqb_eq, Ascii.eqb_eq, Nat.eqb_eq, Bool.eqb_true_iff.
+  auto using Z.eqb_eq, string_eqb_eq, unit_eqb_eq, Ascii.eqb_eq, Nat.eqb_eq, Bool.eqb_true_iff.
 Qed.
 
 Hint Resolve -> uniType_eqb_eq : reflection.

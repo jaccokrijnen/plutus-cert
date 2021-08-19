@@ -1,9 +1,15 @@
 Require Import PlutusCert.Language.PlutusIR.
+Import ZArith.BinInt.
 Import Coq.Lists.List.
 Import Coq.Strings.String.
+Import Ascii.
+Require Import Coq.Strings.BinaryString.
 From Equations Require Import Equations.
 
 Import NamedTerm.
+
+Local Open Scope string_scope.
+Local Open Scope Z_scope.
 
 (** * Substitution *)
 
@@ -22,7 +28,7 @@ Definition term_vars_bound_by_binding (b : NamedTerm.Binding) : list string :=
 
 Definition term_vars_bound_by_bindings (bs : list NamedTerm.Binding) : list string := List.concat (map term_vars_bound_by_binding bs).
 
-(** ** Implementation of substitution as inductive datatype *)
+(** ** Implementation of substitution on terms as inductive datatype *)
 Inductive substitute : name -> Term -> Term -> Term -> Prop :=
   | S_Let1 : forall x s bs t0 bs',
       (exists v, In v (term_vars_bound_by_bindings bs) -> x = v) ->
@@ -155,10 +161,45 @@ with substitute_bindings_nonrec : (x : name) (s : Term) (bs : list Binding) : li
       then DatatypeBind dtd :: bs
       else DatatypeBind dtd :: substitute_bindings_nonrec x s bs }.
 
+(** ** Substitution of types in terms *)
+Inductive substituteT_in_term : tyname -> Ty -> Term -> Term -> Prop :=
+  (* TODO: implement *).
 
 
 
 (** * Big-step operational semantics *)
+
+Definition arity (df : DefaultFun) : nat :=
+  match df with
+  | AddInteger => 2
+  | SubtractInteger => 2
+  | MultiplyInteger => 2
+  | DivideInteger => 2
+  | QuotientInteger => 2
+  | RemainderInteger => 2
+  | ModInteger => 2
+  | LessThanInteger => 2
+  | LessThanEqInteger => 2
+  | GreaterThanInteger => 2
+  | GreaterThanEqInteger => 2
+  | EqInteger => 2
+  | Concatenate => 2
+  | TakeByteString => 2
+  | DropByteString => 2
+  | SHA2 => 1
+  | SHA3 => 1
+  | VerifySignature => 3
+  | EqByteString => 2
+  | LtByteString => 2
+  | GtByteString => 2
+  | IfThenElse => 4
+  | CharToString => 1
+  | Append => 2
+  | Trace => 1
+  end.
+
+(** ** Values *)
+Local Close Scope Z_scope.
 
 Inductive value : Term -> Prop :=
   | V_TyAbs : forall bX K t0,
@@ -169,17 +210,291 @@ Inductive value : Term -> Prop :=
       value (LamAbs bx T t0)
   | V_Constant : forall u,
       value (Constant u)
-  | V_Builtin : forall f,
-      value (Builtin f)
+  | V_Builtin : forall v,
+      value_builtin v ->
+      value v
   | V_Error : forall T,
       value (Error T)
   | V_IWrap : forall F T t0,
       (* TODO: Should the line below be included? *)
       value t0 ->
-      value (IWrap F T t0).
+      value (IWrap F T t0)
 
-(*
+with value_builtin : Term -> Prop :=
+| V_Builtin0 : forall f,
+    0 < arity f ->
+    value_builtin (Builtin f)
+| V_Builtin1 : forall f v1,
+    1 < arity f ->
+    value v1 ->
+    value_builtin (Apply (Builtin f) v1)
+| V_Builtin2 : forall f v1 v2,
+    2 < arity f ->
+    value v1 ->
+    value v2 ->
+    value_builtin (Apply (Apply (Builtin f) v1) v2)
+| V_Builtin1_WithTyInst : forall f T,
+    1 < arity f ->
+    value_builtin (TyInst (Builtin f) T)
+| V_Builtin2_WithTyInst : forall f T v1,
+    2 < arity f ->
+    value v1 ->
+    value_builtin (Apply (TyInst (Builtin f) T) v1)
+| V_Builtin3_WithTyInst : forall f T v1 v2,
+    3 < arity f ->
+    value v1 ->
+    value v2 ->
+    value_builtin (Apply (Apply (TyInst (Builtin f) T) v1) v2).
+
+(** ** Meanings of built-in functions *)
+Local Open Scope Z_scope.
+
+Definition constInt (a : Z) : Term := Constant (Some (ValueOf DefaultUniInteger a)).
+Definition constBool (a : bool) : Term := Constant (Some (ValueOf DefaultUniBool a)).
+Definition constBS (a : string) : Term := Constant (Some (ValueOf DefaultUniByteString a)).
+Definition constChar (a : ascii) : Term := Constant (Some (ValueOf DefaultUniChar a)).
+Definition constString (a : string) : Term := Constant (Some (ValueOf DefaultUniString a)).
+Definition constUnit (a : unit) : Term := Constant (Some (ValueOf DefaultUniUnit a)).
+
+Definition take (x : Z) (s : string) : string := substring 0 (Z.to_nat x) s.
+Definition drop (x : Z) (s : string) : string := substring (Z.to_nat x) (length s) s.
+
+Inductive eval_defaultfun : Term -> Term -> Prop :=
+  (** Binary operators on integers *)
+  | E_Builtin_AddInteger : forall x y,
+      eval_defaultfun (Apply (Apply (Builtin AddInteger) (constInt x)) (constInt y)) (constInt (x + y))
+  | E_Builtin_SubtractInteger : forall x y, 
+      eval_defaultfun (Apply (Apply (Builtin SubtractInteger) (constInt x)) (constInt y)) (constInt (x - y))
+  | E_Builtin_MultiplyInteger : forall x y,
+      eval_defaultfun  (Apply (Apply (Builtin MultiplyInteger) (constInt x)) (constInt y)) (constInt (x * y))
+  | E_Builtin_DivideInteger : forall x y,
+      eval_defaultfun  (Apply (Apply (Builtin DivideInteger) (constInt x)) (constInt y)) (constInt (x / y))
+  | E_Builtin_QuotientInteger : forall x y,
+      eval_defaultfun  (Apply (Apply (Builtin QuotientInteger) (constInt x)) (constInt y)) (constInt (x ÷ y))
+  | E_Builtin_RemainderInteger : forall x y,
+      eval_defaultfun (Apply (Apply (Builtin RemainderInteger) (constInt x)) (constInt y)) (constInt (Z.rem x y))
+  | E_Builtin_ModInteger : forall x y,
+      eval_defaultfun  (Apply (Apply (Builtin ModInteger) (constInt x)) (constInt y)) (constInt (x mod y))
+  (** Binary predicates on integers *)
+  | E_Builtin_LessThanInteger : forall x y,
+      eval_defaultfun (Apply (Apply (Builtin LessThanInteger) (constInt x)) (constInt y)) (constBool (x <? y))
+  | E_Builtin_LessThanEqInteger : forall x y,
+      eval_defaultfun (Apply (Apply (Builtin LessThanEqInteger) (constInt x)) (constInt y)) (constBool (x <=? y))
+  | E_Builtin_GreaterThanInteger : forall x y,
+      eval_defaultfun (Apply (Apply (Builtin GreaterThanInteger) (constInt x)) (constInt y)) (constBool (x >? y))
+  | E_Builtin_GreaterThanEqInteger : forall x y,
+      eval_defaultfun (Apply (Apply (Builtin GreaterThanEqInteger) (constInt x)) (constInt y)) (constBool (x >=? y))
+  | E_Builtin_EqInteger : forall x y,
+      eval_defaultfun (Apply (Apply (Builtin EqInteger) (constInt x)) (constInt y)) (constBool (x =? y))
+  (** Bytestring operations *)
+  | E_Builtin_Concatenate : forall bs1 bs2,
+      eval_defaultfun (Apply (Apply (Builtin Concatenate) (constBS bs1)) (constBS bs2)) (constBS (bs1 ++ bs2))
+  | E_Builtin_TakeByteString : forall x bs,
+      eval_defaultfun (Apply (Apply (Builtin TakeByteString) (constInt x)) (constBS bs)) (constBS (take x bs))
+  | E_Builtin_DropByteString : forall x bs,
+      eval_defaultfun (Apply (Apply (Builtin DropByteString) (constInt x)) (constBS bs)) (constBS (drop x bs))
+  (** Bytestring hashing
+      
+      Note: We model hashing by identity. Comparing hashes now becomes a straightforward equality check.
+      We believe modelling hash function as such is sufficient, because the dynamic semantics is not meant to 
+      be used as a basis for a real-world evaluator.
+  *)
+  | E_Builtin_SHA2 : forall bs,
+      eval_defaultfun (Apply (Builtin SHA2) (constBS bs)) (constBS bs)
+  | E_Builtin_SHA3 : forall bs,
+      eval_defaultfun (Apply (Builtin SHA3) (constBS bs)) (constBS bs)
+  (** Signature verification *)
+  | E_Builtin_VerifySignature : forall publicKey message signature,
+      (* TODO: Obviously, this should not true. However, how can we model the verification of signatures? 
+
+         Implementation of signature verification:
+         https://input-output-hk.github.io/ouroboros-network/cardano-crypto/Crypto-ECC-Ed25519Donna.html
+      *)
+      eval_defaultfun (Apply (Apply (Apply (Builtin VerifySignature) (constBS publicKey)) (constBS message)) (constBS signature)) (constBool true)
+  (** Binary predicates on bytestrings *)
+  | E_Builtin_EqByteString : forall bs1 bs2,
+      eval_defaultfun (Apply (Apply (Builtin EqByteString) (constBS bs1)) (constBS bs2)) (constBool (bs1 =? bs2)%string)
+  | E_Builtin_LtByteString : forall bs1 bs2,
+      eval_defaultfun (Apply (Apply (Builtin LtByteString) (constBS bs1)) (constBS bs2)) (constBool (to_Z bs1 <? to_Z bs2))
+  | E_Builtin_GtByteString : forall bs1 bs2,
+      eval_defaultfun (Apply (Apply (Builtin GtByteString) (constBS bs1)) (constBS bs2)) (constBool (to_Z bs1 >? to_Z bs2))
+  (** If-Then-Else *)
+  | E_Builtin_IfThenElse : forall cond t f T,
+      eval_defaultfun (Apply (Apply (Apply (TyInst (Builtin IfThenElse) T) (constBool cond)) t) f) (if cond then t else f)
+  (** String operations *)
+  | E_Builtin_CharToString : forall ch,
+      eval_defaultfun (Apply (Builtin CharToString) (constChar ch)) (constString (String ch EmptyString))
+  | E_Builtin_Append : forall s1 s2,
+      eval_defaultfun (Apply (Apply (Builtin Append) (constString s1)) (constString s2)) (constString (s1 ++ s2))
+  | E_Builtin_Trace : forall s,
+      eval_defaultfun (Apply (Builtin Trace) (constString s)) (constUnit tt)
+.
+
+(** ** Implementation of big-step semantics as an inductive datatype *)
+Reserved Notation "t '==>' v"(at level 40).
 Inductive eval : Term -> Term -> Prop :=
+  | E_Let : forall bs t v,
+      eval_bindings_nonrec (Let NonRec bs t) v ->
+      (Let NonRec bs t) ==> v
+  | E_LetRec : forall t1 t2, False -> eval t1 t2 (* TODO *)
+  (* | E_Var : should never occur *)
+  | E_TyAbs : forall X K t v,
+      t ==> v ->
+      TyAbs X K t ==> TyAbs X K v
+  | E_LamAbs : forall x T t,
+      LamAbs x T t ==> LamAbs x T t
+  | E_Apply : forall t1 t2 x T t0 t0' v2 v0,
+      t1 ==> LamAbs x T t0 ->
+      t2 ==> v2 ->
+      substitute x v2 t0 t0' ->
+      t0' ==> v0 ->
+      Apply t1 t2 ==> v0
+  | E_Constant : forall a,
+      Constant a ==> Constant a
+  (* Builtins *)
+  | E_Builtin : forall f,
+      Builtin f ==> Builtin f
+  | E_ApplyBuiltin1 : forall t1 t2 v1 v2,
+      t1 ==> v1 ->
+      value_builtin v1 ->
+      t2 ==> v2 ->
+      value_builtin (Apply v1 v2) ->
+      Apply t1 t2 ==> Apply v1 v2
+  | E_ApplyBuiltin2 : forall t1 t2 v1 v2 v0,
+      t1 ==> v1 ->
+      value_builtin v1 ->
+      t2 ==> v2 ->
+      ~(value_builtin (Apply v1 v2)) ->
+      eval_defaultfun (Apply v1 v2) v0 ->
+      Apply t1 t2 ==> v0
+  | E_ApplyBuiltin3 : forall t1 T,
+      t1 ==> Builtin IfThenElse ->
+      TyInst t1 T ==> TyInst (Builtin IfThenElse) T
+  (* Type instantiation *)
+  | E_TyInst : forall t1 T2 X K v0 v0',
+      t1 ==> TyAbs X K v0 ->
+      substituteT_in_term X T2 v0 v0' ->
+      TyInst t1 T2 ==> v0'
+  (* | E_Error : TODO *)
+  | E_IWrap : forall t1 t2, False -> eval t1 t2
+  | E_Unwrap : forall t1 t2, False -> eval t1 t2
+  (* TODO: Should there be a rule for type reduction? *)
 
-with eval_binding : Term -> Term -> Prop.
-*)
+  (* TODO: Errors propagate *)
+
+with eval_bindings_nonrec : Term -> Term -> Prop :=
+  | E_NilB_NonRec : forall t v,
+      t ==> v ->
+      eval_bindings_nonrec (Let NonRec nil t) v
+  | E_ConsB_NonRec : forall s x T tb bs t vb bs' t' v,
+      tb ==> vb ->
+      substitute_bindings_nonrec x vb bs bs' ->
+      substitute x vb t t' ->
+      eval_bindings_nonrec (Let NonRec bs' t') v ->
+      eval_bindings_nonrec (Let NonRec ((TermBind s (VarDecl x T) tb) :: bs) t) v
+
+where "t '==>' v" := (eval t v).
+
+(** ** Examples for derivations of [eval] *)
+
+Definition Ty_int : Ty := Ty_Builtin (Some (TypeIn DefaultUniInteger)).
+Definition int_to_int : Ty := Ty_Fun Ty_int Ty_int.
+
+Example test_addInteger : 
+  Apply (LamAbs "x+" int_to_int (Apply (Var "x+") (constInt 17))) (Apply (Builtin AddInteger) (constInt 3))
+  ==> constInt 20.
+Proof.
+  eapply E_Apply.
+  - apply E_LamAbs.
+  - eapply E_ApplyBuiltin1.
+    + apply E_Builtin.
+    + apply V_Builtin0.
+      simpl.
+      apply le_S.
+      apply le_n.
+    + apply E_Constant.
+    + apply V_Builtin1.
+      * simpl.
+        apply le_n.
+      * apply V_Constant.
+  - apply S_Apply.
+    + apply S_Var1.
+    + apply S_Constant.
+  - eapply E_ApplyBuiltin2.
+    + eapply E_ApplyBuiltin1.
+      * apply E_Builtin.
+      * apply V_Builtin0.
+        simpl.
+        apply le_S.
+        apply le_n.
+      * apply E_Constant.
+      * apply V_Builtin1.
+        -- simpl.
+           apply le_n.
+        -- apply V_Constant.
+    + apply V_Builtin1.
+      -- apply le_n.
+      -- apply V_Constant.
+    + apply E_Constant.
+    + intros Hcon.
+      inversion Hcon. subst.
+      simpl in H2.
+      apply PeanoNat.Nat.lt_irrefl in H2.
+      inversion H2. 
+    + apply E_Builtin_AddInteger.
+Qed.
+
+Definition int_and_int_to_int : Ty := Ty_Fun Ty_int (Ty_Fun Ty_int Ty_int).
+
+
+Example test_ifThenElse :
+  Apply (LamAbs "ite_c" int_and_int_to_int (Apply (Apply (Var "ite_c") (constInt 17)) (constInt 3))) (Apply (TyInst (Apply (LamAbs "x" Ty_int (Builtin IfThenElse)) (constInt 666)) (Ty_Builtin (Some (TypeIn DefaultUniInteger)))) (Constant (Some (ValueOf DefaultUniBool true)))) ==> constInt 17.
+Proof.
+  eapply E_Apply.
+  - apply E_LamAbs.
+  - eapply E_ApplyBuiltin1.
+    + eapply E_ApplyBuiltin3. 
+      eapply E_Apply.
+      * apply E_LamAbs.
+      * apply E_Constant.
+      * apply S_Builtin.
+      * apply E_Builtin.
+    + apply V_Builtin1_WithTyInst.
+      simpl. apply le_S. apply le_S. apply le_n.
+    + apply E_Constant.
+    + apply V_Builtin2_WithTyInst.
+      * simpl. apply le_S. apply le_n.
+      * apply V_Constant.
+  - apply S_Apply.
+    + apply S_Apply.
+      * apply S_Var1.
+      * apply S_Constant.
+    + apply S_Constant.
+  - eapply E_ApplyBuiltin2.
+    + apply E_ApplyBuiltin1.
+      * apply E_ApplyBuiltin1.
+        -- apply E_ApplyBuiltin3.
+           apply E_Builtin.
+        -- apply V_Builtin1_WithTyInst.
+           simpl. apply le_S. apply le_S. apply le_n.
+        -- apply E_Constant.
+        -- apply V_Builtin2_WithTyInst.
+           ++ simpl. apply le_S. apply le_n.
+           ++ apply V_Constant.
+      * apply V_Builtin2_WithTyInst.
+        -- simpl. apply le_S. apply le_n.
+        -- apply V_Constant.
+      * apply E_Constant.
+      * apply V_Builtin3_WithTyInst.
+        -- simpl. apply le_n.
+        -- apply V_Constant.
+        -- apply V_Constant.
+    + apply V_Builtin3_WithTyInst.
+      * simpl. apply le_n.
+      * apply V_Constant.
+      * apply V_Constant.
+    + apply E_Constant.
+    + intros Hcon.
+      inversion Hcon.
+    + apply E_Builtin_IfThenElse.
+Qed. 

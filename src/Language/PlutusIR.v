@@ -1,6 +1,7 @@
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
 Require Import Coq.Arith.PeanoNat.
+Require Import Coq.ZArith.BinInt.
 Require Import Coq.Bool.BoolEq.
 Require Import Ascii.
 Require Import Eqdep.
@@ -63,9 +64,10 @@ Inductive DefaultUni : Type :=
     | DefaultUniUnit       (* : DefaultUni unit (* () *)*)
     | DefaultUniBool       (* : DefaultUni bool (* Bool *)*)
     .
+    
 Definition uniType (x : DefaultUni) : Type :=
   match x with
-    | DefaultUniInteger    => nat
+    | DefaultUniInteger    => Z
     | DefaultUniByteString => string
     | DefaultUniString     => string
     | DefaultUniChar       => ascii
@@ -73,6 +75,7 @@ Definition uniType (x : DefaultUni) : Type :=
     | DefaultUniBool       => bool
   end
   .
+Transparent uniType.
 
 Inductive DefaultFun :=
     | AddInteger
