@@ -34,8 +34,10 @@ src/Language/PlutusIR/Optimizer/DeadBindings.v
 
 src/Language/PlutusIR/Conversion.v
 src/Language/PlutusIR/Semantics/Dynamic.v
+src/Language/PlutusIR/Semantics/Dynamic/Deterministic.v
 src/Language/PlutusIR/Semantics/Static.v
 src/Language/PlutusIR/Semantics/Static/Implementations/Named.v
 src/Language/PlutusIR/Semantics/Static/Implementations/DeBruijn.v
+src/Language/PlutusIR/Semantics/TypeSafety/Preservation.v
 #src/Language/PlutusIR/Semantics/Static/Context.v
 #src/Examples/Timelock/Typing.v

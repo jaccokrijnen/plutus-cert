@@ -110,6 +110,17 @@ with substitute_binding : name -> Term -> Binding -> Binding -> Prop :=
   | S_DatatypeBind : forall x s dtd,
       substitute_binding x s (DatatypeBind dtd) (DatatypeBind dtd).
 
+Scheme substitute__ind := Minimality for substitute Sort Prop
+  with substitute_bindings_nonrec__ind := Minimality for substitute_bindings_nonrec Sort Prop
+  with substitute_bindings_rec__ind := Minimality for substitute_bindings_rec Sort Prop
+  with substitute_binding__ind := Minimality for substitute_binding Sort Prop.
+
+Combined Scheme substitute__mutind from 
+  substitute__ind, 
+  substitute_bindings_nonrec__ind, 
+  substitute_bindings_rec__ind, 
+  substitute_binding__ind.
+
 (** ** Definition as a function (failed) *)
 Reserved Notation "'[' x '|->' s ']' t" (at level 20).
 Fail Equations substitute (x : name) (s t : Term) : Term := {
@@ -160,12 +171,6 @@ with substitute_bindings_nonrec : (x : name) (s : Term) (bs : list Binding) : li
     if existsb (String.eqb x) (vars_bound_by_binding (DatatypeBind dtd))
       then DatatypeBind dtd :: bs
       else DatatypeBind dtd :: substitute_bindings_nonrec x s bs }.
-
-(** ** Substitution of types in terms *)
-Inductive substituteT_in_term : tyname -> Ty -> Term -> Term -> Prop :=
-  (* TODO: implement *).
-
-
 
 (** * Big-step operational semantics *)
 
@@ -305,7 +310,7 @@ Inductive eval_defaultfun : Term -> Term -> Prop :=
       eval_defaultfun (Apply (Builtin SHA3) (constBS bs)) (constBS bs)
   (** Signature verification *)
   | E_Builtin_VerifySignature : forall publicKey message signature,
-      (* TODO: Obviously, this should not true. However, how can we model the verification of signatures? 
+      (* TODO: Obviously, this should evaluate to true. However, how can we model the verification of signatures? 
 
          Implementation of signature verification:
          https://input-output-hk.github.io/ouroboros-network/cardano-crypto/Crypto-ECC-Ed25519Donna.html
@@ -336,7 +341,8 @@ Inductive eval : Term -> Term -> Prop :=
   | E_Let : forall bs t v,
       eval_bindings_nonrec (Let NonRec bs t) v ->
       (Let NonRec bs t) ==> v
-  | E_LetRec : forall t1 t2, False -> eval t1 t2 (* TODO *)
+  | E_LetRec : forall bs t,
+      (Let Rec bs t) ==> (Let Rec bs t) (* TODO *)
   (* | E_Var : should never occur *)
   | E_TyAbs : forall X K t v,
       t ==> v ->
@@ -367,17 +373,26 @@ Inductive eval : Term -> Term -> Prop :=
       ~(value_builtin (Apply v1 v2)) ->
       eval_defaultfun (Apply v1 v2) v0 ->
       Apply t1 t2 ==> v0
-  | E_ApplyBuiltin3 : forall t1 T,
+  | E_TyInstBuiltin1 : forall t1 T,
       t1 ==> Builtin IfThenElse ->
       TyInst t1 T ==> TyInst (Builtin IfThenElse) T
   (* Type instantiation *)
-  | E_TyInst : forall t1 T2 X K v0 v0',
+  | E_TyInst : forall t1 T2 X K v0,
       t1 ==> TyAbs X K v0 ->
+      (* TODO: should the type argument be substituted for the type variable?
       substituteT_in_term X T2 v0 v0' ->
-      TyInst t1 T2 ==> v0'
-  (* | E_Error : TODO *)
-  | E_IWrap : forall t1 t2, False -> eval t1 t2
-  | E_Unwrap : forall t1 t2, False -> eval t1 t2
+      *)
+      TyInst t1 T2 ==> v0
+  (* Errors and their propagation *)
+  | E_Error : forall T,
+      Error T ==> Error T
+  (* Wrap and unwrap *)
+  | E_IWrap : forall F T t0 v0,
+      t0 ==> v0 ->
+      IWrap F T t0 ==> IWrap F T v0
+  | E_Unwrap : forall t0 F T v0,
+      t0 ==> IWrap F T v0 ->
+      Unwrap t0 ==> v0
   (* TODO: Should there be a rule for type reduction? *)
 
   (* TODO: Errors propagate *)
@@ -394,6 +409,10 @@ with eval_bindings_nonrec : Term -> Term -> Prop :=
       eval_bindings_nonrec (Let NonRec ((TermBind s (VarDecl x T) tb) :: bs) t) v
 
 where "t '==>' v" := (eval t v).
+
+Scheme eval__ind := Minimality for eval Sort Prop
+  with eval_bindings_nonrec__ind := Minimality for eval_bindings_nonrec Sort Prop.
+
 
 (** ** Examples for derivations of [eval] *)
 
@@ -453,7 +472,7 @@ Proof.
   eapply E_Apply.
   - apply E_LamAbs.
   - eapply E_ApplyBuiltin1.
-    + eapply E_ApplyBuiltin3. 
+    + eapply E_TyInstBuiltin1. 
       eapply E_Apply.
       * apply E_LamAbs.
       * apply E_Constant.
@@ -473,7 +492,7 @@ Proof.
   - eapply E_ApplyBuiltin2.
     + apply E_ApplyBuiltin1.
       * apply E_ApplyBuiltin1.
-        -- apply E_ApplyBuiltin3.
+        -- apply E_TyInstBuiltin1.
            apply E_Builtin.
         -- apply V_Builtin1_WithTyInst.
            simpl. apply le_S. apply le_S. apply le_n.

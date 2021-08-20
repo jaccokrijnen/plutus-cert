@@ -209,8 +209,9 @@ Proof.
     intros. unfold P_term. intros.
     inversion X0. subst.
     inversion X1. subst.
-    apply T_TyInst with K2.
+    apply T_TyInst with (T1 := T1) (X := X) (K2 := K2).
     + apply H0. assumption.
+    + assumption.
     + assumption.
   - (* T_Error *)
     intros. unfold P_term. intros.
@@ -222,21 +223,18 @@ Proof.
     intros. unfold P_term. intros.
     inversion X0. subst.
     inversion X1. subst.
-    apply T_IWrap with (X := X) (K := K).
-    + apply H0. assumption.
+    apply T_IWrap with (X := X) (K := K) (S := S).
+    + assumption.
+    + apply H1. assumption.
     + assumption.
     + assumption.
   - (* T_Unwrap *)
     intros. unfold P_term. intros.
     inversion X0. subst.
     inversion X1. subst.
-    apply T_Unwrap.
+    apply T_Unwrap with (F := F) (X := X) (K := K) (T := T).
     + apply H0. assumption.
     + assumption.
-  - (* T_Eq *)
-    intros. unfold P_term. intros.
-    apply T_Eq with S.
-    + apply H0. assumption.
     + assumption.
 
   - (* W_Con *)

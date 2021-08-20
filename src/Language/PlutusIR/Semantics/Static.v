@@ -140,28 +140,26 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
       ctx |-+ (Constant (Some (ValueOf u a))) : (Ty_Builtin (Some (TypeIn u)))
   | T_Builtin : forall ctx f,
       ctx |-+ (Builtin f) : (lookupBuiltinTy f)
-  | T_TyInst : forall ctx t1 T2 T1 X K2,
+  | T_TyInst : forall ctx t1 T2 T1 X K2 S,
       ctx |-+ t1 : (Ty_Forall X K2 T1) ->
       ctx |-* T2 : K2 ->
-      ctx |-+ (TyInst t1 T2) : (substituteT X T2 T1)
+      substituteT X T2 T1 =b S ->
+      ctx |-+ (TyInst t1 T2) : S
   | T_Error : forall ctx T,
       ctx |-* T : Kind_Base ->
       ctx |-+ (Error T) : T 
   (* Recursive types *)
-  | T_IWrap : forall ctx F T M X K,
-      ctx |-+ M : (unwrapIFix F X K T) ->
+  | T_IWrap : forall ctx F T M X K S,
+      unwrapIFix F X K T =b S ->
+      ctx |-+ M : S ->
       ctx |-* T : K ->
       ctx |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
       ctx |-+ (IWrap F T M) : (Ty_IFix F T)
-  | T_Unwrap : forall ctx M F X K T,
+  | T_Unwrap : forall ctx M F X K T S,
       ctx |-+ M : (Ty_IFix F T) ->
       ctx |-* T : K ->
-      ctx |-+ (Unwrap M) : (unwrapIFix F X K T)
-  (* Type equality *)
-  | T_Eq : forall ctx t T S,
-      ctx |-+ t : S ->
-      S =b T ->
-      ctx |-+ t : T
+      unwrapIFix F X K T =b S ->
+      ctx |-+ (Unwrap M) : S
 
   with constructor_well_formed : Context -> constructor -> Prop :=
     | W_Con : forall ctx x T ar,
