@@ -56,13 +56,9 @@ Fixpoint remove_eqb {a} a_eqb xs : list a :=
   end
   .
 
-Section FreeVars.
-  Context
-    {var tyvar : Set}
-    (var_eqb : var -> var -> bool)
-    .
+Module FreeVars (M_VarRep : SIG_VarRep) (M_AST : SIG_AST M_VarRep).
 
-Fixpoint boundVars (bs : list (binding var tyvar var tyvar)) : list var := match bs with
+Fixpoint boundVars (bs : list M_AST.Binding) : list M_VarRep.binderName := match bs with
     | ((TermBind _ (VarDecl v _) t) :: bs) => v :: boundVars bs
     | (b                :: bs) =>      boundVars bs
     | nil               => nil

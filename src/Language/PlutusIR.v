@@ -159,26 +159,33 @@ Definition eq_binderName := fun (x y : unit) => true.
 Definition eq_binderTyname := fun (x y : unit) => true.
 End DeBruijnVarRep.
 
-Module AST_Term (M_VarRep : SIG_VarRep).
+Module Type SIG_AST (M_VarRep : SIG_VarRep).
+  Parameter (Kind Ty Term Binding : Type).
+End SIG_AST.
+
+Module AST_Term (M_VarRep : SIG_VarRep) <: SIG_AST M_VarRep.
 Export M_VarRep.
 
 (** * Kinds and types *)
 
 (** ** Kinds *)
-Inductive Kind :=
-  | Kind_Base : Kind
-  | Kind_Arrow : Kind -> Kind -> Kind.
+Inductive _Kind :=
+  | Kind_Base : _Kind
+  | Kind_Arrow : _Kind -> _Kind -> _Kind.
+
+Definition Kind := _Kind.
 
 (** ** Types *)
-Inductive Ty :=
-  | Ty_Var : M_VarRep.tyname -> Ty
-  | Ty_Fun : Ty -> Ty -> Ty
-  | Ty_IFix : Ty -> Ty -> Ty
-  | Ty_Forall : M_VarRep.binderTyname -> Kind -> Ty -> Ty
-  | Ty_Builtin : @some typeIn -> Ty
-  | Ty_Lam : M_VarRep.binderTyname -> Kind -> Ty -> Ty
-  | Ty_App : Ty -> Ty -> Ty.
+Inductive _Ty :=
+  | Ty_Var : M_VarRep.tyname -> _Ty
+  | Ty_Fun : _Ty -> _Ty -> _Ty
+  | Ty_IFix : _Ty -> _Ty -> _Ty
+  | Ty_Forall : M_VarRep.binderTyname -> Kind -> _Ty -> _Ty
+  | Ty_Builtin : @some typeIn -> _Ty
+  | Ty_Lam : M_VarRep.binderTyname -> Kind -> _Ty -> _Ty
+  | Ty_App : _Ty -> _Ty -> _Ty.
 
+Definition Ty := _Ty.
 
 (*
   Simplification of attached values in the AST
@@ -203,24 +210,27 @@ Inductive Constr :=
 
 Inductive DTDecl := Datatype : TVDecl -> list TVDecl -> M_VarRep.binderName -> list Constr -> DTDecl.
 
-Inductive Term :=
-  | Let      : Recursivity -> list Binding -> Term -> Term
-  | Var      : M_VarRep.name -> Term
-  | TyAbs    : M_VarRep.binderTyname -> Kind -> Term -> Term
-  | LamAbs   : M_VarRep.binderName -> Ty -> Term -> Term
-  | Apply    : Term -> Term -> Term
-  | Constant : @some valueOf -> Term
-  | Builtin  : DefaultFun -> Term
-  | TyInst   : Term -> Ty -> Term
-  | Error    : Ty -> Term
-  | IWrap    : Ty -> Ty -> Term -> Term
-  | Unwrap   : Term -> Term
+Inductive _Term :=
+  | Let      : Recursivity -> list _Binding -> _Term -> _Term
+  | Var      : M_VarRep.name -> _Term
+  | TyAbs    : M_VarRep.binderTyname -> Kind -> _Term -> _Term
+  | LamAbs   : M_VarRep.binderName -> Ty -> _Term -> _Term
+  | Apply    : _Term -> _Term -> _Term
+  | Constant : @some valueOf -> _Term
+  | Builtin  : DefaultFun -> _Term
+  | TyInst   : _Term -> Ty -> _Term
+  | Error    : Ty -> _Term
+  | IWrap    : Ty -> Ty -> _Term -> _Term
+  | Unwrap   : _Term -> _Term
 
-with Binding :=
-  | TermBind : Strictness -> VDecl -> Term -> Binding
-  | TypeBind : TVDecl -> Ty -> Binding
-  | DatatypeBind : DTDecl -> Binding
+with _Binding :=
+  | TermBind : Strictness -> VDecl -> _Term -> _Binding
+  | TypeBind : TVDecl -> _Ty -> _Binding
+  | DatatypeBind : DTDecl -> _Binding
 .
+
+Definition Term := _Term.
+Definition Binding := _Binding.
 
 Definition constructorName : Constr -> M_VarRep.binderName := 
   fun c => match c with
