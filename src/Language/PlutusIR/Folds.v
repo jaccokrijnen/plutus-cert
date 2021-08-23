@@ -20,8 +20,8 @@ Section Algebras.
 Record AlgTerm: Type := mkTermAlg
   { a_Let      : Recursivity -> rBindings -> rTerm -> rTerm
   ; a_Var      : name -> rTerm
-  ; a_TyAbs    : tyname -> Kind -> rTerm -> rTerm
-  ; a_LamAbs   : name -> Ty -> rTerm -> rTerm
+  ; a_TyAbs    : binderTyname -> Kind -> rTerm -> rTerm
+  ; a_LamAbs   : binderName -> Ty -> rTerm -> rTerm
   ; a_Apply    : rTerm -> rTerm -> rTerm
   ; a_Constant : @some valueOf -> rTerm
   ; a_Builtin  : DefaultFun -> rTerm
@@ -271,8 +271,8 @@ Section Use. (* name comes from "use" rules in attribute grammars *)
     {|
     a_Let := fun (_ : Recursivity) (rBs : a) (r : a) => f [rBs; r];
     a_Var := fun _ : name => f nil ;
-    a_TyAbs := fun (_ : tyname) (_ : Kind) (X : a) => f [X];
-    a_LamAbs := fun (_ : name) (_ : Ty) (X : a) => f [X];
+    a_TyAbs := fun (_ : binderTyname) (_ : Kind) (X : a) => f [X];
+    a_LamAbs := fun (_ : binderName) (_ : Ty) (X : a) => f [X];
     a_Apply := fun X X0 : a => f [X; X0];
     a_Constant := fun _ : some => f [];
     a_Builtin := fun _ : DefaultFun => f [];
@@ -352,6 +352,7 @@ attributes can then be defined per constructor, perhaps it is useful to receive 
 fields as a records instead of separate arguments.
 *)
 
+(*
 Inductive con_term :=
   | con_Let
   | con_Var
@@ -393,6 +394,7 @@ Definition con_type_binding (name tyname : Set) (P : term name tyname binderName
     | con_TypeBind => forall v ty, Q (TypeBind v ty)
     | con_DatatypeBind => forall dtd, Q (DatatypeBind dtd)
     end.
+*)
 
 (*
 Eval cbv in (forall v P Q, con_type v P Q con_TyAbs).
