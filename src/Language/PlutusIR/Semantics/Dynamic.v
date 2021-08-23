@@ -41,12 +41,12 @@ Inductive substitute : name -> Term -> Term -> Term -> Prop :=
       substitute x s (Let NonRec bs t0) (Let NonRec bs' t0')
   | S_LetRec1 : forall x s bs t0,
       (exists v, In v (term_vars_bound_by_bindings bs) -> x = v) ->
-      substitute x s (Let NonRec bs t0) (Let NonRec bs t0)
+      substitute x s (Let Rec bs t0) (Let Rec bs t0)
   | S_LetRec2 : forall x s bs t0 bs' t0',
       ~(exists v, In v (term_vars_bound_by_bindings bs) -> x = v) ->
       substitute_bindings_rec x s bs bs' ->
       substitute x s t0 t0' ->
-      substitute x s (Let NonRec bs t0) (Let NonRec bs' t0')
+      substitute x s (Let Rec bs t0) (Let Rec bs' t0')
   | S_Var1 : forall x s,
       substitute x s (Var x) s
   | S_Var2 : forall x s y,
@@ -58,6 +58,7 @@ Inductive substitute : name -> Term -> Term -> Term -> Prop :=
   | S_LamAbs1 : forall x s T t0,
       substitute x s (LamAbs x T t0) (LamAbs x T t0)
   | S_LamAbs2 : forall x s bx T t0 t0',
+      x <> bx ->
       substitute x s t0 t0' ->
       substitute x s (LamAbs bx T t0) (LamAbs bx T t0') 
   | S_Apply : forall x s t1 t2 t1' t2',

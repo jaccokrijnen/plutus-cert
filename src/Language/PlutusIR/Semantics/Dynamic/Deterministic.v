@@ -35,15 +35,196 @@ Proof.
     (P0 := P_substitute_bindings_nonrec)
     (P1 := P_substitute_bindings_rec)
     (P2 := P_substitute_binding). 
-Admitted. (* TODO *)
+  - (* S_Let1 *)
+    intros. unfold P_substitute. intros.
+    inversion H2.
+    + subst.
+      assert (bs' = bs'0) by auto.
+      subst.
+      reflexivity.
+    + subst.
+      apply H5 in H.
+      destruct H.
+  - (* S_Let2 *)
+    intros. unfold P_substitute. intros.
+    inversion H4.
+    + subst.
+      apply H in H9.
+      destruct H9.
+    + subst.
+      assert (bs' = bs'0) by auto.
+      subst.
+      assert (t0' = t0'0) by auto.
+      subst.
+      reflexivity.
+  - (* S_LetRec1 *)
+    intros. unfold P_substitute. intros.
+    inversion H0.
+    + subst.
+      reflexivity.
+    + subst.
+      apply H3 in H.
+      destruct H.
+  - (* S_LetRec2 *)
+    intros. unfold P_substitute. intros.
+    inversion H4. 
+    + subst.
+      apply H in H10.
+      destruct H10.
+    + subst.
+      assert (bs' = bs'0) by auto.
+      subst.
+      assert (t0' = t0'0) by auto.
+      subst.
+      reflexivity.
+  - (* S_Var1 *)
+    intros. unfold P_substitute. intros.
+    inversion H. 
+    + subst.
+      reflexivity.
+    + subst.
+      assert (x = x) by reflexivity.
+      apply H3 in H0.
+      destruct H0.
+  - (* S_Var2 *)
+    intros. unfold P_substitute. intros.
+    inversion H0. subst.
+    + subst.
+      assert (y = y) by reflexivity.
+      apply H in H1.
+      destruct H1.
+    + subst.
+      reflexivity.
+  - (* S_TyAbs *)
+    intros. unfold P_substitute. intros. 
+    inversion H1. subst.
+    assert (t0' = t0'0) by auto.
+    subst.
+    reflexivity.
+  - (* S_LamAbs1 *)
+    intros. unfold P_substitute. intros.
+    inversion H.
+    + subst.
+      reflexivity.
+    + subst.
+      assert (x = x) by auto.
+      apply H6 in H0.
+      destruct H0.
+  - (* S_LamAbs2 *)
+    intros. unfold P_substitute. intros.
+    inversion H2. 
+    + subst.
+      assert (bx = bx) by auto.
+      apply H in H3.
+      destruct H3.
+    + subst.
+      assert (t0' = t0'0) by auto.
+      subst.
+      reflexivity.
+  - (* S_Apply *)
+    intros. unfold P_substitute. intros.
+    inversion H3. subst.
+    assert (t1' = t1'0) by auto.
+    assert (t2' = t2'0) by auto.
+    subst.
+    reflexivity.
+  - (* S_Constant *)
+    intros. unfold P_substitute. intros.
+    inversion H. subst.
+    reflexivity.
+  - (* S_Builtin *)
+    intros. unfold P_substitute. intros.
+    inversion H. subst.
+    reflexivity.
+  - (* S_TyInst *)
+    intros. unfold P_substitute. intros.
+    inversion H1. subst.
+    assert (t0' = t0'0) by auto.
+    subst.
+    reflexivity.
+  - (* S_Error *)
+    intros. unfold P_substitute. intros.
+    inversion H. subst.
+    reflexivity.
+  - (* S_IWrap *)
+    intros. unfold P_substitute. intros.
+    inversion H1. subst.
+    assert (t0' = t0'0) by auto.
+    subst.
+    reflexivity.
+  - (* S_Unwrap *)
+    intros. unfold P_substitute. intros.
+    inversion H1. subst.
+    assert (t0' = t0'0) by auto.
+    subst.
+    reflexivity.
+  
+  - (* S_NilB_NonRec *)
+    intros. unfold P_substitute_bindings_nonrec. intros.
+    inversion H. subst.
+    reflexivity.
+  - (* S_ConsB_NonRec1 *)
+    intros. unfold P_substitute_bindings_nonrec. intros.
+    inversion H2.
+    + subst.
+      assert (b' = b'0) by auto.
+      subst.
+      reflexivity.
+    + subst.
+      apply H5 in H.
+      destruct H.
+  - (* S_ConsB_NonRec2 *)
+    intros. unfold P_substitute_bindings_nonrec. intros.
+    inversion H4.
+    + subst.
+      apply H in H9.
+      destruct H9.
+    + subst.
+      assert (b' = b'0) by auto.
+      assert (bs' = bs'0) by auto.
+      subst.
+      reflexivity.
+
+  - (* S_NilB_Rec *)
+    intros. unfold P_substitute_bindings_rec. intros.
+    inversion H. subst.
+    reflexivity. 
+  - (* S_ConsB_Rec *)
+    intros. unfold P_substitute_bindings_rec. intros.
+    inversion H3. subst.
+    assert (b' = b'0) by auto.
+    assert (bs' = bs'0) by auto.
+    subst.
+    reflexivity.
+  
+  - (* S_TermBind *)
+    intros. unfold P_substitute_binding. intros.
+    inversion H1. subst.
+    assert (t' = t'0) by auto.
+    subst.
+    reflexivity.
+  - (* S_TypeBind *)
+    intros. unfold P_substitute_binding. intros.
+    inversion H. subst.
+    reflexivity.
+  - (* S_DatatypeBind *)
+    intros. unfold P_substitute_binding. intros.
+    inversion H. subst.
+    reflexivity.
+Qed.
 
 (** * [eval] is deterministic *)
 
-Theorem eval_defaultfun__deterministic : forall t v1 v2,
+Theorem eval_defaultfun__deterministic : forall (t : Term) v1 v2,
   eval_defaultfun t v1 ->
   eval_defaultfun t v2 ->
   v1 = v2.
-Proof. Admitted. (* TODO *)
+Proof.
+  intros. inversion H.
+  - subst.
+    inversion H0. subst.
+    Fail injection H1. (* TODO: Why does injection fail? *)
+ Admitted. (* TODO *)
 
 Definition P_eval x y1 :=
   forall y2,
