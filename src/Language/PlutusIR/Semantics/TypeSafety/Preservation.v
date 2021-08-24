@@ -51,7 +51,7 @@ Theorem preservation : forall (t : Term) (T : Ty),
   P_term empty t T. 
 Proof.
   intros.
-  eapply has_type__rect with (P := P_term) (P0 := P_constructor) (P1 := P_bindings_nonrec) (P2 := P_bindings_rec) (P3 := P_binding).
+  eapply has_type__ind with (P := P_term) (P0 := P_constructor) (P1 := P_bindings_nonrec) (P2 := P_bindings_rec) (P3 := P_binding).
   - intros. unfold P_term. intros.
     inversion H6; subst.
     unfold P_bindings_nonrec in H3.

@@ -129,7 +129,7 @@ Theorem CNR_Term__preserves_typing : forall ctx t1 T,
     ctx |-+ t1 : T ->
     P_term ctx t1 T.
 Proof.
-  apply has_type__rect with (P := P_term) (P0 := P_constructor) (P1 := P_bindings_nonrec) (P2 := P_bindings_rec) (P3 := P_binding).
+  apply has_type__ind with (P := P_term) (P0 := P_constructor) (P1 := P_bindings_nonrec) (P2 := P_bindings_rec) (P3 := P_binding).
   - (* T_Let *)
     intros. unfold P_term. intros.
     inversion X; subst.

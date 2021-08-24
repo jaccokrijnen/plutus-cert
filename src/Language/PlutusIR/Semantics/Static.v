@@ -2,6 +2,8 @@ Require Import PlutusCert.Language.PlutusIR.
 Import Coq.Lists.List.
 Import Coq.Strings.String.
 
+Create HintDb typing.
+
 Section Typing.
 
 Context (Name Tyname BinderName BinderTyname : Set).
@@ -37,6 +39,8 @@ Context (listOfArgumentTypes : Ty -> list Ty).
 
 Context (unwrapIFix : Ty -> BinderTyname -> Kind -> Ty -> Ty).
 
+
+
 (** ** Kinding of types *)
 Reserved Notation "ctx '|-*' ty ':' K" (at level 40, ty at level 0, K at level 0).
 Inductive has_kind : Context -> Ty -> Kind -> Prop :=
@@ -64,7 +68,6 @@ Inductive has_kind : Context -> Ty -> Kind -> Prop :=
       ctx |-* T2 : K1 ->
       ctx |-* (Ty_App T1 T2) : K2
 where "ctx '|-*' ty ':' K" := (has_kind ctx ty K).
-
 
 (** ** Type equality (beta-reduction) *)
 (* TODO: Alpha-equivalence*)
@@ -197,10 +200,12 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
 
   where "ctx '|-+' tm ':' T" := (has_type ctx tm T).
 
-Scheme has_type__rect := Minimality for has_type Sort Prop
-  with constructor_well_formed__rect := Minimality for constructor_well_formed Sort Prop
-  with bindings_well_formed_nonrec__rect := Minimality for bindings_well_formed_nonrec Sort Prop
-  with bindings_well_formed_rec__rect := Minimality for bindings_well_formed_rec Sort Prop
-  with binding_well_formed__rect := Minimality for binding_well_formed Sort Prop.
+Scheme has_type__ind := Minimality for has_type Sort Prop
+  with constructor_well_formed__ind := Minimality for constructor_well_formed Sort Prop
+  with bindings_well_formed_nonrec__ind := Minimality for bindings_well_formed_nonrec Sort Prop
+  with bindings_well_formed_rec__ind := Minimality for bindings_well_formed_rec Sort Prop
+  with binding_well_formed__ind := Minimality for binding_well_formed Sort Prop.
 
 End Typing.
+
+#[export] Hint Constructors has_kind : typing.
