@@ -2,6 +2,7 @@
 
 src/Util.v
 src/Examples/Timelock.v
+src/Examples/Timelock/Typing.v
 src/Examples/TimelockDumps.v
 src/Language/PlutusIR.v
 src/Language/PlutusIR/Folds.v
@@ -39,5 +40,3 @@ src/Language/PlutusIR/Semantics/Static.v
 src/Language/PlutusIR/Semantics/Static/Implementations/Named.v
 src/Language/PlutusIR/Semantics/Static/Implementations/DeBruijn.v
 src/Language/PlutusIR/Semantics/TypeSafety/Preservation.v
-#src/Language/PlutusIR/Semantics/Static/Context.v
-#src/Examples/Timelock/Typing.v
