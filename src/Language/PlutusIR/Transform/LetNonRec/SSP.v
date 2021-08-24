@@ -134,39 +134,33 @@ Proof.
     intros. unfold P_term. intros.
     inversion X; subst.
     + replace ctx with ([] ++ ctx) by reflexivity. 
-      apply H2.
+      apply H1.
       * apply bs.
       * assumption.
       * assumption.
-      * apply H4.
+      * apply H3.
         assumption.
     + inversion X0. subst. 
       eapply T_Let.
       * reflexivity.
-      * unfold P_bindings_rec in H2. edestruct H2 as [_ [Heq _]]. apply Heq in X1. rewrite <- X1. assumption.
-      * apply H2. assumption. assumption.
-      * unfold P_bindings_rec in H2. edestruct H2 as [_ [Heq _]]. apply Heq in X1. rewrite <- X1. apply H4. assumption. 
+      * apply H1. assumption. assumption.
+      * unfold P_bindings_rec in H2. edestruct H1 as [_ [Heq _]]. apply Heq in X1. rewrite <- X1. apply H3. assumption. 
   - (* T_LetRec *)
     intros. unfold P_term. intros.
     inversion X. subst.
     inversion X0. subst.
     eapply T_LetRec.
     + reflexivity.
-    + unfold P_bindings_rec in H2.
-      edestruct H2 as [IHH Heq].
-      apply Heq in X1 as Hsu.
-      rewrite <- Hsu.
-      assumption.
-    + unfold P_bindings_rec in H2.
-      edestruct H2 as [IHH Heq].
+    + unfold P_bindings_rec in H1.
+      edestruct H1 as [IHH Heq].
       apply Heq in X1 as Hsu.
       rewrite <- Hsu.
       apply IHH. auto. auto.
-    + unfold P_bindings_rec in H2.
-      edestruct H2 as [IHH Heq].
+    + unfold P_bindings_rec in H1.
+      edestruct H1 as [IHH Heq].
       apply Heq in X1 as Hsu.
       rewrite <- Hsu.
-      apply H4.
+      apply H3.
       assumption.
   - (* T_Var *)
     intros. unfold P_term. intros.

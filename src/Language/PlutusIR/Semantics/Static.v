@@ -114,13 +114,11 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
   **)
   | T_Let : forall ctx bs t T ctx',
       ctx' = append (flatten (map binds bs)) ctx ->
-      ctx' |-* T : Kind_Base ->
       bindings_well_formed_nonrec ctx bs ->
       ctx' |-+ t : T ->
       ctx |-+ (Let NonRec bs t) : T
   | T_LetRec : forall ctx bs t T ctx',
       ctx' = append (flatten (map binds bs)) ctx ->
-      ctx' |-* T : Kind_Base ->
       bindings_well_formed_rec ctx' bs ->
       ctx' |-+ t : T ->
       ctx |-+ (Let Rec bs t) : T
@@ -209,3 +207,11 @@ Scheme has_type__ind := Minimality for has_type Sort Prop
 End Typing.
 
 #[export] Hint Constructors has_kind : typing.
+
+#[export] Hint Constructors EqT : typing.
+
+#[export] Hint Constructors has_type : typing.
+#[export] Hint Constructors constructor_well_formed : typing.
+#[export] Hint Constructors bindings_well_formed_nonrec : typing.
+#[export] Hint Constructors bindings_well_formed_rec : typing.
+#[export] Hint Constructors binding_well_formed : typing.
