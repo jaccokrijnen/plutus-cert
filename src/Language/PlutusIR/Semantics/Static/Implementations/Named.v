@@ -1,43 +1,141 @@
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
+Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Map.
 
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Basics.
 Require Import Coq.Strings.String.
+Require Import Coq.Logic.FunctionalExtensionality.
 
 Local Open Scope string_scope.
 
-
-
 (** ** Contexts and lookups *)
-Definition Context := list (name * Ty + tyname * Kind).
+Definition Context : Type := partial_map Ty * partial_map Kind.
 
-Definition empty : Context := nil.
+Definition emptyContext : Context := (Map.empty, Map.empty).
 
-Fixpoint lookupT (ctx : Context) (x : name) : option Ty :=
-  match ctx with
-  | inl (y, T) :: ctx' => if x =? y then Coq.Init.Datatypes.Some T else lookupT ctx' x 
-  | inr _ :: ctx' => lookupT ctx' x
-  | nil => None
-  end.
+Definition lookupT (ctx : Context) (x : name) : option Ty :=
+  fst ctx x.
 
-Fixpoint lookupK (ctx : Context) (X : tyname) : option Kind := 
-  match ctx with
-  | inr (Y, K) :: ctx'  => if X =? Y then Coq.Init.Datatypes.Some K else lookupK ctx' X
-  | inl _ :: ctx' => lookupK ctx' X
-  | nil => None
-  end.
+Definition lookupK (ctx : Context) (X : tyname) : option Kind :=
+  snd ctx X.
 
-Definition extendT x T ctx : Context := cons (inl (x, T)) ctx.
-Definition extendK X K ctx : Context := cons (inr (X, K)) ctx.
+Definition extendT x T ctx : Context := ((x |-> T ; fst ctx), snd ctx).
+Definition extendK X K ctx : Context := (fst ctx, (X |-> K; snd ctx)).
 
-Notation "x ':T:' y" := (extendT (fst x) (snd x) y) (at level 60, right associativity).
-Notation "x ':K:' y" := (extendK (fst x) (snd x) y) (at level 60, right associativity).
+Notation "x '|T->' T ';' ctx" := (extendT x T ctx) (at level 60, right associativity).
+Notation "X '|K->' K ';' ctx" := (extendK X K ctx) (at level 60, right associativity).
 
+Lemma cong_eq : forall {A B} (x1 x2 : A) (y1 y2 : B), x1 = x2 -> y1 = y2 -> (x1, y1) = (x2, y2).
+Proof. intros. f_equal; auto. Qed. 
 
-Definition flatten ctxs : Context := List.concat (rev ctxs).
-Definition append ctx1 ctx2 : Context := app ctx1 ctx2.
+Lemma extendT_shadow : forall ctx x T1 T2,
+    (x |T-> T1; x |T-> T2; ctx) = (x |T-> T1; ctx).
+Proof. 
+  intros. destruct ctx. unfold extendT. simpl. 
+  f_equal.
+  apply update_shadow.
+Qed.
+
+Lemma extendT_permute : forall ctx x1 x2 T1 T2,
+    x2 <> x1 ->
+    (x1 |T-> T1 ; x2 |T-> T2 ; ctx) = (x2 |T-> T2 ; x1 |T-> T1 ; ctx).
+Proof.
+  intros. destruct ctx. unfold extendT. simpl. f_equal. apply update_permute. assumption. Qed.
+
+Lemma extendT_extendK_permute : forall x T Y K ctx,
+    (Y |K-> K ; x |T-> T ; ctx) = (x |T-> T ; Y |K-> K ; ctx).
+Proof.
+  intros.
+  destruct ctx.
+  unfold extendT.
+  unfold extendK.
+  simpl.
+  apply cong_eq; auto.
+Qed.
+
+Definition append ctx1 ctx2 : Context := 
+  pair
+    (fun x =>
+      match lookupT ctx1 x with
+      | Coq.Init.Datatypes.Some T => Coq.Init.Datatypes.Some T
+      | None => lookupT ctx2 x
+      end)
+    (fun X =>
+      match lookupK ctx1 X with
+      | Coq.Init.Datatypes.Some K => Coq.Init.Datatypes.Some K
+      | None => lookupK ctx2 X
+      end).
+Definition concat ctxs : Context := List.fold_right append emptyContext ctxs.
+Definition flatten ctxs : Context := concat (rev ctxs).
+
+Lemma append_emptyContext_l : forall ctx,
+    append emptyContext ctx = ctx.
+Proof. intros. destruct ctx. reflexivity. Qed.
+
+Lemma append_emptyContext_r : forall ctx,
+    append ctx emptyContext = ctx.
+Proof. 
+  intros. destruct ctx. unfold append. simpl.
+  apply cong_eq.
+  - apply functional_extensionality.
+    intros.
+    destruct (p x); auto.
+  - apply functional_extensionality.
+    intros.
+    destruct (p0 x); auto.
+Qed.
+
+Lemma append_singleton_l : forall x T ctx,
+    append (x |T-> T ; emptyContext) ctx = (x |T-> T ; ctx).
+Proof. 
+  intros. unfold append. simpl. destruct ctx. unfold extendT. simpl. 
+  apply cong_eq.
+  - apply functional_extensionality.
+    intros.
+    unfold update.
+    unfold t_update.
+    destruct (x =? x0); auto.
+  - reflexivity.
+Qed.
+
+Lemma append_assoc : forall ctx1 ctx2 ctx3,
+    append ctx1 (append ctx2 ctx3) = append (append ctx1 ctx2) ctx3.
+Proof.
+  intros.
+  destruct ctx1.
+  destruct ctx2.
+  destruct ctx3.
+  unfold append.
+  f_equal.
+  - simpl.
+    apply functional_extensionality.
+    intros.
+    destruct (p x); auto.
+  - simpl.
+    apply functional_extensionality.
+    intros.
+    destruct (p0 x); auto.
+Qed.
+
+Lemma concat_append : forall ctx1 ctx2,
+    concat (ctx1 ++ ctx2) = append (concat ctx1) (concat ctx2).
+Proof. 
+  induction ctx1.
+  - intros.
+    simpl.
+    rewrite append_emptyContext_l.
+    reflexivity.
+  - intros.
+    simpl.
+    rewrite <- append_assoc.
+    f_equal.
+    apply IHctx1.
+Qed.
+
+Lemma flatten_nil : flatten nil = emptyContext.
+Proof. reflexivity. Qed.
 
 Definition constructorDecl : constructor -> VDecl :=
   fun c => match c with
@@ -145,14 +243,14 @@ Open Scope list_scope.
 
 Definition binds (b : Binding) : Context :=
   match b with
-  | TermBind _ vd _ => (getName vd, getTy vd) :T: nil
-  | TypeBind tvd ty => (getTyname tvd, getKind tvd) :K: nil
+  | TermBind _ vd _ => (getName vd |T-> getTy vd ; emptyContext)
+  | TypeBind tvd ty => (getTyname tvd |K-> getKind tvd ; emptyContext)
   | DatatypeBind d =>
     let dataB := dataBind d in 
     let constrBs := constrBinds d in
-    let constrBs_ctx := fold_right (compose cons inl) nil constrBs in
+    let constrBs_ctx : Context := fold_right append emptyContext (map (fun x => (fst x |T-> snd x ; emptyContext)) constrBs) in
     let matchB := matchBind d in
-    matchB :T: constrBs_ctx ++ (dataB :K: nil)
+    (fst matchB |T-> snd matchB ; (append constrBs_ctx (fst dataB |K-> snd dataB ; emptyContext)))
   end.
 
 (** ** Kinds of builtin types *)
@@ -234,7 +332,7 @@ Fixpoint substituteT (X : tyname) (S T : Ty) : Ty :=
 
 Definition fromDecl (tvd : tvdecl tyname) : Context :=
   match tvd with
-  | TyVarDecl v K => extendK v K empty
+  | TyVarDecl v K => extendK v K emptyContext
   end.
     
 Definition unwrapIFix (F : Ty) (X : binderTyname) (K : Kind) (T : Ty) : Ty := (Ty_App (Ty_App F (Ty_Lam X K (Ty_IFix F (Ty_Var X)))) T).

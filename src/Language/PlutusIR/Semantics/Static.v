@@ -19,8 +19,8 @@ Notation constructor := (constr Tyname BinderName BinderTyname).
 
 (* Typing/kinding contexts *)
 Context 
-  (Context : Set) 
-  (empty : Context)
+  (Context : Type) 
+  (emptyContext : Context)
   (lookupT : Context -> Name -> option Ty)
   (lookupK : Context -> Tyname -> option Kind) 
   (extendT : BinderName -> Ty -> Context -> Context)

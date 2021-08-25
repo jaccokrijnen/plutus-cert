@@ -158,7 +158,7 @@ Definition P_bindings_well_formed_nonrec ctx bs1 :=
       forall f_bs2 t T,
         ctx |-oks_nr bs1 -> 
         CNR_Bindings bs1 f_bs2 ->
-        ((flatten (map binds bs1)) ++ ctx) |-+ t : T ->
+        (append (flatten (map binds bs1)) ctx) |-+ t : T ->
         ctx |-+ (fold_right apply t f_bs2) : T
     ).
 
@@ -184,7 +184,7 @@ Definition P_binding_well_formed ctx b1 :=
       forall f_b2 t T,
         ctx |-ok b1 ->
         CNR_Binding b1 f_b2 ->
-        (binds b1 ++ ctx) |-+ t : T ->
+        (append (binds b1) ctx) |-+ t : T ->
         ctx |-+ (f_b2 t) : T  
     ).
 
@@ -197,8 +197,7 @@ Proof.
   - (* T_Let *)
     intros. unfold P_has_type. intros.
     inversion X; subst.
-    + replace ctx with ([] ++ ctx) by reflexivity. 
-      apply H1.
+    + apply H1.
       * apply bs.
       * assumption.
       * assumption.
@@ -311,6 +310,9 @@ Proof.
         reflexivity.
       * intros.
         inversion X. subst.
+        simpl in H0.
+        rewrite flatten_nil in H0.
+        rewrite append_emptyContext_l in H0.
         assumption.
   - (* W_ConsB_NonRec *)
     intros. unfold P_bindings_well_formed_nonrec. intros.
@@ -338,7 +340,6 @@ Proof.
         
         simpl.
         edestruct H0 as [_ [_ J2]].
-        replace ctx with ([] ++ ctx) by reflexivity. 
         apply J2.
         -- assumption.
         -- assumption.
@@ -346,15 +347,15 @@ Proof.
            ++ assumption.
            ++ assumption.
            ++ simpl.
-              simpl in H4. 
-              unfold flatten in H4. 
-              simpl in H4. 
-              rewrite concat_app in H4.
               simpl in H4.
-              rewrite <- app_assoc in H4.
+              unfold flatten in H4.
+              simpl in H4. 
+              rewrite concat_append in H4.
+              simpl in H4.
+              rewrite <- append_assoc in H4.
+              rewrite append_emptyContext_r in H4.
               simpl in H4.
               apply H4.
-    
   - (* W_NilB_Rec *)
     intros. unfold P_bindings_well_formed_rec. intros.
     split.
@@ -395,7 +396,9 @@ Proof.
         inversion X. subst.
         eapply T_Apply.
         -- apply T_LamAbs.
-          ++ assumption. 
+          ++ simpl in H3.
+             rewrite append_singleton_l in H3. 
+             assumption. 
           ++ assumption.
         -- apply H1. assumption.
   - (* W_Type *)

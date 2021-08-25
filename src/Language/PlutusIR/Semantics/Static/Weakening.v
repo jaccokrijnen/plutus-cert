@@ -7,16 +7,16 @@ Import Coq.Strings.String.
 Local Open Scope string_scope.
 
 Definition inclusion (ctx1 ctx2 : Context) : Prop :=
-  (forall x T, lookupT ctx1 x = Coq.Init.Datatypes.Some T -> lookupT ctx2 x = Coq.Init.Datatypes.Some T) /\
-  (forall X K, lookupK ctx1 X = Coq.Init.Datatypes.Some K -> lookupK ctx2 X = Coq.Init.Datatypes.Some K).
+  Map.inclusion (fst ctx1) (fst ctx2) /\ Map.inclusion (snd ctx1) (snd ctx2).
 
-Lemma inclusion_empty : forall ctx2,
-    inclusion empty ctx2.
+Lemma inclusion_emptyContext : forall ctx2,
+    inclusion emptyContext ctx2.
 Proof.
   intros.
   unfold inclusion.
   simpl.
-  split; intros; inversion H.
+  destruct ctx2 as [ctx2_T ctx2_K].
+  split; apply inclusion_empty.
 Qed.
 
 Lemma inclusion_extendT : forall (ctx1 ctx2 : Context) (y : binderName) (T : Ty),
@@ -29,18 +29,11 @@ Proof.
   - intros.
     unfold lookupT.
     simpl.
-    unfold lookupT in H0.
-    simpl in H0.
-    destruct (x =? y) eqn:Hxy.
-    + assumption.
-    + fold lookupK.
-      fold lookupK in H0.
-      apply H.
-      assumption.
+    apply inclusion_update.
+    apply H.
   - intros. 
     simpl.
     apply H.
-    assumption.
 Qed.
 
 Lemma inclusion_extendK : forall (ctx1 ctx2 : Context) (y : binderTyname) (K : Kind),
@@ -53,18 +46,10 @@ Proof.
   - intros.
     simpl.
     apply H.
-    assumption.
   - intros.
     unfold lookupK.
-    simpl.
-    unfold lookupK in H0.
-    simpl in H0.
-    destruct (X =? y) eqn:Hxy.
-    + assumption.
-    + fold lookupK.
-      fold lookupK in H0.
-      apply H.
-      assumption.
+    apply inclusion_update.
+    apply H.
 Qed.
 
 Lemma inclusion_append : forall (ctx1 ctx2 ctx' : Context),
@@ -72,34 +57,20 @@ Lemma inclusion_append : forall (ctx1 ctx2 ctx' : Context),
     inclusion (Named.append ctx' ctx1) (Named.append ctx' ctx2).
 Proof.
   intros.
-  induction ctx'.
+  destruct ctx'.
+  split.
   - simpl.
+    unfold Map.inclusion.
+    intros.
+    destruct (p x); auto.
+    apply H.
     assumption.
-  - unfold Named.append.
-    simpl.
-    split.
-    + destruct a; destruct p.
-      * intros x T. 
-        unfold lookupT.
-        fold lookupT.
-        destruct (x =? s) eqn:Hxy.
-        -- auto.
-        -- intros.
-           apply IHctx'.
-           assumption.
-      * intros x T.
-        apply IHctx'.
-    + destruct a; destruct p.
-      * intros xT.
-        apply IHctx'.
-      * intros x T.
-        unfold lookupK.
-        fold lookupK.
-        destruct (x =? s) eqn:Hxy.
-        -- auto.
-        -- intros.
-           apply IHctx'.
-           assumption.
+  - simpl.
+    unfold Map.inclusion.
+    intros.
+    destruct (p0 x); auto.
+    apply H.
+    assumption.
 Qed.
       
 Lemma weakening__has_kind : forall ctx ctx' T K,
@@ -301,4 +272,15 @@ Proof.
       * subst.
         apply inclusion_append.
         assumption.
+Qed.
+
+Lemma weakening_empty : forall ctx t T,
+    emptyContext |-+ t : T ->
+    ctx |-+ t : T.
+Proof.
+  intros ctx t T Ht.
+  apply weakening in Ht.
+  unfold P_has_type in Ht.
+  apply Ht.
+  apply inclusion_emptyContext.
 Qed.

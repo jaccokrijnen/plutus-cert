@@ -40,15 +40,15 @@ Definition P_bindings_rec ctx bs := ctx |-oks_r bs.
 Definition P_binding ctx b := (*ctx |-ok b.*)
   forall s x Tb tb vb t t' T,
     b = TermBind s (VarDecl x Tb) tb ->
-    (binds (TermBind s (VarDecl x Tb) tb) ++ ctx) |-+ t : T ->
+    (append (binds (TermBind s (VarDecl x Tb) tb)) ctx) |-+ t : T ->
     substitute x vb t t' ->
     ctx |-+ t' : T.
 
 Axiom skip : forall P, P.
 
 Theorem preservation' : forall (t : Term) (T : Ty),
-  empty |-+ t : T ->
-  P_term empty t T. 
+  emptyContext |-+ t : T ->
+  P_term emptyContext t T. 
 Proof.
   intros.
   eapply has_type__ind with (P := P_term) (P0 := P_constructor) (P1 := P_bindings_nonrec) (P2 := P_bindings_rec) (P3 := P_binding).
@@ -145,6 +145,8 @@ Proof.
     simpl in H3.
     unfold P_term in H1.
     simpl in H1.
+    rewrite flatten_nil in H1.
+    rewrite append_emptyContext_l in H1.
     apply H1.
     apply H5.
   - intros. unfold P_bindings_nonrec. unfold P_bindings_nonrec in H3. intros.
@@ -158,7 +160,7 @@ Proof.
       * unfold flatten in H5.
         unfold flatten in H5.
         unfold append in H5.
-        simpl in H5. unfold extendT in H5. simpl in H5.
+        simpl in H5. unfold extendT in H5. simpl in H5. (*
         rewrite List.concat_app in H5. simpl in H5.
         rewrite <- List.app_assoc in H5. simpl in H5.
         apply H5.
@@ -169,11 +171,11 @@ Proof.
         simpl in H7. unfold extendT in H7. simpl in H7.
         rewrite List.concat_app in H7. simpl in H7.
         rewrite <- List.app_assoc in H7. simpl in H7.
-        apply H7.
+        apply H7.*)
 Abort.
 
 Theorem preservation : forall t v T,
-    empty |-+ t : T ->
+    emptyContext |-+ t : T ->
     t ==> v ->
-    empty |-+ v : T.
+    emptyContext |-+ v : T.
 Proof. Admitted.
