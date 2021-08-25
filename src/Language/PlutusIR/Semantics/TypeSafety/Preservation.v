@@ -46,20 +46,20 @@ Definition P_binding ctx b := (*ctx |-ok b.*)
 
 Axiom skip : forall P, P.
 
-Theorem preservation : forall (t : Term) (T : Ty),
+Theorem preservation' : forall (t : Term) (T : Ty),
   empty |-+ t : T ->
   P_term empty t T. 
 Proof.
   intros.
   eapply has_type__ind with (P := P_term) (P0 := P_constructor) (P1 := P_bindings_nonrec) (P2 := P_bindings_rec) (P3 := P_binding).
   - intros. unfold P_term. intros.
-    inversion H6; subst.
+    inversion H5; subst.
     unfold P_bindings_nonrec in H3.
-    eapply H3.
-    + apply H2.
-    + apply H5.
-    + apply H10.
+    eapply H2.
+    + apply H1.
     + apply H4.
+    + apply H9.
+    + apply H3.
   - apply skip. (* TODO *)
   - (* T_Var *)
     intros. unfold P_term. intros.
@@ -148,8 +148,8 @@ Proof.
     apply H1.
     apply H5.
   - intros. unfold P_bindings_nonrec. unfold P_bindings_nonrec in H3. intros.
-      
     inversion H6. subst.
+
     eapply H1.
     + reflexivity.
     + simpl.
@@ -171,3 +171,9 @@ Proof.
         rewrite <- List.app_assoc in H7. simpl in H7.
         apply H7.
 Abort.
+
+Theorem preservation : forall t v T,
+    empty |-+ t : T ->
+    t ==> v ->
+    empty |-+ v : T.
+Proof. Admitted.

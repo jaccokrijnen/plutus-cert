@@ -10,12 +10,14 @@ Require PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
 
 Require Import PlutusCert.Language.PlutusIR.Conversion.
 
+(*
+
 Module DB.
 
 Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.DeBruijn.
 Import DeBruijnTerm.
-Import ConvertInductive.
+Import ConvertFunction.
 
 Definition P ctx t1 T := 
   forall t2 t1' t2' vars, 
@@ -32,6 +34,68 @@ Definition R ctx b1 :=
     ConvertBinding vars b1' b1 ->
     ConvertBinding vars b2' b2 ->
     ctx |-ok b2.
+
+Definition P_has_type ctx t1 T := 
+  forall t2 t1' t2' vars, 
+    CNR_Term t1' t2' ->
+    ConvertTerm vars t1' t1 ->
+    ConvertTerm vars t2' t2 -> 
+    ctx |-+ t2 : T.
+
+Definition P_constructor_well_formed ctx c := ctx |-ok_c c.
+
+Definition P_bindings_well_formed_nonrec ctx bs1 :=
+    forall bs2 bs1' bs2' vars, (
+      ctx |-oks_nr bs1 ->
+      Congruence.Cong_Bindings CNR_Term bs1' bs2' ->
+      ConvertBindings vars bs1' bs1 ->
+      ConvertBindings vars bs2' bs2 ->
+      ctx |-oks_nr bs2
+    ) /\ (
+      Congruence.Cong_Bindings CNR_Term bs1' bs2' ->
+      ConvertBindings vars bs1' bs1 ->
+      ConvertBindings vars bs2' bs2 -> 
+      map binds bs1 = map binds bs2
+    ) /\ (
+      forall f_bs2 t T,
+        ctx |-oks_nr bs1 -> 
+        CNR_Bindings bs1' f_bs2 ->
+        ConvertBindings vars bs1' bs1 ->
+        ((flatten (map binds bs1)) ++ ctx) |-+ t : T ->
+        ctx |-+ (fold_right apply t f_bs2) : T
+    ).
+
+Definition P_bindings_well_formed_rec ctx bs1 :=
+  forall bs2, (
+    ctx |-oks_r bs1 ->
+    Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
+    ctx |-oks_r bs2
+  ) /\ (
+    Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
+    map binds bs1 = map binds bs2
+  ).
+
+Definition P_binding_well_formed ctx b1 := 
+  forall b2, (
+      ctx |-ok b1 ->
+      Congruence.Cong_Binding CNR_Term b1 b2 ->
+      ctx |-ok b2
+    ) /\ (
+      Congruence.Cong_Binding CNR_Term b1 b2 ->
+      binds b1 = binds b2
+    ) /\ (
+      forall f_b2 t T,
+        ctx |-ok b1 ->
+        CNR_Binding b1 f_b2 ->
+        (binds b1 ++ ctx) |-+ t : T ->
+        ctx |-+ (f_b2 t) : T  
+    ).
+
+
+Theorem CNR_Term__preserves_typing : forall ctx t1 T,
+    ctx |-+ t1 : T ->
+    P_has_type ctx t1 T.
+Proof.
 
 (*
 Theorem CNR_Term__preserves_typing : forall ctx t1 T,
@@ -66,7 +130,7 @@ Abort.
 *)
 
 End DB.
-
+*)
 
 
 Module Named.
@@ -75,14 +139,14 @@ Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
 Import NamedTerm.
 
-Definition P_term ctx t1 T := 
+Definition P_has_type ctx t1 T := 
   forall t2, 
     CNR_Term t1 t2 -> 
     ctx |-+ t2 : T.
 
-Definition P_constructor ctx c := ctx |-ok_c c.
+Definition P_constructor_well_formed ctx c := ctx |-ok_c c.
 
-Definition P_bindings_nonrec ctx bs1 :=
+Definition P_bindings_well_formed_nonrec ctx bs1 :=
     forall bs2, (
       ctx |-oks_nr bs1 ->
       Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
@@ -98,7 +162,7 @@ Definition P_bindings_nonrec ctx bs1 :=
         ctx |-+ (fold_right apply t f_bs2) : T
     ).
 
-Definition P_bindings_rec ctx bs1 :=
+Definition P_bindings_well_formed_rec ctx bs1 :=
   forall bs2, (
     ctx |-oks_r bs1 ->
     Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
@@ -108,7 +172,7 @@ Definition P_bindings_rec ctx bs1 :=
     map binds bs1 = map binds bs2
   ).
 
-Definition P_binding ctx b1 := 
+Definition P_binding_well_formed ctx b1 := 
   forall b2, (
       ctx |-ok b1 ->
       Congruence.Cong_Binding CNR_Term b1 b2 ->
@@ -127,11 +191,11 @@ Definition P_binding ctx b1 :=
 
 Theorem CNR_Term__preserves_typing : forall ctx t1 T,
     ctx |-+ t1 : T ->
-    P_term ctx t1 T.
+    P_has_type ctx t1 T.
 Proof.
-  apply has_type__ind with (P := P_term) (P0 := P_constructor) (P1 := P_bindings_nonrec) (P2 := P_bindings_rec) (P3 := P_binding).
+  apply has_type__ind with (P := P_has_type) (P0 := P_constructor_well_formed) (P1 := P_bindings_well_formed_nonrec) (P2 := P_bindings_well_formed_rec) (P3 := P_binding_well_formed).
   - (* T_Let *)
-    intros. unfold P_term. intros.
+    intros. unfold P_has_type. intros.
     inversion X; subst.
     + replace ctx with ([] ++ ctx) by reflexivity. 
       apply H1.
@@ -144,63 +208,63 @@ Proof.
       eapply T_Let.
       * reflexivity.
       * apply H1. assumption. assumption.
-      * unfold P_bindings_rec in H2. edestruct H1 as [_ [Heq _]]. apply Heq in X1. rewrite <- X1. apply H3. assumption. 
+      * unfold P_bindings_well_formed_rec in H2. edestruct H1 as [_ [Heq _]]. apply Heq in X1. rewrite <- X1. apply H3. assumption. 
   - (* T_LetRec *)
-    intros. unfold P_term. intros.
+    intros. unfold P_has_type. intros.
     inversion X. subst.
     inversion X0. subst.
     eapply T_LetRec.
     + reflexivity.
-    + unfold P_bindings_rec in H1.
+    + unfold P_bindings_well_formed_rec in H1.
       edestruct H1 as [IHH Heq].
       apply Heq in X1 as Hsu.
       rewrite <- Hsu.
       apply IHH. auto. auto.
-    + unfold P_bindings_rec in H1.
+    + unfold P_bindings_well_formed_rec in H1.
       edestruct H1 as [IHH Heq].
       apply Heq in X1 as Hsu.
       rewrite <- Hsu.
       apply H3.
       assumption.
   - (* T_Var *)
-    intros. unfold P_term. intros.
+    intros. unfold P_has_type. intros.
     inversion X. subst.
     inversion X0. subst.
     apply T_Var. assumption.
   - (* T_TyAbs *)
-    intros. unfold P_term. intros.
+    intros. unfold P_has_type. intros.
     inversion X0. subst.
     inversion X1. subst.
     apply T_TyAbs.
-    unfold P_term in H0.
+    unfold P_has_type in H0.
     apply H0.
     apply X2.
   - (* T_LamAbs *)
-    intros. unfold P_term. intros.
+    intros. unfold P_has_type. intros.
     inversion X. subst.
     inversion X0. subst.
     apply T_LamAbs.
     + apply H0. assumption.
     + assumption.
   - (* T_Apply *)
-    intros. unfold P_term. intros.
+    intros. unfold P_has_type. intros.
     inversion X. subst.
     inversion X0. subst.
     apply T_Apply with T1.
     + apply H0. assumption.
     + apply H2. assumption.
   - (* T_Constant *)
-    intros. unfold P_term. intros.
+    intros. unfold P_has_type. intros.
     inversion X. subst.
     inversion X0. subst.
     apply T_Constant.
   - (* T_Builtin *)
-    intros. unfold P_term. intros.
+    intros. unfold P_has_type. intros.
     inversion X. subst.
     inversion X0. subst.
     apply T_Builtin.
   - (* T_TyInst *)
-    intros. unfold P_term. intros.
+    intros. unfold P_has_type. intros.
     inversion X0. subst.
     inversion X1. subst.
     apply T_TyInst with (T1 := T1) (X := X) (K2 := K2).
@@ -208,13 +272,13 @@ Proof.
     + assumption.
     + assumption.
   - (* T_Error *)
-    intros. unfold P_term. intros.
+    intros. unfold P_has_type. intros.
     inversion X. subst.
     inversion X0. subst.
     apply T_Error.
     apply H.
   - (* T_IWrap *)
-    intros. unfold P_term. intros.
+    intros. unfold P_has_type. intros.
     inversion X0. subst.
     inversion X1. subst.
     apply T_IWrap with (X := X) (K := K) (S := S).
@@ -223,7 +287,7 @@ Proof.
     + assumption.
     + assumption.
   - (* T_Unwrap *)
-    intros. unfold P_term. intros.
+    intros. unfold P_has_type. intros.
     inversion X0. subst.
     inversion X1. subst.
     apply T_Unwrap with (F := F) (X := X) (K := K) (T := T).
@@ -232,11 +296,11 @@ Proof.
     + assumption.
 
   - (* W_Con *)
-    intros. unfold P_constructor. intros.
+    intros. unfold P_constructor_well_formed. intros.
     apply W_Con. assumption.
 
   - (* W_NilB_NonRec *)
-    intros. unfold P_bindings_nonrec. intros.
+    intros. unfold P_bindings_well_formed_nonrec. intros.
     split.
     + intros.
       inversion X. subst.
@@ -249,13 +313,13 @@ Proof.
         inversion X. subst.
         assumption.
   - (* W_ConsB_NonRec *)
-    intros. unfold P_bindings_nonrec. intros.
+    intros. unfold P_bindings_well_formed_nonrec. intros.
     split.
     + intros.
       inversion X. subst.
       apply W_ConsB_NonRec.
       * apply H0. assumption. assumption.
-      * unfold P_binding in H0.
+      * unfold P_binding_well_formed in H0.
         edestruct H0 as [_ [Heq _]].
         apply Heq in X0.
         rewrite <- X0.
@@ -292,7 +356,7 @@ Proof.
               apply H4.
     
   - (* W_NilB_Rec *)
-    intros. unfold P_bindings_rec. intros.
+    intros. unfold P_bindings_well_formed_rec. intros.
     split.
     + intros.
       inversion X. subst.
@@ -301,7 +365,7 @@ Proof.
       inversion X. subst.
       reflexivity.
   - (* W_ConsB_Rec*)
-    intros. unfold P_bindings_rec. intros.
+    intros. unfold P_bindings_well_formed_rec. intros.
     split.
     + intros.
       inversion X. subst.
@@ -316,7 +380,7 @@ Proof.
       -- apply H2. assumption.
            
   - (* W_Term *)
-    intros. unfold P_binding. intros.
+    intros. unfold P_binding_well_formed. intros.
     split.
     + intros. 
       inversion X. subst.
@@ -335,7 +399,7 @@ Proof.
           ++ assumption.
         -- apply H1. assumption.
   - (* W_Type *)
-    intros. unfold P_binding. intros.
+    intros. unfold P_binding_well_formed. intros.
     split.
     + intros. 
       inversion X0. subst.
@@ -348,7 +412,7 @@ Proof.
       * intros.
         inversion X0.
   - (* W_Data *)
-    intros. unfold P_binding. intros.
+    intros. unfold P_binding_well_formed. intros.
     split.
     + intros.
       inversion X0. subst.

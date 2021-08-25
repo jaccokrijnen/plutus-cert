@@ -338,10 +338,15 @@ with ConvertBinding : list string -> NamedTerm.Binding -> DeBruijnTerm.Binding -
 with ConvertConstructors : list string -> list NamedTerm.constructor -> list DeBruijnTerm.constructor -> Prop :=
   | ConvertConstructors_Nil : forall vars,
       ConvertConstructors vars nil nil
-  | ConvertConstructors_Cons : forall vars x T ar cs T' cs',
-      ConvertTy vars T T' ->
+  | ConvertConstructors_Cons : forall vars c cs c' cs',
+      ConvertConstr vars c c' ->
       ConvertConstructors vars cs cs' ->
-      ConvertConstructors vars (Constructor (VarDecl x T) ar :: cs) (Constructor (VarDecl tt T') ar :: cs') 
+      ConvertConstructors vars (c :: cs) (c' :: cs')
+
+with ConvertConstr : list string -> NamedTerm.constructor -> DeBruijnTerm.constructor -> Prop :=
+  | ConvertConstructor : forall vars x T ar T',
+      ConvertTy vars T T' ->
+      ConvertConstr vars (Constructor (VarDecl x T) ar) (Constructor (VarDecl tt T') ar)
 .
 
 Import ConvertFunc.

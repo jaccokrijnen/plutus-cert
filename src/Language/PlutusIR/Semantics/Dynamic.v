@@ -50,7 +50,7 @@ Inductive substitute : name -> Term -> Term -> Term -> Prop :=
   | S_Var1 : forall x s,
       substitute x s (Var x) s
   | S_Var2 : forall x s y,
-      x <> y ->
+      y <> x ->
       substitute x s (Var y) (Var y)
   | S_TyAbs : forall x s bX K t0 t0',
       substitute x s t0 t0' ->
@@ -380,9 +380,6 @@ Inductive eval : Term -> Term -> Prop :=
   (* Type instantiation *)
   | E_TyInst : forall t1 T2 X K v0,
       t1 ==> TyAbs X K v0 ->
-      (* TODO: should the type argument be substituted for the type variable?
-      substituteT_in_term X T2 v0 v0' ->
-      *)
       TyInst t1 T2 ==> v0
   (* Errors and their propagation *)
   | E_Error : forall T,

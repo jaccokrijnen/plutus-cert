@@ -103,6 +103,19 @@ Inductive EqT : Ty -> Ty -> Prop :=
       Ty_App S1 T1 =b Ty_App S2 T2
 where "T1 '=b' T2" := (EqT T1 T2).
 
+Fixpoint beta_reduce (T : Ty) : Ty :=
+  match T with
+  (* Beta-reduction *)
+  | Ty_App (Ty_Lam X K T1) T2 => substituteT X T2 T1
+  (* Congruence *)
+  | Ty_Fun T1 T2 => Ty_Fun (beta_reduce T1) (beta_reduce T2)
+  | Ty_Forall X K T0 => Ty_Forall X K (beta_reduce T0)
+  | Ty_Lam X K T0 => Ty_Lam X K (beta_reduce T0)
+  | Ty_App T1 T2 => Ty_App (beta_reduce T1) (beta_reduce T2)
+  (* Reflexivity *)
+  | T0 => T0
+  end.
+
 (** ** Typing of terms *)
 Reserved Notation "ctx '|-+' tm ':' T" (at level 40, tm at level 0, T at level 0).
 Inductive has_type : Context -> Term -> Ty -> Prop :=
@@ -204,6 +217,12 @@ Scheme has_type__ind := Minimality for has_type Sort Prop
   with bindings_well_formed_rec__ind := Minimality for bindings_well_formed_rec Sort Prop
   with binding_well_formed__ind := Minimality for binding_well_formed Sort Prop.
 
+Combined Scheme has_type__multind from 
+  has_type__ind,
+  bindings_well_formed_nonrec__ind,
+  bindings_well_formed_rec__ind,
+  binding_well_formed__ind.
+  
 End Typing.
 
 #[export] Hint Constructors has_kind : typing.

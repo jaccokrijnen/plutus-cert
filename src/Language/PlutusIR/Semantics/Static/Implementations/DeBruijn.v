@@ -255,6 +255,14 @@ Definition constructor_well_formed__DeBruijn : Context -> constructor -> Prop :=
 
 Notation "ctx '|-ok_c' c" := (constructor_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc listOfArgumentTypes unwrapIFix ctx c) (at level 40, c at level 0).
 
+Definition bindings_well_formed_nonrec__DeBruijn : Context -> list Binding -> Prop := bindings_well_formed_nonrec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc listOfArgumentTypes unwrapIFix.
+
+Notation "ctx '|-oks_nr' bs" := (bindings_well_formed_nonrec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc listOfArgumentTypes unwrapIFix ctx bs) (at level 40, bs at level 0).
+
+Definition bindings_well_formed_rec__DeBruijn : Context -> list Binding -> Prop := bindings_well_formed_rec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc listOfArgumentTypes unwrapIFix.
+
+Notation "ctx '|-oks_r' bs" := (bindings_well_formed_rec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc listOfArgumentTypes unwrapIFix ctx bs) (at level 40, bs at level 0).
+
 Definition binding_well_formed__DeBruijn : Context -> Binding -> Prop := binding_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc listOfArgumentTypes unwrapIFix.
 
 Notation "ctx '|-ok' tm" := (binding_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc listOfArgumentTypes unwrapIFix ctx tm) (at level 40, tm at level 0).
