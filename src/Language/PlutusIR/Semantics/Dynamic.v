@@ -1,15 +1,10 @@
 Require Import PlutusCert.Language.PlutusIR.
-Import ZArith.BinInt.
+Import NamedTerm.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
 Import Coq.Lists.List.
 Import Coq.Strings.String.
-Import Ascii.
-Require Import Coq.Strings.BinaryString.
-From Equations Require Import Equations.
-
-Import NamedTerm.
 
 Local Open Scope string_scope.
-Local Open Scope Z_scope.
 
 (** * Substitution *)
 
@@ -122,90 +117,9 @@ Combined Scheme substitute__mutind from
   substitute_bindings_rec__ind, 
   substitute_binding__ind.
 
-(** ** Definition as a function (failed) *)
-Reserved Notation "'[' x '|->' s ']' t" (at level 20).
-Fail Equations substitute (x : name) (s t : Term) : Term := {
-  substitute x s (Let NonRec bs t0) => 
-    if existsb (String.eqb x) (vars_bound_by_bindings bs)
-      then Let NonRec (substitute_bindings_nonrec x s bs) t0
-      else Let NonRec (substitute_bindings_nonrec x s bs) ([x |-> s] t0) ;
-  substitute x s (Let Rec bs t0) => 
-    if existsb (String.eqb x) (vars_bound_by_bindings bs)
-      then Let Rec bs t0
-      else Let Rec bs (*(map (substitute_binding x s) bs)*) ([x |-> s]  t0) ;
-  substitute x s (Var y) => 
-    if String.eqb x y then s else Var y ;
-  substitute x s (TyAbs bX K t0) => 
-    TyAbs bX K ([x |-> s]  t0) ;
-  substitute x s (LamAbs bx T t0) => 
-    if String.eqb x bx
-      then LamAbs bx T t0
-      else LamAbs bx T ([x |-> s]  t0) ;
-  substitute x s (Apply t1 t2) => 
-    Apply ([x |-> s]  t1) ([x |-> s]  t2) ;
-  substitute x s (Constant u) => 
-    Constant u ;
-  substitute x s (Builtin d) => 
-    Builtin d ;
-  substitute x s (TyInst t0 T) => 
-    TyInst ([x |-> s]  t0) T ;
-  substitute x s (Error T) => 
-    Error T ;
-  substitute x s (IWrap F T t0) => 
-    IWrap F T ([x |-> s]  t0) ;
-  substitute x s (Unwrap t0) => 
-    Unwrap ([x |-> s]  t0) }
-where "'[' x '|->' s ']' t" := (substitute x s t)
-
-with substitute_bindings_nonrec : (x : name) (s : Term) (bs : list Binding) : list Binding := {
-  substitute_bindings_nonrec x s nil =>
-    nil ;
-  substitute_bindings_nonrec x s (TermBind strictness (VarDecl bx T) t :: bs) =>
-    if String.eqb x bx
-      then TermBind strictness (VarDecl bx T) ([x |-> s] t) :: bs
-      else TermBind strictness (VarDecl bx T) ([x |-> s] t) :: substitute_bindings_nonrec x s bs ;
-  substitute_bindings_nonrec x s (TypeBind tvd T :: bs) =>
-    if existsb (String.eqb x) (vars_bound_by_binding (TypeBind tvd T))
-      then TypeBind tvd T :: bs
-      else TypeBind tvd T :: substitute_bindings_nonrec x s bs ;
-  substitute_bindings_nonrec x s (DatatypeBind dtd :: bs) =>
-    if existsb (String.eqb x) (vars_bound_by_binding (DatatypeBind dtd))
-      then DatatypeBind dtd :: bs
-      else DatatypeBind dtd :: substitute_bindings_nonrec x s bs }.
-
 (** * Big-step operational semantics *)
 
-Definition arity (df : DefaultFun) : nat :=
-  match df with
-  | AddInteger => 2
-  | SubtractInteger => 2
-  | MultiplyInteger => 2
-  | DivideInteger => 2
-  | QuotientInteger => 2
-  | RemainderInteger => 2
-  | ModInteger => 2
-  | LessThanInteger => 2
-  | LessThanEqInteger => 2
-  | GreaterThanInteger => 2
-  | GreaterThanEqInteger => 2
-  | EqInteger => 2
-  | Concatenate => 2
-  | TakeByteString => 2
-  | DropByteString => 2
-  | SHA2 => 1
-  | SHA3 => 1
-  | VerifySignature => 3
-  | EqByteString => 2
-  | LtByteString => 2
-  | GtByteString => 2
-  | IfThenElse => 4
-  | CharToString => 1
-  | Append => 2
-  | Trace => 1
-  end.
-
 (** ** Values *)
-Local Close Scope Z_scope.
 
 Inductive value : Term -> Prop :=
   | V_TyAbs : forall bX K t0,
@@ -252,90 +166,6 @@ with value_builtin : Term -> Prop :=
     value v2 ->
     value_builtin (Apply (Apply (TyInst (Builtin f) T) v1) v2).
 
-(** ** Meanings of built-in functions *)
-Local Open Scope Z_scope.
-
-Definition constInt (a : Z) : Term := Constant (Some (ValueOf DefaultUniInteger a)).
-Definition constBool (a : bool) : Term := Constant (Some (ValueOf DefaultUniBool a)).
-Definition constBS (a : string) : Term := Constant (Some (ValueOf DefaultUniByteString a)).
-Definition constChar (a : ascii) : Term := Constant (Some (ValueOf DefaultUniChar a)).
-Definition constString (a : string) : Term := Constant (Some (ValueOf DefaultUniString a)).
-Definition constUnit (a : unit) : Term := Constant (Some (ValueOf DefaultUniUnit a)).
-
-Definition take (x : Z) (s : string) : string := substring 0 (Z.to_nat x) s.
-Definition drop (x : Z) (s : string) : string := substring (Z.to_nat x) (length s) s.
-
-Inductive eval_defaultfun : Term -> Term -> Prop :=
-  (** Binary operators on integers *)
-  | E_Builtin_AddInteger : forall x y,
-      eval_defaultfun (Apply (Apply (Builtin AddInteger) (constInt x)) (constInt y)) (constInt (x + y))
-  | E_Builtin_SubtractInteger : forall x y, 
-      eval_defaultfun (Apply (Apply (Builtin SubtractInteger) (constInt x)) (constInt y)) (constInt (x - y))
-  | E_Builtin_MultiplyInteger : forall x y,
-      eval_defaultfun  (Apply (Apply (Builtin MultiplyInteger) (constInt x)) (constInt y)) (constInt (x * y))
-  | E_Builtin_DivideInteger : forall x y,
-      eval_defaultfun  (Apply (Apply (Builtin DivideInteger) (constInt x)) (constInt y)) (constInt (x / y))
-  | E_Builtin_QuotientInteger : forall x y,
-      eval_defaultfun  (Apply (Apply (Builtin QuotientInteger) (constInt x)) (constInt y)) (constInt (x ÷ y))
-  | E_Builtin_RemainderInteger : forall x y,
-      eval_defaultfun (Apply (Apply (Builtin RemainderInteger) (constInt x)) (constInt y)) (constInt (Z.rem x y))
-  | E_Builtin_ModInteger : forall x y,
-      eval_defaultfun  (Apply (Apply (Builtin ModInteger) (constInt x)) (constInt y)) (constInt (x mod y))
-  (** Binary predicates on integers *)
-  | E_Builtin_LessThanInteger : forall x y,
-      eval_defaultfun (Apply (Apply (Builtin LessThanInteger) (constInt x)) (constInt y)) (constBool (x <? y))
-  | E_Builtin_LessThanEqInteger : forall x y,
-      eval_defaultfun (Apply (Apply (Builtin LessThanEqInteger) (constInt x)) (constInt y)) (constBool (x <=? y))
-  | E_Builtin_GreaterThanInteger : forall x y,
-      eval_defaultfun (Apply (Apply (Builtin GreaterThanInteger) (constInt x)) (constInt y)) (constBool (x >? y))
-  | E_Builtin_GreaterThanEqInteger : forall x y,
-      eval_defaultfun (Apply (Apply (Builtin GreaterThanEqInteger) (constInt x)) (constInt y)) (constBool (x >=? y))
-  | E_Builtin_EqInteger : forall x y,
-      eval_defaultfun (Apply (Apply (Builtin EqInteger) (constInt x)) (constInt y)) (constBool (x =? y))
-  (** Bytestring operations *)
-  | E_Builtin_Concatenate : forall bs1 bs2,
-      eval_defaultfun (Apply (Apply (Builtin Concatenate) (constBS bs1)) (constBS bs2)) (constBS (bs1 ++ bs2))
-  | E_Builtin_TakeByteString : forall x bs,
-      eval_defaultfun (Apply (Apply (Builtin TakeByteString) (constInt x)) (constBS bs)) (constBS (take x bs))
-  | E_Builtin_DropByteString : forall x bs,
-      eval_defaultfun (Apply (Apply (Builtin DropByteString) (constInt x)) (constBS bs)) (constBS (drop x bs))
-  (** Bytestring hashing
-      
-      Note: We model hashing by identity. Comparing hashes now becomes a straightforward equality check.
-      We believe modelling hash function as such is sufficient, because the dynamic semantics is not meant to 
-      be used as a basis for a real-world evaluator.
-  *)
-  | E_Builtin_SHA2 : forall bs,
-      eval_defaultfun (Apply (Builtin SHA2) (constBS bs)) (constBS bs)
-  | E_Builtin_SHA3 : forall bs,
-      eval_defaultfun (Apply (Builtin SHA3) (constBS bs)) (constBS bs)
-  (** Signature verification *)
-  | E_Builtin_VerifySignature : forall publicKey message signature,
-      (* TODO: Obviously, this should evaluate to true. However, how can we model the verification of signatures? 
-
-         Implementation of signature verification:
-         https://input-output-hk.github.io/ouroboros-network/cardano-crypto/Crypto-ECC-Ed25519Donna.html
-      *)
-      eval_defaultfun (Apply (Apply (Apply (Builtin VerifySignature) (constBS publicKey)) (constBS message)) (constBS signature)) (constBool true)
-  (** Binary predicates on bytestrings *)
-  | E_Builtin_EqByteString : forall bs1 bs2,
-      eval_defaultfun (Apply (Apply (Builtin EqByteString) (constBS bs1)) (constBS bs2)) (constBool (bs1 =? bs2)%string)
-  | E_Builtin_LtByteString : forall bs1 bs2,
-      eval_defaultfun (Apply (Apply (Builtin LtByteString) (constBS bs1)) (constBS bs2)) (constBool (to_Z bs1 <? to_Z bs2))
-  | E_Builtin_GtByteString : forall bs1 bs2,
-      eval_defaultfun (Apply (Apply (Builtin GtByteString) (constBS bs1)) (constBS bs2)) (constBool (to_Z bs1 >? to_Z bs2))
-  (** If-Then-Else *)
-  | E_Builtin_IfThenElse : forall cond t f T,
-      eval_defaultfun (Apply (Apply (Apply (TyInst (Builtin IfThenElse) T) (constBool cond)) t) f) (if cond then t else f)
-  (** String operations *)
-  | E_Builtin_CharToString : forall ch,
-      eval_defaultfun (Apply (Builtin CharToString) (constChar ch)) (constString (String ch EmptyString))
-  | E_Builtin_Append : forall s1 s2,
-      eval_defaultfun (Apply (Apply (Builtin Append) (constString s1)) (constString s2)) (constString (s1 ++ s2))
-  | E_Builtin_Trace : forall s,
-      eval_defaultfun (Apply (Builtin Trace) (constString s)) (constUnit tt)
-.
-
 (** ** Implementation of big-step semantics as an inductive datatype *)
 Reserved Notation "t '==>' v"(at level 40).
 Inductive eval : Term -> Term -> Prop :=
@@ -372,7 +202,7 @@ Inductive eval : Term -> Term -> Prop :=
       value_builtin v1 ->
       t2 ==> v2 ->
       ~(value_builtin (Apply v1 v2)) ->
-      eval_defaultfun (Apply v1 v2) v0 ->
+      compute_defaultfun (Apply v1 v2) = Datatypes.Some v0 ->
       Apply t1 t2 ==> v0
   | E_TyInstBuiltin1 : forall t1 T,
       t1 ==> Builtin IfThenElse ->
@@ -417,6 +247,9 @@ Scheme eval__ind := Minimality for eval Sort Prop
 Definition Ty_int : Ty := Ty_Builtin (Some (TypeIn DefaultUniInteger)).
 Definition int_to_int : Ty := Ty_Fun Ty_int Ty_int.
 
+Import ZArith.BinInt.
+Local Open Scope Z_scope.
+
 Example test_addInteger : 
   Apply (LamAbs "x+" int_to_int (Apply (Var "x+") (constInt 17))) (Apply (Builtin AddInteger) (constInt 3))
   ==> constInt 20.
@@ -458,7 +291,7 @@ Proof.
       simpl in H2.
       apply PeanoNat.Nat.lt_irrefl in H2.
       inversion H2. 
-    + apply E_Builtin_AddInteger.
+    +  reflexivity.
 Qed.
 
 Definition int_and_int_to_int : Ty := Ty_Fun Ty_int (Ty_Fun Ty_int Ty_int).
@@ -513,5 +346,5 @@ Proof.
     + apply E_Constant.
     + intros Hcon.
       inversion Hcon.
-    + apply E_Builtin_IfThenElse.
-Qed. 
+    + reflexivity.
+Qed.

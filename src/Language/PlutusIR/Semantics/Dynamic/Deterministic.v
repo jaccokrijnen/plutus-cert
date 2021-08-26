@@ -1,7 +1,6 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
-
 (** * [substitute] is deterministic*)
 
 Definition P_substitute (x : name) (s t t' : Term) : Prop :=
@@ -215,17 +214,6 @@ Qed.
 
 (** * [eval] is deterministic *)
 
-Theorem eval_defaultfun__deterministic : forall (t : Term) v1 v2,
-  eval_defaultfun t v1 ->
-  eval_defaultfun t v2 ->
-  v1 = v2.
-Proof.
-  intros. inversion H.
-  - subst.
-    inversion H0. subst.
-    Fail injection H1. (* TODO: Why does injection fail? *)
- Admitted. (* TODO *)
-
 Definition P_eval x y1 :=
   forall y2,
     x ==> y2 ->
@@ -338,7 +326,7 @@ Proof.
       subst.
       apply H11 in H4.
       destruct H4.
-  - (* E_ApplyBuiltin3 *)
+  - (* E_ApplyBuiltin2 *)
     intros. unfold P_eval. intros.
     inversion H6. subst.
     + (* E_Apply *) 
@@ -369,10 +357,11 @@ Proof.
       assert (v2 = v4). {
         apply H3. assumption.
       }
-      subst.
-      apply eval_defaultfun__deterministic with (Apply v3 v4).
-      * assumption.
-      * assumption.
+      subst. 
+      rewrite H5 in H14. 
+      inversion H14. 
+      subst. 
+      reflexivity.
   - (* E_TyInstBuiltin1 *)
     intros. unfold P_eval. intros.
     inversion H1.

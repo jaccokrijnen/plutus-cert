@@ -3,12 +3,16 @@ Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
+
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
 
 
 Lemma preservation__eval_defaultfun : forall ctx t T,
+    ctx = emptyContext ->
     ctx |-+ t : T ->
     forall v,
-      eval_defaultfun t v ->
+      compute_defaultfun t = Datatypes.Some v ->
       ctx |-+ v : T.
 Proof. Admitted. (* TODO *)
 
@@ -19,7 +23,8 @@ Theorem unique_kinds : forall ctx T K K',
 Proof. Admitted.
 
 
-Definition P_term ctx t T := 
+Definition P_term (ctx : Context) t T := 
+  ctx = emptyContext ->
   forall v, 
     t ==> v -> 
     ctx |-+ v : T.
@@ -28,6 +33,7 @@ Definition P_term ctx t T :=
 Definition P_constructor ctx c := ctx |-ok_c c.
 
 Definition P_bindings_nonrec ctx bs := 
+  ctx = emptyContext ->
   forall t0 T v0,
     ctx |-oks_nr bs ->    
     P_term (append (flatten (List.map binds bs)) ctx) t0 T ->
@@ -46,20 +52,21 @@ Definition P_binding ctx b := (*ctx |-ok b.*)
 
 Axiom skip : forall P, P.
 
-Theorem preservation' : forall (t : Term) (T : Ty),
-  emptyContext |-+ t : T ->
-  P_term emptyContext t T. 
+Theorem preservation' : forall (ctx : Context) (t : Term) (T : Ty),
+  ctx |-+ t : T ->
+  P_term ctx t T. 
 Proof.
-  intros.
-  eapply has_type__ind with (P := P_term) (P0 := P_constructor) (P1 := P_bindings_nonrec) (P2 := P_bindings_rec) (P3 := P_binding).
-  - intros. unfold P_term. intros.
+  apply has_type__ind with (P := P_term) (P0 := P_constructor) (P1 := P_bindings_nonrec) (P2 := P_bindings_rec) (P3 := P_binding).
+  - intros. unfold P_term. intros. 
+    subst.
     inversion H5; subst.
-    unfold P_bindings_nonrec in H3.
-    eapply H2.
-    + apply H1.
-    + apply H4.
-    + apply H9.
+    unfold P_bindings_nonrec in H1.
+    eapply H1.
+    + reflexivity.
+    + assumption.
     + apply H3.
+    + apply H7.
+    + apply H2.
   - apply skip. (* TODO *)
   - (* T_Var *)
     intros. unfold P_term. intros.
@@ -68,8 +75,7 @@ Proof.
     intros. unfold P_term. intros.
     inversion H2. subst.
     apply T_TyAbs.
-    apply H1.
-    assumption.
+    apply skip.
   - (* T_LamAbs *)
     intros. unfold P_term. intros.
     inversion H3. subst.
@@ -79,21 +85,20 @@ Proof.
   - (* T_Apply *) 
     intros. unfold P_term. intros.
     inversion H4.
-    + subst. apply skip. (* TODO *)
+    + subst. 
+      apply H0 in H7; auto. 
+      apply H2 in H8; auto.
+      
+      inversion H7. subst.  eapply substitution_preserves_typing in H9; eauto. apply skip. (* TODO *)
     + subst. 
       apply T_Apply with T1.
-      * apply H1.
-        assumption.
-      * apply H3.
-        assumption.   
+      * apply H0; auto.
+      * apply H2; auto.
     + subst.
-      apply preservation__eval_defaultfun with (Apply v1 v2).
-      * apply T_Apply with T1.
-        -- apply H1.
-           assumption.
-        -- apply H3.
-           assumption.
-      * assumption.
+      apply preservation__eval_defaultfun with (Apply v1 v2); auto.
+      apply T_Apply with T1.
+      -- apply H0; auto.
+      -- apply H2; auto.
   - (* T_Constant *)
     intros. unfold P_term. intros.
     inversion H0. subst.
@@ -107,8 +112,7 @@ Proof.
     inversion H4.
     + subst.
       apply T_TyInst with (T1 := T1) (X := X) (K2 := K2).
-      * apply H1.
-        assumption.
+      * apply H0; auto.
       * assumption.
       * assumption.
     + subst. apply skip. (* TODO *)
@@ -122,18 +126,18 @@ Proof.
     inversion H5. subst.
     apply T_IWrap with (X := X) (K := K) (S := S).
     + assumption.
-    + apply H2.
-      assumption.
+    + apply H1; auto.
     + assumption.
     + assumption.
   - (* T_Unwrap *)
     intros. unfold P_term. intros.
     inversion H4. subst.
-    apply H1 in H6 as H7.
+    apply H0 in H6 as H7.
     inversion H7. subst.
     assert (K = K0) by eauto using unique_kinds.
     subst. (* TODO: something with transitivity and free variables *)
     apply skip.
+    reflexivity.
 
   - (* W_Con *)
     intros. unfold P_constructor. 
@@ -147,15 +151,15 @@ Proof.
     simpl in H1.
     rewrite flatten_nil in H1.
     rewrite append_emptyContext_l in H1.
-    apply H1.
-    apply H5.
-  - intros. unfold P_bindings_nonrec. unfold P_bindings_nonrec in H3. intros.
+    apply H1; auto.
+  - intros. unfold P_bindings_nonrec. unfold P_bindings_nonrec in H2. intros.
     inversion H6. subst.
 
-    eapply H1.
+    eapply H0.
     + reflexivity.
     + simpl.
-      eapply H3.
+      eapply H2.
+      * (*
       * assumption.
       * unfold flatten in H5.
         unfold flatten in H5.
@@ -171,7 +175,7 @@ Proof.
         simpl in H7. unfold extendT in H7. simpl in H7.
         rewrite List.concat_app in H7. simpl in H7.
         rewrite <- List.app_assoc in H7. simpl in H7.
-        apply H7.*)
+        apply H7.*)*)
 Abort.
 
 Theorem preservation : forall t v T,
