@@ -37,7 +37,9 @@ src/Language/PlutusIR/Conversion.v
 src/Language/PlutusIR/Semantics/Dynamic.v
 src/Language/PlutusIR/Semantics/Dynamic/Bigstep.v
 src/Language/PlutusIR/Semantics/Dynamic/Bigstep/Deterministic.v
+src/Language/PlutusIR/Semantics/Dynamic/Bigstep/EvalToValue.v
 src/Language/PlutusIR/Semantics/Dynamic/BuiltinMeanings.v
+src/Language/PlutusIR/Semantics/Dynamic/Smallstep.v
 src/Language/PlutusIR/Semantics/Dynamic/Substitution.v
 src/Language/PlutusIR/Semantics/Dynamic/Values.v
 src/Language/PlutusIR/Semantics/Static.v
