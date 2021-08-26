@@ -1,143 +1,14 @@
 Require Import PlutusCert.Language.PlutusIR.
+Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Transform.LetNonRec.
 Require Import Coq.Program.Basics.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
-Require PlutusCert.Language.PlutusIR.Semantics.Static.
-Require PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.DeBruijn.
-Require PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
-
-Require Import PlutusCert.Language.PlutusIR.Conversion.
-
-(*
-
-Module DB.
-
-Import PlutusCert.Language.PlutusIR.Semantics.Static.
-Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.DeBruijn.
-Import DeBruijnTerm.
-Import ConvertFunction.
-
-Definition P ctx t1 T := 
-  forall t2 t1' t2' vars, 
-    CNR_Term t1' t2' -> 
-    ConvertTerm vars t1' t1 ->
-    ConvertTerm vars t2' t2 ->
-    ctx |-+ t2 : T.
-
-Definition Q ctx c := ctx |-ok_c c.
-
-Definition R ctx b1 := 
-  forall b2 b1' b2' vars,
-    Congruence.Cong_Binding CNR_Term b1' b2' ->
-    ConvertBinding vars b1' b1 ->
-    ConvertBinding vars b2' b2 ->
-    ctx |-ok b2.
-
-Definition P_has_type ctx t1 T := 
-  forall t2 t1' t2' vars, 
-    CNR_Term t1' t2' ->
-    ConvertTerm vars t1' t1 ->
-    ConvertTerm vars t2' t2 -> 
-    ctx |-+ t2 : T.
-
-Definition P_constructor_well_formed ctx c := ctx |-ok_c c.
-
-Definition P_bindings_well_formed_nonrec ctx bs1 :=
-    forall bs2 bs1' bs2' vars, (
-      ctx |-oks_nr bs1 ->
-      Congruence.Cong_Bindings CNR_Term bs1' bs2' ->
-      ConvertBindings vars bs1' bs1 ->
-      ConvertBindings vars bs2' bs2 ->
-      ctx |-oks_nr bs2
-    ) /\ (
-      Congruence.Cong_Bindings CNR_Term bs1' bs2' ->
-      ConvertBindings vars bs1' bs1 ->
-      ConvertBindings vars bs2' bs2 -> 
-      map binds bs1 = map binds bs2
-    ) /\ (
-      forall f_bs2 t T,
-        ctx |-oks_nr bs1 -> 
-        CNR_Bindings bs1' f_bs2 ->
-        ConvertBindings vars bs1' bs1 ->
-        ((flatten (map binds bs1)) ++ ctx) |-+ t : T ->
-        ctx |-+ (fold_right apply t f_bs2) : T
-    ).
-
-Definition P_bindings_well_formed_rec ctx bs1 :=
-  forall bs2, (
-    ctx |-oks_r bs1 ->
-    Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
-    ctx |-oks_r bs2
-  ) /\ (
-    Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
-    map binds bs1 = map binds bs2
-  ).
-
-Definition P_binding_well_formed ctx b1 := 
-  forall b2, (
-      ctx |-ok b1 ->
-      Congruence.Cong_Binding CNR_Term b1 b2 ->
-      ctx |-ok b2
-    ) /\ (
-      Congruence.Cong_Binding CNR_Term b1 b2 ->
-      binds b1 = binds b2
-    ) /\ (
-      forall f_b2 t T,
-        ctx |-ok b1 ->
-        CNR_Binding b1 f_b2 ->
-        (binds b1 ++ ctx) |-+ t : T ->
-        ctx |-+ (f_b2 t) : T  
-    ).
+Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
 
 
-Theorem CNR_Term__preserves_typing : forall ctx t1 T,
-    ctx |-+ t1 : T ->
-    P_has_type ctx t1 T.
-Proof.
-
-(*
-Theorem CNR_Term__preserves_typing : forall ctx t1 T,
-    ctx |-+ t1 : T ->
-    P ctx t1 T.
-Proof.
-  apply has_type_rec with (P := P) (P0 := Q) (P1 := R).
-  - intros.  
-    unfold P.
-    intros.
-    inversion H4. subst.
-    inversion X; subst.
-    + apply skip.
-    + inversion X0. subst. apply skip.
-  - intros.
-    unfold P.
-    intros.
-    inversion H5. subst.
-    rename bs0 into bs1'. rename t0 into t1'. rename bs into bs1. rename t into t1.
-    inversion X. subst.
-    inversion X0. subst.
-    rename bs' into bs2'. rename t' into t2'.
-    inversion H6. subst.
-    rename bs' into bs2. rename t0' into t2.
-    eapply T_LetRec.
-    + auto.
-    + reflexivity.
-    + intros.
-      unfold R in H2.
-Abort.
-
-*)
-
-End DB.
-*)
-
-
-Module Named.
-
-Import PlutusCert.Language.PlutusIR.Semantics.Static.
-Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
-Import NamedTerm.
 
 Definition P_has_type ctx t1 T := 
   forall t2, 
@@ -429,5 +300,3 @@ Proof.
 
   Unshelve. auto. apply (TermBind Strict (VarDecl v ty) t_bound).
 Qed. 
-
-End Named.
