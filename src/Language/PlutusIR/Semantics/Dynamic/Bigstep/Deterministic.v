@@ -1,6 +1,6 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.Bigstep.
 (** * [substitute] is deterministic*)
 
 Definition P_substitute (x : name) (s t t' : Term) : Prop :=
