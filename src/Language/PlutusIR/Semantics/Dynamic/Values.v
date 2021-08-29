@@ -37,15 +37,18 @@ with value_builtin : Term -> Prop :=
     value v1 ->
     value v2 ->
     value_builtin (Apply (Apply (Builtin f) v1) v2)
-| V_Builtin1_WithTyInst : forall f T,
-    1 < arity f ->
-    value_builtin (TyInst (Builtin f) T)
-| V_Builtin2_WithTyInst : forall f T v1,
-    2 < arity f ->
+| V_Builtin1_WithTyInst : forall T,
+    1 < arity IfThenElse ->
+    value_builtin (TyInst (Builtin IfThenElse) T)
+| V_Builtin2_WithTyInst : forall T v1,
+    2 < arity IfThenElse ->
     value v1 ->
-    value_builtin (Apply (TyInst (Builtin f) T) v1)
-| V_Builtin3_WithTyInst : forall f T v1 v2,
-    3 < arity f ->
+    value_builtin (Apply (TyInst (Builtin IfThenElse) T) v1)
+| V_Builtin3_WithTyInst : forall T v1 v2,
+    3 < arity IfThenElse ->
     value v1 ->
     value v2 ->
-    value_builtin (Apply (Apply (TyInst (Builtin f) T) v1) v2).
+    value_builtin (Apply (Apply (TyInst (Builtin IfThenElse) T) v1) v2).
+
+Scheme value__ind := Minimality for value Sort Prop
+  with value_builtin__ind := Minimality for value_builtin Sort Prop.

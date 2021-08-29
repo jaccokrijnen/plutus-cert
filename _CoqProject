@@ -27,6 +27,7 @@ src/Language/PlutusIR/Transform/FloatLet.v
 src/Language/PlutusIR/Transform/LetNonStrict.v
 src/Language/PlutusIR/Transform/LetRec.v
 src/Language/PlutusIR/Transform/LetNonRec.v
+src/Language/PlutusIR/Transform/LetNonRec/DSP.v
 src/Language/PlutusIR/Transform/LetNonRec/SSP.v
 src/Language/PlutusIR/Transform/LetTypes.v
 #src/Language/PlutusIR/Transform/ScottEnc.v
@@ -36,8 +37,10 @@ src/Language/PlutusIR/Optimizer/DeadBindings.v
 src/Language/PlutusIR/Conversion.v
 src/Language/PlutusIR/Semantics/Dynamic.v
 src/Language/PlutusIR/Semantics/Dynamic/Bigstep.v
+src/Language/PlutusIR/Semantics/Dynamic/Bigstep/Congruence.v
 src/Language/PlutusIR/Semantics/Dynamic/Bigstep/Deterministic.v
 src/Language/PlutusIR/Semantics/Dynamic/Bigstep/EvalToValue.v
+src/Language/PlutusIR/Semantics/Dynamic/Bigstep/EvalValue.v
 src/Language/PlutusIR/Semantics/Dynamic/BuiltinMeanings.v
 src/Language/PlutusIR/Semantics/Dynamic/Smallstep.v
 src/Language/PlutusIR/Semantics/Dynamic/Substitution.v
@@ -51,3 +54,4 @@ src/Language/PlutusIR/Semantics/Static/Weakening.v
 src/Language/PlutusIR/Semantics/TypeSafety/Preservation.v
 src/Language/PlutusIR/Semantics/TypeSafety/Progress.v
 src/Language/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/Def.v

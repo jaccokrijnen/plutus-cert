@@ -27,26 +27,26 @@ Definition term_vars_bound_by_bindings (bs : list NamedTerm.Binding) : list stri
 (** ** Implementation of substitution on terms as inductive datatype *)
 Inductive substitute : name -> Term -> Term -> Term -> Prop :=
   | S_Let1 : forall x s bs t0 bs',
-      (exists v, In v (term_vars_bound_by_bindings bs) -> x = v) ->
+      In x (term_vars_bound_by_bindings bs) ->
       substitute_bindings_nonrec x s bs bs' ->
       substitute x s (Let NonRec bs t0) (Let NonRec bs' t0)
   | S_Let2 : forall x s bs t0 bs' t0',
-      ~(exists v, In v (term_vars_bound_by_bindings bs) -> x = v) ->
+      ~(In x (term_vars_bound_by_bindings bs)) ->
       substitute_bindings_nonrec x s bs bs' ->
       substitute x s t0 t0' ->
       substitute x s (Let NonRec bs t0) (Let NonRec bs' t0')
   | S_LetRec1 : forall x s bs t0,
-      (exists v, In v (term_vars_bound_by_bindings bs) -> x = v) ->
+      In x (term_vars_bound_by_bindings bs)->
       substitute x s (Let Rec bs t0) (Let Rec bs t0)
   | S_LetRec2 : forall x s bs t0 bs' t0',
-      ~(exists v, In v (term_vars_bound_by_bindings bs) -> x = v) ->
+      ~(In x (term_vars_bound_by_bindings bs)) ->
       substitute_bindings_rec x s bs bs' ->
       substitute x s t0 t0' ->
       substitute x s (Let Rec bs t0) (Let Rec bs' t0')
   | S_Var1 : forall x s,
       substitute x s (Var x) s
   | S_Var2 : forall x s y,
-      y <> x ->
+      x <> y ->
       substitute x s (Var y) (Var y)
   | S_TyAbs : forall x s bX K t0 t0',
       substitute x s t0 t0' ->
@@ -81,11 +81,11 @@ with substitute_bindings_nonrec : name -> Term -> list Binding -> list Binding -
   | S_NilB_NonRec : forall x s, 
       substitute_bindings_nonrec x s nil nil
   | S_ConsB_NonRec1 : forall x s b b' bs,
-      (exists v, In v (term_vars_bound_by_binding b) -> x = v) ->
+      In x (term_vars_bound_by_binding b) ->
       substitute_binding x s b b' ->
       substitute_bindings_nonrec x s (b :: bs) (b' :: bs)
   | S_ConsB_NonRec2 : forall x s b b' bs bs',
-      ~(exists v, In v (term_vars_bound_by_binding b) -> x = v) ->
+      ~(In x (term_vars_bound_by_binding b)) ->
       substitute_binding x s b b' ->
       substitute_bindings_nonrec x s bs bs' ->
       substitute_bindings_nonrec x s (b :: bs) (b' :: bs')

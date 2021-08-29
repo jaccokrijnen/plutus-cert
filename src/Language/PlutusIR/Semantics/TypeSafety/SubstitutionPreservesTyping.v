@@ -72,13 +72,13 @@ Qed.
 
 
 Lemma binds_binds_bound_vars : forall a x U v,
-  (exists v, List.In v (term_vars_bound_by_binding a) -> x = v) ->
+  List.In x (term_vars_bound_by_binding a) ->
   emptyContext |-+ v : U ->
   lookupT (binds a) x = Datatypes.Some U.
 Proof. Admitted.
 
 Lemma binds_unbinds_unbound_vars : forall a x,
-  ~(exists v, List.In v (term_vars_bound_by_binding a) -> x = v) ->
+  ~(List.In x (term_vars_bound_by_binding a)) ->
   lookupT (binds a) x = None.
 Proof. Admitted.
 

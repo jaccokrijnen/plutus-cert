@@ -354,7 +354,7 @@ Import ConvertFunc.
 Theorem reflect_convert : forall vars t t',
     term_to' vars t = Some t' ->
     ConvertTerm vars t t'.
-Proof. Admitted.
+Proof. Abort.
 
 End ConvertInductive.
 
