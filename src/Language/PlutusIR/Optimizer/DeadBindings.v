@@ -8,6 +8,7 @@ Set Equations Transparent.
 
 From PlutusCert Require Import Util.
 From PlutusCert Require Import Language.PlutusIR.
+Import NamedTerm.
 From PlutusCert Require Import Language.PlutusIR.Analysis.FreeVars.
 From PlutusCert Require Import Language.PlutusIR.Analysis.Equality.
 From PlutusCert Require Import Language.PlutusIR.Transform.Congruence.
@@ -30,12 +31,12 @@ Inductive DBE_Term : Term -> Term -> Type :=
   (* To check if a term-binding `x = e` can be eliminated,
      we check that its variable is not free in the resulting term*)
     | DBE_RemoveTermBind : `{ ~ In n (fv' t) ->
-             DBE_Binding (TermBind stric n s) t}
+             DBE_Binding (TermBind stric (VarDecl n T) s) t}
 
    (* For type or datatype bindings, we allow that these are eliminated, since the AST currently
       contains no types (hence they are always dead bindings).
    *)
-    | DBE_RemoveTypeBind : `{ DBE_Binding (TypeBind d ty) t}
+    | DBE_RemoveTypeBind : `{ DBE_Binding (TypeBind d T) t}
     | DBE_RemoveDatatype : `{ DBE_Binding (DatatypeBind (Datatype tv ds n vs)) t}
 
   with DBE_Bindings : list Binding -> list Binding -> Term -> Type :=
@@ -45,9 +46,9 @@ Inductive DBE_Term : Term -> Term -> Type :=
     .
 
 
-
-
-Definition subTerm :=
+(* TODO: Does not consider types, tt is mapped to built-in strings *)
+Definition tt := @Ty_Builtin tyname binderTyname (Some (@TypeIn DefaultUniString)).
+Definition subTerm : Term :=
        (LamAbs (Name "ds" (Unique 75)) tt
           (LamAbs (Name "ds" (Unique 76)) tt
              (Apply
@@ -119,7 +120,7 @@ end.
 
 Fixpoint dbe_dec_Binding (b : Binding) (t : Term) {struct b} : option (DBE_Binding b t) :=
     match b with
-      | TermBind stric n t'   =>
+      | TermBind stric (VarDecl n T) t'   =>
           DBE_RemoveTermBind <$> in_dec_option n (fv' t)
 
       | TypeBind (TyVarDecl n k) ty        =>

@@ -1,4 +1,5 @@
 From PlutusCert Require Import Language.PlutusIR.
+Import NamedTerm.
 From PlutusCert Require Import Language.PlutusIR.Transform.Congruence.
 From PlutusCert Require Import Language.PlutusIR.Analysis.FreeVars.
 Require Import Coq.Strings.String.
@@ -48,7 +49,7 @@ with CNR_Binding : Binding -> (Term -> Term) -> Type :=
   | CNR_Desugar : forall {v t_bound t_bound' ty},
       CNR_Term t_bound t_bound' ->
       CNR_Binding
-        (TermBind Strict v t_bound)
+        (TermBind Strict (VarDecl v ty) t_bound)
         (fun t_bs => Apply (LamAbs v ty t_bs) t_bound')
   .
 
@@ -84,7 +85,7 @@ Definition C_Apply' : forall R (s s' t t' : Term),
 Proof. eq_principle. Qed.
 Definition C_Constant' : forall R (v v' : some), v = v' -> Cong R (Constant v) (Constant v').
 Proof. eq_principle. Qed.
-Definition C_Builtin' : forall R (f f' : func), f = f' -> Cong R (Builtin f) (Builtin f').
+Definition C_Builtin' : forall R (f f' : DefaultFun), f = f' -> Cong R (Builtin f) (Builtin f').
 Proof. eq_principle. Qed.
 Definition C_TyInst' : forall R (t t' : Term) (ty ty' : Ty),
                 ty = ty' -> R t t' -> Cong R (TyInst t ty) (TyInst t' ty').
@@ -118,7 +119,7 @@ Definition CNR_Desugar'
         v = v' ->
         CNR_Term t_bound t_bound' ->
         CNR_Binding
-          (TermBind Strict v t_bound)
+          (TermBind Strict (VarDecl v ty) t_bound)
           (fun t_bs => Apply (LamAbs v' ty t_bs) t_bound').
 Proof.
   intros. subst. apply CNR_Desugar. assumption.

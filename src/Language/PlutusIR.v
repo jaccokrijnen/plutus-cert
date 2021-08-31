@@ -1,12 +1,15 @@
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
 Require Import Coq.Arith.PeanoNat.
+Require Import Coq.ZArith.BinInt.
 Require Import Coq.Bool.BoolEq.
 Require Import Ascii.
 Require Import Eqdep.
 
 From PlutusCert Require Import Util.
 Set Implicit Arguments.
+
+Require Import Coq.Program.Basics.
 
 (*
   Simplification of the names in the AST
@@ -48,18 +51,6 @@ Definition TyName (s : string) := s.
 Inductive tyname := TyName : name -> tyname.
 *)
 
-
-(*
-  Simplification of types and kinds in the AST
-
-  We also ignore kinds and types, and represent them with the unit type.
-
-  TODO: take the same approach as with names (above). The dumping code in Haskell is ugly and prints
-  units for types and kinds.
-*)
-Definition Kind := unit.
-Definition Ty   := unit.
-
 Inductive Recursivity := NonRec | Rec.
 
 Inductive Strictness := NonStrict | Strict.
@@ -73,9 +64,10 @@ Inductive DefaultUni : Type :=
     | DefaultUniUnit       (* : DefaultUni unit (* () *)*)
     | DefaultUniBool       (* : DefaultUni bool (* Bool *)*)
     .
+    
 Definition uniType (x : DefaultUni) : Type :=
   match x with
-    | DefaultUniInteger    => nat
+    | DefaultUniInteger    => Z
     | DefaultUniByteString => string
     | DefaultUniString     => string
     | DefaultUniChar       => ascii
@@ -83,6 +75,7 @@ Definition uniType (x : DefaultUni) : Type :=
     | DefaultUniBool       => bool
   end
   .
+Transparent uniType.
 
 Inductive DefaultFun :=
     | AddInteger
@@ -114,17 +107,9 @@ Inductive DefaultFun :=
 Set Implicit Arguments.
 
 
-(* Perhaps parametrize to mimic original AST in haskell more closely? We really only need one instantiation for now. *)
-(* Context {func : Type} {uni : Type -> Type} {name : Type} {tyname : Type}. *)
 
-(* TODO: Coq prints wrong notation for LamAbs type, perhaps just use string
-    everywhere? *)
-Notation name := string.
-Notation tyname := string.
-Notation uni := DefaultUni.
-Notation func := DefaultFun.
 
-Inductive valueOf (u : uni) :=
+Inductive valueOf (u : DefaultUni) :=
   ValueOf : uniType u -> valueOf u.
 Arguments ValueOf _ _ : clear implicits.
 
@@ -133,9 +118,36 @@ Arguments ValueOf _ _ : clear implicits.
 Arguments ValueOf {_} {_}.
 *)
 
-Inductive some :=
-  Some : forall {u : uni}, valueOf u -> some.
+Inductive some {f : DefaultUni -> Type} :=
+  Some : forall {u : DefaultUni}, f u -> some.
 (*Inductive some := Some : forall a, valueOf a -> some.*)
+
+(** ** Builtin types *)
+Inductive typeIn (u : DefaultUni) :=
+  TypeIn : typeIn u.
+Arguments TypeIn _ : clear implicits.
+
+
+Section AST_term.
+Context (name tyname : Set).
+Context (binderName binderTyname : Set).
+
+(** * Kinds and types *)
+
+(** ** Kinds *)
+Inductive kind :=
+  | Kind_Base : kind
+  | Kind_Arrow : kind -> kind -> kind.
+
+(** ** Types *)
+Inductive ty :=
+  | Ty_Var : tyname -> ty
+  | Ty_Fun : ty -> ty -> ty
+  | Ty_IFix : ty -> ty -> ty
+  | Ty_Forall : binderTyname -> kind -> ty -> ty
+  | Ty_Builtin : @some typeIn -> ty
+  | Ty_Lam : binderTyname -> kind -> ty -> ty
+  | Ty_App : ty -> ty -> ty.
 
 
 (*
@@ -148,70 +160,191 @@ Inductive some :=
   TODO: perhaps use a similar approach to the simplification of names, by ignoring the argument
   in each constructor (have to add types for the possible values that can occur when dumping)
 *)
-Definition VDecl := string.
-Definition VarDecl (x : name) (t : Ty) : VDecl := x.
 
-(*
-Inductive VDecl := VarDecl : name -> Ty -> VDecl.
-*)
-
-Inductive TVDecl := TyVarDecl : tyname -> Kind -> TVDecl.
+Inductive vdecl := VarDecl : binderName -> ty -> vdecl.
+Inductive tvdecl := TyVarDecl : binderTyname -> kind -> tvdecl.
 
 (* Inductive DTDecl := Datatype : TVDecl -> list TVDecl -> name -> list VDecl -> DTDecl.*)
 
 (* This is a bit in-between hack of having types in the AST and completely ignoring them*)
 (* Constructor name and arity, needed for Scott encoding *)
-Inductive constructor :=
-  | Constructor : string -> nat -> constructor.
+Inductive constr :=
+  | Constructor : vdecl -> nat -> constr.
 
-Definition constructorName : constructor -> string := fun c => match c with
-  | Constructor name _ => name
-  end
-  .
-
-Inductive DTDecl := Datatype : TVDecl -> list TVDecl -> name -> list constructor -> DTDecl.
-
-
-Section AST_term.
-Context (name : Set).
+Inductive dtdecl := Datatype : tvdecl -> list tvdecl -> binderName -> list constr -> dtdecl.
 
 Inductive term :=
   | Let      : Recursivity -> list binding -> term -> term
   | Var      : name -> term
-  | TyAbs    : tyname -> Kind -> term -> term
-  | LamAbs   : name -> Ty -> term -> term
+  | TyAbs    : binderTyname -> kind -> term -> term
+  | LamAbs   : binderName -> ty -> term -> term
   | Apply    : term -> term -> term
-  | Constant : some -> term
-  | Builtin  : func -> term
-  | TyInst   : term -> Ty -> term
-  | Error    : Ty -> term
-  | IWrap    : Ty -> Ty -> term -> term
+  | Constant : @some valueOf -> term
+  | Builtin  : DefaultFun -> term
+  | TyInst   : term -> ty -> term
+  | Error    : ty -> term
+  | IWrap    : ty -> ty -> term -> term
   | Unwrap   : term -> term
 
 with binding :=
-  | TermBind : Strictness -> name -> term -> binding
-  | TypeBind : TVDecl -> Ty -> binding
-  | DatatypeBind : DTDecl -> binding
+  | TermBind : Strictness -> vdecl -> term -> binding
+  | TypeBind : tvdecl -> ty -> binding
+  | DatatypeBind : dtdecl -> binding
 .
 
-
 End AST_term.
+
+(** * Named terms (all variables and binders are strings) *)
+Module NamedTerm.
+
+(* Perhaps parametrize to mimic original AST in haskell more closely? We really only need one instantiation for now. *)
+(* Context {func : Type} {uni : Type -> Type} {name : Type} {tyname : Type}. *)
+
+(* TODO: Coq prints wrong notation for LamAbs type, perhaps just use string
+    everywhere? *)
+Notation name := string.
+Notation tyname := string.
+Notation binderName := string.
+Notation binderTyname := string.
 
 (* These constructors should treat the type parameter
    as implicit too (this is already correctly generated for the recursive
    constructors. *)
 
-Arguments Constant [name]%type_scope.
-Arguments Builtin [name]%type_scope.
-Arguments Error [name]%type_scope.
-Arguments TypeBind [name]%type_scope.
-Arguments DatatypeBind [name]%type_scope.
+Arguments Ty_Var [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Fun [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Forall [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Builtin [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Lam [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Var [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments Constant [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments Builtin [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments Error [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments TypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments DatatypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
 
-Notation Term := (term string).
-Notation Binding := (binding string).
+Arguments VarDecl [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments TyVarDecl [binderTyname]%type_scope.
+Arguments Datatype [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+
+Notation Kind := (kind).
+Notation Ty := (ty tyname binderTyname).
+Notation VDecl := (vdecl name tyname binderName).
+Notation TVDecl := (tvdecl binderTyname).
+Notation DTDecl := (dtdecl name tyname binderTyname).
+Notation constructor := (constr tyname binderName binderTyname).
+Notation Term := (term name tyname binderName binderTyname).
+Notation Binding := (binding name tyname binderName binderTyname).
+
+Definition constructorName : constructor -> name := 
+  fun c => match c with
+  | Constructor (VarDecl n _) _ => n
+  end
+  .
+
+(** ** Trace of compilation *)
+Inductive Pass :=
+  | PassRename
+  | PassTypeCheck
+  | PassInline : list name -> Pass
+  | PassDeadCode
+  | PassThunkRec
+  | PassFloatTerm
+  | PassLetNonStrict
+  | PassLetTypes
+  | PassLetRec
+  | PassLetNonRec.
+
+Inductive CompTrace :=
+  | CompilationTrace : Term -> list (Pass * Term) -> CompTrace.
+
+End NamedTerm.
+
+
+
+(** * De Bruijn terms *)
+Module DeBruijnTerm.
+
+From Equations Require Import Equations.
+
+Notation name := nat.
+Notation tyname := nat.
+Notation binderName := unit.
+Notation binderTyname := unit.
+
+Arguments Ty_Var [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Fun [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Forall [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Builtin [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Lam [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Var [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments Constant [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments Builtin [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments Error [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments TypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments DatatypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+
+Arguments VarDecl [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments TyVarDecl [binderTyname]%type_scope.
+Arguments Datatype [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+
+
+Notation Kind := (kind).
+Notation Ty := (ty tyname binderTyname).
+Notation VDecl := (vdecl tyname binderName binderTyname).
+Notation TVDecl := (tvdecl binderTyname).
+Notation DTDecl := (dtdecl tyname binderName binderTyname).
+Notation constructor := (constr tyname binderName binderTyname).
+Notation Term := (term name tyname binderName binderTyname).
+Notation Binding := (binding name tyname binderName binderTyname).
+
+
+Fixpoint shift_ty' (k c : nat) (T : Ty) : Ty :=
+  match T with
+  | Ty_Var X => if X <? c then Ty_Var X else Ty_Var (k + X)
+  | Ty_Fun T1 T2 => Ty_Fun (shift_ty' k c T1) (shift_ty' k c T2)
+  | Ty_IFix F T0 => Ty_IFix (shift_ty' k c F) (shift_ty' k c T0)
+  | Ty_Forall bX K T => Ty_Forall bX K (shift_ty' k (S c) T)
+  | Ty_Builtin u => Ty_Builtin u
+  | Ty_Lam bX K1 T => Ty_Lam bX K1 (shift_ty' k (S c) T)
+  | Ty_App T1 T2 => Ty_App (shift_ty' k c T1) (shift_ty' k c T2)
+  end.
+
+Definition shift_ty (T : Ty) := shift_ty' 1 0 T.
+
+Equations shift_term' : nat -> nat -> Term -> Term := {
+  shift_term' k c (Let NonRec bs t0) => Let NonRec (shift_bindings' k c bs) (shift_term' k (length bs + c) t0) ;
+  shift_term' k c (Let Rec bs t0) => Let Rec (shift_bindings' k (length bs + c) bs (* TODO: shift by c or more? *)) (shift_term' k (length bs + c) t0) ;
+  shift_term' k c (Var x) => if x <? c then Var x else Var (k + x) ;
+  shift_term' k c (TyAbs bX K t0) => TyAbs bX K (shift_term' k (S c) t0) ;
+  shift_term' k c (LamAbs bx T t0) => LamAbs bx (shift_ty' k c T) (shift_term' k (S c) t0) ;
+  shift_term' k c (Apply t1 t2) => Apply (shift_term' k c t1) (shift_term' k c t2) ;
+  shift_term' k c (Constant u) => Constant u ;
+  shift_term' k c (Builtin d) => Builtin d ;
+  shift_term' k c (TyInst t0 T) => TyInst (shift_term' k c t0) (shift_ty' k c T) ;
+  shift_term' k c (Error T) => Error (shift_ty' k c T) ;
+  shift_term' k c (IWrap F T t0) => IWrap (shift_ty' k c F) (shift_ty' k c T) (shift_term' k c t0) ;
+  shift_term' k c (Unwrap t0) => Unwrap (shift_term' k c t0) }
+
+where shift_bindings' : nat -> nat -> list Binding -> list Binding := {
+  shift_bindings' k c nil => nil ;
+  shift_bindings' k c (TermBind s (VarDecl bn T) t :: bs) => TermBind s (VarDecl bn (shift_ty' k c T)) (shift_term' k c t) :: shift_bindings' k c bs ;
+  shift_bindings' k c (TypeBind tvd T :: bs) => TypeBind tvd (shift_ty' k c T) :: shift_bindings' k c bs ;
+  shift_bindings' k c (DatatypeBind (Datatype X YKs matchFunc cs) :: bs) => DatatypeBind (Datatype X YKs matchFunc (shift_constructors' k c cs)) :: shift_bindings' k c bs} 
+
+where shift_constructors' : nat -> nat -> list constructor -> list constructor := {
+  shift_constructors' k c nil => nil ;
+  shift_constructors' k c (Constructor (VarDecl bn T) ar :: cs) => Constructor (VarDecl bn (shift_ty' k c T)) ar :: shift_constructors' k c cs }. 
+
+Definition shift_term (t : Term) := shift_term' 1 0 t.
+
+End DeBruijnTerm.
+
 
 
 Section Term_rect.
+  Import NamedTerm.
+
   Unset Implicit Arguments.
 
   Variable (P : Term -> Type).
@@ -224,7 +357,7 @@ Section Term_rect.
     (H_LamAbs   : forall (s : tyname) (t : Ty) (t0 : Term), P t0 -> P (LamAbs s t t0))
     (H_Apply    : forall t : Term, P t -> forall t0 : Term, P t0 -> P (Apply t t0))
     (H_Constant : forall s : some, P (Constant s))
-    (H_Builtin  : forall d : func, P (Builtin d))
+    (H_Builtin  : forall d : DefaultFun, P (Builtin d))
     (H_TyInst   : forall t : Term, P t -> forall t0 : Ty, P (TyInst t t0))
     (H_Error    : forall t : Ty, P (Error t))
     (H_IWrap    : forall (t t0 : Ty) (t1 : Term), P t1 -> P (IWrap t t0 t1))
@@ -266,24 +399,24 @@ End Term_rect.
 
 
 Section term_rect.
-  Variable (v : Set).
-  Variable (P : term v -> Type).
-  Variable (Q : binding v -> Type).
-  Variable (R : list (binding v) -> Type).
+  Variable (v v' b b': Set).
+  Variable (P : term v v' b b' -> Type).
+  Variable (Q : binding v v' b b' -> Type).
+  Variable (R : list (binding v v' b b') -> Type).
 
   Context
     (* (H_Let      : forall rec bs t, ForallT Q bs -> P t -> P (Let rec bs t)) *)
     (H_Let      : forall rec bs t, R bs -> P t -> P (Let rec bs t))
     (H_Var      : forall s : v, P (Var s))
-    (H_TyAbs    : forall (s : tyname) (k : Kind) (t : term v), P t -> P (TyAbs s k t))
-    (H_LamAbs   : forall (s : v) (t : Ty) (t0 : term v), P t0 -> P (LamAbs s t t0))
-    (H_Apply    : forall t : term v, P t -> forall t0 : term v, P t0 -> P (Apply t t0))
+    (H_TyAbs    : forall (s : b') (k : kind) (t : term v v' b b'), P t -> P (TyAbs s k t))
+    (H_LamAbs   : forall (s : b) (t : ty v' b') (t0 : term v v' b b'), P t0 -> P (LamAbs s t t0))
+    (H_Apply    : forall t : term v v' b b', P t -> forall t0 : term v v' b b', P t0 -> P (Apply t t0))
     (H_Constant : forall s : some, P (Constant s))
-    (H_Builtin  : forall d : func, P (Builtin d))
-    (H_TyInst   : forall t : term v, P t -> forall t0 : Ty, P (TyInst t t0))
-    (H_Error    : forall t : Ty, P (Error t))
-    (H_IWrap    : forall (t t0 : Ty) (t1 : term v), P t1 -> P (IWrap t t0 t1))
-    (H_Unwrap   : forall t : term v, P t -> P (Unwrap t)).
+    (H_Builtin  : forall d : DefaultFun, P (Builtin d))
+    (H_TyInst   : forall t : term v v' b b', P t -> forall t0 : ty v' b', P (TyInst t t0))
+    (H_Error    : forall t : ty v' b', P (Error t))
+    (H_IWrap    : forall (t t0 : ty v' b') (t1 : term v v' b b'), P t1 -> P (IWrap t t0 t1))
+    (H_Unwrap   : forall t : term v v' b b', P t -> P (Unwrap t)).
 
   Context
     (H_TermBind     : forall s v t, P t -> Q (TermBind s v t))
@@ -303,14 +436,14 @@ Section term_rect.
     end.
     *)
 
-  Definition bindings_rect' (binding_rect' : forall (b : binding v), Q b) :=
+  Definition bindings_rect' (binding_rect' : forall (b : binding v v' b b'), Q b) :=
     fix bindings_rect' bs :=
     match bs return R bs with
       | nil       => @H_nil
       | cons b bs => @H_cons _ bs (binding_rect' b) (bindings_rect' bs)
     end.
 
-  Fixpoint term_rect' (t : term v) : P t :=
+  Fixpoint term_rect' (t : term v v' b b') : P t :=
     match t with
       | Let rec bs t    => @H_Let rec bs t (bindings_rect' binding_rect' bs) (term_rect' t)
       | Var n           => @H_Var n
@@ -324,7 +457,7 @@ Section term_rect.
       | Constant v      => @H_Constant v
       | Builtin f       => @H_Builtin f
     end
-  with binding_rect' (b : binding v) : Q b :=
+  with binding_rect' (b : binding v v' b b') : Q b :=
     match b with
       | TermBind s v t   => @H_TermBind s v t (term_rect' t)
       | TypeBind v ty    => @H_TypeBind v ty
@@ -354,7 +487,7 @@ with Binding termR bindingR :=
 *)
 Definition Mu (f : Type -> Type) (g : Type -> Type) := forall a, (f a -> a) -> (g a -> a) -> a.
 
-Definition unitVal : Term := Constant (Some (ValueOf DefaultUniUnit tt)).
+Definition unitVal : NamedTerm.Term := Constant (Some (ValueOf DefaultUniUnit tt)).
 
 
 Inductive ZipWith {a} (P : a -> a -> Type) : list a -> list a -> Type :=
@@ -362,7 +495,7 @@ Inductive ZipWith {a} (P : a -> a -> Type) : list a -> list a -> Type :=
   | ZipWithNil  : ZipWith P nil nil.
 
 (* Helper for optionally relating term-bindings, by relating the bound terms *)
-Inductive BindingBy (R : Term -> Term -> Type) : Binding -> Binding -> Type :=
+Inductive BindingBy (R : NamedTerm.Term -> NamedTerm.Term -> Type) : NamedTerm.Binding -> NamedTerm.Binding -> Type :=
   | BB_TermBind: forall t t' s v,
       R t t' ->
       BindingBy R

@@ -9,6 +9,7 @@ From Equations Require Import Equations.
 Set Implicit Arguments.
 
 From PlutusCert Require Import Language.PlutusIR.
+Import NamedTerm.
 From PlutusCert Require Import Language.PlutusIR.Folds.
 
 Local Open Scope string_scope.

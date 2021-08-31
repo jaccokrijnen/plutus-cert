@@ -12,3 +12,6 @@ Makefile.coq
 
 # vim
 *.swp
+
+# vscode
+.vscode/

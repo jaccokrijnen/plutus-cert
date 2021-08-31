@@ -9,6 +9,7 @@ From Equations Require Import Equations.
 Set Implicit Arguments.
 
 From PlutusCert Require Import Language.PlutusIR.
+Import NamedTerm.
 From PlutusCert Require Import Language.PlutusIR.Folds.
 
 Local Open Scope string_scope.
@@ -57,18 +58,18 @@ Fixpoint remove_eqb {a} a_eqb xs : list a :=
 
 Section FreeVars.
   Context
-    {var : Set}
+    {var tyvar : Set}
     (var_eqb : var -> var -> bool)
     .
 
-Fixpoint boundVars (bs : list (binding var)) : list var := match bs with
-    | ((TermBind _ v t) :: bs) => v :: boundVars bs
+Fixpoint boundVars (bs : list (binding var tyvar var tyvar)) : list var := match bs with
+    | ((TermBind _ (VarDecl v _) t) :: bs) => v :: boundVars bs
     | (b                :: bs) =>      boundVars bs
     | nil               => nil
     end.
 
-Fixpoint boundTerms (bs : list (binding var)) : list (var * term var) := match bs with
-    | ((TermBind _ v t) :: bs) => (v, t) :: boundTerms bs
+Fixpoint boundTerms (bs : list (binding var tyvar var tyvar)) : list (var * term var tyvar var tyvar) := match bs with
+    | ((TermBind _ (VarDecl v _) t) :: bs) => (v, t) :: boundTerms bs
     | (b                :: bs) =>           boundTerms bs
     | nil               => nil
     end.
@@ -81,12 +82,12 @@ Definition elem x xs := existsb (var_eqb x) xs.
 Definition deleteMany : list var -> list var -> list var :=
   fun ds xs => filter (fun x => negb (elem x ds)) xs.
 
-Fixpoint freeVars (t : term var) : list var :=
+Fixpoint freeVars (t : term var tyvar var tyvar) : list var :=
  match t with
    | (Let Rec bs t)    => deleteMany (boundVars bs) (freeVars t ++ concat (map freeVarsBinding bs))
    | (Let NonRec bs t) => fold_right
                             (fun b fv_bs bound => match b with
-                               | TermBind s v t => app (deleteMany bound (freeVarsBinding b)) (fv_bs (v :: bound))
+                               | TermBind s (VarDecl v _) t => app (deleteMany bound (freeVarsBinding b)) (fv_bs (v :: bound))
                                | _              => fv_bs bound
                                end
                             )
@@ -105,7 +106,7 @@ Fixpoint freeVars (t : term var) : list var :=
    | (Builtin f)       => []
    end
 
-with freeVarsBinding (b : binding var) :=
+with freeVarsBinding (b : binding var tyvar var tyvar) :=
   match b with
     | TermBind _ v t => freeVars t
     | _              => []
@@ -130,7 +131,7 @@ Equations fv' : Term -> list string := {
   fv' (Builtin f)       := nil
   }
   where fv_bindings : list Binding -> list string := {
-    fv_bindings ((TermBind _ n t) :: bs) := cons n (fv_bindings bs) ++ fv' t;
+    fv_bindings ((TermBind _ (VarDecl n _) t) :: bs) := cons n (fv_bindings bs) ++ fv' t;
     fv_bindings (_                :: bs) := fv_bindings bs;
     fv_bindings nil                      := nil
   }
@@ -173,7 +174,7 @@ Fixpoint catMaybes {a : Type} (xs : list (option a)) : list a := match xs with
 
 Definition boundName : Binding -> option name := fun b =>
   match b with
-    | TermBind _ v _ => Datatypes.Some v
+    | TermBind _ (VarDecl v _) _ => Datatypes.Some v
     | _ => None
     end.
 (*
