@@ -18,31 +18,44 @@ From PlutusCert Require Import Language.PlutusIR.Transform.Congruence.
 Generalizable All Variables.
 Inductive DBE_Term : Term -> Term -> Type :=
 
-    | DBE_Congruence    : `{ Cong DBE_Term t t' ->
-        DBE_Term t t' }
+    | DBE_Congruence : forall {t t'},
+        Cong DBE_Term t t' ->
+        DBE_Term t t'
 
-    | DBE_RemoveBindings : `{ DBE_Term t t' -> DBE_Bindings bs bs' (Let rec bs' t') ->
-        DBE_Term (Let rec bs t) (Let rec bs' t') }
+    | DBE_RemoveBindings : forall {t t' bs bs' rec},
+        DBE_Term t t' ->
+        DBE_Bindings bs bs' (Let rec bs' t') ->
+        DBE_Term (Let rec bs t) (Let rec bs' t')
 
-    | DBE_RemoveLet      : `{ DBE_Term t t' -> DBE_Bindings bs nil t' ->
-        DBE_Term (Let rec bs t) t' }
+    | DBE_RemoveLet : forall {t t' bs rec},
+        DBE_Term t t' -> DBE_Bindings bs nil t' ->
+        DBE_Term (Let rec bs t) t'
 
   with DBE_Binding : Binding -> Term -> Type :=
   (* To check if a term-binding `x = e` can be eliminated,
      we check that its variable is not free in the resulting term*)
-    | DBE_RemoveTermBind : `{ ~ In n (fv' t) ->
-             DBE_Binding (TermBind stric (VarDecl n T) s) t}
+    | DBE_RemoveTermBind : forall {v stric t_bound t T},
+        ~ In v (fv' t) ->
+        DBE_Binding (TermBind stric (VarDecl v T) t_bound) t
 
    (* For type or datatype bindings, we allow that these are eliminated, since the AST currently
       contains no types (hence they are always dead bindings).
    *)
-    | DBE_RemoveTypeBind : `{ DBE_Binding (TypeBind d T) t}
-    | DBE_RemoveDatatype : `{ DBE_Binding (DatatypeBind (Datatype tv ds n vs)) t}
+    | DBE_RemoveTypeBind : forall {d T t},
+        DBE_Binding (TypeBind d T) t
+    | DBE_RemoveDatatype : forall {tv ds n vs t},
+        DBE_Binding (DatatypeBind (Datatype tv ds n vs)) t
 
   with DBE_Bindings : list Binding -> list Binding -> Term -> Type :=
-    | DBE_Keep   : forall {b bs bs' t}, DBE_Bindings bs bs' t                   -> DBE_Bindings (b :: bs) (b :: bs') t
-    | DBE_Remove : forall {b bs bs' t}, DBE_Bindings bs bs' t -> DBE_Binding b t -> DBE_Bindings (b :: bs) (     bs') t
-    | DBE_Nil    : forall {t}, DBE_Bindings nil nil t
+    | DBE_Keep   : forall {b bs bs' t},
+        DBE_Bindings bs bs' t ->
+        DBE_Bindings (b :: bs) (b :: bs') t
+    | DBE_Remove : forall {b bs bs' t},
+        DBE_Bindings bs bs' t ->
+        DBE_Binding b t ->
+        DBE_Bindings (b :: bs) (     bs') t
+    | DBE_Nil    : forall {t},
+        DBE_Bindings nil nil t
     .
 
 
