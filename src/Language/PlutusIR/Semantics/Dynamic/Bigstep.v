@@ -11,12 +11,14 @@ Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.Values.
 (** ** Implementation of big-step semantics as an inductive datatype *)
 Reserved Notation "t '==>' v"(at level 40).
 Inductive eval : Term -> Term -> Prop :=
+  (** Let-bindings *)
   | E_Let : forall bs t v,
       eval_bindings_nonrec (Let NonRec bs t) v ->
       (Let NonRec bs t) ==> v
-  | E_LetRec : forall bs t,
-      (Let Rec bs t) ==> (Let Rec bs t) (* TODO *)
-  (* | E_Var : should never occur *)
+  | E_LetRec : forall bs t v,
+      eval_bindings_rec bs (Let Rec bs t) v ->
+      (Let Rec bs t) ==> v
+  (** Others *)
   | E_TyAbs : forall X K t v,
       t ==> v ->
       TyAbs X K t ==> TyAbs X K v
@@ -46,9 +48,30 @@ Inductive eval : Term -> Term -> Prop :=
       ~(value_builtin (Apply v1 v2)) ->
       compute_defaultfun (Apply v1 v2) = Datatypes.Some v0 ->
       Apply t1 t2 ==> v0
-  | E_TyInstBuiltin1 : forall t1 T,
+  (** Builtins: If-Then-Else 
+
+      We handle this built-in function separately because it has a unique behaviour:
+      The ``then''-branch should only be evaluated when the condition is true,
+      and the opposite is true for the ``else''-branch.
+  *)
+  | E_IfTyInst : forall t1 T,
       t1 ==> Builtin IfThenElse ->
       TyInst t1 T ==> TyInst (Builtin IfThenElse) T
+  | E_IfCondition : forall t_b t_c T cond,
+      t_b ==> TyInst (Builtin IfThenElse) T ->
+      t_c ==> Constant (Some (ValueOf DefaultUniBool cond)) ->
+      Apply t_b t_c ==> Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool cond)))
+  | E_IfThenBranch : forall t_bc t_t T cond,
+      t_bc ==> Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool cond))) ->
+      Apply t_bc t_t ==> Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool cond)))) t_t
+  | E_IfTrue : forall t_bct t_t T v_t t_e,
+      t_bct ==> Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool true)))) t_t ->
+      t_t ==> v_t ->
+      Apply t_bct t_e ==> v_t
+  | E_IfFalse : forall t_bct t_t T v_e t_e,
+      t_bct ==> Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool false)))) t_t ->
+      t_e ==> v_e ->
+      Apply t_bct t_e ==> v_e
   (* Type instantiation *)
   | E_TyInst : forall t1 T2 X K v0,
       t1 ==> TyAbs X K v0 ->
@@ -73,122 +96,22 @@ with eval_bindings_nonrec : Term -> Term -> Prop :=
       eval_bindings_nonrec (Let NonRec nil t) v
   | E_ConsB_NonRec : forall s x T tb bs t vb bs' t' v,
       tb ==> vb ->
-      substitute_bindings_nonrec x vb bs bs' ->
+      substitute_bindings_rec x vb bs bs' ->
       substitute x vb t t' ->
       eval_bindings_nonrec (Let NonRec bs' t') v ->
       eval_bindings_nonrec (Let NonRec ((TermBind s (VarDecl x T) tb) :: bs) t) v
 
+with eval_bindings_rec : list Binding -> Term -> Term -> Prop :=
+  | E_NilB_Rec : forall bs0 t v,
+      t ==> v ->
+      eval_bindings_rec bs0 (Let Rec nil t) v
+  | E_ConsB_Rec : forall bs0 s x T tb bs t t' v,
+      substitute x (Let Rec bs0 tb) t t' ->
+      eval_bindings_rec bs0 (Let Rec bs t') v ->
+      eval_bindings_rec bs0 (Let Rec ((TermBind s (VarDecl x T) tb) :: bs) t) v
+
 where "t '==>' v" := (eval t v).
 
 Scheme eval__ind := Minimality for eval Sort Prop
-  with eval_bindings_nonrec__ind := Minimality for eval_bindings_nonrec Sort Prop.
-
-
-(** ** Examples for derivations of [eval] *)
-
-Definition Ty_int : Ty := Ty_Builtin (Some (TypeIn DefaultUniInteger)).
-Definition int_to_int : Ty := Ty_Fun Ty_int Ty_int.
-
-Import ZArith.BinInt.
-Local Open Scope Z_scope.
-
-Example test_addInteger : forall x,
-  Apply (LamAbs x int_to_int (Apply (Var x) (constInt 17))) (Apply (Builtin AddInteger) (constInt 3))
-  ==> constInt 20.
-Proof.
-  intros.
-  eapply E_Apply.
-  - apply E_LamAbs.
-  - eapply E_ApplyBuiltin1.
-    + apply E_Builtin.
-    + apply V_Builtin0.
-      simpl.
-      apply le_S.
-      apply le_n.
-    + apply E_Constant.
-    + apply V_Builtin1.
-      * simpl.
-        apply le_n.
-      * apply V_Constant.
-  - apply S_Apply.
-    + apply S_Var1.
-    + apply S_Constant.
-  - eapply E_ApplyBuiltin2.
-    + eapply E_ApplyBuiltin1.
-      * apply E_Builtin.
-      * apply V_Builtin0.
-        simpl.
-        apply le_S.
-        apply le_n.
-      * apply E_Constant.
-      * apply V_Builtin1.
-        -- simpl.
-           apply le_n.
-        -- apply V_Constant.
-    + apply V_Builtin1.
-      -- apply le_n.
-      -- apply V_Constant.
-    + apply E_Constant.
-    + intros Hcon.
-      inversion Hcon. subst.
-      simpl in H2.
-      apply PeanoNat.Nat.lt_irrefl in H2.
-      inversion H2. 
-    +  reflexivity.
-Qed.
-
-Definition int_and_int_to_int : Ty := Ty_Fun Ty_int (Ty_Fun Ty_int Ty_int).
-
-
-Example test_ifThenElse : forall x y,
-  Apply (LamAbs x int_and_int_to_int (Apply (Apply (Var x) (constInt 17)) (constInt 3))) (Apply (TyInst (Apply (LamAbs y Ty_int (Builtin IfThenElse)) (constInt 666)) (Ty_Builtin (Some (TypeIn DefaultUniInteger)))) (Constant (Some (ValueOf DefaultUniBool true)))) ==> constInt 17.
-Proof.
-  intros.
-  eapply E_Apply.
-  - apply E_LamAbs.
-  - eapply E_ApplyBuiltin1.
-    + eapply E_TyInstBuiltin1. 
-      eapply E_Apply.
-      * apply E_LamAbs.
-      * apply E_Constant.
-      * apply S_Builtin.
-      * apply E_Builtin.
-    + apply V_Builtin1_WithTyInst.
-      simpl. apply le_S. apply le_S. apply le_n.
-    + apply E_Constant.
-    + apply V_Builtin2_WithTyInst.
-      * simpl. apply le_S. apply le_n.
-      * apply V_Constant.
-  - apply S_Apply.
-    + apply S_Apply.
-      * apply S_Var1.
-      * apply S_Constant.
-    + apply S_Constant.
-  - eapply E_ApplyBuiltin2.
-    + apply E_ApplyBuiltin1.
-      * apply E_ApplyBuiltin1.
-        -- apply E_TyInstBuiltin1.
-           apply E_Builtin.
-        -- apply V_Builtin1_WithTyInst.
-           simpl. apply le_S. apply le_S. apply le_n.
-        -- apply E_Constant.
-        -- apply V_Builtin2_WithTyInst.
-           ++ simpl. apply le_S. apply le_n.
-           ++ apply V_Constant.
-      * apply V_Builtin2_WithTyInst.
-        -- simpl. apply le_S. apply le_n.
-        -- apply V_Constant.
-      * apply E_Constant.
-      * apply V_Builtin3_WithTyInst.
-        -- simpl. apply le_n.
-        -- apply V_Constant.
-        -- apply V_Constant.
-    + apply V_Builtin3_WithTyInst.
-      * simpl. apply le_n.
-      * apply V_Constant.
-      * apply V_Constant.
-    + apply E_Constant.
-    + intros Hcon.
-      inversion Hcon.
-    + reflexivity.
-Qed.
+  with eval_bindings_nonrec__ind := Minimality for eval_bindings_nonrec Sort Prop
+  with eval_bindings_rec__ind := Minimality for eval_bindings_rec Sort Prop.

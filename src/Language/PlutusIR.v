@@ -75,7 +75,6 @@ Definition uniType (x : DefaultUni) : Type :=
     | DefaultUniBool       => bool
   end
   .
-Transparent uniType.
 
 Inductive DefaultFun :=
     | AddInteger
@@ -120,6 +119,7 @@ Arguments ValueOf {_} {_}.
 
 Inductive some {f : DefaultUni -> Type} :=
   Some : forall {u : DefaultUni}, f u -> some.
+Arguments some _ : clear implicits.
 (*Inductive some := Some : forall a, valueOf a -> some.*)
 
 (** ** Builtin types *)
@@ -219,6 +219,7 @@ Arguments Ty_Lam [tyname]%type_scope [binderTyname]%type_scope.
 Arguments Var [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
 Arguments Constant [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
 Arguments Builtin [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments TyInst [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
 Arguments Error [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
 Arguments TypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
 Arguments DatatypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
@@ -280,6 +281,7 @@ Arguments Ty_Lam [tyname]%type_scope [binderTyname]%type_scope.
 Arguments Var [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
 Arguments Constant [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
 Arguments Builtin [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments TyInst [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
 Arguments Error [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
 Arguments TypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
 Arguments DatatypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
@@ -356,7 +358,7 @@ Section Term_rect.
     (H_TyAbs    : forall (s : tyname) (k : Kind) (t : Term), P t -> P (TyAbs s k t))
     (H_LamAbs   : forall (s : tyname) (t : Ty) (t0 : Term), P t0 -> P (LamAbs s t t0))
     (H_Apply    : forall t : Term, P t -> forall t0 : Term, P t0 -> P (Apply t t0))
-    (H_Constant : forall s : some, P (Constant s))
+    (H_Constant : forall s : some valueOf, P (Constant s))
     (H_Builtin  : forall d : DefaultFun, P (Builtin d))
     (H_TyInst   : forall t : Term, P t -> forall t0 : Ty, P (TyInst t t0))
     (H_Error    : forall t : Ty, P (Error t))
@@ -411,7 +413,7 @@ Section term_rect.
     (H_TyAbs    : forall (s : b') (k : kind) (t : term v v' b b'), P t -> P (TyAbs s k t))
     (H_LamAbs   : forall (s : b) (t : ty v' b') (t0 : term v v' b b'), P t0 -> P (LamAbs s t t0))
     (H_Apply    : forall t : term v v' b b', P t -> forall t0 : term v v' b b', P t0 -> P (Apply t t0))
-    (H_Constant : forall s : some, P (Constant s))
+    (H_Constant : forall s : some valueOf, P (Constant s))
     (H_Builtin  : forall d : DefaultFun, P (Builtin d))
     (H_TyInst   : forall t : term v v' b b', P t -> forall t0 : ty v' b', P (TyInst t t0))
     (H_Error    : forall t : ty v' b', P (Error t))

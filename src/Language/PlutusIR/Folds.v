@@ -274,7 +274,7 @@ Section Use. (* name comes from "use" rules in attribute grammars *)
     a_TyAbs := fun (_ : tyname) (_ : Kind) (X : a) => f [X];
     a_LamAbs := fun (_ : name) (_ : Ty) (X : a) => f [X];
     a_Apply := fun X X0 : a => f [X; X0];
-    a_Constant := fun _ : some => f [];
+    a_Constant := fun _ : some valueOf => f [];
     a_Builtin := fun _ : DefaultFun => f [];
     a_TyInst := fun (X : a) (_ : Ty) => f [X];
     a_Error := fun _ : Ty => f [];
@@ -373,7 +373,7 @@ Definition con_type (v v' b b': Set) P Q : con_term -> Type :=
     | con_TyAbs     => forall (s : b') (k : kind) (t : term v v' b b'), P t -> P (TyAbs s k t)
     | con_LamAbs    => forall (s : b) (t : ty v' b') (t0 : term v v' b b'), P t0 -> P (LamAbs s t t0)
     | con_Apply     => forall t : term v v' b b', P t -> forall t0 : term v v' b b', P t0 -> P (Apply t t0)
-    | con_Constant  => forall s : some, P (Constant s)
+    | con_Constant  => forall s : some valueOf, P (Constant s)
     | con_Builtin   => forall d : DefaultFun, P (Builtin d)
     | con_TyInst    => forall t : term v v' b b', P t -> forall t0 : ty v' b', P (TyInst t t0)
     | con_Error     => forall t : ty v' b', P (Error t)

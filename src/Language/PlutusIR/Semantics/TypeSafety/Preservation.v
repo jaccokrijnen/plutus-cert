@@ -99,6 +99,14 @@ Proof.
       apply T_Apply with T1.
       -- apply H0; auto.
       -- apply H2; auto.
+    + subst.
+      eapply T_Apply; eauto.
+    + subst.
+      eapply T_Apply; eauto.
+    + subst.
+      apply skip.
+    + subst.
+      apply skip.
   - (* T_Constant *)
     intros. unfold P_term. intros.
     inversion H0. subst.

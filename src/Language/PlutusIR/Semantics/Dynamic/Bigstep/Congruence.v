@@ -38,4 +38,35 @@ Proof.
     + apply H5.
     + assumption.
     + assumption.
+  - assert (v1 = TyInst (Builtin IfThenElse) T) by (eapply eval__deterministic; eauto).
+    subst.
+    eapply E_IfCondition.
+    + apply eval_value.
+      apply V_IfTyInst.
+    + assumption.
+  - assert (v1 = Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool cond)))) by (eapply eval__deterministic; eauto).
+    subst.
+    apply E_IfThenBranch.
+    apply E_IfCondition.
+    + apply E_IfTyInst.
+      apply E_Builtin.
+    + apply E_Constant.
+  - assert (v1 = Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool true)))) t_t) by (eapply eval__deterministic; eauto).
+    subst.
+    eapply E_IfTrue.
+    + apply E_IfThenBranch.
+      apply E_IfCondition.
+      * apply E_IfTyInst.
+        apply E_Builtin.
+      * apply E_Constant.
+    + assumption.
+  - assert (v1 = Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool false)))) t_t) by (eapply eval__deterministic; eauto).
+    subst.
+    eapply E_IfFalse.
+    + apply E_IfThenBranch.
+      apply E_IfCondition.
+      * apply E_IfTyInst.
+        apply E_Builtin.
+      * apply E_Constant.
+    + assumption.
 Qed.

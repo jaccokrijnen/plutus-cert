@@ -107,6 +107,11 @@ with substitute_binding : name -> Term -> Binding -> Binding -> Prop :=
   | S_DatatypeBind : forall x s dtd,
       substitute_binding x s (DatatypeBind dtd) (DatatypeBind dtd).
 
+#[export] Hint Constructors substitute : core.
+#[export] Hint Constructors substitute_bindings_nonrec : core.
+#[export] Hint Constructors substitute_bindings_rec : core.
+#[export] Hint Constructors substitute_binding : core.
+
 Scheme substitute__ind := Minimality for substitute Sort Prop
   with substitute_bindings_nonrec__ind := Minimality for substitute_bindings_nonrec Sort Prop
   with substitute_bindings_rec__ind := Minimality for substitute_bindings_rec Sort Prop

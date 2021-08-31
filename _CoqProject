@@ -41,6 +41,9 @@ src/Language/PlutusIR/Semantics/Dynamic/Bigstep/Congruence.v
 src/Language/PlutusIR/Semantics/Dynamic/Bigstep/Deterministic.v
 src/Language/PlutusIR/Semantics/Dynamic/Bigstep/EvalToValue.v
 src/Language/PlutusIR/Semantics/Dynamic/Bigstep/EvalValue.v
+src/Language/PlutusIR/Semantics/Dynamic/Bigstep/Examples/AddInteger.v
+src/Language/PlutusIR/Semantics/Dynamic/Bigstep/Examples/Factorial.v
+src/Language/PlutusIR/Semantics/Dynamic/Bigstep/Examples/IfThenElse.v
 src/Language/PlutusIR/Semantics/Dynamic/BuiltinMeanings.v
 src/Language/PlutusIR/Semantics/Dynamic/Smallstep.v
 src/Language/PlutusIR/Semantics/Dynamic/Substitution.v

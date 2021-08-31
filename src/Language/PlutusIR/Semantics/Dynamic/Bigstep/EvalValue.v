@@ -30,6 +30,23 @@ Proof.
     intros. unfold P_value.
     apply E_IWrap.
     assumption.
+  - (* V_IfTyInst *)
+    intros. unfold P_value.
+    apply E_IfTyInst.
+    apply E_Builtin.
+  - (* V_IfCondition *)
+    intros. unfold P_value.
+    apply E_IfCondition.
+    + apply E_IfTyInst.
+      apply E_Builtin.
+    + apply E_Constant.
+  - (* V_IfThenBranch *)
+    intros. unfold P_value.
+    apply E_IfThenBranch.
+    apply E_IfCondition.
+    * apply E_IfTyInst.
+      apply E_Builtin.
+    * apply E_Constant.
 
   - (* V_Builtin0 *)
     intros. unfold P_value_builtin.
@@ -68,44 +85,4 @@ Proof.
       * assumption.
       * assumption.
       * assumption.  
-  - (* V_Builtin1_WithTyInst *)
-    intros. unfold P_value_builtin.
-    apply E_TyInstBuiltin1.
-    apply E_Builtin.
-  - (* V_Builtin2_WithTyInst *)
-    intros. unfold P_value_builtin.
-    apply E_ApplyBuiltin1.
-    + apply E_TyInstBuiltin1.
-      apply E_Builtin.
-    + apply V_Builtin1_WithTyInst.
-      apply PeanoNat.Nat.lt_succ_l.
-      assumption.
-    + assumption.
-    + apply V_Builtin2_WithTyInst.
-      * assumption.
-      * assumption.
-  - (* V_Builtin3_WithTyInst *)
-    intros. unfold P_value_builtin.
-    eapply E_ApplyBuiltin1.
-    + apply E_ApplyBuiltin1.
-      * apply E_TyInstBuiltin1.
-        apply E_Builtin.
-      * apply V_Builtin1_WithTyInst.
-        apply PeanoNat.Nat.lt_succ_l.
-        apply PeanoNat.Nat.lt_succ_l.
-        assumption.
-      * assumption.
-      * apply V_Builtin2_WithTyInst.
-        -- apply PeanoNat.Nat.lt_succ_l.
-           assumption.
-        -- assumption.
-    + apply V_Builtin2_WithTyInst.
-      * apply PeanoNat.Nat.lt_succ_l.
-        assumption.
-      * assumption.
-    + assumption.
-    + apply V_Builtin3_WithTyInst.
-      * assumption.
-      * assumption.
-      * assumption.
 Qed.

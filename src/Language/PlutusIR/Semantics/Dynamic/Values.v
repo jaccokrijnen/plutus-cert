@@ -23,6 +23,13 @@ Inductive value : Term -> Prop :=
       (* TODO: Should the line below be included? *)
       value t0 ->
       value (IWrap F T t0)
+  (** If-Then-Else constructs *)
+  | V_IfTyInst : forall T,
+    value (TyInst (Builtin IfThenElse) T)
+  | V_IfCondition : forall T cond,
+      value (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool cond))))
+  | V_IfThenBranch : forall T cond t_then,
+      value (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool cond)))) t_then)
 
 with value_builtin : Term -> Prop :=
 | V_Builtin0 : forall f,
@@ -36,19 +43,10 @@ with value_builtin : Term -> Prop :=
     2 < arity f ->
     value v1 ->
     value v2 ->
-    value_builtin (Apply (Apply (Builtin f) v1) v2)
-| V_Builtin1_WithTyInst : forall T,
-    1 < arity IfThenElse ->
-    value_builtin (TyInst (Builtin IfThenElse) T)
-| V_Builtin2_WithTyInst : forall T v1,
-    2 < arity IfThenElse ->
-    value v1 ->
-    value_builtin (Apply (TyInst (Builtin IfThenElse) T) v1)
-| V_Builtin3_WithTyInst : forall T v1 v2,
-    3 < arity IfThenElse ->
-    value v1 ->
-    value v2 ->
-    value_builtin (Apply (Apply (TyInst (Builtin IfThenElse) T) v1) v2).
+    value_builtin (Apply (Apply (Builtin f) v1) v2).
+
+#[export] Hint Constructors value : core.
+#[export] Hint Constructors value_builtin : core.
 
 Scheme value__ind := Minimality for value Sort Prop
   with value_builtin__ind := Minimality for value_builtin Sort Prop.

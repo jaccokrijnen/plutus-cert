@@ -233,20 +233,6 @@ Definition compute_defaultfun (t : Term) : option Term :=
       )
       (Constant (@Some _ DefaultUniByteString (ValueOf _ bs2)))
     ) => Datatypes.Some (constBool (to_Z bs1 >? to_Z bs2))
-  (** If-Then-Else *)
-  | (Apply
-      (Apply
-        (Apply
-          (TyInst
-            (Builtin IfThenElse)
-            T
-          )
-          (Constant (@Some _ DefaultUniBool (ValueOf _ cond)))
-        )
-        t
-      )
-      f
-    ) => Datatypes.Some (if cond then t else f)
   (* String operations *)
   (* CharToString *)
   | (Apply
