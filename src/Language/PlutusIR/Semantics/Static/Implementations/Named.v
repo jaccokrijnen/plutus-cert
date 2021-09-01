@@ -137,6 +137,21 @@ Qed.
 Lemma flatten_nil : flatten nil = emptyContext.
 Proof. reflexivity. Qed.
 
+Lemma flatten_extract : forall ctx ctxs,
+    flatten (ctx :: ctxs) = append (flatten ctxs) ctx.
+Proof.
+  intros.
+  unfold flatten.
+  simpl.
+  replace ctx with (concat (ctx :: nil)) by eauto using append_emptyContext_r.
+  rewrite concat_append.
+  simpl.
+  rewrite append_emptyContext_r.
+  reflexivity.
+Qed.
+
+
+
 Definition constructorDecl : constructor -> VDecl :=
   fun c => match c with
   | Constructor vd _ => vd

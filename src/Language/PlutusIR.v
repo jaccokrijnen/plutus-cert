@@ -398,7 +398,64 @@ Section Term_rect.
       | DatatypeBind dtd => H_DatatypeBind dtd
     end.
 End Term_rect.
+ 
+Section Term__ind.
+  Import NamedTerm.
 
+  Unset Implicit Arguments.
+
+  Variable (P : Term -> Prop).
+  Variable (Q : Binding -> Prop).
+
+  Context
+    (H_Let      : forall rec bs t, ForallP Q bs -> P t -> P (Let rec bs t))
+    (H_Var      : forall s : tyname, P (Var s))
+    (H_TyAbs    : forall (s : tyname) (k : Kind) (t : Term), P t -> P (TyAbs s k t))
+    (H_LamAbs   : forall (s : tyname) (t : Ty) (t0 : Term), P t0 -> P (LamAbs s t t0))
+    (H_Apply    : forall t : Term, P t -> forall t0 : Term, P t0 -> P (Apply t t0))
+    (H_Constant : forall s : some valueOf, P (Constant s))
+    (H_Builtin  : forall d : DefaultFun, P (Builtin d))
+    (H_TyInst   : forall t : Term, P t -> forall t0 : Ty, P (TyInst t t0))
+    (H_Error    : forall t : Ty, P (Error t))
+    (H_IWrap    : forall (t t0 : Ty) (t1 : Term), P t1 -> P (IWrap t t0 t1))
+    (H_Unwrap   : forall t : Term, P t -> P (Unwrap t)).
+
+  Context
+    (H_TermBind : forall s v t, P t -> Q (TermBind s v t))
+    (H_TypeBind : forall v ty, Q (TypeBind v ty))
+    (H_DatatypeBind : forall dtd, Q (DatatypeBind dtd)).
+
+  Definition Bindings__ind (Binding__ind : forall (b : Binding), Q b) :=
+    fix Bindings__ind bs :=
+    match bs as p return ForallP Q p with
+      | nil       => ForallP_nil
+      | cons b bs => ForallP_cons (Binding__ind b) (Bindings__ind bs)
+    end.
+
+  Fixpoint Term__ind (t : Term) : P t :=
+    match t with
+      | Let rec bs t    => H_Let rec bs t (Bindings__ind Binding__ind bs) (Term__ind t)
+      | Var n           => H_Var n
+      | TyAbs n k t     => H_TyAbs n k t (Term__ind t)
+      | LamAbs n ty t   => H_LamAbs n ty t (Term__ind t)
+      | Apply s t       => H_Apply s (Term__ind s) t (Term__ind t)
+      | TyInst t ty     => H_TyInst t (Term__ind t) ty
+      | IWrap ty1 ty2 t => H_IWrap ty1 ty2 t (Term__ind t)
+      | Unwrap t        => H_Unwrap t (Term__ind t)
+      | Error ty        => H_Error ty
+      | Constant v      => H_Constant v
+      | Builtin f       => H_Builtin f
+    end
+  with Binding__ind (b : Binding) : Q b :=
+    match b with
+      | TermBind s v t  => H_TermBind s v t (Term__ind t)
+      | TypeBind v ty   => H_TypeBind v ty
+      | DatatypeBind dtd => H_DatatypeBind dtd
+    end.
+
+  Combined Scheme Term__multind from Term__ind, Binding__ind.
+
+End Term__ind.
 
 Section term_rect.
   Variable (v v' b b': Set).

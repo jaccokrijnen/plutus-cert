@@ -96,7 +96,7 @@ with eval_bindings_nonrec : Term -> Term -> Prop :=
       eval_bindings_nonrec (Let NonRec nil t) v
   | E_ConsB_NonRec : forall s x T tb bs t vb bs' t' v,
       tb ==> vb ->
-      substitute_bindings_rec x vb bs bs' ->
+      substitute_bindings_nonrec x vb bs bs' ->
       substitute x vb t t' ->
       eval_bindings_nonrec (Let NonRec bs' t') v ->
       eval_bindings_nonrec (Let NonRec ((TermBind s (VarDecl x T) tb) :: bs) t) v
@@ -115,3 +115,8 @@ where "t '==>' v" := (eval t v).
 Scheme eval__ind := Minimality for eval Sort Prop
   with eval_bindings_nonrec__ind := Minimality for eval_bindings_nonrec Sort Prop
   with eval_bindings_rec__ind := Minimality for eval_bindings_rec Sort Prop.
+
+Combined Scheme eval__multind from 
+  eval__ind,
+  eval_bindings_nonrec__ind,
+  eval_bindings_rec__ind.
