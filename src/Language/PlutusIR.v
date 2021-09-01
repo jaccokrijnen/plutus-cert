@@ -64,7 +64,7 @@ Inductive DefaultUni : Type :=
     | DefaultUniUnit       (* : DefaultUni unit (* () *)*)
     | DefaultUniBool       (* : DefaultUni bool (* Bool *)*)
     .
-    
+
 Definition uniType (x : DefaultUni) : Type :=
   match x with
     | DefaultUniInteger    => Z
@@ -192,7 +192,15 @@ with binding :=
   | DatatypeBind : dtdecl -> binding
 .
 
+
 End AST_term.
+
+Definition constructorName {tyname binderName binderTyname} : constr tyname binderName binderTyname -> binderName :=
+  fun c => match c with
+  | Constructor (VarDecl n _) _ => n
+  end
+  .
+Arguments constructorName _ _ _.
 
 (** * Named terms (all variables and binders are strings) *)
 Module NamedTerm.
@@ -236,11 +244,6 @@ Notation constructor := (constr tyname binderName binderTyname).
 Notation Term := (term name tyname binderName binderTyname).
 Notation Binding := (binding name tyname binderName binderTyname).
 
-Definition constructorName : constructor -> name := 
-  fun c => match c with
-  | Constructor (VarDecl n _) _ => n
-  end
-  .
 
 (** ** Trace of compilation *)
 Inductive Pass :=
@@ -330,11 +333,11 @@ where shift_bindings' : nat -> nat -> list Binding -> list Binding := {
   shift_bindings' k c nil => nil ;
   shift_bindings' k c (TermBind s (VarDecl bn T) t :: bs) => TermBind s (VarDecl bn (shift_ty' k c T)) (shift_term' k c t) :: shift_bindings' k c bs ;
   shift_bindings' k c (TypeBind tvd T :: bs) => TypeBind tvd (shift_ty' k c T) :: shift_bindings' k c bs ;
-  shift_bindings' k c (DatatypeBind (Datatype X YKs matchFunc cs) :: bs) => DatatypeBind (Datatype X YKs matchFunc (shift_constructors' k c cs)) :: shift_bindings' k c bs} 
+  shift_bindings' k c (DatatypeBind (Datatype X YKs matchFunc cs) :: bs) => DatatypeBind (Datatype X YKs matchFunc (shift_constructors' k c cs)) :: shift_bindings' k c bs}
 
 where shift_constructors' : nat -> nat -> list constructor -> list constructor := {
   shift_constructors' k c nil => nil ;
-  shift_constructors' k c (Constructor (VarDecl bn T) ar :: cs) => Constructor (VarDecl bn (shift_ty' k c T)) ar :: shift_constructors' k c cs }. 
+  shift_constructors' k c (Constructor (VarDecl bn T) ar :: cs) => Constructor (VarDecl bn (shift_ty' k c T)) ar :: shift_constructors' k c cs }.
 
 Definition shift_term (t : Term) := shift_term' 1 0 t.
 

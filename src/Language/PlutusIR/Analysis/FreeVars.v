@@ -13,8 +13,6 @@ From PlutusCert Require Import
   Language.PlutusIR.Folds
   Util.
 
-Local Open Scope string_scope.
-
 
 
 (* Parametrized for _named_ binders (not de Bruijn) *)
@@ -29,6 +27,7 @@ Notation binding' := (binding var tyvar var tyvar).
 
 Fixpoint boundVars_binding (b : binding') : list var := match b with
   | TermBind _ (VarDecl v _) _ => [v]
+  | DatatypeBind (Datatype _ _ matchf constructors ) => [matchf] ++ map constructorName constructors
   | _                          => []
   end.
 
