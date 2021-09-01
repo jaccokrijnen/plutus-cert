@@ -8,69 +8,40 @@ From Equations Require Import Equations.
 
 Set Implicit Arguments.
 
-From PlutusCert Require Import Language.PlutusIR.
-Import NamedTerm.
-From PlutusCert Require Import Language.PlutusIR.Folds.
+From PlutusCert Require Import
+  Language.PlutusIR
+  Language.PlutusIR.Folds
+  Util.
 
 Local Open Scope string_scope.
 
-(*
-Definition fv_alg :=
-  {| A_Var      := fun n        => cons n nil
-  ;  A_LamAbs   := fun n _ fvs  => remove string_dec n fvs
 
-  ;  A_Let      := fun _ bs fvs => fvs (*TODO let bindings*)
 
-  ;  A_Apply    := fun fvs fvs' => app fvs fvs'
-  ;  A_TyAbs    := fun _ _ fvs  => fvs
-  ;  A_TyInst   := fun fvs _    => fvs
-  ;  A_IWrap    := fun _ _ fvs  => fvs
-  ;  A_Unwrap   := fun fvs      => fvs
-  ;  A_Constant := fun _        => nil
-  ;  A_Builtin  := fun _        => nil
-  ;  A_Error    := fun _        => nil
-  |}.
-
-Definition FV : Term -> list string -> Type := Fold (fv_alg).
-
-Example FV_test : FV (Var "test") (cons "test" nil).
-Proof.
-  constructor.
-Qed.
-
-Definition fv := fold (fv_alg).
-Example fv_test : fv (Var "test") = (cons "test" nil).
-Proof.
-  constructor.
-Qed.
-
-*)
-
-Definition remove_list {A} (dec : forall x y, {x = y} + {x <> y}) : list A -> list A -> list A :=
-  fun rs xs => fold_right (remove dec) xs rs.
-
-Fixpoint remove_eqb {a} a_eqb xs : list a :=
-  match xs with
-    | nil => nil
-    | x :: xs => if a_eqb x : bool then remove_eqb a_eqb xs else x :: remove_eqb a_eqb xs
-  end
-  .
-
+(* Parametrized for _named_ binders (not de Bruijn) *)
 Section FreeVars.
   Context
     {var tyvar : Set}
     (var_eqb : var -> var -> bool)
     .
 
-Fixpoint boundVars (bs : list (binding var tyvar var tyvar)) : list var := match bs with
-    | ((TermBind _ (VarDecl v _) t) :: bs) => v :: boundVars bs
-    | (b                :: bs) =>      boundVars bs
-    | nil               => nil
+Notation term'    := (term var tyvar var tyvar).
+Notation binding' := (binding var tyvar var tyvar).
+
+Fixpoint boundVars_binding (b : binding') : list var := match b with
+  | TermBind _ (VarDecl v _) _ => [v]
+  | _                          => []
+  end.
+
+Fixpoint boundVars_bindings (bs : list binding') : list var := match bs with
+    | ((TermBind _ (VarDecl v _) t) :: bs)
+        => v :: boundVars_bindings bs
+    | (_ :: bs) => boundVars_bindings bs
+    | nil       => nil
     end.
 
-Fixpoint boundTerms (bs : list (binding var tyvar var tyvar)) : list (var * term var tyvar var tyvar) := match bs with
-    | ((TermBind _ (VarDecl v _) t) :: bs) => (v, t) :: boundTerms bs
-    | (b                :: bs) =>           boundTerms bs
+Fixpoint boundTerms_bindings (bs : list binding') : list (var * term var tyvar var tyvar) := match bs with
+    | ((TermBind _ (VarDecl v _) t) :: bs) => (v, t) :: boundTerms_bindings bs
+    | (b                :: bs) =>           boundTerms_bindings bs
     | nil               => nil
     end.
 
@@ -79,21 +50,33 @@ Definition delete : var -> list var -> list var :=
 
 Definition elem x xs := existsb (var_eqb x) xs.
 
-Definition deleteMany : list var -> list var -> list var :=
+Definition delete_many : list var -> list var -> list var :=
   fun ds xs => filter (fun x => negb (elem x ds)) xs.
+
+
+Section fvbs.
+(*
+  Workaround for: Cannot guess decreasing argument of fix (in freeVars/freeVars_binding)
+*)
+Context (freeVars_binding : Recursivity -> binding' -> list var).
+
+Fixpoint freeVars_bindings  rec (bs : list binding') : list var :=
+  match rec with
+    | Rec    =>
+        delete_many (boundVars_bindings bs) (concat (map (freeVars_binding Rec) bs))
+    | NonRec =>
+        match bs with
+          | nil     => []
+          | b :: bs => freeVars_binding NonRec b
+                       ++ delete_many (boundVars_binding b) (freeVars_bindings NonRec bs)
+        end
+  end.
+End fvbs.
+
 
 Fixpoint freeVars (t : term var tyvar var tyvar) : list var :=
  match t with
-   | (Let Rec bs t)    => deleteMany (boundVars bs) (freeVars t ++ concat (map freeVarsBinding bs))
-   | (Let NonRec bs t) => fold_right
-                            (fun b fv_bs bound => match b with
-                               | TermBind s (VarDecl v _) t => app (deleteMany bound (freeVarsBinding b)) (fv_bs (v :: bound))
-                               | _              => fv_bs bound
-                               end
-                            )
-                            (fun _ => nil)
-                            bs
-                            []
+   | Let rec bs t => freeVars_bindings freeVars_binding rec bs ++ delete_many (boundVars_bindings bs) (freeVars t)
    | (LamAbs n ty t)   => delete n (freeVars t)
    | (Var n)           => [n]
    | (TyAbs n k t)     => freeVars t
@@ -106,19 +89,23 @@ Fixpoint freeVars (t : term var tyvar var tyvar) : list var :=
    | (Builtin f)       => []
    end
 
-with freeVarsBinding (b : binding var tyvar var tyvar) :=
+with freeVars_binding rec (b : binding') : list var :=
   match b with
-    | TermBind _ v t => freeVars t
-    | _              => []
+    | TermBind _ (VarDecl v _) t => match rec with
+      | Rec    => delete v (freeVars t)
+      | NonRec => freeVars t
+      end
+    | _        => []
   end
   .
 
 End FreeVars.
 
 
+(*
 Equations fv' : Term -> list string := {
   fv' (Let rec bs t)    := let fvs := app (fv_bindings bs) (fv' t)
-                           in  remove_list string_dec (boundVars bs) fvs;
+                           in  remove_list string_dec (boundVars_bindings bs) fvs;
   fv' (LamAbs n ty t)   := remove string_dec n (fv' t);
   fv' (Var n)           := n :: nil;
   fv' (TyAbs n k t)     := fv' t;
@@ -136,6 +123,7 @@ Equations fv' : Term -> list string := {
     fv_bindings nil                      := nil
   }
   .
+*)
 
 (* Apparently, Equations did something special, since the similar definition below
   is not allowed in plain gallina.
@@ -166,6 +154,7 @@ Fixpoint fvs (t : Term) : list string := match t with
 .
 *)
 
+(*
 Fixpoint catMaybes {a : Type} (xs : list (option a)) : list a := match xs with
   | nil => nil
   | cons (Datatypes.Some x) xs => cons x (catMaybes xs)
@@ -177,6 +166,8 @@ Definition boundName : Binding -> option name := fun b =>
     | TermBind _ (VarDecl v _) _ => Datatypes.Some v
     | _ => None
     end.
+
+*)
 (*
 (* TODO: use well-founded recursion to include the subterms of
 let-bindings *)
@@ -211,3 +202,36 @@ Fixpoint freeVars_binders (b : list Binding) : list name := match b with
 end
 .
 *)
+
+(*
+Definition fv_alg :=
+  {| A_Var      := fun n        => cons n nil
+  ;  A_LamAbs   := fun n _ fvs  => remove string_dec n fvs
+
+  ;  A_Let      := fun _ bs fvs => fvs (*TODO let bindings*)
+
+  ;  A_Apply    := fun fvs fvs' => app fvs fvs'
+  ;  A_TyAbs    := fun _ _ fvs  => fvs
+  ;  A_TyInst   := fun fvs _    => fvs
+  ;  A_IWrap    := fun _ _ fvs  => fvs
+  ;  A_Unwrap   := fun fvs      => fvs
+  ;  A_Constant := fun _        => nil
+  ;  A_Builtin  := fun _        => nil
+  ;  A_Error    := fun _        => nil
+  |}.
+
+Definition FV : Term -> list string -> Type := Fold (fv_alg).
+
+Example FV_test : FV (Var "test") (cons "test" nil).
+Proof.
+  constructor.
+Qed.
+
+Definition fv := fold (fv_alg).
+Example fv_test : fv (Var "test") = (cons "test" nil).
+Proof.
+  constructor.
+Qed.
+
+*)
+

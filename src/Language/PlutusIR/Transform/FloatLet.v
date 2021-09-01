@@ -9,6 +9,8 @@ Require Import Coq.Lists.List.
 Import Coq.Lists.List.ListNotations.
 
 
+Notation fv := (freeVars String.eqb).
+
 (* Find adjacent lets of given recursivity at the top of the AST *)
 Fixpoint adjacentBindings r (t : Term) : list Binding * Term :=
     match t with
@@ -84,15 +86,15 @@ Inductive Bindings_NonRec_Commute : Binding -> Binding -> Type :=
                                Although this could be allowed in specific cases,
                                when both are dead bindings, or are binding
                                equivalent terms *)
-       ~ (In x (fv' yt)) -> (* yt may not depend on x *)
-       ~ (In y (fv' xt)) -> (* if xt has a free var y, swapping would shadow that variable *)
+       ~ (In x (fv yt)) -> (* yt may not depend on x *)
+       ~ (In y (fv xt)) -> (* if xt has a free var y, swapping would shadow that variable *)
 
        Bindings_NonRec_Commute
          (TermBind NonStrict (VarDecl x T) xt)
          (TermBind NonStrict (VarDecl y T) yt)
 
   | BC_DatatypeL: forall ty args matchf constructors strictness x xt T,
-       Forall (fun v => ~(In v (fv' xt))) (matchf :: (map constructorName constructors)) ->
+       Forall (fun v => ~(In v (fv xt))) (matchf :: (map constructorName constructors)) ->
        Bindings_NonRec_Commute
          (DatatypeBind (Datatype ty args matchf constructors))
          (TermBind strictness (VarDecl x T) xt)

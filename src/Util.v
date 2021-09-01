@@ -176,3 +176,13 @@ Fixpoint listNats (i : nat) : list nat :=
   | O => nil
   | S i' => cons i' (listNats i')
   end.
+
+Definition remove_list {A} (dec : forall x y, {x = y} + {x <> y}) : list A -> list A -> list A :=
+  fun rs xs => fold_right (remove dec) xs rs.
+
+Fixpoint remove_eqb {a} a_eqb xs : list a :=
+  match xs with
+    | nil => nil
+    | x :: xs => if a_eqb x : bool then remove_eqb a_eqb xs else x :: remove_eqb a_eqb xs
+  end
+  .
