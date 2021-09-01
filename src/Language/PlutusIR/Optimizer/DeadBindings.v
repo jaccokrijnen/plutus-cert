@@ -9,7 +9,8 @@ From PlutusCert Require Import
   Language.PlutusIR
   Language.PlutusIR.Analysis.FreeVars
   Language.PlutusIR.Analysis.Equality
-  Language.PlutusIR.Transform.Congruence.
+  Language.PlutusIR.Transform.Congruence
+  Language.PlutusIR.Semantics.Dynamic.Values.
 
 Import NamedTerm.
 
@@ -48,6 +49,7 @@ Inductive DBE_Term : Term -> Term -> Type :=
   *)
     | DBE_RemoveTermBind : forall {v stric t_bound T vars},
         ~ In v vars ->
+        (stric = Strict -> value t_bound) -> (* strict bindings may have side-effects and can safely be removed when they are values *)
         DBE_Binding vars (TermBind stric (VarDecl v T) t_bound)
 
   with DBE_Bindings : Recursivity ->
