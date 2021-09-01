@@ -7,8 +7,6 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
 
 Inductive value : Term -> Prop :=
   | V_TyAbs : forall bX K t0,
-      (* TODO: Should the line below be included? *)
-      value t0 ->
       value (TyAbs bX K t0)
   | V_LamAbs : forall bx T t0,
       value (LamAbs bx T t0)

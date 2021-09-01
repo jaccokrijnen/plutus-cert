@@ -5,6 +5,7 @@ Require Import PlutusCert.Language.PlutusIR.Transform.LetNonRec.SSP.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.ContextInvariance.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.Preservation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.Progress.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
@@ -12,92 +13,6 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Def.
 
 
 Require Import Coq.Lists.List.
-
-
-
-(** ** Context invariance *)
-
-Inductive appears_free_in : name -> Term -> Prop :=
-  | AFI_Let : forall x r bs t,
-      appears_free_in x t ->
-      appears_free_in x (Let r bs t)
-  | AFI_LetNonRec : forall x bs t,
-      appears_free_in_bindings_nonrec x bs ->
-      appears_free_in x (Let NonRec bs t)
-  | AFI_LetRec : forall x bs t,
-      ~(In x (term_vars_bound_by_bindings bs)) ->
-      appears_free_in_bindings_rec x bs ->
-      appears_free_in x (Let Rec bs t)
-  | AFI_Var : forall x,
-      appears_free_in x (Var x)
-  | AFI_TyAbs : forall x bX K t0,
-      appears_free_in x t0 ->
-      appears_free_in x (TyAbs bX K t0)
-  | AFI_LamAbs : forall x bx K t0,
-      appears_free_in x t0 ->
-      appears_free_in x (LamAbs bx K t0)
-  | AFI_Apply1 : forall x t1 t2,
-      appears_free_in x t1 ->
-      appears_free_in x (Apply t1 t2)
-  | AFI_Apply2 : forall x t1 t2,
-      appears_free_in x t2 ->
-      appears_free_in x (Apply t1 t2)
-  | AFI_TyInst : forall x t0 T,
-      appears_free_in x t0 ->
-      appears_free_in x (TyInst t0 T)
-  | AFI_IWrap : forall x F T t0,
-      appears_free_in x t0 ->
-      appears_free_in x (IWrap F T t0)
-  | AFI_Unwrap : forall x t0,
-      appears_free_in x t0 ->
-      appears_free_in x (Unwrap t0)
-
-with appears_free_in_bindings_nonrec : name -> list Binding -> Prop :=
-  | AFI_ConsB1_NonRec : forall x b bs,
-      appears_free_in_binding x b ->
-      appears_free_in_bindings_nonrec x (b :: bs)
-  | AFI_ConsB2_NonRec : forall x b bs,
-      ~(In x (term_vars_bound_by_binding b)) ->
-      appears_free_in_bindings_nonrec x bs ->
-      appears_free_in_bindings_nonrec x (b :: bs)
-
-with appears_free_in_bindings_rec : name -> list Binding -> Prop :=
-  | AFI_ConsB1_Rec : forall x b bs,
-      appears_free_in_binding x b ->
-      appears_free_in_bindings_rec x (b :: bs)
-  | AFI_ConsB2_Rec : forall x b bs,
-      appears_free_in_bindings_rec x bs ->
-      appears_free_in_bindings_rec x (b :: bs)
-
-with appears_free_in_binding : name -> Binding -> Prop :=
-  | AFI_TermBind : forall x s vd t0,
-      appears_free_in x t0 ->
-      appears_free_in_binding x (TermBind s vd t0)
-  .
-
-Definition closed (t : Term) :=
-  forall x, ~(appears_free_in x t).
-
-Lemma context_invariance : forall Gamma Gamma' t S,
-    Gamma |-+ t : S ->
-    (forall x, appears_free_in x t -> lookupT Gamma x = lookupT Gamma' x) ->
-    Gamma' |-+ t : S.
-Proof. Admitted.
-
-Lemma free_in_context : forall x t T Gamma,
-    appears_free_in x t ->
-    Gamma |-+ t : T ->
-    exists T', lookupT Gamma x = Datatypes.Some T'.
-Proof. Admitted.
-
-Corollary typable_empty__closed : forall t T,
-    emptyContext |-+ t : T ->
-    closed t.
-Proof.
-  intros. unfold closed. intros x H1.
-  destruct (free_in_context _ _ _ _ H1 H) as [T' C].
-  discriminate C.
-Qed.
 
 (** ** Multisubstitutions, multi-extensions, and instantiations *)
 
@@ -279,7 +194,8 @@ Proof.
         -- intros Hcon.
            apply H0.
            apply AFI_Let.
-           assumption.
+           ++ assumption.
+           ++ assumption.
         -- assumption.
     + (* S_LetRec1 *)
       reflexivity.
@@ -300,7 +216,8 @@ Proof.
         -- intros Hcon.
            apply H0.
            apply AFI_Let.
-           assumption.
+           ++ assumption.
+           ++ assumption.
         -- assumption.
   - (* Var *)
     intros. unfold P_Term. intros.
@@ -336,7 +253,8 @@ Proof.
       * intros Hcon.
         apply H0.
         apply AFI_LamAbs.
-        assumption.
+        -- assumption.
+        -- assumption.
       * assumption.
   - (* Apply *)
     intros. unfold P_Term. intros.

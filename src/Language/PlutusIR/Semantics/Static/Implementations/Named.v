@@ -30,6 +30,32 @@ Notation "X '|K->' K ';' ctx" := (extendK X K ctx) (at level 60, right associati
 Lemma cong_eq : forall {A B} (x1 x2 : A) (y1 y2 : B), x1 = x2 -> y1 = y2 -> (x1, y1) = (x2, y2).
 Proof. intros. f_equal; auto. Qed. 
 
+Lemma lookupT_eq : forall ctx x T,
+    lookupT (x |T-> T ; ctx) x = Datatypes.Some T.
+Proof. intros. unfold lookupT. simpl. rewrite update_eq. reflexivity. Qed.
+
+Lemma lookupK_eq : forall ctx X K,
+    lookupK (X |K-> K ; ctx) X = Datatypes.Some K.
+Proof. intros. unfold lookupK. simpl. rewrite update_eq. reflexivity. Qed.
+
+Lemma lookupT_neq : forall ctx x1 x2 T,
+    x2 <> x1->
+    lookupT (x2 |T-> T ; ctx) x1 = lookupT ctx x1.
+Proof. intros. unfold lookupT. simpl. rewrite update_neq. reflexivity. assumption. Qed.
+
+Lemma lookupK_neq : forall ctx X1 X2 K,
+    X2 <> X1 ->
+    lookupK (X2 |K-> K ; ctx) X1 = lookupK ctx X1.
+Proof. intros. unfold lookupT. simpl. rewrite update_neq. reflexivity. assumption. Qed.
+
+Lemma lookupT_extendK : forall ctx X K x,
+  lookupT (X |K-> K; ctx) x = lookupT ctx x.
+Proof. reflexivity. Qed.
+
+Lemma lookupK_extendT : forall ctx x T X,
+  lookupK (x |T-> T; ctx) X = lookupK ctx X.
+Proof. reflexivity. Qed.
+
 Lemma extendT_shadow : forall ctx x T1 T2,
     (x |T-> T1; x |T-> T2; ctx) = (x |T-> T1; ctx).
 Proof. 
@@ -99,6 +125,16 @@ Proof.
     destruct (x =? x0); auto.
   - reflexivity.
 Qed.
+
+Lemma lookupT_append_r : forall ctx ctx' ctx'' x,
+    lookupT ctx' x = lookupT ctx'' x ->
+    lookupT (append ctx ctx') x = lookupT (append ctx ctx'') x.
+Proof. intros. destruct ctx. simpl. destruct (p x); auto. Qed.
+
+Lemma lookupK_append_r : forall ctx ctx' ctx'' X,
+    lookupK ctx' X = lookupK ctx'' X ->
+    lookupK (append ctx ctx') X = lookupK (append ctx ctx'') X.
+Proof. intros. destruct ctx. simpl. destruct (p0 X); auto. Qed.
 
 Lemma append_assoc : forall ctx1 ctx2 ctx3,
     append ctx1 (append ctx2 ctx3) = append (append ctx1 ctx2) ctx3.

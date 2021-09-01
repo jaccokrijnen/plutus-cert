@@ -75,45 +75,17 @@ Example fact_term_evaluates :
 Proof with eauto.
   apply E_LetRec.
   eapply E_ConsB_Rec. {
-    apply S_Apply. 
-    - apply S_Var1.
-    - apply S_Constant.
+    solve_substitute.
+  } {
+    solve_substitute.
   }
   apply E_NilB_Rec.
   eapply E_Apply. {
     eapply E_LetRec.
     eapply E_ConsB_Rec. {
-      apply S_LamAbs2.
-      - intros Hcon.
-        inversion Hcon.
-      - apply S_Apply.
-        + apply S_Apply.
-          * apply S_Apply. 
-            -- apply S_TyInst.
-               apply S_Builtin.
-            -- apply S_Apply. 
-               ++ apply S_Apply.
-                  ** apply S_Builtin.
-                  ** apply S_Var2. 
-                     intros Hcon.
-                     inversion Hcon.
-               ++ apply S_Constant.
-          * apply S_Constant.
-        + apply S_Apply. 
-          * apply S_Apply.
-            -- apply S_Builtin.
-            -- apply S_Var2.
-               intros Hcon.
-               inversion Hcon.
-          * apply S_Apply.
-            -- apply S_Var1.
-            -- apply S_Apply.
-               ++ apply S_Apply.
-                  ** apply S_Builtin.
-                  ** apply S_Var2.
-                     intros Hcon.
-                     inversion Hcon.
-               ++ apply S_Constant.
+      solve_substitute.
+    } {
+      solve_substitute.
     }
     apply E_NilB_Rec.
     apply E_LamAbs.
@@ -214,6 +186,8 @@ Proof with eauto.
     eapply E_Apply. {
       eapply E_LetRec. {
         eapply E_ConsB_Rec. {
+          solve_substitute.
+        } {
           solve_substitute.
         } {
           eapply E_NilB_Rec.
@@ -336,6 +310,8 @@ Proof with eauto.
           eapply E_Apply. {
             eapply E_LetRec. {
               eapply E_ConsB_Rec. {
+                solve_substitute.
+              } {
                 solve_substitute.
               } {
                 eapply E_NilB_Rec.

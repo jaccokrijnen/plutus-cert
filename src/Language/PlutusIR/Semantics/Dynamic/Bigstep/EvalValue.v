@@ -13,7 +13,6 @@ Proof.
   - (* V_TyAbs *) 
     intros. unfold P_value.
     apply E_TyAbs.
-    assumption.
   - (* V_LamAbs *)
     intros. unfold P_value.
     apply E_LamAbs.

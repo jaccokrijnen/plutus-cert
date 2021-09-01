@@ -19,9 +19,8 @@ Inductive eval : Term -> Term -> Prop :=
       eval_bindings_rec bs (Let Rec bs t) v ->
       (Let Rec bs t) ==> v
   (** Others *)
-  | E_TyAbs : forall X K t v,
-      t ==> v ->
-      TyAbs X K t ==> TyAbs X K v
+  | E_TyAbs : forall X K t,
+      TyAbs X K t ==> TyAbs X K t
   | E_LamAbs : forall x T t,
       LamAbs x T t ==> LamAbs x T t
   | E_Apply : forall t1 t2 x T t0 t0' v2 v0,
@@ -73,8 +72,9 @@ Inductive eval : Term -> Term -> Prop :=
       t_e ==> v_e ->
       Apply t_bct t_e ==> v_e
   (* Type instantiation *)
-  | E_TyInst : forall t1 T2 X K v0,
-      t1 ==> TyAbs X K v0 ->
+  | E_TyInst : forall t1 T2 X K t0 v0,
+      t1 ==> TyAbs X K t0 ->
+      t0 ==> v0 ->
       TyInst t1 T2 ==> v0
   (* Errors and their propagation *)
   | E_Error : forall T,
@@ -105,9 +105,10 @@ with eval_bindings_rec : list Binding -> Term -> Term -> Prop :=
   | E_NilB_Rec : forall bs0 t v,
       t ==> v ->
       eval_bindings_rec bs0 (Let Rec nil t) v
-  | E_ConsB_Rec : forall bs0 s x T tb bs t t' v,
+  | E_ConsB_Rec : forall bs0 s x T tb bs t bs' t' v,
+      substitute_bindings_rec x (Let Rec bs0 tb) bs bs' ->
       substitute x (Let Rec bs0 tb) t t' ->
-      eval_bindings_rec bs0 (Let Rec bs t') v ->
+      eval_bindings_rec bs0 (Let Rec bs' t') v ->
       eval_bindings_rec bs0 (Let Rec ((TermBind s (VarDecl x T) tb) :: bs) t) v
 
 where "t '==>' v" := (eval t v).

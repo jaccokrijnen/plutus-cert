@@ -13,7 +13,7 @@ Proof.
     try (intros; unfold P_eval; unfold P_eval_bindings_nonrec; unfold P_eval_bindings_rec).
   - assumption.
   - assumption.
-  - apply V_TyAbs. assumption.
+  - apply V_TyAbs.
   - apply V_LamAbs.
   - assumption.
   - apply V_Constant.
@@ -65,7 +65,7 @@ Proof.
   - apply V_IfThenBranch.
   - assumption.
   - assumption.
-  - inversion H0; subst; auto. inversion H1. 
+  - assumption.
   - apply V_Error.
   - apply V_IWrap. apply H0.
   - inversion H0; subst. inversion H1. assumption.

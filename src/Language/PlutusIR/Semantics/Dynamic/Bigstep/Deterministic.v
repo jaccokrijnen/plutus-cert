@@ -246,10 +246,8 @@ Proof.
     assumption.
   - (* E_TyAbs *)
     intros. unfold P_eval. intros.
-    inversion H1. subst.
-    f_equal.
-    apply H0.
-    assumption.
+    inversion H. subst.
+    reflexivity.
   - (* E_LamAbs *)
     intros. unfold P_eval. intros.
     inversion H. subst.
@@ -453,7 +451,7 @@ Proof.
       reflexivity.
     + (* E_TyInst *)  
       subst.
-      assert (Builtin IfThenElse = TyAbs X K y2). {
+      assert (Builtin IfThenElse = TyAbs X K t2). {
         apply H0. assumption.
       }
       inversion H2.
@@ -651,20 +649,21 @@ Proof.
       assumption.
   - (* E_TyInst *)
     intros. unfold P_eval. intros.
-    inversion H1.
+    inversion H3.
     + (* E_IfTyInst *)
       subst.
-      assert (TyAbs X K v0 = Builtin IfThenElse). {
+      assert (TyAbs X K t0 = Builtin IfThenElse). {
         apply H0. assumption.
       }
-      inversion H2.
+      inversion H4.
     + (* E_TyInst *)
       subst.
-      assert (TyAbs X K v0 = TyAbs X0 K0 y2). {
+      assert (TyAbs X K t0 = TyAbs X0 K0 t3). {
         apply H0. assumption.
       }
-      inversion H2. subst.
-      reflexivity.
+      inversion H4. subst.
+      apply H2.
+      assumption.
   - (* E_Error *)
     intros. unfold P_eval. intros.
     inversion H. subst.
@@ -717,13 +716,18 @@ Proof.
     assumption.
   - (* E_ConsB_Rec *)
     intros. unfold P_eval_bindings_rec. intros.
-    inversion H2. subst.
-    assert (t' = t'0). {
+    inversion H3. subst.
+    assert (bs' = bs'0). {
       apply substitute__deterministic in H.
-      apply H in H11.
+      apply H in H12.
+      assumption.
+    }
+    assert (t' = t'0). {
+      apply substitute__deterministic in H0.
+      apply H0 in H13.
       assumption.
     }
     subst.
-    apply H1.
+    apply H2.
     assumption.
 Qed.

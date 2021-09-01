@@ -106,30 +106,34 @@ Proof.
     eapply H0; eauto.
   - (* E_TyAbs *)
     intros. unfold P_eval. intros.
-    inversion H1. subst.
-    apply T_TyAbs.
-    apply skip.
-  - intros. unfold P_eval. intros.
+    assumption.
+  - (* E_LamAbs *)
+    intros. unfold P_eval. intros.
     assumption. 
-  - intros. unfold P_eval. intros.
+  - (* E_Apply *) 
+    intros. unfold P_eval. intros.
     inversion H6. subst.
     apply H0 in H10.
     apply H2 in H12.
     eapply substitution_preserves_typing in H3; eauto.
     inversion H10. subst.
     eauto.
-  - intros. unfold P_eval. intros.
+  - (* E_Constant *) 
+    intros. unfold P_eval. intros.
     assumption.
-  - intros. unfold P_eval. intros.
+  - (* E_Builtin *) 
+    intros. unfold P_eval. intros.
     assumption.
-  - intros. unfold P_eval. intros.
+  - (* E_ApplyBuiltin1 *) 
+    intros. unfold P_eval. intros.
     inversion H5. subst.
     apply T_Apply with T1.
     + apply H0.
       assumption. 
     + apply H3.
       assumption.
-  - intros. unfold P_eval. intros.
+  - (* E_ApplyBuiltin2 *) 
+    intros. unfold P_eval. intros.
     inversion H6. subst.
     eapply preservation__compute_defaultfun.
     + apply T_Apply with T1. 
@@ -138,16 +142,20 @@ Proof.
       * apply H3.
         assumption.
     + assumption.
-  - intros. unfold P_eval. intros.
+  - (* E_IfTyInst *) 
+    intros. unfold P_eval. intros.
     inversion H1; subst.
     eapply T_TyInst; eauto.
-  - intros. unfold P_eval. intros.
+  - (* E_IfCondition *)
+    intros. unfold P_eval. intros.
     inversion H3; subst.
     eapply T_Apply; eauto.
-  - intros. unfold P_eval. intros.
+  - (* E_IfThenBranch *)
+    intros. unfold P_eval. intros.
     inversion H1; subst.
     eapply T_Apply; eauto.
-  - intros. unfold P_eval. intros.
+  - (* E_IfTrue *) 
+    intros. unfold P_eval. intros.
     inversion H3; subst.
     apply H0 in H7.
     apply H2.
@@ -159,7 +167,8 @@ Proof.
     simpl in H16.
     
     apply skip. (* TODO *)
-  - intros. unfold P_eval. intros.
+  - (* E_IfFalse *)
+    intros. unfold P_eval. intros.
     inversion H3. subst.
     apply H0 in H7.
     apply H2.
@@ -171,15 +180,18 @@ Proof.
     simpl in H16.
 
     apply skip. (* TODO *)
-  - intros. unfold P_eval. intros.
-    inversion H1. subst.
+  - (* E_TyInst *) 
+    intros. unfold P_eval. intros.
     apply skip. (* TODO *)
-  - intros. unfold P_eval. intros.
+  - (* E_Error *)
+    intros. unfold P_eval. intros.
     assumption.
-  - intros. unfold P_eval. intros.
+  - (* E_IWrap *) 
+    intros. unfold P_eval. intros.
     inversion H1. subst.
     eapply T_IWrap; eauto.
-  - intros. unfold P_eval. intros.
+  - (* E_Unwrap *)
+    intros. unfold P_eval. intros.
     inversion H1. subst.
     apply H0 in H3.
     inversion H3. subst.
@@ -241,6 +253,34 @@ Proof.
   - (* E_NilB_Rec *)
     intros. unfold P_eval_bindings_rec. intros.
     inversion H1. subst.
+    apply H0.
+    inversion H2. subst.
+    assumption.
+  - (* E_ConsB_Rec *)
+    intros. unfold P_eval_bindings_rec. intros.
+    inversion H3. subst.
+    clear H3.
+    inversion H4. subst.    
+    eapply H2. 
+    + reflexivity.
+    + eapply T_LetRec.
+      * reflexivity.
+      * inversion H8. subst.
+        inversion H7. subst.
+        apply substitution_preserves_typing__Bindings_Rec with bs x T (Let Rec bs0 tb). {
+          inversion H8.
+          subst.
+          simpl in H9.
+          erewrite <- append_extendT_permute.
+          - rewrite flatten_extract in H9.
+            rewrite append_emptyContext_r in H9.
+            apply skip. (* TODO *)
+          - apply skip. (* TODO *)
+        } {
+          apply skip. (* TODO *)
+        } {
+          eapply H.
+        }
     
 Abort.
 
