@@ -47,15 +47,15 @@ Fixpoint drop {X:Type} (n:string) (nxs:list (string * X)) : list (string * X) :=
   | (n',x) :: nxs' => if String.eqb n' n then drop n nxs' else (n',x) :: (drop n nxs')
   end.
 
-Inductive instantiation : tass -> env -> env -> Prop :=
+Inductive instantiation : tass -> list (name * partial_map Kind) -> env -> env -> Prop :=
   | V_nil : 
-      instantiation nil nil nil
-  | V_cons : forall x T v1 v2 c e1 e2,
+      instantiation nil nil nil nil
+  | V_cons : forall x T GammaK v1 v2 c GammaKs e1 e2,
       value v1 ->
       value v2 ->
-      R T v1 v2 ->
-      instantiation c e1 e2 ->
-      instantiation ((x, T) :: c) ((x, v1) :: e1) ((x, v2) :: e2)
+      R T GammaK v1 v2 ->
+      instantiation c GammaKs e1 e2 ->
+      instantiation ((x, T) :: c) ((x, GammaK) :: GammaKs) ((x, v1) :: e1) ((x, v2) :: e2)
   . 
 
 
@@ -472,15 +472,15 @@ Proof. Admitted.
 
 (** ** Properties of Instantiations *)
 
-Lemma instantiation_domains_match : forall c e1 e2,
-    instantiation c e1 e2 ->
+Lemma instantiation_domains_match : forall c GammaKs e1 e2,
+    instantiation c GammaKs e1 e2 ->
     forall x T,
       lookup x c = Datatypes.Some T ->
       exists t1 t2,
         lookup x e1 = Datatypes.Some t1 /\
         lookup x e2 = Datatypes.Some t2.
 Proof.
-  intros c e1 e2 V. 
+  intros c GammaKs e1 e2 V. 
   induction V; intros x0 T0 C.
   - discriminate.
   - simpl.
@@ -491,67 +491,70 @@ Proof.
       assumption.
 Qed.
 
-Lemma instantiation_env_closed : forall c e1 e2,
-    instantiation c e1 e2 ->
+Lemma instantiation_env_closed : forall c GammaKs e1 e2,
+    instantiation c GammaKs e1 e2 ->
     closed_env e1 /\ closed_env e2.
 Proof.
-  intros c e1 e2 V.
+  intros c GammaKs e1 e2 V.
   induction V; intros.
   - split; reflexivity.
   - split.
     + simpl.
       split.
-      * apply typable_empty__closed with T.
-        apply R_typable_empty_1 with v2.
+      * apply typable_emptyT__closed with GammaK T.
+        apply R_typable_emptyT_1 with v2.
         assumption.
       * apply IHV.
     + simpl.
       split.
-      * apply typable_empty__closed with T.
-        apply R_typable_empty_2 with v1.
+      * apply typable_emptyT__closed with GammaK T.
+        apply R_typable_emptyT_2 with v1.
         assumption.
       * apply IHV.
 Qed.
     
 
-Corollary instantiation_env_closed_1 : forall c e1 e2,
-    instantiation c e1 e2 ->
+Corollary instantiation_env_closed_1 : forall c GammaKs e1 e2,
+    instantiation c GammaKs e1 e2 ->
     closed_env e1.
-Proof. intros. destruct (instantiation_env_closed _ _ _ H). assumption. Qed.
+Proof. intros. destruct (instantiation_env_closed _ _ _ _ H). assumption. Qed.
 
-Corollary instantiation_env_closed_2 : forall c e1 e2,
-    instantiation c e1 e2 ->
+Corollary instantiation_env_closed_2 : forall c GammaKs e1 e2,
+    instantiation c GammaKs e1 e2 ->
     closed_env e2.
-Proof. intros. destruct (instantiation_env_closed _ _ _ H). assumption. Qed.
+Proof. intros. destruct (instantiation_env_closed _ _ _ _ H). assumption. Qed.
 
-Lemma instantiation_R : forall c e1 e2,
-    instantiation c e1 e2 ->
-    forall x T v1 v2,
+Lemma instantiation_R : forall c GammaKs e1 e2,
+    instantiation c GammaKs e1 e2 ->
+    forall x T GammaK v1 v2,
       lookup x c = Datatypes.Some T ->
+      lookup x GammaKs = Datatypes.Some GammaK ->
       lookup x e1 = Datatypes.Some v1 ->
       lookup x e2 = Datatypes.Some v2 ->
-      R T v1 v2.
+      R T GammaK v1 v2.
 Proof.
-  intros c e1 e2 V.
-  induction V; intros x' T' v1' v2' G E1 E2.
+  intros c GammaKs e1 e2 V.
+  induction V; intros x' T' GammaK' v1' v2' G Gc E1 E2.
   - destruct x'; discriminate.
   - inversion G. subst.
+    inversion Gc. subst.
     inversion E1. subst.
     inversion E2. subst.
     destruct (x =? x').
     + inversion H3. subst.
       inversion H4. subst.
       inversion H5. subst.
+      inversion H6. subst.
       assumption. 
     + apply IHV with x'; assumption.
 Qed.
 
-Lemma instantiation_drop : forall c e1 e2,
-    instantiation c e1 e2 ->
+Lemma instantiation_drop : forall c GammaKs e1 e2,
+    instantiation c GammaKs e1 e2 ->
     forall x,
-      instantiation (drop x c) (drop x e1) (drop x e2).
+      instantiation (drop x c) (drop x GammaKs) (drop x e1) (drop x e2).
 Proof.
-  intros c e1 e2 V.
+  intros c GammaKs e1 e2 V.
   induction V.
   - intros. simpl. apply V_nil.
   - intros. simpl.
@@ -568,14 +571,14 @@ Qed.
 
 (** ** Multi-substitutions preserve typing *)
 
-Lemma msubst_preserves_typing_1 : forall c e1 e2,
-    instantiation c e1 e2 ->
+Lemma msubst_preserves_typing_1 : forall c GammaKs e1 e2,
+    instantiation c GammaKs e1 e2 ->
     forall Gamma t t' S,
       (mupdate Gamma c) |-+ t : S ->
       msubst e1 t t' ->
       Gamma |-+ t': S. 
 Proof.
-  intros c e1 e2 V.
+  intros c GammaKs e1 e2 V.
   induction V.
   - intros.
     simpl in H.
@@ -587,7 +590,7 @@ Proof.
     apply IHV with t'0.
     + eapply substitution_preserves_typing.
       * apply H2.
-      * apply R_typable_empty_1 with v2.
+      * apply R_typable_emptyT_1 with v2.
         apply H1.
       * apply H9.
     + apply H10.
@@ -627,9 +630,11 @@ Definition P_has_type ctx t1 T :=
     ctx |-+ t2 : T ->
     instantiation c e1 e2 ->
     CNR_Term t1 t2 ->
-    forall t1' t2',
+    forall t1' t2' v1' v2',
       msubst e1 t1 t1' ->
       msubst e2 t2 t2' ->
+      t1' ==> v1' ->
+      t2' ==> v2' ->
       R T t1' t2'.
 
 Definition P_constructor_well_formed ctx c := ctx |-ok_c c.
@@ -670,7 +675,7 @@ Proof.
   - (* T_Var *)
     intros. 
     unfold P_has_type. 
-    intros c e1 e2 t2 Heq Ht1 Ht2 V Hds t1' t2' X1 X2.
+    intros c e1 e2 t2 Heq Ht1 Ht2 V Hds t1' t2' v1' v2' Hv1' Hv2' X1 X2.
     subst.
 
     inversion Hds. subst.
@@ -697,6 +702,7 @@ Proof.
       * assumption.
 
   - (* T_Forall *)
+    intros. unfold P_has_type. intros.
     apply skip.
 
   - (* T_LamAbs *)
@@ -705,7 +711,7 @@ Proof.
   - (* T_Apply *)
     intros ctx t1_1 t1_2 T1 T2 Ht1_1 IH1_1 Ht1_2 IH1_2.
     unfold P_has_type.
-    intros c e1 e2 t2 Heq Ht1 Ht2 V Hds t1' t2' Hms1 Hms2.
+    intros c e1 e2 t2 Heq Ht1 Ht2 V Hds t1' t2' v1' v2' Hms1 Hms2 Hv1' Hv2'.
     subst.
 
     inversion Hds. subst.
@@ -718,17 +724,29 @@ Proof.
 
     assert (emptyContext |-+ (Apply t1_1' t1_2') : T2) by eauto using msubst_preserves_typing_1.
     assert (emptyContext |-+ (Apply t2_1' t2_2') : T2) by eauto using msubst_preserves_typing_2.
+    assert (exists v1_1', t1_1' ==> v1_1'). {
+      inversion Hv1'; eauto.
+    }
+    assert (exists v2_1', t2_1' ==> v2_1'). {
+      inversion Hv2'; eauto.
+    }
+    destruct H1 as [v1_1' Hv1_1'].
+    destruct H2 as [v2_1' Hv2_1'].
 
+    (*
     destruct (progress _ _ H) as [v1 Hv1].
     destruct (progress _ _ H0) as [v2 Hv2].
+    *)
 
     assert (R (Ty_Fun T1 T2) t1_1' t2_1'). {
       unfold P_has_type in IH1_1.
-      apply IH1_1 with c e1 e2 t2_1.
+      apply IH1_1 with c e1 e2 t2_1 v1_1' v2_1'.
       - reflexivity.
       - assumption.
       - eapply CNR_Term__preserves_typing; eauto.
       - apply V.
+      - assumption.
+      - assumption.
       - assumption.
       - assumption.
       - assumption.
