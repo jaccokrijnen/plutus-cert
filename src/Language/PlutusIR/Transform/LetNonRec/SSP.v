@@ -140,7 +140,7 @@ Proof.
     apply T_TyInst with (T1 := T1) (X := X) (K2 := K2).
     + apply H0. assumption.
     + assumption.
-    + assumption.
+    + reflexivity.
   - (* T_Error *)
     intros. unfold P_has_type. intros.
     inversion X. subst.
@@ -151,8 +151,8 @@ Proof.
     intros. unfold P_has_type. intros.
     inversion X0. subst.
     inversion X1. subst.
-    apply T_IWrap with (X := X) (K := K) (S := S).
-    + assumption.
+    apply T_IWrap with (X := X) (K := K) (S := beta_reduce (unwrapIFix F X K T)).
+    + reflexivity.
     + apply H1. assumption.
     + assumption.
     + assumption.
@@ -163,8 +163,8 @@ Proof.
     apply T_Unwrap with (F := F) (X := X) (K := K) (T := T).
     + apply H0. assumption.
     + assumption.
-    + assumption.
-
+    + reflexivity.
+    
   - (* W_Con *)
     intros. unfold P_constructor_well_formed. intros.
     apply W_Con. assumption.

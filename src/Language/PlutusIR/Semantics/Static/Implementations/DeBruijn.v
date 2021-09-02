@@ -239,30 +239,45 @@ Definition fromDecl (tvd : TVDecl) : Context :=
     
 Definition unwrapIFix (F : Ty) (X : binderTyname) (K : Kind) (T : Ty) : Ty := (Ty_App (Ty_App F (Ty_Lam tt K (Ty_IFix F (Ty_Var 0)))) T).
 
+Fixpoint beta_reduce (T : Ty) : Ty :=
+  match T with
+  (* Beta-reduction *)
+  | Ty_App (Ty_Lam tt K T1) T2 => substituteT 0 T2 T1
+  (* Congruence *)
+  | Ty_Fun T1 T2 => Ty_Fun (beta_reduce T1) (beta_reduce T2)
+  | Ty_Forall X K T0 => Ty_Forall X K (beta_reduce T0)
+  | Ty_Lam X K T0 => Ty_Lam X K (beta_reduce T0)
+  | Ty_App T1 T2 => Ty_App (beta_reduce T1) (beta_reduce T2)
+  (* Reflexivity *)
+  | T0 => T0
+  end.
+
+
+
 Definition has_kind__DeBruijn : Context -> Ty -> Kind -> Prop := has_kind tyname binderTyname Context lookupK extendK lookupBuiltinKind.
 
 Notation "ctx '|-*' T ':' K" := (has_kind tyname binderTyname Context lookupK extendK lookupBuiltinKind ctx T K) (at level 40, T at level 0, K at level 0).
 
-Definition has_type__DeBruijn : Context -> Term -> Ty -> Prop := has_type name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc listOfArgumentTypes unwrapIFix.
+Definition has_type__DeBruijn : Context -> Term -> Ty -> Prop := has_type name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc beta_reduce listOfArgumentTypes unwrapIFix.
 
-Notation "ctx '|-+' tm ':' T" := (has_type name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc listOfArgumentTypes unwrapIFix ctx tm T) (at level 40, tm at level 0, T at level 0).
+Notation "ctx '|-+' tm ':' T" := (has_type name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc beta_reduce listOfArgumentTypes unwrapIFix ctx tm T) (at level 40, tm at level 0, T at level 0).
 
 Definition EqT__DeBruijn : Ty -> Ty -> Prop := EqT tyname binderTyname substituteT_reduc.
 
 Notation "T1 '=b' T2" := (EqT tyname binderTyname substituteT T1 T2) (at level 40).
 
-Definition constructor_well_formed__DeBruijn : Context -> constructor -> Prop := constructor_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc listOfArgumentTypes unwrapIFix.
+Definition constructor_well_formed__DeBruijn : Context -> constructor -> Prop := constructor_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc beta_reduce listOfArgumentTypes unwrapIFix.
 
-Notation "ctx '|-ok_c' c" := (constructor_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc listOfArgumentTypes unwrapIFix ctx c) (at level 40, c at level 0).
+Notation "ctx '|-ok_c' c" := (constructor_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc beta_reduce listOfArgumentTypes unwrapIFix ctx c) (at level 40, c at level 0).
 
-Definition bindings_well_formed_nonrec__DeBruijn : Context -> list Binding -> Prop := bindings_well_formed_nonrec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc listOfArgumentTypes unwrapIFix.
+Definition bindings_well_formed_nonrec__DeBruijn : Context -> list Binding -> Prop := bindings_well_formed_nonrec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc beta_reduce listOfArgumentTypes unwrapIFix.
 
-Notation "ctx '|-oks_nr' bs" := (bindings_well_formed_nonrec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc listOfArgumentTypes unwrapIFix ctx bs) (at level 40, bs at level 0).
+Notation "ctx '|-oks_nr' bs" := (bindings_well_formed_nonrec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc beta_reduce listOfArgumentTypes unwrapIFix ctx bs) (at level 40, bs at level 0).
 
-Definition bindings_well_formed_rec__DeBruijn : Context -> list Binding -> Prop := bindings_well_formed_rec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc listOfArgumentTypes unwrapIFix.
+Definition bindings_well_formed_rec__DeBruijn : Context -> list Binding -> Prop := bindings_well_formed_rec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc beta_reduce listOfArgumentTypes unwrapIFix.
 
-Notation "ctx '|-oks_r' bs" := (bindings_well_formed_rec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc listOfArgumentTypes unwrapIFix ctx bs) (at level 40, bs at level 0).
+Notation "ctx '|-oks_r' bs" := (bindings_well_formed_rec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc beta_reduce listOfArgumentTypes unwrapIFix ctx bs) (at level 40, bs at level 0).
 
-Definition binding_well_formed__DeBruijn : Context -> Binding -> Prop := binding_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc listOfArgumentTypes unwrapIFix.
+Definition binding_well_formed__DeBruijn : Context -> Binding -> Prop := binding_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc beta_reduce listOfArgumentTypes unwrapIFix.
 
-Notation "ctx '|-ok' tm" := (binding_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc listOfArgumentTypes unwrapIFix ctx tm) (at level 40, tm at level 0).
+Notation "ctx '|-ok' tm" := (binding_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT_reduc beta_reduce listOfArgumentTypes unwrapIFix ctx tm) (at level 40, tm at level 0).

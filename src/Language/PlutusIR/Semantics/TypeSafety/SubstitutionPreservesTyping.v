@@ -583,7 +583,7 @@ Proof.
     + destruct ctx.
       eapply context_invariance_T__has_kind.
       eauto.
-    + assumption.
+    + reflexivity.
   - (* Error *)
     intros. autounfold. intros.
     inversion H. subst.
@@ -597,7 +597,7 @@ Proof.
     inversion H0. subst.
     inversion H2. subst.
     eapply T_IWrap.
-    + eassumption.
+    + reflexivity.
     + eapply H.
       * eassumption.
       * eassumption.
@@ -620,7 +620,7 @@ Proof.
     + destruct ctx.
       eapply context_invariance_T__has_kind.
       eauto.
-    + eassumption.
+    + reflexivity.
 
   - (* TermBind *)
     intros. autounfold. intros.

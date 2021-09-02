@@ -218,11 +218,13 @@ Definition P_binding_well_formed (Gamma : Context) (b : Binding) :=
 
 Axiom skip : forall P, P.
 
-Theorem context_invariance : forall Gamma t T,
-    Gamma |-+ t : T ->
-    P_has_type Gamma t T.
+Theorem context_invariance : 
+  (forall Gamma t T, Gamma |-+ t : T -> P_has_type Gamma t T) /\
+  (forall Gamma bs, Gamma |-oks_nr bs -> P_bindings_well_formed_nonrec Gamma bs) /\
+  (forall Gamma bs, Gamma |-oks_r bs -> P_bindings_well_formed_rec Gamma bs) /\
+  (forall Gamma b, Gamma |-ok b -> P_binding_well_formed Gamma b).
 Proof with eauto.
-  apply has_type__ind with
+  apply has_type__multind with
     (P := P_has_type)
     (P0 := P_constructor_well_formed)
     (P1 := P_bindings_well_formed_nonrec)
@@ -499,6 +501,15 @@ Proof. Admitted.
 
 Corollary typable_empty__closed : forall t T,
     emptyContext |-+ t : T ->
+    closed t.
+Proof.
+  intros. unfold closed. intros x H1.
+  destruct (free_in_context _ _ _ _ H1 H) as [T' C].
+  discriminate C.
+Qed.
+
+Corollary typable_emptyT__closed : forall ctxK t T,
+    (empty, ctxK) |-+ t : T ->
     closed t.
 Proof.
   intros. unfold closed. intros x H1.

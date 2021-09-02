@@ -96,8 +96,7 @@ with eval_bindings_nonrec : Term -> Term -> Prop :=
       eval_bindings_nonrec (Let NonRec nil t) v
   | E_ConsB_NonRec : forall s x T tb bs t vb bs' t' v,
       tb ==> vb ->
-      substitute_bindings_nonrec x vb bs bs' ->
-      substitute x vb t t' ->
+      substitute x vb (Let NonRec bs t) (Let NonRec bs' t') ->
       eval_bindings_nonrec (Let NonRec bs' t') v ->
       eval_bindings_nonrec (Let NonRec ((TermBind s (VarDecl x T) tb) :: bs) t) v
 
@@ -106,8 +105,7 @@ with eval_bindings_rec : list Binding -> Term -> Term -> Prop :=
       t ==> v ->
       eval_bindings_rec bs0 (Let Rec nil t) v
   | E_ConsB_Rec : forall bs0 s x T tb bs t bs' t' v,
-      substitute_bindings_rec x (Let Rec bs0 tb) bs bs' ->
-      substitute x (Let Rec bs0 tb) t t' ->
+      substitute x (Let Rec bs0 tb) (Let Rec bs t) (Let Rec bs' t') ->
       eval_bindings_rec bs0 (Let Rec bs' t') v ->
       eval_bindings_rec bs0 (Let Rec ((TermBind s (VarDecl x T) tb) :: bs) t) v
 

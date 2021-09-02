@@ -75,17 +75,25 @@ Example fact_term_evaluates :
 Proof with eauto.
   apply E_LetRec.
   eapply E_ConsB_Rec. {
-    solve_substitute.
-  } {
-    solve_substitute.
+    apply S_LetRec2. {
+      invert_contra.
+    } {    
+      solve_substitute.
+    } {
+      solve_substitute.
+    }
   }
   apply E_NilB_Rec.
   eapply E_Apply. {
     eapply E_LetRec.
     eapply E_ConsB_Rec. {
-      solve_substitute.
-    } {
-      solve_substitute.
+      apply S_LetRec2. {
+        invert_contra.
+      } {    
+        solve_substitute.
+      } {
+        solve_substitute.
+      }
     }
     apply E_NilB_Rec.
     apply E_LamAbs.
@@ -186,13 +194,16 @@ Proof with eauto.
     eapply E_Apply. {
       eapply E_LetRec. {
         eapply E_ConsB_Rec. {
-          solve_substitute.
-        } {
-          solve_substitute.
-        } {
-          eapply E_NilB_Rec.
-          eapply E_LamAbs.
+          apply S_LetRec2. {
+            invert_contra.
+          } {    
+            solve_substitute.
+          } {
+            solve_substitute.
+          }
         }
+        eapply E_NilB_Rec.
+        eapply E_LamAbs.
       }
     } {
       eapply E_ApplyBuiltin2. {
@@ -310,13 +321,16 @@ Proof with eauto.
           eapply E_Apply. {
             eapply E_LetRec. {
               eapply E_ConsB_Rec. {
-                solve_substitute.
-              } {
-                solve_substitute.
-              } {
-                eapply E_NilB_Rec.
-                eapply E_LamAbs.
+                apply S_LetRec2. {
+                  invert_contra.
+                } {
+                  solve_substitute.
+                } {
+                  solve_substitute.
+                }
               }
+              eapply E_NilB_Rec.
+              eapply E_LamAbs.
             }
           } {
             eapply E_ApplyBuiltin2. {

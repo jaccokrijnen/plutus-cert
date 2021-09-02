@@ -689,24 +689,19 @@ Proof.
     apply H0. assumption.
   - (* E_ConsB_NonRec *)
     intros. unfold P_eval_bindings_nonrec. intros.
-    inversion H5. subst.
+    inversion H4. subst.
     assert (vb = vb0). {
       apply H0. assumption.
     }
     subst.
-    assert (t' = t'0). {
-      apply substitute__deterministic in H2.
-      apply H2 in H15.
-      assumption.
-    }
-    subst.
-    assert (bs' = bs'0). {
+    assert (Let NonRec bs' t' = Let NonRec bs'0 t'0). {
       apply substitute__deterministic in H1.
-      apply H1 in H14.
+      apply H1 in H13.
       assumption.
     }
+    inversion H5. 
     subst.
-    apply H4.
+    apply H3.
     assumption.
   
   - (* E_NilB_Rec *)
@@ -716,18 +711,14 @@ Proof.
     assumption.
   - (* E_ConsB_Rec *)
     intros. unfold P_eval_bindings_rec. intros.
-    inversion H3. subst.
-    assert (bs' = bs'0). {
+    inversion H2. subst.
+    assert (Let Rec bs' t' = Let Rec bs'0 t'0). {
       apply substitute__deterministic in H.
-      apply H in H12.
+      apply H in H11.
       assumption.
     }
-    assert (t' = t'0). {
-      apply substitute__deterministic in H0.
-      apply H0 in H13.
-      assumption.
-    }
+    inversion H3. 
     subst.
-    apply H2.
+    apply H1.
     assumption.
 Qed.

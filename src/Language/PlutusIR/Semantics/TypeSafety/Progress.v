@@ -68,10 +68,10 @@ Proof.
     inversion H6.
     + subst.
 
-  Admitted.
+  Abort.
 
 
 Theorem progress : forall (t : Term) (T : Ty),
     emptyContext |-+ t : T ->
     exists v, t ==> v.
-Proof. Admitted.
+Proof. Abort.
