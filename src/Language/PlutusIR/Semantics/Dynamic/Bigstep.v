@@ -72,9 +72,10 @@ Inductive eval : Term -> Term -> Prop :=
       t_e ==> v_e ->
       Apply t_bct t_e ==> v_e
   (* Type instantiation *)
-  | E_TyInst : forall t1 T2 X K t0 v0,
+  | E_TyInst : forall t1 T2 X K t0 t0' v0,
       t1 ==> TyAbs X K t0 ->
-      t0 ==> v0 ->
+      annotsubst X T2 t0 t0' ->
+      t0' ==> v0 ->
       TyInst t1 T2 ==> v0
   (* Errors and their propagation *)
   | E_Error : forall T,

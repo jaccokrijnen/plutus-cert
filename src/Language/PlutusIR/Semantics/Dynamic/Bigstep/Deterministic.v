@@ -212,6 +212,12 @@ Proof.
     reflexivity.
 Qed.
 
+Theorem annotsubst__deterministic : forall X S t t' t'', 
+    annotsubst X S t t' ->
+    annotsubst X S t t'' ->
+    t' = t''. 
+Proof. Admitted.
+
 (** * [eval] is deterministic *)
 
 Definition P_eval x y1 :=
@@ -649,20 +655,24 @@ Proof.
       assumption.
   - (* E_TyInst *)
     intros. unfold P_eval. intros.
-    inversion H3.
+    inversion H4.
     + (* E_IfTyInst *)
       subst.
       assert (TyAbs X K t0 = Builtin IfThenElse). {
         apply H0. assumption.
       }
-      inversion H4.
+      inversion H5.
     + (* E_TyInst *)
       subst.
       assert (TyAbs X K t0 = TyAbs X0 K0 t3). {
         apply H0. assumption.
       }
-      inversion H4. subst.
-      apply H2.
+      inversion H5. subst.
+      assert (t0' = t0'0). {
+        apply annotsubst__deterministic with X0 T2 t3; auto.
+      }
+      subst.
+      apply H3.
       assumption.
   - (* E_Error *)
     intros. unfold P_eval. intros.
