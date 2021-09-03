@@ -38,7 +38,7 @@ Context (substituteT : BinderTyname -> Ty -> Ty -> Ty).
 Context (beta_reduce : Ty -> Ty).
 Context (listOfArgumentTypes : Ty -> list Ty).
 
-Context (unwrapIFix : Ty -> BinderTyname -> Kind -> Ty -> Ty).
+Context (unwrapIFix : Ty -> Kind -> Ty -> Ty).
 
 
 
@@ -151,16 +151,16 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
       ctx |-* T : Kind_Base ->
       ctx |-+ (Error T) : T 
   (* Recursive types *)
-  | T_IWrap : forall ctx F T M X K S,
-      beta_reduce (unwrapIFix F X K T) = S ->
+  | T_IWrap : forall ctx F T M K S,
+      beta_reduce (unwrapIFix F K T) = S ->
       ctx |-+ M : S ->
       ctx |-* T : K ->
       ctx |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
       ctx |-+ (IWrap F T M) : (Ty_IFix F T)
-  | T_Unwrap : forall ctx M F X K T S,
+  | T_Unwrap : forall ctx M F K T S,
       ctx |-+ M : (Ty_IFix F T) ->
       ctx |-* T : K ->
-      beta_reduce (unwrapIFix F X K T) = S ->
+      beta_reduce (unwrapIFix F K T) = S ->
       ctx |-+ (Unwrap M) : S
 
   with constructor_well_formed : Context -> constructor -> Prop :=

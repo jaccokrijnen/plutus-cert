@@ -137,9 +137,9 @@ Program Fixpoint R'' (T : Ty) (t1 t2 : Term) {measure (countBindingLocations T)}
     | Ty_Builtin st => 
         v1 = v2
     | Ty_IFix F T0 => 
-        forall X K,
+        forall K,
           emptyContext |-* T : K ->
-          R'' (Named.beta_reduce (unwrapIFix F X K T0)) (Unwrap v1) (Unwrap v2)
+          R'' (Named.beta_reduce (unwrapIFix F K T0)) (Unwrap v1) (Unwrap v2)
     |_ => False
     end.
 Next Obligation. Admitted.
@@ -173,9 +173,9 @@ Equations R' (T : Ty) (t1 t2 : Term) : Prop by wf (countBindingLocations T) :=
       | Ty_Builtin st => 
           v1 = v2
       | Ty_IFix F T0 => 
-          forall X K,
+          forall K,
             emptyContext |-* T : K ->
-            R' (Named.beta_reduce (unwrapIFix F X K T0)) (Unwrap v1) (Unwrap v2)
+            R' (Named.beta_reduce (unwrapIFix F K T0)) (Unwrap v1) (Unwrap v2)
       |_ => False
       end.
       

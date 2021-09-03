@@ -386,7 +386,7 @@ Definition fromDecl (tvd : tvdecl tyname) : Context :=
   | TyVarDecl v K => extendK v K emptyContext
   end.
     
-Definition unwrapIFix (F : Ty) (X : binderTyname) (K : Kind) (T : Ty) : Ty := (Ty_App (Ty_App F (Ty_Lam X K (Ty_IFix F (Ty_Var X)))) T).
+Definition unwrapIFix (F : Ty) (K : Kind) (T : Ty) : Ty := (Ty_App (Ty_App F (Ty_Lam "X" K (Ty_IFix F (Ty_Var "X")))) T).
 
 Fixpoint beta_reduce (T : Ty) : Ty :=
   match T with
