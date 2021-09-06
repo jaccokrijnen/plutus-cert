@@ -220,6 +220,24 @@ Proof. Admitted.
 
 (** * [eval] is deterministic *)
 
+(** The next Lemma seems to follow easily from inversion on the assumption and it is 
+    therefore not really necessary to dedicate a Lemma to it. However, we need to  prove 
+    this Lemma separately because the [inversion] tactic could not figure out this equality 
+    during the [eval__deterministic] proof below. *)
+Lemma compare_IfThenElse_conditions : forall T T' (t_e t_e' : Term) cond cond', 
+    Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool cond)))) t_e = 
+      Apply (Apply (TyInst (Builtin IfThenElse) T') (Constant (Some (ValueOf DefaultUniBool cond')))) t_e' -> 
+    cond = cond'.
+Proof.
+  intros.
+  inversion H. 
+  subst.
+  apply Eqdep.EqdepTheory.inj_pair2 in H2.
+  subst.
+  reflexivity.
+Qed.
+
+(** ** Predicates *)
 Definition P_eval x y1 :=
   forall y2,
     x ==> y2 ->
@@ -235,6 +253,7 @@ Definition P_eval_bindings_rec bs0 x y1 :=
     eval_bindings_rec bs0 x y2 ->
     y1 = y2.
 
+(** ** The main result *)
 Theorem eval__deterministic : forall x y1,
   x ==> y1 ->
   P_eval x y1.
@@ -600,8 +619,8 @@ Proof.
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool true)))) t_t = Apply (Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool false)))) t_t0). {
         apply H0. assumption.
       }
-      inversion H4.
-      Axiom skip : forall P, P. apply skip. (* TODO: Why does inversion not do anything? *)
+      apply compare_IfThenElse_conditions in H4.
+      discriminate.
   - (* E_IfFalse *)
     intros. unfold P_eval. intros.
     inversion H3.
@@ -641,9 +660,8 @@ Proof.
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool false)))) t_t = Apply (Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool true)))) t_t0). {
         apply H0. assumption.
       }
-      inversion H4.
-      apply skip. (* TODO: Why does inversion not do anything? *)
-
+      apply compare_IfThenElse_conditions in H4.
+      discriminate.
     + (* E_IfFalse *)
       subst.
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool false)))) t_t = Apply (Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool false)))) t_t0). {
