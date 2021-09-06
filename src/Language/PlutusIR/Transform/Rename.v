@@ -33,6 +33,10 @@ Polymorphic Inductive Rename (env : environment) : term var tyvar var tyvar -> t
       In (v, RenamedTo w) env ->
       Rename env (Var v) (Var w)
 
+  | RenameVarEq     : forall v,
+      In (v, Unchanged) env ->
+      Rename env (Var v) (Var v)
+
   | RenameLetNonRec : forall bs bs' env' t t',
       RenameBindingsNonRec env env' bs bs' ->
       Rename env' t t' ->
@@ -148,18 +152,19 @@ with Rename_dtdecl (env : environment) :
   environment ->
   dtdecl' -> dtdecl' -> Type :=
     | Rename_Datatype : forall var_res matchf matchf' cs_res cs cs' tv tvs ,
-      Rename_var env var_res matchf matchf' ->
+      Rename_var_bind env var_res matchf matchf' ->
       Rename_constrs env cs_res cs cs' ->
       Rename_dtdecl env (var_res :: cs_res)
         (Datatype tv tvs matchf  cs)
         (Datatype tv tvs matchf' cs')
 
-with Rename_var (env : environment) : (var * rename_result) -> var -> var -> Type :=
+(* Either a variable binder is renamed or it is equal *)
+with Rename_var_bind (env : environment) : (var * rename_result) -> var -> var -> Type :=
   | VarEq  : forall v,
-      Rename_var env (v, Unchanged) v v
+      Rename_var_bind env (v, Unchanged) v v
   | VarNeq : forall v v',
       v <> v' ->
-      Rename_var env (v, RenamedTo v') v v'
+      Rename_var_bind env (v, RenamedTo v') v v'
 
 with Rename_constrs (env : environment) :
   environment ->
@@ -179,14 +184,13 @@ with Rename_constr (env : environment) :
   constr' ->
   Type :=
   | Rename_Constructor : forall res v v' ty arity,
-      Rename_var env res v v' ->
+      Rename_var_bind env res v v' ->
       Rename_constr
         env
         res
-        (Constructor (VarDecl v ty) arity)
+        (Constructor (VarDecl v  ty) arity)
         (Constructor (VarDecl v' ty) arity)
   .
 
 End Rename.
-
 Definition Rename_string := Rename (var := string) (tyvar := string) String.eqb nil.
