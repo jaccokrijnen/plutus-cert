@@ -14,7 +14,7 @@ From PlutusCert Require Import
   Language.PlutusIR.Transform.FloatLet
   Language.PlutusIR.Transform.NonStrict
   Language.PlutusIR.Transform.LetNonRec
-  Language.PlutusIR.Transform.LetNonStrict
+  (* Language.PlutusIR.Transform.LetNonStrict*)
   Language.PlutusIR.Transform.LetRec
   Language.PlutusIR.Transform.LetTypes
   .
@@ -37,7 +37,7 @@ Definition pirToCore: list (Term -> Term -> Type) :=
 
   [ ThunkRecursions
   ; FloatLet
-  ; LetNonStrict
+  (* ; LetNonStrict *)
   ; LetTypes
   ; LetTermsRec
   ]
