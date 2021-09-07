@@ -131,7 +131,7 @@ with RenameBinding (env : environment) :
 
   | BindRename : forall s v w t t' ty,
       v <> w ->
-      ~ (In w (freeVars var_eqb t)) ->
+      ~ (In w (free_vars var_eqb t)) ->
       Rename env t t' ->
       RenameBinding env [(v, RenamedTo w)]
         (TermBind s (VarDecl v ty) t )

@@ -18,9 +18,9 @@ Set Implicit Arguments.
 Set Equations Transparent.
 
 
-Notation fv := (freeVars String.eqb).
-Notation fv_binding := (freeVars_binding String.eqb).
-Notation fv_bindings := (freeVars_bindings String.eqb fv_binding).
+Notation fv := (free_vars String.eqb).
+Notation fv_binding := (free_vars_binding String.eqb).
+Notation fv_bindings := (free_vars_bindings String.eqb fv_binding).
 
 (* DBE_Term relates terms t and t' such that t' is the result of eliminating dead bindings in t *)
 Inductive DBE_Term : Term -> Term -> Type :=
@@ -114,7 +114,7 @@ Equations dbe_dec_Term (t1 t2 : Term) : option (DBE_Term t1 t2) :=
   where dbe_dec_Binding (b : Binding) (t : Term)  : option (DBE_Binding b t) :=
 
     dbe_dec_Binding (TermBind stric (VarDecl n ty) t') t    :=
-      DBE_RemoveTermBind <$> in_dec_option n (freeVars t);
+      DBE_RemoveTermBind <$> in_dec_option n (free_vars t);
 
      dbe_dec_Binding (TypeBind (TyVarDecl n k) ty) t        :=
       pure DBE_RemoveTypeBind;
@@ -154,7 +154,7 @@ end.
 Fixpoint dbe_dec_Binding (b : Binding) (t : Term) {struct b} : option (DBE_Binding b t) :=
     match b with
       | TermBind stric (VarDecl n T) t'   =>
-          DBE_RemoveTermBind <$> in_dec_option n (freeVars t)
+          DBE_RemoveTermBind <$> in_dec_option n (free_vars t)
 
       | TypeBind (TyVarDecl n k) ty        =>
           pure DBE_RemoveTypeBind

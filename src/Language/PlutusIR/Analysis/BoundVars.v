@@ -10,32 +10,35 @@ Local Open Scope string_scope.
 From PlutusCert Require Import
   Util
   Language.PlutusIR
-  Language.PlutusIR.Folds.
+  Language.PlutusIR.Folds
+  FreeVars.
 
 
-Set Polymorphic Universes.
+Section BoundVars.
+  Context
+    {var tyvar : Set}
+    (var_eqb : var -> var -> bool)
+    .
 
-Fixpoint bv_term {v v'} (t : term v v' v v') : list v :=
-  match t with
-  | Let _ bs t  => concat (map bv_binding bs)
-  | Var _       => []
-  | TyAbs _ _ t => bv_term t
-  | LamAbs v _ t => [v] ++ bv_term t
-  | Apply s t  => bv_term s ++ bv_term t
-  | Constant _ => []
-  | Builtin _  => []
-  | TyInst t _ => bv_term t
-  | Error _   => []
-  | IWrap _ _ t => bv_term t
-  | Unwrap t => bv_term t
-  end
-with bv_binding {v v'} (b : binding v v' v v') : list v:=
-  match b with
-  | TermBind _ (VarDecl v _) t => [v] ++ bv_term t
-  | TypeBind _ _   => []
-  | DatatypeBind _ => []
-  end
-.
+Notation term'    := (term var tyvar var tyvar).
+Notation binding' := (binding var tyvar var tyvar).
+
+Fixpoint bound_vars (t : term') : list var :=
+ match t with
+   | Let rec bs t => bound_vars_bindings bs ++ bound_vars t
+   | (LamAbs n ty t)   => n :: (bound_vars t)
+   | (Var n)           => []
+   | (TyAbs n k t)     => bound_vars t
+   | (Apply s t)       => bound_vars s ++ bound_vars t
+   | (TyInst t ty)     => bound_vars t
+   | (IWrap ty1 ty2 t) => bound_vars t
+   | (Unwrap t)        => bound_vars t
+   | (Error ty)        => []
+   | (Constant v)      => []
+   | (Builtin f)       => []
+   end.
+
+End BoundVars.
 
 Section UniqueVars.
   Context (name tyname : Set).
@@ -44,7 +47,7 @@ Section UniqueVars.
     | UV_Let : forall {r bs t}, ForallT (UniqueVars_binding) bs -> UniqueVars t -> UniqueVars (Let r bs t)
     | UV_Var : forall v, UniqueVars (Var v)
     | UV_TyAbs : forall v k t, UniqueVars t -> UniqueVars (TyAbs v k t)
-    | UV_LamAbs : forall v ty t, ~(In v (bv_term t)) -> UniqueVars t -> UniqueVars (LamAbs v ty t)
+    | UV_LamAbs : forall v ty t, ~(In v (bound_vars t)) -> UniqueVars t -> UniqueVars (LamAbs v ty t)
     | UV_Apply : forall s t, UniqueVars s -> UniqueVars t -> UniqueVars (Apply s t)
     | UV_Constant : forall c, UniqueVars (Constant c)
     | UV_Builtin : forall f, UniqueVars (Builtin f)
@@ -54,7 +57,7 @@ Section UniqueVars.
     | UV_Unwrap : forall t, UniqueVars t -> UniqueVars (Unwrap t)
 
     with UniqueVars_binding : binding name tyname name tyname -> Type :=
-    | UV_TermBind : forall s v t ty, ~(In v (bv_term t)) -> UniqueVars t -> UniqueVars_binding (TermBind s (VarDecl v ty) t)
+    | UV_TermBind : forall s v t ty, ~(In v (bound_vars t)) -> UniqueVars t -> UniqueVars_binding (TermBind s (VarDecl v ty) t)
     | UV_TypeBind : forall tvd ty, UniqueVars_binding (TypeBind tvd ty)
     | UV_DatatypeBind : forall dtd, UniqueVars_binding (DatatypeBind dtd)
     .

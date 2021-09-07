@@ -9,7 +9,7 @@ Require Import Coq.Lists.List.
 Import Coq.Lists.List.ListNotations.
 
 
-Notation fv := (freeVars String.eqb).
+Notation fv := (free_vars String.eqb).
 
 (* Find adjacent lets of given recursivity at the top of the AST *)
 Fixpoint adjacentBindings r (t : Term) : list Binding * Term :=

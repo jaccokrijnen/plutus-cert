@@ -30,27 +30,6 @@ Require Import Coq.Program.Basics.
   AST
 
 *)
-
-Definition Unique (n : nat) := tt.
-(*
-Inductive unique := Unique : nat -> unique.
-  Definition unique_dec : forall u u' : unique, {u = u'} + {u <> u'}.
-  Proof. decide equality. apply Nat.eq_dec. Defined.
-*)
-
-Definition Name (s : string) (n : unit) := s.
-(*
-Inductive name := Name : string -> unique -> name.
-
-Definition name_dec : forall n1 n2 : name, {n1 = n2} + {n1 <> n2}.
-Proof. decide equality. apply unique_dec. apply string_dec. Defined.
-*)
-
-Definition TyName (s : string) := s.
-(*
-Inductive tyname := TyName : name -> tyname.
-*)
-
 Inductive Recursivity := NonRec | Rec.
 
 Inductive Strictness := NonStrict | Strict.
@@ -192,6 +171,18 @@ with binding :=
   | DatatypeBind : dtdecl -> binding
 .
 
+(** ** Trace of compilation *)
+Inductive Pass :=
+  | PassRename
+  | PassTypeCheck
+  | PassInline : list name -> Pass
+  | PassDeadCode
+  | PassThunkRec
+  | PassFloatTerm
+  | PassLetNonStrict
+  | PassLetTypes
+  | PassLetRec
+  | PassLetNonRec.
 
 End AST_term.
 
@@ -207,6 +198,27 @@ Module NamedTerm.
 
 (* Perhaps parametrize to mimic original AST in haskell more closely? We really only need one instantiation for now. *)
 (* Context {func : Type} {uni : Type -> Type} {name : Type} {tyname : Type}. *)
+
+
+Definition Unique (n : nat) := tt.
+(*
+Inductive unique := Unique : nat -> unique.
+  Definition unique_dec : forall u u' : unique, {u = u'} + {u <> u'}.
+  Proof. decide equality. apply Nat.eq_dec. Defined.
+*)
+
+Definition Name (s : string) (n : unit) := s.
+(*
+Inductive name := Name : string -> unique -> name.
+
+Definition name_dec : forall n1 n2 : name, {n1 = n2} + {n1 <> n2}.
+Proof. decide equality. apply unique_dec. apply string_dec. Defined.
+*)
+
+Definition TyName (s : string) := s.
+(*
+Inductive tyname := TyName : name -> tyname.
+*)
 
 (* TODO: Coq prints wrong notation for LamAbs type, perhaps just use string
     everywhere? *)
@@ -343,6 +355,52 @@ Definition shift_term (t : Term) := shift_term' 1 0 t.
 
 End DeBruijnTerm.
 
+
+Module UniqueTerm.
+
+
+Open Scope type_scope.
+Definition name         := string * Z.
+Definition tyname       := string * Z.
+Definition binderName   := string * Z.
+Definition binderTyname := string * Z.
+
+(* These constructors should treat the type parameter
+   as implicit too (this is already correctly generated for the recursive
+   constructors. *)
+
+Arguments Ty_Var [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Fun [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Forall [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Builtin [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Lam [tyname]%type_scope [binderTyname]%type_scope.
+Arguments Var [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments Constant [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments Builtin [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments Error [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments TypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments DatatypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+
+Arguments VarDecl [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments TyVarDecl [binderTyname]%type_scope.
+Arguments Datatype [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+
+Notation Kind := (kind).
+Notation Ty := (ty tyname binderTyname).
+Notation VDecl := (vdecl name tyname binderName).
+Notation TVDecl := (tvdecl binderTyname).
+Notation DTDecl := (dtdecl name tyname binderTyname).
+Notation constructor := (constr tyname binderName binderTyname).
+Notation Term := (term name tyname binderName binderTyname).
+Notation Binding := (binding name tyname binderName binderTyname).
+
+
+Definition Name x y : string * Z := (x, y).
+Definition Unique x : Z := x.
+Definition TyName name : string * Z := name.
+
+
+End UniqueTerm.
 
 
 Section Term_rect.

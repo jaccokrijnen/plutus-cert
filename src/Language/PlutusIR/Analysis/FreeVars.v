@@ -14,7 +14,6 @@ From PlutusCert Require Import
   Util.
 
 
-
 (* Parametrized for _named_ binders (not de Bruijn) *)
 Section FreeVars.
   Context
@@ -25,16 +24,16 @@ Section FreeVars.
 Notation term'    := (term var tyvar var tyvar).
 Notation binding' := (binding var tyvar var tyvar).
 
-Fixpoint boundVars_binding (b : binding') : list var := match b with
+Fixpoint bound_vars_binding (b : binding') : list var := match b with
   | TermBind _ (VarDecl v _) _ => [v]
   | DatatypeBind (Datatype _ _ matchf constructors ) => [matchf] ++ map constructorName constructors
   | _                          => []
   end.
 
-Fixpoint boundVars_bindings (bs : list binding') : list var := match bs with
+Fixpoint bound_vars_bindings (bs : list binding') : list var := match bs with
     | ((TermBind _ (VarDecl v _) t) :: bs)
-        => v :: boundVars_bindings bs
-    | (_ :: bs) => boundVars_bindings bs
+        => v :: bound_vars_bindings bs
+    | (_ :: bs) => bound_vars_bindings bs
     | nil       => nil
     end.
 
@@ -44,55 +43,61 @@ Fixpoint boundTerms_bindings (bs : list binding') : list (var * term var tyvar v
     | nil               => nil
     end.
 
-Definition delete : var -> list var -> list var :=
+Definition delete_all : var -> list var -> list var :=
   fun x xs => filter (fun y => negb (var_eqb x y)) xs.
+
+Fixpoint delete (x : var) (xs : list var) : list var :=
+  match xs with
+    | nil => nil
+    | cons y ys => if var_eqb x y then ys else y :: delete x ys
+  end.
 
 Definition elem x xs := existsb (var_eqb x) xs.
 
-Definition delete_many : list var -> list var -> list var :=
+Definition delete_all_many : list var -> list var -> list var :=
   fun ds xs => filter (fun x => negb (elem x ds)) xs.
 
 
 Section fvbs.
 (*
-  Workaround for: Cannot guess decreasing argument of fix (in freeVars/freeVars_binding)
+  Workaround for: Cannot guess decreasing argument of fix (in free_vars/free_vars_binding)
 *)
-Context (freeVars_binding : Recursivity -> binding' -> list var).
+Context (free_vars_binding : Recursivity -> binding' -> list var).
 
-Fixpoint freeVars_bindings  rec (bs : list binding') : list var :=
+Fixpoint free_vars_bindings  rec (bs : list binding') : list var :=
   match rec with
     | Rec    =>
-        delete_many (boundVars_bindings bs) (concat (map (freeVars_binding Rec) bs))
+        delete_all_many (bound_vars_bindings bs) (concat (map (free_vars_binding Rec) bs))
     | NonRec =>
         match bs with
           | nil     => []
-          | b :: bs => freeVars_binding NonRec b
-                       ++ delete_many (boundVars_binding b) (freeVars_bindings NonRec bs)
+          | b :: bs => free_vars_binding NonRec b
+                       ++ delete_all_many (bound_vars_binding b) (free_vars_bindings NonRec bs)
         end
   end.
 End fvbs.
 
 
-Fixpoint freeVars (t : term var tyvar var tyvar) : list var :=
+Fixpoint free_vars (t : term var tyvar var tyvar) : list var :=
  match t with
-   | Let rec bs t => freeVars_bindings freeVars_binding rec bs ++ delete_many (boundVars_bindings bs) (freeVars t)
-   | (LamAbs n ty t)   => delete n (freeVars t)
+   | Let rec bs t => free_vars_bindings free_vars_binding rec bs ++ delete_all_many (bound_vars_bindings bs) (free_vars t)
+   | (LamAbs n ty t)   => delete_all n (free_vars t)
    | (Var n)           => [n]
-   | (TyAbs n k t)     => freeVars t
-   | (Apply s t)       => freeVars s ++ freeVars t
-   | (TyInst t ty)     => freeVars t
-   | (IWrap ty1 ty2 t) => freeVars t
-   | (Unwrap t)        => freeVars t
+   | (TyAbs n k t)     => free_vars t
+   | (Apply s t)       => free_vars s ++ free_vars t
+   | (TyInst t ty)     => free_vars t
+   | (IWrap ty1 ty2 t) => free_vars t
+   | (Unwrap t)        => free_vars t
    | (Error ty)        => []
    | (Constant v)      => []
    | (Builtin f)       => []
    end
 
-with freeVars_binding rec (b : binding') : list var :=
+with free_vars_binding rec (b : binding') : list var :=
   match b with
     | TermBind _ (VarDecl v _) t => match rec with
-      | Rec    => delete v (freeVars t)
-      | NonRec => freeVars t
+      | Rec    => delete_all v (free_vars t)
+      | NonRec => free_vars t
       end
     | _        => []
   end
@@ -104,7 +109,7 @@ End FreeVars.
 (*
 Equations fv' : Term -> list string := {
   fv' (Let rec bs t)    := let fvs := app (fv_bindings bs) (fv' t)
-                           in  remove_list string_dec (boundVars_bindings bs) fvs;
+                           in  remove_list string_dec (bound_vars_bindings bs) fvs;
   fv' (LamAbs n ty t)   := remove string_dec n (fv' t);
   fv' (Var n)           := n :: nil;
   fv' (TyAbs n k t)     := fv' t;
@@ -170,33 +175,33 @@ Definition boundName : Binding -> option name := fun b =>
 (*
 (* TODO: use well-founded recursion to include the subterms of
 let-bindings *)
-Fixpoint freeVars (t : Term) : list name := match t with
+Fixpoint free_vars (t : Term) : list name := match t with
     | Let _ bs t   =>
         let ts_let    := map (fun x => match x with
           | TermBind _ _ t => Datatypes.Some t
           | _              => None end) bs in
-        let fvs_let   := nil in (* freeVars_binders bs in *) (* TODO *)
-        let fvs_t     := freeVars t in
+        let fvs_let   := nil in (* free_vars_binders bs in *) (* TODO *)
+        let fvs_t     := free_vars t in
         let names_let := catMaybes (map boundName bs) in
           fold_right (remove name_dec) (app fvs_let fvs_t) names_let
 
-    | LamAbs n _ t => remove name_dec n (freeVars t)
+    | LamAbs n _ t => remove name_dec n (free_vars t)
 
     | Var n        => n :: nil
-    | TyAbs _ _ t  => freeVars t
-    | Apply t1 t2  => freeVars t1 ++ freeVars t2
-    | TyInst t _   => freeVars t
-    | Unwrap t     => freeVars t
-    | IWrap _ _ t  => freeVars t
+    | TyAbs _ _ t  => free_vars t
+    | Apply t1 t2  => free_vars t1 ++ free_vars t2
+    | TyInst t _   => free_vars t
+    | Unwrap t     => free_vars t
+    | IWrap _ _ t  => free_vars t
     | Constant _   => nil
     | Builtin _    => nil
     | Error _      => nil
     end
 .
 
-Fixpoint freeVars_binders (b : list Binding) : list name := match b with
-  | cons (TermBind _ _ t) xs => freeVars t ++ freeVars_binders xs
-  | cons _ xs => freeVars_binders xs
+Fixpoint free_vars_binders (b : list Binding) : list name := match b with
+  | cons (TermBind _ _ t) xs => free_vars t ++ free_vars_binders xs
+  | cons _ xs => free_vars_binders xs
   | nil => nil
 end
 .
