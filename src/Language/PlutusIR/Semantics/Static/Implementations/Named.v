@@ -27,8 +27,24 @@ Definition extendK X K ctx : Context := (fst ctx, (X |-> K; snd ctx)).
 Notation "x '|T->' T ';' ctx" := (extendT x T ctx) (at level 60, right associativity).
 Notation "X '|K->' K ';' ctx" := (extendK X K ctx) (at level 60, right associativity).
 
+Definition deleteT x ctx : Context := (delete (fst ctx) x, snd ctx).
+Definition deleteK X ctx : Context := (fst ctx, delete (snd ctx) X).
+
 Lemma cong_eq : forall {A B} (x1 x2 : A) (y1 y2 : B), x1 = x2 -> y1 = y2 -> (x1, y1) = (x2, y2).
 Proof. intros. f_equal; auto. Qed. 
+
+Lemma lookupT_eq : forall ctx x T,
+    lookupT (x |T-> T ; ctx) x = Datatypes.Some T.
+Proof. intros. unfold lookupT. simpl. rewrite update_eq. reflexivity. Qed.
+
+Lemma lookupT_neq : forall ctx x1 x2 T,
+    x2 <> x1->
+    lookupT (x2 |T-> T ; ctx) x1 = lookupT ctx x1.
+Proof. intros. unfold lookupT. simpl. rewrite update_neq. reflexivity. assumption. Qed.
+
+Lemma deleteT_eq : forall ctx x T,
+    deleteT x (x |T-> T; ctx) = deleteT x ctx.
+Proof. intros. unfold deleteT. simpl. rewrite delete_eq. reflexivity. Qed.
 
 Lemma extendT_shadow : forall ctx x T1 T2,
     (x |T-> T1; x |T-> T2; ctx) = (x |T-> T1; ctx).

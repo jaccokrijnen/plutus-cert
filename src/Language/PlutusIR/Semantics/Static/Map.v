@@ -96,6 +96,9 @@ Definition empty {A : Type} : partial_map A :=
 Definition update {A : Type} (m : partial_map A) (x : string) (v : A) :=
   (x !-> Some v; m).
 
+Definition delete {A : Type} (m : partial_map A) (x : string) :=
+  (x !-> None; m).
+
 Notation "x '|->' v ';' m" := (update m x v)
   (at level 100, v at next level, right associativity).
 
@@ -148,7 +151,9 @@ Proof.
   apply t_update_permute.
 Qed.
 
-
+Lemma delete_eq : forall (A : Type) (m : partial_map A) x v,
+    delete (x |-> v ; m) x = delete m x.
+Proof. intros. unfold delete. apply t_update_shadow. Qed. 
 
 Definition inclusion {A : Type} (m m' : partial_map A) :=
   forall x v, m x = Some v -> m' x = Some v.
