@@ -47,6 +47,11 @@ Polymorphic Inductive Rename (env : environment) : term var tyvar var tyvar -> t
       Rename env' t t' ->
       Rename env (Let Rec bs t) (Let Rec bs' t')
 
+  | RenameLamAbsRename : forall v w ty t t',
+      v <> w ->
+      ~ (In w (free_vars var_eqb t)) ->
+      Rename env t t' ->
+      Rename env (LamAbs v ty t) (LamAbs w ty t')
   (*
      | RenameCong      : forall env t t', Cong (Rename env) t t' -> Rename env t t'
 
@@ -66,7 +71,7 @@ Polymorphic Inductive Rename (env : environment) : term var tyvar var tyvar -> t
   | RenameTyAbs : forall ty k t t',
       Rename env t t' ->
       Rename env (TyAbs ty k t) (TyAbs ty k t')
-  | RenameLamAbs : forall v ty t t',
+  | RenameLamAbsEq : forall v ty t t',
       Rename env t t' ->
       Rename env (LamAbs v ty t) (LamAbs v ty t')
   | RenameApply : forall t1 t2 t1' t2',
@@ -129,6 +134,10 @@ with RenameBinding (env : environment) :
         (TermBind s (VarDecl v ty) t)
         (TermBind s (VarDecl v ty) t')
 
+  (* Todo: include the right Terms over which this binding
+     is scoped, and add the ~( In free_vars ...) conditions
+  *)
+  (*
   | BindRename : forall s v w t t' ty,
       v <> w ->
       ~ (In w (free_vars var_eqb t)) ->
@@ -136,6 +145,7 @@ with RenameBinding (env : environment) :
       RenameBinding env [(v, RenamedTo w)]
         (TermBind s (VarDecl v ty) t )
         (TermBind s (VarDecl w ty) t')
+        *)
 
   | DataEq : forall d d' env_up,
       Rename_dtdecl env env_up d d' ->
@@ -152,19 +162,25 @@ with Rename_dtdecl (env : environment) :
   environment ->
   dtdecl' -> dtdecl' -> Type :=
     | Rename_Datatype : forall var_res matchf matchf' cs_res cs cs' tv tvs ,
-      Rename_var_bind env var_res matchf matchf' ->
-      Rename_constrs env cs_res cs cs' ->
-      Rename_dtdecl env (var_res :: cs_res)
-        (Datatype tv tvs matchf  cs)
-        (Datatype tv tvs matchf' cs')
+        Rename_var_bind env var_res matchf matchf' ->
+        Rename_constrs env cs_res cs cs' ->
+        Rename_dtdecl env (var_res :: cs_res)
+          (Datatype tv tvs matchf  cs)
+          (Datatype tv tvs matchf' cs')
 
 (* Either a variable binder is renamed or it is equal *)
 with Rename_var_bind (env : environment) : (var * rename_result) -> var -> var -> Type :=
   | VarEq  : forall v,
       Rename_var_bind env (v, Unchanged) v v
+
+  (* Todo: include the right Terms over which this binding
+     is scoped, and add the ~( In free_vars ...) conditions
+  *)
+  (*
   | VarNeq : forall v v',
       v <> v' ->
       Rename_var_bind env (v, RenamedTo v') v v'
+      *)
 
 with Rename_constrs (env : environment) :
   environment ->
@@ -183,7 +199,7 @@ with Rename_constr (env : environment) :
   constr' ->
   constr' ->
   Type :=
-  | Rename_Constructor : forall res v v' ty arity,
+  | Rename_Constructor_Eq : forall res v v' ty arity,
       Rename_var_bind env res v v' ->
       Rename_constr
         env
