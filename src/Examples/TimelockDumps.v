@@ -5,10 +5,7 @@ From PlutusCert Require Import Language.PlutusIR.Analysis.BoundVars.
 From PlutusCert Require Import Language.PlutusIR.
 
 Import NamedTerm.
-(*
-Import UniqueTerm.
 Local Open Scope Z_scope.
-*)
 
 Local Open Scope string_scope.
 (* Taken from dumps of plutus compiler *)
