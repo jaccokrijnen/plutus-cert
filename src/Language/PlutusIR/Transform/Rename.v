@@ -68,6 +68,7 @@ Polymorphic Inductive Rename : environment -> term var tyvar var tyvar -> term v
   | RenameLamAbsRename : forall env v w ty t t',
       v <> w ->
       ~ (In w (free_vars var_eqb t)) ->
+      ~ (In (RenamedTo w) (map snd env)) ->
       lookupV env (RenamedTo w) = None ->
       Rename ((v, RenamedTo w) :: env) t t' ->
       Rename env (LamAbs v ty t) (LamAbs w ty t')

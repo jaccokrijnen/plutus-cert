@@ -15,6 +15,7 @@ Local Open Scope string_scope.
 
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.ContextInvariance.
 
 Definition rename_result := @rename_result name.
 Definition environment := list (name * rename_result).
@@ -44,42 +45,46 @@ Fixpoint RenameContext (env : environment) (Gamma : Context) : Context :=
       RenameContext env' Gamma
   end.
 
-Compute (
-  lookupT 
-  (RenameContext (("a", RenamedTo "b") :: ("a" , RenamedTo "c") :: nil) ("a" |T-> Ty_Var "B"; "a" |T-> Ty_Var "C"; emptyContext))
-  "c"
-).
+Lemma deleteT_ignores_kinds : forall Gamma x,
+    snd (deleteT x Gamma) = snd Gamma.
+Proof. intros. unfold deleteT. reflexivity. Qed.
 
-Definition non_capturing_environment (t : Term) (env : environment) : Prop :=
-  forall x rr, 
-    List.In x (free_vars eqb t) ->
-    lookupRR env x = Datatypes.Some rr /\ lookupV env rr = Datatypes.Some x.
-
-Lemma e : forall env t y r,
-    non_capturing_environment t ((y, r) :: env) ->
-    non_capturing_environment t env.
+Lemma RenameContext_ignores_kinds : forall env Gamma,
+    snd (RenameContext env Gamma) = snd Gamma.
 Proof.
-  intros.
-  unfold non_capturing_environment.
-  intros.
-  unfold non_capturing_environment in H.
-  apply H with x rr in H0.
-  destruct H0.
-  inversion H0.
-  inversion H1.
-  destruct (x =? y) eqn:Hxy; destruct (rename_result_eqb eqb rr r) eqn:Hrrr.
-  - inversion H3. subst.
-    inversion H4. subst.
-Abort.
+  induction env.
+  - intros.
+    simpl.
+    reflexivity.
+  - intros.
+    simpl.
+    destruct a.
+    destruct r.
+    + destruct (lookupT Gamma s).
+      * simpl.
+        rewrite IHenv.
+        rewrite deleteT_ignores_kinds.
+        reflexivity.
+      * apply IHenv.
+    + apply IHenv.
+Qed.
+
+Lemma renaming_exhaustive : forall env x w t1 t2,
+    lookupRR env x = Datatypes.Some (RenamedTo w) ->
+    Rename env t1 t2 ->
+    ~(appears_free_in x t2).
+Proof. Admitted.
+
 
 (* Predicate for the [has_type] datatype *)
 Definition P_ht Gamma t1 T := 
   forall env t2, 
+    (*
     (forall x y T', 
       lookupRR env x = Datatypes.Some (RenamedTo y) ->
       lookupT Gamma x = Datatypes.Some T' -> 
       lookupT (RenameContext env Gamma) y = Datatypes.Some T'
-    ) ->
+    ) -> *)
     Rename env t1 t2 -> 
     (RenameContext env Gamma) |-+ t2 : T.
 
@@ -89,46 +94,22 @@ Definition P_cwf Gamma c := Gamma |-ok_c c.
 (* Predicate for the [bindings_well_formed_nonrec] datatype *)
 Definition P_bwfnr Gamma bs1 :=
     forall env env' bs2,
-      Gamma |-oks_nr bs1 ->
       RenameBindingsNonRec env env' bs1 bs2 ->
-      Gamma |-oks_nr bs2.
+      (RenameContext env Gamma) |-oks_nr bs2.
 
 (* Predicate for the [bindings_well_formed_rec] datatype *)
 Definition P_bwfr Gamma bs1 :=
   forall env env' bs2,
-    Gamma |-oks_nr bs1 ->
     RenameBindingsRec env env' bs1 bs2 ->
-    Gamma |-oks_nr bs2.
+    (RenameContext env Gamma) |-oks_r bs2.
 
 (* Predicate for the [binding_well_formed] datatype *)
 Definition P_bwf Gamma b1 := 
   forall env env' b2,
-      Gamma |-ok b1 ->
       RenameBinding env env' b1 b2 ->
-      Gamma |-ok b2.
+      (RenameContext env Gamma) |-ok b2.
 
 Axiom skip : forall P, P.
-
-
-Lemma e0e0 : forall env x w T Gamma t T0,
-    ~(List.In x (free_vars eqb t)) ->
-    (RenameContext ((x, RenamedTo w) :: env) (x |T-> T0; Gamma)) |-+ t : T ->
-    (w |T-> T0; RenameContext env Gamma) |-+ t : T.
-Proof.
-  induction env.
-  - intros.
-    simpl in H0.
-    rewrite update_eq in H0.
-    destruct (w =? x) eqn:Heqb.
-    + apply eqb_eq in Heqb as Heq.
-      subst.
-      rewrite deleteT_eq in H0.
-      simpl.
-      apply skip.
-    + apply eqb_neq in Heqb as Hneq.
-      apply skip.
-  - intros.
-Admitted.
 
 Theorem Rename__SSP : forall Gamma t1 T,
     Gamma |-+ t1 : T ->
@@ -141,16 +122,12 @@ Proof.
     (P2 := P_bwfr) 
     (P3 := P_bwf).
   - (* T_Let *)
-    intros Gamma bs t T Gamma' Heq Htyp_bs IH_bs Htyp_t IH_t.
-    unfold P_ht.
-    intros env t2 X.
-    subst.
-
     apply skip.
   - (* T_LetRec *)
     apply skip.
 
   - (* T_Var *)
+    (*
     intros Gamma x T Hlookup.
     unfold P_ht. 
     intros env t2 Hnce X.
@@ -164,12 +141,13 @@ Proof.
       subst.
       apply T_Var.
       eapply Hnce.
-      apply skip.
+      apply skip.*)
       apply skip.
 
   - (* T_TyAbs *)
     apply skip.
   - (* T_LamAbs *)
+    (*
     intros Gamma x T1 t0 T2 Htyp_t0 IH_t0 Hkind_T1. 
     unfold P_ht. 
     intros env t2 Hnce X.
@@ -180,42 +158,167 @@ Proof.
       rename t' into t0'.
       apply T_LamAbs.
       * unfold P_ht in IH_t0.
-        eapply IH_t0 in X0; eauto.
-        apply skip. apply skip.
+        eapply IH_t0 in X0 as X1; eauto.
+        -- simpl in X1. 
+           rewrite update_eq in X1. 
+           rewrite deleteT_extendT_shadow in X1.
+           assert (~(appears_free_in x t0')). {
+             apply renaming_exhaustive with ((x, RenamedTo w) :: env) w t0.
+             - simpl.
+               rewrite eqb_refl.
+               reflexivity.
+             - auto. 
+           }
+           eapply context_invariance; eauto.
+           ++ intros.
+              destruct (w =? x0) eqn:Hwx0. 
+              ** apply eqb_eq in Hwx0.
+                 subst.
+                 rewrite lookupT_eq.
+                 rewrite lookupT_eq.
+                 reflexivity.
+              ** apply eqb_neq in Hwx0.
+                 rewrite lookupT_neq; auto.
+                 rewrite lookupT_neq; auto.
+                 destruct (x =? x0) eqn:Hxx0.
+                 --- apply eqb_eq in Hxx0.
+                     subst.
+                     apply H in H0.
+                     destruct H0.
+                 --- apply eqb_neq in Hxx0.
+                     apply skip.
+           ++ simpl.
+              apply skip.
+       -- apply skip.
       * apply skip.
-    + apply skip.
+    + apply skip.*)
+    apply skip.        
          
   - (* T_Apply *)
-    apply skip.
+    intros Gamma t1 t2 T1 T2 Htyp_t1 IH_t1 Htyp_t2 IH_t2.
+    unfold P_ht.
+    intros env t' X.
+    
+    inversion X. subst.
+    apply T_Apply with T1.
+    + apply IH_t1.
+      assumption.
+    + apply IH_t2.
+      assumption.
   - (* T_Constant *)
-    apply skip.
+    intros Gamma u a. 
+    unfold P_ht. 
+    intros env t' X.
+    inversion X. subst.
+    apply T_Constant.
   - (* T_Builtin *)
-    apply skip.
+    intros Gamma f.
+    unfold P_ht.
+    intros env t' X.
+    inversion X. subst.
+    apply T_Builtin.
   - (* T_TyInst *)
-    apply skip.
+    intros Gamma t0 T2 T1 X K2 S Htyp_t0 IH_t0 Hkind_T2 Hbeta.
+    unfold P_ht.
+    intros env t' Hrename.
+    inversion Hrename. subst.
+    rename t'0 into t0'.
+    apply T_TyInst with T1 X K2.
+    + apply IH_t0.
+      assumption. 
+    + apply skip.
+    + reflexivity.
   - (* T_Error *)
+    intros Gamma T Hkind_T.
+    unfold P_ht.
+    intros env t' Hrename.
+    inversion Hrename. subst.
+    apply T_Error.
     apply skip.
   - (* T_IWrap *)
-    apply skip.
+    intros Gamma F T M K S Hbeta Htyp_M IH_M Hkind_T HKind_F.
+    unfold P_ht.
+    intros env t' Hrename.
+    inversion Hrename. subst.
+    rename t'0 into M'.
+    eapply T_IWrap.
+    + reflexivity.
+    + apply IH_M.
+      assumption.
+    + apply skip.
+    + apply skip.
   - (* T_Unwrap *)
-    apply skip.
+    intros Gamma M F K T S Htyp_M IH_M Hkind_T Hbeta.
+    unfold P_ht.
+    intros env t' Hrename.
+    inversion Hrename. subst.
+    rename t'0 into M'.
+    eapply T_Unwrap.
+    + apply IH_M.
+      assumption.
+    + apply skip.
+    + reflexivity. 
 
   - (* W_Con *)
-    apply skip.
+    intros Gamma x T ar Hkinds.
+    unfold P_cwf.
+    apply W_Con; auto.
 
   - (* W_NilB_NonRec *)
-    apply skip.
+    intros Gamma.
+    unfold P_bwfnr.
+    intros env env' bs' Hrename.
+    inversion Hrename. subst.
+    apply W_NilB_NonRec.
   - (* W_ConsB_NonRec *)
-    apply skip.
+    intros Gamma b bs Hwf_b IH_b Hwf_bs IH_bs.
+    unfold P_bwfnr.
+    intros env env' bs' Hrename.
+    inversion Hrename. subst.
+    apply W_ConsB_NonRec.
+    + eapply IH_b.
+      apply X.
+    + apply skip.
   - (* W_NilB_Rec *)
-    apply skip.
+    intros Gamma.
+    unfold P_bwfr.
+    intros env env' bs' Hrename.
+    inversion Hrename. subst.
+    apply W_NilB_Rec.
   - (* W_ConsB_Rec*)
-    apply skip.
+    intros Gamma b bs Hwf_b IH_b Hwf_bs IH_bs.
+    unfold P_bwfr.
+    intros env env' bs' Hrename.
+    inversion Hrename. subst.
+    apply W_ConsB_Rec.
+    + eapply IH_b.
+      apply X.
+    + apply skip.
            
   - (* W_Term *)
-    apply skip.
+    intros Gamma s x T tb Hkind_T Htyp_tb IH_tb.
+    unfold P_bwf.
+    intros env env' b' Hrename.
+    inversion Hrename. subst.
+    rename t' into tb'.
+    apply W_Term.
+    + apply skip.
+    + apply skip.
   - (* W_Type *)
+    intros Gamma X K T Hkind_T.
+    unfold P_bwf.
+    intros env env' b' Hrename.
+    inversion Hrename. subst.
+    apply W_Type.
     apply skip.
   - (* W_Data *)
-    apply skip.
+    intros Gamma X YKs cs matchf Gamma' HGamma' Hwf_cs IH_cs.
+    unfold P_bwf.
+    intros env env' b' Hrename.
+    inversion Hrename. subst.
+    inversion H2. subst.
+    eapply W_Data.
+    + reflexivity.
+    + intros c Hin.
+      apply skip.
 Qed. 

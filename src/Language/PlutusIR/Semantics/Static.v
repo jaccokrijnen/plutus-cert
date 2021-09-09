@@ -35,9 +35,10 @@ Context
 Context (lookupBuiltinKind : DefaultUni -> Kind).
 Context (lookupBuiltinTy : DefaultFun -> Ty). 
 Context (substituteT : BinderTyname -> Ty -> Ty -> Ty).
+Context (beta_reduce : Ty -> Ty).
 Context (listOfArgumentTypes : Ty -> list Ty).
 
-Context (unwrapIFix : Ty -> BinderTyname -> Kind -> Ty -> Ty).
+Context (unwrapIFix : Ty -> Kind -> Ty -> Ty).
 
 
 
@@ -103,18 +104,6 @@ Inductive EqT : Ty -> Ty -> Prop :=
       Ty_App S1 T1 =b Ty_App S2 T2
 where "T1 '=b' T2" := (EqT T1 T2).
 
-Fixpoint beta_reduce (T : Ty) : Ty :=
-  match T with
-  (* Beta-reduction *)
-  | Ty_App (Ty_Lam X K T1) T2 => substituteT X T2 T1
-  (* Congruence *)
-  | Ty_Fun T1 T2 => Ty_Fun (beta_reduce T1) (beta_reduce T2)
-  | Ty_Forall X K T0 => Ty_Forall X K (beta_reduce T0)
-  | Ty_Lam X K T0 => Ty_Lam X K (beta_reduce T0)
-  | Ty_App T1 T2 => Ty_App (beta_reduce T1) (beta_reduce T2)
-  (* Reflexivity *)
-  | T0 => T0
-  end.
 
 (** ** Typing of terms *)
 Reserved Notation "ctx '|-+' tm ':' T" (at level 40, tm at level 0, T at level 0).
@@ -157,22 +146,22 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
   | T_TyInst : forall ctx t1 T2 T1 X K2 S,
       ctx |-+ t1 : (Ty_Forall X K2 T1) ->
       ctx |-* T2 : K2 ->
-      substituteT X T2 T1 =b S ->
+      beta_reduce (substituteT X T2 T1) = S ->
       ctx |-+ (TyInst t1 T2) : S
   | T_Error : forall ctx T,
       ctx |-* T : Kind_Base ->
       ctx |-+ (Error T) : T 
   (* Recursive types *)
-  | T_IWrap : forall ctx F T M X K S,
-      unwrapIFix F X K T =b S ->
+  | T_IWrap : forall ctx F T M K S,
+      beta_reduce (unwrapIFix F K T) = S ->
       ctx |-+ M : S ->
       ctx |-* T : K ->
       ctx |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
       ctx |-+ (IWrap F T M) : (Ty_IFix F T)
-  | T_Unwrap : forall ctx M F X K T S,
+  | T_Unwrap : forall ctx M F K T S,
       ctx |-+ M : (Ty_IFix F T) ->
       ctx |-* T : K ->
-      unwrapIFix F X K T =b S ->
+      beta_reduce (unwrapIFix F K T) = S ->
       ctx |-+ (Unwrap M) : S
 
   with constructor_well_formed : Context -> constructor -> Prop :=

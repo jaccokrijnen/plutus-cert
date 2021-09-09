@@ -135,6 +135,20 @@ Proof.
   reflexivity.
 Qed.
 
+Theorem update_delete_shadow :  forall (A : Type) (m : partial_map A) x v,
+    (x |-> v ; delete m x) = (x |-> v ; m).
+Proof.
+  intros A m x v. unfold update. unfold delete. rewrite t_update_shadow. 
+  reflexivity.
+Qed.
+
+Theorem delete_update_shadow :  forall (A : Type) (m : partial_map A) x v,
+    delete (x |-> v ; m) x = delete m x.
+Proof.
+  intros A m x v. unfold update. unfold delete. rewrite t_update_shadow. 
+  reflexivity.
+Qed.
+
 Theorem update_same : forall (A : Type) (m : partial_map A) x v,
     m x = Some v ->
     (x |-> v ; m) = m.

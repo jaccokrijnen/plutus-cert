@@ -33,18 +33,43 @@ Definition deleteK X ctx : Context := (fst ctx, delete (snd ctx) X).
 Lemma cong_eq : forall {A B} (x1 x2 : A) (y1 y2 : B), x1 = x2 -> y1 = y2 -> (x1, y1) = (x2, y2).
 Proof. intros. f_equal; auto. Qed. 
 
+Lemma deleteT_eq : forall ctx x T,
+    deleteT x (x |T-> T; ctx) = deleteT x ctx.
+Proof. intros. unfold deleteT. simpl. rewrite delete_eq. reflexivity. Qed.
+
 Lemma lookupT_eq : forall ctx x T,
     lookupT (x |T-> T ; ctx) x = Datatypes.Some T.
 Proof. intros. unfold lookupT. simpl. rewrite update_eq. reflexivity. Qed.
+
+Lemma lookupK_eq : forall ctx X K,
+    lookupK (X |K-> K ; ctx) X = Datatypes.Some K.
+Proof. intros. unfold lookupK. simpl. rewrite update_eq. reflexivity. Qed.
 
 Lemma lookupT_neq : forall ctx x1 x2 T,
     x2 <> x1->
     lookupT (x2 |T-> T ; ctx) x1 = lookupT ctx x1.
 Proof. intros. unfold lookupT. simpl. rewrite update_neq. reflexivity. assumption. Qed.
 
-Lemma deleteT_eq : forall ctx x T,
-    deleteT x (x |T-> T; ctx) = deleteT x ctx.
-Proof. intros. unfold deleteT. simpl. rewrite delete_eq. reflexivity. Qed.
+Lemma lookupK_neq : forall ctx X1 X2 K,
+    X2 <> X1 ->
+    lookupK (X2 |K-> K ; ctx) X1 = lookupK ctx X1.
+Proof. intros. unfold lookupT. simpl. rewrite update_neq. reflexivity. assumption. Qed.
+
+Lemma lookupT_extendK : forall ctx X K x,
+    lookupT (X |K-> K; ctx) x = lookupT ctx x.
+Proof. reflexivity. Qed.
+
+Lemma lookupK_extendT : forall ctx x T X,
+    lookupK (x |T-> T; ctx) X = lookupK ctx X.
+Proof. reflexivity. Qed.
+
+Lemma extendT_deleteT_shadow : forall Gamma x T,
+    (x |T-> T; deleteT x Gamma) = (x |T-> T; Gamma).
+Proof. intros. unfold deleteT. unfold extendT. simpl. f_equal. apply update_delete_shadow. Qed.
+
+Lemma deleteT_extendT_shadow : forall Gamma x T,
+    deleteT x (x |T-> T; Gamma) = deleteT x Gamma.
+Proof. intros. unfold deleteT. unfold extendT. simpl. f_equal. apply delete_update_shadow. Qed.
 
 Lemma extendT_shadow : forall ctx x T1 T2,
     (x |T-> T1; x |T-> T2; ctx) = (x |T-> T1; ctx).
@@ -116,6 +141,16 @@ Proof.
   - reflexivity.
 Qed.
 
+Lemma lookupT_append_r : forall ctx ctx' ctx'' x,
+    lookupT ctx' x = lookupT ctx'' x ->
+    lookupT (append ctx ctx') x = lookupT (append ctx ctx'') x.
+Proof. intros. destruct ctx. simpl. destruct (p x); auto. Qed.
+
+Lemma lookupK_append_r : forall ctx ctx' ctx'' X,
+    lookupK ctx' X = lookupK ctx'' X ->
+    lookupK (append ctx ctx') X = lookupK (append ctx ctx'') X.
+Proof. intros. destruct ctx. simpl. destruct (p0 X); auto. Qed.
+
 Lemma append_assoc : forall ctx1 ctx2 ctx3,
     append ctx1 (append ctx2 ctx3) = append (append ctx1 ctx2) ctx3.
 Proof.
@@ -152,6 +187,23 @@ Qed.
 
 Lemma flatten_nil : flatten nil = emptyContext.
 Proof. reflexivity. Qed.
+
+Lemma flatten_extract : forall ctx ctxs,
+    flatten (ctx :: ctxs) = append (flatten ctxs) ctx.
+Proof.
+  intros.
+  unfold flatten.
+  simpl.
+  replace ctx with (concat (ctx :: nil)) by eauto using append_emptyContext_r.
+  rewrite concat_append.
+  simpl.
+  rewrite append_emptyContext_r.
+  reflexivity.
+Qed.
+
+
+
+
 
 Definition constructorDecl : constructor -> VDecl :=
   fun c => match c with
@@ -351,32 +403,47 @@ Definition fromDecl (tvd : tvdecl tyname) : Context :=
   | TyVarDecl v K => extendK v K emptyContext
   end.
     
-Definition unwrapIFix (F : Ty) (X : binderTyname) (K : Kind) (T : Ty) : Ty := (Ty_App (Ty_App F (Ty_Lam X K (Ty_IFix F (Ty_Var X)))) T).
+Definition unwrapIFix (F : Ty) (K : Kind) (T : Ty) : Ty := (Ty_App (Ty_App F (Ty_Lam "X" K (Ty_IFix F (Ty_Var "X")))) T).
+
+Fixpoint beta_reduce (T : Ty) : Ty :=
+  match T with
+  (* Beta-reduction *)
+  | Ty_App (Ty_Lam X K T1) T2 => substituteT X T2 T1
+  (* Congruence *)
+  | Ty_Fun T1 T2 => Ty_Fun (beta_reduce T1) (beta_reduce T2)
+  | Ty_Forall X K T0 => Ty_Forall X K (beta_reduce T0)
+  | Ty_Lam X K T0 => Ty_Lam X K (beta_reduce T0)
+  | Ty_App T1 T2 => Ty_App (beta_reduce T1) (beta_reduce T2)
+  (* Reflexivity *)
+  | T0 => T0
+  end.
+
+
 
 Definition has_kind__named : Context -> Ty -> Kind -> Prop := has_kind tyname binderTyname Context lookupK extendK lookupBuiltinKind.
 
 Notation "ctx '|-*' T ':' K" := (has_kind tyname binderTyname Context lookupK extendK lookupBuiltinKind ctx T K) (at level 40, T at level 0, K at level 0).
 
-Definition has_type__named : Context -> Term -> Ty -> Prop := has_type name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT listOfArgumentTypes unwrapIFix.
+Definition has_type__named : Context -> Term -> Ty -> Prop := has_type name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT beta_reduce listOfArgumentTypes unwrapIFix.
 
-Notation "ctx '|-+' tm ':' T" := (has_type name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT listOfArgumentTypes unwrapIFix ctx tm T) (at level 40, tm at level 0, T at level 0).
+Notation "ctx '|-+' tm ':' T" := (has_type name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT beta_reduce listOfArgumentTypes unwrapIFix ctx tm T) (at level 40, tm at level 0, T at level 0).
 
 Definition EqT__named : Ty -> Ty -> Prop := EqT tyname binderTyname substituteT.
 
 Notation "T1 '=b' T2" := (EqT tyname binderTyname substituteT T1 T2) (at level 40).
 
-Definition constructor_well_formed__named : Context -> constructor -> Prop := constructor_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT listOfArgumentTypes unwrapIFix.
+Definition constructor_well_formed__named : Context -> constructor -> Prop := constructor_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT beta_reduce listOfArgumentTypes unwrapIFix.
 
-Notation "ctx '|-ok_c' c" := (constructor_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT listOfArgumentTypes unwrapIFix ctx c) (at level 40, c at level 0).
+Notation "ctx '|-ok_c' c" := (constructor_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT beta_reduce listOfArgumentTypes unwrapIFix ctx c) (at level 40, c at level 0).
 
-Definition bindings_well_formed_nonrec__named : Context -> list Binding -> Prop := bindings_well_formed_nonrec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT listOfArgumentTypes unwrapIFix.
+Definition bindings_well_formed_nonrec__named : Context -> list Binding -> Prop := bindings_well_formed_nonrec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT beta_reduce listOfArgumentTypes unwrapIFix.
 
-Notation "ctx '|-oks_nr' bs" := (bindings_well_formed_nonrec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT listOfArgumentTypes unwrapIFix ctx bs) (at level 40, bs at level 0).
+Notation "ctx '|-oks_nr' bs" := (bindings_well_formed_nonrec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT beta_reduce listOfArgumentTypes unwrapIFix ctx bs) (at level 40, bs at level 0).
 
-Definition bindings_well_formed_rec__named : Context -> list Binding -> Prop := bindings_well_formed_rec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT listOfArgumentTypes unwrapIFix.
+Definition bindings_well_formed_rec__named : Context -> list Binding -> Prop := bindings_well_formed_rec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT beta_reduce listOfArgumentTypes unwrapIFix.
 
-Notation "ctx '|-oks_r' bs" := (bindings_well_formed_rec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT listOfArgumentTypes unwrapIFix ctx bs) (at level 40, bs at level 0).
+Notation "ctx '|-oks_r' bs" := (bindings_well_formed_rec name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT beta_reduce listOfArgumentTypes unwrapIFix ctx bs) (at level 40, bs at level 0).
 
-Definition binding_well_formed__named : Context -> Binding -> Prop := binding_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT listOfArgumentTypes unwrapIFix.
+Definition binding_well_formed__named : Context -> Binding -> Prop := binding_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT beta_reduce listOfArgumentTypes unwrapIFix.
 
-Notation "ctx '|-ok' tm" := (binding_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT listOfArgumentTypes unwrapIFix ctx tm) (at level 40, tm at level 0).
+Notation "ctx '|-ok' tm" := (binding_well_formed name tyname binderName binderTyname Context lookupT lookupK extendT extendK flatten append binds fromDecl lookupBuiltinKind lookupBuiltinTy substituteT beta_reduce listOfArgumentTypes unwrapIFix ctx tm) (at level 40, tm at level 0). 
