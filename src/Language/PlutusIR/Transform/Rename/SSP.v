@@ -42,7 +42,12 @@ Fixpoint RenameContext (env : environment) (Gamma : Context) : Context :=
           u |T-> T ; RenameContext env' (deleteT x Gamma)
       end
   | (x, Unchanged) :: env' => 
-      RenameContext env' Gamma
+      match lookupT Gamma x with
+      | None => 
+          RenameContext env' Gamma
+      | Datatypes.Some T => 
+          x |T-> T ; RenameContext env' (deleteT x Gamma)
+      end
   end.
 
 Lemma deleteT_ignores_kinds : forall Gamma x,
@@ -66,8 +71,193 @@ Proof.
         rewrite deleteT_ignores_kinds.
         reflexivity.
       * apply IHenv.
-    + apply IHenv.
+    + destruct (lookupT Gamma s).
+      * simpl.
+        rewrite IHenv.
+        rewrite deleteT_ignores_kinds.
+        reflexivity.
+      * apply IHenv.
 Qed.
+
+Inductive coincides (freevars: list name) : environment -> Context -> Context -> Prop :=
+  | COI_nil :
+      coincides freevars nil emptyContext emptyContext
+  | COI_cons_RenamedTo : forall env Gamma Gamma' x w T,
+      coincides freevars env Gamma Gamma' ->
+      w <> x ->
+      ~(List.In w freevars) ->
+      ~(List.In (RenamedTo w) (List.map snd env)) ->
+      coincides freevars ((x, RenamedTo w) :: env) (x |T-> T; Gamma) (w |T-> T; Gamma')
+  | COI_cons_Unchanged : forall env Gamma Gamma' x T,
+      coincides freevars env Gamma Gamma' ->
+      coincides freevars ((x, Unchanged) :: env) (x |T-> T; Gamma) (x |T-> T; Gamma')
+.
+
+Lemma p : forall fv1 fv2 env Gamma Gamma',
+    coincides (fv1 ++ fv2) env Gamma Gamma' ->
+    coincides fv2 env Gamma Gamma'.
+Proof.
+  intros.
+  induction H.
+  - apply COI_nil.
+  - apply COI_cons_RenamedTo; auto.
+    intros Hcon.
+    apply H1.
+    apply List.in_or_app.
+    right.
+    apply Hcon.
+  - apply COI_cons_Unchanged; auto.
+Qed.
+
+Lemma p2 : forall fv1 fv2 env Gamma Gamma',
+    coincides (fv1 ++ fv2) env Gamma Gamma' ->
+    coincides fv1 env Gamma Gamma'.
+Proof.
+  intros.
+  induction H.
+  - apply COI_nil.
+  - apply COI_cons_RenamedTo; auto.
+    intros Hcon.
+    apply H1.
+    apply List.in_or_app.
+    left.
+    apply Hcon.
+  - apply COI_cons_Unchanged; auto.
+Qed.
+
+Lemma p3 : forall fv x env Gamma Gamma',
+    coincides fv env Gamma Gamma' ->
+    coincides (delete_all eqb x fv) env Gamma Gamma'.
+Proof. Admitted.
+
+Lemma b : forall env x w,
+    lookupRR env x = Datatypes.Some (RenamedTo w) ->
+    List.In (RenamedTo w) (List.map snd env).
+Proof.
+  induction env.
+  - intros.
+    inversion H.
+  - intros.
+    simpl.
+    destruct a.
+    destruct (s =? x) eqn:Heqb.
+    + apply eqb_eq in Heqb as Heq.
+      subst.
+      simpl in H.
+      rewrite eqb_refl in H.
+      inversion H. subst.
+      left.
+      reflexivity.
+    + simpl in H.
+      rewrite Heqb in H.
+      right.
+      eapply IHenv; eauto.
+Qed.
+
+Lemma e' : forall freevars env Gamma Gamma' x w T,
+    coincides freevars env Gamma Gamma'->
+    List.In x freevars ->
+    lookupRR env x = Datatypes.Some (RenamedTo w) ->
+    lookupT Gamma x = Datatypes.Some T ->
+    lookupT Gamma' w = Datatypes.Some T.
+Proof.
+  intros freevars env Gamma Gamma' x w T V.
+  generalize dependent x.
+  generalize dependent T.
+  generalize dependent w.
+  induction V.
+  - intros.
+    inversion H0.
+  - intros. 
+    destruct (x =? x0) eqn:Heqb.
+    + apply eqb_eq in Heqb as Heq.
+      subst.
+      simpl in H3.
+      rewrite eqb_refl in H3.
+      inversion H3. subst.
+      rewrite lookupT_eq.
+      rewrite lookupT_eq in H4.
+      assumption.
+    + apply eqb_neq in Heqb as Hneq.
+      rewrite lookupT_neq in H4; auto.
+      simpl in H3.
+      rewrite Heqb in H3.
+      destruct (w =? w0) eqn:Heqb'.
+      * apply eqb_eq in Heqb'.
+        subst.
+        apply b in H3.
+        apply H1 in H3.
+        destruct H3.
+      * apply eqb_neq in Heqb' as Hneq'.
+        rewrite lookupT_neq; eauto.
+  - intros.
+    destruct (x =? x0) eqn:Heqb.
+    + simpl in H0.
+      rewrite Heqb in H0.
+      inversion H0.
+    + apply eqb_neq in Heqb as Hneq.
+      simpl in H0.
+      rewrite Heqb in H0.
+      rewrite lookupT_neq in H1; auto.
+      destruct (x =? w) eqn:Heqb'.
+      * apply eqb_eq in Heqb' as Heq'.
+        subst.
+        rewrite lookupT_eq.
+        apply b in H0.
+        apply skip.
+      * apply eqb_neq in Heqb' as Hneq'.
+        eapply IHV in H0 as H10; eauto.
+        rewrite lookupT_neq; auto.
+Qed.
+
+Lemma e: forall freevars env Gamma Gamma' x T,
+  coincides freevars env Gamma Gamma'->
+  List.In x freevars ->
+  lookupRR env x = Datatypes.Some Unchanged ->
+  lookupT Gamma x = Datatypes.Some T ->
+  lookupT Gamma' x = Datatypes.Some T.
+Proof.
+  intros freevars env Gamma Gamma' x T V.
+  generalize dependent x.
+  generalize dependent T.
+  induction V.
+  - intros.
+    inversion H0.
+  - intros. 
+    destruct (x =? x0) eqn:Heqb.
+    + apply eqb_eq in Heqb as Heq.
+      subst.
+      simpl in H3.
+      rewrite Heqb in H3.
+      inversion H3.
+    + apply eqb_neq in Heqb as Hneq.
+      simpl in H3.
+      rewrite Heqb in H3.
+      rewrite lookupT_neq in H4; auto.
+      destruct (w =? x0) eqn:Heqb'.
+      * apply eqb_eq in Heqb' as Heq'.
+        subst.
+        apply H0 in H2.
+        destruct H2.
+      * apply eqb_neq in Heqb' as Hneq'.
+        rewrite lookupT_neq; auto.
+  - intros.
+    destruct (x =? x0) eqn:Heqb.
+    + apply eqb_eq in Heqb as Heq.
+      subst.
+      rewrite lookupT_eq.
+      rewrite lookupT_eq in H1.
+      assumption.
+    + apply eqb_neq in Heqb as Hneq.
+      rewrite lookupT_neq; auto.
+      apply IHV.
+      * assumption.
+      * simpl in H0.
+        rewrite Heqb in H0.
+        assumption.
+      * rewrite lookupT_neq in H1; auto.
+Qed.
+
 
 Lemma renaming_exhaustive : forall env x w t1 t2,
     lookupRR env x = Datatypes.Some (RenamedTo w) ->
@@ -78,15 +268,10 @@ Proof. Admitted.
 
 (* Predicate for the [has_type] datatype *)
 Definition P_ht Gamma t1 T := 
-  forall env t2, 
-    (*
-    (forall x y T', 
-      lookupRR env x = Datatypes.Some (RenamedTo y) ->
-      lookupT Gamma x = Datatypes.Some T' -> 
-      lookupT (RenameContext env Gamma) y = Datatypes.Some T'
-    ) -> *)
+  forall env Gamma' t2, 
+    coincides (free_vars eqb t1) env Gamma Gamma' ->
     Rename env t1 t2 -> 
-    (RenameContext env Gamma) |-+ t2 : T.
+    Gamma' |-+ t2 : T.
 
 (* Predicate for the [constructor_well_formed] datatype *)
 Definition P_cwf Gamma c := Gamma |-ok_c c.
@@ -111,6 +296,7 @@ Definition P_bwf Gamma b1 :=
 
 Axiom skip : forall P, P.
 
+
 Theorem Rename__SSP : forall Gamma t1 T,
     Gamma |-+ t1 : T ->
     P_ht Gamma t1 T.
@@ -127,37 +313,54 @@ Proof.
     apply skip.
 
   - (* T_Var *)
-    (*
     intros Gamma x T Hlookup.
-    unfold P_ht. 
-    intros env t2 Hnce X.
-    
-    inversion X.
-    + (* RenameVar *)
+    unfold P_ht.
+    intros env Gamma' t' V Hrename.
+
+    inversion Hrename.
+    + subst.
+      apply T_Var.
+      eapply e'; eauto.
+      simpl.
+      left.
+      reflexivity.
+
+    + (* RenameVarEq *) 
       subst.
       apply T_Var.
-      eapply Hnce; eauto.
-    + (* RenameVarEq *)
-      subst.
-      apply T_Var.
-      eapply Hnce.
-      apply skip.*)
-      apply skip.
+      eapply e; eauto.
+      simpl.
+      left.
+      reflexivity.
+
 
   - (* T_TyAbs *)
     apply skip.
   - (* T_LamAbs *)
-    (*
     intros Gamma x T1 t0 T2 Htyp_t0 IH_t0 Hkind_T1. 
     unfold P_ht. 
-    intros env t2 Hnce X.
+    intros env Gamma' t' V Hrename.
 
-    inversion X.
+    inversion Hrename.
     + (* RenameLamAbsRename *) 
       subst.
-      rename t' into t0'.
+      rename t'0 into t0'.
       apply T_LamAbs.
       * unfold P_ht in IH_t0.
+        eapply IH_t0; eauto.
+        apply COI_cons_RenamedTo; auto. 
+        unfold free_vars in V.
+        fold (@free_vars name tyname eqb) in V.
+        apply skip.
+      * apply skip.
+    + subst.
+      rename t'0 into t0'.
+      apply T_LamAbs.
+      * unfold P_ht in IH_t0.
+        eapply IH_t0; eauto.
+        apply COI_cons_Unchanged; auto.
+
+        (*eapply p3.
         eapply IH_t0 in X0 as X1; eauto.
         -- simpl in X1. 
            rewrite update_eq in X1. 
@@ -192,70 +395,67 @@ Proof.
        -- apply skip.
       * apply skip.
     + apply skip.*)
-    apply skip.        
+    apply skip. * apply skip.         
          
   - (* T_Apply *)
     intros Gamma t1 t2 T1 T2 Htyp_t1 IH_t1 Htyp_t2 IH_t2.
     unfold P_ht.
-    intros env t' X.
+    intros env Gamma' t' V Hrename.
     
-    inversion X. subst.
+    inversion Hrename. subst.
     apply T_Apply with T1.
-    + apply IH_t1.
-      assumption.
-    + apply IH_t2.
-      assumption.
+    + eapply IH_t1; eauto.
+      eauto using p2.
+    + eapply IH_t2; eauto.
+      eauto using p.
   - (* T_Constant *)
     intros Gamma u a. 
     unfold P_ht. 
-    intros env t' X.
-    inversion X. subst.
+    intros env Gamma' t' V Hrename.
+    inversion Hrename. subst.
     apply T_Constant.
   - (* T_Builtin *)
     intros Gamma f.
     unfold P_ht.
-    intros env t' X.
-    inversion X. subst.
+    intros env Gamma' t' V Hrename.
+    inversion Hrename. subst.
     apply T_Builtin.
   - (* T_TyInst *)
     intros Gamma t0 T2 T1 X K2 S Htyp_t0 IH_t0 Hkind_T2 Hbeta.
     unfold P_ht.
-    intros env t' Hrename.
+    intros env Gamma' t' V Hrename.
     inversion Hrename. subst.
     rename t'0 into t0'.
     apply T_TyInst with T1 X K2.
-    + apply IH_t0.
-      assumption. 
+    + eapply IH_t0; eauto.
     + apply skip.
     + reflexivity.
   - (* T_Error *)
     intros Gamma T Hkind_T.
     unfold P_ht.
-    intros env t' Hrename.
+    intros env Gamma' t' V Hrename.
     inversion Hrename. subst.
     apply T_Error.
     apply skip.
   - (* T_IWrap *)
     intros Gamma F T M K S Hbeta Htyp_M IH_M Hkind_T HKind_F.
     unfold P_ht.
-    intros env t' Hrename.
+    intros env Gamma' t' V Hrename.
     inversion Hrename. subst.
     rename t'0 into M'.
     eapply T_IWrap.
     + reflexivity.
-    + apply IH_M.
-      assumption.
+    + eapply IH_M; eauto.
     + apply skip.
     + apply skip.
   - (* T_Unwrap *)
     intros Gamma M F K T S Htyp_M IH_M Hkind_T Hbeta.
     unfold P_ht.
-    intros env t' Hrename.
+    intros env Gamma' t' V Hrename.
     inversion Hrename. subst.
     rename t'0 into M'.
     eapply T_Unwrap.
-    + apply IH_M.
-      assumption.
+    + eapply IH_M; eauto.
     + apply skip.
     + reflexivity. 
 

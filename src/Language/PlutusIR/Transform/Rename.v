@@ -30,7 +30,7 @@ Import ListNotations.
 Fixpoint lookupRR (env : environment) (x : var) : option rename_result :=
   match env with 
   | nil => None
-  | (y, rr) :: env' => if var_eqb x y then Datatypes.Some rr else lookupRR env' x
+  | (y, rr) :: env' => if var_eqb y x then Datatypes.Some rr else lookupRR env' x
   end.
 
 Definition rename_result_eqb (rr1 rr2 : rename_result) :=
@@ -92,7 +92,7 @@ Polymorphic Inductive Rename : environment -> term var tyvar var tyvar -> term v
       Rename env t t' ->
       Rename env (TyAbs ty k t) (TyAbs ty k t')
   | RenameLamAbsEq : forall env v ty t t',
-      Rename env t t' ->
+      Rename ((v, Unchanged) :: env) t t' ->
       Rename env (LamAbs v ty t) (LamAbs v ty t')
   | RenameApply : forall env t1 t2 t1' t2',
       Rename env t1 t1' ->
