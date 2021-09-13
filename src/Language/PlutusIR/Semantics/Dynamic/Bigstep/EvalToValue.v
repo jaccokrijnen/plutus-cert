@@ -2,12 +2,12 @@ Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.Bigstep.
 
-Definition P_eval (t v : Term) := value v.
-Definition P_eval_bindings_nonrec (t v : Term) := value v.
-Definition P_eval_bindings_rec (bs0 : list Binding) (t v : Term) := value v.
+Definition P_eval (t v : Term) (k : nat) := value v.
+Definition P_eval_bindings_nonrec (t v : Term) (k : nat) := value v.
+Definition P_eval_bindings_rec (bs0 : list Binding) (t v : Term) (k : nat) := value v.
 
-Lemma eval_to_value : forall t v,
-    t ==> v -> value v.
+Lemma eval_to_value : forall t v k,
+    t =[k]=> v -> value v.
 Proof.
   eapply eval__ind with (P := P_eval) (P0 := P_eval_bindings_nonrec) (P1 := P_eval_bindings_rec); 
     try (intros; unfold P_eval; unfold P_eval_bindings_nonrec; unfold P_eval_bindings_rec).

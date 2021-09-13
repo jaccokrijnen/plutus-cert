@@ -5,6 +5,7 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.Bigstep.EvalToValu
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.Bigstep.EvalValue.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.Bigstep.Deterministic.
 
+(*
 Lemma eval_congr_Apply1 : forall t1 t2 v1 v0,
     Apply t1 t2 ==> v0 ->
     t1 ==> v1 ->
@@ -70,3 +71,4 @@ Proof.
       * apply E_Constant.
     + assumption.
 Qed.
+*)

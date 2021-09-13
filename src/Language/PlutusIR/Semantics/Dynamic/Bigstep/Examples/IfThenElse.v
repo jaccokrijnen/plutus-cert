@@ -13,10 +13,11 @@ Local Open Scope string_scope.
 Definition Ty_int : Ty := Ty_Builtin (Some (TypeIn DefaultUniInteger)).
 Definition int_and_int_to_int : Ty := Ty_Fun Ty_int (Ty_Fun Ty_int Ty_int).
 
-Example test_ifThenElse : forall x y,
-  Apply (LamAbs x int_and_int_to_int (Apply (Apply (Var x) (constInt 17)) (constInt 3))) (Apply (TyInst (Apply (LamAbs y Ty_int (Builtin IfThenElse)) (constInt 666)) (Ty_Builtin (Some (TypeIn DefaultUniInteger)))) (Constant (Some (ValueOf DefaultUniBool true)))) ==> constInt 17.
+Example test_ifThenElse : forall x y, exists k,
+  Apply (LamAbs x int_and_int_to_int (Apply (Apply (Var x) (constInt 17)) (constInt 3))) (Apply (TyInst (Apply (LamAbs y Ty_int (Builtin IfThenElse)) (constInt 666)) (Ty_Builtin (Some (TypeIn DefaultUniInteger)))) (Constant (Some (ValueOf DefaultUniBool true)))) =[k]=> constInt 17.
 Proof.
   intros.
+  eexists.
   eapply E_Apply.
   - apply E_LamAbs.
   - eapply E_IfCondition.

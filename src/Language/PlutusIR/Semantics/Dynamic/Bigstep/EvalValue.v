@@ -2,8 +2,8 @@ Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.Bigstep.
 
-Definition P_value (v : Term) := v ==> v.
-Definition P_value_builtin (v : Term) := v ==> v.
+Definition P_value (v : Term) := v =[0]=> v.
+Definition P_value_builtin (v : Term) := v =[0]=> v.
 
 Lemma eval_value : forall v,
     value v -> 
@@ -35,6 +35,7 @@ Proof.
     apply E_Builtin.
   - (* V_IfCondition *)
     intros. unfold P_value.
+    replace 0 with (0 + 0) by reflexivity.
     apply E_IfCondition.
     + apply E_IfTyInst.
       apply E_Builtin.
@@ -42,6 +43,7 @@ Proof.
   - (* V_IfThenBranch *)
     intros. unfold P_value.
     apply E_IfThenBranch.
+    replace 0 with (0 + 0) by reflexivity.
     apply E_IfCondition.
     * apply E_IfTyInst.
       apply E_Builtin.
@@ -52,6 +54,7 @@ Proof.
     apply E_Builtin.
   - (* V_Builtin1 *)
     intros. unfold P_value_builtin.
+    replace 0 with (0 + 0) by reflexivity.
     apply E_ApplyBuiltin1.
     + apply E_Builtin.
     + apply V_Builtin0.
@@ -63,8 +66,10 @@ Proof.
       * assumption.
   - (* V_Builtin2 *)
     intros. unfold P_value_builtin.
+    replace 0 with (0 + 0) by reflexivity.
     apply E_ApplyBuiltin1.
-    + apply E_ApplyBuiltin1.
+    + replace 0 with (0 + 0) by reflexivity.
+      apply E_ApplyBuiltin1.
       * apply E_Builtin.
       * apply V_Builtin0.
         apply PeanoNat.Nat.lt_succ_l.

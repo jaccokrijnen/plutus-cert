@@ -214,36 +214,36 @@ Qed.
 
 (** * [eval] is deterministic *)
 
-Definition P_eval x y1 :=
-  forall y2,
-    x ==> y2 ->
+Definition P_eval x y1 (k1 : nat) :=
+  forall y2 k2,
+    x =[k2]=> y2 ->
     y1 = y2.
 
-Definition P_eval_bindings_nonrec x y1 :=
-  forall y2,
-    eval_bindings_nonrec x y2 ->
+Definition P_eval_bindings_nonrec x y1 (k1 : nat) :=
+  forall y2 k2,
+    eval_bindings_nonrec x y2 k2 ->
     y1 = y2.
 
-Definition P_eval_bindings_rec bs0 x y1 :=
-  forall y2,
-    eval_bindings_rec bs0 x y2 ->
+Definition P_eval_bindings_rec bs0 x y1 (k1 : nat) :=
+  forall y2 k2,
+    eval_bindings_rec bs0 x y2 k2->
     y1 = y2.
 
-Theorem eval__deterministic : forall x y1,
-  x ==> y1 ->
-  P_eval x y1.
+Theorem eval__deterministic : forall x y1 k1,
+  x =[k1]=> y1 ->
+  P_eval x y1 k1.
 Proof.
   apply eval__ind with (P := P_eval) (P0 := P_eval_bindings_nonrec) (P1 := P_eval_bindings_rec).
   - (* E_Let *)
     intros. unfold P_eval. intros.
     inversion H1. subst.
-    apply H0.
-    assumption.
+    eapply H0.
+    eassumption.
   - (* E_LetRec *)
     intros. unfold P_eval. intros.
     inversion H1. subst.
-    apply H0.
-    assumption.
+    eapply H0.
+    eassumption.
   - (* E_TyAbs *)
     intros. unfold P_eval. intros.
     inversion H. subst.
@@ -257,13 +257,13 @@ Proof.
     inversion H6.
     + (* E_Apply *)
       subst.
-      apply H5.
+      eapply H5.
       assert (LamAbs x T t0 = LamAbs x0 T0 t5). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H7. subst.
       assert (v2 = v1). {
-        apply H2. assumption.
+        eapply H2. eassumption.
       }
       subst.
       assert (t0'0 = t0'). {
@@ -272,43 +272,43 @@ Proof.
         + assumption.
       }
       subst. 
-      assumption.
+      eassumption.
     + (* E_ApplyBuiltin1 *)
       subst.
       assert (LamAbs x T t0 = v1). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
-      inversion H13.
+      inversion H14.
     + (* E_ApplyBuiltin2 *) 
       subst. 
       assert (LamAbs x T t0 = v1). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       inversion H10.
     + (* E_IfCondition*)
       subst.
       assert (LamAbs x T t0 = TyInst (Builtin IfThenElse) T0). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H7.
     + (* E_IfThenBranch *)
       subst.
       assert (LamAbs x T t0 = Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool cond)))). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H7.
     + (* E_IfTrue *)
       subst.
       assert (LamAbs x T t0 = Apply (Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool true)))) t_t). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H7.
     + (* E_IfFalse *)
       subst.
       assert (LamAbs x T t0 = Apply (Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool false)))) t_t). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H7.
   - (* E_Constant *)
@@ -325,29 +325,29 @@ Proof.
     + (* E_Apply *) 
       subst.
       assert (v1 = LamAbs x T t4). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       inversion H4.
     + (* E_AppltBuiltin1 *)
       subst.
       assert (v1 = v0). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       assert (v2 = v3). {
-        apply H3. assumption.
+        eapply H3. eassumption.
       }
       subst.
       reflexivity.
     + (* E_ApplyBuiltin2 *)
       subst.
       assert (v1 = v0). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       assert (v2 = v3). {
-        apply H3. assumption.
+        eapply H3. eassumption.
       }
       subst.
       apply H11 in H4.
@@ -355,28 +355,28 @@ Proof.
     + (* E_IfCondition*)
       subst.
       assert (v1 = TyInst (Builtin IfThenElse) T). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       inversion H4.
     + (* E_IfThenBranch *)
       subst.
       assert (v1 = Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool cond)))). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       inversion H4.
     + (* E_IfTrue *)
       subst.
       assert (v1 = Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool true)))) t_t). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       inversion H4.
     + (* E_IfFalse *)
       subst.
       assert (v1 = Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool false)))) t_t). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       inversion H4.
@@ -386,61 +386,61 @@ Proof.
     + (* E_Apply *) 
       subst.
       assert (v1 = LamAbs x T t4). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       inversion H1.
     + (* E_ApplyBuiltin1 *)
       subst.
       assert (v1 = v3). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       assert (v2 = v4). {
-        apply H3. assumption.
+        eapply H3. eassumption.
       }
       subst.
-      apply H4 in H13.
-      destruct H13.
+      apply H4 in H14.
+      destruct H14.
     + (* E_ApplyBuiltin2 *)
       subst.
       assert (v1 = v3). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       assert (v2 = v4). {
-        apply H3. assumption.
+        eapply H3. eassumption.
       }
       subst. 
-      rewrite H5 in H14. 
-      inversion H14. 
+      rewrite H5 in H15. 
+      inversion H15. 
       subst. 
       reflexivity.
     + (* E_IfCondition*)
       subst.
       assert (v1 = TyInst (Builtin IfThenElse) T). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       inversion H1.
     + (* E_IfThenBranch *)
       subst.
       assert (v1 = Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool cond)))). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       inversion H1.
     + (* E_IfTrue *)
       subst.
       assert (v1 = Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool true)))) t_t). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       inversion H1.
     + (* E_IfFalse *)
       subst.
       assert (v1 = Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool false)))) t_t). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       inversion H1.
@@ -452,7 +452,7 @@ Proof.
     + (* E_TyInst *)  
       subst.
       assert (Builtin IfThenElse = TyAbs X K t2). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H2.
   - (* E_IfCondition *)
@@ -461,44 +461,44 @@ Proof.
     + (* E_Apply *) 
       subst.
       assert (TyInst (Builtin IfThenElse) T = LamAbs x T0 t0). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H4.
     + (* E_ApplyBuiltin1 *)
       assert (TyInst (Builtin IfThenElse) T = v1). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       inversion H7.
     + (* E_ApplyBuiltin2 *)
       subst.
       assert (TyInst (Builtin IfThenElse) T = v1). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       inversion H7.
     + (* E_IfCondition*)
       subst.
       f_equal.
-      * apply H0. assumption.
-      * apply H2. assumption.
+      * eapply H0. eassumption.
+      * eapply H2. eassumption.
     + (* E_IfThenBranch *)
       subst.
       assert (TyInst (name := Strings.String.string) (binderName := Strings.String.string) (Builtin IfThenElse) T = Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool cond0)))). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H4.
     + (* E_IfTrue *)
       subst.
       assert (TyInst (name := Strings.String.string) (binderName := Strings.String.string) (Builtin IfThenElse) T = Apply (Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool true)))) t_t). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       inversion H4.
     + (* E_IfFalse *)
       subst.
       assert (TyInst (name := Strings.String.string) (binderName := Strings.String.string) (Builtin IfThenElse) T = Apply (Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool false)))) t_t). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       inversion H4.
@@ -508,42 +508,42 @@ Proof.
     + (* E_Apply *) 
       subst.
       assert (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool cond))) = LamAbs x T0 t0). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H2.
     + (* E_ApplyBuiltin1 *)
       assert (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool cond))) = v1). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
-      inversion H8.
+      inversion H9.
     + (* E_ApplyBuiltin2 *)
       subst.
       assert (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool cond))) = v1). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       inversion H5.
     + (* E_IfCondition*)
       subst.
       assert (Apply (name := Strings.String.string) (binderName := Strings.String.string) (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool cond))) = (TyInst (Builtin IfThenElse) T0)). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H2.
     + (* E_IfThenBranch *)
       subst.
       f_equal.
-      apply H0. assumption.
+      eapply H0. eassumption.
     + (* E_IfTrue *)
       assert (Apply (name := Strings.String.string) (binderName := Strings.String.string) (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool cond))) = Apply (Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool true)))) t_t0). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
-      inversion H7.
+      inversion H8.
     + (* E_IfFalse *)
       subst.
       assert (Apply (name := Strings.String.string) (binderName := Strings.String.string) (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool cond))) = Apply (Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool false)))) t_t0). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H2.
   - (* E_IfTrue *)
@@ -552,118 +552,118 @@ Proof.
     + (* E_Apply *) 
       subst.
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool true)))) t_t = LamAbs x T0 t0). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H4.
     + (* E_ApplyBuiltin1 *)
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool true)))) t_t = v1). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
-      inversion H10.
+      inversion H11.
     + (* E_ApplyBuiltin2 *)
       subst.
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool true)))) t_t = v1). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       inversion H7.
     + (* E_IfCondition*)
       subst.
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool true)))) t_t = (TyInst (Builtin IfThenElse) T0)). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H4.
     + (* E_IfThenBranch *)
       subst.
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool true)))) t_t = Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool cond)))). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H4.
     + (* E_IfTrue *)
       subst.
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool true)))) t_t = Apply (Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool true)))) t_t0). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H4.
       subst.
-      apply H2.
-      assumption.
+      eapply H2.
+      eassumption.
     + (* E_IfFalse *)
       subst.
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool true)))) t_t = Apply (Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool false)))) t_t0). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H4.
-      Axiom skip : forall P, P. apply skip. (* TODO: Why does inversion not do anything? *)
+      Axiom skip : forall P, P. eapply skip. (* TODO: Why does inversion not do anything? *)
   - (* E_IfFalse *)
     intros. unfold P_eval. intros.
     inversion H3.
     + (* E_Apply *) 
       subst.
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool false)))) t_t = LamAbs x T0 t0). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H4.
     + (* E_ApplyBuiltin1 *)
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool false)))) t_t = v1). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
-      inversion H10.
+      inversion H11.
     + (* E_ApplyBuiltin2 *)
       subst.
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool false)))) t_t = v1). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       subst.
       inversion H7.
     + (* E_IfCondition*)
       subst.
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool false)))) t_t = (TyInst (Builtin IfThenElse) T0)). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H4.
     + (* E_IfThenBranch *)
       subst.
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool false)))) t_t = Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool cond)))). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H4.
     + (* E_IfTrue *)
       subst.
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool false)))) t_t = Apply (Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool true)))) t_t0). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H4.
-      apply skip. (* TODO: Why does inversion not do anything? *)
+      eapply skip. (* TODO: Why does inversion not do anything? *)
 
     + (* E_IfFalse *)
       subst.
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool false)))) t_t = Apply (Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool false)))) t_t0). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H4.
       subst.
-      apply H2.
-      assumption.
+      eapply H2.
+      eassumption.
   - (* E_TyInst *)
     intros. unfold P_eval. intros.
     inversion H3.
     + (* E_IfTyInst *)
       subst.
       assert (TyAbs X K t0 = Builtin IfThenElse). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H4.
     + (* E_TyInst *)
       subst.
       assert (TyAbs X K t0 = TyAbs X0 K0 t3). {
-        apply H0. assumption.
+        eapply H0. eassumption.
       }
       inversion H4. subst.
-      apply H2.
-      assumption.
+      eapply H2.
+      eassumption.
   - (* E_Error *)
     intros. unfold P_eval. intros.
     inversion H. subst.
@@ -672,13 +672,13 @@ Proof.
     intros. unfold P_eval. intros.
     inversion H1. subst.
     f_equal.
-    apply H0.
-    assumption.
+    eapply H0.
+    eassumption.
   - (* E_Unwrap *)
     intros. unfold P_eval. intros.
     inversion H1. subst.
     assert (IWrap F T v0 = IWrap F0 T0 y2). {
-      apply H0. assumption.  
+      eapply H0. eassumption.  
     }
     inversion H2. subst.
     reflexivity.
@@ -686,39 +686,39 @@ Proof.
   - (* E_NilB_NonRec  *)
     intros. unfold P_eval_bindings_nonrec. intros.
     inversion H1. subst.
-    apply H0. assumption.
+    eapply H0. eassumption.
   - (* E_ConsB_NonRec *)
     intros. unfold P_eval_bindings_nonrec. intros.
     inversion H4. subst.
     assert (vb = vb0). {
-      apply H0. assumption.
+      eapply H0. eassumption.
     }
     subst.
     assert (Let NonRec bs' t' = Let NonRec bs'0 t'0). {
       apply substitute__deterministic in H1.
-      apply H1 in H13.
+      apply H1 in H14.
       assumption.
     }
     inversion H5. 
     subst.
-    apply H3.
-    assumption.
+    eapply H3.
+    eassumption.
   
   - (* E_NilB_Rec *)
     intros. unfold P_eval_bindings_rec. intros.
     inversion H1. subst.
-    apply H0.
-    assumption.
+    eapply H0.
+    eassumption.
   - (* E_ConsB_Rec *)
     intros. unfold P_eval_bindings_rec. intros.
     inversion H2. subst.
     assert (Let Rec bs' t' = Let Rec bs'0 t'0). {
       apply substitute__deterministic in H.
-      apply H in H11.
+      apply H in H12.
       assumption.
     }
     inversion H3. 
     subst.
-    apply H1.
-    assumption.
+    eapply H1.
+    eassumption.
 Qed.

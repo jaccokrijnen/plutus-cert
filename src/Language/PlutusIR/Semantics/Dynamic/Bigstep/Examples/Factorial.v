@@ -70,9 +70,10 @@ Ltac destruct_invert_contra := let Hcon := fresh "Hcon" in intros Hcon; destruct
 Ltac solve_substitute := repeat (econstructor || eauto || invert_contra || destruct_invert_contra).
 Ltac solve_value_builtin := repeat econstructor.
 
-Example fact_term_evaluates : 
-  fact_term 2 ==> Constant (Some (ValueOf DefaultUniInteger 2)).
+Example fact_term_evaluates : exists k,
+  fact_term 2 =[k]=> Constant (Some (ValueOf DefaultUniInteger 2)).
 Proof with eauto.
+  eexists.
   apply E_LetRec.
   eapply E_ConsB_Rec. {
     apply S_LetRec2. {

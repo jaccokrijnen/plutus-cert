@@ -4,98 +4,288 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 
-Notation beta_reduce := (beta_reduce tyname binderTyname substituteT).
+Require Import Arith.
+
+
+Definition terminates := fun t k => exists v j, j < k /\ t =[j]=> v.
+
+Lemma e : forall i j k,
+  i < k ->
+  j < k - i ->
+  j < k.
+Proof. Admitted.
+
 
 (* Note: The cases for Ty_Forall and and Ty_IFix make use of
    type substitution and beta reduction. However, Coq can then not
    guess the decreasing argument of fix anymore. *)
-Fixpoint R (T : Ty) (ctx_K : partial_map Kind) (t1 t2 : Term) : Prop :=
-  (empty, ctx_K) |-+ t1 : T /\
-  (empty, ctx_K) |-+ t2 : T /\
-  exists v1 v2,
-    t1 ==> v1 /\
-    t2 ==> v2 /\
-    match T with
-    | Ty_Forall X K T0 => 
-        forall t0_1 t0_2,
-          v1 = TyAbs X K t0_1 ->
-          v2 = TyAbs X K t0_2 ->
-          R T0 (X |-> K ; ctx_K) t0_1 t0_2
-    | Ty_Fun T1 T2 => 
-        forall s1 s2,
-          R T1 ctx_K s1 s2 ->
-          R T2 ctx_K (Apply v1 s1) (Apply v2 s2)
-    | Ty_Builtin st => 
-        v1 = v2
-    | Ty_IFix F T0 => 
-        (*
-        forall X K,
-          empty |-* T : K ->
-          R (beta_reduce (unwrapIFix F X K T0)) (Unwrap v1) (Unwrap v2)
-        *)
-        True
-    |_ => False
-    end.
+Equations? R (k : nat ) (T : Ty) (t1 t2 : Term) : Prop by wf k :=
+  R k T t1 t2 =>
+  emptyContext |-+ t1 : T /\
+  emptyContext |-+ t2 : T /\
+  forall v1 j1,
+    forall (Hj1 : j1 < k),
+    t1 =[j1]=> v1 ->
+    exists v2 j2,
+      t2 =[j2]=> v2 /\
+        match T with
+        | Ty_Forall X K T0 => 
+            forall t0_1 t0_2 T' j,
+              forall (Hj : j < k - j1),
+              v1 = TyAbs X K t0_1 ->
+              v2 = TyAbs X K t0_2 ->
+              emptyContext |-* T' : K ->
+              R j (beta_reduce (substituteT X T' T0)) v1 v2
+        | Ty_Fun T1 T2 => 
+            forall s1 s2 j,
+              forall (Hj : j < k - j1),
+              R j T1 s1 s2 ->
+              R j T2 (Apply v1 s1) (Apply v2 s2)
+        | Ty_Builtin st => 
+            v1 = v2
+        | Ty_IFix F T0 => 
+            forall X K j,
+              forall (Hj : j < k - j1),
+              emptyContext |-* T0 : K ->
+              R j (beta_reduce (unwrapIFix F X K T0)) v1 v2
+        | _ => False (* Ty_Lam, Ty_Abs and Ty_Var should not occur *)
+        end.
+Proof. all: try solve [eapply e; eauto]. Qed.
 
-Lemma R_typable_emptyT : forall T ctxK t1 t2,
-    R T ctxK t1 t2 ->
-    (empty, ctxK) |-+ t1 : T /\ (empty, ctxK) |-+ t2 : T.
-Proof. intros. destruct T; destruct H as [Ht1 [Ht2 _]]; auto. Qed.
+Lemma monotonicity : forall k T v1 v2 j,
+  value v1 ->
+  value v2 ->
+  j <= k ->
+  R k T v1 v2 ->
+  R j T v1 v2.
+Proof.
+  destruct T.
+  - intros.
+    autorewrite with R in H2.
+    autorewrite with R.
+    destruct H2.
+    destruct H3.
+    split; auto.
+    split; auto.
+    intros.
+    assert (j1 < k). {
+      eapply le_trans; eauto.
+    }
 
-Lemma R_typable_emptyT_1 : forall T ctxK t1 t2,
-    R T ctxK t1 t2 ->
-    (empty, ctxK) |-+ t1 : T.
-Proof. intros. destruct (R_typable_emptyT _ _ _ _ H). assumption. Qed.
+    edestruct H4; eauto.
+  - intros.
+    autorewrite with R in H2.
+    autorewrite with R.
+    destruct H2.
+    destruct H3.
+    split; auto.
+    split; auto.
+    intros.
+    assert (j1 < k). {
+      eapply le_trans; eauto.
+    }
 
-Lemma R_typable_emptyT_2 : forall T ctxK t1 t2,
-    R T ctxK t1 t2 ->
-    (empty, ctxK) |-+ t2 : T.
-Proof. intros. destruct (R_typable_emptyT _ _ _ _ H). assumption. Qed.
+    edestruct H4; eauto.
+    destruct H7.
+    destruct H7.
+    exists x.
+    exists x0.
+    split; auto.
 
-Lemma R_evaluable : forall T ctxK t1 t2,
-    R T ctxK t1 t2 ->
-    exists v1 v2, t1 ==> v1 /\ t2 ==> v2.
-Proof. intros. destruct T; destruct H as [_ [_ [v1 [v2 [Hev1 [Hev2 _]]]]]]; eauto. Qed.
+    intros.
+    eapply H8.
+    + apply skip. 
+    + assumption.
+  - intros.
+    autorewrite with R in H2.
+    autorewrite with R.
+    destruct H2.
+    destruct H3.
+    split; auto.
+    split; auto.
+    intros.
+    assert (j1 < k). {
+      eapply le_trans; eauto.
+    }
 
-Lemma R_evaluable_1 : forall T ctxK t1 t2,
-    R T ctxK t1 t2 ->
-    exists v1, t1 ==> v1.
-Proof. intros. destruct (R_evaluable _ _ _ _ H) as [v1 [_ [Hev1 _]]]. eauto. Qed.
+    edestruct H4; eauto.
+    destruct H7.
+    destruct H7.
+    exists x.
+    exists x0.
+    split; auto.
 
-Lemma R_evaluable_2 : forall T ctxK t1 t2,
-    R ctxK T t1 t2 ->
-    exists v2, t2 ==> v2.
-Proof. intros. destruct (R_evaluable _ _ _ _ H) as [_ [v2 [_ Hev2]]]. eauto. Qed.
+    intros.
+    eapply H8.
+    + apply skip. 
+    + assumption.
+  - intros.
+    autorewrite with R in H2.
+    autorewrite with R.
+    destruct H2.
+    destruct H3.
+    split; auto.
+    split; auto.
+    intros.
+    assert (j1 < k). {
+      eapply le_trans; eauto.
+    }
 
-Lemma R_syntactic_equality : forall st ctxK t1 t2,
-    R (Ty_Builtin st) ctxK t1 t2 ->
-    exists v1 v2,
-      t1 ==> v1 /\
-      t2 ==> v2 /\
-      v1 = v2.
-Proof. intros. destruct H as [_ [_ [v1 [v2 [Hev1 [Hev2 Heq]]]]]]. eauto. Qed.
+    edestruct H4; eauto.
+    destruct H7.
+    destruct H7.
+    exists x.
+    exists x0.
+    split; auto.
 
-Lemma R_functional_extensionality : forall T1 T2 ctxK t1 t2,
-  R (Ty_Fun T1 T2) ctxK t1 t2 ->
-  exists v1 v2,
-    t1 ==> v1 /\
-    t2 ==> v2 /\
-    (forall s1 s2,
-      R T1 ctxK s1 s2 ->
-      R T2 ctxK (Apply v1 s1) (Apply v2 s2)).
-Proof. intros. destruct H as [_ [_ [v1 [v2 [Hev1 [Hev2 Hfe]]]]]]. eauto. Qed.
+    intros.
+    eapply H8.
+    + apply skip. 
+    + eassumption.
+    + eassumption.
+    + eassumption.
+  - intros.
+    autorewrite with R in H2.
+    autorewrite with R.
+    destruct H2.
+    destruct H3.
+    split; auto.
+    split; auto.
+    intros.
+    assert (j1 < k). {
+      eapply le_trans; eauto.
+    }
 
-Lemma R_falsity : forall ctxK t1 t2,
-  (forall a, ~(R (Ty_Var a) ctxK t1 t2)) /\
-  (forall bX K T, ~(R (Ty_Lam bX K T) ctxK t1 t2)) /\
-  (forall T1 T2, ~(R (Ty_App T1 T2) ctxK t1 t2)).
-Proof. 
-  split.
-  - intros. intro Hcon. destruct Hcon as [_ [_ [_ [_ [_ [_ Hfalse]]]]]]. destruct Hfalse.
-  - split.
-    + intros. intro Hcon. edestruct Hcon as [_ [_ [_ [_ [_ [_ Hfalse]]]]]]. destruct Hfalse.
-    + intros. intro Hcon. edestruct Hcon as [_ [_ [_ [_ [_ [_ Hfalse]]]]]]. destruct Hfalse.
+    edestruct H4; eauto.
+  - intros.
+    autorewrite with R in H2.
+    autorewrite with R.
+    destruct H2.
+    destruct H3.
+    split; auto.
+    split; auto.
+    intros.
+    assert (j1 < k). {
+      eapply le_trans; eauto.
+    }
+
+    edestruct H4; eauto.
+  - intros.
+    autorewrite with R in H2.
+    autorewrite with R.
+    destruct H2.
+    destruct H3.
+    split; auto.
+    split; auto.
+    intros.
+    assert (j1 < k). {
+      eapply le_trans; eauto.
+    }
+
+    edestruct H4; eauto.
 Qed.
+
+Lemma R_typable_empty : forall k T t1 t2,
+    R k T t1 t2 ->
+    emptyContext |-+ t1 : T /\ emptyContext |-+ t2 : T.
+Proof. intros. destruct k, T; destruct H as [Ht1 [Ht2 _]]; auto. Qed.
+
+Lemma R_typable_empty_1 : forall k T t1 t2,
+    R k T t1 t2 ->
+    emptyContext |-+ t1 : T.
+Proof. intros. destruct (R_typable_empty _ _ _ _ H). assumption. Qed.
+
+Lemma R_typable_empty_2 : forall k T t1 t2,
+    R k T t1 t2 ->
+    emptyContext |-+ t2 : T.
+Proof. intros. destruct (R_typable_empty _ _ _ _ H). assumption. Qed.
+
+Lemma R_evaluable : forall k T t1 t2,
+    terminates t1 k ->
+    R k T t1 t2 ->
+    exists v1 v2 j1 j2, t1 =[j1]=> v1 /\ t2 =[j2]=> v2.
+Proof. intros. destruct H. destruct H. destruct H. autorewrite with R in H0.
+  destruct T; destruct H0 as [_ [_ [v2 [j2 [Hev2 _]]]]]; eauto; 
+    try solve [eexists; eexists; eexists; eexists; eauto].
+Qed.
+
+Lemma R_evaluable_1 : forall k T t1 t2,
+    terminates t1 k ->
+    R k T t1 t2 ->
+    exists v1 j1, t1 =[j1]=> v1.
+Proof. intros. destruct (R_evaluable _ _ _ _ H H0) as [v1 [_ [j1 [_ [Hev1 _]]]]]; eauto. Qed.
+
+Lemma R_evaluable_2 : forall k T t1 t2,
+    terminates t1 k ->
+    R k T t1 t2 ->
+    exists v2 j2, t2 =[j2]=> v2.
+Proof. intros. destruct (R_evaluable _ _ _ _ H H0) as [_ [v2 [_ [j2 [_ Hev2]]]]]; eauto. Qed.
+
+Lemma R_syntactic_equality : forall k st t1 t2,
+    terminates t1 k ->
+    R k (Ty_Builtin st) t1 t2 ->
+    exists v1 v2 j1 j2,
+      t1 =[j1]=> v1 /\
+      t2 =[j2]=> v2 /\
+      v1 = v2.
+Proof. 
+  intros. destruct H. destruct H. destruct H. destruct H0 as [_ [_ [v2 [j2 [Hev2 Heq]]]]]; eauto.
+  eexists. eexists. eexists. eexists. eauto. 
+Qed.
+
+Lemma R_functional_extensionality : forall k T1 T2 t1 t2,
+    terminates t1 k ->
+    R k (Ty_Fun T1 T2) t1 t2 ->
+    exists v1 v2 j1 j2,
+      t1 =[j1]=> v1 /\
+      t2 =[j2]=> v2 /\
+      (forall s1 s2 j,
+        j < k - j1 ->
+        R j T1 s1 s2 ->
+        R j T2 (Apply v1 s1) (Apply v2 s2)).
+Proof. 
+  intros. destruct H. destruct H. destruct H.
+  autorewrite with R in H0.
+  destruct H0.
+  destruct H2.
+  edestruct H3; eauto.
+  destruct H4.
+  destruct H4.
+  exists x.
+  exists x1.
+  exists x0.
+  exists x2.
+  split; eauto.
+Qed.
+
+Lemma R_impossible_type : forall k t1 t2,
+    terminates t1 k ->
+    (forall a, ~(R k (Ty_Var a) t1 t2)) /\
+    (forall bX K T, ~(R k (Ty_Lam bX K T) t1 t2)) /\
+    (forall T1 T2, ~(R k (Ty_App T1 T2) t1 t2)).
+Proof.
+  intros. destruct H. destruct H. destruct H. 
+  split; try split; try solve [intros; intro Hcon; destruct k; destruct Hcon as [_ [_ [_ [_ [_ Hfls]]]]]; eauto].
+Qed.
+
+Lemma R_impossible_k : forall t1 t2,
+    terminates t1 0 ->
+    (forall T1 T2, ~(R 0 (Ty_Fun T1 T2) t1 t2)) /\
+    (forall X K T0, ~(R 0 (Ty_Forall X K T0) t1 t2)).
+Proof.
+  intros. destruct H.
+  destruct H.
+  destruct H.
+  apply PeanoNat.Nat.nlt_0_r in H.
+  destruct H.
+Qed.
+
+Lemma R_nontermination : forall k T t1 t2,
+    ~(terminates t1) ->
+    emptyContext |-+ t1 : T ->
+    emptyContext |-+ t2 : T ->
+    R k T t1 t2.
+Proof. intros. destruct k; destruct T; try solve [split; eauto; split; eauto; intros v1 Hcon; exfalso; apply H; exists v1; auto]. Qed.
 
 (* TODO: Possible fixes for R require a proof of well-founded recursion. I've tried out some things
    below, but I have not founda solution yet. *)
