@@ -59,3 +59,4 @@ src/Language/PlutusIR/Semantics/TypeSafety/Preservation.v
 src/Language/PlutusIR/Semantics/TypeSafety/Progress.v
 src/Language/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/Def.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/ReductionInvariance.v
