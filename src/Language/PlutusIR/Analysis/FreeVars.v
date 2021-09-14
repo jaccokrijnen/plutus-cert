@@ -31,9 +31,8 @@ Fixpoint bound_vars_binding (b : binding') : list var := match b with
   end.
 
 Fixpoint bound_vars_bindings (bs : list binding') : list var := match bs with
-    | ((TermBind _ (VarDecl v _) t) :: bs)
-        => v :: bound_vars_bindings bs
-    | (_ :: bs) => bound_vars_bindings bs
+    | (b :: bs)
+        => bound_vars_binding b ++ bound_vars_bindings bs
     | nil       => nil
     end.
 
