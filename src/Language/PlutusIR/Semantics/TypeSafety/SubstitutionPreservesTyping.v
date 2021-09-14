@@ -3,7 +3,7 @@ Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Weakening.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.Bigstep.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.Substitution.
 
 Require Import Coq.Strings.String.
 Require Import Coq.Logic.FunctionalExtensionality.

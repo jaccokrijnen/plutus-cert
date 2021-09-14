@@ -43,10 +43,10 @@ Equations? R (k : nat ) (T : Ty) (t1 t2 : Term) : Prop by wf k :=
           | Ty_Builtin st => 
               v1 = v2
           | Ty_IFix F T0 => 
-              forall X K j,
+              forall K j,
                 forall (Hj : j < k - j1),
                 emptyContext |-* T0 : K ->
-                R j (beta_reduce (unwrapIFix F X K T0)) v1 v2
+                R j (beta_reduce (unwrapIFix F K T0)) v1 v2
           | _ => False (* Ty_Lam, Ty_Abs and Ty_Var should not occur *)
           end.
 Proof. all: try solve [eapply e; eauto]. Qed.

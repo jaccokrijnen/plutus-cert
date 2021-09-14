@@ -149,18 +149,18 @@ Proof.
     apply H.
   - (* T_IWrap *)
     intros. unfold P_has_type. intros.
+    inversion X. subst.
     inversion X0. subst.
-    inversion X1. subst.
-    apply T_IWrap with (X := X) (K := K) (S := beta_reduce (unwrapIFix F X K T)).
+    apply T_IWrap with (K := K) (S := beta_reduce (unwrapIFix F K T)).
     + reflexivity.
     + apply H1. assumption.
     + assumption.
     + assumption.
   - (* T_Unwrap *)
     intros. unfold P_has_type. intros.
+    inversion X. subst.
     inversion X0. subst.
-    inversion X1. subst.
-    apply T_Unwrap with (F := F) (X := X) (K := K) (T := T).
+    apply T_Unwrap with (F := F) (K := K) (T := T).
     + apply H0. assumption.
     + assumption.
     + reflexivity.

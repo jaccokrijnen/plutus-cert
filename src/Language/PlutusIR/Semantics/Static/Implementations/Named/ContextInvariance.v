@@ -368,7 +368,7 @@ Proof with eauto.
       apply H1.
   - (* T_IWrap *)
     intros. unfold P_has_type. intros.
-    apply T_IWrap with X K S.
+    apply T_IWrap with K S.
     + assumption.
     + apply H1.
       * intros.
@@ -387,7 +387,7 @@ Proof with eauto.
         apply H5.
   - (* T_Unwrap *)
     intros. unfold P_has_type. intros.
-    apply T_Unwrap with F X K T.
+    apply T_Unwrap with F K T.
     + apply H0.
       * intros.
         apply H3.

@@ -212,8 +212,32 @@ Proof.
     reflexivity.
 Qed.
 
+Theorem annotsubst__deterministic : forall X S t t' t'', 
+    annotsubst X S t t' ->
+    annotsubst X S t t'' ->
+    t' = t''. 
+Proof. Admitted.
+
 (** * [eval] is deterministic *)
 
+(** The next Lemma seems to follow easily from inversion on the assumption and it is 
+    therefore not really necessary to dedicate a Lemma to it. However, we need to  prove 
+    this Lemma separately because the [inversion] tactic could not figure out this equality 
+    during the [eval__deterministic] proof below. *)
+Lemma compare_IfThenElse_conditions : forall T T' (t_e t_e' : Term) cond cond', 
+    Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool cond)))) t_e = 
+      Apply (Apply (TyInst (Builtin IfThenElse) T') (Constant (Some (ValueOf DefaultUniBool cond')))) t_e' -> 
+    cond = cond'.
+Proof.
+  intros.
+  inversion H. 
+  subst.
+  apply Eqdep.EqdepTheory.inj_pair2 in H2.
+  subst.
+  reflexivity.
+Qed.
+
+(** ** Predicates *)
 Definition P_eval x y1 (k1 : nat) :=
   forall y2 k2,
     x =[k2]=> y2 ->
@@ -229,6 +253,7 @@ Definition P_eval_bindings_rec bs0 x y1 (k1 : nat) :=
     eval_bindings_rec bs0 x y2 k2->
     y1 = y2.
 
+(** ** The main result *)
 Theorem eval__deterministic : forall x y1 k1,
   x =[k1]=> y1 ->
   P_eval x y1 k1.
@@ -594,8 +619,8 @@ Proof.
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool true)))) t_t = Apply (Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool false)))) t_t0). {
         eapply H0. eassumption.
       }
-      inversion H4.
-      Axiom skip : forall P, P. eapply skip. (* TODO: Why does inversion not do anything? *)
+      apply compare_IfThenElse_conditions in H4.
+      discriminate.
   - (* E_IfFalse *)
     intros. unfold P_eval. intros.
     inversion H3.
@@ -635,9 +660,8 @@ Proof.
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool false)))) t_t = Apply (Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool true)))) t_t0). {
         eapply H0. eassumption.
       }
-      inversion H4.
-      eapply skip. (* TODO: Why does inversion not do anything? *)
-
+      apply compare_IfThenElse_conditions in H4.
+      discriminate.
     + (* E_IfFalse *)
       subst.
       assert (Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool false)))) t_t = Apply (Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool false)))) t_t0). {
@@ -649,20 +673,24 @@ Proof.
       eassumption.
   - (* E_TyInst *)
     intros. unfold P_eval. intros.
-    inversion H3.
+    inversion H4.
     + (* E_IfTyInst *)
       subst.
       assert (TyAbs X K t0 = Builtin IfThenElse). {
         eapply H0. eassumption.
       }
-      inversion H4.
+      inversion H5.
     + (* E_TyInst *)
       subst.
       assert (TyAbs X K t0 = TyAbs X0 K0 t3). {
         eapply H0. eassumption.
       }
-      inversion H4. subst.
-      eapply H2.
+      inversion H5. subst.
+      assert (t0' = t0'0). {
+        apply annotsubst__deterministic with X0 T2 t3; auto.
+      }
+      subst.
+      eapply H3.
       eassumption.
   - (* E_Error *)
     intros. unfold P_eval. intros.

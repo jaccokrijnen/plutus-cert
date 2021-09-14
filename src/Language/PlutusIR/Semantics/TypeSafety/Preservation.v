@@ -3,10 +3,11 @@ Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.ContextInvariance.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.Bigstep.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.UniqueTypes.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.AnnotsubstPreservesTyping.
 
 
 Lemma preservation__compute_defaultfun : forall t T,
@@ -47,14 +48,49 @@ Proof.
       subst.
       inversion H22; subst.
       apply T_Constant.
+    } {
+      destruct d; inversion H2; 
+        try solve [
+          destruct t1_2; inversion H2;
+          destruct s; inversion H2;
+          destruct u; inversion H2;
+          destruct v0; inversion H0;
+          destruct t2; inversion H0;
+          destruct s; inversion H0;
+          destruct u0; inversion H0;
+          destruct v0; inversion H0;
+          inversion H13; subst;
+          inversion H; subst;
+          clear H;
+          inversion H16; subst;
+          clear H16;
+          inversion H18; subst;
+          clear H18;
+          inversion H15; subst;
+          clear H15;
+          inversion H19; subst;
+          clear H19;
+          apply Eqdep.EqdepTheory.inj_pair2 in H16;
+          subst;
+          apply Eqdep.EqdepTheory.inj_pair2 in H15;
+          subst;
+          apply T_Constant
+        ].
+      }
+    } {
+      destruct d; inversion H2;
+      destruct t2; inversion H2;
+      destruct s; inversion H2;
+      destruct u; inversion H2;
+      destruct v0; inversion H2;
+      inversion H; subst;
+      inversion H11; subst;
+      inversion H11; subst;
+      apply T_Constant.
     }
-Admitted. (* TODO *)
+Qed.
 
-Theorem unique_kinds : forall ctx T K K',
-    ctx |-* T : K ->
-    ctx |-* T : K' ->
-    K = K'.
-Proof. Admitted.
+
 
 
 Definition P_eval (t v : Term) (k : nat) :=
@@ -79,19 +115,6 @@ Definition P_eval_bindings_rec (bs0 : list Binding) (t v : Term) (k : nat) :=
 
 
 Axiom skip : forall P, P.
-
-Lemma e : forall T T3 T2 T1 T0,
-  substituteT "a" T (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniBool))) (Ty_Fun (Ty_Var "a") (Ty_Fun (Ty_Var "a") (Ty_Var "a")))) =b
-    Ty_Fun T3 (Ty_Fun T2 (Ty_Fun T1 T0)) -> 
-  T1 =b T2.
-Proof.
-  intros.
-  simpl in H.
-  induction H; auto.
-  - apply skip.
-  - apply skip.
-Qed.
-
 
 Theorem preservation : 
   (forall (t v : Term) (k : nat), t =[k]=> v -> P_eval t v k) /\
@@ -187,11 +210,11 @@ Proof.
     apply skip. (* TODO *)
   - (* E_TyInst *) 
     intros. unfold P_eval. intros.
-    inversion H3. subst.
-    apply H2.
-    apply H0 in H6.
-    inversion H6. subst.
-    apply skip. (* TODO *)
+    inversion H4. subst.
+    apply H3.
+    apply H0 in H7.
+    inversion H7. subst.
+    eapply annotsubst_preserves_typing; eauto.
   - (* E_Error *)
     intros. unfold P_eval. intros.
     assumption.
@@ -202,10 +225,12 @@ Proof.
   - (* E_Unwrap *)
     intros. unfold P_eval. intros.
     inversion H1. subst.
+    unfold P_eval in H0.
     apply H0 in H3.
     inversion H3. subst.
-
-    apply skip. (* TODO *)
+    assert (K = K0) by eauto using unique_kinds.
+    subst.
+    apply H11.
 
   - (* E_NilB_NonRec *)
     intros. unfold P_eval_bindings_nonrec. intros.
