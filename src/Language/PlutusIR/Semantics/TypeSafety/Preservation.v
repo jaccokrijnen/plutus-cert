@@ -57,19 +57,19 @@ Theorem unique_kinds : forall ctx T K K',
 Proof. Admitted.
 
 
-Definition P_eval (t v : Term) :=
+Definition P_eval (t v : Term) (k : nat) :=
   forall T,
     emptyContext |-+ t : T ->
     emptyContext |-+ v : T.
 
-Definition P_eval_bindings_nonrec (t v : Term) :=
+Definition P_eval_bindings_nonrec (t v : Term) (k : nat) :=
   forall bs t0,
     t = Let NonRec bs t0 ->
     forall T,
       emptyContext |-+ t : T ->
       emptyContext |-+ v : T.
 
-Definition P_eval_bindings_rec (bs0 : list Binding) (t v : Term) :=
+Definition P_eval_bindings_rec (bs0 : list Binding) (t v : Term) (k : nat) :=
   flatten (List.map binds bs0) |-oks_r bs0 ->
   forall bs t0,
     t = Let Rec bs t0 ->
@@ -94,9 +94,9 @@ Qed.
 
 
 Theorem preservation : 
-  (forall (t v : Term), t ==> v -> P_eval t v) /\
-  (forall (t v : Term), eval_bindings_nonrec t v -> P_eval_bindings_nonrec t v) /\
-  (forall (bs0 : list Binding) (t v : Term), eval_bindings_rec bs0 t v -> P_eval_bindings_rec bs0 t v). 
+  (forall (t v : Term) (k : nat), t =[k]=> v -> P_eval t v k) /\
+  (forall (t v : Term) (k : nat), eval_bindings_nonrec t v k -> P_eval_bindings_nonrec t v k) /\
+  (forall (bs0 : list Binding) (t v : Term) (k : nat), eval_bindings_rec bs0 t v k -> P_eval_bindings_rec bs0 t v k). 
 Proof.
   apply eval__multind with
     (P := P_eval)
@@ -283,8 +283,8 @@ Proof.
       * assumption.
 Abort.
 
-Theorem preservation : forall t v T,
+Theorem preservation : forall t v k T,
     emptyContext |-+ t : T ->
-    t ==> v ->
+    t =[k]=> v ->
     emptyContext |-+ v : T.
-Proof. Abort.
+Proof. Admitted.
