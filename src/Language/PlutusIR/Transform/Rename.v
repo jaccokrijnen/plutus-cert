@@ -27,30 +27,50 @@ Notation environment := (list (var * rename_result)).
 Import ListNotations.
 
 
+Fixpoint lookupRR (env : environment) (x : var) : option rename_result :=
+  match env with
+  | nil => None
+  | (y, rr) :: env' => if var_eqb y x then Datatypes.Some rr else lookupRR env' x
+  end.
+
+Definition rename_result_eqb (rr1 rr2 : rename_result) :=
+  match rr1, rr2 with
+  | RenamedTo y1, RenamedTo y2 => var_eqb y1 y2
+  | _, _ => true
+  end.
+
+Fixpoint lookupV (env : environment) (rr : rename_result) : option var :=
+  match env with
+  | nil => None
+  | (y, rr') :: env' => if rename_result_eqb rr rr' then Datatypes.Some y else lookupV env' rr
+  end.
+
 (* Alpha renaming of term variables *)
-Polymorphic Inductive Rename (env : environment) : term var tyvar var tyvar -> term var tyvar var tyvar -> Type :=
-  | RenameVar       : forall v w,
-      In (v, RenamedTo w) env ->
+Polymorphic Inductive Rename : environment -> term var tyvar var tyvar -> term var tyvar var tyvar -> Type :=
+  | RenameVar       : forall env v w,
+      lookupRR env v = Datatypes.Some (RenamedTo w) ->
       Rename env (Var v) (Var w)
 
-  | RenameVarEq     : forall v,
-      In (v, Unchanged) env ->
+  | RenameVarEq     : forall env v,
+      lookupRR env v = Datatypes.Some Unchanged ->
       Rename env (Var v) (Var v)
 
-  | RenameLetNonRec : forall bs bs' env' t t',
+  | RenameLetNonRec : forall env bs bs' env' t t',
       RenameBindingsNonRec env env' bs bs' ->
       Rename env' t t' ->
       Rename env (Let NonRec bs t) (Let NonRec bs' t')
 
-  | RenameLetRec    : forall bs bs' env' t t',
+  | RenameLetRec    : forall env bs bs' env' t t',
       RenameBindingsRec env env' bs bs' ->
       Rename env' t t' ->
       Rename env (Let Rec bs t) (Let Rec bs' t')
 
-  | RenameLamAbsRename : forall v w ty t t',
+  | RenameLamAbsRename : forall env v w ty t t',
       v <> w ->
       ~ (In w (free_vars var_eqb t)) ->
-      Rename env t t' ->
+      ~ (In (RenamedTo w) (map snd env)) ->
+      lookupV env (RenamedTo w) = None ->
+      Rename ((v, RenamedTo w) :: env) t t' ->
       Rename env (LamAbs v ty t) (LamAbs w ty t')
   (*
      | RenameCong      : forall env t t', Cong (Rename env) t t' -> Rename env t t'
@@ -68,67 +88,72 @@ Polymorphic Inductive Rename (env : environment) : term var tyvar var tyvar -> t
      So we write out all other cases by hand...
   *)
 
-  | RenameTyAbs : forall ty k t t',
+  | RenameTyAbs : forall env ty k t t',
       Rename env t t' ->
       Rename env (TyAbs ty k t) (TyAbs ty k t')
-  | RenameLamAbsEq : forall v ty t t',
-      Rename env t t' ->
+  | RenameLamAbsEq : forall env v ty t t',
+      Rename ((v, Unchanged) :: env) t t' ->
       Rename env (LamAbs v ty t) (LamAbs v ty t')
-  | RenameApply : forall t1 t2 t1' t2',
+  | RenameApply : forall env t1 t2 t1' t2',
       Rename env t1 t1' ->
       Rename env t2 t2' ->
       Rename env (Apply t1 t2) (Apply t1' t2')
-  | RenameConstant : forall c,
+  | RenameConstant : forall env c,
       Rename env (Constant c) (Constant c)
-  | RenameBuiltin : forall f,
+  | RenameBuiltin : forall env f,
       Rename env (Builtin f) (Builtin f)
-  | RenameTyInst : forall t t' ty,
+  | RenameTyInst : forall env t t' ty,
       Rename env t t' ->
       Rename env (TyInst t ty) (TyInst t' ty)
-  | RenameError : forall ty,
+  | RenameError : forall env ty,
       Rename env (Error ty) (Error ty)
-  | RenameIWrap : forall ty1 ty2 t t',
+  | RenameIWrap : forall env ty1 ty2 t t',
       Rename env t t' ->
       Rename env (IWrap ty1 ty2 t) (IWrap ty1 ty2 t')
-  | RenameUnwrap : forall t t',
+  | RenameUnwrap : forall env t t',
       Rename env t t' ->
       Rename env (Unwrap t) (Unwrap t')
 
 (*
 Non-recursive: the environment can be extended and passed down
 *)
-with RenameBindingsNonRec (env : environment): (* environment passed down (accumulating param) *)
+with RenameBindingsNonRec :
+  environment -> (* environment passed down (accumulating param) *)
   environment ->         (* resulting environment, used for the let-body *)
   list (binding var tyvar var tyvar) -> (* bindings before translation *)
   list (binding var tyvar var tyvar) -> (* bindings after translation*)
   Type :=
-  | NonRecCons : forall env' env_up b b' bs bs',
+  | NonRecCons : forall env env' env_up b b' bs bs',
       RenameBinding env  env_up b b' ->
       RenameBindingsNonRec (env_up ++ env) env'       bs         bs' ->
       RenameBindingsNonRec            env  env' (b :: bs) (b' :: bs')
-  | NonRecNil  : RenameBindingsNonRec env env nil nil
+  | NonRecNil  : forall env,
+      RenameBindingsNonRec env env nil nil
 
 (*
 Recursive: the inherited environment already contains the bindings in this group,
 so it does not have to be extended
 *)
-with RenameBindingsRec (env : environment): (* parametrized by the environment*)
+with RenameBindingsRec :
+  environment -> (* parametrized by the environment*)
   environment ->         (* resulting environment, used for the let-body AND env parameter (see Rename_LetRec)*)
   list (binding var tyvar var tyvar) -> (* bindings before translation *)
   list (binding var tyvar var tyvar) -> (* bindings after translation*)
   Type :=
-  | RecCons : forall env_b env_bs b b' bs bs',
+  | RecCons : forall env env_b env_bs b b' bs bs',
       RenameBinding     env  env_b            b         b'         ->
       RenameBindingsRec env           env_bs        bs         bs' ->
       RenameBindingsRec env (env_b ++ env_bs) (b :: bs) (b' :: bs')
-  | RecNil  : RenameBindingsRec env nil nil nil
+  | RecNil  : forall env,
+      RenameBindingsRec env nil nil nil
 
-with RenameBinding (env : environment) :
+with RenameBinding :
+  environment ->
   environment -> (* rename results for this binding *)
   binding var tyvar var tyvar ->
   binding var tyvar var tyvar -> Type :=
 
-  | BindEq     : forall s v t t' ty,
+  | BindEq     : forall env s v t t' ty,
       Rename env t t' ->
       RenameBinding env [(v, Unchanged)]
         (TermBind s (VarDecl v ty) t)
@@ -138,7 +163,7 @@ with RenameBinding (env : environment) :
      is scoped, and add the ~( In free_vars ...) conditions
   *)
   (*
-  | BindRename : forall s v w t t' ty,
+  | BindRename : forall env s v w t t' ty,
       v <> w ->
       ~ (In w (free_vars var_eqb t)) ->
       Rename env t t' ->
@@ -147,21 +172,22 @@ with RenameBinding (env : environment) :
         (TermBind s (VarDecl w ty) t')
         *)
 
-  | DataEq : forall d d' env_up,
+  | DataEq : forall env d d' env_up,
       Rename_dtdecl env env_up d d' ->
       RenameBinding env env_up
         (DatatypeBind d)
         (DatatypeBind d')
 
-  | TypeEq : forall t ty,
+  | TypeEq : forall env t ty,
       RenameBinding env nil
         (TypeBind t ty)
         (TypeBind t ty)
 
-with Rename_dtdecl (env : environment) :
+with Rename_dtdecl :
+  environment ->
   environment ->
   dtdecl' -> dtdecl' -> Type :=
-    | Rename_Datatype : forall var_res matchf matchf' cs_res cs cs' tv tvs ,
+    | Rename_Datatype : forall env var_res matchf matchf' cs_res cs cs' tv tvs ,
         Rename_var_bind env var_res matchf matchf' ->
         Rename_constrs env cs_res cs cs' ->
         Rename_dtdecl env (var_res :: cs_res)
@@ -169,37 +195,41 @@ with Rename_dtdecl (env : environment) :
           (Datatype tv tvs matchf' cs')
 
 (* Either a variable binder is renamed or it is equal *)
-with Rename_var_bind (env : environment) : (var * rename_result) -> var -> var -> Type :=
-  | VarEq  : forall v,
+with Rename_var_bind :
+  environment -> (var * rename_result) -> var -> var -> Type :=
+  | VarEq  : forall env v,
       Rename_var_bind env (v, Unchanged) v v
 
   (* Todo: include the right Terms over which this binding
      is scoped, and add the ~( In free_vars ...) conditions
   *)
   (*
-  | VarNeq : forall v v',
+  | VarNeq : forall env v v',
       v <> v' ->
       Rename_var_bind env (v, RenamedTo v') v v'
       *)
 
-with Rename_constrs (env : environment) :
+with Rename_constrs :
+  environment ->
   environment ->
   list constr' ->
   list constr' ->
   Type :=
-  | Rename_constrs_cons : forall c cs c' cs' c_res env',
+  | Rename_constrs_cons : forall env c cs c' cs' c_res env',
       Rename_constr env c_res c c' ->
       Rename_constrs env env' cs cs' ->
       Rename_constrs env (c_res :: env') (c :: cs) (c' :: cs')
 
-  | Rename_constrs_nil  : Rename_constrs env nil nil nil
+  | Rename_constrs_nil  : forall env,
+      Rename_constrs env nil nil nil
 
-with Rename_constr (env : environment) :
+with Rename_constr :
+  environment ->
   (var * rename_result) ->
   constr' ->
   constr' ->
   Type :=
-  | Rename_Constructor_Eq : forall res v v' ty arity,
+  | Rename_Constructor_Eq : forall env res v v' ty arity,
       Rename_var_bind env res v v' ->
       Rename_constr
         env
@@ -210,3 +240,4 @@ with Rename_constr (env : environment) :
 
 End Rename.
 Definition Rename_string := Rename (var := string) (tyvar := string) String.eqb nil.
+
