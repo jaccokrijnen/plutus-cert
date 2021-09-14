@@ -172,10 +172,10 @@ with binding :=
 .
 
 (** ** Trace of compilation *)
-Inductive Pass :=
+Inductive pass :=
   | PassRename
   | PassTypeCheck
-  | PassInline : list name -> Pass
+  | PassInline : list name -> pass
   | PassDeadCode
   | PassThunkRec
   | PassFloatTerm
@@ -183,6 +183,10 @@ Inductive Pass :=
   | PassLetTypes
   | PassLetRec
   | PassLetNonRec.
+
+Inductive compilation_trace :=
+  | CompilationTrace : term -> list (pass * term) -> compilation_trace.
+
 
 End AST_term.
 
@@ -257,21 +261,7 @@ Notation Term := (term name tyname binderName binderTyname).
 Notation Binding := (binding name tyname binderName binderTyname).
 
 
-(** ** Trace of compilation *)
-Inductive Pass :=
-  | PassRename
-  | PassTypeCheck
-  | PassInline : list name -> Pass
-  | PassDeadCode
-  | PassThunkRec
-  | PassFloatTerm
-  | PassLetNonStrict
-  | PassLetTypes
-  | PassLetRec
-  | PassLetNonRec.
 
-Inductive CompTrace :=
-  | CompilationTrace : Term -> list (Pass * Term) -> CompTrace.
 
 End NamedTerm.
 
@@ -366,24 +356,50 @@ Definition binderName   := string * Z.
 Definition binderTyname := string * Z.
 
 (* These constructors should treat the type parameter
-   as implicit too (this is already correctly generated for the recursive
-   constructors. *)
+   as implicit too
 
-Arguments Ty_Var [tyname]%type_scope [binderTyname]%type_scope.
-Arguments Ty_Fun [tyname]%type_scope [binderTyname]%type_scope.
-Arguments Ty_Forall [tyname]%type_scope [binderTyname]%type_scope.
-Arguments Ty_Builtin [tyname]%type_scope [binderTyname]%type_scope.
-Arguments Ty_Lam [tyname]%type_scope [binderTyname]%type_scope.
-Arguments Var [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments Constant [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments Builtin [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments Error [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments TypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments DatatypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+   Using maximally inserted implicits for ease of use with
+   partial application *)
 
-Arguments VarDecl [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments TyVarDecl [binderTyname]%type_scope.
-Arguments Datatype [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
+Arguments Ty_Var {_ _}.
+Arguments Ty_Fun {_ _}.
+Arguments Ty_IFix {_ _}.
+Arguments Ty_Forall {_ _}.
+Arguments Ty_Builtin {_ _}.
+Arguments Ty_Lam {_ _}.
+
+Arguments Let {_ _ _ _}.
+Arguments Var {_ _ _ _}.
+Arguments TyAbs {_ _ _ _}.
+Arguments LamAbs {_ _ _ _}.
+Arguments Apply {_ _ _ _}.
+Arguments Constant {_ _ _ _}.
+Arguments Builtin {_ _ _ _}.
+Arguments TyInst {_ _ _ _}.
+Arguments Error {_ _ _ _}.
+Arguments IWrap {_ _ _ _}.
+Arguments Unwrap {_ _ _ _}.
+
+Arguments TermBind {_ _ _ _}.
+Arguments TypeBind {_ _ _ _}.
+Arguments DatatypeBind {_ _ _ _}.
+
+Arguments VarDecl {_ _ _}.
+Arguments TyVarDecl {_}.
+Arguments Datatype {_ _ _}.
+
+Arguments PassRename {_}%type_scope.
+Arguments PassTypeCheck {_}%type_scope.
+Arguments PassInline {_}%type_scope.
+Arguments PassDeadCode {_}%type_scope.
+Arguments PassThunkRec {_}%type_scope.
+Arguments PassFloatTerm {_}%type_scope.
+Arguments PassLetNonStrict {_}%type_scope.
+Arguments PassLetTypes {_}%type_scope.
+Arguments PassLetRec {_}%type_scope.
+Arguments PassLetNonRec {_}%type_scope.
+
+Arguments CompilationTrace {name tyname binderName binderTyname}.
 
 Notation Kind := (kind).
 Notation Ty := (ty tyname binderTyname).
