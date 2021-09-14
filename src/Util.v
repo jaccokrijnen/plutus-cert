@@ -82,8 +82,16 @@ Notation "x <*> y" := (option_app x y) (at level 81, left associativity).
 Notation "f <$> x" := (option_map f x) (at level 80, right associativity).
 Notation "x <|> y" := (option_alt x y) (at level 82, right associativity).
 
-Definition cat_options {a} : list (option a) -> option (list a) :=
+Definition sequence_options {a} : list (option a) -> option (list a) :=
   fun os => fold_right (fun mx mxs => cons <$> mx <*> mxs) (pure nil) os.
+
+Fixpoint cat_options {a} (xs : list (option a)) : (list a) :=
+  match xs with
+    | nil            => nil
+    | (Some x) :: xs => x :: cat_options xs
+    | None     :: xs => cat_options xs
+    end.
+
 
 (* sumbool to bool *)
 Definition sumbool_to_bool (A : Type) (a b : A) : {a = b} + {a <> b} -> bool

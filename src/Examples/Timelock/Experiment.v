@@ -92,7 +92,7 @@ refine (
               match t' with
 
                | Let _ bs' t_body'  =>
-                   Let rec <$> cat_options (map (fun b => inlined_intermediate_binding elims b bs') bs)
+                   Let rec <$> sequence_options (map (fun b => inlined_intermediate_binding elims b bs') bs)
                            <*> inlined_intermediate elims t_body t_body'
 
                | _                  => Nothing
