@@ -9,35 +9,20 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPre
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Def.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Monotonicity.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.ReductionInvariance.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Termination.
 
 Require Import Arith.
+Require Import Coq.Logic.Decidable.
 
-Lemma termination_congr_Apply1 : forall t1 t2 k,
-  terminates (Apply t1 t2) k ->
-  terminates t1 k.
-Proof.
-  intros.
-  destruct H as [v0 [j [Hlt_j]]].
-  inversion Hlt_j.
-  - subst.
-    exists (LamAbs x T t4).
-    exists k1.
-    split; auto.
-    apply skip.
-Admitted.
 
-Lemma termination_congr_Apply2 : forall t1 t2 k,
-  terminates (Apply t1 t2) k ->
-  terminates t2 k.
-Proof. Admitted.
 
-Lemma R_compatibility_Apply : forall k T1 T2 t1_1 t1_2 t2_1 t2_2,
-    (terminates (Apply t1_1 t1_2) k \/ ~ terminates (Apply t2_1 t2_2) k) ->
+Lemma R_compatibility_Apply : forall k T1 T2 t1_1 t1_2 t2_1 t2_2 j v,
+    terminates_excl (Apply t1_1 t1_2) j v k ->
     R k (Ty_Fun T1 T2) t1_1 t2_1 ->
     R k T1 t1_2 t2_2 ->
     R k T2 (Apply t1_1 t1_2) (Apply t2_1 t2_2).
 Proof.
-  intros k T1 T2 t1_1 t1_2 t2_1 t2_2 Hterm R1 R2.
+  intros k T1 T2 t1_1 t1_2 t2_1 t2_2 j v Hterm R1 R2.
 
   assert (Htyp1 : emptyContext |-+ (Apply t1_1 t1_2) : T2). {
     apply T_Apply with T1.
@@ -55,22 +40,97 @@ Proof.
   destruct T2.
   - (* Ty_Var S *)
     split; auto. split; auto.
+    apply skip.
+  - apply skip.
+  - apply skip.
+  - apply skip.
+  - (* Ty_Builtin *)
+    split; auto. split; auto.
 
-    intros v1_0 j1 Hlt_j1 Hev1. 
+    intros.
+    apply termination_congr_Apply1 in H as H0.
+    destruct H0 as [v1_1 [j1_1 Hterm1_1]].
+    destruct Hterm1_1 as [Hev1_1 Hlt1_1] eqn:Hterm1_1'.
+    clear Hterm1_1'.
 
-    assert (Hterm1: terminates (Apply t1_1 t1_2) k). {
-      exists v1_0, j1. auto.
-    }
-    assert (Hterm_t1_1 : terminates t1_1 k). {
-      inversion Hev1; subst; eapply termination_congr_Apply1; eauto.
-    }
-    assert (Hterm_t1_2 : terminates t1_2 k). {
-      inversion Hev1; subst; eapply termination_congr_Apply2; eauto.
+    assert (j1_1 < k) by eauto using le_lt_trans.
+    assert (terminates_excl t1_1 j1_1 v1_1 k). {
+      eapply terminates__incl_excl in Hterm1_1.
+      eapply terminates_excl__monotone; eauto.
     }
 
-    apply R_functional_extensionality in R1 as temp; eauto.
-    destruct temp as [v1_1 [v2_1 [j1_1 [j2_1 [Hlt1_1 [Hev1_1 [Hev2_1 Hfe]]]]]]].
-    destruct k. {
-      apply R_impossible_k in R1; eauto. destruct R1.
+    eapply R_functional_extensionality in R1 as temp; eauto. 
+    destruct temp as [v2_1 [j2_1 [Hev2_1 Hfe]]].
+
+    assert (exists x T t0, v1_1 = LamAbs x T t0). {
+      assert (emptyContext |-+ v1_1 : (Ty_Fun T1 (Ty_Builtin s))). {
+        eapply preservation; eauto.
+        eapply R_typable_empty_1; eauto.
+      }
+      apply skip.
     }
+    destruct H2 as [x1_0 [T1_0 [t1_0 Heq1_0]]]. subst.
+
+    eapply termination_congr_Apply2 in H as H2; eauto.
+    destruct H2 as [v1_2 [j1_2 Hterm1_2]].
+    destruct Hterm1_2 as [Hev1_2 Hlt1_2] eqn:Hterm1_2'.
+    clear Hterm1_2'.
+
+    assert (k - j1_1 <= k). { apply skip. }
+    assert (R (k - j1_1) T1 t1_2 t2_2). {
+      eapply R_monotone.
+      - reflexivity.
+      - reflexivity.
+      - apply H2.
+      - apply R2.
+    }
+
+    assert (exists t1_0', substitute x1_0 v1_2 t1_0 t1_0') by (eapply substitute_models_total_function__Term; eauto).
+    destruct H4 as [t1_0' Hsubst1_0].
+    eapply termination_congr_Apply3 in H as H4; eauto.
+    destruct H4 as [j1_0 [Hterm1_0 Heq]].
+    destruct Hterm1_0 as [Hev1_0 Hlt1_0] eqn:Hterm1_0'.
+    clear Hterm1_0'.
+
+
+    assert (exists v2_2 j2_2, t2_2 =[j2_2]=> v2_2). {
+      eapply R_evaluable_2.
+      apply skip.
+      apply skip.
+      apply skip.
+    }
+
+    destruct H4 as [v2_2 [j2_2 Hev2_2]].
+
+    assert (k - j1_1 - j1_2 - 1 <= k - j1_1). { apply skip. }
+    assert (R (k - j1_1 - j1_2 - 1) T1 v1_2 v2_2). {
+      eapply R_monotone.
+      - reflexivity.
+      - reflexivity.
+      - apply H4. 
+      - eapply eval_preserves_R; eauto. apply skip. 
+    }
+
+    assert (k - j1_1 - j1_2 - 1 < k - j1_1). { apply skip. }
+
+    remember (Hfe v1_2 v2_2 (k - j1_1 - j1_2 -1)).
+    clear Heqr.
+    assert (exists x T t0, v2_1 = LamAbs x T t0). {
+      assert (emptyContext |-+ v2_1 : (Ty_Fun T1 (Ty_Builtin s))). {
+        eapply preservation; eauto.
+        eapply R_typable_empty_2; eauto.
+      }
+      apply skip.
+    }
+    destruct H7 as [x2_0 [T2_0 [t2_0 Heq2_0]]]. subst.
+    assert (exists t2_0', substitute x2_0 v2_2 t2_0 t2_0') by (eapply substitute_models_total_function__Term; eauto).
+    destruct H7 as [t2_0' Hsubst2_0'].
+    remember (r x1_0 x2_0 T1_0 T2_0 t1_0 t2_0 t1_0' t2_0').
+
+    assert (R (k - j1_1 - j1_2 - 1) (Ty_Builtin s) t1_0' t2_0'). { apply skip. }
+
+    eapply R_syntactic_equality in H7; eauto. 
+    destruct H7.
+    destruct H7.
+    destruct H7.
 Abort.

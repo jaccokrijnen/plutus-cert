@@ -9,15 +9,15 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Def.
 Require Import Arith.
 
 Lemma eval_preserves_termination : forall t v k j,
-    terminates t k ->
-    t =[j]=> v ->
-    j < k ->
-    terminates v k.
-Proof. intros. exists v, 0.
+    terminates_excl t j v k ->
+    terminates_excl v 0 v k.
+Proof. 
+  intros.
+  destruct H.
   split.
   - apply eval_value. eapply eval_to_value. eassumption.
   - destruct (Nat.eq_0_gt_0_cases k).
-    + subst. apply Nat.nlt_0_r in H1. destruct H1.
+    + subst. apply Nat.nlt_0_r in H0. destruct H0.
     + assumption.
 Qed.
 
@@ -32,13 +32,12 @@ Proof. Admitted.
 (** ** Evaluation of the first related term preserves [R] *)
 
 Lemma eval_preserves_R_left : forall k T t1 j1 v1 t2,
-    terminates t1 k ->
-    t1 =[j1]=> v1 ->
-    j1 < k ->
+    terminates_excl t1 j1 v1 k ->
     R k T t1 t2 ->
     R k T v1 t2.
 Proof.
-  intros k T t1 j1 v1 t2 Hterm_t1 Hev_t1 Hlt R.
+  intros k T t1 j1 v1 t2 Hterm R.
+  destruct Hterm as [Hev_t1 Hlt_j1] eqn:Hterm'.
 
   assert (emptyContext |-+ t1 : T) by eauto using R_typable_empty_1.
   assert (emptyContext |-+ t2 : T) by eauto using R_typable_empty_2.
@@ -46,36 +45,36 @@ Proof.
 
   autorewrite with R.
   destruct T.
-  - apply R_impossible_type in R; auto. destruct R.
-  - apply R_functional_extensionality in R as Hfe; auto.
-    destruct Hfe as [v1' [v2 [j1' [j2 [Hlt_j1' [Hev_t1' [Hev_t2 Hfe]]]]]]].
+  - apply R_impossible_type in R. destruct R.
+  - eapply R_functional_extensionality in R as Hfe; eauto.
+    destruct Hfe as [v2 [j2 [Hev_t2 Hfe]]].
   
     split; auto. split; auto.
     intros v0 j0 Hlt_j0 Hev_v1.
     exists v2, j2. split; auto.
     
-    intros s1 s2 k' Hlt_k' R'. 
-    assert (v1' = v1 /\ j1' = j1) by (eapply eval__deterministic; eauto).
-    destruct H2. subst.
+    intros s1 s2 k' x1_0 x2_0 T1_0 T2_0 t1_0 t2_0 t1_0' t2_0' Hlt_k' Heq1_0 Heq2_0 R' Hsubst1_0 Hsubst2_0. 
     apply eval_to_value in Hev_t1 as Hval_v1.
     apply eval_value in Hval_v1.
     unfold P_value in Hval_v1.
     assert (v0 = v1 /\ j0 = 0) by (eapply eval__deterministic; eauto).
     destruct H2. subst. 
-    apply Hfe.
+    eapply Hfe.
     + eapply e; eauto.
+    + reflexivity.
+    + reflexivity.
+    + eassumption.
+    + assumption.
     + assumption.
   - (* Ty_IFix *)
-    apply R_unwrap in R as Hunwr; auto.
-    destruct Hunwr as [v1' [v2 [j1' [j2 [Hlt_j1' [Hev_t1' [Hev_t2 Hunwr]]]]]]].
+    eapply R_unwrap in R as Hunwr; eauto.
+    destruct Hunwr as [v2 [j2 [Hev_t2 Hunwr]]].
     
     split; auto. split; auto.
     intros v0 j0 Hlt_j0 Hev_v1.
     exists v2, j2. split; auto.
 
     intros K k' Hlt_k' Hkind_T2.
-    assert (v1' = v1 /\ j1' = j1) by (eapply eval__deterministic; eauto).
-    destruct H2. subst.
     apply eval_to_value in Hev_t1 as Hval_v1.
     apply eval_value in Hval_v1 as Hev_v1'.
     unfold P_value in Hev_v1'.
@@ -85,20 +84,18 @@ Proof.
     + eapply e; eauto.
     + assumption.
   - (* Ty_Forall *)
-    apply R_instantiational_extensionality in R as Hie; auto.
-    destruct Hie as [v1' [v2 [j1' [j2 [Hlt_j1' [Hev_t1' [Hev_t2 Hie]]]]]]].
+    eapply R_instantiational_extensionality in R as Hie; eauto.
+    destruct Hie as [v2 [j2 [Hev_t2 Hie]]].
 
     split; auto. split; auto.
     intros v0 j0 Hlt_j0 Hev_v1.
     exists v2, j2. split; auto.
 
     intros t0_1 t0_2 T' k' Hlt_k' Heq1 Heq2 Hkind_T'.
-    assert (v1' = v1 /\ j1' = j1) by (eapply eval__deterministic; eauto).
-    destruct H2. subst.
     apply eval_to_value in Hev_t1 as Hval_v1.
     apply eval_value in Hval_v1 as Hev_v1'.
     unfold P_value in Hev_v1'.
-    assert (TyAbs s k0 t0_1 = v1 /\ j0 = 0) by (eapply eval__deterministic; eauto).
+    assert (v0 = v1 /\ j0 = 0) by (eapply eval__deterministic; eauto).
     destruct H2. subst.
     eapply Hie.
     + apply e; eauto.
@@ -106,37 +103,36 @@ Proof.
     + reflexivity.
     + assumption.
   - (* Ty_Builtin *)
-    apply R_syntactic_equality in R as Hse; auto.
-    destruct Hse as [v1' [v2 [j1' [j2 [Hlt_j1' [Hev_t1' [Hev_t2 Hse]]]]]]].
+    eapply R_syntactic_equality in R as Hse; eauto.
+    destruct Hse as [v2 [j2 [Hev_t2 Hse]]].
     subst.
 
     split; auto. split; auto.
     intros v0 j0 Hlt_j0 Hev_v1.
     exists v2, j2. split; auto.
 
-    assert (v2 = v1 /\ j1' = j1) by (eapply eval__deterministic; eauto).
-    destruct H2. subst.
     apply eval_to_value in Hev_t1 as Hval_v1.
     apply eval_value in Hval_v1 as Hev_v1'.
     unfold P_value in Hev_v1'.
-    assert (v0 = v1 /\ j0 = 0) by (eapply eval__deterministic; eauto).
+    assert (v0 = v2 /\ j0 = 0) by (eapply eval__deterministic; eauto).
     destruct H2. subst.
     reflexivity.
   - (* Ty_Lam *)
-    apply R_impossible_type in R; auto. destruct R.
+    apply R_impossible_type in R. destruct R.
   - (* Ty_App *)
-    apply R_impossible_type in R; auto. destruct R.
+    apply R_impossible_type in R. destruct R.
 Qed.
 
 (** ** Evaluation of the second related term preserves [R] *)
 
-Lemma eval_preserves_R_right : forall k T t1 t2 j2 v2,
-    terminates t1 k ->
+Lemma eval_preserves_R_right : forall k T t1 j1 v1 t2 j2 v2,
+    terminates_excl t1 j1 v1 k ->
     t2 =[j2]=> v2 ->
     R k T t1 t2 ->
     R k T t1 v2.
 Proof. 
-  intros k T t1 t2 j2 v2 Hterm_t1 Hev_t2 R.
+  intros k T t1 j1 v1 t2 j2 v2 Hterm Hev_t2 R.
+  destruct Hterm as [Hev_t1 Hlt_j1] eqn:Hterm'.
 
   assert (emptyContext |-+ t1 : T) by eauto using R_typable_empty_1.
   assert (emptyContext |-+ t2 : T) by eauto using R_typable_empty_2.
@@ -144,9 +140,9 @@ Proof.
 
   autorewrite with R.
   destruct T.
-  - apply R_impossible_type in R; auto. destruct R.
-  - apply R_functional_extensionality in R as Hfe; auto.
-    destruct Hfe as [v1 [v2' [j1 [j2' [Hlt_j1 [Hev_t1 [Hev_t2' Hfe]]]]]]].
+  - apply R_impossible_type in R. destruct R.
+  - eapply R_functional_extensionality in R as Hfe; eauto.
+    destruct Hfe as [v2' [j2' [Hev_t2' Hfe]]].
   
     split; auto. split; auto.
     intros v1' j1' Hlt_j1' Hev_t1'.
@@ -164,8 +160,8 @@ Proof.
 
     apply Hfe.
   - (* Ty_IFix *)
-    apply R_unwrap in R as Hunwr; auto.
-    destruct Hunwr as [v1 [v2' [j1 [j2' [Hlt_j1 [Hev_t1 [Hev_t2' Hunwr]]]]]]].
+    eapply R_unwrap in R as Hunwr; eauto.
+    destruct Hunwr as [v2' [j2' [Hev_t2' Hunwr]]].
 
     split; auto. split; auto.
     intros v1' j1' Hlt_j1' Hev_t1'.
@@ -183,8 +179,8 @@ Proof.
 
     apply Hunwr.
   - (* Ty_Forall *)
-    apply R_instantiational_extensionality in R as Hie; auto.
-    destruct Hie as [v1 [v2' [j1 [j2' [Hlt_j1 [Hev_t1 [Hev_t2' Hie]]]]]]].
+    eapply R_instantiational_extensionality in R as Hie; eauto.
+    destruct Hie as [v2' [j2' [Hev_t2' Hie]]].
 
     split; auto. split; auto.
     intros v1' j1' Hlt_j1' Hev_t1'.
@@ -202,8 +198,8 @@ Proof.
 
     apply Hie.
   - (* Ty_Builtin *)
-    apply R_syntactic_equality in R as Hse; auto.
-    destruct Hse as [v1 [v2' [j1 [j2' [Hlt_j1 [Hev_t1 [Hev_t2' Hse]]]]]]].
+    eapply R_syntactic_equality in R as Hse; eauto.
+    destruct Hse as [v2' [j2' [Hev_t2' Hse]]].
 
     split; auto. split; auto.
     intros v1' j1' Hlt_j1' Hev_t1'.
@@ -218,26 +214,23 @@ Proof.
 
     eapply eval__deterministic; eauto.
   - (* Ty_Lam *)
-    apply R_impossible_type in R; auto. destruct R.
+    apply R_impossible_type in R. destruct R.
   - (* Ty_App *)
-    apply R_impossible_type in R; auto. destruct R.
+    apply R_impossible_type in R. destruct R.
 Qed.
 
 (** ** Evaluation of both related terms preserves [R] *)
 
 Lemma eval_preserves_R : forall k T t1 j1 v1 t2 j2 v2,
-    terminates t1 k ->
-    t1 =[j1]=> v1 ->
-    j1 < k ->
+    terminates_excl t1 j1 v1 k ->
     t2 =[j2]=> v2 ->
     R k T t1 t2 ->
     R k T v1 v2.
 Proof.
-  intros k T t1 j1 v1 t2 j2 v2 Hterm1 Hev1 Hlt1 Hev2 R.
+  intros k T t1 j1 v1 t2 j2 v2 Hterm1 Hev2 R.
   eapply eval_preserves_R_left; eauto.
   eapply eval_preserves_R_right; eauto.
 Qed.
-
 
 
 (** * Evaluation of terms preserved [R] (backward preservation) *)
@@ -246,18 +239,16 @@ Qed.
 
 Lemma eval_preserved_R_left : forall k T t1 j1 v1 t2,
     emptyContext |-+ t1 : T ->
-    terminates t1 k ->
-    t1 =[j1]=> v1 ->
-    j1 < k ->
+    terminates_excl t1 j1 v1 k ->
     R k T v1 t2 ->
     R k T t1 t2.
 Proof. Abort.
 
 (** ** Evaluation of the second related term preserved [R] *)
 
-Lemma eval_preserved_R_right : forall k T t1 t2 j2 v2,
+Lemma eval_preserved_R_right : forall k T t1 j1 v1 t2 j2 v2,
     emptyContext |-+ t2 : T ->
-    terminates t1 k ->
+    terminates_excl t1 j1 v1 k ->
     t2 =[j2]=> v2 ->
     R k T t1 v2 ->
     R k T t1 t2.
@@ -268,14 +259,12 @@ Proof. Abort.
 Lemma eval_preserved_R : forall k T t1 j1 v1 t2 j2 v2,
     emptyContext |-+ t1 : T ->
     emptyContext |-+ t2 : T ->
-    terminates t1 k ->
-    t1 =[j1]=> v1 ->
-    j1 < k ->
+    terminates_excl t1 j1 v1 k ->
     t2 =[j2]=> v2 ->
     R k T v1 v2 ->
     R k T t1 t2.
 Proof.
-  intros k T t1 j1 v1 t2 j2 v2 Htyp_t1 Htyp_t2 Hterm1 Hev1 Hlt1 Hev2 R.
+  intros k T t1 j1 v1 t2 j2 v2 Htyp_t1 Htyp_t2 Hterm1 Hev2 R.
   (*
   apply eval_preserved_R_left with v1; auto.
   apply eval_preserved_R_right with v2; auto.

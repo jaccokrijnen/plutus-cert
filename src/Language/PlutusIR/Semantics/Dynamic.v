@@ -11,4 +11,4 @@ Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.Bigstep.EvalToValu
 Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.Bigstep.EvalValue.
 
 (** ** Theorems and lemmas about substitution *)
-Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.Substitution.Total.
+Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.Substitution.Total.

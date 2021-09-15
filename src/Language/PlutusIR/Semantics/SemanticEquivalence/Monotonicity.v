@@ -14,26 +14,16 @@ Lemma e2 : forall j j0 k j1,
 Proof. Admitted.
 
 Lemma R_monotone : forall k T v1 v2 j,
-  value v1 ->
-  value v2 ->
+  True ->
+  True ->
   j <= k ->
   R k T v1 v2 ->
   R j T v1 v2.
 Proof.
   destruct T.
   - intros.
-    autorewrite with R in H2.
-    autorewrite with R.
+    apply R_impossible_type in H2.
     destruct H2.
-    destruct H3.
-    split; auto.
-    split; auto.
-    intros.
-    assert (j1 < k). {
-      eapply le_trans; eauto.
-    }
-
-    edestruct H4; eauto.
   - intros.
     autorewrite with R in H2.
     autorewrite with R.
@@ -56,6 +46,10 @@ Proof.
     intros.
     eapply H8.
     + apply e2 with j; auto.
+    + eassumption.
+    + eassumption.
+    + eassumption.
+    + assumption.
     + assumption.
   - intros.
     autorewrite with R in H2.
@@ -119,29 +113,9 @@ Proof.
 
     edestruct H4; eauto.
   - intros.
-    autorewrite with R in H2.
-    autorewrite with R.
+    apply R_impossible_type in H2.
     destruct H2.
-    destruct H3.
-    split; auto.
-    split; auto.
-    intros.
-    assert (j1 < k). {
-      eapply le_trans; eauto.
-    }
-
-    edestruct H4; eauto.
   - intros.
-    autorewrite with R in H2.
-    autorewrite with R.
+    apply R_impossible_type in H2.
     destruct H2.
-    destruct H3.
-    split; auto.
-    split; auto.
-    intros.
-    assert (j1 < k). {
-      eapply le_trans; eauto.
-    }
-
-    edestruct H4; eauto.
 Qed.
