@@ -103,19 +103,19 @@ Admitted.
 
 Lemma termination_congr_Apply1 : forall t1 t2 j v0,
     Apply t1 t2 =[j]=> v0 ->
-    exists v1 j1, terminates_incl t1 j1 v1 j.
+    exists j1 v1, terminates_incl t1 j1 v1 j.
 Proof.
   intros.
   inversion H. all: subst.
-  - exists (LamAbs x T t4).
-    exists k1.
+  - exists k1.
+    exists (LamAbs x T t4).
     split; auto.
 Admitted.
 
 Lemma termination_congr_Apply2 : forall t1 t2 j v0 j1 v1,
     Apply t1 t2 =[j]=> v0 ->
     terminates_incl t1 j1 v1 j ->
-    exists v2 j2, terminates_incl t2 j2 v2 (j - j1).
+    exists j2 v2, terminates_incl t2 j2 v2 (j - j1).
 Proof. 
   intros. 
   destruct H0.
@@ -123,8 +123,9 @@ Proof.
   all: subst.
   - assert (v1 = LamAbs x T t4 /\ j1 = k1) by (eapply eval__deterministic; eauto).
     destruct H2. subst.
-    exists v2.
     exists k2.
+    
+    exists v2.
     split; auto.
 Admitted.
 

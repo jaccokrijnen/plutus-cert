@@ -13,112 +13,58 @@ Lemma e2 : forall j j0 k j1,
     j0 < k - j1.
 Proof. Admitted.
 
-Lemma RC_monotone : forall k T j v v',
+Lemma helper : forall i k j i0,
+    i <= k ->
+    i0 < i - j ->
+    i0 < k - j.
+Proof. Admitted. 
+
+Lemma RC_monotone : forall k T i e j e_f e',
+    terminates_excl e j e_f k ->
+    RC k T e e' ->  
+    i <= k ->
+    RC i T e e'.
+Proof.
+  intros k T i e j e_f e' Hterm RC Hle__i.
+  
+  destruct Hterm as [Hev__e Hlt__j] eqn:Hterm'.
+  clear Hterm'.
+
+  autorewrite with RC in RC.
+  autorewrite with RC.
+
+  destruct RC as [Htyp_e [Htyp_e' RC]].
+  
+  split; auto. split; auto.
+
+  intros j0 Hlt__j0 e_f0 Hev__e0.
+
+  assert (temp: e_f0 = e_f /\ j0 = j) by (eapply eval__deterministic; eauto).
+  destruct temp. subst.
+  clear Hev__e0 Hlt__j0.
+
+  remember (RC j Hlt__j e_f Hev__e) as temp.
+  clear Heqtemp. clear RC. rename temp into RC.
+
+  destruct RC as [e'_f [j' [Hev__e' RV]]].
+
+  exists e'_f, j'. split; auto.
+
+  destruct T; try solve [eauto || intros; eapply RV; eauto using helper].
+Qed.
+    
+
+Lemma RV_monotone : forall k T j v v',
     value v ->
-    value v' ->
-    RC (S k) T v v' ->  
-    j <= (S k) ->
+    0 < k ->
+    RC k T v v' ->  
+    j <= k ->
     RC j T v v'.
 Proof.
-  intros k T j v v' Hval_v Hval_v' RC Hlt.
+  intros k T j v v' Hval_v RC Hlt.
 
-  assert (Hterm : terminates_excl v 0 v (S k)). {
-    split.
-    - eapply eval_value. assumption. 
-    - apply Nat.lt_0_succ.
-  }
-
-
-  destruct T.
-  - eapply RC_impossible_type in RC; eauto.
-    destruct RC.
-  - autorewrite with RC in RC.
-    autorewrite with RC.
-    destruct RC.
-    destruct H0.
-    split; auto.
-    split; auto.
-    intros j0 Hlt_j0 e_f0 Hev__e_f0.
-    assert (j0 < S k). {
-      eapply le_trans; eauto.
-    }
-
-    edestruct H1; eauto.
-    destruct H3.
-    destruct H3.
-    exists x.
-    exists x0.
-    split; auto.
-
-    intros.
-    eapply H4.
-    + eassumption.
-    + eassumption.
-    + apply e2 with j; auto.
-    + eassumption.
-    + eassumption.
-    + eassumption.
-  - autorewrite with RC in RC.
-    autorewrite with RC.
-    destruct RC.
-    destruct H0.
-    split; auto.
-    split; auto.
-    intros j0 Hlt_j0 e_f0 Hev__e_f0.
-    assert (j0 < S k). {
-      eapply le_trans; eauto.
-    }
-
-    edestruct H1; eauto.
-    destruct H3.
-    destruct H3.
-    exists x.
-    exists x0.
-    split; auto.
-
-    intros.
-    eapply H4.
-    + assumption.
-    + assumption.
-    + apply e2 with j; auto.
-    + assumption.
-  - autorewrite with RC in RC.
-    autorewrite with RC.
-    destruct RC.
-    destruct H0.
-    split; auto.
-    split; auto.
-    intros j0 Hlt_j0 e_f0 Hev__e_f0.
-    assert (j0 < S k). {
-      eapply le_trans; eauto.
-    }
-
-    edestruct H1; eauto.
-    destruct H3.
-    destruct H3.
-    exists x.
-    exists x0.
-    split; auto.
-
-    intros.
-    eapply H4.
-    + assumption.
-    + assumption.
-    + apply e2 with j; auto.
-  - autorewrite with RC in RC.
-    autorewrite with RC.
-    destruct RC.
-    destruct H0.
-    split; auto.
-    split; auto.
-    intros j0 Hlt_j0 e_f0 Hev__e_f0.
-    assert (j0 < S k). {
-      eapply le_trans; eauto.
-    }
-
-    edestruct H1; eauto.
-  - eapply RC_impossible_type in RC; eauto.
-    destruct RC.
-  - eapply RC_impossible_type in RC; eauto.
-    destruct RC.
+  eapply RC_monotone; eauto.
+  split.
+  - eapply eval_value. assumption.
+  - assumption. 
 Qed.

@@ -6,6 +6,7 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Nam
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.ContextInvariance.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.Preservation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.Apply.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Def.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Monotonicity.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Termination.
@@ -53,7 +54,7 @@ Inductive instantiation : nat -> tass -> env -> env -> Prop :=
   | V_cons : forall x k T v1 v2 c e1 e2,
       value v1 ->
       value v2 ->
-      R k T v1 v2 ->
+      RC k T v1 v2 ->
       instantiation k c e1 e2 ->
       instantiation k ((x, T) :: c) ((x, v1) :: e1) ((x, v2) :: e2)
   . 
@@ -576,13 +577,13 @@ Proof.
     + simpl.
       split.
       * apply typable_empty__closed with T.
-        apply R_typable_empty_1 with k v2.
+        apply RC_typable_empty_1 with k v2.
         assumption.
       * apply IHV.
     + simpl.
       split.
       * apply typable_empty__closed with T.
-        apply R_typable_empty_2 with k v1.
+        apply RC_typable_empty_2 with k v1.
         assumption.
       * apply IHV.
 Qed.
@@ -631,7 +632,7 @@ Lemma instantiation_R : forall k c e1 e2,
       lookup x c = Datatypes.Some T ->
       lookup x e1 = Datatypes.Some v1 ->
       lookup x e2 = Datatypes.Some v2 ->
-      R k T v1 v2.
+      RC k T v1 v2.
 Proof.
   intros k c e1 e2 V.
   induction V; intros x' T' v1' v2' G E1 E2.
@@ -688,7 +689,7 @@ Proof.
     apply IHV with t'0.
     + eapply substitution_preserves_typing.
       * apply H2.
-      * apply R_typable_empty_1 with k v2.
+      * apply RC_typable_empty_1 with k v2.
         apply H1.
       * apply H9.
     + apply H10.
@@ -713,7 +714,7 @@ Proof.
     apply IHV with t'0.
     + eapply substitution_preserves_typing.
       * apply H2.
-      * apply R_typable_empty_2 with k v1.
+      * apply RC_typable_empty_2 with k v1.
         apply H1.
       * apply H9.
     + apply H10.
@@ -727,11 +728,11 @@ Definition P_has_type Gamma t1 T :=
     Gamma |-+ t1 : T ->
     Gamma |-+ t1 : T ->
     instantiation k c e1 e2 ->
-    forall t2 t3,
+    forall t2 j2 v2 t3,
       msubst e1 t1 t2 ->
       msubst e2 t1 t3 ->
-      terminates t2 k -> 
-      R k T t2 t3.
+      terminates_excl t2 j2 v2 k -> 
+      RC k T t2 t3.
 
 Definition P_constructor_well_formed Gamma c := Gamma |-ok_c c.
 
@@ -771,7 +772,7 @@ Proof.
   - (* T_Var *)
     intros. 
     unfold P_has_type. 
-    intros k c e1 e2 Heq Htyp_t1 _ V v2 v3 Hms_v2 Hms_v3 Hterm.
+    intros k c e1 e2 Heq Htyp_t1 _ V v2 j0 v0 v3 Hms_v2 Hms_v3 Hterm.
     subst.
 
     assert (forall x, lookupT (mupdate emptyContext c) x = lookup x c). {
@@ -805,7 +806,7 @@ Proof.
   - (* T_LamAbs *)
     intros Gamma x T1 t0_1 T2 Htyp__t0_1 IH Hkin_T1.
     unfold P_has_type.
-    intros k c e1 e2 Heq Htyp_t1 _ V v2 v3 Hms_v2 Hms_v3 Hterm.
+    intros k c e1 e2 Heq Htyp_t1 _ V v2 j0 v0 v3 Hms_v2 Hms_v3 Hterm.
     subst.
 
     assert (Hcls1 : closed_env e1) by (eapply instantiation_env_closed_1; eauto).
@@ -825,7 +826,7 @@ Proof.
   - (* T_Apply *)
     intros Gamma t1 t2 T1 T2 Htyp_t1 IH_t1 Htyp_t2 IH_t2.
     unfold P_has_type.
-    intros k c e1 e2 Heq Htyp _ V t3 t4 Hms_t3 Hms_t4 Hterm.
+    intros k c e1 e2 Heq Htyp _ V t3 j3 v3 t4 Hms_t3 Hms_t4 Hterm.
     subst.
     
     destruct (msubst_Apply _ _ _ _ Hms_t3) as [t3_1 [t3_2 [Hms_t3_1 [Hms_t3_2 Heq_t3]]]].
@@ -833,20 +834,15 @@ Proof.
     destruct (msubst_Apply _ _ _ _ Hms_t4) as [t4_1 [t4_2 [Hms_t4_1 [Hms_t4_2 Heq_t4]]]].
     subst.
 
+
+    
+
     assert (emptyContext |-+ (Apply t3_1 t3_2) : T2) by eauto using msubst_preserves_typing_1.
     assert (emptyContext |-+ (Apply t4_1 t4_2) : T2) by eauto using msubst_preserves_typing_2.
 
-    apply termination_congr_Apply1 in Hterm as Hterm__t1_1.
-    apply termination_congr_Apply2 in Hterm as Hterm__t1_2.
+    assert (R1: RC k (Ty_Fun T1 T2) t3_1 t4_1) by (eapply IH_t1; eauto; apply skip).
+    assert (R2: RC k T1 t3_2 t4_2) by (eapply IH_t2; eauto; apply skip).
 
-    assert (R1: R k (Ty_Fun T1 T2) t3_1 t4_1) by (eapply IH_t1; eauto).
-    assert (R2: R k T1 t3_2 t4_2) by (eapply IH_t2; eauto).
 
-    
-    destruct H2 as [k1' [Hterm_t3_1 Hlt_k1']].
-    destruct H3 as [k2' [Hterm_t3_2 Hlt_k2']].
-    apply HR1 in Hterm_t3_1 as R1.
-    apply HR2 in H3 as R2.
-
-    assert (decidable (k1 <= k2)) by eauto using Nat.le_decidable. 
+    eapply R_compatibility_Apply; eauto.
 Abort.
