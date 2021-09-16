@@ -166,6 +166,8 @@ Equations? RC (k : nat) (T : Ty) (e e' : Term) : Prop by wf k :=
               (* Extensional equivalence *)
               forall i (Hlt_i : i < k - j) v v' e_body' e'_body',
                 RC i T1 v v' ->
+                value v ->
+                value v' ->
                 substitute x v e_body e_body' ->
                 substitute x' v' e'_body e'_body' ->
                 RC i T2 e_body' e'_body'
@@ -329,6 +331,8 @@ Lemma RC_functional_extensionality : forall k T1 T2 e j e_f e',
         (* Extensional equivalence *)
         forall i (Hlt_i : i < k - j) v v' e_body' e'_body',
           RC i T1 v v' ->
+          value v ->
+          value v' ->
           substitute x v e_body e_body' ->
           substitute x' v' e'_body e'_body' ->
           RC i T2 e_body' e'_body').

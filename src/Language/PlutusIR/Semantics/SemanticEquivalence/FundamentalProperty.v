@@ -6,7 +6,7 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Nam
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.ContextInvariance.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.Preservation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
-Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.Apply.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Def.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Monotonicity.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Termination.
@@ -500,6 +500,17 @@ Proof.
     assumption.
 Qed.
 
+Lemma msubst_Constant : forall ss sv t',
+  msubst ss (Constant sv) t' ->
+  t' = Constant sv.
+Proof.
+  induction ss; intros.
+  - inversion H. subst. reflexivity.
+  - inversion H. subst.
+    inversion H2. subst.
+    eauto.
+Qed.
+
 (** ** Properties of multi-extensions *)
 
 Lemma mupdate_lookup : forall (c : tass) (x : name),
@@ -512,38 +523,6 @@ Lemma mupdate_drop : forall (c : tass) Gamma x x',
         then lookupT Gamma x' 
         else lookupT (mupdate Gamma c) x'.
 Proof. Admitted.
-
-Lemma ee : forall x T c,
-    mupdate (x |T-> T; emptyContext) (drop x c) = (x |T-> T; mupdate emptyContext c).
-Proof.
-  induction c.
-  - reflexivity.
-  - simpl.
-    destruct a.
-    destruct (s =? x) eqn:Heqb.
-    + apply eqb_eq in Heqb as Heq.
-      subst.
-      rewrite extendT_shadow.
-      apply IHc.
-    + apply eqb_neq in Heqb as Hneq.
-      simpl.
-      rewrite extendT_permute; auto.
-      f_equal.
-      apply IHc.
-Admitted.
-
-Lemma e : forall c X,
-    lookupK (mupdate emptyContext c) X = lookupK emptyContext X.
-Proof.
-  induction c.
-  - reflexivity.
-  - intros.
-    simpl.
-    destruct a.
-    simpl.
-    apply IHc.
-Qed.
-
 
 (** ** Properties of Instantiations *)
 
@@ -728,10 +707,9 @@ Definition P_has_type Gamma t1 T :=
     Gamma |-+ t1 : T ->
     Gamma |-+ t1 : T ->
     instantiation k c e1 e2 ->
-    forall t2 j2 v2 t3,
+    forall t2 t3,
       msubst e1 t1 t2 ->
       msubst e2 t1 t3 ->
-      terminates_excl t2 j2 v2 k -> 
       RC k T t2 t3.
 
 Definition P_constructor_well_formed Gamma c := Gamma |-ok_c c.
@@ -772,7 +750,7 @@ Proof.
   - (* T_Var *)
     intros. 
     unfold P_has_type. 
-    intros k c e1 e2 Heq Htyp_t1 _ V v2 j0 v0 v3 Hms_v2 Hms_v3 Hterm.
+    intros k c e1 e2 Heq Htyp_t1 _ V v2 v3 Hms_v2 Hms_v3.
     subst.
 
     assert (forall x, lookupT (mupdate emptyContext c) x = lookup x c). {
@@ -806,7 +784,7 @@ Proof.
   - (* T_LamAbs *)
     intros Gamma x T1 t0_1 T2 Htyp__t0_1 IH Hkin_T1.
     unfold P_has_type.
-    intros k c e1 e2 Heq Htyp_t1 _ V v2 j0 v0 v3 Hms_v2 Hms_v3 Hterm.
+    intros k c e1 e2 Heq Htyp_t1 _ V v2 v3 Hms_v2 Hms_v3.
     subst.
 
     assert (Hcls1 : closed_env e1) by (eapply instantiation_env_closed_1; eauto).
@@ -821,12 +799,35 @@ Proof.
 
     unfold P_has_type in IH.
 
-    apply skip.
+    autorewrite with RC.
+    split; auto. split; auto.
+    intros j Hlt__j e_f Hev__e_f.
+    inversion Hev__e_f. subst.
+    exists (LamAbs x T1 t0_3).
+    exists 0.
+    split. {
+      eapply eval_value. apply V_LamAbs.
+    }
+    intros.
+    inversion H1. subst.
+    inversion H2. subst.
+
+    assert (msubst ((x', v) :: drop x' e1) t0_1 e_body'). { apply skip. }
+    assert (msubst ((x', v') :: drop x' e2) t0_1 e'_body'). { apply skip. }
+
+    eapply IH; eauto.
+    + assert (x' |T-> T1; mupdate emptyContext c = mupdate emptyContext ((x', T1) :: drop x' c)). {
+        apply skip.
+      }
+      apply H10.
+    + apply V_cons; eauto.
+      eapply instantiation_drop.
+      apply skip.
 
   - (* T_Apply *)
     intros Gamma t1 t2 T1 T2 Htyp_t1 IH_t1 Htyp_t2 IH_t2.
     unfold P_has_type.
-    intros k c e1 e2 Heq Htyp _ V t3 j3 v3 t4 Hms_t3 Hms_t4 Hterm.
+    intros k c e1 e2 Heq Htyp _ V t3 t4 Hms_t3 Hms_t4.
     subst.
     
     destruct (msubst_Apply _ _ _ _ Hms_t3) as [t3_1 [t3_2 [Hms_t3_1 [Hms_t3_2 Heq_t3]]]].
@@ -834,15 +835,22 @@ Proof.
     destruct (msubst_Apply _ _ _ _ Hms_t4) as [t4_1 [t4_2 [Hms_t4_1 [Hms_t4_2 Heq_t4]]]].
     subst.
 
-
-    
-
     assert (emptyContext |-+ (Apply t3_1 t3_2) : T2) by eauto using msubst_preserves_typing_1.
     assert (emptyContext |-+ (Apply t4_1 t4_2) : T2) by eauto using msubst_preserves_typing_2.
 
     assert (R1: RC k (Ty_Fun T1 T2) t3_1 t4_1) by (eapply IH_t1; eauto; apply skip).
     assert (R2: RC k T1 t3_2 t4_2) by (eapply IH_t2; eauto; apply skip).
 
+    eapply RC_compatibility_Apply; eauto.
+  
+  - (* T_Constant *)
+    intros Gamma u a.
+    unfold P_has_type.
+    intros k c e1 e2 Heq Htyp_t1 _ V t2 t3 Hmsubst_t2 Hmsubst_t3.
 
-    eapply R_compatibility_Apply; eauto.
+    apply msubst_Constant in Hmsubst_t2 as Heq2.
+    apply msubst_Constant in Hmsubst_t3 as Heq3.
+    subst.
+
+    apply RC_compatibility_Constant.
 Abort.

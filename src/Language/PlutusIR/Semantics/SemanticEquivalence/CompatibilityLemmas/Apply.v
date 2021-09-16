@@ -16,7 +16,7 @@ Require Import Coq.Logic.Decidable.
 
 
 
-Lemma R_compatibility_Apply : forall k T1 T2 e1 e2 e1' e2',
+Lemma RC_compatibility_Apply : forall k T1 T2 e1 e2 e1' e2',
     RC k (Ty_Fun T1 T2) e1 e1' ->
     RC k T1 e2 e2' ->
     RC k T2 (Apply e1 e2) (Apply e1' e2').
@@ -190,6 +190,7 @@ Proof.
 
   assert (RC (k - j1 - j2 - 1) T2 e_f11__substed e'_f11__substed). {
     eapply RV1; eauto.
+    all: eauto using eval_value, eval_to_value.
   }
 
   autorewrite with RC in H0.
