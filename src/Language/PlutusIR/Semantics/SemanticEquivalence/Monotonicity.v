@@ -13,109 +13,112 @@ Lemma e2 : forall j j0 k j1,
     j0 < k - j1.
 Proof. Admitted.
 
-Lemma R_monotone : forall k T v1 v2 j,
-  True ->
-  True ->
-  j <= k ->
-  R k T v1 v2 ->
-  R j T v1 v2.
+Lemma RC_monotone : forall k T j v v',
+    value v ->
+    value v' ->
+    RC (S k) T v v' ->  
+    j <= (S k) ->
+    RC j T v v'.
 Proof.
+  intros k T j v v' Hval_v Hval_v' RC Hlt.
+
+  assert (Hterm : terminates_excl v 0 v (S k)). {
+    split.
+    - eapply eval_value. assumption. 
+    - apply Nat.lt_0_succ.
+  }
+
+
   destruct T.
-  - intros.
-    apply R_impossible_type in H2.
-    destruct H2.
-  - intros.
-    autorewrite with R in H2.
-    autorewrite with R.
-    destruct H2.
-    destruct H3.
+  - eapply RC_impossible_type in RC; eauto.
+    destruct RC.
+  - autorewrite with RC in RC.
+    autorewrite with RC.
+    destruct RC.
+    destruct H0.
     split; auto.
     split; auto.
-    intros.
-    assert (j1 < k). {
+    intros j0 Hlt_j0 e_f0 Hev__e_f0.
+    assert (j0 < S k). {
       eapply le_trans; eauto.
     }
 
-    edestruct H4; eauto.
-    destruct H7.
-    destruct H7.
+    edestruct H1; eauto.
+    destruct H3.
+    destruct H3.
     exists x.
     exists x0.
     split; auto.
 
     intros.
-    eapply H8.
+    eapply H4.
+    + eassumption.
+    + eassumption.
     + apply e2 with j; auto.
     + eassumption.
     + eassumption.
     + eassumption.
-    + assumption.
-    + assumption.
-  - intros.
-    autorewrite with R in H2.
-    autorewrite with R.
-    destruct H2.
-    destruct H3.
+  - autorewrite with RC in RC.
+    autorewrite with RC.
+    destruct RC.
+    destruct H0.
     split; auto.
     split; auto.
-    intros.
-    assert (j1 < k). {
+    intros j0 Hlt_j0 e_f0 Hev__e_f0.
+    assert (j0 < S k). {
       eapply le_trans; eauto.
     }
 
-    edestruct H4; eauto.
-    destruct H7.
-    destruct H7.
+    edestruct H1; eauto.
+    destruct H3.
+    destruct H3.
     exists x.
     exists x0.
     split; auto.
 
     intros.
-    eapply H8.
+    eapply H4.
+    + assumption.
+    + assumption.
     + apply e2 with j; auto.
     + assumption.
-  - intros.
-    autorewrite with R in H2.
-    autorewrite with R.
-    destruct H2.
-    destruct H3.
+  - autorewrite with RC in RC.
+    autorewrite with RC.
+    destruct RC.
+    destruct H0.
     split; auto.
     split; auto.
-    intros.
-    assert (j1 < k). {
+    intros j0 Hlt_j0 e_f0 Hev__e_f0.
+    assert (j0 < S k). {
       eapply le_trans; eauto.
     }
 
-    edestruct H4; eauto.
-    destruct H7.
-    destruct H7.
+    edestruct H1; eauto.
+    destruct H3.
+    destruct H3.
     exists x.
     exists x0.
     split; auto.
 
     intros.
-    eapply H8.
+    eapply H4.
+    + assumption.
+    + assumption.
     + apply e2 with j; auto.
-    + eassumption.
-    + eassumption.
-    + eassumption.
-  - intros.
-    autorewrite with R in H2.
-    autorewrite with R.
-    destruct H2.
-    destruct H3.
+  - autorewrite with RC in RC.
+    autorewrite with RC.
+    destruct RC.
+    destruct H0.
     split; auto.
     split; auto.
-    intros.
-    assert (j1 < k). {
+    intros j0 Hlt_j0 e_f0 Hev__e_f0.
+    assert (j0 < S k). {
       eapply le_trans; eauto.
     }
 
-    edestruct H4; eauto.
-  - intros.
-    apply R_impossible_type in H2.
-    destruct H2.
-  - intros.
-    apply R_impossible_type in H2.
-    destruct H2.
+    edestruct H1; eauto.
+  - eapply RC_impossible_type in RC; eauto.
+    destruct RC.
+  - eapply RC_impossible_type in RC; eauto.
+    destruct RC.
 Qed.
