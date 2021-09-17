@@ -176,8 +176,8 @@ Equations? RC (k : nat) (T : Ty) (e e' : Term) : Prop by wf k :=
         | Ty_IFix F T =>
             forall v v',
               (* Determine the shape of e_f and e_f' *)
-              e_f = IWrap F T v ->
-              e'_f = IWrap F T v' ->
+              IWrap F T v = e_f ->
+              IWrap F T v' = e'_f ->
               (* Uwrap *)
               forall i (Hlt_i : i < k - j) K,
                 emptyContext |-* T : K ->
@@ -352,8 +352,8 @@ Lemma RC_unwrap : forall k F T e j e_f e',
 
       (forall v v',
         (* Determine the shape of e_f and e_f' *)
-        e_f = IWrap F T v ->
-        e'_f = IWrap F T v' ->
+        IWrap F T v = e_f ->
+        IWrap F T v' = e'_f ->
         (* Uwrap *)
         forall i (Hlt_i : i < k - j) K,
           emptyContext |-* T : K ->

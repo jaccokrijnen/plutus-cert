@@ -63,8 +63,9 @@ src/Language/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Apply.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Constant.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/IWrap.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/Def.v
-#src/Language/PlutusIR/Semantics/SemanticEquivalence/FundamentalProperty.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/FundamentalProperty.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/Monotonicity.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/ReductionInvariance.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/Termination.v
