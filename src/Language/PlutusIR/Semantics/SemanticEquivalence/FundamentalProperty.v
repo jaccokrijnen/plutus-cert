@@ -530,6 +530,25 @@ Proof.
     + reflexivity.
 Qed.
 
+Lemma msubst_Unwrap : forall ss M t',
+    msubst ss (Unwrap M) t' ->
+    exists M', msubst ss M M' /\ t' = Unwrap M'.
+Proof.
+  induction ss; intros.
+  - inversion H. subst.
+    exists M. split. constructor. reflexivity.
+  - inversion H. subst.
+    inversion H2. subst.
+    rename t0' into M'.
+    eapply IHss in H5.
+    destruct H5 as [M'' [H0 H1]].
+    subst.
+    exists M''.
+    split.
+    + eapply msubst_cons; eauto.
+    + reflexivity.
+Qed.
+
 (** ** Properties of multi-extensions *)
 
 Lemma mupdate_lookup : forall (c : tass) (x : name),
@@ -909,5 +928,36 @@ Proof.
     eapply RC_compatibility_IWrap; eauto.
     + inversion H. subst. auto. apply skip. (* TODO *)
     + inversion H0. subst. auto. apply skip. (* TODO *)
+
+  - (* T_Unwrap *)
+    intros Gamma M F K T S Htyp_M IH_M Hkind_T Hbr.
+    unfold P_has_type.
+    intros k c e1 e2 Heq Htyp _ V t2 t3 Hmsubst_t2 Hmsubst_t3.
+
+    unfold P_has_type in IH_M.
+
+    assert (exists M', msubst e1 M M' /\ t2 = Unwrap M')
+      by eauto using msubst_Unwrap.
+    destruct H as [M' [Hmsubst_M' Heq_t2]].
+    subst.
+
+    assert (exists M'', msubst e2 M M'' /\ t3 = Unwrap M'')
+      by eauto using msubst_Unwrap.
+    destruct H as [M'' [Hmsubst_M'' Heq_t3]].
+    subst.
+
+    assert (emptyContext |-+ (Unwrap M') : (beta_reduce (unwrapIFix F K T))) 
+      by eauto using msubst_preserves_typing_1.
+    assert (emptyContext |-+ (Unwrap M'') : (beta_reduce (unwrapIFix F K T)))
+      by eauto using msubst_preserves_typing_2.
+
+    assert (RC k (Ty_IFix F T) M' M''). {
+      eapply IH_M; eauto.
+    }
+
+    eapply RC_compatibility_Unwrap; eauto.
+    + inversion H. subst. apply skip. (* TODO *)
+
+  - 
 
 Abort.

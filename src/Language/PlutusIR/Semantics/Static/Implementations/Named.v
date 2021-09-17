@@ -391,14 +391,17 @@ Definition unwrapIFix (F : Ty) (K : Kind) (T : Ty) : Ty := (Ty_App (Ty_App F (Ty
 Fixpoint beta_reduce (T : Ty) : Ty :=
   match T with
   (* Beta-reduction *)
-  | Ty_App (Ty_Lam X K T1) T2 => substituteT X T2 T1
-  (* Congruence *)
+  | Ty_App T1 T2 => 
+    match beta_reduce T1, beta_reduce T2 with
+    | Ty_Lam X K T1', T2' => substituteT X T2' T1'
+    | T1', T2' => Ty_App T1' T2'
+    end
   | Ty_Fun T1 T2 => Ty_Fun (beta_reduce T1) (beta_reduce T2)
   | Ty_Forall X K T0 => Ty_Forall X K (beta_reduce T0)
   | Ty_Lam X K T0 => Ty_Lam X K (beta_reduce T0)
-  | Ty_App T1 T2 => Ty_App (beta_reduce T1) (beta_reduce T2)
-  (* Reflexivity *)
-  | T0 => T0
+  | Ty_Var X => Ty_Var X
+  | Ty_IFix F T => Ty_IFix F T
+  | Ty_Builtin st => Ty_Builtin st
   end.
 
 
