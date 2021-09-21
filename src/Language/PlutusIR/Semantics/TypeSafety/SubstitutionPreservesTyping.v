@@ -1,8 +1,6 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Weakening.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.Substitution.
 
 Require Import Coq.Strings.String.
@@ -10,11 +8,12 @@ Require Import Coq.Logic.FunctionalExtensionality.
 
 Lemma append_extendT_shadow : forall ctx' x T U ctx,
     lookupT ctx' x = Datatypes.Some T ->
-    Named.append ctx' (x |T-> U; ctx) = Named.append ctx' ctx.
+    Implementations.append ctx' (x |T-> U; ctx) = Implementations.append ctx' ctx.
 Proof.
   intros.
-  unfold Named.append.
+  unfold Implementations.append.
   apply cong_eq.
+  - reflexivity.
   - apply functional_extensionality.
     intros.
     simpl.
@@ -30,16 +29,16 @@ Proof.
       remember (H0 _ _ _ H Hx0).
       clear Heqn.
       rewrite update_neq; auto.
-  - reflexivity.
 Qed.
 
 Lemma append_extendT_permute : forall ctx' x U ctx,
     lookupT ctx' x = None ->
-    Named.append ctx' (x |T-> U; ctx) = (x |T-> U; Named.append ctx' ctx).
+    Implementations.append ctx' (x |T-> U; ctx) = (x |T-> U; Implementations.append ctx' ctx).
 Proof. 
   intros.
-  unfold Named.append.
+  unfold Implementations.append.
   apply cong_eq.
+  - reflexivity.
   - apply functional_extensionality.
     intros.
     simpl.
@@ -67,7 +66,6 @@ Proof.
         rewrite update_neq; auto.
         rewrite Hx0.
         reflexivity.
-  - reflexivity.
 Qed.
 
 
@@ -114,7 +112,7 @@ Proof.
       simpl.
       rewrite concat_append.
       simpl. 
-      destruct (lookupT (Named.concat (List.rev (List.map binds bs))) x).
+      destruct (lookupT (Implementations.concat (List.rev (List.map binds bs))) x).
       * exists t.
         reflexivity.
       * destruct (lookupT (binds a) x) eqn:Hlookup.
@@ -129,7 +127,7 @@ Proof.
       simpl.
       rewrite concat_append.
       simpl.
-      destruct (lookupT (Named.concat (List.rev (List.map binds bs))) x) eqn:Hlookup.
+      destruct (lookupT (Implementations.concat (List.rev (List.map binds bs))) x) eqn:Hlookup.
       * exists t.
         reflexivity.
       * apply IHbs in H.
@@ -175,7 +173,7 @@ Proof.
     + apply eqb_neq in Heqb as Hneq.
       rewrite update_neq; auto.
       destruct  (lookupT
-      (List.fold_right Named.append emptyContext
+      (List.fold_right Implementations.append emptyContext
          (List.map
             (fun x0 : binderTyname * Ty => fst x0 |T-> snd x0; emptyContext)
             (List.map (constrBind (Datatype t l s l0)) l0))) x) eqn:E.
@@ -200,7 +198,7 @@ Proof.
     simpl.
     rewrite concat_append.
     simpl.
-    destruct (lookupT (Named.concat (List.rev (List.map binds bs))) x) eqn:Hlookup.
+    destruct (lookupT (Implementations.concat (List.rev (List.map binds bs))) x) eqn:Hlookup.
     + rewrite IHbs in Hlookup.
       * symmetry in Hlookup.
         assumption.
@@ -225,8 +223,8 @@ Proof.
 Qed.
 
 Theorem context_invariance_T__has_kind : forall T ctx_T ctx_K K ctx_T',
-    (ctx_T, ctx_K) |-* T : K ->
-    (ctx_T', ctx_K) |-* T : K.
+    (ctx_K, ctx_T) |-* T : K ->
+    (ctx_K, ctx_T') |-* T : K.
 Proof.
   induction T.
   - intros.
@@ -263,8 +261,8 @@ Proof.
 Qed.
 
 Lemma context_invariance_T__constructor_well_formed : forall ctx_T' ctx_T ctx_K c ,
-  (ctx_T, ctx_K) |-ok_c c ->
-  (ctx_T', ctx_K) |-ok_c c.
+  (ctx_K, ctx_T) |-ok_c c ->
+  (ctx_K, ctx_T') |-ok_c c.
 Proof.
   intros.
   inversion H. subst.

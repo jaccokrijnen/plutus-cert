@@ -1,8 +1,6 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.ContextInvariance.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
 
@@ -656,32 +654,6 @@ Qed.
 
 (** ** Multi-substitutions preserve typing *)
 
-Fixpoint map_msubstT_rho_syn1 (rho : tymapping) (xts : tass) : tass :=
-  match xts with
-  | nil => nil
-  | (x,T) :: xts' => (x, msubstT_rho_syn1 rho T) :: map_msubstT_rho_syn1 rho xts'
-  end.
-
-Fixpoint map_msubstT_rho_syn2 (rho : tymapping) (xts : tass) : tass :=
-  match xts with
-  | nil => nil
-  | (x,T) :: xts' => (x, msubstT_rho_syn2 rho T) :: map_msubstT_rho_syn2 rho xts'
-  end.
-
-Definition type_subst_context (a : tyname) (S : Ty) (Gamma : partial_map Ty) :=
-   fun x => 
-    match Gamma x with
-    | None => None
-    | Datatypes.Some T => 
-        Datatypes.Some (substituteT a S T)
-    end.
-
-Lemma type_substitution : forall a Gamma Delta T2 T1 K e e_s,
-    (Gamma, a |-> K ; Delta) |-+ e : T2 ->
-    (Gamma, Delta) |-* T1 : K ->
-    annotsubst a T1 e e_s ->
-    (type_subst_context a T1 Gamma, Delta) |-+ e_s : (substituteT a T1 T2).
-Proof. Admitted.
 
 (*
 Lemma msubst_preserves_typing_1 : forall rho k c e1 e2,
@@ -744,8 +716,8 @@ Qed. *)
     $\gamma(e')$ are related for $k$ steps as computations of type $\tau$.
 *)
 Definition LR_logically_approximate (Delta : partial_map Kind) (Gamma : partial_map Ty) (e e' : Term) (T : Ty) :=
-    (Gamma, Delta) |-+ e : T /\
-    (Gamma, Delta) |-+ e' : T /\
+    (Delta, Gamma) |-+ e : T /\
+    (Delta, Gamma) |-+ e' : T /\
     forall k rho env env' ct ck,
       Delta = mupdate empty ck -> Gamma = mupdate empty ct ->
       RD ck rho /\

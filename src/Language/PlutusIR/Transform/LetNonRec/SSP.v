@@ -6,7 +6,6 @@ Require Import Coq.Lists.List.
 Import ListNotations.
 
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
 
 
 

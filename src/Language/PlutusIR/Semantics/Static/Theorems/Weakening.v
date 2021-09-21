@@ -1,7 +1,6 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Rules.
 
 Import Coq.Strings.String.
 Local Open Scope string_scope.
@@ -27,12 +26,12 @@ Proof.
   intros.
   split.
   - intros.
-    unfold lookupT.
     simpl.
-    apply inclusion_update.
     apply H.
   - intros. 
     simpl.
+    unfold lookupT.
+    apply inclusion_update.
     apply H.
 Qed.
 
@@ -44,17 +43,17 @@ Proof.
   intros.
   split.
   - intros.
-    simpl.
-    apply H.
-  - intros.
     unfold lookupK.
     apply inclusion_update.
+    apply H.
+  - intros.
+    simpl.
     apply H.
 Qed.
 
 Lemma inclusion_append : forall (ctx1 ctx2 ctx' : Context),
     inclusion ctx1 ctx2 ->
-    inclusion (Named.append ctx' ctx1) (Named.append ctx' ctx2).
+    inclusion (Implementations.append ctx' ctx1) (Implementations.append ctx' ctx2).
 Proof.
   intros.
   destruct ctx'.
@@ -62,13 +61,13 @@ Proof.
   - simpl.
     unfold Map.inclusion.
     intros.
-    destruct (p x); auto.
+    destruct (d x); auto.
     apply H.
     assumption.
   - simpl.
     unfold Map.inclusion.
     intros.
-    destruct (p0 x); auto.
+    destruct (g x); auto.
     apply H.
     assumption.
 Qed.

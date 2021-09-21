@@ -1,7 +1,7 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
-Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Def.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RelationalModel.
 
 Require Import Arith.
 

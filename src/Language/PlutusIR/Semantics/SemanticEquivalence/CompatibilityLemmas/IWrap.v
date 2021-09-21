@@ -2,8 +2,6 @@ Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.UniqueTypes.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.Preservation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Def.

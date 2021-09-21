@@ -4,8 +4,6 @@ Require Import PlutusCert.Language.PlutusIR.Transform.LetNonRec.
 Require Import PlutusCert.Language.PlutusIR.Transform.LetNonRec.SSP.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.ContextInvariance.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.Preservation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.Progress.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.

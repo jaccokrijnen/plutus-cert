@@ -1,6 +1,5 @@
 From PlutusCert Require Import Language.PlutusIR.
 From PlutusCert Require Import Language.PlutusIR.Semantics.Static.
-From PlutusCert Require Import Language.PlutusIR.Semantics.Static.Implementations.Named.
 
 From Coq Require Import Strings.String.
 

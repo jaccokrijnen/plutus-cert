@@ -1,14 +1,62 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
 
-(* TODO: instead of using [term_vars_bound_by_bindings], use a separate inductive datatype that records boundness *)
-Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.Substitution.
-Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Rules.
 
 Require Import Coq.Lists.List.
 
+
+Definition term_var_bound_by_constructor (c : NamedTerm.constructor) : string :=
+  match c with
+  | Constructor (VarDecl x _) _ => x
+  end.
+
+Definition term_vars_bound_by_binding (b : NamedTerm.Binding) : list string :=
+  match b with
+  | TermBind _ (VarDecl x _) _ => cons x nil
+  | TypeBind (TyVarDecl X _) _ => nil
+  | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => matchFunc :: (rev (map term_var_bound_by_constructor cs))
+  end.
+
+Definition term_vars_bound_by_bindings (bs : list NamedTerm.Binding) : list string := List.concat (map term_vars_bound_by_binding bs).
+
+Theorem context_invariance_T__has_kind : forall T ctx_T ctx_K K ctx_T',
+    (ctx_K, ctx_T) |-* T : K ->
+    (ctx_K, ctx_T') |-* T : K.
+Proof.
+  induction T.
+  - intros.
+    inversion H. subst.
+    apply K_Var.
+    assumption.
+  - intros.
+    inversion H. subst.
+    apply K_Fun. 
+    + eapply IHT1. eauto.
+    + eapply IHT2. eauto.
+  - intros.
+    inversion H. subst.
+    eapply K_IFix.
+    + eapply IHT2. eauto.
+    + eapply IHT1. eauto.
+  - intros. 
+    inversion H. subst.
+    apply K_Forall.
+    eapply IHT. eauto.
+  - intros.
+    inversion H. subst.
+    apply K_Builtin.
+  - intros.
+    inversion H. subst.
+    eapply K_Lam.
+    eapply IHT.
+    eauto.
+  - intros.
+    inversion H. subst.
+    eapply K_App.
+    + eapply IHT1. eauto.
+    + eapply IHT2. eauto.
+Qed.
 
 
 (** * Context invariance *)
@@ -105,7 +153,7 @@ Proof with eauto.
 Qed.
 
 Corollary typable_empty__closed_typelevel : forall T K GammaT,
-    (GammaT, empty) |-* T : K ->
+    (empty, GammaT) |-* T : K ->
     closed_typelevel T.
 Proof.
   intros. unfold closed_typelevel. intros x H1.
@@ -509,7 +557,7 @@ Proof.
 Qed.
 
 Corollary typable_emptyT__closed : forall ctxK t T,
-    (empty, ctxK) |-+ t : T ->
+    (ctxK, empty) |-+ t : T ->
     closed t.
 Proof.
   intros. unfold closed. intros x H1.

@@ -1,7 +1,7 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.Substitution.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.ContextInvariance.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 
 Definition P_Term (t : Term) :=
   forall x,

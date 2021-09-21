@@ -1,6 +1,6 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Import Coq.Lists.List.
 Import Coq.Strings.String.
 
@@ -166,8 +166,8 @@ Inductive annotsubst : tyname -> Ty -> Term -> Term -> Prop :=
       annotsubst X S (Let Rec bs t0) (Let Rec bs' t0')
   | SA_Var : forall X S x,
       annotsubst X S (Var x) (Var x)
-  | SA_TyAbs1 : forall X S K t0 t0',
-      annotsubst X S (TyAbs X K t0) (TyAbs X K t0')
+  | SA_TyAbs1 : forall X S K t0,
+      annotsubst X S (TyAbs X K t0) (TyAbs X K t0)
   | SA_TyAbs2 : forall X S bX K t0 t0',
       X <> bX ->
       annotsubst X S t0 t0' ->

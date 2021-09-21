@@ -34,7 +34,6 @@ src/Language/PlutusIR/Transform/LetTypes.v
 src/Language/PlutusIR/Transform.v
 src/Language/PlutusIR/Optimizer/DeadBindings.v
 
-src/Language/PlutusIR/Conversion.v
 src/Language/PlutusIR/Semantics/Dynamic.v
 src/Language/PlutusIR/Semantics/Dynamic/Bigstep.v
 src/Language/PlutusIR/Semantics/Dynamic/Bigstep/Congruence.v
@@ -50,17 +49,19 @@ src/Language/PlutusIR/Semantics/Dynamic/Substitution.v
 src/Language/PlutusIR/Semantics/Dynamic/Substitution/Vacuous.v
 src/Language/PlutusIR/Semantics/Dynamic/Substitution/Total.v
 src/Language/PlutusIR/Semantics/Dynamic/Values.v
+
 src/Language/PlutusIR/Semantics/Static.v
-src/Language/PlutusIR/Semantics/Static/Implementations/Named.v
-src/Language/PlutusIR/Semantics/Static/Implementations/Named/ContextInvariance.v
-src/Language/PlutusIR/Semantics/Static/Implementations/Named/UniqueTypes.v
-src/Language/PlutusIR/Semantics/Static/Implementations/Named2.v
-src/Language/PlutusIR/Semantics/Static/Implementations/DeBruijn.v
+src/Language/PlutusIR/Semantics/Static/Rules.v
+src/Language/PlutusIR/Semantics/Static/Implementations.v
+src/Language/PlutusIR/Semantics/Static/Theorems/ContextInvariance.v
+src/Language/PlutusIR/Semantics/Static/Theorems/UniqueTypes.v
+src/Language/PlutusIR/Semantics/Static/Theorems/Weakening.v
 src/Language/PlutusIR/Semantics/Static/Map.v
-src/Language/PlutusIR/Semantics/Static/Weakening.v
+
 src/Language/PlutusIR/Semantics/TypeSafety/AnnotsubstPreservesTyping.v
 src/Language/PlutusIR/Semantics/TypeSafety/Preservation.v
 src/Language/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping.v
+
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas.v
 #src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Apply.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Constant.v
