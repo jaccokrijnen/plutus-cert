@@ -19,16 +19,12 @@ Lemma helper : forall i k j i0,
     i0 < k - j.
 Proof. Admitted. 
 
-Lemma RC_monotone : forall k T i e j e_f e',
-    terminates_excl e j e_f k ->
-    RC k T e e' ->  
+Lemma RC_monotone : forall k rho T i e e',
+    RC k T rho e e' ->  
     i <= k ->
-    RC i T e e'.
+    RC i T rho e e'.
 Proof.
-  intros k T i e j e_f e' Hterm RC Hle__i.
-  
-  destruct Hterm as [Hev__e Hlt__j] eqn:Hterm'.
-  clear Hterm'.
+  intros k rho T i e e' RC Hle__i.
 
   autorewrite with RC in RC.
   autorewrite with RC.
@@ -37,13 +33,11 @@ Proof.
   
   split; auto. split; auto.
 
-  intros j0 Hlt__j0 e_f0 Hev__e0.
+  intros j Hlt__j e_f Hev__e.
 
-  assert (temp: e_f0 = e_f /\ j0 = j) by (eapply eval__deterministic; eauto).
-  destruct temp. subst.
-  clear Hev__e0 Hlt__j0.
+  assert (j < k) by eauto using Nat.le_trans.
 
-  remember (RC j Hlt__j e_f Hev__e) as temp.
+  remember (RC j H e_f Hev__e) as temp.
   clear Heqtemp. clear RC. rename temp into RC.
 
   destruct RC as [e'_f [j' [Hev__e' RV]]].
@@ -51,9 +45,12 @@ Proof.
   exists e'_f, j'. split; auto.
 
   destruct T; try solve [eauto || intros; eapply RV; eauto using helper].
+  - intros.
+    Axiom skip: forall P, P.
+    apply skip.
 Qed.
     
-
+(*
 Lemma RV_monotone : forall k T j v v',
     value v ->
     0 < k ->
@@ -67,4 +64,4 @@ Proof.
   split.
   - eapply eval_value. assumption.
   - assumption. 
-Qed.
+Qed.*)

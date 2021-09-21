@@ -16,20 +16,20 @@ Require Import Coq.Logic.Decidable.
 
 
 
-Lemma RC_compatibility_Apply : forall k T1 T2 e1 e2 e1' e2',
-    RC k (Ty_Fun T1 T2) e1 e1' ->
-    RC k T1 e2 e2' ->
-    RC k T2 (Apply e1 e2) (Apply e1' e2').
+Lemma RC_compatibility_Apply : forall k rho T1 T2 e1 e2 e1' e2',
+    RC k rho (Ty_Fun T1 T2) e1 e1' ->
+    RC k rho T1 e2 e2' ->
+    RC k rho T2 (Apply e1 e2) (Apply e1' e2').
 Proof.
-  intros k T1 T2 e1 e2 e1' e2'.
+  intros k rho T1 T2 e1 e2 e1' e2'.
   intros RC1 RC2.
 
-  assert (Htyp : emptyContext |-+ (Apply e1 e2) : T2). {
+  assert (Htyp : emptyContext |-+ (Apply e1 e2) : (apply_tysubsts_1 rho T2)). {
     apply T_Apply with T1.
     - eapply RC_typable_empty_1; eauto.
     - eapply RC_typable_empty_1; eauto.
   } 
-  assert (Htyp' : emptyContext |-+ (Apply e1' e2') : T2). {
+  assert (Htyp' : emptyContext |-+ (Apply e1' e2') : (apply_tysubsts_2 rho T2)). {
     apply T_Apply with T1.
     - eapply RC_typable_empty_2; eauto.
     - eapply RC_typable_empty_2; eauto.
@@ -108,9 +108,8 @@ Proof.
       Instantiate the second conjunct of RC2 with (k - j1). 
   *)
   remember RC2 as RC2'. clear HeqRC2'.
-  assert (temp: RC (k - j1) T1 e2 e2'). {
+  assert (temp: RC (k - j1) rho T1 e2 e2'). {
     eapply RC_monotone.
-    - split. apply Hev__e2. apply skip. (* TODO *)
     - eassumption.
     - apply skip. (* TODO *) 
   }
@@ -134,7 +133,7 @@ Proof.
       # (k - j1 - j2, e_f2, e'_f2) \in RV[[T1]]
   *)
   destruct RC2 as [e'_f2 [j'_2 [Hev__e2' _]]].
-  assert (RV2: RC (k - j1 - j2) T1 e_f2 e'_f2). {
+  assert (RV2: RC (k - j1 - j2) rho T1 e_f2 e'_f2). {
     apply skip. (* TODO *)
   }
 
@@ -172,23 +171,22 @@ Proof.
   remember (RV1 x e_f11 x' e'_f11 Heq Heq' (k - j1 - j2 - 1) Hlt__j1_j2_k_j1) as temp.
   clear Heqtemp. clear RV1. rename temp into RV1.
 
-  assert (RC (k - j1 - j2 - 1) T1 v_f2 v'_f2). {
+  assert (RC (k - j1 - j2 - 1) rho T1 v_f2 v'_f2). {
     eapply RC_monotone.
-    - split. eapply eval_value. eapply eval_to_value. eapply Hev__e2. apply skip. 
     - eassumption.
     - apply skip.
   }
 
-  assert (temp : exists e_f11__substed, substitute x v_f2 e_f11 e_f11__substed). {
+  assert (temp : exists e_f11__s, substitute x v_f2 e_f11 e_f11__s). {
     eapply substitute_models_total_function__Term.
   }
-  destruct temp as [e_f11__substed Hsubst].
-  assert (temp : exists e'_f11__substed, substitute x' v'_f2 e'_f11 e'_f11__substed). {
+  destruct temp as [e_f11__s Hsubst].
+  assert (temp : exists e'_f11__s, substitute x' v'_f2 e'_f11 e'_f11__s). {
     eapply substitute_models_total_function__Term.
   }
-  destruct temp as [e'_f11__substed Hsubst'].
+  destruct temp as [e'_f11__s Hsubst'].
 
-  assert (RC (k - j1 - j2 - 1) T2 e_f11__substed e'_f11__substed). {
+  assert (RC (k - j1 - j2 - 1) rho T2 e_f11__s e'_f11__s). {
     eapply RV1; eauto.
     all: eauto using eval_value, eval_to_value.
   }
@@ -196,7 +194,7 @@ Proof.
   autorewrite with RC in H0.
   destruct H0 as [_ [_ H0]].
 
-  assert (exists j0, terminates_incl e_f11__substed j0 e_f (j - j1 - j2 - 1) /\ j = j1 + j2 + 1 + j0). {
+  assert (exists j0, terminates_incl e_f11__s j0 e_f (j - j1 - j2 - 1) /\ j = j1 + j2 + 1 + j0). {
     eapply termination_congr_Apply3; eauto. split; eauto. subst. eauto. split; eauto.
   }
   destruct H1 as [j3 H1]. destruct H1. destruct H1.
@@ -208,8 +206,9 @@ Proof.
 
   destruct T2; eauto.
   all : intros;
-    eapply H6; eauto;
+    try eapply H6; eauto;
     subst.
+  - apply skip.
   - apply skip.
   - apply skip.
   - apply skip.
