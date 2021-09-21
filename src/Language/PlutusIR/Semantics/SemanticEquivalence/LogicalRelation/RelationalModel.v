@@ -302,7 +302,7 @@ Inductive RD : kass -> tymapping -> Prop :=
   | RD_cons : forall ck rho T1 T2 Chi X K,
       emptyContext |-* T1 : K ->
       emptyContext |-* T2 : K ->
-      (* Something about the fact that K should be reduced? *)
+      (* Something about the fact that T1 and T2 should be reduced? *)
       Rel T1 T2 Chi ->
       RD ck rho ->
       RD ((X, K) :: ck) ((X, (Chi, T1, T2)) :: rho).
@@ -320,16 +320,6 @@ Inductive RG (rho : tymapping) (k : nat) : tass -> env -> env -> Prop :=
       RC k T rho v1 v2 ->
       RG rho k c e1 e2 ->
       RG rho k ((x, T) :: c) ((x, v1) :: e1) ((x, v2) :: e2).
-
-
-Inductive msubst : env -> Term -> Term -> Prop :=
-  | msubst_nil : forall t,
-      msubst nil t t
-  | msubst_cons : forall x s ss t t' t'',
-      substitute x s t t' ->
-      msubst ss t' t'' ->
-      msubst ((x, s) :: ss) t t''
-  .
 
 Fixpoint mupdate {X:Type} (m : partial_map X) (xts : list (string * X)) :=
   match xts with

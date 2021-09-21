@@ -33,10 +33,10 @@ Definition substituteT_context (a : tyname) (S : Ty) (Gamma : partial_map Ty) :=
 
 Definition P_Term (e : Term) :=
   forall a Gamma Delta T2 T1 K e_s,
-    (Gamma, a |-> K ; Delta) |-+ e : T2 ->
-    (Gamma, Delta) |-* T1 : K ->
+    (a |-> K ; Delta, Gamma) |-+ e : T2 ->
+    (Delta, Gamma) |-* T1 : K ->
     annotsubst a T1 e e_s ->
-    (substituteT_context a T1 Gamma, Delta) |-+ e_s : (substituteT a T1 T2).
+    (Delta, substituteT_context a T1 Gamma) |-+ e_s : (substituteT a T1 T2).
 
 Definition P_Binding (b : Binding) : Prop :=
   forall ctx x U v b',
@@ -89,11 +89,4 @@ Proof.
       rewrite eqb_refl.
       apply T_TyAbs.
       unfold P_Term in IH__t.
-      apply annotsubst_preserves_typing.
-      eapply IH__t.
-      unfold extendK in H4. fold extendK in H4.
-      eapply IH__t.
-      simpl.
-
-
- Admitted.
+Abort.

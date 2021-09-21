@@ -212,9 +212,9 @@ Proof.
     reflexivity.
 Qed.
 
-Theorem annotsubst__deterministic : forall X S t t' t'', 
-    annotsubst X S t t' ->
-    annotsubst X S t t'' ->
+Theorem substituteA__deterministic : forall X S t t' t'', 
+    substituteA X S t t' ->
+    substituteA X S t t'' ->
     t' = t''. 
 Proof. Admitted.
 

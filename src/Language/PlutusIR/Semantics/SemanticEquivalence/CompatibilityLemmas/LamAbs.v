@@ -44,7 +44,7 @@ Proof.
 Qed.
 
 Lemma compatibility_LamAbs : forall Delta Gamma x T1 e e' T2,
-    (Gamma, Delta) |-* T1 : Kind_Base ->
+    (Delta, Gamma) |-* T1 : Kind_Base ->
     LR_logically_approximate Delta (x |-> T1; Gamma) e e' T2 ->
     LR_logically_approximate Delta Gamma (LamAbs x T1 e) (LamAbs x T1 e') (Ty_Fun T1 T2).
 Proof.
@@ -73,24 +73,19 @@ Proof.
   subst.
   clear Hcls1 Hcls2.
 
-  assert (emptyContext |-+ (LamAbs x T1 e) : (msubstT_rho_syn1 rho (Ty_Fun T1 T2))). {
-    destruct IH_LR as [Htyp__e [Htyp__e' H]].
-    assert ((mupdate empty ct, mupdate empty ck) |-+ (LamAbs x T1 e) : (Ty_Fun T1 T2)). {
-      eapply T_LamAbs; eauto.
-    }
-    assert ()
-
-    eapply T_LamAbs in Htyp__e.
+  assert (emptyContext |-+ (LamAbs x T1 e_s0) : (msubstT_rho_syn1 rho (Ty_Fun T1 T2))). {
+    Axiom skip : forall P, P.
+    apply skip.
   }
-  assert (emptyContext |-+ (LamAbs x T1 e') : (Ty_Fun T1 T2)).
+  assert (emptyContext |-+ (LamAbs x T1 e'_s0) : (msubstT_rho_syn2 rho (Ty_Fun T1 T2))) by apply skip.
 
-  unfold P_has_type in IH.
+  unfold P_has_type in IH_LR.
 
   autorewrite with RC.
   split; auto. split; auto.
   intros j Hlt__j e_f Hev__e_f.
   inversion Hev__e_f. subst.
-  exists (LamAbs x T1 t0_3).
+  exists (LamAbs x T1 e'_s0).
   exists 0.
   split. {
     eapply eval_value. apply V_LamAbs.

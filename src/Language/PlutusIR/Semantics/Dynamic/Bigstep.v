@@ -1,6 +1,7 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
+Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.AnnotationSubstitution.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.Substitution.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.Values.
 
@@ -74,7 +75,7 @@ Inductive eval : Term -> Term -> nat -> Prop :=
   (* Type instantiation *)
   | E_TyInst : forall t1 T2 X K t0 t0' v0 k1 k0,
       t1 =[k1]=> TyAbs X K t0 ->
-      annotsubst X T2 t0 t0' ->
+      substituteA X T2 t0 t0' ->
       t0' =[k0]=> v0 ->
       TyInst t1 T2 =[k1 + k0]=> v0
   (* Errors and their propagation *)
