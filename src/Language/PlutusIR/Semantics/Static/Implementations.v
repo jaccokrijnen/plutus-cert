@@ -1,6 +1,7 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Map.
+Require Export PlutusCert.Language.PlutusIR.Semantics.Static.TypeSubstitution.
 
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Basics.
@@ -360,25 +361,6 @@ Fixpoint listOfArgumentTypes (T : Ty) : list Ty :=
   match T with
   | Ty_Fun T1 T2 => cons T1 (listOfArgumentTypes T2)
   | _ => nil
-  end.
-
-(** ** Substitution in types *)
-Fixpoint substituteT (X : tyname) (S T : Ty) : Ty :=
-  match T with
-  | Ty_Var Y => 
-    if X =? Y then S else Ty_Var Y
-  | Ty_Fun T1 T2 =>
-    Ty_Fun (substituteT X S T1) (substituteT X S T2)
-  | Ty_IFix F T =>
-    Ty_IFix (substituteT X S F) (substituteT X S T)
-  | Ty_Forall Y K T' =>
-    if X =? Y then Ty_Forall Y K T' else Ty_Forall Y K (substituteT X S T')
-  | Ty_Builtin u => 
-    Ty_Builtin u
-  | Ty_Lam Y K1 T' =>
-    if X =? Y then Ty_Lam Y K1 T' else Ty_Lam Y K1 (substituteT X S T')
-  | Ty_App T1 T2 =>
-    Ty_App (substituteT X S T1) (substituteT X S T2)
   end.
 
 Definition fromDecl (tvd : tvdecl tyname) : Context :=
