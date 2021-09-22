@@ -51,7 +51,7 @@ Proof.
   intros k rho env env' ct ck HeqDelta HeqGamma [H_RD H_RG].
   subst.
 
-  intros e_s e'_s env_cls env'_cls Hclsoff__env Hclsoff__env' Hms__e Hms__e' .
+  intros e_s e'_s Hms__e Hms__e' .
   
   apply msubst_Constant in Hms__e as Heq.
   apply msubst_Constant in Hms__e' as Heq'.
@@ -60,20 +60,8 @@ Proof.
 
   autorewrite with RC.
 
-  split. { 
-    exists (Constant (Some (ValueOf u a))).
-    split. 
-    - apply msubstA_Constant.
-    - rewrite msubstT_TyConstant. 
-      apply T_Constant. 
-  }
-  split. { 
-    exists (Constant (Some (ValueOf u a))).
-    split. 
-    - apply msubstA_Constant.
-    - rewrite msubstT_TyConstant. 
-      apply T_Constant. 
-  }
+  split. { rewrite msubstT_TyConstant. apply T_Constant. }
+  split. { rewrite msubstT_TyConstant. apply T_Constant. }
 
   intros j Hlt__j e_f Hev__e_f.
 

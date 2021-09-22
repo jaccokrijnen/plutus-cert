@@ -93,8 +93,8 @@ Proof. Admitted.
 Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k :=
   RC k T rho e e' =>
     (* RC *)
-    (exists e_sa, msubstA (msyn1 rho) e e_sa /\ emptyContext |-+ e_sa : (msubstT (msyn1 rho) T)) /\
-    (exists e'_sa, msubstA (msyn2 rho) e' e'_sa /\ emptyContext |-+ e'_sa : (msubstT (msyn2 rho) T)) /\
+    emptyContext |-+ e : (msubstT (msyn1 rho) T) /\
+    emptyContext |-+ e' : (msubstT (msyn2 rho) T) /\
 
     forall j (Hlt_j : j < k) e_f,
       e =[j]=> e_f ->
@@ -184,18 +184,18 @@ Definition impossible_type (T : Ty) : Prop := ~ possible_type T.
 
 Lemma RC_typable_empty : forall k T rho e e',
     RC k T rho e e' ->
-    (exists e_sa, msubstA (msyn1 rho) e e_sa /\ emptyContext |-+ e_sa : (msubstT (msyn1 rho) T)) /\
-    (exists e'_sa, msubstA (msyn2 rho) e' e'_sa /\ emptyContext |-+ e'_sa : (msubstT (msyn2 rho) T)).
+    emptyContext |-+ e : (msubstT (msyn1 rho) T) /\
+    emptyContext |-+ e' : (msubstT (msyn2 rho) T).
 Proof. intros. destruct T; edestruct H as [He [He' _]]; eauto. Qed.
 
 Lemma RC_typable_empty_1 : forall k T rho e e',
     RC k T rho e e' ->
-    (exists e_sa, msubstA (msyn1 rho) e e_sa /\ emptyContext |-+ e_sa : (msubstT (msyn1 rho) T)).
+    emptyContext |-+ e : (msubstT (msyn1 rho) T).
 Proof. intros. destruct (RC_typable_empty _ _ _ _ _ H). eauto. Qed.
 
 Lemma RC_typable_empty_2 : forall k T rho e e',
     RC k T rho e e' ->
-    (exists e'_sa, msubstA (msyn2 rho) e' e'_sa /\ emptyContext |-+ e'_sa : (msubstT (msyn2 rho) T)).
+    emptyContext |-+ e' : (msubstT (msyn2 rho) T).
 Proof. intros. destruct (RC_typable_empty _ _ _ _ _ H). eauto. Qed.
 
 Lemma RC_evaluable : forall k T rho e j e_f e',
@@ -345,12 +345,14 @@ Definition tass := list (name * Ty).
 Inductive RG (rho : tymapping) (k : nat) : tass -> env -> env -> Prop :=
   | RG_nil :
       RG rho k nil nil nil
-  | RG_cons : forall x T v1 v2 c e1 e2,
-      value v1 ->
-      value v2 ->
-      RC k T rho v1 v2 ->
+  | RG_cons : forall x T v1 v2 c e1 e2 v1_s v2_s,
+      msubstA (msyn1 rho) v1 v1_s ->
+      msubstA (msyn2 rho) v2 v2_s ->
+      value v1_s ->
+      value v2_s ->
+      RC k T rho v1_s v2_s ->
       RG rho k c e1 e2 ->
-      RG rho k ((x, T) :: c) ((x, v1) :: e1) ((x, v2) :: e2).
+      RG rho k ((x, T) :: c) ((x, v1_s) :: e1) ((x, v2_s) :: e2).
 
 Fixpoint mupdate {X:Type} (m : partial_map X) (xts : list (string * X)) :=
   match xts with
@@ -583,115 +585,71 @@ Proof.
   - simpl.
     simpl in C.
     destruct (x =? x0) eqn:Heqb.
-    + exists v1, v2. auto.
+    + exists v1_s, v2_s. auto.
     + apply IHV with T0.
       assumption.
 Qed.
 
-Lemma RG_env_closed : forall rho k c e1 e2 e1_cls e2_cls,
+Lemma RG_env_closed : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
-    close_off_env (msyn1 rho) e1 e1_cls ->
-    close_off_env (msyn2 rho) e2 e2_cls ->
-    closed_env e1_cls /\ closed_env e2_cls.
+    closed_env e1 /\ closed_env e2.
 Proof.
-  intros rho k c e1 e2 e1_cls e2_cls V Hcls1 Hcls2.
-  generalize dependent e2_cls.
-  generalize dependent e1_cls.
+  intros rho k c e1 e2 V.
   induction V; intros.
-  - inversion Hcls1. subst.
-    inversion Hcls2. subst.
-    split; reflexivity.
-  - inversion Hcls1. subst.
-    rename t' into v1'.
-    rename env' into e1_cls.
-    inversion Hcls2. subst.
-    rename t' into v2'.
-    rename env' into e2_cls.
-    split.
+  - split; reflexivity.
+  - split.
     + simpl.
       split.
       * eapply typable_empty__closed.
-        eapply RC_typable_empty_1 in H1.
-        destruct H1.
-        destruct H1.
-        assert (x0 = v1'). apply skip.
-        subst.
-        apply H2.
-      * assert (closed_env e1_cls /\ closed_env e2_cls) by eauto.
-        apply H2.
+        eapply RC_typable_empty_1.
+        eauto.
+      * apply IHV.
     + simpl.
       split.
       * eapply typable_empty__closed.
-        eapply RC_typable_empty_2 in H1.
-        destruct H1.
-        destruct H1.
-        assert (x0 = v2'). apply skip.
-        subst.
-        apply H2.
-    * assert (closed_env e1_cls /\ closed_env e2_cls) by eauto.
-      apply H2.
+        eapply RC_typable_empty_2.
+        eauto.
+    * apply IHV.
 Qed.
 
-Corollary RG_env_closed_1 : forall rho k c e1 e2 e1_cls e2_cls,
+Corollary RG_env_closed_1 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
-    close_off_env (msyn1 rho) e1 e1_cls ->
-    close_off_env (msyn2 rho) e2 e2_cls ->
-    closed_env e1_cls.
-Proof. intros. destruct (RG_env_closed _ _ _ _ _ _ _ H H0 H1). assumption. Qed.
+    closed_env e1.
+Proof. intros. destruct (RG_env_closed _ _ _ _ _ H). assumption. Qed.
 
-Corollary RG_env_closed_2 : forall rho k c e1 e2 e1_cls e2_cls,
+Corollary RG_env_closed_2 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
-    close_off_env (msyn1 rho) e1 e1_cls ->
-    close_off_env (msyn2 rho) e2 e2_cls ->
-    closed_env e1_cls.
-Proof. intros. destruct (RG_env_closed _ _ _ _ _ _ _ H H0 H1). assumption. Qed.
+    closed_env e2.
+Proof. intros. destruct (RG_env_closed _ _ _ _ _ H). assumption. Qed.
 
 
-Lemma RG_env_values : forall rho k c e1 e2 e1_cls e2_cls ,
+Lemma RG_env_values : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
-    close_off_env (msyn1 rho) e1 e1_cls ->
-    close_off_env (msyn2 rho) e2 e2_cls ->
-    value_env e1_cls /\ value_env e2_cls.
+    value_env e1 /\ value_env e2.
 Proof.
-  intros rho k c e1 e2 e1_cls e2_cls V Hcls1 Hcls2.
-  generalize dependent e2_cls.
-  generalize dependent e1_cls.
+  intros rho k c e1 e2 V.
   induction V; intros.
-  - inversion Hcls1. subst.
-    inversion Hcls2. subst.
-    split; reflexivity.
-  - inversion Hcls1. subst.
-    rename t' into v1'.
-    rename env' into e1_cls.
-    inversion Hcls2. subst.
-    rename t' into v2'.
-    rename env' into e2_cls.
-    split.
+  - split; reflexivity.
+  - split.
     + simpl.
       split.
-      * apply msubstA_preserves_value with (msyn1 rho) v1. assumption. assumption.
-      * assert (value_env e1_cls /\ value_env e2_cls) by eauto.
-        apply H2.
+      * assumption.
+      * apply IHV. 
     + simpl.
       split.
-      * apply msubstA_preserves_value with (msyn2 rho) v2. assumption. assumption.
-      * assert (value_env e1_cls /\ value_env e2_cls) by eauto.
-        apply H2.
+      * assumption.
+      * apply IHV. 
 Qed.
 
-Lemma RG_env_values_1 : forall rho k c e1 e2 e1_cls e2_cls,
+Lemma RG_env_values_1 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
-    close_off_env (msyn1 rho) e1 e1_cls ->
-    close_off_env (msyn2 rho) e2 e2_cls ->
-    value_env e1_cls.
-Proof. intros. destruct (RG_env_values _ _ _ _ _ _ _ H H0 H1). assumption. Qed.
+    value_env e1.
+Proof. intros. destruct (RG_env_values _ _ _ _ _ H). assumption. Qed.
 
-Lemma RG_env_values_2 : forall rho k c e1 e2 e1_cls e2_cls,
+Lemma RG_env_values_2 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
-    close_off_env (msyn1 rho) e1 e1_cls ->
-    close_off_env (msyn2 rho) e2 e2_cls ->
-    value_env e2_cls.
-Proof. intros. destruct (RG_env_values _ _ _ _ _ _ _ H H0 H1). assumption. Qed. 
+    value_env e2.
+Proof. intros. destruct (RG_env_values _ _ _ _ _ H). assumption. Qed. 
 
 Lemma RG_RC : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
@@ -708,9 +666,9 @@ Proof.
     inversion E1. subst.
     inversion E2. subst.
     destruct (x =? x').
-    + inversion H3. subst.
-      inversion H4. subst.
-      inversion H5. subst.
+    + inversion H5. subst.
+      inversion H6. subst.
+      inversion H7. subst.
       assumption. 
     + apply IHV with x'; assumption.
 Qed.
@@ -726,7 +684,9 @@ Proof.
   - intros. simpl.
     destruct (x =? x0).
     + apply IHV.
-    + apply RG_cons.
+    + eapply RG_cons.
+      * eassumption.
+      * eassumption.
       * assumption.
       * assumption.
       * assumption.
@@ -805,11 +765,9 @@ Definition LR_logically_approximate (Delta : partial_map Kind) (Gamma : partial_
       Delta = mupdate empty ck -> Gamma = mupdate empty ct ->
       RD ck rho /\
       RG rho k ct env env' ->
-      forall e_s e'_s env_cls env'_cls,
-        close_off_env (msyn1 rho) env env_cls ->
-        close_off_env (msyn2 rho) env' env'_cls ->
-        msubst env_cls e e_s ->
-        msubst env'_cls e' e'_s ->
+      forall e_s e'_s,
+        msubst env e e_s ->
+        msubst env' e' e'_s ->
         RC k T rho e_s e'_s.
       
 (** Logical relation: logical equivalence 

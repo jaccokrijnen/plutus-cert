@@ -54,10 +54,8 @@ Proof.
   - (* T_Var *)
     intros. 
     unfold P_has_type.
-
     apply compatibility_Var.
     assumption.
-    
 
   - (* T_Forall *)
     intros Gamma X K t0_1 T Htyp_t IH. 
