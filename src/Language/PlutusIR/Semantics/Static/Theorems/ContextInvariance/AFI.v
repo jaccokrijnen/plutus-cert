@@ -157,10 +157,10 @@ Inductive appears_free_in_Annotation (X : tyname) : Term -> Prop :=
       ~(In X (tyvars_bound_by_bindings bs)) ->
       appears_free_in_Annotation X t ->
       appears_free_in_Annotation X (Let r bs t)
-  | AFI_LetNonRec : forall bs t,
+  | AFIA_LetNonRec : forall bs t,
       appears_free_in_Annotation__bindings_nonrec X bs ->
       appears_free_in_Annotation X (Let NonRec bs t)
-  | AFI_LetRec : forall bs t,
+  | AFIA_LetRec : forall bs t,
       ~(In X (tyvars_bound_by_bindings bs)) ->
       appears_free_in_Annotation__bindings_rec X bs ->
       appears_free_in_Annotation X (Let Rec bs t)

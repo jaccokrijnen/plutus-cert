@@ -382,7 +382,18 @@ Proof.
   intros.
   eapply vacuous_substitution; eauto.
   unfold closed in H.
-  destruct H.
+  apply H.
+Qed.
+
+Lemma substA_closed : forall t,
+    closed t -> 
+    forall X T t',
+      substituteA X T t t' ->
+      t' = t.
+Proof.
+  intros.
+  eapply vacuous_substituteA; eauto.
+  unfold closed in H.
   apply H.
 Qed.
 
@@ -432,6 +443,26 @@ Proof.
     inversion H0. 
     subst.
     assert (t'0 = t) by eauto using subst_closed.
+    subst.
+    apply IHss.
+    assumption.
+Qed.
+
+Lemma msubstA_closed : forall t,
+    closed t ->
+    forall ss t',
+      msubstA ss t t' ->
+      t' = t.
+Proof.
+  induction ss.
+  - intros.
+    inversion H0. 
+    subst.
+    reflexivity.
+  - intros.
+    inversion H0. 
+    subst.
+    assert (t'0 = t) by eauto using substA_closed.
     subst.
     apply IHss.
     assumption.
@@ -622,7 +653,6 @@ Corollary RG_env_closed_2 : forall rho k c e1 e2,
     closed_env e2.
 Proof. intros. destruct (RG_env_closed _ _ _ _ _ H). assumption. Qed.
 
-
 Lemma RG_env_values : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
     value_env e1 /\ value_env e2.
@@ -696,15 +726,55 @@ Qed.
 (** ** Congruence lemmas on [eval] *)
 
 (** ** Multi-substitutions preserve typing *)
+Definition upd (m : list (tyname * Ty)) (Gamma : partial_map Ty) :=
+  fun x =>
+    match Gamma x with
+    | None => None
+    | Datatypes.Some T => Datatypes.Some (msubstT m T)
+    end.
+
+Lemma e : forall Gamma,
+    upd nil Gamma = Gamma.
+Proof.
+  intros.
+  apply Coq.Logic.FunctionalExtensionality.functional_extensionality.
+  intros.
+  unfold upd.
+  simpl.
+  destruct (Gamma x); auto.
+Qed.
+
+Lemma msubst_preserves_typing_1 : forall rho ck,
+    RD ck rho ->
+    forall Gamma Delta t t' S,
+      (mupdate Delta ck, Gamma) |-+ t : (msubstT (msyn1 rho) S) ->
+      msubstA (msyn1 rho) t t' ->
+      (Delta, upd (msyn1 rho) Gamma) |-+ t': (msubstT (msyn1 rho) S). 
+Proof.
+  intros rho ck V.
+  induction V.
+  - intros.
+    inversion H0. subst.
+    simpl in H.
+    simpl.
+    rewrite e.
+    assumption.
+  - intros.
+    inversion H3. subst.
+    simpl in H2.
+    simpl in H3.
+    simpl.
+    unfold upd.
+    simpl.
+Abort.
 
 
-(*
 Lemma msubst_preserves_typing_1 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
     forall Gamma Delta t t' S,
-      (mupdate Gamma c, Delta) |-+ t : S ->
+      (Delta, mupdate Gamma (List.map (fun x => (fst x, msubstT (msyn1 rho) (snd x))) c)) |-+ t : (msubstT (msyn1 rho) S) ->
       msubst e1 t t' ->
-      (Gamma, Delta) |-+ t': S. 
+      (Delta, Gamma) |-+ t': (msubstT (msyn1 rho) S). 
 Proof.
   intros rho k c e1 e2 V.
   induction V.
@@ -713,23 +783,23 @@ Proof.
     inversion H0. subst.
     assumption.
   - intros.
-    simpl in H2.
-    inversion H3. subst.
+    simpl in H4.
+    inversion H5. subst.
     apply IHV with t'0.
     + eapply substitution_preserves_typing.
-      * apply H2.
+      * apply H4.
       * eapply RC_typable_empty_1.
-        apply H1.
-      * apply H9.
-    + apply H10.
+        eauto.
+      * assumption.
+    + assumption.
 Qed. 
 
 Lemma msubst_preserves_typing_2 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
     forall Gamma Delta t t' S,
-      (mupdate Gamma (map_msubstT_rho_syn2 rho c), Delta) |-+ t : S ->
+      (Delta, mupdate Gamma (List.map (fun x => (fst x, msubstT (msyn2 rho) (snd x))) c)) |-+ t : (msubstT (msyn2 rho) S) ->
       msubst e2 t t' ->
-      (Gamma, Delta) |-+ t': S. 
+      (Delta, Gamma) |-+ t': (msubstT (msyn2 rho) S). 
 Proof.
   intros rho k c e1 e2 V.
   induction V.
@@ -738,17 +808,16 @@ Proof.
     inversion H0. subst.
     assumption.
   - intros.
-    simpl in H2.
-    inversion H3. subst.
+    simpl in H4.
+    inversion H5. subst.
     apply IHV with t'0.
     + eapply substitution_preserves_typing.
-      * apply H2.
-      * apply RC_typable_empty_2 with k v1.
-        apply H1.
-      * apply H9.
-    + apply H10.
-Qed. *)
-
+      * apply H4.
+      * eapply RC_typable_empty_2.
+        eauto.
+      * assumption.
+    + assumption.
+Qed.
 
 (** Logical relation: logical approximation
 
@@ -765,9 +834,11 @@ Definition LR_logically_approximate (Delta : partial_map Kind) (Gamma : partial_
       Delta = mupdate empty ck -> Gamma = mupdate empty ct ->
       RD ck rho /\
       RG rho k ct env env' ->
-      forall e_s e'_s,
-        msubst env e e_s ->
-        msubst env' e' e'_s ->
+      forall e_sa e'_sa e_s e'_s,
+        msubstA (msyn1 rho) e e_sa ->
+        msubstA (msyn2 rho) e e'_sa ->
+        msubst env e_sa e_s ->
+        msubst env' e'_sa e'_s ->
         RC k T rho e_s e'_s.
       
 (** Logical relation: logical equivalence 

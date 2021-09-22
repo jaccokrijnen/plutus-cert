@@ -53,7 +53,7 @@ Inductive substituteA : tyname -> Ty -> Term -> Term -> Prop :=
       substituteA X S (TyAbs bX K t0) (TyAbs bX K t0')
   | SA_LamAbs : forall X S bx T t0 t0',
       substituteA X S t0 t0' ->
-      substituteA X S (LamAbs bx T t0) (LamAbs bx (beta_reduce (substituteT X S T)) t0')
+      substituteA X S (LamAbs bx T t0) (LamAbs bx (substituteT X S T) t0')
   | SA_Apply : forall X S t1 t2 t1' t2',
       substituteA X S t1 t1' ->
       substituteA X S t2 t2' ->
@@ -64,7 +64,7 @@ Inductive substituteA : tyname -> Ty -> Term -> Term -> Prop :=
       substituteA X S (Builtin d) (Builtin d)
   | SA_TyInst : forall X S t0 T t0',
       substituteA X S t0 t0' ->
-      substituteA X S (TyInst t0 T) (TyInst t0' (beta_reduce (substituteT X S T)))
+      substituteA X S (TyInst t0 T) (TyInst t0' (substituteT X S T))
   | SA_Error : forall X S T,
       substituteA X S (Error T) (Error T)
   | SA_IWrap : forall X S F T t0 t0',
@@ -98,9 +98,9 @@ with substituteA_bindings_rec : tyname -> Ty -> list Binding -> list Binding -> 
 with substituteA_binding : tyname -> Ty -> Binding -> Binding -> Prop :=
   | SA_TermBind : forall X S strictness bx T t t',
       substituteA X S t t' ->
-      substituteA_binding X S (TermBind strictness (VarDecl bx T) t) (TermBind strictness (VarDecl bx (beta_reduce (substituteT X S T))) t')
+      substituteA_binding X S (TermBind strictness (VarDecl bx T) t) (TermBind strictness (VarDecl bx (substituteT X S T)) t')
   | SA_TypeBind : forall X S tvd T,
-      substituteA_binding X S (TypeBind tvd T) (TypeBind tvd (beta_reduce (substituteT X S T)))
+      substituteA_binding X S (TypeBind tvd T) (TypeBind tvd (substituteT X S T))
   | SA_DatatypeBind : forall X S tvd YKs matchFunc cs,
       substituteA_binding X S (DatatypeBind (Datatype tvd YKs matchFunc cs)) (DatatypeBind (Datatype tvd YKs matchFunc (map (substituteA_constructor X S) cs))).
 

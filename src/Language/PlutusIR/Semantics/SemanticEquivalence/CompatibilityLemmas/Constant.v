@@ -17,15 +17,20 @@ Proof.
     eauto.
 Qed.
 
-Lemma msubstA_Constant : forall ss sv,
-  msubstA ss (Constant sv) (Constant sv).
+Lemma msubstA_Constant : forall ss sv t',
+  msubstA ss (Constant sv) t' ->
+  t' = (Constant sv).
 Proof.
   induction ss; intros.
-  - apply msubstA_nil.
-  - destruct a. 
-    eapply msubstA_cons.
-    + apply SA_Constant.
-    + apply IHss.
+  - inversion H.
+    subst.
+    reflexivity.
+  - inversion H.
+    subst.
+    inversion H2. 
+    subst.
+    apply IHss.
+    assumption.
 Qed.
 
 Lemma msubstT_TyConstant : forall ss u,
@@ -51,12 +56,15 @@ Proof.
   intros k rho env env' ct ck HeqDelta HeqGamma [H_RD H_RG].
   subst.
 
-  intros e_s e'_s Hms__e Hms__e' .
+  intros e_sa e'_sa  e_s e'_s HmsA__e_sa HmsA__e'_sa Hms__e_s Hms__e'_s.
   
-  apply msubst_Constant in Hms__e as Heq.
-  apply msubst_Constant in Hms__e' as Heq'.
+  apply msubstA_Constant in HmsA__e_sa.
+  apply msubstA_Constant in HmsA__e'_sa.
   subst.
-  clear Hms__e Hms__e'.
+  apply msubst_Constant in Hms__e_s.
+  apply msubst_Constant in Hms__e'_s.
+  subst.
+
 
   autorewrite with RC.
 
