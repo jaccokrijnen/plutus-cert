@@ -6,6 +6,7 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Logica
 
 Require Import Arith.
 
+(*
 Lemma msubst_Var : forall ss x,
     closed_env ss ->
     value_env ss ->
@@ -33,7 +34,7 @@ Proof.
       apply IHss; eauto.
       inversion H; auto.
       inversion H0; auto.
-Qed.
+Qed.*)
 
 Lemma compatibility_Var : forall Delta Gamma x T,
     Gamma x = Coq.Init.Datatypes.Some T ->
@@ -45,6 +46,7 @@ Proof.
   split. { apply T_Var. auto. }
   split. { apply T_Var. auto. }
 
+  (*
   intros k rho env env' ct ck HeqDelta HeqGamma [H_RD H_RG].
   subst.
 
@@ -71,4 +73,5 @@ Proof.
     rewrite Hlu__v' in Hms__e'_substed.
     destruct Hms__e'_substed. subst.
     assumption.
-Qed.
+  *)
+Admitted.

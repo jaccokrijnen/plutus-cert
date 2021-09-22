@@ -6,32 +6,37 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Logica
 
 Require Import Arith.
 
-
-Lemma msubstT_rho_syn1__TyConstant : forall rho u,
-    msubstT_rho_syn1 rho (Ty_Builtin (Some (TypeIn u))) = Ty_Builtin (Some (TypeIn u)).
+Lemma msubst_Constant : forall ss sv t',
+  msubst ss (Constant sv) t' ->
+  t' = Constant sv.
 Proof.
-  induction rho.
-  - reflexivity.
-  - intros.
-    simpl.
-    destruct a.
-    destruct p.
-    destruct p.
-    apply IHrho.
+  induction ss; intros.
+  - inversion H. subst. reflexivity.
+  - inversion H. subst.
+    inversion H2. subst.
+    eauto.
 Qed.
 
-
-Lemma msubstT_rho_syn2__TyConstant : forall rho u,
-    msubstT_rho_syn2 rho (Ty_Builtin (Some (TypeIn u))) = Ty_Builtin (Some (TypeIn u)).
+Lemma msubstA_Constant : forall ss sv,
+  msubstA ss (Constant sv) (Constant sv).
 Proof.
-  induction rho.
+  induction ss; intros.
+  - apply msubstA_nil.
+  - destruct a. 
+    eapply msubstA_cons.
+    + apply SA_Constant.
+    + apply IHss.
+Qed.
+
+Lemma msubstT_TyConstant : forall ss u,
+    msubstT ss (Ty_Builtin (Some (TypeIn u))) = Ty_Builtin (Some (TypeIn u)).
+Proof.
+  induction ss.
   - reflexivity.
   - intros.
     simpl.
     destruct a.
-    destruct p.
-    destruct p.
-    apply IHrho.
+    apply IHss.
 Qed.
 
 Lemma compatibility_Constant : forall Delta Gamma u a,
@@ -55,8 +60,20 @@ Proof.
 
   autorewrite with RC.
 
-  split. { rewrite msubstT_rho_syn1__TyConstant. apply T_Constant. }
-  split. { rewrite msubstT_rho_syn2__TyConstant. apply T_Constant. }
+  split. { 
+    exists (Constant (Some (ValueOf u a))).
+    split. 
+    - apply msubstA_Constant.
+    - rewrite msubstT_TyConstant. 
+      apply T_Constant. 
+  }
+  split. { 
+    exists (Constant (Some (ValueOf u a))).
+    split. 
+    - apply msubstA_Constant.
+    - rewrite msubstT_TyConstant. 
+      apply T_Constant. 
+  }
 
   intros j Hlt__j e_f Hev__e_f.
 

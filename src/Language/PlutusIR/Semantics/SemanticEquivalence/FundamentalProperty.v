@@ -14,7 +14,7 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Termin
 
 
 Definition P_has_type Gamma e T := 
-  LR_logically_approximate (snd Gamma) (fst Gamma) e e T.
+  LR_logically_approximate (fst Gamma) (snd Gamma) e e T.
 
 Definition P_constructor_well_formed Gamma c := Gamma |-ok_c c.
 
@@ -62,14 +62,21 @@ Proof.
   - (* T_Forall *)
     intros Gamma X K t0_1 T Htyp_t IH. 
     unfold P_has_type. 
+    unfold LR_logically_approximate.
+    intros.
+    autorewrite with RC.
+    
 
     apply skip.
 
   - (* T_LamAbs *)
     intros. 
     unfold P_has_type.
+    apply skip.
 
   - (* T_Apply *)
+    apply skip.
+    (*
     intros Gamma t1 t2 T1 T2 Htyp_t1 IH_t1 Htyp_t2 IH_t2.
     unfold P_has_type.
     intros k c e1 e2 Heq Htyp _ V t3 t4 Hms_t3 Hms_t4.
@@ -86,23 +93,21 @@ Proof.
     assert (R1: RC k (Ty_Fun T1 T2) t3_1 t4_1) by (eapply IH_t1; eauto; apply skip).
     assert (R2: RC k T1 t3_2 t4_2) by (eapply IH_t2; eauto; apply skip).
 
-    eapply RC_compatibility_Apply; eauto.
+    eapply RC_compatibility_Apply; eauto.*)
   
   - (* T_Constant *)
     intros Gamma u a.
     unfold P_has_type.
-    intros k c e1 e2 Heq Htyp_t1 _ V t2 t3 Hmsubst_t2 Hmsubst_t3.
-
-    apply msubst_Constant in Hmsubst_t2 as Heq2.
-    apply msubst_Constant in Hmsubst_t3 as Heq3.
-    subst.
-
-    apply RC_compatibility_Constant.
+    apply compatibility_Constant.
     
   - (* T_Builtin*)
     apply skip.
 
   - (* T_TyInst *)
+    intros.
+    unfold P_has_type.
+    unfold LR_logically_approximate.
+    
     apply skip.
 
   - (* T_Error *)

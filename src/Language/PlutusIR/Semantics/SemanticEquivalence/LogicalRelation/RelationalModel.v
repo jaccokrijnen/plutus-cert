@@ -5,40 +5,61 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
 
 Require Import Arith.
-
+Require Import Coq.Lists.List.
+Require Import Coq.Strings.String.
+Local Open Scope string_scope.
 
 Definition terminates_excl := fun t j v k => t =[j]=> v /\ j < k.
 Definition terminates_incl := fun t j v k => t =[j]=> v /\ j <= k.
 
-Lemma e : forall i j k,
-i < k ->
-j < k - i ->
-j < k.
-Proof. Admitted.
 
+(** ** Type mappings
 
-
-
+    We denote a type mapping by rho. A type mapping maps
+    type variables to a triplet of a step-indexed relation and two types.
+*)
 Definition tymapping := list (tyname * ((nat -> Term -> Term -> Prop) * Ty * Ty)).
 
-Fixpoint rho_sem (rho : tymapping) (a : tyname) : option (nat -> Term -> Term -> Prop) :=
+
+(** Semantic substitution for the type variable a *)
+Fixpoint sem (rho : tymapping) (a : tyname) : option (nat -> Term -> Term -> Prop) :=
   match rho with
   | nil => None
   | (a', (Chi, _ , _)) :: rho' => 
-      if String.eqb a a' then Datatypes.Some Chi else rho_sem rho' a
+      if a =? a' then Datatypes.Some Chi else sem rho' a
   end.
 
 
-Fixpoint msubstT_rho_syn1 (rho : tymapping) (T : Ty) : Ty :=
+(** (Left) syntactic substitution for the type variable a *)
+Fixpoint syn1 (rho : tymapping) (a : tyname) : option Ty :=
   match rho with
-  | nil => T
-  | (a, (_, T1, _)) :: rho' => msubstT_rho_syn1 rho' (substituteT a T1 T)
+  | nil => None
+  | (a', (_, T1, _)) :: rho' => 
+      if a =? a' then Datatypes.Some T1 else syn1 rho' a
   end.
 
-Fixpoint msubstT_rho_syn2 (rho : tymapping) (T : Ty) : Ty :=
+(** (Right) syntactic substitution for the type variable a *)
+Fixpoint syn2 (rho : tymapping) (a : tyname) : option Ty :=
   match rho with
-  | nil => T
-  | (a, (_, _, T2)) :: rho' => msubstT_rho_syn2 rho' (substituteT a T2 T)
+  | nil => None
+  | (a', (_, _, T2)) :: rho' => 
+      if a =? a' then Datatypes.Some T2 else syn2 rho' a
+  end.
+
+(** (Left) syntactic substitutions in rho *)
+Fixpoint msyn1 (rho : tymapping) : list (tyname * Ty) :=
+  match rho with
+  | nil => nil
+  | (a', (_, T1, _)) :: rho' => 
+      (a', T1) :: msyn1 rho'
+  end.
+
+(** (Right) syntactic substitutions in rho *)
+Fixpoint msyn2 (rho : tymapping) : list (tyname * Ty) :=
+  match rho with
+  | nil => nil
+  | (a', (_, _, T2)) :: rho' => 
+      (a', T2) :: msyn2 rho'
   end.
 
 Definition Rel 
@@ -54,21 +75,27 @@ Definition Rel
       i <= j ->
       Chi i v v'.
 
-(*
-Definition k_approx 
-    (X : nat -> Term -> Term -> Prop) (k : nat) 
-    (j : nat) (v v' : Term)
-    : Prop :=
-    j < k /\
-    Chi j v v'.
+
+
+(** ** Relation interpation for computations and values *)
+
+(** *** Fixpoint termination 
+
+    This helper lemma is the key to proving that [RC] is terminating.
 *)
+Lemma RC_termination_helper : forall i j k,
+    i < k ->
+    j < k - i ->
+    j < k.
+Proof. Admitted.
 
 (** RV = Relational interpretation for values, RC = Relation interpretation for computations *)
 Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k :=
   RC k T rho e e' =>
     (* RC *)
-    emptyContext |-+ e : (msubstT_rho_syn1 rho T) /\
-    emptyContext |-+ e' : (msubstT_rho_syn2 rho T) /\
+    (exists e_sa, msubstA (msyn1 rho) e e_sa /\ emptyContext |-+ e_sa : (msubstT (msyn1 rho) T)) /\
+    (exists e'_sa, msubstA (msyn2 rho) e' e'_sa /\ emptyContext |-+ e'_sa : (msubstT (msyn2 rho) T)) /\
+
     forall j (Hlt_j : j < k) e_f,
       e =[j]=> e_f ->
       exists e'_f j', e' =[j']=> e'_f /\
@@ -79,7 +106,7 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
         (* RV for type variable *)
         | Ty_Var a =>
             forall Chi,
-            rho_sem rho a = Datatypes.Some Chi ->  
+            sem rho a = Datatypes.Some Chi ->  
             Chi (k - j) e_f e'_f
 
         (* RV for type lambda *)
@@ -137,7 +164,7 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
                 forall i (Hlt_i : i < k - j),
                   RC i T ((bX, (Chi, T1, T2)) :: rho) e_body e'_body
       end.
-Proof. all: try (eapply e; eauto). Qed.
+Proof. all: eapply RC_termination_helper. all: eauto. Qed.
       
 Definition RV (k : nat) (T : Ty) (rho : tymapping) (v v' : Term) : Prop :=
   value v /\ value v' /\ RC k T rho v v'.
@@ -157,18 +184,19 @@ Definition impossible_type (T : Ty) : Prop := ~ possible_type T.
 
 Lemma RC_typable_empty : forall k T rho e e',
     RC k T rho e e' ->
-    emptyContext |-+ e : (msubstT_rho_syn1 rho T) /\ emptyContext |-+ e' : (msubstT_rho_syn2 rho T).
-Proof. intros. destruct k, T; destruct H as [He [He' _]]; auto. Qed.
+    (exists e_sa, msubstA (msyn1 rho) e e_sa /\ emptyContext |-+ e_sa : (msubstT (msyn1 rho) T)) /\
+    (exists e'_sa, msubstA (msyn2 rho) e' e'_sa /\ emptyContext |-+ e'_sa : (msubstT (msyn2 rho) T)).
+Proof. intros. destruct T; edestruct H as [He [He' _]]; eauto. Qed.
 
 Lemma RC_typable_empty_1 : forall k T rho e e',
     RC k T rho e e' ->
-    emptyContext |-+ e : (msubstT_rho_syn1 rho T).
-Proof. intros. destruct (RC_typable_empty _ _ _ _ _ H). assumption. Qed.
+    (exists e_sa, msubstA (msyn1 rho) e e_sa /\ emptyContext |-+ e_sa : (msubstT (msyn1 rho) T)).
+Proof. intros. destruct (RC_typable_empty _ _ _ _ _ H). eauto. Qed.
 
 Lemma RC_typable_empty_2 : forall k T rho e e',
     RC k T rho e e' ->
-    emptyContext |-+ e' : (msubstT_rho_syn2 rho T).
-Proof. intros. destruct (RC_typable_empty _ _ _ _ _ H). assumption. Qed.
+    (exists e'_sa, msubstA (msyn2 rho) e' e'_sa /\ emptyContext |-+ e'_sa : (msubstT (msyn2 rho) T)).
+Proof. intros. destruct (RC_typable_empty _ _ _ _ _ H). eauto. Qed.
 
 Lemma RC_evaluable : forall k T rho e j e_f e',
     terminates_excl e j e_f k ->
@@ -285,12 +313,15 @@ Lemma RC_impossible_type : forall k rho e j e_f e',
     (forall T1 T2, ~(RC k (Ty_App T1 T2) rho e e')).
 Proof. intros. destruct H. split; try split; try solve [intros; intro Hcon; destruct Hcon as [_ [_ [_ [_ [_ Hfls]]]]]; eauto]. Qed.
 
+(*
 Lemma RC_nontermination : forall k T rho e e',
     ~(exists e_f j, terminates_excl e j e_f k) ->
     emptyContext |-+ e : (msubstT_rho_syn1 rho T) ->
     emptyContext |-+ e' : (msubstT_rho_syn2 rho T) ->
     RC k T rho e e'.
 Proof. intros. unfold terminates_excl in H. destruct T; try solve [split; auto; split; auto; intros; exfalso; apply H; eauto]. Qed.
+*)
+
 
 (** ** Multisubstitutions, multi-extensions, and instantiations *)
 
@@ -338,7 +369,6 @@ Fixpoint drop {X:Type} (n:string) (nxs:list (string * X)) : list (string * X) :=
   | nil => nil
   | (n',x) :: nxs' => if String.eqb n' n then drop n nxs' else (n',x) :: (drop n nxs')
   end.
-
 
 
 Lemma subst_closed : forall t,
@@ -439,16 +469,7 @@ Proof.
     assumption.
 Qed.
 
-Lemma msubst_Constant : forall ss sv t',
-  msubst ss (Constant sv) t' ->
-  t' = Constant sv.
-Proof.
-  induction ss; intros.
-  - inversion H. subst. reflexivity.
-  - inversion H. subst.
-    inversion H2. subst.
-    eauto.
-Qed.
+
 
 Lemma msubst_IWrap : forall ss F T M t',
     msubst ss (IWrap F T M) t' ->
@@ -540,6 +561,7 @@ Proof.
       assumption.
 Qed.
 
+(*
 Lemma RG_env_closed : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
     closed_env e1 /\ closed_env e2.
@@ -550,7 +572,8 @@ Proof.
   - split.
     + simpl.
       split.
-      * eapply typable_empty__closed.
+      * eapply RC_typable_empty_1 in H1.
+         eapply typable_empty__closed.
         eapply RC_typable_empty_1 with k v2.
         eassumption.
       * apply IHV.
@@ -571,6 +594,8 @@ Corollary RG_env_closed_2 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
     closed_env e2.
 Proof. intros. destruct (RG_env_closed _ _ _ _ _ H). assumption. Qed.
+*)
+
 
 Lemma RG_env_values : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
