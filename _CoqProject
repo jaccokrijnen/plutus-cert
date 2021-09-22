@@ -56,6 +56,7 @@ src/Language/PlutusIR/Semantics/Static/Rules.v
 src/Language/PlutusIR/Semantics/Static/Implementations.v
 src/Language/PlutusIR/Semantics/Static/Map.v
 src/Language/PlutusIR/Semantics/Static/Theorems/ContextInvariance.v
+src/Language/PlutusIR/Semantics/Static/Theorems/ContextInvariance/AFI.v
 src/Language/PlutusIR/Semantics/Static/Theorems/UniqueTypes.v
 src/Language/PlutusIR/Semantics/Static/Theorems/Weakening.v
 src/Language/PlutusIR/Semantics/Static/TypeSubstitution.v

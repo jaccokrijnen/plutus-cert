@@ -5,14 +5,14 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 
 Definition P_Term (t : Term) :=
   forall x,
-    ~(appears_free_in x t) ->
+    ~(appears_free_in_Term x t) ->
     forall s t', 
       substitute x s t t' ->
       t' = t.
 
 Definition P_Binding (b : Binding) :=
   forall x,
-    ~(appears_free_in_binding x b) ->
+    ~(appears_free_in_Term__binding x b) ->
     forall s b',
       substitute_binding x s b b' ->
       b' = b.
@@ -20,7 +20,7 @@ Definition P_Binding (b : Binding) :=
 Definition P_Bindings_NonRec (bs : list Binding) :=
   Util.ForallT P_Binding bs ->
   forall x,
-    ~(appears_free_in_bindings_nonrec x bs) ->
+    ~(appears_free_in_Term__bindings_nonrec x bs) ->
     forall s bs',
       substitute_bindings_nonrec x s bs bs' ->
       bs' = bs.
@@ -40,7 +40,7 @@ Proof.
       apply X with x s.
       * intros Hcon.
         apply H.
-        apply AFI_ConsB1_NonRec.
+        apply AFIT_ConsB1_NonRec.
         assumption.
       * assumption.
     + subst.
@@ -50,7 +50,7 @@ Proof.
         apply X with x s.
         -- intros Hcon.
            apply H.
-           apply AFI_ConsB1_NonRec.
+           apply AFIT_ConsB1_NonRec.
            assumption.
         -- assumption.
       * unfold P_Bindings_NonRec in IHbs.
@@ -59,7 +59,7 @@ Proof.
            assumption.
         -- intros Hcon.
            apply H.
-           apply AFI_ConsB2_NonRec.
+           apply AFIT_ConsB2_NonRec.
            ++ assumption.
            ++ assumption.
         -- assumption.
@@ -68,7 +68,7 @@ Qed.
 Definition P_Bindings_Rec (bs : list Binding) :=
   Util.ForallT P_Binding bs ->
   forall x,
-    ~(appears_free_in_bindings_rec x bs) ->
+    ~(appears_free_in_Term__bindings_rec x bs) ->
     forall s bs',
       substitute_bindings_rec x s bs bs' ->
       bs' = bs.
@@ -88,7 +88,7 @@ Proof.
       apply X with x s.
       * intros Hcon.
         apply H.
-        apply AFI_ConsB1_Rec.
+        apply AFIT_ConsB1_Rec.
         assumption.
       * assumption.
     + unfold P_Bindings_Rec in IHbs.
@@ -97,7 +97,7 @@ Proof.
         assumption.
       * intros Hcon.
         apply H.
-        apply AFI_ConsB2_Rec.
+        apply AFIT_ConsB2_Rec.
         assumption.
       * assumption.
 Qed.
@@ -116,7 +116,7 @@ Proof.
       * assumption.
       * intros Hcon.
         apply H0.
-        apply AFI_LetNonRec.
+        apply AFIT_LetNonRec.
         assumption.
       * assumption.
     + (* S_Let2 *)
@@ -127,14 +127,14 @@ Proof.
         -- assumption.
         -- intros Hcon.
            apply H0.
-           apply AFI_LetNonRec.
+           apply AFIT_LetNonRec.
            assumption.
         -- assumption.
       * unfold P_Term in H.
         apply H with x s.
         -- intros Hcon.
            apply H0.
-           apply AFI_Let.
+           apply AFIT_Let.
            ++ assumption.
            ++ assumption.
         -- assumption.
@@ -148,7 +148,7 @@ Proof.
         -- assumption.
         -- intros Hcon.
            apply H0.
-           apply AFI_LetRec.
+           apply AFIT_LetRec.
            ++ assumption.
            ++ assumption.
         -- assumption.
@@ -156,7 +156,7 @@ Proof.
         apply H with x s.
         -- intros Hcon.
            apply H0.
-           apply AFI_Let.
+           apply AFIT_Let.
            ++ assumption.
            ++ assumption.
         -- assumption.
@@ -165,7 +165,7 @@ Proof.
     inversion H0.
     + (* S_Var1 *)
       subst.
-      assert (appears_free_in s (Var s)) by constructor.
+      assert (appears_free_in_Term s (Var s)) by constructor.
       apply H in H1.
       destruct H1.
     + (* S_Var2 *)
@@ -178,7 +178,7 @@ Proof.
     apply H with x s0.
     + intros Hcon.
       apply H0.
-      apply AFI_TyAbs.
+      apply AFIT_TyAbs.
       assumption.
     + assumption.
   - (* LamAbs *)
@@ -193,7 +193,7 @@ Proof.
       apply H with x s0.
       * intros Hcon.
         apply H0.
-        apply AFI_LamAbs.
+        apply AFIT_LamAbs.
         -- assumption.
         -- assumption.
       * assumption.
@@ -205,14 +205,14 @@ Proof.
       apply H with x s.
       * intros Hcon.
         apply H1.
-        apply AFI_Apply1.
+        apply AFIT_Apply1.
         assumption.
       * assumption.
     + unfold P_Term in H0.
       apply H0 with x s.
       * intros Hcon.
         apply H1.
-        apply AFI_Apply2.
+        apply AFIT_Apply2.
         assumption.
       * assumption.
   - (* Constant *)
@@ -231,7 +231,7 @@ Proof.
     apply H with x s.
     + intros Hcon.
       apply H0.
-      apply AFI_TyInst.
+      apply AFIT_TyInst.
       assumption.
     + assumption.
   - (* Error *)
@@ -246,7 +246,7 @@ Proof.
     apply H with x s.
     + intros Hcon.
       apply H0.
-      apply AFI_IWrap.
+      apply AFIT_IWrap.
       assumption.
     + assumption.
   - (* Unwrap *)
@@ -257,7 +257,7 @@ Proof.
     apply H with x s.
     + intros Hcon.
       apply H0.
-      apply AFI_Unwrap.
+      apply AFIT_Unwrap.
       assumption.
     + assumption.
 
@@ -269,7 +269,7 @@ Proof.
     apply H with x s0.
     + intros Hcon.
       apply H0.
-      apply AFI_TermBind.
+      apply AFIT_TermBind.
       assumption.
     + assumption.
   - (* TypeBind *)

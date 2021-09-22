@@ -382,7 +382,7 @@ Lemma subst_not_afi : forall t x v,
     closed v ->
     forall t',
       substitute x v t t' ->
-      ~(appears_free_in x t').
+      ~(appears_free_in_Term x t').
 Proof. Admitted.
 
 Lemma duplicate_subst : forall x t v s,

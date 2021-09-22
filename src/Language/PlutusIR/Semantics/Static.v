@@ -6,5 +6,6 @@ Require Export PlutusCert.Language.PlutusIR.Semantics.Static.TypeSubstitution.
 
 (** Important theorems *)
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.ContextInvariance.
+Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.ContextInvariance.AFI.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.UniqueTypes.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.Weakening.

@@ -1,24 +1,12 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 
+Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.ContextInvariance.AFI.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Rules.
 
 Require Import Coq.Lists.List.
 
 
-Definition term_var_bound_by_constructor (c : NamedTerm.constructor) : string :=
-  match c with
-  | Constructor (VarDecl x _) _ => x
-  end.
-
-Definition term_vars_bound_by_binding (b : NamedTerm.Binding) : list string :=
-  match b with
-  | TermBind _ (VarDecl x _) _ => cons x nil
-  | TypeBind (TyVarDecl X _) _ => nil
-  | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => matchFunc :: (rev (map term_var_bound_by_constructor cs))
-  end.
-
-Definition term_vars_bound_by_bindings (bs : list NamedTerm.Binding) : list string := List.concat (map term_vars_bound_by_binding bs).
 
 Theorem context_invariance_T__has_kind : forall T ctx_T ctx_K K ctx_T',
     (ctx_K, ctx_T) |-* T : K ->
@@ -63,42 +51,9 @@ Qed.
 
 (** ** Type-level context invariance *)
 
-(** *** Free variables and closedness *)
-Inductive appears_free_in_Ty : tyname -> Ty -> Prop :=
-  | AFI_TyVar : forall X,
-      appears_free_in_Ty X (Ty_Var X)
-  | AFI_TyFun1 : forall X T1 T2,
-      appears_free_in_Ty X T1 ->
-      appears_free_in_Ty X (Ty_Fun T1 T2)
-  | AFI_TyFun2 : forall X T1 T2,
-      appears_free_in_Ty X T2 ->
-      appears_free_in_Ty X (Ty_Fun T1 T2)
-  | AFI_TyIFix1 : forall X F T,
-      appears_free_in_Ty X F ->
-      appears_free_in_Ty X (Ty_IFix F T)
-  | AFI_TyIFix2 : forall X F T,
-      appears_free_in_Ty X T ->
-      appears_free_in_Ty X (Ty_IFix F T)
-  | AFI_TyForall : forall X bX K T,
-      X <> bX ->
-      appears_free_in_Ty X T ->
-      appears_free_in_Ty X (Ty_Forall bX K T)
-  | AFI_TyLam : forall X bX K T,
-      X <> bX ->
-      appears_free_in_Ty X T ->
-      appears_free_in_Ty X (Ty_Lam bX K T)
-  | AFI_TyApp1 : forall X T1 T2,
-      appears_free_in_Ty X T1 ->
-      appears_free_in_Ty X (Ty_App T1 T2)
-  | AFI_TyApp2 : forall X T1 T2,
-      appears_free_in_Ty X T2 ->
-      appears_free_in_Ty X (Ty_App T1 T2)
-  .
-  
-#[export] Hint Constructors appears_free_in_Ty : core.
 
-Definition closed_typelevel (T : Ty) :=
-  forall X, ~(appears_free_in_Ty X T).
+  
+
 
 (** *** Context invariance (Lemma) *)
 Lemma context_invariance__typelevel : forall Gamma Gamma' T K,
@@ -141,7 +96,7 @@ Qed.
 
 (** *** Free variables are in context (Lemma) *)
 
-Lemma free_in_context__typelevel : forall X T K Gamma,
+Lemma free_in_context__Ty : forall X T K Gamma,
     appears_free_in_Ty X T ->
     Gamma |-* T : K ->
     exists K', lookupK Gamma X = Datatypes.Some K'.
@@ -152,92 +107,24 @@ Proof with eauto.
   - rewrite lookupK_neq in IHHtyp; auto.
 Qed.
 
-Corollary typable_empty__closed_typelevel : forall T K GammaT,
+Corollary typable_empty__closed_Ty : forall T K GammaT,
     (empty, GammaT) |-* T : K ->
-    closed_typelevel T.
+    closed_Ty T.
 Proof.
-  intros. unfold closed_typelevel. intros x H1.
-  destruct (free_in_context__typelevel _ _ _ _ H1 H) as [T' C].
+  intros. unfold closed_Ty. intros x H1.
+  destruct (free_in_context__Ty _ _ _ _ H1 H) as [T' C].
   discriminate C.
 Qed.
 
 (** ** Term-level context invariance *)
 
-(** *** Free variables and closedness *)
-Inductive appears_free_in : name -> Term -> Prop :=
-  | AFI_Let : forall x r bs t,
-      ~(In x (term_vars_bound_by_bindings bs)) ->
-      appears_free_in x t ->
-      appears_free_in x (Let r bs t)
-  | AFI_LetNonRec : forall x bs t,
-      appears_free_in_bindings_nonrec x bs ->
-      appears_free_in x (Let NonRec bs t)
-  | AFI_LetRec : forall x bs t,
-      ~(In x (term_vars_bound_by_bindings bs)) ->
-      appears_free_in_bindings_rec x bs ->
-      appears_free_in x (Let Rec bs t)
-  | AFI_Var : forall x,
-      appears_free_in x (Var x)
-  | AFI_TyAbs : forall x bX K t0,
-      appears_free_in x t0 ->
-      appears_free_in x (TyAbs bX K t0)
-  | AFI_LamAbs : forall x bx K t0,
-      x <> bx ->
-      appears_free_in x t0 ->
-      appears_free_in x (LamAbs bx K t0)
-  | AFI_Apply1 : forall x t1 t2,
-      appears_free_in x t1 ->
-      appears_free_in x (Apply t1 t2)
-  | AFI_Apply2 : forall x t1 t2,
-      appears_free_in x t2 ->
-      appears_free_in x (Apply t1 t2)
-  | AFI_TyInst : forall x t0 T,
-      appears_free_in x t0 ->
-      appears_free_in x (TyInst t0 T)
-  | AFI_IWrap : forall x F T t0,
-      appears_free_in x t0 ->
-      appears_free_in x (IWrap F T t0)
-  | AFI_Unwrap : forall x t0,
-      appears_free_in x t0 ->
-      appears_free_in x (Unwrap t0)
 
-with appears_free_in_bindings_nonrec : name -> list Binding -> Prop :=
-  | AFI_ConsB1_NonRec : forall x b bs,
-      appears_free_in_binding x b ->
-      appears_free_in_bindings_nonrec x (b :: bs)
-  | AFI_ConsB2_NonRec : forall x b bs,
-      ~(In x (term_vars_bound_by_binding b)) ->
-      appears_free_in_bindings_nonrec x bs ->
-      appears_free_in_bindings_nonrec x (b :: bs)
-
-with appears_free_in_bindings_rec : name -> list Binding -> Prop :=
-  | AFI_ConsB1_Rec : forall x b bs,
-      appears_free_in_binding x b ->
-      appears_free_in_bindings_rec x (b :: bs)
-  | AFI_ConsB2_Rec : forall x b bs,
-      appears_free_in_bindings_rec x bs ->
-      appears_free_in_bindings_rec x (b :: bs)
-
-with appears_free_in_binding : name -> Binding -> Prop :=
-  | AFI_TermBind : forall x s vd t0,
-      appears_free_in x t0 ->
-      appears_free_in_binding x (TermBind s vd t0)
-  .
-
-#[export] Hint Constructors 
-  appears_free_in 
-  appears_free_in_bindings_nonrec
-  appears_free_in_bindings_rec
-  appears_free_in_binding : core.
-
-Definition closed (t : Term) :=
-  forall x, ~(appears_free_in x t).
 
 (** ** Context invariance (Theorem) *)
 
 Definition P_has_type (Gamma : Context) (t : Term) (T : Ty) :=
   forall Gamma',
-    (forall x, appears_free_in x t -> lookupT Gamma x = lookupT Gamma' x) ->
+    (forall x, appears_free_in_Term x t -> lookupT Gamma x = lookupT Gamma' x) ->
     (forall X, lookupK Gamma X = lookupK Gamma' X) ->
     Gamma' |-+ t : T.
 
@@ -248,19 +135,19 @@ Definition P_constructor_well_formed (Gamma : Context) (c : constructor) :=
 
 Definition P_bindings_well_formed_nonrec (Gamma : Context) (bs : list Binding) :=
   forall Gamma',
-    (forall x, appears_free_in_bindings_nonrec x bs -> lookupT Gamma x = lookupT Gamma' x) ->
+    (forall x, appears_free_in_Term__bindings_nonrec x bs -> lookupT Gamma x = lookupT Gamma' x) ->
     (forall X, lookupK Gamma X = lookupK Gamma' X) ->
     Gamma' |-oks_nr bs.  
 
 Definition P_bindings_well_formed_rec (Gamma : Context) (bs : list Binding) :=
   forall Gamma',
-    (forall x, appears_free_in_bindings_rec x bs -> lookupT Gamma x = lookupT Gamma' x) ->
+    (forall x, appears_free_in_Term__bindings_rec x bs -> lookupT Gamma x = lookupT Gamma' x) ->
     (forall X, lookupK Gamma X = lookupK Gamma' X) ->
     Gamma' |-oks_r bs.  
 
 Definition P_binding_well_formed (Gamma : Context) (b : Binding) :=
   forall Gamma',
-    (forall x, appears_free_in_binding x b -> lookupT Gamma x = lookupT Gamma' x) ->
+    (forall x, appears_free_in_Term__binding x b -> lookupT Gamma x = lookupT Gamma' x) ->
     (forall X, lookupK Gamma X = lookupK Gamma' X) ->
     Gamma' |-ok b.
 
@@ -286,14 +173,14 @@ Proof with eauto.
     + apply H1.
       * intros.
         apply H4.
-        apply AFI_LetNonRec.
+        apply AFIT_LetNonRec.
         assumption.
       * assumption.
     + apply H3.
       * intros.
         apply lookupT_append_r.
         apply H4.
-        apply AFI_Let.
+        apply AFIT_Let.
         -- apply skip. (* TODO *) 
         -- assumption.
       * intros.
@@ -308,7 +195,7 @@ Proof with eauto.
       * intros.
         apply lookupT_append_r.
         apply H4.
-        apply AFI_LetRec; auto.
+        apply AFIT_LetRec; auto.
         apply skip. (* TODO *)
       * intros.
         apply lookupK_append_r.
@@ -317,7 +204,7 @@ Proof with eauto.
       * intros.
         apply lookupT_append_r.
         apply H4.
-        apply AFI_Let.
+        apply AFIT_Let.
         -- apply skip. (* TODO *)
         -- assumption.
       * intros.
@@ -335,7 +222,7 @@ Proof with eauto.
       rewrite lookupT_extendK.
       rewrite lookupT_extendK.
       apply H1.
-      apply AFI_TyAbs.
+      apply AFIT_TyAbs.
       assumption.
     + intros Y.
       destruct (X =? Y) eqn:Heqb.
@@ -375,14 +262,14 @@ Proof with eauto.
     + apply H0.
       * intros.
         apply H3.
-        apply AFI_Apply1.
+        apply AFIT_Apply1.
         assumption.
       * intros.
         apply H4.
     + apply H2.
       * intros.
         apply H3.
-        apply AFI_Apply2.
+        apply AFIT_Apply2.
         assumption.
       * intros.
         apply H4.
@@ -398,7 +285,7 @@ Proof with eauto.
     + apply H0.
       * intros.
         apply H3.
-        apply AFI_TyInst.
+        apply AFIT_TyInst.
         assumption.
       * intros.
         apply H4.
@@ -421,7 +308,7 @@ Proof with eauto.
     + apply H1.
       * intros.
         apply H4.
-        apply AFI_IWrap.
+        apply AFIT_IWrap.
         assumption.
       * intros.
         apply H5.
@@ -439,7 +326,7 @@ Proof with eauto.
     + apply H0.
       * intros.
         apply H3.
-        apply AFI_Unwrap.
+        apply AFIT_Unwrap.
         assumption.
       * intros.
         apply H4.
@@ -471,14 +358,14 @@ Proof with eauto.
     + apply H0.
       intros.
       apply H3.
-      apply AFI_ConsB1_NonRec.
+      apply AFIT_ConsB1_NonRec.
       * assumption.
       * assumption.
     + apply H2.
       intros.
       apply lookupT_append_r.
       apply H3.
-      apply AFI_ConsB2_NonRec.
+      apply AFIT_ConsB2_NonRec.
       * unfold P_binding_well_formed in H0.
         unfold P_bindings_well_formed_nonrec in H2. apply skip. (* TODO *) 
       * assumption.
@@ -495,13 +382,13 @@ Proof with eauto.
     + apply H0.
       * intros.
         apply H3.
-        apply AFI_ConsB1_Rec.
+        apply AFIT_ConsB1_Rec.
         assumption.
       * assumption.
     + apply H2.
       * intros.
         apply H3.
-        apply AFI_ConsB2_Rec.
+        apply AFIT_ConsB2_Rec.
         assumption.
       * assumption.
   
@@ -515,7 +402,7 @@ Proof with eauto.
     + apply H1.
       * intros.
         apply H2.
-        apply AFI_TermBind.
+        apply AFIT_TermBind.
         assumption.
       * intros.
         apply H3.
@@ -542,25 +429,25 @@ Qed.
     
 
 Lemma free_in_context : forall x t T Gamma,
-    appears_free_in x t ->
+    appears_free_in_Term x t ->
     Gamma |-+ t : T ->
     exists T', lookupT Gamma x = Datatypes.Some T'.
 Proof. Admitted.
 
-Corollary typable_empty__closed : forall t T,
+Corollary typable_empty__closed_Term : forall t T,
     emptyContext |-+ t : T ->
-    closed t.
+    closed_Term t.
 Proof.
-  intros. unfold closed. intros x H1.
+  intros. unfold closed_Term. intros x H1.
   destruct (free_in_context _ _ _ _ H1 H) as [T' C].
   discriminate C.
 Qed.
 
-Corollary typable_emptyT__closed : forall ctxK t T,
+Corollary typable_emptyT__closed_Term : forall ctxK t T,
     (ctxK, empty) |-+ t : T ->
-    closed t.
+    closed_Term t.
 Proof.
-  intros. unfold closed. intros x H1.
+  intros. unfold closed_Term. intros x H1.
   destruct (free_in_context _ _ _ _ H1 H) as [T' C].
   discriminate C.
 Qed.

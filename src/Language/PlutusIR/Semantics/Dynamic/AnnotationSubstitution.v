@@ -78,11 +78,11 @@ with substituteA_bindings_nonrec : tyname -> Ty -> list Binding -> list Binding 
   | SA_NilB_NonRec : forall X S, 
       substituteA_bindings_nonrec X S nil nil
   | SA_ConsB_NonRec1 : forall X S b b' bs,
-      In X (term_vars_bound_by_binding b) ->
+      In X (tyvars_bound_by_binding b) ->
       substituteA_binding X S b b' ->
       substituteA_bindings_nonrec X S (b :: bs) (b' :: bs)
   | SA_ConsB_NonRec2 : forall X S b b' bs bs',
-      ~(In X (term_vars_bound_by_binding b)) ->
+      ~(In X (tyvars_bound_by_binding b)) ->
       substituteA_binding X S b b' ->
       substituteA_bindings_nonrec X S bs bs' ->
       substituteA_bindings_nonrec X S (b :: bs) (b' :: bs')
