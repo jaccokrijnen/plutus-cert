@@ -18,14 +18,14 @@ Notation DTDecl := (dtdecl Name Tyname BinderTyname).
 Notation constructor := (constr Tyname BinderName BinderTyname).
 
 (* Typing/kinding contexts *)
-Context 
-  (Context : Type) 
+Context
+  (Context : Type)
   (emptyContext : Context)
   (lookupT : Context -> Name -> option Ty)
-  (lookupK : Context -> Tyname -> option Kind) 
+  (lookupK : Context -> Tyname -> option Kind)
   (extendT : BinderName -> Ty -> Context -> Context)
   (extendK : BinderTyname -> Kind -> Context -> Context).
-Context 
+Context
   (flatten : list Context -> Context)
   (append : Context -> Context -> Context)
   (binds : Binding -> Context)
@@ -33,7 +33,7 @@ Context
 
 (* Builtins *)
 Context (lookupBuiltinKind : DefaultUni -> Kind).
-Context (lookupBuiltinTy : DefaultFun -> Ty). 
+Context (lookupBuiltinTy : DefaultFun -> Ty).
 Context (substituteT : BinderTyname -> Ty -> Ty -> Ty).
 Context (listOfArgumentTypes : Ty -> list Ty).
 
@@ -106,14 +106,17 @@ where "T1 '=b' T2" := (EqT T1 T2).
 Fixpoint beta_reduce (T : Ty) : Ty :=
   match T with
   (* Beta-reduction *)
-  | Ty_App (Ty_Lam X K T1) T2 => substituteT X T2 T1
-  (* Congruence *)
+  | Ty_App T1 T2 =>
+    match beta_reduce T1, beta_reduce T2 with
+    | Ty_Lam X K T1', T2' => substituteT X T2' T1'
+    | T1', T2' => Ty_App T1' T2'
+    end
   | Ty_Fun T1 T2 => Ty_Fun (beta_reduce T1) (beta_reduce T2)
   | Ty_Forall X K T0 => Ty_Forall X K (beta_reduce T0)
   | Ty_Lam X K T0 => Ty_Lam X K (beta_reduce T0)
-  | Ty_App T1 T2 => Ty_App (beta_reduce T1) (beta_reduce T2)
-  (* Reflexivity *)
-  | T0 => T0
+  | Ty_Var X => Ty_Var X
+  | Ty_IFix F T => Ty_IFix (beta_reduce F) (beta_reduce T)
+  | Ty_Builtin st => Ty_Builtin st
   end.
 
 (** ** Typing of terms *)
@@ -122,7 +125,7 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
   (** Let-bindings
       Note: The rules for let-constructs differ significantly from the paper definitions
       because we had to adapt the typing rules to the compiler implementation of type checking.
-      Reference: The Haskell module Language.PlutusIR.TypeCheck.Internal in the 
+      Reference: The Haskell module Language.PlutusIR.TypeCheck.Internal in the
       iohk/plutus/plutus-core/plutus-ir project.
   **)
   | T_Let : forall ctx bs t T ctx',
@@ -143,7 +146,7 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
       (extendK X K ctx) |-+ t : T ->
       ctx |-+ (TyAbs X K t) : (Ty_Forall X K T)
   | T_LamAbs : forall ctx x T1 t T2,
-      (extendT x T1 ctx) |-+ t : T2 -> 
+      (extendT x T1 ctx) |-+ t : T2 ->
       ctx |-* T1 : Kind_Base ->
       ctx |-+ (LamAbs x T1 t) : (Ty_Fun T1 T2)
   | T_Apply : forall ctx t1 t2 T1 T2,
@@ -161,7 +164,7 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
       ctx |-+ (TyInst t1 T2) : S
   | T_Error : forall ctx T,
       ctx |-* T : Kind_Base ->
-      ctx |-+ (Error T) : T 
+      ctx |-+ (Error T) : T
   (* Recursive types *)
   | T_IWrap : forall ctx F T M X K S,
       unwrapIFix F X K T =b S ->
@@ -217,12 +220,12 @@ Scheme has_type__ind := Minimality for has_type Sort Prop
   with bindings_well_formed_rec__ind := Minimality for bindings_well_formed_rec Sort Prop
   with binding_well_formed__ind := Minimality for binding_well_formed Sort Prop.
 
-Combined Scheme has_type__multind from 
+Combined Scheme has_type__multind from
   has_type__ind,
   bindings_well_formed_nonrec__ind,
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
-  
+
 End Typing.
 
 #[export] Hint Constructors has_kind : typing.

@@ -31,7 +31,7 @@ Proof.
     simpl.
     apply inclusion_update.
     apply H.
-  - intros. 
+  - intros.
     simpl.
     apply H.
 Qed.
@@ -72,7 +72,7 @@ Proof.
     apply H.
     assumption.
 Qed.
-      
+
 Lemma weakening__has_kind : forall ctx ctx' T K,
     inclusion ctx ctx' ->
     ctx |-* T : K ->
@@ -112,14 +112,14 @@ Definition P_binding_well_formed ctx b : Prop :=
     inclusion ctx ctx' ->
     ctx' |-ok b.
 
-Lemma weakening : 
+Lemma weakening :
   (forall ctx t T, ctx |-+ t : T -> P_has_type ctx t T) /\
   (forall ctx bs, ctx |-oks_nr bs -> P_bindings_well_formed_nonrec ctx bs) /\
   (forall ctx bs, ctx |-oks_r bs -> P_bindings_well_formed_rec ctx bs) /\
   (forall ctx b, ctx |-ok b -> P_binding_well_formed ctx b).
 Proof.
-  apply has_type__multind with 
-    (P := P_has_type) 
+  apply has_type__multind with
+    (P := P_has_type)
     (P0 := P_constructor_well_formed)
     (P1 := P_bindings_well_formed_nonrec)
     (P2 := P_bindings_well_formed_rec)
@@ -203,7 +203,7 @@ Proof.
     + apply weakening__has_kind with ctx.
       * assumption.
       * assumption.
-    + apply weakening__has_kind with ctx. 
+    + apply weakening__has_kind with ctx.
       * assumption.
       * assumption.
   - (* T_Unwrap *)
@@ -224,7 +224,7 @@ Proof.
     + assumption.
     + apply H.
       assumption.
-  
+
   - (* W_NilB_NonRec *)
     intros. unfold P_bindings_well_formed_nonrec. intros.
     apply W_NilB_NonRec.
@@ -236,8 +236,8 @@ Proof.
     + apply H2.
       apply inclusion_append.
       assumption.
-  
-  - (* W_NilB_Rec *)  
+
+  - (* W_NilB_Rec *)
     intros. unfold P_bindings_well_formed_rec. intros.
     apply W_NilB_Rec.
   - (* W_ConsB_Rec *)
@@ -247,7 +247,7 @@ Proof.
       assumption.
     + apply H2.
       assumption.
-  
+
   - (* W_Term *)
     intros. unfold P_binding_well_formed. intros.
     apply W_Term.
@@ -283,4 +283,14 @@ Proof.
   unfold P_has_type in Ht.
   apply Ht.
   apply inclusion_emptyContext.
+Qed.
+
+Lemma weakening_empty_kind : forall ctx t T,
+    emptyContext |-* t : T ->
+    ctx |-* t : T.
+Proof.
+  intros ctx t T Hk.
+  eapply weakening__has_kind.
+    { apply inclusion_emptyContext. }
+    { apply Hk. }
 Qed.
