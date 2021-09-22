@@ -6,7 +6,6 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Logica
 
 Require Import Arith.
 
-(*
 Lemma msubst_Var : forall ss x,
     closed_env ss ->
     value_env ss ->
@@ -34,7 +33,7 @@ Proof.
       apply IHss; eauto.
       inversion H; auto.
       inversion H0; auto.
-Qed.*)
+Qed.
 
 Lemma compatibility_Var : forall Delta Gamma x T,
     Gamma x = Coq.Init.Datatypes.Some T ->
@@ -46,11 +45,10 @@ Proof.
   split. { apply T_Var. auto. }
   split. { apply T_Var. auto. }
 
-  (*
   intros k rho env env' ct ck HeqDelta HeqGamma [H_RD H_RG].
   subst.
 
-  intros e_substed e'_substed Hms__e_substed Hms__e'_substed.
+  intros e_s e'_s env_cls env'_cls Hclsoff__env Hclsoff__env' Hms__e_s Hms__e'_s.
 
   assert (forall x, (mupdate empty ct) x = lookup x ct). {
       intros. erewrite mupdate_lookup. auto.
@@ -59,14 +57,14 @@ Proof.
   rewrite H in Hx.
 
   destruct (RG_domains_match _ _ _ _ _ H_RG _ _ Hx) as [v [v' [Hlu__v Hlu__v']]].
-  destruct (RG_env_closed _ _ _ _ _ H_RG) as [Hcls__env Hcls__env'].
-  destruct (RG_env_values _ _ _ _ _ H_RG) as [Hvals__env Hvals__env'].
+  destruct (RG_env_closed _ _ _ _ _ _ _ H_RG Hclsoff__env Hclsoff__env') as [Hcls__env Hcls__env'].
+  destruct (RG_env_values _ _ _ _ _ _ _ H_RG Hclsoff__env Hclsoff__env') as [Hvals__env Hvals__env'].
 
   eapply RG_RC.
   - apply H_RG.
   - apply Hx.
-  - apply msubst_Var in Hms__e_substed; eauto.
-    rewrite Hlu__v in Hms__e_substed.
+  - apply msubst_Var in Hms__e_s; eauto.
+    rewrite Hlu__v in Hms__e_s.
     destruct Hms__e_substed. subst.
     assumption.
   - apply msubst_Var in Hms__e'_substed; eauto.

@@ -451,3 +451,89 @@ Proof.
   destruct (free_in_context _ _ _ _ H1 H) as [T' C].
   discriminate C.
 Qed.
+
+
+
+
+
+
+
+Lemma free_in_context_Term : forall x t T Delta Gamma,
+    appears_free_in_Term x t ->
+    (Delta, Gamma) |-+ t : T ->
+    exists T', lookupT (Delta, Gamma) x = Datatypes.Some T'.
+Proof.
+  intros x t T Delta Gamma Hafi Htyp.
+  generalize dependent x.
+  induction Htyp.
+  - intros.
+    inversion Hafi.
+    + subst.
+      apply IHHtyp in H6.
+      destruct H6.
+      apply skip.
+    + subst.
+      apply skip.
+  - apply skip.
+  - (* T_Var *)
+    intros.
+    inversion Hafi.
+    subst.
+    exists T. 
+    assumption.
+  - (* T_TyAbs *)
+    intros.
+    inversion Hafi.
+    subst.
+    simpl in IHHtyp.
+    apply IHHtyp.
+    assumption.
+Admitted.
+
+Lemma free_in_context_Annotation : forall X t T Delta Gamma,
+    appears_free_in_Annotation X t ->
+    (Delta, Gamma) |-+ t : T ->
+    exists K, lookupK (Delta, Gamma) X = Datatypes.Some K.
+Proof.
+  intros x t T Delta Gamma Hafi Htyp.
+  generalize dependent x.
+  induction Htyp.
+  - apply skip.
+  - apply skip.
+  - intros.
+    inversion Hafi. 
+  - intros.
+    inversion Hafi.
+    subst.
+    erewrite <- lookupK_neq; eauto.
+  - intros.
+    inversion Hafi.
+    + subst.
+      eapply free_in_context__Ty; eauto.
+    + subst.
+      simpl in IHHtyp.
+      apply IHHtyp.
+      assumption.
+  - intros. 
+    inversion Hafi. 
+    + subst.
+      apply IHHtyp1.
+      assumption.
+    + subst.
+      apply IHHtyp2.
+      assumption.
+Admitted.
+
+Corollary typable_empty__closed : forall t T,
+    emptyContext |-+ t : T ->
+    closed t.
+Proof.
+  intros. unfold closed.
+  split.
+  - intros x H1.
+    destruct (free_in_context_Term _ _ _ _ _ H1 H) as [T' C].
+    discriminate C.
+  - intros X H1.
+    destruct (free_in_context_Annotation _ _ _ _ _ H1 H) as [K C].
+    discriminate C.
+Qed.

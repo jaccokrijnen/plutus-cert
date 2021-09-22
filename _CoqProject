@@ -36,6 +36,7 @@ src/Language/PlutusIR/Optimizer/DeadBindings.v
 
 src/Language/PlutusIR/Semantics/Dynamic.v
 src/Language/PlutusIR/Semantics/Dynamic/AnnotationSubstitution.v
+src/Language/PlutusIR/Semantics/Dynamic/AnnotationSubstitution/PreservesValue.v
 src/Language/PlutusIR/Semantics/Dynamic/Bigstep.v
 src/Language/PlutusIR/Semantics/Dynamic/Bigstep/Congruence.v
 src/Language/PlutusIR/Semantics/Dynamic/Bigstep/Deterministic.v

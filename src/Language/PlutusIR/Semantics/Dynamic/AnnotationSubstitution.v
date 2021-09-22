@@ -124,9 +124,9 @@ Combined Scheme substituteA__mutind from
 
 (** * Multi-substitutions of types in type annotations *)
 
-Definition env := list (tyname * Ty).
+Definition envA := list (tyname * Ty).
 
-Inductive msubstA : env -> Term -> Term -> Prop :=
+Inductive msubstA : envA -> Term -> Term -> Prop :=
   | msubstA_nil : forall t,
       msubstA nil t t
   | msubstA_cons : forall a T ss t t' t'',

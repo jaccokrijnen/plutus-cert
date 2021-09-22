@@ -51,7 +51,7 @@ Proof.
   intros k rho env env' ct ck HeqDelta HeqGamma [H_RD H_RG].
   subst.
 
-  intros e_substed e'_substed Hms__e Hms__e'.
+  intros e_s e'_s env_cls env'_cls Hclsoff__env Hclsoff__env' Hms__e Hms__e' .
   
   apply msubst_Constant in Hms__e as Heq.
   apply msubst_Constant in Hms__e' as Heq'.
