@@ -66,7 +66,7 @@ src/Language/PlutusIR/Semantics/Static/TypeSubstitution.v
 src/Language/PlutusIR/Semantics/TypeSafety/AnnotsubstPreservesTyping.v
 src/Language/PlutusIR/Semantics/TypeSafety/Preservation.v
 src/Language/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping.v
-src/Language/PlutusIR/Semantics/TypeSafety/SubstituteT_PreservesTyping.v
+src/Language/PlutusIR/Semantics/TypeSafety/SubstituteT_PreservesKinding.v
 
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas.v
 #src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Apply.v

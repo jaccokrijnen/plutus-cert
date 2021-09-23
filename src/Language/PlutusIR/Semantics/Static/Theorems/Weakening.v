@@ -72,17 +72,22 @@ Proof.
     assumption.
 Qed.
       
-Lemma weakening__has_kind : forall ctx ctx' T K,
-    inclusion ctx ctx' ->
-    ctx |-* T : K ->
-    ctx' |-* T : K.
+Lemma weakening__has_kind : forall Delta Delta' T K,
+    Map.inclusion Delta Delta' ->
+    Delta |-* T : K ->
+    Delta' |-* T : K.
 Proof.
-  intros ctx ctx' T K H HT.
-  generalize dependent ctx'.
-  induction HT; intros; eauto using inclusion_extendK with typing.
-  - apply K_Var.
-    apply H0.
-    apply H.
+  intros Delta Delta' T K H HT.
+  generalize dependent Delta'.
+  induction HT; intros; eauto using inclusion_update with typing.
+Qed.
+
+Lemma weakening_empty__has_kind : forall Delta T K,
+    empty |-* T : K ->
+    Delta |-* T : K.
+Proof.
+  intros.
+  eapply weakening__has_kind; eauto using inclusion_empty.
 Qed.
 
 
@@ -162,8 +167,8 @@ Proof.
     + apply H0.
       apply inclusion_extendT.
       assumption.
-    + apply weakening__has_kind with ctx.
-      * assumption.
+    + apply weakening__has_kind with (fst ctx).
+      * apply H2.
       * assumption.
   - (* T_Apply *)
     intros. unfold P_has_type. intros.
@@ -183,15 +188,15 @@ Proof.
     apply T_TyInst with (T1 := T1) (X := X) (K2 := K2).
     + apply H0.
       assumption.
-    + apply weakening__has_kind with ctx.
-      * assumption.
+    + apply weakening__has_kind with (fst ctx).
+      * apply H3. 
       * assumption.
     + assumption.
   - (* T_Error *)
     intros. unfold P_has_type. intros.
     apply T_Error.
-    apply weakening__has_kind with ctx.
-    + assumption.
+    apply weakening__has_kind with (fst ctx).
+    + simpl. apply H0.
     + assumption.
   - (* T_IWrap *)
     intros. unfold P_has_type. intros.
@@ -199,19 +204,19 @@ Proof.
     + assumption.
     + apply H1.
       assumption.
-    + apply weakening__has_kind with ctx.
+    + apply weakening__has_kind with (fst ctx).
+      * apply H4.
       * assumption.
-      * assumption.
-    + apply weakening__has_kind with ctx. 
-      * assumption.
+    + apply weakening__has_kind with (fst ctx). 
+      * apply H4.
       * assumption.
   - (* T_Unwrap *)
     intros. unfold P_has_type. intros.
     apply T_Unwrap with F K T.
     + apply H0.
       assumption.
-    + apply weakening__has_kind with ctx.
-      * assumption.
+    + apply weakening__has_kind with (fst ctx).
+      * apply H3. 
       * assumption.
     + assumption.
 
@@ -219,8 +224,8 @@ Proof.
     intros. unfold P_constructor_well_formed. intros.
     apply W_Con.
     intros.
-    apply weakening__has_kind with ctx.
-    + assumption.
+    apply weakening__has_kind with (fst ctx).
+    + apply H0.
     + apply H.
       assumption.
   
@@ -250,16 +255,16 @@ Proof.
   - (* W_Term *)
     intros. unfold P_binding_well_formed. intros.
     apply W_Term.
-    + apply weakening__has_kind with ctx.
-      * assumption.
+    + apply weakening__has_kind with (fst ctx).
+      * apply H2.
       * assumption.
     + apply H1.
       assumption.
   - (* W_Type *)
     intros. unfold P_binding_well_formed. intros.
     apply W_Type.
-    apply weakening__has_kind with ctx.
-    + assumption.
+    apply weakening__has_kind with (fst ctx).
+    + apply H0.
     + assumption.
   - (* W_Data *)
     intros. unfold P_binding_well_formed. intros.

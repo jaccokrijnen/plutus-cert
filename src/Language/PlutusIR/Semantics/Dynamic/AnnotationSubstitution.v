@@ -66,10 +66,10 @@ Inductive substituteA : tyname -> Ty -> Term -> Term -> Prop :=
       substituteA X S t0 t0' ->
       substituteA X S (TyInst t0 T) (TyInst t0' (substituteT X S T))
   | SA_Error : forall X S T,
-      substituteA X S (Error T) (Error T)
+      substituteA X S (Error T) (Error (substituteT X S T))
   | SA_IWrap : forall X S F T t0 t0',
       substituteA X S t0 t0' ->
-      substituteA X S (IWrap F T t0) (IWrap F T t0')
+      substituteA X S (IWrap F T t0) (IWrap (substituteT X S F) (substituteT X S T) t0')
   | SA_Unwrap : forall X S t0 t0',
       substituteA X S t0 t0' ->
       substituteA X S (Unwrap t0) (Unwrap t0') 

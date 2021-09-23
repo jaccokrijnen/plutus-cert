@@ -6,47 +6,6 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Rules.
 
 Require Import Coq.Lists.List.
 
-
-
-Theorem context_invariance_T__has_kind : forall T ctx_T ctx_K K ctx_T',
-    (ctx_K, ctx_T) |-* T : K ->
-    (ctx_K, ctx_T') |-* T : K.
-Proof.
-  induction T.
-  - intros.
-    inversion H. subst.
-    apply K_Var.
-    assumption.
-  - intros.
-    inversion H. subst.
-    apply K_Fun. 
-    + eapply IHT1. eauto.
-    + eapply IHT2. eauto.
-  - intros.
-    inversion H. subst.
-    eapply K_IFix.
-    + eapply IHT2. eauto.
-    + eapply IHT1. eauto.
-  - intros. 
-    inversion H. subst.
-    apply K_Forall.
-    eapply IHT. eauto.
-  - intros.
-    inversion H. subst.
-    apply K_Builtin.
-  - intros.
-    inversion H. subst.
-    eapply K_Lam.
-    eapply IHT.
-    eauto.
-  - intros.
-    inversion H. subst.
-    eapply K_App.
-    + eapply IHT1. eauto.
-    + eapply IHT2. eauto.
-Qed.
-
-
 (** * Context invariance *)
 
 (** ** Type-level context invariance *)
@@ -56,13 +15,13 @@ Qed.
 
 
 (** *** Context invariance (Lemma) *)
-Lemma context_invariance__typelevel : forall Gamma Gamma' T K,
-    Gamma |-* T : K ->
-    (forall X, appears_free_in_Ty X T -> lookupK Gamma X = lookupK Gamma' X) ->
-    Gamma' |-* T : K.
+Lemma context_invariance__typelevel : forall Delta Delta' T K,
+    Delta |-* T : K ->
+    (forall X, appears_free_in_Ty X T -> Delta X = Delta' X) ->
+    Delta' |-* T : K.
 Proof with auto.
-  intros Gamma Gamma' T K HK.
-  generalize dependent Gamma'.
+  intros Delta Delta' T K HK.
+  generalize dependent Delta'.
   induction HK; intros; try solve [econstructor; auto].
   - apply K_Var.
     rewrite <- H0...
@@ -73,12 +32,12 @@ Proof with auto.
     destruct (X =? X0) eqn:Heqb.
     + apply eqb_eq in Heqb.
       subst.
-      rewrite lookupK_eq.
-      rewrite lookupK_eq.
+      rewrite update_eq.
+      rewrite update_eq.
       reflexivity.
     + apply eqb_neq in Heqb.
-      rewrite lookupK_neq...
-      rewrite lookupK_neq...
+      rewrite update_neq...
+      rewrite update_neq...
   - (* K_Lam *)
     apply K_Lam.
     apply IHHK.
@@ -86,29 +45,29 @@ Proof with auto.
     destruct (X =? X0) eqn:Heqb.
     + apply eqb_eq in Heqb.
       subst.
-      rewrite lookupK_eq.
-      rewrite lookupK_eq.
+      rewrite update_eq.
+      rewrite update_eq.
       reflexivity.
     + apply eqb_neq in Heqb.
-      rewrite lookupK_neq...
-      rewrite lookupK_neq...
+      rewrite update_neq...
+      rewrite update_neq...
 Qed.
 
 (** *** Free variables are in context (Lemma) *)
 
-Lemma free_in_context__Ty : forall X T K Gamma,
+Lemma free_in_context__Ty : forall X T K Delta,
     appears_free_in_Ty X T ->
-    Gamma |-* T : K ->
-    exists K', lookupK Gamma X = Datatypes.Some K'.
+    Delta |-* T : K ->
+    exists K', Delta X = Datatypes.Some K'.
 Proof with eauto.
-  intros X T K Gamma Hafi Htyp.
+  intros X T K Delta Hafi Htyp.
   induction Htyp; inversion Hafi; subst...
-  - rewrite lookupK_neq in IHHtyp; auto.
-  - rewrite lookupK_neq in IHHtyp; auto.
+  - rewrite update_neq in IHHtyp; auto.
+  - rewrite update_neq in IHHtyp; auto.
 Qed.
 
-Corollary typable_empty__closed_Ty : forall T K GammaT,
-    (empty, GammaT) |-* T : K ->
+Corollary typable_empty__closed_Ty : forall T K,
+    empty |-* T : K ->
     closed_Ty T.
 Proof.
   intros. unfold closed_Ty. intros x H1.
@@ -252,7 +211,7 @@ Proof with eauto.
         -- rewrite lookupK_extendT.
            rewrite lookupK_extendT.
            apply H3.
-    + apply context_invariance__typelevel with ctx.
+    + apply context_invariance__typelevel with (fst ctx).
       * assumption.
       * intros.
         apply H3.
@@ -289,7 +248,7 @@ Proof with eauto.
         assumption.
       * intros.
         apply H4.
-    + apply context_invariance__typelevel with ctx.
+    + apply context_invariance__typelevel with (fst ctx).
       * assumption.
       * intros.
         apply H4.
@@ -297,7 +256,7 @@ Proof with eauto.
   - (* T_Error *)
     intros. unfold P_has_type. intros.
     apply T_Error.
-    apply context_invariance__typelevel with ctx.
+    apply context_invariance__typelevel with (fst ctx).
     + assumption.
     + intros.
       apply H1.
@@ -312,11 +271,11 @@ Proof with eauto.
         assumption.
       * intros.
         apply H5.
-    + apply context_invariance__typelevel with ctx.
+    + apply context_invariance__typelevel with (fst ctx).
       * assumption.
       * intros.
         apply H5.
-    + apply context_invariance__typelevel with ctx.
+    + apply context_invariance__typelevel with (fst ctx).
       * assumption.
       * intros.
         apply H5.
@@ -330,7 +289,7 @@ Proof with eauto.
         assumption.
       * intros.
         apply H4.
-    + apply context_invariance__typelevel with ctx.
+    + apply context_invariance__typelevel with (fst ctx).
       * assumption.
       * intros.
         apply H4.
@@ -342,7 +301,6 @@ Proof with eauto.
     intros.
     destruct Gamma'.
     destruct ctx.
-    eapply context_invariance_T__has_kind.
     eapply context_invariance__typelevel.
     + apply H.
       assumption.
@@ -395,7 +353,7 @@ Proof with eauto.
   - (* W_Term *)
     intros. unfold P_binding_well_formed. intros.
     apply W_Term.
-    + apply context_invariance__typelevel with ctx.
+    + apply context_invariance__typelevel with (fst ctx).
       * assumption.
       * intros.
         apply H3.
@@ -409,7 +367,7 @@ Proof with eauto.
   - (* W_Type *)
     intros. unfold P_binding_well_formed. intros.
     apply W_Type.
-    apply context_invariance__typelevel with ctx.
+    apply context_invariance__typelevel with (fst ctx).
     * assumption.
     * intros.
       apply H1.
