@@ -179,3 +179,12 @@ Proof.
   intros.
   inversion H.
 Qed.
+
+Lemma inclusion_refl : forall (A : Type) (m : partial_map A),
+    inclusion m m.
+Proof.
+  intros.
+  unfold inclusion.
+  intros.
+  assumption.
+Qed.

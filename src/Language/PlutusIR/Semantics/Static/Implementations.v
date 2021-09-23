@@ -65,11 +65,24 @@ Proof.
   apply update_shadow.
 Qed.
 
+Lemma extendK_shadow : forall ctx x K1 K2,
+    (x |K-> K1; x |K-> K2; ctx) = (x |K-> K1; ctx).
+Proof. 
+  intros. destruct ctx. unfold extendK. simpl. 
+  f_equal.
+  apply update_shadow.
+Qed.
+
 Lemma extendT_permute : forall ctx x1 x2 T1 T2,
     x2 <> x1 ->
     (x1 |T-> T1 ; x2 |T-> T2 ; ctx) = (x2 |T-> T2 ; x1 |T-> T1 ; ctx).
 Proof.
   intros. destruct ctx. unfold extendT. simpl. f_equal. apply update_permute. assumption. Qed.
+
+Lemma extendK_permute : forall ctx X1 X2 K1 K2,
+    X2 <> X1 ->
+    (X1 |K-> K1 ; X2 |K-> K2 ; ctx) = (X2 |K-> K2 ; X1 |K-> K1 ; ctx).
+Proof. intros. destruct ctx. unfold extendK. simpl. f_equal. apply update_permute. assumption. Qed.
 
 Lemma extendT_extendK_permute : forall x T Y K ctx,
     (Y |K-> K ; x |T-> T ; ctx) = (x |T-> T ; Y |K-> K ; ctx).
