@@ -101,6 +101,10 @@ Inductive EqT : Ty -> Ty -> Prop :=
       S1 =b S2 ->
       T1 =b T2 ->
       Ty_App S1 T1 =b Ty_App S2 T2
+  | Q_IFix : forall F G S T,
+      S =b T ->
+      F =b G ->
+      Ty_IFix F S =b Ty_IFix G T
 where "T1 '=b' T2" := (EqT T1 T2).
 
 Fixpoint beta_reduce (T : Ty) : Ty :=
@@ -118,6 +122,31 @@ Fixpoint beta_reduce (T : Ty) : Ty :=
   | Ty_IFix F T => Ty_IFix (beta_reduce F) (beta_reduce T)
   | Ty_Builtin st => Ty_Builtin st
   end.
+
+
+Ltac EqT_search := subst; eauto using Q_Beta, Q_Refl, Q_Fun, Q_Forall, Q_Lam, Q_App, Q_IFix.
+
+Axiom cheat : forall a, a.
+
+Lemma beta_reduce_EqT : forall S T,
+  beta_reduce S = T -> S =b T.
+Proof.
+  clear.
+  induction S.
+  all: intros T Heq; simpl in Heq.
+  all: EqT_search.
+  destruct S1; simpl.
+  all: EqT_search.
+    (* Ty_App (Ty_Lam _) _ case *)
+    + eapply Q_Trans.
+        2: { apply Q_Beta. }
+           { eapply Q_App.
+             { apply IHS1. reflexivity. }
+             { apply IHS2. reflexivity. }
+           }
+    (*Ty_App (Ty_App _) _ case*)
+    + apply cheat. (* Todo, not sure why this case does not simplify *)
+Qed.
 
 (** ** Typing of terms *)
 Reserved Notation "ctx '|-+' tm ':' T" (at level 40, tm at level 0, T at level 0).

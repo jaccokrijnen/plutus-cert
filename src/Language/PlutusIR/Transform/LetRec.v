@@ -102,7 +102,11 @@ Definition self :=
 
 
 Definition beta := beta_reduce _ _ substituteT.
-Eval cbv in beta self_type.
+
+
+(* Somehow this doesn't terminate with coqc *)
+(* Eval cbv in beta self_type.*)
+(*
 Lemma self_well_typed :
   emptyContext |-+ self : (beta self_type).
 Proof.
@@ -113,3 +117,6 @@ Proof.
   (* we are stuck, since the type has to be normalized *)
   Fail apply T_LamAbs.
 Abort.
+*)
+
+Polymorphic Inductive LetTermsRec : Term -> Term -> Type := .
