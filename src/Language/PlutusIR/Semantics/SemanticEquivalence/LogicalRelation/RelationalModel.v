@@ -149,7 +149,7 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
               IWrap F T v' = e'_f ->
               (* Uwrap *)
               forall i (Hlt_i : i < k - j) K,
-                emptyContext |-* T : K ->
+                empty |-* T : K ->
                 RC i (beta_reduce (unwrapIFix F K T)) rho v v'
 
         (* RV for universal types *)
@@ -273,7 +273,7 @@ Lemma RC_unwrap : forall k F T rho e j e_f e',
         IWrap F T v' = e'_f ->
         (* Uwrap *)
         forall i (Hlt_i : i < k - j) K,
-          emptyContext |-* T : K ->
+          empty |-* T : K ->
           RC i (beta_reduce (unwrapIFix F K T)) rho v v').
 Proof.
   intros k F T rho t1 j1 v1 t2 Hterm RC.
@@ -331,8 +331,8 @@ Inductive RD : kass -> tymapping -> Prop :=
   | RD_nil :
       RD nil nil
   | RD_cons : forall ck rho T1 T2 Chi X K,
-      emptyContext |-* T1 : K ->
-      emptyContext |-* T2 : K ->
+      empty |-* T1 : K ->
+      empty |-* T2 : K ->
       (* Something about the fact that T1 and T2 should be reduced? *)
       Rel T1 T2 Chi ->
       RD ck rho ->

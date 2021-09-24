@@ -81,7 +81,7 @@ Qed.
 
 
 Lemma compatibility_LamAbs : forall Delta Gamma x T1 e e' T2,
-    (Delta, Gamma) |-* T1 : Kind_Base ->
+    Delta |-* T1 : Kind_Base ->
     LR_logically_approximate Delta (x |-> T1; Gamma) e e' T2 ->
     LR_logically_approximate Delta Gamma (LamAbs x T1 e) (LamAbs x T1 e') (Ty_Fun T1 T2).
 Proof.

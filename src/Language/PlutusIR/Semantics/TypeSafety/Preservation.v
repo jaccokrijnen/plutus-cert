@@ -4,7 +4,6 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
-Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.AnnotsubstPreservesTyping.
 
 
 Lemma preservation__compute_defaultfun : forall t T,
@@ -211,7 +210,12 @@ Proof.
     apply H3.
     apply H0 in H7.
     inversion H7. subst.
-    eapply annotsubst_preserves_typing; eauto.
+    eapply substituteA_preserves_typing in H8; eauto.
+    apply H8 in H9; eauto.
+    simpl in H9.
+    rewrite upd_empty in H9.
+    apply skip.
+
   - (* E_Error *)
     intros. unfold P_eval. intros.
     assumption.

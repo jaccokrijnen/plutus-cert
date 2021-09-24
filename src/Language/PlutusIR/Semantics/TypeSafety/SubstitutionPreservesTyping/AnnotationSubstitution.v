@@ -2,7 +2,7 @@ Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.AnnotationSubstitution.
-Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstituteT_PreservesKinding.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.TypeSubstitution.
 
 Require Import Coq.Logic.FunctionalExtensionality.
 
@@ -12,6 +12,15 @@ Definition upd (a : tyname) (T' : Ty ) (Gamma : partial_map Ty) :=
     | None => None
     | Datatypes.Some T => Datatypes.Some (substituteT a T' T)
     end.
+
+Lemma upd_empty : forall X U,
+    upd X U empty = empty.
+Proof.
+  intros X U.
+  unfold upd.
+  simpl.
+  reflexivity.
+Qed.
 
 Lemma upd__substituteT : forall Gamma x X U T,
     Gamma x = Datatypes.Some T ->
@@ -217,13 +226,7 @@ Proof.
     simpl.
     eapply T_IWrap.
     + eauto.
-    + simpl. simpl in H4. destruct (substituteT X U F0) eqn:hs. 
-      all : destruct F0.
-      all : simpl in hs.
-      all : try solve [inversion hs].
-      * destruct (X =? s0). subst. eapply substituteT_preserves_kinding. auto.
-      
-      a apply skip. (* TODO *) 
+    + apply skip. (* TODO *) 
     + eapply substituteT_preserves_kinding; eauto.
       apply H6.
     + eapply substituteT_preserves_kinding; eauto.
@@ -235,44 +238,5 @@ Proof.
     
     inversion Htyp. subst.
     inversion Hsa__t'. subst.
-    
-    simpl.
-    
-    simpl.
-      destruct (beta_reduce (substituteT X U F0)).
-      * unfold unwrapIFix in H4.
-        simpl in H4.
 
-      fold unwrapIFix.
-        try (destruct (substituteT )) eapply IH__t0. eauto.
-
-    apply 
-
-    apply T_
-
-    eapply T_TyInst.
-    + 
-    
-    eapply T_TyInst.
-    + unfold P_Term in IH__t_body.
-      eapply IH__t_body in H1; eauto.
-      simpl in H1.
-      destruct (X =? X0) eqn:Heqb.
-      * apply H1.
-      *  
-    eapply IH__t_body. 
-
-    + apply T_Builtin.
-
-    unfold substituteT.
-    simpl.
-
-
-  eauto.
-
-     eapply IH__t_body.
-    intros IH__t_body.
-    unfold P_Term.
-    intros
-
- Admitted.
+Admitted.

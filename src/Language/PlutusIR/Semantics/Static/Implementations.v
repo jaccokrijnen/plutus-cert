@@ -395,6 +395,6 @@ Fixpoint beta_reduce (T : Ty) : Ty :=
   | Ty_Forall X K T0 => Ty_Forall X K (beta_reduce T0)
   | Ty_Lam X K T0 => Ty_Lam X K (beta_reduce T0)
   | Ty_Var X => Ty_Var X
-  | Ty_IFix F T => Ty_IFix F T
+  | Ty_IFix F T => Ty_IFix (beta_reduce F) (beta_reduce T)
   | Ty_Builtin st => Ty_Builtin st
   end.
