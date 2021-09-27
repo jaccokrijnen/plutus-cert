@@ -46,33 +46,13 @@ Proof.
     (P1 := P_bindings_well_formed_nonrec)
     (P2 := P_bindings_well_formed_rec)
     (P3 := P_binding_well_formed).
+
+  all : unfold P_has_type; intros; subst.
+  all : eauto with DSP_compatibility_lemmas.
   - intros. unfold P_has_type. intros. subst.
     apply skip.
   - intros. unfold P_has_type. intros. subst.
     apply skip.
-
-  - (* T_Var *)
-    unfold P_has_type.
-    intros.
-    apply compatibility_Var.
-    assumption.
-
-  - (* T_Forall *)
-    intros Gamma X K t0_1 T Htyp_t IH. 
-    unfold P_has_type. 
-    unfold LR_logically_approximate.
-    intros.
-    autorewrite with RC.
-    
-
-    apply skip.
-
-  - (* T_LamAbs *) 
-    unfold P_has_type.
-    intros.
-    apply compatibility_LamAbs. 
-    auto.
-    auto.
 
   - (* T_Apply *)
     apply skip.
@@ -94,11 +74,6 @@ Proof.
     assert (R2: RC k T1 t3_2 t4_2) by (eapply IH_t2; eauto; apply skip).
 
     eapply RC_compatibility_Apply; eauto.*)
-  
-  - (* T_Constant *)
-    intros Gamma u a.
-    unfold P_has_type.
-    apply compatibility_Constant.
     
   - (* T_Builtin*)
     apply skip.
@@ -113,35 +88,9 @@ Proof.
   - (* T_Error *)
     apply skip.
 
-  - (* T_IWrap *)
-    intros Gamma F T M K S Hbr Htyp_M IH_M Hkind_T Hkind_F.
-    unfold P_has_type.
-    intros k c e1 e2 Heq Htyp _ V t2 t3 Hmsubst_t2 Hmsubst_t3.
-
-    unfold P_has_type in IH_M.
-
-    assert (exists M', msubst e1 M M' /\ t2 = IWrap F T M')
-      by eauto using msubst_IWrap.
-    destruct H as [M' [Hmsubst_M' Heq_t2]].
-    subst.
-
-    assert (exists M'', msubst e2 M M'' /\ t3 = IWrap F T M'')
-      by eauto using msubst_IWrap.
-    destruct H as [M'' [Hmsubst_M'' Heq_t3]].
-    subst.
-
-    assert (emptyContext |-+ (IWrap F T M') : (Ty_IFix F T)) by eauto using msubst_preserves_typing_1.
-    assert (emptyContext |-+ (IWrap F T M'') : (Ty_IFix F T)) by eauto using msubst_preserves_typing_2.
-
-    assert (RC k (beta_reduce (unwrapIFix F K T)) M' M''). {
-      eapply IH_M; eauto.
-    }
-
-    eapply RC_compatibility_IWrap; eauto.
-    + inversion H. subst. auto. apply skip. (* TODO *)
-    + inversion H0. subst. auto. apply skip. (* TODO *)
-
   - (* T_Unwrap *)
+
+    (*
     intros Gamma M F K T S Htyp_M IH_M Hkind_T Hbr.
     unfold P_has_type.
     intros k c e1 e2 Heq Htyp _ V t2 t3 Hmsubst_t2 Hmsubst_t3.
@@ -169,7 +118,6 @@ Proof.
 
     eapply RC_compatibility_Unwrap; eauto.
     + inversion H. subst. apply skip. (* TODO *)
-
-  - 
-
+    *)
+    apply skip.
 Abort.

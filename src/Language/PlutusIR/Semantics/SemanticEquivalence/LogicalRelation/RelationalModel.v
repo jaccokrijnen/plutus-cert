@@ -145,13 +145,13 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
         | Ty_IFix F T =>
             forall v v',
               (* Determine the shape of e_f and e_f' *)
-              IWrap F T v = e_f ->
-              IWrap F T v' = e'_f ->
+              e_f = IWrap (msubstT (msyn1 rho) F) (msubstT (msyn1 rho) T) v ->
+              e'_f = IWrap (msubstT (msyn2 rho) F) (msubstT (msyn2 rho) T) v' ->
               (* Uwrap *)
-              forall i (Hlt_i : i < k - j) K T',
-                empty |-* T : K ->
-                normalise (unwrapIFix F K T) T' ->
-                RC i T' rho v v'
+              forall i (Hlt_i : i < k - j) K S,
+                empty |-* (msubstT (msyn2 rho) T) : K ->
+                normalise (unwrapIFix F K T) S ->
+                RC i S rho v v'
 
         (* RV for universal types *)
         | Ty_Forall bX K T => 
@@ -160,8 +160,12 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
               e_f = TyAbs bX K e_body ->
               e'_f = TyAbs bX K e'_body ->
               (* Instantiational equivalence *)
-              forall T1 T2 Chi,
+              forall T1 T2 Chi e_body' e'_body',
+                empty |-* T1 : K ->
+                empty |-* T2 : K ->
                 Rel T1 T2 Chi ->
+                substituteA bX T1 e_body e_body' ->
+                substituteA bX T2 e'_body e'_body' ->
                 forall i (Hlt_i : i < k - j),
                   RC i T ((bX, (Chi, T1, T2)) :: rho) e_body e'_body
       end.
@@ -374,7 +378,6 @@ Fixpoint drop {X:Type} (n:string) (nxs:list (string * X)) : list (string * X) :=
   | (n',x) :: nxs' => if String.eqb n' n then drop n nxs' else (n',x) :: (drop n nxs')
   end.
 
-
 Lemma subst_closed : forall t,
     closed t -> 
     forall x s t',
@@ -501,6 +504,17 @@ Lemma subst_msubst : forall env x v t,
       t2 = t4.
 Proof. Admitted.
 
+Lemma substA_msubstA : forall env x v t,
+    closed_Ty v ->
+    (* closed_env env -> *)
+    forall t1 t2 t3 t4,
+      substituteA x v t t1 ->
+      msubstA env t1 t2 ->
+      msubstA (drop x env) t t3 ->
+      substituteA x v t3 t4 ->
+      t2 = t4.
+Proof. Admitted.
+
 
 
 
@@ -533,24 +547,7 @@ Qed.
 
 
 
-Lemma msubst_IWrap : forall ss F T M t',
-    msubst ss (IWrap F T M) t' ->
-    exists M', msubst ss M M' /\ t' = IWrap F T M'.
-Proof.
-  induction ss; intros.
-  - inversion H. subst.
-    exists M. split. constructor. reflexivity.
-  - inversion H. subst.
-    inversion H2. subst.
-    rename t0' into M'.
-    eapply IHss in H5.
-    destruct H5 as [M'' [H0 H1]].
-    subst.
-    exists M''.
-    split.
-    + eapply msubst_cons; eauto.
-    + reflexivity.
-Qed.
+
 
 Lemma msubst_Unwrap : forall ss M t',
     msubst ss (Unwrap M) t' ->
@@ -624,11 +621,16 @@ Lemma mupdate_drop : forall (c : tass) Gamma x x',
 Proof. Admitted.
 *)
 
-Lemma mupdate_unfold : forall c x (T : Ty),
-    (x |-> T; mupdate empty c) = mupdate empty ((x, T) :: c).
+Lemma mupdate_unfold : forall {X : Type} (c : list (string * X)) x (v : X),
+    (x |-> v; mupdate empty c) = mupdate empty ((x, v) :: c).
 Proof. intros. auto. Qed.
 
 (** ** Properties of Instantiations *)
+
+Lemma RG_extend_rho : forall X Chi T1 T2 rho k c env env' ,
+    RG rho k c env env' ->
+    RG ((X, (Chi, T1, T2)) :: rho) k c env env'.
+Proof. Admitted.
 
 Lemma RG_domains_match : forall c e1 e2 k rho,
     RG rho k c e1 e2 ->
