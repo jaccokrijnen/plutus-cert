@@ -1,3 +1,4 @@
 Require Export PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.AnnotationSubstitution.
 Require Export PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.TermSubstitution.
 Require Export PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.TypeSubstitution.
+Require Export PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.SubstituteTCA.
