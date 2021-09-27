@@ -188,7 +188,6 @@ Proof.
     inversion H8. subst.
     inversion H10; subst.
     inversion H6. subst.
-    simpl in H16.
     
     apply skip. (* TODO *)
   - (* E_IfFalse *)
@@ -201,7 +200,6 @@ Proof.
     inversion H8. subst.
     inversion H10. subst.
     inversion H6. subst.
-    simpl in H16.
 
     apply skip. (* TODO *)
   - (* E_TyInst *) 
@@ -211,9 +209,8 @@ Proof.
     apply H0 in H7.
     inversion H7. subst.
     eapply substituteA_preserves_typing in H8; eauto.
+    apply H8 in H1.
 
-    apply skip.
-    apply skip.
     apply skip.
 
   - (* E_Error *)
@@ -231,7 +228,7 @@ Proof.
     inversion H3. subst.
     assert (K = K0) by eauto using unique_kinds.
     subst.
-    apply H11.
+    apply skip. (* TODO *)
 
   - (* E_NilB_NonRec *)
     intros. unfold P_eval_bindings_nonrec. intros.

@@ -539,7 +539,8 @@ Proof.
       * eassumption.
     + destruct ctx.
       eauto.
-    + reflexivity.
+    + eassumption.
+    + eassumption.
   - (* Error *)
     intros. autounfold. intros.
     inversion H. subst.
@@ -552,7 +553,7 @@ Proof.
     inversion H0. subst.
     inversion H2. subst.
     eapply T_IWrap.
-    + reflexivity.
+    + eassumption.
     + eapply H.
       * eassumption.
       * eassumption.
@@ -572,7 +573,7 @@ Proof.
       * assumption.
     + destruct ctx.
       eauto.
-    + reflexivity.
+    + eassumption.
 
   - (* TermBind *)
     intros. autounfold. intros.

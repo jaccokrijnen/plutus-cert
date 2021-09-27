@@ -52,8 +52,8 @@ Proof.
     apply skip.
 
   - (* T_Var *)
-    intros. 
     unfold P_has_type.
+    intros.
     apply compatibility_Var.
     assumption.
 
@@ -67,10 +67,12 @@ Proof.
 
     apply skip.
 
-  - (* T_LamAbs *)
-    intros. 
+  - (* T_LamAbs *) 
     unfold P_has_type.
-    apply skip.
+    intros.
+    apply compatibility_LamAbs. 
+    auto.
+    auto.
 
   - (* T_Apply *)
     apply skip.

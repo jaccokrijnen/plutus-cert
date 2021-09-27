@@ -93,8 +93,8 @@ Proof. Admitted.
 Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k :=
   RC k T rho e e' =>
     (* RC *)
-    (exists T', msubstTCA (msyn1 rho) T T' /\ emptyContext |-+ e : T') /\
-    (exists T', msubstTCA (msyn2 rho) T T' /\ emptyContext |-+ e' : T') /\
+    emptyContext |-+ e : (msubstT (msyn1 rho) T) /\
+    emptyContext |-+ e' : (msubstT (msyn2 rho) T) /\
 
     forall j (Hlt_j : j < k) e_f,
       e =[j]=> e_f ->
@@ -132,8 +132,8 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
         | Ty_Fun T1 T2 =>
             forall x e_body x' e'_body,
               (* Determine the shape of e_f and e'_f *)
-              e_f = LamAbs x T1 e_body ->
-              e'_f = LamAbs x' T1 e'_body ->
+              e_f = LamAbs x (msubstT (msyn1 rho) T1) e_body ->
+              e'_f = LamAbs x' (msubstT (msyn2 rho) T1) e'_body ->
               (* Extensional equivalence *)
               forall i (Hlt_i : i < k - j) v v' e_body' e'_body',
                 value v /\ value v' /\ RC i T1 rho v v' ->
@@ -148,9 +148,10 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
               IWrap F T v = e_f ->
               IWrap F T v' = e'_f ->
               (* Uwrap *)
-              forall i (Hlt_i : i < k - j) K,
+              forall i (Hlt_i : i < k - j) K T',
                 empty |-* T : K ->
-                RC i (beta_reduce (unwrapIFix F K T)) rho v v'
+                normalise (unwrapIFix F K T) T' ->
+                RC i T' rho v v'
 
         (* RV for universal types *)
         | Ty_Forall bX K T => 
@@ -184,20 +185,19 @@ Definition impossible_type (T : Ty) : Prop := ~ possible_type T.
 
 Lemma RC_typable_empty : forall k T rho e e',
     RC k T rho e e' ->
-    (exists T', msubstTCA (msyn1 rho) T T' /\ emptyContext |-+ e : T') /\
-    (exists T', msubstTCA (msyn2 rho) T T' /\ emptyContext |-+ e' : T').
+    emptyContext |-+ e : (msubstT (msyn1 rho) T) /\ emptyContext |-+ e' : (msubstT (msyn2 rho) T).
 Proof. intros. destruct T; edestruct H as [He [He' _]]; eauto. Qed.
 
 Lemma RC_typable_empty_1 : forall k T rho e e',
     RC k T rho e e' ->
-    (exists T', msubstTCA (msyn1 rho) T T' /\ emptyContext |-+ e : T').
+    emptyContext |-+ e : (msubstT (msyn1 rho) T).
 Proof. intros. destruct (RC_typable_empty _ _ _ _ _ H). eauto. Qed.
 
 Lemma RC_typable_empty_2 : forall k T rho e e',
     RC k T rho e e' ->
-    (exists T', msubstTCA (msyn2 rho) T T' /\ emptyContext |-+ e' : T').
+    emptyContext |-+ e' : (msubstT (msyn2 rho) T).
 Proof. intros. destruct (RC_typable_empty _ _ _ _ _ H). eauto. Qed.
-
+(*
 Lemma RC_evaluable : forall k T rho e j e_f e',
     terminates_excl e j e_f k ->
     RC k T rho e e' ->
@@ -245,8 +245,8 @@ Lemma RC_functional_extensionality : forall k T1 T2 rho e j e_f e',
 
       (forall x e_body x' e'_body,
         (* Determine the shape of e_f and e'_f *)
-        e_f = LamAbs x T1 e_body ->
-        e'_f = LamAbs x' T1 e'_body ->
+        e_f = LamAbs x (msubstT (msyn1 rho) T1) e_body ->
+        e'_f = LamAbs x' (msubstT (msyn2 rho) T1) e'_body ->
         (* Extensional equivalence *)
         forall i (Hlt_i : i < k - j) v v' e_body' e'_body',
           value v /\ value v' /\ RC i T1 rho v v' ->
@@ -272,9 +272,10 @@ Lemma RC_unwrap : forall k F T rho e j e_f e',
         IWrap F T v = e_f ->
         IWrap F T v' = e'_f ->
         (* Uwrap *)
-        forall i (Hlt_i : i < k - j) K,
+        forall i (Hlt_i : i < k - j) K T',
           empty |-* T : K ->
-          RC i (beta_reduce (unwrapIFix F K T)) rho v v').
+          normalise (unwrapIFix F K T) T' ->
+          RC i T' rho v v').
 Proof.
   intros k F T rho t1 j1 v1 t2 Hterm RC.
   destruct Hterm. 
@@ -320,6 +321,7 @@ Lemma RC_nontermination : forall k T rho e e',
     emptyContext |-+ e' : (msubstT_rho_syn2 rho T) ->
     RC k T rho e e'.
 Proof. intros. unfold terminates_excl in H. destruct T; try solve [split; auto; split; auto; intros; exfalso; apply H; eauto]. Qed.
+*)
 *)
 
 
@@ -590,6 +592,29 @@ Proof.
       rewrite update_neq; auto.
 Qed.
 
+Lemma mupdate_drop : forall (c : tass) x T,
+    (x |-> T; mupdate empty c) = (x |-> T; mupdate empty (drop x c)).
+Proof. 
+  induction c; intros. 
+  - auto.
+  - destruct a.
+    simpl.
+    destruct (s =? x) eqn:Heqb.
+    + apply eqb_eq in Heqb as Heq.
+      subst.
+      rewrite update_shadow.
+      auto.
+    + apply eqb_neq in Heqb as Hneq.
+      rewrite update_permute; auto.
+      simpl.
+      assert ((x |-> T; s |-> t; mupdate empty (drop x c)) = (s |-> t; x |-> T; mupdate empty (drop x c))). {
+        apply update_permute. auto. 
+      }
+      rewrite H.
+      f_equal.
+      auto.
+Qed.
+
 (*
 Lemma mupdate_drop : forall (c : tass) Gamma x x',
       lookupT (mupdate Gamma (drop x c)) x' 
@@ -599,6 +624,9 @@ Lemma mupdate_drop : forall (c : tass) Gamma x x',
 Proof. Admitted.
 *)
 
+Lemma mupdate_unfold : forall c x (T : Ty),
+    (x |-> T; mupdate empty c) = mupdate empty ((x, T) :: c).
+Proof. intros. auto. Qed.
 
 (** ** Properties of Instantiations *)
 
@@ -631,17 +659,13 @@ Proof.
   - split.
     + simpl.
       split.
-      * eapply RC_typable_empty_1 in H3; eauto.
-        destruct H3 as [T' [Hmstca__T' Htyp__v1_s]].
-        eapply typable_empty__closed.
-        apply Htyp__v1_s.
+      * eapply typable_empty__closed.
+        eapply RC_typable_empty_1 in H3; eauto.
       * apply IHV.
     + simpl.
       split.
-      * eapply RC_typable_empty_2 in H3; eauto.
-        destruct H3 as [T' [Hmstca__T' Htyp__v2_s]].
-        eapply typable_empty__closed.
-        apply Htyp__v2_s.
+      * eapply typable_empty__closed.
+        eapply RC_typable_empty_2 in H3; eauto.
     * apply IHV.
 Qed.
 
@@ -728,171 +752,102 @@ Qed.
 (** ** Congruence lemmas on [eval] *)
 
 (** ** Multi-substitutions preserve typing *)
-Definition upd (m : list (tyname * Ty)) (Gamma : partial_map Ty) :=
-  fun x =>
-    match Gamma x with
-    | None => None
-    | Datatypes.Some T => Datatypes.Some (msubstT m T)
-    end.
 
-Lemma e : forall Gamma,
-    upd nil Gamma = Gamma.
-Proof.
-  intros.
-  apply Coq.Logic.FunctionalExtensionality.functional_extensionality.
-  intros.
-  unfold upd.
-  simpl.
-  destruct (Gamma x); auto.
-Qed.
+Fixpoint mupd (xts : tass) (Gamma : Gamma) : Implementations.Gamma :=
+  match xts with
+  | nil => Gamma
+  | ((a, T) :: xts') => mupd xts' (upd a T Gamma)
+  end.
 
+Lemma mupd_nil : forall Gamma,
+    mupd nil Gamma = Gamma.
+Proof. intros. apply Coq.Logic.FunctionalExtensionality.functional_extensionality. intros. unfold mupd. destruct (Gamma x); auto. Qed.
 
-Inductive mupd : tass -> tass -> tass -> Prop :=
-  | MUC_nil : forall c,
-      mupd nil c c
-  | MUC_cons : forall c c' c'' X U xts,
-      UpdateContext X U c c' ->
-      mupd xts c' c'' ->
-      mupd ((X, U) :: xts) c c''.
-
-Lemma mupd_e : forall xts X T c c',
-    mupd xts ((X, T) :: c) c' ->
-    exists T' c'', c' = ((X, T') :: c'').
+Lemma mupd_absorbs_msubstT : forall xts x T Gamma,
+    mupd xts (x |-> T; Gamma) = (x |-> msubstT xts T; mupd xts Gamma).
 Proof.
   induction xts.
+  - auto.
   - intros.
-    inversion H.
-    subst.
-    eauto.
-  - intros.
-    inversion H. subst.
-    inversion H2. subst.
+    destruct a. 
+    simpl.
+    rewrite <- upd_absorbs_substituteT.
     eauto.
 Qed.
 
-Lemma mupd_uncons : forall xts X T T' c c',
-    mupd xts ((X, T) :: c) ((X, T') :: c') ->
-    mupd xts c c'.
-Proof.
-  induction xts.
-  - intros.
-    inversion H. subst.
-    apply MUC_nil.
-  - intros.
-    inversion H. subst.
-    inversion H2. subst.
-    econstructor; eauto.
-Qed.
-
-Lemma mupd_nil : forall xts c',
-    mupd xts nil c' ->
-    c' = nil.
-Proof.
-  induction xts.
-  - intros.
-    inversion H. 
-    auto.
-  - intros.
-    inversion H.
-    subst.
-    inversion H2. 
-    subst.
-    apply IHxts.
-    auto.
-Qed.
+Lemma mupd_empty : forall xts,
+    mupd xts empty = empty.
+Proof. induction xts; auto. simpl. destruct a. auto. Qed.
 
 Lemma msubstA_preserves_typing_1 : forall rho ck,
     RD ck rho ->
-    forall Gamma Gamma' c c',
-      mupd (msyn1 rho) c c' ->
-      Gamma = mupdate empty c ->
-      Gamma' = mupdate empty c' ->
-      forall Delta t t' T T',
-        (mupdate Delta ck, Gamma) |-+ t : T ->
-        msubstA (msyn1 rho) t t' ->
-        msubstTCA (msyn1 rho) T T' ->
-        (Delta, Gamma') |-+ t': T'. 
+    forall Delta Gamma t t' T,
+      (mupdate Delta ck, Gamma) |-+ t : T ->
+      msubstA (msyn1 rho) t t' ->
+      (Delta, mupd (msyn1 rho) Gamma) |-+ t': (msubstT (msyn1 rho) T). 
 Proof.
   intros rho ck V.
   induction V.
   - intros.
     subst.
-    inversion H. subst.
-    inversion H3. subst.
-    inversion H4. subst.
+    inversion H0. subst.
+    simpl.
     assumption.
   - intros.
     subst.
-    inversion H2. subst.
-    inversion H6. subst.
-    inversion H7. subst.
+    inversion H3. subst.
+    simpl.
+    unfold mupd.
+    simpl.
     eapply IHV; eauto.
     eapply substituteA_preserves_typing; eauto.
 Qed.
 
-Lemma msubstA_preserves_typing_21 : forall rho ck,
+Lemma msubstA_preserves_typing_2 : forall rho ck,
     RD ck rho ->
-    forall Gamma Gamma' c c',
-      mupd (msyn2 rho) c c' ->
-      Gamma = mupdate empty c ->
-      Gamma' = mupdate empty c' ->
-      forall Delta t t' T T',
-        (mupdate Delta ck, Gamma) |-+ t : T ->
-        msubstA (msyn2 rho) t t' ->
-        msubstTCA (msyn2 rho) T T' ->
-        (Delta, Gamma') |-+ t': T'. 
+    forall Delta Gamma t t' T,
+      (mupdate Delta ck, Gamma) |-+ t : T ->
+      msubstA (msyn2 rho) t t' ->
+      (Delta, mupd (msyn2 rho) Gamma) |-+ t': (msubstT (msyn2 rho) T). 
 Proof.
   intros rho ck V.
   induction V.
   - intros.
     subst.
-    inversion H. subst.
-    inversion H3. subst.
-    inversion H4. subst.
+    inversion H0. subst.
+    simpl.
     assumption.
   - intros.
     subst.
-    inversion H2. subst.
-    inversion H6. subst.
-    inversion H7. subst.
+    inversion H3. subst.
+    simpl.
+    unfold mupd.
+    simpl.
     eapply IHV; eauto.
     eapply substituteA_preserves_typing; eauto.
 Qed.
 
 Lemma msubst_preserves_typing_1 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
-    forall T T' c',
-      mupd (msyn1 rho) c c' ->
-      msubstTCA (msyn1 rho) T T' ->
-      forall Gamma t t',
-        (empty, mupdate Gamma c') |-+ t : T' ->
-        msubst e1 t t' ->
-        (empty, Gamma) |-+ t': T'. 
+    forall Gamma T t t',
+      (empty, mupd (msyn1 rho) (mupdate Gamma c)) |-+ t : (msubstT (msyn1 rho) T) ->
+      msubst e1 t t' ->
+      (empty, mupd (msyn1 rho) Gamma) |-+ t': (msubstT (msyn1  rho) T). 
 Proof.
   intros rho k c e1 e2 V.
   induction V.
   - intros.
-    apply mupd_nil in H.
-    subst.
-    inversion H2. subst.
+    inversion H0. subst.
     assumption.
   - intros.
-    eapply mupd_e in H4 as H15.
-    destruct H15.
-    destruct H8.
-    subst.
-    simpl in H6.
-    inversion H7. subst.
-    apply mupd_uncons in H4 as H20.
+    inversion H5. subst.
     eapply IHV.
-    + eauto.
-    + apply H5.
     + eapply substitution_preserves_typing.
-      * unfold extendT. simpl. eapply H6.
+      * simpl in H4.
+        rewrite mupd_absorbs_msubstT in H4.
+        eauto.
       * eapply RC_typable_empty_1 in H3.
-        destruct H3.
-        destruct H3.
-        assert (x2 = x0) by apply skip.
+        
         subst.
         eauto.
       * eassumption.
@@ -901,43 +856,31 @@ Qed.
 
 Lemma msubst_preserves_typing_2 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
-    forall T T' c',
-      mupd (msyn2 rho) c c' ->
-      msubstTCA (msyn2 rho) T T' ->
-      forall Gamma t t',
-        (empty, mupdate Gamma c') |-+ t : T' ->
-        msubst e2 t t' ->
-        (empty, Gamma) |-+ t': T'. 
+    forall Gamma T t t',
+      (empty, mupd (msyn2 rho) (mupdate Gamma c)) |-+ t : (msubstT (msyn2 rho) T) ->
+      msubst e2 t t' ->
+      (empty, mupd (msyn2 rho) Gamma) |-+ t': (msubstT (msyn2 rho) T). 
 Proof.
   intros rho k c e1 e2 V.
   induction V.
   - intros.
-    apply mupd_nil in H.
-    subst.
-    inversion H2. subst.
+    inversion H0. subst.
     assumption.
   - intros.
-    eapply mupd_e in H4 as H15.
-    destruct H15.
-    destruct H8.
-    subst.
-    simpl in H6.
-    inversion H7. subst.
-    apply mupd_uncons in H4 as H20.
+    inversion H5. subst.
     eapply IHV.
-    + eauto.
-    + apply H5.
     + eapply substitution_preserves_typing.
-      * unfold extendT. simpl. eapply H6.
+      * simpl in H4.
+        rewrite mupd_absorbs_msubstT in H4.
+        eauto.
       * eapply RC_typable_empty_2 in H3.
-        destruct H3.
-        destruct H3.
-        assert (x2 = x0) by apply skip.
+        
         subst.
         eauto.
       * eassumption.
     + assumption.
 Qed. 
+
 
 (** Logical relation: logical approximation
 

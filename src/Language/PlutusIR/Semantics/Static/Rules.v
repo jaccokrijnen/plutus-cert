@@ -75,17 +75,18 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
       ctx |-+ (Constant (Some (ValueOf u a))) : (Ty_Builtin (Some (TypeIn u)))
   | T_Builtin : forall ctx f,
       ctx |-+ (Builtin f) : (lookupBuiltinTy f)
-  | T_TyInst : forall ctx t1 T2 T1 X K2 S,
+  | T_TyInst : forall ctx t1 T2 T1 X K2 S T1',
       ctx |-+ t1 : (Ty_Forall X K2 T1) ->
       (fst ctx) |-* T2 : K2 ->
-      beta_reduce (substituteT X T2 T1) = S ->
+      substituteTCA X T2 T1 T1' ->
+      normalise T1' S ->
       ctx |-+ (TyInst t1 T2) : S
   | T_Error : forall ctx T,
       (fst ctx) |-* T : Kind_Base ->
       ctx |-+ (Error T) : T 
   (* Recursive types *)
   | T_IWrap : forall ctx F T M K S,
-      beta_reduce (unwrapIFix F K T) = S ->
+      normalise (unwrapIFix F K T) S ->
       ctx |-+ M : S ->
       (fst ctx) |-* T : K ->
       (fst ctx) |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
@@ -93,7 +94,7 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
   | T_Unwrap : forall ctx M F K T S,
       ctx |-+ M : (Ty_IFix F T) ->
       (fst ctx) |-* T : K ->
-      beta_reduce (unwrapIFix F K T) = S ->
+      normalise (unwrapIFix F K T) S ->
       ctx |-+ (Unwrap M) : S
 
   with constructor_well_formed : Context -> constructor -> Prop :=

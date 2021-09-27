@@ -46,10 +46,9 @@ Inductive substituteA : tyname -> Ty -> Term -> Term -> Prop :=
       X <> bX ->
       substituteA X S t0 t0' ->
       substituteA X S (TyAbs bX K t0) (TyAbs bX K t0')
-  | SA_LamAbs : forall X S bx T T' t0 t0',
+  | SA_LamAbs : forall X S bx T t0 t0',
       substituteA X S t0 t0' ->
-      substituteTCA X S T T' ->
-      substituteA X S (LamAbs bx T t0) (LamAbs bx (beta_reduce T') t0')
+      substituteA X S (LamAbs bx T t0) (LamAbs bx (substituteT X S T) t0')
   | SA_Apply : forall X S t1 t2 t1' t2',
       substituteA X S t1 t1' ->
       substituteA X S t2 t2' ->
@@ -58,18 +57,14 @@ Inductive substituteA : tyname -> Ty -> Term -> Term -> Prop :=
       substituteA X S (Constant u) (Constant u)
   | SA_Builtin : forall X S d,
       substituteA X S (Builtin d) (Builtin d)
-  | SA_TyInst : forall X S t0 T t0' T',
+  | SA_TyInst : forall X S t0 T t0',
       substituteA X S t0 t0' ->
-      substituteTCA X S T T' ->
-      substituteA X S (TyInst t0 T) (TyInst t0' (beta_reduce T'))
-  | SA_Error : forall X S T T',
-      substituteTCA X S T T' ->
-      substituteA X S (Error T) (Error (beta_reduce T'))
-  | SA_IWrap : forall X S F F' T T' t0 t0',
+      substituteA X S (TyInst t0 T) (TyInst t0' (substituteT X S T))
+  | SA_Error : forall X S T,
+      substituteA X S (Error T) (Error (substituteT X S T))
+  | SA_IWrap : forall X S F T t0 t0',
       substituteA X S t0 t0' ->
-      substituteTCA X S F F' ->
-      substituteTCA X S T T' ->
-      substituteA X S (IWrap F T t0) (IWrap (beta_reduce F') (beta_reduce T') t0')
+      substituteA X S (IWrap F T t0) (IWrap (substituteT X S F) (substituteT X S T) t0')
   | SA_Unwrap : forall X S t0 t0',
       substituteA X S t0 t0' ->
       substituteA X S (Unwrap t0) (Unwrap t0') 
@@ -96,13 +91,11 @@ with substituteA_bindings_rec : tyname -> Ty -> list Binding -> list Binding -> 
       substituteA_bindings_rec X S (b :: bs) (b' :: bs')
 
 with substituteA_binding : tyname -> Ty -> Binding -> Binding -> Prop :=
-  | SA_TermBind : forall X S strictness bx T T' t t',
+  | SA_TermBind : forall X S strictness bx T t t',
       substituteA X S t t' ->
-      substituteTCA X S T T' ->
-      substituteA_binding X S (TermBind strictness (VarDecl bx T) t) (TermBind strictness (VarDecl bx (beta_reduce T')) t')
-  | SA_TypeBind : forall X S tvd T T',
-      substituteTCA X S T T' ->
-      substituteA_binding X S (TypeBind tvd T) (TypeBind tvd (beta_reduce T'))
+      substituteA_binding X S (TermBind strictness (VarDecl bx T) t) (TermBind strictness (VarDecl bx (substituteT X S T)) t')
+  | SA_TypeBind : forall X S tvd T,
+      substituteA_binding X S (TypeBind tvd T) (TypeBind tvd (substituteT X S T))
   | SA_DatatypeBind : forall X S tvd YKs matchFunc cs cs',
       substituteA_constructors X S cs cs' ->
       substituteA_binding X S (DatatypeBind (Datatype tvd YKs matchFunc cs)) (DatatypeBind (Datatype tvd YKs matchFunc cs'))
@@ -116,9 +109,8 @@ with substituteA_constructors : tyname -> Ty -> list constructor -> list constru
       substituteA_constructors X S (c :: cs) (c' :: cs')
 
 with substituteA_constructor : tyname -> Ty -> constructor -> constructor -> Prop :=
-  | SA_Constr : forall X S T T' bx ar,
-      substituteTCA X S T T' ->
-      substituteA_constructor X S (Constructor (VarDecl bx T) ar) (Constructor (VarDecl bx (beta_reduce T')) ar)
+  | SA_Constr : forall X S T bx ar,
+      substituteA_constructor X S (Constructor (VarDecl bx T) ar) (Constructor (VarDecl bx (substituteT X S T)) ar)
 .
 
 #[export] Hint Constructors substituteA : core.

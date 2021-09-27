@@ -64,3 +64,20 @@ Proof.
   - eapply eval_value. assumption.
   - assumption. 
 Qed.*)
+
+Lemma RG_monotone : forall c rho i k env env',
+    RG rho k c env env' ->  
+    i <= k ->
+    RG rho i c env env'.
+Proof.
+  induction c.
+  - intros.
+    inversion H. 
+    subst.
+    constructor.
+  - intros.
+    inversion H.
+    subst.
+    eapply RG_cons; eauto.
+    eapply RC_monotone; eauto.
+Qed.

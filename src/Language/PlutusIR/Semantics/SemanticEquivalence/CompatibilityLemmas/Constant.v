@@ -33,22 +33,15 @@ Proof.
     assumption.
 Qed.
 
-Lemma msubstTCA_TyConstant : forall ss u T',
-    msubstTCA ss (Ty_Builtin (Some (TypeIn u))) T' ->
-    T' = Ty_Builtin (Some (TypeIn u)).
+Lemma msubstT_TyBuiltin : forall ss u,
+    msubstT ss (Ty_Builtin (Some (TypeIn u))) = Ty_Builtin (Some (TypeIn u)).
 Proof.
   induction ss.
+  - reflexivity.
   - intros.
-    inversion H.
-    subst.  
-    reflexivity.
-  - intros.
-    inversion H.
-    subst.
-    inversion H2.
-    subst.
+    simpl.
+    destruct a.
     apply IHss.
-    auto.
 Qed.
 
 Lemma compatibility_Constant : forall Delta Gamma u a,
@@ -75,18 +68,8 @@ Proof.
 
   autorewrite with RC.
 
-  split. { 
-    eexists. 
-    split.
-    - apply skip.
-    - apply T_Constant.  
-  }
-  split. { 
-    eexists. 
-    split.
-    - apply skip.
-    - apply T_Constant.  
-  }
+  split. { rewrite msubstT_TyBuiltin. apply T_Constant. }
+  split. { rewrite msubstT_TyBuiltin. apply T_Constant. }
 
   intros j Hlt__j e_f Hev__e_f.
 

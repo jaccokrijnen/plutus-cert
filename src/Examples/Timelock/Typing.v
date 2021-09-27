@@ -67,10 +67,16 @@ Proof.
                         apply T_TyInst with 
                           (T1 := (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniBool))) (Ty_Fun (Ty_Var (TyName (Name "a" (Unique 0)))) (Ty_Fun (Ty_Var (TyName (Name "a" (Unique 0)))) (Ty_Var (TyName (Name "a" (Unique 0))))))))
                           (X := "a")
-                          (K2 := Kind_Base). {
+                          (K2 := Kind_Base)
+                          (T1' := (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniBool)))
+                          (Ty_Fun (Ty_Var (TyName (Name "Bool" (Unique 11))))
+                             (Ty_Fun (Ty_Var (TyName (Name "Bool" (Unique 11))))
+                                (Ty_Var (TyName (Name "Bool" (Unique 11)))))))). {
                           apply T_Builtin.
                         }{
                           auto with typing.
+                        } {
+                          repeat constructor.
                         }
                         simpl.
                         auto with typing.
@@ -291,10 +297,16 @@ Proof.
                       apply T_TyInst with 
                         (T1 := Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniBool))) (Ty_Fun (Ty_Var (TyName (Name "a" (Unique 0)))) (Ty_Fun (Ty_Var (TyName (Name "a" (Unique 0)))) (Ty_Var (TyName (Name "a" (Unique 0)))))))
                         (X := "a")
-                        (K2 := Kind_Base). {
+                        (K2 := Kind_Base)
+                        (T1' := (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniBool)))
+                        (Ty_Fun (Ty_Var (TyName (Name "Bool" (Unique 11))))
+                           (Ty_Fun (Ty_Var (TyName (Name "Bool" (Unique 11))))
+                              (Ty_Var (TyName (Name "Bool" (Unique 11)))))))). {
                         apply T_Builtin.
                       }{
                         auto with typing.
+                      } {
+                        repeat constructor.
                       }
                       auto with typing.
                     }
@@ -342,10 +354,16 @@ Proof.
                       apply T_TyInst with 
                         (T1 := Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniBool))) (Ty_Fun (Ty_Var (TyName (Name "a" (Unique 0)))) (Ty_Fun (Ty_Var (TyName (Name "a" (Unique 0)))) (Ty_Var (TyName (Name "a" (Unique 0)))))))
                         (X := "a")
-                        (K2 := Kind_Base). {
+                        (K2 := Kind_Base)
+                        (T1' := (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniBool)))
+                        (Ty_Fun (Ty_Var (TyName (Name "Bool" (Unique 11))))
+                           (Ty_Fun (Ty_Var (TyName (Name "Bool" (Unique 11))))
+                              (Ty_Var (TyName (Name "Bool" (Unique 11)))))))). {
                         apply T_Builtin.
                       }{
                         auto with typing.
+                      } {
+                        repeat constructor.
                       }
                       auto with typing.
                     }
@@ -393,10 +411,16 @@ Proof.
                       apply T_TyInst with 
                         (T1 := Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniBool))) (Ty_Fun (Ty_Var (TyName (Name "a" (Unique 0)))) (Ty_Fun (Ty_Var (TyName (Name "a" (Unique 0)))) (Ty_Var (TyName (Name "a" (Unique 0)))))))
                         (X := "a")
-                        (K2 := Kind_Base). {
+                        (K2 := Kind_Base)
+                        (T1' := (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniBool)))
+                        (Ty_Fun (Ty_Var (TyName (Name "Bool" (Unique 11))))
+                           (Ty_Fun (Ty_Var (TyName (Name "Bool" (Unique 11))))
+                              (Ty_Var (TyName (Name "Bool" (Unique 11)))))))). {
                         apply T_Builtin.
                       }{
                         auto with typing.
+                      } {
+                        repeat constructor.
                       }
                       auto with typing.
                     }
@@ -444,10 +468,16 @@ Proof.
                       apply T_TyInst with 
                         (T1 := Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniBool))) (Ty_Fun (Ty_Var (TyName (Name "a" (Unique 0)))) (Ty_Fun (Ty_Var (TyName (Name "a" (Unique 0)))) (Ty_Var (TyName (Name "a" (Unique 0)))))))
                         (X := "a")
-                        (K2 := Kind_Base). {
+                        (K2 := Kind_Base)
+                        (T1' := (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniBool)))
+                        (Ty_Fun (Ty_Var (TyName (Name "Bool" (Unique 11))))
+                           (Ty_Fun (Ty_Var (TyName (Name "Bool" (Unique 11))))
+                              (Ty_Var (TyName (Name "Bool" (Unique 11)))))))). {
                         apply T_Builtin.
                       }{
                         auto with typing.
+                      } {
+                        repeat constructor.
                       }
                       auto with typing.
                     }
@@ -495,10 +525,16 @@ Proof.
                       apply T_TyInst with 
                         (T1 := Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniBool))) (Ty_Fun (Ty_Var (TyName (Name "a" (Unique 0)))) (Ty_Fun (Ty_Var (TyName (Name "a" (Unique 0)))) (Ty_Var (TyName (Name "a" (Unique 0)))))))
                         (X := "a")
-                        (K2 := Kind_Base). {
+                        (K2 := Kind_Base)
+                        (T1' := (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniBool)))
+                        (Ty_Fun (Ty_Var (TyName (Name "Bool" (Unique 11))))
+                           (Ty_Fun (Ty_Var (TyName (Name "Bool" (Unique 11))))
+                              (Ty_Var (TyName (Name "Bool" (Unique 11)))))))). {
                         apply T_Builtin.
                       }{
                         auto with typing.
+                      } {
+                        repeat constructor.
                       }
                       auto with typing.
                     }
@@ -546,10 +582,16 @@ Proof.
                       apply T_TyInst with 
                         (T1 := Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniBool))) (Ty_Fun (Ty_Var (TyName (Name "a" (Unique 0)))) (Ty_Fun (Ty_Var (TyName (Name "a" (Unique 0)))) (Ty_Var (TyName (Name "a" (Unique 0)))))))
                         (X := "a")
-                        (K2 := Kind_Base). {
+                        (K2 := Kind_Base)
+                        (T1' := (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniBool)))
+                        (Ty_Fun (Ty_Var (TyName (Name "Bool" (Unique 11))))
+                           (Ty_Fun (Ty_Var (TyName (Name "Bool" (Unique 11))))
+                              (Ty_Var (TyName (Name "Bool" (Unique 11)))))))). {
                         apply T_Builtin.
                       }{
                         auto with typing.
+                      } {
+                        repeat constructor.
                       }
                       auto with typing.
                     }
@@ -612,10 +654,16 @@ Proof.
                       apply T_TyInst with 
                         (T1 := Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniBool))) (Ty_Fun (Ty_Var (TyName (Name "a" (Unique 0)))) (Ty_Fun (Ty_Var (TyName (Name "a" (Unique 0)))) (Ty_Var (TyName (Name "a" (Unique 0)))))))
                         (X := "a")
-                        (K2 := Kind_Base). {
+                        (K2 := Kind_Base)
+                        (T1' := (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniBool)))
+                        (Ty_Fun (Ty_Var (TyName (Name "Bool" (Unique 11))))
+                           (Ty_Fun (Ty_Var (TyName (Name "Bool" (Unique 11))))
+                              (Ty_Var (TyName (Name "Bool" (Unique 11)))))))). {
                         apply T_Builtin.
                       }{
                         auto with typing.
+                      } {
+                        repeat constructor.
                       }
                       auto with typing.
                     }
@@ -663,10 +711,16 @@ Proof.
                       apply T_TyInst with 
                         (T1 := Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniBool))) (Ty_Fun (Ty_Var (TyName (Name "a" (Unique 0)))) (Ty_Fun (Ty_Var (TyName (Name "a" (Unique 0)))) (Ty_Var (TyName (Name "a" (Unique 0)))))))
                         (X := "a")
-                        (K2 := Kind_Base). {
+                        (K2 := Kind_Base)
+                        (T1' := (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniBool)))
+                        (Ty_Fun (Ty_Var (TyName (Name "Bool" (Unique 11))))
+                           (Ty_Fun (Ty_Var (TyName (Name "Bool" (Unique 11))))
+                              (Ty_Var (TyName (Name "Bool" (Unique 11)))))))). {
                         apply T_Builtin.
                       }{
                         auto with typing.
+                      } {
+                        repeat constructor.
                       }
                       auto with typing.
                     }
@@ -860,7 +914,15 @@ Proof.
             apply T_TyInst with
               (T1 := (Ty_Fun (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniInteger))) (Ty_Var "R")) (Ty_Fun (Ty_Var "R") (Ty_Var "R"))))
               (X := "R")
-              (K2 := Kind_Base). {
+              (K2 := Kind_Base)
+              (T1' := (Ty_Fun
+              (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniInteger)))
+                 (Ty_Fun (Ty_Var (TyName (Name "Unit" (Unique 60))))
+                    (Ty_Var (TyName (Name "Bool" (Unique 11))))))
+              (Ty_Fun
+                 (Ty_Fun (Ty_Var (TyName (Name "Unit" (Unique 60))))
+                    (Ty_Var (TyName (Name "Bool" (Unique 11)))))
+                 (Ty_Fun (Ty_Var "Unit") (Ty_Var "Bool"))))). {
               apply T_Apply with (Ty_Var "EndDate"). {
                 apply T_Var.
                 reflexivity.
@@ -868,6 +930,8 @@ Proof.
               auto with typing. 
             }{
               auto with typing.
+            } {
+              repeat constructor.
             }
               simpl.
               auto with typing.

@@ -15,4 +15,5 @@ Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.Bigstep.EvalValue.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.Substitution.Total.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.Substitution.Vacuous.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.AnnotationSubstitution.PreservesValue.
+Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.AnnotationSubstitution.Total.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.AnnotationSubstitution.Vacuous.

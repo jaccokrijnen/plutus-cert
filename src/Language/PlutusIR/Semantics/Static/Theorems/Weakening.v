@@ -185,12 +185,13 @@ Proof.
     apply T_Builtin.
   - (* T_TyInst *)
     intros. unfold P_has_type. intros.
-    apply T_TyInst with (T1 := T1) (X := X) (K2 := K2).
+    apply T_TyInst with (T1 := T1) (X := X) (K2 := K2) (T1' := T1').
     + apply H0.
       assumption.
     + apply weakening__has_kind with (fst ctx).
-      * apply H3. 
+      * apply H4. 
       * assumption.
+    + assumption.
     + assumption.
   - (* T_Error *)
     intros. unfold P_has_type. intros.

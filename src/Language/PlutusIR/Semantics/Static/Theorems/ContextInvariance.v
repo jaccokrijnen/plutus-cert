@@ -240,18 +240,19 @@ Proof with eauto.
     apply T_Builtin.
   - (* T_TyInst *)
     intros. unfold P_has_type. intros.
-    apply T_TyInst with T1 X K2.
+    apply T_TyInst with T1 X K2 T1'.
     + apply H0.
       * intros.
-        apply H3.
+        apply H4.
         apply AFIT_TyInst.
         assumption.
       * intros.
-        apply H4.
+        apply H5.
     + apply context_invariance__typelevel with (fst ctx).
       * assumption.
       * intros.
-        apply H4.
+        apply H5.
+    + assumption.
     + assumption.
   - (* T_Error *)
     intros. unfold P_has_type. intros.

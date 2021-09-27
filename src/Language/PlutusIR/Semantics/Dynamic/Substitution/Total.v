@@ -185,3 +185,19 @@ Proof.
   }
   apply H.
 Qed.
+
+
+Lemma msubst_total : forall env t,
+    exists t', msubst env t t'.
+Proof.
+  induction env; intros.
+  - exists t. constructor.
+  - destruct a as [a T].
+    assert (exists t', substitute a T t t') by (eapply substitute_models_total_function__Term; eauto).
+    destruct H as [t' Hs__t'].
+    destruct (IHenv t') as [t'' Hms__t''].
+    exists t''.
+    econstructor.
+    + apply Hs__t'.
+    + apply Hms__t''.
+Qed.

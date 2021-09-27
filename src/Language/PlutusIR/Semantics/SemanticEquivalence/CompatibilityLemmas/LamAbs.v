@@ -3,6 +3,7 @@ Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RelationalModel.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Monotonicity.
 
 Require Import Arith.
 
@@ -114,23 +115,22 @@ Proof.
   subst.
   clear Hcls1 Hcls2.
 
-  unfold LR_logically_approximate in IH_LR.
-
   autorewrite with RC.
   split. {
-    eapply msubst_preserves_typing_1; eauto.
-    rewrite msubstT_TyFun.
-    destruct IH_LR.
-    eapply T_LamAbs.
-Abort.
-(*
-    + eauto.
-
-
-    apply skip.
+    replace emptyContext with (@empty Kind, mupd (msyn1 rho) empty).
+    - eapply msubst_preserves_typing_1; eauto.
+      eapply msubstA_preserves_typing_1; eauto.
+      destruct IH_LR.
+      eapply T_LamAbs; eauto.
+    - rewrite mupd_empty; eauto.
   }
   split. {
-    apply skip.
+    replace emptyContext with (@empty Kind, mupd (msyn2 rho) empty).
+    - eapply msubst_preserves_typing_2; eauto.
+      eapply msubstA_preserves_typing_2; eauto.
+      destruct IH_LR.
+      eapply T_LamAbs; eauto.
+    - rewrite mupd_empty; eauto.
   }
 
   intros j Hlt__j e_f Hev__e_f.
@@ -141,23 +141,68 @@ Abort.
     eapply eval_value. apply V_LamAbs.
   }
   intros.
+  symmetry in H. inversion H. subst.
+  symmetry in H0. inversion H0. subst.
 
+  assert (exists v_sa, msubstA (msyn1 rho) v v_sa) by eapply msubstA_total.
+  destruct H4 as [v_sa Hmsa__v_sa].
+  assert (v_sa = v). { eapply msubstA_closed; eauto. eapply typable_empty__closed. eapply RC_typable_empty_1. eapply H1. }
+  subst.
+  assert (exists v'_sa, msubstA (msyn2 rho) v' v'_sa) by eapply msubstA_total.
+  destruct H4 as [v'_sa Hmsa__v'_sa].
+  assert (v'_sa = v'). { eapply msubstA_closed; eauto. eapply typable_empty__closed. eapply RC_typable_empty_2. eapply H1. }
+  subst.
+
+  assert (exists aaa, substitute x v eb_sa aaa) by eauto using substitute_models_total_function__Term.
+  destruct H4 as [aaa Haaa].
+  assert (exists bbb, msubst env aaa bbb) by eauto using msubst_total.
+  destruct H4 as [bbb Hbbb].
+  assert (bbb = e_body'). {
+    eapply subst_msubst; eauto.
+    - eapply typable_empty__closed.
+      eapply RC_typable_empty_1.
+      eapply H1.
+    - eapply RG_env_closed_1. eauto.
+  }
+  subst.
+  assert (msubst ((x, v) :: env) eb_sa e_body'). {
+    econstructor; eauto.
+  }
+
+  assert (exists ccc, substitute x v' eb'_sa ccc) by eauto using substitute_models_total_function__Term.
+  destruct H5 as [ccc Hccc].
+  assert (exists ddd, msubst env' ccc ddd) by eauto using msubst_total.
+  destruct H5 as [ddd Hddd].
+  assert (ddd = e'_body'). {
+    eapply subst_msubst; eauto.
+    - eapply typable_empty__closed.
+      eapply RC_typable_empty_2.
+      eapply H1.
+    - eapply RG_env_closed_2. eauto.
+  }
+  subst.
+  assert (msubst ((x, v') :: env') eb'_sa e'_body'). {
+    econstructor; eauto.
+  }
+
+  unfold LR_logically_approximate in IH_LR.
+  destruct IH_LR as [_ [_ IH_LR]].
   eapply IH_LR.
   - reflexivity.
-  - reflexivity. 
-
-  inversion H1. subst.
-  inversion H2. subst.
-
-  assert (msubst ((x', v) :: drop x' e1) t0_1 e_body'). { apply skip. }
-  assert (msubst ((x', v') :: drop x' e2) t0_1 e'_body'). { apply skip. }
-
-  eapply IH; eauto.
-  + assert (x' |T-> T1; mupdate emptyContext c = mupdate emptyContext ((x', T1) :: drop x' c)). {
-      apply skip.
-    }
-    apply H10.
-  + apply V_cons; eauto.
-    eapply instantiation_drop.
-    apply skip.
-*)
+  - rewrite mupdate_unfold.  reflexivity.
+  - split; auto.
+    eapply RG_cons.
+    + apply Hmsa__v_sa.
+    + apply Hmsa__v'_sa.
+    + apply H1.
+    + apply H1.
+    + apply H1.
+    + eapply RG_monotone; eauto.
+      rewrite <- minus_n_O in Hlt_i.
+      apply Nat.lt_le_incl.
+      assumption.
+  - eassumption.
+  - eassumption.
+  - apply H4.
+  - apply H5.
+Qed.

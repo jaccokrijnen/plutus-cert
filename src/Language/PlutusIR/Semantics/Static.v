@@ -10,3 +10,4 @@ Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.ContextInv
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.ContextInvariance.AFI.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.UniqueTypes.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.Weakening.
+Require Export PlutusCert.Language.PlutusIR.Semantics.Static.TypeSubstitution.Equivalence.

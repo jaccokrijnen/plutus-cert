@@ -37,6 +37,7 @@ src/Language/PlutusIR/Optimizer/DeadBindings.v
 src/Language/PlutusIR/Semantics/Dynamic.v
 src/Language/PlutusIR/Semantics/Dynamic/AnnotationSubstitution.v
 src/Language/PlutusIR/Semantics/Dynamic/AnnotationSubstitution/PreservesValue.v
+src/Language/PlutusIR/Semantics/Dynamic/AnnotationSubstitution/Total.v
 src/Language/PlutusIR/Semantics/Dynamic/AnnotationSubstitution/Vacuous.v
 src/Language/PlutusIR/Semantics/Dynamic/Bigstep.v
 src/Language/PlutusIR/Semantics/Dynamic/Bigstep/Congruence.v
@@ -63,7 +64,9 @@ src/Language/PlutusIR/Semantics/Static/Theorems/UniqueTypes.v
 src/Language/PlutusIR/Semantics/Static/Theorems/Weakening.v
 src/Language/PlutusIR/Semantics/Static/TypeSubstitution.v
 src/Language/PlutusIR/Semantics/Static/TypeSubstitution/CaptureAvoiding.v
+src/Language/PlutusIR/Semantics/Static/TypeSubstitution/Equivalence.v
 
+src/Language/PlutusIR/Semantics/TypeSafety/NormalisationPreservesKinding.v
 src/Language/PlutusIR/Semantics/TypeSafety/Preservation.v
 src/Language/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping.v
 src/Language/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping/AnnotationSubstitution.v
