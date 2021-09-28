@@ -230,6 +230,12 @@ Proof.
     subst.
     apply skip. (* TODO *)
 
+  - (* E_Unwrap_Error *)
+    intros. unfold P_eval. intros.
+    inversion H1. subst.
+    eapply H0.
+    apply skip. (* TODO: Remove *)
+
   - (* E_NilB_NonRec *)
     intros. unfold P_eval_bindings_nonrec. intros.
     inversion H1. subst.

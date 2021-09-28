@@ -91,6 +91,9 @@ Inductive eval : Term -> Term -> nat -> Prop :=
   (* TODO: Should there be a rule for type reduction? *)
 
   (* TODO: Errors propagate *)
+  | E_Unwrap_Error : forall t0 k0 T_err,
+      t0 =[k0]=> Error T_err ->
+      Unwrap t0 =[k0 + 1]=> Error T_err
 
 with eval_bindings_nonrec : Term -> Term -> nat -> Prop :=
   | E_NilB_NonRec : forall t v k,
