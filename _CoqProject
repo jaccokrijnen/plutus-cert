@@ -75,15 +75,16 @@ src/Language/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping/TypeSubst
 src/Language/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping/SubstituteTCA.v
 
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas.v
-#src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Apply.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Apply.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Builtin.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Constant.v
-src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/LamAbs.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Error.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/IWrap.v
-#src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Unwrap.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/LamAbs.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Unwrap.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TyAbs.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Var.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/LogicalRelation/RelationalModel.v
-#src/Language/PlutusIR/Semantics/SemanticEquivalence/FundamentalProperty.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/FundamentalProperty.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/Monotonicity.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/ReductionInvariance.v
-src/Language/PlutusIR/Semantics/SemanticEquivalence/Termination.v

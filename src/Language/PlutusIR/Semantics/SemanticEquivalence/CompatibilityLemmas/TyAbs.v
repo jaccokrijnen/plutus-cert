@@ -123,7 +123,7 @@ Proof.
     replace emptyContext with (@empty Kind, mupd (msyn2 rho) empty).
     - eapply msubst_preserves_typing_2; eauto.
       eapply msubstA_preserves_typing_2; eauto.
-      destruct IH_LR.
+      destruct IH_LR. destruct H0.
       eapply T_TyAbs; eauto.
     - rewrite mupd_empty; eauto.
   }

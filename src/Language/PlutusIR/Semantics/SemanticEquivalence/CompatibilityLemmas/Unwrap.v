@@ -4,13 +4,51 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.Preservation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
-Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Def.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RelationalModel.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Monotonicity.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.ReductionInvariance.
-Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Termination.
 
 Require Import Arith.
 Require Import Coq.Logic.Decidable.
+
+Lemma msubst_Unwrap : forall ss M t',
+    msubst ss (Unwrap M) t' ->
+    exists M', msubst ss M M' /\ t' = Unwrap M'.
+Proof.
+  induction ss; intros.
+  - inversion H. subst.
+    exists M. split. constructor. reflexivity.
+  - inversion H. subst.
+    inversion H2. subst.
+    rename t0' into M'.
+    eapply IHss in H5.
+    destruct H5 as [M'' [H0 H1]].
+    subst.
+    exists M''.
+    split.
+    + eapply msubst_cons; eauto.
+    + reflexivity.
+Qed.
+
+Lemma msubstA_Unwrap : forall ss M t',
+    msubstA ss (Unwrap M) t' ->
+    exists M', msubstA ss M M' /\ t' = Unwrap M'.
+Proof.
+  induction ss; intros.
+  - inversion H. subst.
+    exists M. split. constructor. reflexivity.
+  - inversion H. subst.
+    inversion H2. subst.
+    rename t0' into M'.
+    eapply IHss in H5.
+    destruct H5 as [M'' [H0 H1]].
+    subst.
+    exists M''.
+    split.
+    + eapply msubstA_cons; eauto.
+    + reflexivity.
+Qed.
+  
 
 Lemma inspect_eval__Unwrap_1 : forall e j e_f,
     Unwrap e =[j]=> e_f ->
@@ -84,28 +122,55 @@ Lemma helper4 : forall k j,
     0 < (k - j).
 Proof. Admitted.
 
-Lemma RC_compatibility_Unwrap : forall k F K T e e',
-    emptyContext |-* T : K ->
-    RC k (Ty_IFix F T) e e' ->
-    RC k (beta_reduce (unwrapIFix F K T)) (Unwrap e) (Unwrap e').
+Lemma compatibility_Unwrap : forall Delta Gamma F T e e' K S,
+    Delta |-* T : K ->
+    normalise (unwrapIFix F K T) S ->
+    LR_logically_approximate Delta Gamma e e' (Ty_IFix F T)->
+    LR_logically_approximate Delta Gamma (Unwrap e) (Unwrap e') S.
 Proof.
-  intros k F K T e e'.
-  intros Hkind_T H_RC.
-  remember H_RC as H_RC'. clear HeqH_RC'.
+  intros Delta Gamma F T e e' K S Hkind__T Hnorm IH_LR.
+  unfold LR_logically_approximate.
 
-  assert (Htyp : emptyContext |-+ (Unwrap e) : (beta_reduce (unwrapIFix F K T))). {
+  split. {
+    edestruct IH_LR as [Htyp__e [Htyp__e' H]].
     eapply T_Unwrap; eauto.
-    eapply RC_typable_empty_1; eauto.
-  } 
-  assert (Htyp' : emptyContext |-+ (Unwrap e') : (beta_reduce (unwrapIFix F K T))). {
-    eapply T_Unwrap; eauto.
-    eapply RC_typable_empty_2; eauto.
   }
+
+  split. {
+    edestruct IH_LR as [Htyp__e [Htyp__e' H]].
+    eapply T_Unwrap; eauto.
+  }
+
+  intros k rho env env' ct ck HeqDelta HeqGamma [H_RD H_RG].
+  subst.
+
+  intros e_msa e'_msa e_ms e'_ms.
+  intros HmsA__e_msa HmsA__e'_msa Hms__e_ms Hms__e'_ms.
+
+  destruct (msubstA_Unwrap _ _ _ HmsA__e_msa) as [eb_msa [HmsA__eb_msa Heq]].
+  destruct (msubstA_Unwrap _ _ _ HmsA__e'_msa) as [eb'_msa [HmsA__eb'_msa Heq']].
+  subst.
+
+  destruct (msubst_Unwrap _ _ _ Hms__e_ms) as [eb_ms [Hms__eb_ms Heq]].
+  destruct (msubst_Unwrap _ _ _ Hms__e'_ms) as [eb'_ms [Hms__eb'_ms Heq']].
+  subst.
 
   autorewrite with RC.
 
-  (* First part of the proof *)
-  split; auto. split; auto.
+  split. {
+    replace emptyContext with (@empty Kind, mupd (msyn1 rho) empty).
+    - eapply T_Unwrap.
+      + apply skip.
+      + apply skip.
+      + apply skip.
+    - rewrite mupd_empty. reflexivity.
+  } 
+  split. {
+    replace emptyContext with (@empty Kind, mupd (msyn1 rho) empty).
+    - eapply T_Unwrap.
+      all: apply skip.
+    - rewrite mupd_empty. reflexivity.
+  } 
 
   (* Second part of the proof *)
 
@@ -124,7 +189,7 @@ Proof.
       # irred(e_f1) and
       # j_1 <= j
   *)
-  assert (temp: exists j_1 e_f1, e =[j_1]=> e_f1 /\ j_1 <= j) by eauto using inspect_eval__Unwrap_1.
+  assert (temp: exists j_1 e_f1, eb_ms =[j_1]=> e_f1 /\ j_1 <= j) by eauto using inspect_eval__Unwrap_1.
   destruct temp as [j_1 [e_f1 [Hev__e Hle__j_1]]].
 
   (** 
@@ -136,6 +201,9 @@ Proof.
   *)
   assert (Hlt__j_1 : j_1 < k) by eauto using Nat.le_lt_trans. 
 
+  unfold LR_logically_approximate in IH_LR.
+  destruct IH_LR as [H20 [H21 IH_LR]].
+  assert (H_RC: RC k (Ty_IFix F T) rho eb_ms eb'_ms) by eauto.
   autorewrite with RC in H_RC.
   destruct H_RC as [_ [_ H_RC]].
   remember (H_RC j_1 Hlt__j_1 e_f1 Hev__e) as temp.
@@ -147,11 +215,8 @@ Proof.
       # (k - j_1, e_f1, e'_f1) \in RV[[Ty_IFix F T]]
   *)
   destruct H_RC as [e'_f1 [j'_1 [Hev__e1' H_RC]]].
-  assert (H_RV: RC (k - j_1) (Ty_IFix F T) e_f1 e'_f1). {
+  assert (H_RV: RC (k - j_1) (Ty_IFix F T) rho e_f1 e'_f1). {
     eapply RC_monotone.
-    - split.
-      + eapply eval_value. eapply eval_to_value. eauto.
-      + eapply helper1; eauto. 
     - eapply eval_preserves_R; eauto.
       split.
       + eauto.
@@ -164,11 +229,11 @@ Proof.
         e_f1 `equiv` IWrap F T v_f11, and
         e'_f1 `equiv` IWrap F T v'_f11.
   *)
-  assert (temp: exists v_f11, e_f1 = IWrap F T v_f11). {
+  assert (temp: exists v_f11, e_f1 = IWrap (msubstT (msyn1 rho) F) (msubstT (msyn1 rho) T) v_f11). {
     apply skip. (* TODO *)
   }
   destruct temp as [v_f11 Heq1].
-  assert (temp: exists v'_f11, e'_f1 = IWrap F T v'_f11). {
+  assert (temp: exists v'_f11, e'_f1 = IWrap (msubstT (msyn2 rho) F) (msubstT (msyn2 rho) T) v'_f11). {
     apply skip. (* TODO *)
   }
   destruct temp as [v'_f11 Heq2].
@@ -206,11 +271,14 @@ Proof.
     subst. eapply E_Unwrap; eauto.
   }
 
-  assert (IWrap F T v_f11 = IWrap F T v_f11) by reflexivity.
-  assert (IWrap F T v'_f11 = IWrap F T v'_f11) by reflexivity.
+  assert (IWrap (msubstT (msyn1 rho) F) (msubstT (msyn1 rho) T) v_f11 = IWrap (msubstT (msyn1 rho) F) (msubstT (msyn1 rho) T) v_f11) by reflexivity.
+  assert (IWrap (msubstT (msyn2 rho) F) (msubstT (msyn2 rho) T) v'_f11 = IWrap (msubstT (msyn2 rho) F) (msubstT (msyn2 rho) T) v'_f11) by reflexivity.
   assert (k - j < k - j_1) by (eapply helper3; eauto).
   subst.
-  remember (H_RC _ _ H H0 _ H1 _ Hkind_T) as H_RC2.
+  assert (Hkind_msT: empty |-* (msubstT (msyn2 rho) T) : K). {
+    apply skip. (* TODO *)
+  }
+  remember (H_RC _ _ H H0 _ H1 _ _ Hkind_msT Hnorm) as H_RC2.
   clear HeqH_RC2.
 
   assert (terminates_excl v_f11 0 v_f11 (k - (j_1 + 1))). {
@@ -221,72 +289,29 @@ Proof.
     + eapply helper4; eauto.
   }
 
-  destruct (beta_reduce (unwrapIFix F K T)) eqn:Hd.
-  - eapply RC_impossible_type in H_RC2; eauto.
+  autorewrite with RC in H_RC2.
 
-  - eapply RC_functional_extensionality in H_RC2; eauto.
-    destruct H_RC2 as [a [b [c H_RC2]]].
-    assert (a = v'_f11 /\ b = 0). {
-      
-      eapply eval__deterministic; eauto.
-      apply eval_value.
-      eapply eval_to_value; eauto.
-      eapply E_Unwrap. eauto.
-    }
-    destruct H3. subst.
+  destruct H_RC2 as [_ [_ H_RC2]].
+  assert (0 < k - (j_1 + 1)). {
+    eapply helper4; eauto.
+  }
+  assert (v_f11 =[0]=> v_f11). {
+    eapply eval_value. eapply eval_to_value; eauto.
+  }
 
-    intros.
-    eapply H_RC2; eauto.
-    rewrite <- minus_n_O.
-    auto.
+  eapply H_RC2 in H3; eauto.
+  destruct H3.
+  destruct H3.
+  destruct H3.
 
-  - eapply RC_unwrap in H_RC2; eauto.
-    destruct H_RC2 as [a [b [c H_RC2]]].
-    assert (a = v'_f11 /\ b = 0). {
-      
-      eapply eval__deterministic; eauto.
-      apply eval_value.
-      eapply eval_to_value; eauto.
-      eapply E_Unwrap. eauto.
-    }
-    destruct H3. subst.
+  assert (v'_f11 =[0]=> v'_f11). {
+    eapply eval_value. eapply eval_to_value; eauto. eapply E_Unwrap; eauto.
+  }
 
-    intros.
-    eapply H_RC2; eauto.
-    rewrite <- minus_n_O.
-    auto.
+  assert (x = v'_f11) by (eapply eval__deterministic; eauto).
+  subst.
+  rewrite <- minus_n_O in H5.
+  eauto.
 
-  - eapply RC_instantiational_extensionality in H_RC2; eauto.
-    destruct H_RC2 as [a [b [c H_RC2]]].
-    assert (a = v'_f11 /\ b = 0). {
-      
-      eapply eval__deterministic; eauto.
-      apply eval_value.
-      eapply eval_to_value; eauto.
-      eapply E_Unwrap. eauto.
-    }
-    destruct H3. subst.
-
-    intros.
-    eapply H_RC2; eauto.
-    rewrite <- minus_n_O.
-    auto.
-
-  - eapply RC_syntactic_equality in H_RC2; eauto.
-    destruct H_RC2 as [a [b [c H_RC2]]].
-    assert (a = v'_f11 /\ b = 0). {
-      
-      eapply eval__deterministic; eauto.
-      apply eval_value.
-      eapply eval_to_value; eauto.
-      eapply E_Unwrap. eauto.
-    }
-    destruct H3. subst.
-
-    intros.
-    eapply H_RC2; eauto.
-
-  - eapply RC_impossible_type in H_RC2; eauto.
-
-  - eapply RC_impossible_type in H_RC2; eauto.
+  Unshelve. all: eauto.
 Qed.

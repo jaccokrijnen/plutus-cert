@@ -473,14 +473,6 @@ Proof.
     assumption.
 Qed.
 
-Inductive close_off_env (envA : list (tyname * Ty)) : env -> env -> Prop :=
-  | CO_nil : 
-      close_off_env envA nil nil
-  | CO_cons : forall x t t' env env',
-      msubstA envA t t' ->
-      close_off_env envA env env' ->
-      close_off_env envA ((x,t) :: env) ((x, t') :: env').
-
 Fixpoint closed_env (env : env) :=
   match env with
   | nil => True
@@ -514,59 +506,6 @@ Lemma substA_msubstA : forall env x v t,
       substituteA x v t3 t4 ->
       t2 = t4.
 Proof. Admitted.
-
-
-
-
-Lemma msubst_Apply : forall ss t1 t2 t',
-    msubst ss (Apply t1 t2) t' ->
-    exists t1' t2', msubst ss t1 t1' /\ msubst ss t2 t2' /\ t' = (Apply t1' t2').
-Proof.
-  induction ss; intros.
-  - inversion H. subst.
-    exists t1, t2.
-    eauto using msubst_nil, msubst_cons. 
-  - inversion H. subst.
-    rename t'0 into t''.
-    inversion H2. subst.
-    apply IHss in H5.
-    destruct H5 as [t1'' [t2'' [H9 [H10 H11]]]].
-    exists t1'', t2''.
-    split. {
-      apply msubst_cons with t1'.
-      + assumption.
-      + apply H9.
-    }
-    split. {
-      apply msubst_cons with t2'.
-      + assumption.
-      + apply H10.
-    }
-    assumption.
-Qed.
-
-
-
-
-
-Lemma msubst_Unwrap : forall ss M t',
-    msubst ss (Unwrap M) t' ->
-    exists M', msubst ss M M' /\ t' = Unwrap M'.
-Proof.
-  induction ss; intros.
-  - inversion H. subst.
-    exists M. split. constructor. reflexivity.
-  - inversion H. subst.
-    inversion H2. subst.
-    rename t0' into M'.
-    eapply IHss in H5.
-    destruct H5 as [M'' [H0 H1]].
-    subst.
-    exists M''.
-    split.
-    + eapply msubst_cons; eauto.
-    + reflexivity.
-Qed.
 
 (** ** Properties of multi-extensions *)
 
@@ -899,12 +838,12 @@ Definition LR_logically_approximate (Delta : partial_map Kind) (Gamma : partial_
       Delta = mupdate empty ck -> Gamma = mupdate empty ct ->
       RD ck rho /\
       RG rho k ct env env' ->
-      forall e_sa e'_sa e_s e'_s,
-        msubstA (msyn1 rho) e e_sa ->
-        msubstA (msyn2 rho) e e'_sa ->
-        msubst env e_sa e_s ->
-        msubst env' e'_sa e'_s ->
-        RC k T rho e_s e'_s.
+      forall e_msa e'_msa e_ms e'_ms,
+        msubstA (msyn1 rho) e e_msa ->
+        msubstA (msyn2 rho) e' e'_msa ->
+        msubst env e_msa e_ms ->
+        msubst env' e'_msa e'_ms ->
+        RC k T rho e_ms e'_ms.
       
 (** Logical relation: logical equivalence 
 
