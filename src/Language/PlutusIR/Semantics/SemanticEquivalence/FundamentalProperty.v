@@ -52,13 +52,6 @@ Proof.
     apply skip.
   - intros. unfold P_has_type. intros. subst.
     apply skip.
-
-  - (* T_TyInst *)
-    intros.
-    unfold P_has_type.
-    unfold LR_logically_approximate.
-    
-    apply skip.
   - unfold P_constructor_well_formed. eauto with typing.
   - unfold P_bindings_well_formed_nonrec. eauto with typing.
   - unfold P_bindings_well_formed_nonrec. eauto with typing.

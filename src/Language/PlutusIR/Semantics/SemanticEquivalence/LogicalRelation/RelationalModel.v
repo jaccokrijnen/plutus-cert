@@ -68,7 +68,7 @@ Definition Rel
     : Prop :=
   forall j v v',
     Chi j v v' ->
-    value v /\ value v' /\
+    (* value v /\ value v' /\ *)
     emptyContext |-+ v : T /\
     emptyContext |-+ v' : T' /\ 
     forall i,

@@ -2,6 +2,54 @@ Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.Bigstep.
 
+
+Lemma compute_defaultfun__to_value : forall t v,
+    compute_defaultfun t = Datatypes.Some v ->
+    value v.
+Proof.
+  intros.
+  destruct t; try discriminate.
+  simpl in H.
+  destruct t1; try discriminate.
+  - destruct t1_1; try discriminate.
+    + destruct t1_1_1; try discriminate.
+      destruct d; try discriminate.
+      destruct t1_1_2; try discriminate.
+      destruct s; try discriminate.
+      destruct u; try discriminate.
+      destruct v0; try discriminate.
+      destruct t1_2; try discriminate.
+      destruct s; try discriminate.
+      destruct u0; try discriminate.
+      destruct v0; try discriminate.
+      destruct t2; try discriminate.
+      destruct s; try discriminate.
+      destruct u1; try discriminate.
+      destruct v0; try discriminate.
+      inversion H. subst.
+      constructor.
+    + destruct d; try discriminate.
+      all: try solve [
+        destruct t1_2; try discriminate;
+        destruct s; try discriminate;
+        destruct u; try discriminate;
+        destruct v0; try discriminate;
+        destruct t2; try discriminate;
+        destruct s; try discriminate;
+        destruct u0; try discriminate;
+        destruct v0; try discriminate;
+        inversion H; subst; constructor
+      ].
+  - destruct d; try discriminate.
+    all: try solve [
+      destruct t2; try discriminate;
+      destruct s; try discriminate;
+      destruct u; try discriminate;
+      destruct v0; try discriminate;
+      inversion H; subst; constructor
+    ].
+Qed.
+
 Definition P_eval (t v : Term) (k : nat) := value v.
 Definition P_eval_bindings_nonrec (t v : Term) (k : nat) := value v.
 Definition P_eval_bindings_rec (bs0 : list Binding) (t v : Term) (k : nat) := value v.

@@ -77,7 +77,7 @@ Inductive eval : Term -> Term -> nat -> Prop :=
       t1 =[k1]=> TyAbs X K t0 ->
       substituteA X T2 t0 t0' ->
       t0' =[k0]=> v0 ->
-      TyInst t1 T2 =[k1 + k0]=> v0
+      TyInst t1 T2 =[k1 + 1 + k0]=> v0
   (* Errors and their propagation *)
   | E_Error : forall T,
       Error T =[0]=> Error T
@@ -95,7 +95,7 @@ Inductive eval : Term -> Term -> nat -> Prop :=
 with eval_bindings_nonrec : Term -> Term -> nat -> Prop :=
   | E_NilB_NonRec : forall t v k,
       t =[k]=> v ->
-      eval_bindings_nonrec (Let NonRec nil t) v k
+      eval_bindings_nonrec (Let NonRec nil t) v (S k)
   | E_ConsB_NonRec : forall s x T tb bs t vb bs' t' v kb k,
       tb =[kb]=> vb ->
       substitute x vb (Let NonRec bs t) (Let NonRec bs' t') ->
@@ -105,7 +105,7 @@ with eval_bindings_nonrec : Term -> Term -> nat -> Prop :=
 with eval_bindings_rec : list Binding -> Term -> Term -> nat -> Prop :=
   | E_NilB_Rec : forall bs0 t v k,
       t =[k]=> v ->
-      eval_bindings_rec bs0 (Let Rec nil t) v k
+      eval_bindings_rec bs0 (Let Rec nil t) v (S k)
   | E_ConsB_Rec : forall bs0 s x T tb bs t bs' t' v k,
       substitute x (Let Rec bs0 tb) (Let Rec bs t) (Let Rec bs' t') ->
       eval_bindings_rec bs0 (Let Rec bs' t') v k ->
