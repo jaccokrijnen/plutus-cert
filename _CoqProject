@@ -48,7 +48,7 @@ src/Language/PlutusIR/Semantics/Dynamic/Bigstep/Examples/AddInteger.v
 src/Language/PlutusIR/Semantics/Dynamic/Bigstep/Examples/Factorial.v
 src/Language/PlutusIR/Semantics/Dynamic/Bigstep/Examples/IfThenElse.v
 src/Language/PlutusIR/Semantics/Dynamic/BuiltinMeanings.v
-src/Language/PlutusIR/Semantics/Dynamic/Smallstep.v
+#src/Language/PlutusIR/Semantics/Dynamic/Smallstep.v
 src/Language/PlutusIR/Semantics/Dynamic/Substitution.v
 src/Language/PlutusIR/Semantics/Dynamic/Substitution/Vacuous.v
 src/Language/PlutusIR/Semantics/Dynamic/Substitution/Total.v
@@ -81,8 +81,10 @@ src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Constant
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Error.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/IWrap.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/LamAbs.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/LetNonRec.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Unwrap.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TyAbs.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TyInst.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Var.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/LogicalRelation/RelationalModel.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/FundamentalProperty.v

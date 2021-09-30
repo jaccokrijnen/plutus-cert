@@ -170,7 +170,7 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
                   RC i T ((bX, (Chi, T1, T2)) :: rho) e_body e'_body
       end.
 Proof. all: eapply RC_termination_helper. all: eauto. Qed.
-      
+
 Definition RV (k : nat) (T : Ty) (rho : tymapping) (v v' : Term) : Prop :=
   value v /\ value v' /\ RC k T rho v v'.
 
@@ -854,3 +854,62 @@ Definition LR_logically_approximate (Delta : partial_map Kind) (Gamma : partial_
 
 Definition LR_logically_equivalent (Delta : partial_map Kind) (Gamma : partial_map Ty) (e e' : Term) (T : Ty) :=
   LR_logically_approximate Delta Gamma e e' T /\ LR_logically_approximate Delta Gamma e' e T.
+
+Equations RB (k : nat) (rho : tymapping) (b b' : Binding) : Prop :=
+  RB k rho b b' =>
+    emptyContext |-ok b /\
+    emptyContext |-ok b' /\
+
+    match b, b' with
+    | TermBind s (VarDecl x T) e, TermBind s' vd' e' =>
+        RC k T rho e e'
+    | _, _ => b = b'
+    end.
+
+Definition LR_logically_approximate_binding (Delta : Delta) (Gamma : Gamma) (b b' : Binding) :=
+  (Delta, Gamma) |-ok b /\
+  (Delta, Gamma) |-ok b' /\
+  forall k rho env env' ct ck,
+    Delta = mupdate empty ck -> Gamma = mupdate empty ct ->
+    RD ck rho /\
+    RG rho k ct env env' ->
+    forall b_msa b'_msa b_ms b'_ms,
+      msubstA_binding (msyn1 rho) b b_msa ->
+      msubstA_binding (msyn2 rho) b' b'_msa ->
+      msubst_binding env b_msa b_ms ->
+      msubst_binding env' b'_msa b'_ms ->
+      RB k rho b_ms b'_ms.
+
+Inductive LR_logically_approximate_bindings_nonrec : Delta -> Gamma -> list Binding -> list Binding -> Prop :=
+  | LR_NonRec_Nil : forall Delta Gamma,
+      LR_logically_approximate_bindings_nonrec Delta Gamma nil nil
+  | LR_NonRec_Cons : forall Delta Gamma b b' Delta' Gamma' bs bs',
+      LR_logically_approximate_binding Delta Gamma b b' ->
+      (Delta', Gamma') = Implementations.append (binds b) (Delta, Gamma) ->
+      binds b = binds b' ->
+      LR_logically_approximate_bindings_nonrec Delta' Gamma' bs bs' ->
+      LR_logically_approximate_bindings_nonrec Delta Gamma (b :: bs) (b' :: bs').
+
+Lemma LR_la_bnr__oks : forall Delta Gamma bs bs',
+    LR_logically_approximate_bindings_nonrec Delta Gamma bs bs' ->
+    (Delta, Gamma) |-oks_nr bs /\ (Delta, Gamma) |-oks_nr bs' /\ map binds bs = map binds bs'.
+Proof.
+  intros.
+  induction H.
+  - eauto with typing.
+  - split.
+    + econstructor.
+      * apply H.
+      * rewrite <- H0.
+        apply IHLR_logically_approximate_bindings_nonrec.
+    + split. 
+      * econstructor.
+        -- apply H.
+        -- rewrite <- H1.
+          rewrite <- H0.
+          apply IHLR_logically_approximate_bindings_nonrec.
+      * simpl.
+        rewrite H1.
+        f_equal.
+        apply IHLR_logically_approximate_bindings_nonrec.
+Qed.

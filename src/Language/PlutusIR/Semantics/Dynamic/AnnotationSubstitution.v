@@ -143,3 +143,11 @@ Inductive msubstA : envA -> Term -> Term -> Prop :=
       msubstA ss t' t'' ->
       msubstA ((a, T) :: ss) t t''
   .
+
+Inductive msubstA_binding : envA -> Binding -> Binding -> Prop :=
+  | msubstA_binding__nil : forall b,
+      msubstA_binding nil b b 
+  | msubstA_binding__cons : forall a T ss b b' b'',
+      substituteA_binding a T b b' ->
+      msubstA_binding ss b' b'' ->
+      msubstA_binding ((a, T) :: ss) b b''.

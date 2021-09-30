@@ -138,3 +138,11 @@ Inductive msubst : env -> Term -> Term -> Prop :=
       msubst ss t' t'' ->
       msubst ((x, s) :: ss) t t''
   .
+
+Inductive msubst_binding : env -> Binding -> Binding -> Prop :=
+  | msubst_binding__nil : forall b,
+      msubst_binding nil b b
+  | msubst_binding__cons : forall x s ss b b' b'',
+      substitute_binding x s b b' ->
+      msubst_binding ss b' b'' ->
+      msubst_binding ((x, s) :: ss) b b''.
