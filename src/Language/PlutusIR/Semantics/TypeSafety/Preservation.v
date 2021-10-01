@@ -94,6 +94,7 @@ Definition P_eval (t v : Term) (k : nat) :=
     emptyContext |-+ t : T ->
     emptyContext |-+ v : T.
 
+    
 Definition P_eval_bindings_nonrec (t v : Term) (k : nat) :=
   forall bs t0,
     t = Let NonRec bs t0 ->

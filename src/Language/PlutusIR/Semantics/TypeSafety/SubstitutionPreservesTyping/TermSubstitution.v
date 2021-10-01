@@ -250,127 +250,55 @@ Definition P_Binding (b : Binding) : Prop :=
     ctx |-ok b' /\ binds b = binds b'.
 #[export] Hint Unfold P_Binding : core.
 
-Definition P_Bindings_NonRec (bs : list Binding) : Prop :=
-  forall ctx x U v bs',
-    extendT x U ctx |-oks_nr bs ->
+Lemma P_letnonrec : forall bs t ctx x U v bs' T t',
+    P_Term t ->
+    extendT x U ctx |-+ (Let NonRec bs t) : T ->
     emptyContext |-+ v : U ->
     Util.ForallP P_Binding bs ->
-    substitute_bindings_nonrec x v bs bs' ->
-    ctx |-oks_nr bs' /\ List.map binds bs = List.map binds bs'.
+    substitute x v (Let NonRec bs t) (Let NonRec bs' t') ->
+    ctx |-+ (Let NonRec bs' t') : T /\ List.map binds bs = List.map binds bs'.
+Proof.
+  induction bs; intros.
+  - inversion H3. subst.
+    split.
+    + eapply T_Let.
+      * reflexivity.
+      * econstructor.
+      * simpl.
+        rewrite flatten_nil.
+        rewrite append_emptyContext_l.
+        eapply H; eauto.
+        inversion H0. subst.
+        eauto.
+    + auto.
+  - inversion H0. subst.
+    inversion H8. subst.
+    inversion H3. 
+    + subst.
+      apply binds_binds_bound_vars in H6.
+      destruct H6 as [U' Hlu].
+      split.
+      * eapply T_Let.
+        -- reflexivity.
+        -- apply W_ConsB_NonRec.
+           ++ eapply Util.ForallP_hd in H2.
+              eapply H2; eauto.
+           ++ eapply Util.ForallP_hd in H2.
+              unfold P_Binding in H2.
+              assert (binds a = binds b') by (eapply H2; eauto).
+              rewrite <- H4.
+              erewrite append_extendT_shadow in H9; eauto.
+        -- simpl. 
+Admitted.
 
-Definition P_Bindings_Rec (bs : list Binding) : Prop :=
-  forall ctx x U v bs',
-    extendT x U ctx |-oks_r bs ->
+Lemma P_letrec : forall bs t ctx x U v bs' T t',
+    P_Term t ->
+    extendT x U ctx |-+ (Let Rec bs t) : T ->
     emptyContext |-+ v : U ->
     Util.ForallP P_Binding bs ->
-    substitute_bindings_rec x v bs bs' ->
-    ctx |-oks_r bs' /\ List.map binds bs = List.map binds bs'.
-
-Lemma P_Bindings_NonRec__holds_definitionally : forall bs, P_Bindings_NonRec bs.
-Proof.
-  induction bs.
-  - unfold P_Bindings_NonRec.
-    intros.
-    inversion H2. subst.
-    auto with typing.
-  - unfold P_Bindings_NonRec.
-    intros.
-    inversion H2.
-    + subst.
-      split.
-      * apply W_ConsB_NonRec.
-        -- apply Util.ForallP_hd in H1.
-           unfold P_Binding in H1.
-           eapply H1.
-           ++ inversion H. subst.
-              apply H6.
-           ++ apply H0.
-           ++ assumption.
-        -- apply Util.ForallP_hd in H1.
-           unfold P_Binding in H1.
-           inversion H. subst.
-           destruct (H1 _ _ _ _ _ H6 H0 H9).
-           rewrite <- H4.
-           apply binds_binds_bound_vars in H7.
-           destruct H7.
-           erewrite append_extendT_shadow in H8; eauto.
-      * simpl.
-        apply Util.ForallP_hd in H1.
-        inversion H. subst.
-        assert (binds a = binds b'). {
-          eapply H1; eauto.
-        }
-        subst.
-        f_equal; auto.
-    + subst.
-      split.
-      * apply W_ConsB_NonRec.
-        -- apply Util.ForallP_hd in H1.
-           apply H1 with x U v.
-           ++ inversion H. subst.
-              assumption.
-           ++ assumption.
-           ++ assumption.
-        -- apply Util.ForallP_hd in H1 as H11.
-           unfold P_Binding in H11.
-           inversion H. subst.
-           destruct (H11 _ _ _ _ _ H7 H0 H8).
-           rewrite <- H4.
-           eapply IHbs.
-           ++ rewrite append_extendT_permute in H9; eauto.
-              apply binds_unbinds_unbound_vars; auto.
-           ++ apply H0.
-           ++ apply Util.ForallP_tl in H1. assumption.
-           ++ apply H10.
-      * simpl.
-        apply Util.ForallP_hd in H1 as H11.
-        inversion H. subst.
-        assert (binds a = binds b'). {
-          eapply H11; eauto.
-        }
-        f_equal; auto.
-        eapply IHbs; eauto.
-        -- rewrite append_extendT_permute in H9; eauto.
-           apply binds_unbinds_unbound_vars; eauto.
-        -- eapply Util.ForallP_tl. eauto.
-Qed.
-
-Lemma P_Bindings_Rec__holds_definitionally : forall bs, P_Bindings_Rec bs.
-Proof.
-  induction bs.
-  - unfold P_Bindings_Rec.
-    intros.
-    inversion H2. subst.
-    auto with typing.
-  - unfold P_Bindings_Rec.
-    intros.
-    inversion H2.
-    + subst.
-      split.
-      * apply W_ConsB_Rec.
-        -- apply Util.ForallP_hd in H1.
-           unfold P_Binding in H1.
-           eapply H1.
-           ++ inversion H. subst.
-              apply H6.
-           ++ apply H0.
-           ++ assumption.
-        -- apply Util.ForallP_tl in H1.
-           eapply IHbs; eauto.
-           inversion H. subst.
-           auto.
-      * simpl.
-        inversion H. subst.
-        f_equal.
-        -- assert (binds a = binds b'). {
-            apply Util.ForallP_hd in H1.
-             eapply H1; eauto.
-           }
-           subst.
-           auto.
-        -- apply Util.ForallP_tl in H1.
-           eapply IHbs; eauto.
-Qed.
+    substitute x v (Let Rec bs t) (Let Rec bs' t') ->
+    ctx |-+ (Let Rec bs' t') : T /\ List.map binds bs = List.map binds bs'.
+Proof. Admitted.
 
 Lemma substitution_preserves_typing : 
   (forall t, P_Term t) /\ (forall b, P_Binding b).
@@ -378,89 +306,11 @@ Proof.
   intros.
   apply Term__multind with (P := P_Term) (Q := P_Binding).
   - intros. autounfold. intros.
-    inversion H3.
-    + subst.
-      eapply T_Let.
-      * reflexivity.
-      * eapply P_Bindings_NonRec__holds_definitionally.
-        -- inversion H1. subst.
-            eauto.
-        -- eauto.
-        -- eauto.
-        -- eauto.
-      * inversion H1. subst.
-        assert (List.map binds bs = List.map binds bs'). {
-          eapply P_Bindings_NonRec__holds_definitionally.
-          -- inversion H1. subst.
-             eauto.
-          -- eauto.
-          -- eauto.
-          -- eauto.
-        }
-        rewrite <- H4.
-        apply mapbinds_binds_bound_vars in H10.
-        destruct H10. 
-        erewrite append_extendT_shadow in H12.
-        -- assumption.
-        -- apply H5.
-    + subst.
-      inversion H1. subst.
-      eapply T_Let.
-      * reflexivity.
-      * eapply P_Bindings_NonRec__holds_definitionally.
-        -- eauto.
-        -- eauto.
-        -- eauto.
-        -- eauto.
-      * assert (List.map binds bs = List.map binds bs'). {
-          eapply P_Bindings_NonRec__holds_definitionally.
-          -- eauto.
-          -- eauto.
-          -- eauto.
-          -- eauto.
-        }
-        rewrite <- H4.
-        apply mapbinds_unbinds_unbound_vars in H9 as H14.
-        rewrite append_extendT_permute in H13; auto.
-        eapply H0; eauto.
-    + subst.
-      inversion H1. subst.
-      eapply T_LetRec.
-      * reflexivity.
-      * apply mapbinds_binds_bound_vars in H10 as H12. 
-        destruct H12.
-        erewrite append_extendT_shadow in H8; eauto.
-      * apply mapbinds_binds_bound_vars in H10 as H12. 
-        destruct H12.
-        erewrite append_extendT_shadow in H11; eauto.
-    + subst.
-      inversion H1. subst.
-      eapply T_LetRec.
-      * reflexivity.
-      * apply mapbinds_unbinds_unbound_vars in H9 as H14.
-        rewrite append_extendT_permute in H13; auto.
-        rewrite append_extendT_permute in H8; auto.
-        assert (List.map binds bs = List.map binds bs'). {
-          eapply P_Bindings_Rec__holds_definitionally.
-          -- eauto.
-          -- eauto.
-          -- eauto.
-          -- eauto.
-        }
-        rewrite <- H4.
-        eapply (P_Bindings_Rec__holds_definitionally bs); eauto.
-      * apply mapbinds_unbinds_unbound_vars in H9 as H14.
-        rewrite append_extendT_permute in H13; auto.
-        rewrite append_extendT_permute in H8; auto.
-        assert (List.map binds bs = List.map binds bs'). {
-          eapply P_Bindings_Rec__holds_definitionally.
-          -- eauto.
-          -- eauto.
-          -- eauto.
-          -- eauto.
-        }
-        rewrite <- H4.
-        eapply H0; eauto.
+    destruct rec.
+    + inversion H3; subst. 
+      all: eapply P_letnonrec; eauto.
+    + inversion H3; subst.
+      all: eapply P_letrec; eauto.
   - intros. autounfold. intros.
     inversion H1.
     + subst.
@@ -474,14 +324,14 @@ Proof.
       apply T_Var.
       inversion H.
       subst.
-      simpl in H4.
-      rewrite update_neq in H4; auto.
+      simpl in H5.
+      rewrite update_neq in H5; auto.
   - (* TyAbs *) 
     intros. autounfold. intros.
     inversion H2. subst.
     inversion H0. subst.
     apply T_TyAbs.
-    rewrite extendT_extendK_permute in H8.
+    rewrite extendT_extendK_permute in H9.
     eapply H.
     + eauto.
     + eauto.
@@ -624,39 +474,3 @@ Corollary substitution_preserves_typing__Binding : forall b ctx x U v b',
     substitute_binding x v b b' ->
     ctx |-ok b' /\ binds b = binds b'.
 Proof. apply substitution_preserves_typing. Qed.
-
-Corollary substitution_preserves_typing__Bindings_NonRec : forall bs ctx x U v bs',
-    extendT x U ctx |-oks_nr bs ->
-    emptyContext |-+ v : U ->
-    substitute_bindings_nonrec x v bs bs' ->
-    ctx |-oks_nr bs' /\ List.map binds bs = List.map binds bs'.
-Proof.
-  intros.
-  eapply P_Bindings_NonRec__holds_definitionally; eauto.
-  assert (forall bs0, Util.ForallP P_Binding bs0). {
-    induction bs0.
-    - constructor.
-    - constructor.
-      + apply substitution_preserves_typing.
-      + assumption.
-  }
-  apply H2.
-Qed.
-
-Corollary substitution_preserves_typing__Bindings_Rec : forall bs ctx x U v bs',
-    extendT x U ctx |-oks_r bs ->
-    emptyContext |-+ v : U ->
-    substitute_bindings_rec x v bs bs' ->
-    ctx |-oks_r bs' /\ List.map binds bs = List.map binds bs'.
-Proof.
-  intros.
-  eapply P_Bindings_Rec__holds_definitionally; eauto.
-  assert (forall bs0, Util.ForallP P_Binding bs0). {
-    induction bs0.
-    - constructor.
-    - constructor.
-      + apply substitution_preserves_typing.
-      + assumption.
-  }
-  apply H2.
-Qed.

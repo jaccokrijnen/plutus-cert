@@ -8,7 +8,7 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Logica
 Require Import Arith.
 
 Lemma msubst_Error : forall ss T t',
-    msubst ss (Error T) t' ->
+    msubst_term ss (Error T) t' ->
     t' = Error T.
 Proof. 
   induction ss; intros.

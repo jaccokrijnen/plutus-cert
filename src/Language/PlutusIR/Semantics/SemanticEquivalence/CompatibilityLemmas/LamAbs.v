@@ -9,15 +9,15 @@ Require Import Arith.
 
 
 Lemma msubst_LamAbs : forall ss x T t0 t',
-    msubst ss (LamAbs x T t0) t' ->
-    exists t0', msubst (drop x ss) t0 t0' /\ t' = LamAbs x T t0'.
+    msubst_term ss (LamAbs x T t0) t' ->
+    exists t0', msubst_term (drop x ss) t0 t0' /\ t' = LamAbs x T t0'.
 Proof.
   induction ss.
   - intros. 
     inversion H. subst.
     exists t0.
     split. 
-    + apply msubst_nil.
+    + apply msubst_term__nil.
     + reflexivity. 
   - intros.
     inversion H. subst.
@@ -29,13 +29,13 @@ Proof.
       eapply IHss; eauto.
     + subst.
       simpl.
-      apply eqb_neq in H8.
-      rewrite H8.
+      apply eqb_neq in H6.
+      rewrite H6.
       edestruct IHss as [t0'' Hms0']; eauto.
       eexists.
       split.
-      -- eapply msubst_cons.
-         ++ apply H9.
+      -- eapply msubst_term__cons.
+         ++ apply H7.
          ++ apply Hms0'.
       -- destruct Hms0'.
          subst.
@@ -148,9 +148,9 @@ Proof.
   assert (v'_sa = v'). { eapply msubstA_closed; eauto. eapply typable_empty__closed. eapply RC_typable_empty_2. eapply H1. }
   subst.
 
-  assert (exists aaa, substitute x v eb_sa aaa) by eauto using substitute_models_total_function__Term.
+  assert (exists aaa, substitute x v eb_sa aaa) by eauto using substitute_term__total.
   destruct H4 as [aaa Haaa].
-  assert (exists bbb, msubst env aaa bbb) by eauto using msubst_total.
+  assert (exists bbb, msubst_term env aaa bbb) by eauto using msubst_term__total.
   destruct H4 as [bbb Hbbb].
   assert (bbb = e_body'). {
     eapply subst_msubst; eauto.
@@ -160,13 +160,13 @@ Proof.
     - eapply RG_env_closed_1. eauto.
   }
   subst.
-  assert (msubst ((x, v) :: env) eb_sa e_body'). {
+  assert (msubst_term ((x, v) :: env) eb_sa e_body'). {
     econstructor; eauto.
   }
 
-  assert (exists ccc, substitute x v' eb'_sa ccc) by eauto using substitute_models_total_function__Term.
+  assert (exists ccc, substitute x v' eb'_sa ccc) by eauto using substitute_term__total.
   destruct H5 as [ccc Hccc].
-  assert (exists ddd, msubst env' ccc ddd) by eauto using msubst_total.
+  assert (exists ddd, msubst_term env' ccc ddd) by eauto using msubst_term__total.
   destruct H5 as [ddd Hddd].
   assert (ddd = e'_body'). {
     eapply subst_msubst; eauto.
@@ -176,7 +176,7 @@ Proof.
     - eapply RG_env_closed_2. eauto.
   }
   subst.
-  assert (msubst ((x, v') :: env') eb'_sa e'_body'). {
+  assert (msubst_term ((x, v') :: env') eb'_sa e'_body'). {
     econstructor; eauto.
   }
 

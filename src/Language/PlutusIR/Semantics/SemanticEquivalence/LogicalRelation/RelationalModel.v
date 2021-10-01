@@ -378,6 +378,13 @@ Fixpoint drop {X:Type} (n:string) (nxs:list (string * X)) : list (string * X) :=
   | (n',x) :: nxs' => if String.eqb n' n then drop n nxs' else (n',x) :: (drop n nxs')
   end.
 
+Fixpoint mdrop {X:Type} (ns : list string) (nxs: list (string * X)) : list (string * X) :=
+  match ns with
+  | nil => nxs
+  | n :: ns' =>
+      mdrop ns' (drop n nxs) 
+  end.
+
 Lemma subst_closed : forall t,
     closed t -> 
     forall x s t',
@@ -436,7 +443,7 @@ Proof. Abort.
 Lemma msubst_closed : forall t,
     closed t ->
     forall ss t',
-      msubst ss t t' ->
+      msubst_term ss t t' ->
       t' = t.
 Proof.
   induction ss.
@@ -490,8 +497,8 @@ Lemma subst_msubst : forall env x v t,
     closed_env env ->
     forall t1 t2 t3 t4,
       substitute x v t t1 ->
-      msubst env t1 t2 ->
-      msubst (drop x env) t t3 ->
+      msubst_term env t1 t2 ->
+      msubst_term (drop x env) t t3 ->
       substitute x v t3 t4 ->
       t2 = t4.
 Proof. Admitted.
@@ -563,6 +570,10 @@ Proof. Admitted.
 Lemma mupdate_unfold : forall {X : Type} (c : list (string * X)) x (v : X),
     (x |-> v; mupdate empty c) = mupdate empty ((x, v) :: c).
 Proof. intros. auto. Qed.
+
+Lemma mdrop_nil : forall X ns,
+    @mdrop X ns nil = nil.
+Proof. induction ns; auto. Qed.
 
 (** ** Properties of Instantiations *)
 
@@ -772,7 +783,7 @@ Lemma msubst_preserves_typing_1 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
     forall Gamma T t t',
       (empty, mupd (msyn1 rho) (mupdate Gamma c)) |-+ t : (msubstT (msyn1 rho) T) ->
-      msubst e1 t t' ->
+      msubst_term e1 t t' ->
       (empty, mupd (msyn1 rho) Gamma) |-+ t': (msubstT (msyn1  rho) T). 
 Proof.
   intros rho k c e1 e2 V.
@@ -799,7 +810,7 @@ Lemma msubst_preserves_typing_2 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
     forall Gamma T t t',
       (empty, mupd (msyn2 rho) (mupdate Gamma c)) |-+ t : (msubstT (msyn2 rho) T) ->
-      msubst e2 t t' ->
+      msubst_term e2 t t' ->
       (empty, mupd (msyn2 rho) Gamma) |-+ t': (msubstT (msyn2 rho) T). 
 Proof.
   intros rho k c e1 e2 V.
@@ -841,8 +852,8 @@ Definition LR_logically_approximate (Delta : partial_map Kind) (Gamma : partial_
       forall e_msa e'_msa e_ms e'_ms,
         msubstA (msyn1 rho) e e_msa ->
         msubstA (msyn2 rho) e' e'_msa ->
-        msubst env e_msa e_ms ->
-        msubst env' e'_msa e'_ms ->
+        msubst_term env e_msa e_ms ->
+        msubst_term env' e'_msa e'_ms ->
         RC k T rho e_ms e'_ms.
       
 (** Logical relation: logical equivalence 

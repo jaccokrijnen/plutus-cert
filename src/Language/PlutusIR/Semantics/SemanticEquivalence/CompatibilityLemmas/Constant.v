@@ -7,7 +7,7 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Logica
 Require Import Arith.
 
 Lemma msubst_Constant : forall ss sv t',
-  msubst ss (Constant sv) t' ->
+  msubst_term ss (Constant sv) t' ->
   t' = Constant sv.
 Proof.
   induction ss; intros.

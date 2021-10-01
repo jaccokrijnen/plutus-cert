@@ -33,8 +33,8 @@ Axiom skip : forall P, P.
     instantiation c e1 e2 ->
     CNR_Term t1 t2 ->
     forall t1' t2',
-      msubst e1 t1 t1' ->
-      msubst e2 t2 t2' ->
+      msubst_term e1 t1 t1' ->
+      msubst_term e2 t2 t2' ->
       R T t1' t2'.*)
 
 
@@ -58,7 +58,7 @@ Proof.
   - unfold P_bindings_well_formed_nonrec. econstructor; eauto with DSP_compatibility_lemmas.
   - unfold P_bindings_well_formed_rec. eauto with typing.
   - unfold P_bindings_well_formed_rec. eauto with typing.
-  - apply skip. (* TODO *)
+  - unfold LR_logically_approximate in H1. apply skip. (* TODO *)
   - apply skip. (* TODO *)
   - apply skip. (* TODO *)
 Qed.

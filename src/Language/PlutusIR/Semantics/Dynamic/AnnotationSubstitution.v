@@ -151,3 +151,12 @@ Inductive msubstA_binding : envA -> Binding -> Binding -> Prop :=
       substituteA_binding a T b b' ->
       msubstA_binding ss b' b'' ->
       msubstA_binding ((a, T) :: ss) b b''.
+
+
+Inductive msubstA_bindings_nonrec : env -> list Binding -> list Binding -> Prop :=
+| msubstA_bindings_nonrec__nil : forall bs,
+    msubstA_bindings_nonrec nil bs bs
+| msubstA_bindings_nonrec__cons : forall a T ss bs bs' bs'',
+    substituteA_bindings_nonrec a T bs bs' ->
+    msubstA_bindings_nonrec ss bs' bs'' ->
+    msubstA_bindings_nonrec ((a, T) :: ss) bs bs''.

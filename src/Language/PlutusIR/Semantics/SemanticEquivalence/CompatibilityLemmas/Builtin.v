@@ -7,7 +7,7 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Logica
 Require Import Arith.
 
 Lemma msubst_Builtin : forall ss f t',
-    msubst ss (Builtin f) t' ->
+    msubst_term ss (Builtin f) t' ->
     t' = Builtin f.
 Proof. 
   induction ss; intros.

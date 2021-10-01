@@ -12,13 +12,13 @@ Require Import Coq.Logic.Decidable.
 
 
 Lemma msubst_Apply : forall ss t1 t2 t',
-    msubst ss (Apply t1 t2) t' ->
-    exists t1' t2', msubst ss t1 t1' /\ msubst ss t2 t2' /\ t' = (Apply t1' t2').
+    msubst_term ss (Apply t1 t2) t' ->
+    exists t1' t2', msubst_term ss t1 t1' /\ msubst_term ss t2 t2' /\ t' = (Apply t1' t2').
 Proof.
   induction ss; intros.
   - inversion H. subst.
     exists t1, t2.
-    eauto using msubst_nil, msubst_cons. 
+    eauto using msubst_term__nil, msubst_term__cons. 
   - inversion H. subst.
     rename t'0 into t''.
     inversion H2. subst.
@@ -26,12 +26,12 @@ Proof.
     destruct H5 as [t1'' [t2'' [H9 [H10 H11]]]].
     exists t1'', t2''.
     split. {
-      apply msubst_cons with t1'.
+      apply msubst_term__cons with t1'.
       + assumption.
       + apply H9.
     }
     split. {
-      apply msubst_cons with t2'.
+      apply msubst_term__cons with t2'.
       + assumption.
       + apply H10.
     }
@@ -109,7 +109,7 @@ Proof.
     destruct H5. inversion H5. subst.
     assert (v1 = v2 /\ k2 = j2) by (eapply eval__deterministic; eauto).
     destruct H6. subst.
-    assert (t0'0 = t0') by (eapply substitute__deterministic; eauto).
+    assert (t0'0 = t0') by (eapply substitute_term__deterministic; eauto).
     subst.
     exists k0.
     split; auto.
@@ -311,11 +311,11 @@ Proof.
   }
 
   assert (temp : exists e_f11__s, substitute x v_f2 e_f11 e_f11__s). {
-    eapply substitute_models_total_function__Term.
+    eapply substitute_term__total.
   }
   destruct temp as [e_f11__s Hsubst].
   assert (temp : exists e'_f11__s, substitute x' v'_f2 e'_f11 e'_f11__s). {
-    eapply substitute_models_total_function__Term.
+    eapply substitute_term__total.
   }
   destruct temp as [e'_f11__s Hsubst'].
 

@@ -9,15 +9,15 @@ Require Import Arith.
 
 
 Lemma msubst_TyAbs : forall ss bX K t0 t',
-    msubst ss (TyAbs bX K t0) t' ->
-    exists t0', msubst ss t0 t0' /\ t' = TyAbs bX K t0'.
+    msubst_term ss (TyAbs bX K t0) t' ->
+    exists t0', msubst_term ss t0 t0' /\ t' = TyAbs bX K t0'.
 Proof.
   induction ss.
   - intros. 
     inversion H. subst.
     exists t0.
     split. 
-    + apply msubst_nil.
+    + apply msubst_term__nil.
     + reflexivity. 
   - intros.
     inversion H. subst.
@@ -27,8 +27,8 @@ Proof.
     edestruct IHss as [t0'' Hms0']; eauto.
     eexists.
     split.
-    + eapply msubst_cons.
-      * apply H8.
+    + eapply msubst_term__cons.
+      * apply H6.
       * apply Hms0'.
     + destruct Hms0'.
       * subst.
@@ -162,13 +162,13 @@ Proof.
     -  eapply RG_env_closed_1. eauto.
   }
   subst.
-  assert (msubst ((x, v) :: env) eb_sa e_body'). {
+  assert (msubst_term ((x, v) :: env) eb_sa e_body'). {
     econstructor; eauto.
   }
 
   assert (exists ccc, substitute x v' eb'_sa ccc) by eauto using substitute_models_total_function__Term.
   destruct H5 as [ccc Hccc].
-  assert (exists ddd, msubst env' ccc ddd) by eauto using msubst_total.
+  assert (exists ddd, msubst_term env' ccc ddd) by eauto using msubst_total.
   destruct H5 as [ddd Hddd].
   assert (ddd = e'_body'). {
     eapply subst_msubst; eauto.
@@ -178,7 +178,7 @@ Proof.
     - eapply RG_env_closed_2. eauto.
   }
   subst.
-  assert (msubst ((x, v') :: env') eb'_sa e'_body'). {
+  assert (msubst_term ((x, v') :: env') eb'_sa e'_body'). {
     econstructor; eauto.
   }*)
 

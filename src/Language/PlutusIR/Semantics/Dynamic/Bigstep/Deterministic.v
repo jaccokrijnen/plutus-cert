@@ -1,92 +1,87 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.Bigstep.
+
+
 (** * [substitute] is deterministic*)
 
-Definition P_substitute (x : name) (s t t' : Term) : Prop :=
-  forall t'',
+Definition P_substitute (t t' : Term) : Prop :=
+  forall x s t'',
     substitute x s t t'' ->
     t' = t''. 
 
-Definition P_substitute_bindings_nonrec (x : name) (s : Term) (bs bs' : list Binding) : Prop :=
-  forall bs'',
-    substitute_bindings_nonrec x s bs bs'' ->
-    bs' = bs''.
+Definition P_substitute_letrec (t t' : Term) : Prop :=
+  forall x s t'',
+    substitute_letrec x s t t'' ->
+    t' = t''.
 
-Definition P_substitute_bindings_rec (x : name) (s : Term) (bs bs' : list Binding) : Prop :=
-  forall bs'',
-    substitute_bindings_rec x s bs bs'' ->
-    bs' = bs''.
-        
-Definition P_substitute_binding (x : name) (s : Term) (b b' : Binding) : Prop :=
-  forall b'',
+Definition P_substitute_binding (b b' : Binding) : Prop :=
+  forall x s b'',
     substitute_binding x s b b'' ->
     b' = b''.
-
-Theorem substitute__deterministic : 
-  (forall x s t t', substitute x s t t' -> P_substitute x s t t') /\
-  (forall x s bs bs', substitute_bindings_nonrec x s bs bs' -> P_substitute_bindings_nonrec x s bs bs') /\
-  (forall x s bs bs', substitute_bindings_rec x s bs bs' -> P_substitute_bindings_rec x s bs bs') /\
-  (forall x s b b', substitute_binding x s b b' -> P_substitute_binding x s b b').
+    
+Theorem substitute__deterministic : forall x s,
+    (* P =  *) (forall t t', substitute x s t t' -> (forall t'', substitute x s t t'' -> t' = t'')) /\
+    (* P0 = *) (forall t t', substitute_letrec x s t t' -> (forall t'', substitute_letrec x s t t'' -> t' = t'')) /\
+    (* P1 = *) (forall b b', substitute_binding x s b b' -> (forall b'', substitute_binding x s b b'' -> b' = b'')).
 Proof.
-  apply substitute__mutind with 
-    (P := P_substitute)
-    (P0 := P_substitute_bindings_nonrec)
-    (P1 := P_substitute_bindings_rec)
-    (P2 := P_substitute_binding). 
-  - (* S_Let1 *)
-    intros. unfold P_substitute. intros.
+  intros x s.
+  apply substitute__mutind.
+  - (* S_LetNonRec_Nil1 *)
+    intros. 
+    inversion H1.
+    subst.
+    f_equal.
+    eapply H0; eauto.
+  - (* S_LetNonRec_Cons1 *)
+    intros. 
     inversion H2.
     + subst.
-      assert (bs' = bs'0) by auto.
-      subst.
-      reflexivity.
+      f_equal.
+      f_equal.
+      eapply H1; eauto.
     + subst.
-      apply H5 in H.
-      destruct H.
-  - (* S_Let2 *)
-    intros. unfold P_substitute. intros.
+      exfalso.
+      auto.
+  - (* S_LetNonRec_Cons2 *)
+    intros. 
     inversion H4.
     + subst.
-      apply H in H9.
-      destruct H9.
+      exfalso.
+      auto.
     + subst.
-      assert (bs' = bs'0) by auto.
-      subst.
-      assert (t0' = t0'0) by auto.
-      subst.
-      reflexivity.
+      apply H3 in H11.
+      inversion H11. subst.
+      f_equal.
+      f_equal. 
+      auto.
   - (* S_LetRec1 *)
-    intros. unfold P_substitute. intros.
-    inversion H0.
+    intros.
+    inversion H0. 
     + subst.
       reflexivity.
     + subst.
-      apply H3 in H.
-      destruct H.
+      exfalso.
+      auto.
   - (* S_LetRec2 *)
-    intros. unfold P_substitute. intros.
-    inversion H4. 
+    intros.
+    inversion H2.
     + subst.
-      apply H in H10.
-      destruct H10.
+      exfalso.
+      auto.
     + subst.
-      assert (bs' = bs'0) by auto.
-      subst.
-      assert (t0' = t0'0) by auto.
-      subst.
-      reflexivity.
+      eauto.
   - (* S_Var1 *)
-    intros. unfold P_substitute. intros.
+    intros. 
     inversion H. 
     + subst.
       reflexivity.
     + subst.
       assert (x = x) by reflexivity.
-      apply H3 in H0.
-      destruct H0.
+      exfalso.
+      auto.
   - (* S_Var2 *)
-    intros. unfold P_substitute. intros.
+    intros. 
     inversion H0. subst.
     + subst.
       assert (y = y) by reflexivity.
@@ -95,22 +90,22 @@ Proof.
     + subst.
       reflexivity.
   - (* S_TyAbs *)
-    intros. unfold P_substitute. intros. 
+    intros.  
     inversion H1. subst.
     assert (t0' = t0'0) by auto.
     subst.
     reflexivity.
   - (* S_LamAbs1 *)
-    intros. unfold P_substitute. intros.
+    intros. 
     inversion H.
     + subst.
       reflexivity.
     + subst.
       assert (x = x) by auto.
-      apply H6 in H0.
-      destruct H0.
+      exfalso.
+      auto.
   - (* S_LamAbs2 *)
-    intros. unfold P_substitute. intros.
+    intros. 
     inversion H2. 
     + subst.
       assert (bx = bx) by auto.
@@ -121,96 +116,78 @@ Proof.
       subst.
       reflexivity.
   - (* S_Apply *)
-    intros. unfold P_substitute. intros.
+    intros. 
     inversion H3. subst.
     assert (t1' = t1'0) by auto.
     assert (t2' = t2'0) by auto.
     subst.
     reflexivity.
   - (* S_Constant *)
-    intros. unfold P_substitute. intros.
+    intros. 
     inversion H. subst.
     reflexivity.
   - (* S_Builtin *)
-    intros. unfold P_substitute. intros.
+    intros. 
     inversion H. subst.
     reflexivity.
   - (* S_TyInst *)
-    intros. unfold P_substitute. intros.
+    intros. 
     inversion H1. subst.
     assert (t0' = t0'0) by auto.
     subst.
     reflexivity.
   - (* S_Error *)
-    intros. unfold P_substitute. intros.
+    intros. 
     inversion H. subst.
     reflexivity.
   - (* S_IWrap *)
-    intros. unfold P_substitute. intros.
+    intros. 
     inversion H1. subst.
     assert (t0' = t0'0) by auto.
     subst.
     reflexivity.
   - (* S_Unwrap *)
-    intros. unfold P_substitute. intros.
+    intros. 
     inversion H1. subst.
     assert (t0' = t0'0) by auto.
     subst.
     reflexivity.
-  
-  - (* S_NilB_NonRec *)
-    intros. unfold P_substitute_bindings_nonrec. intros.
-    inversion H. subst.
-    reflexivity.
-  - (* S_ConsB_NonRec1 *)
-    intros. unfold P_substitute_bindings_nonrec. intros.
-    inversion H2.
-    + subst.
-      assert (b' = b'0) by auto.
-      subst.
-      reflexivity.
-    + subst.
-      apply H5 in H.
-      destruct H.
-  - (* S_ConsB_NonRec2 *)
-    intros. unfold P_substitute_bindings_nonrec. intros.
-    inversion H4.
-    + subst.
-      apply H in H9.
-      destruct H9.
-    + subst.
-      assert (b' = b'0) by auto.
-      assert (bs' = bs'0) by auto.
-      subst.
-      reflexivity.
 
   - (* S_NilB_Rec *)
-    intros. unfold P_substitute_bindings_rec. intros.
-    inversion H. subst.
-    reflexivity. 
+    intros.
+    inversion H1. subst.
+    f_equal.
+    auto.
   - (* S_ConsB_Rec *)
-    intros. unfold P_substitute_bindings_rec. intros.
+    intros.
     inversion H3. subst.
-    assert (b' = b'0) by auto.
-    assert (bs' = bs'0) by auto.
-    subst.
-    reflexivity.
+    apply H2 in H9.
+    inversion H9. subst.
+    f_equal.
+    f_equal.
+    auto.
   
   - (* S_TermBind *)
-    intros. unfold P_substitute_binding. intros.
+    intros. 
     inversion H1. subst.
     assert (t' = t'0) by auto.
     subst.
     reflexivity.
   - (* S_TypeBind *)
-    intros. unfold P_substitute_binding. intros.
+    intros.
     inversion H. subst.
     reflexivity.
   - (* S_DatatypeBind *)
-    intros. unfold P_substitute_binding. intros.
+    intros.
     inversion H. subst.
     reflexivity.
 Qed.
+
+Corollary substitute_term__deterministic : forall x s t t' t'', 
+    substitute x s t t' -> 
+    substitute x s t t'' -> 
+    t' = t''.
+Proof. intros. eapply substitute__deterministic in H; eauto. Qed.
 
 Theorem substituteA__deterministic : forall X S t t' t'', 
     substituteA X S t t' ->

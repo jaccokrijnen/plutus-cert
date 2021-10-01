@@ -8,6 +8,9 @@ Import Coq.Strings.String.
 
 Local Open Scope string_scope.
 
+
+(** * Predicates *)
+
 Definition P_Term (t : Term) : Prop :=
   forall x s,
     exists t', substitute x s t t'.
@@ -16,61 +19,60 @@ Definition P_Binding (b : Binding) : Prop :=
   forall x s,
     exists b', substitute_binding x s b b'.
 
-Definition P_Bindings_NonRec (bs : list Binding) : Prop :=
-  forall x s,
+(** * Helper lemmas *)
+Lemma P_letnonrec : forall bs x s t,
+    P_Term t ->
     ForallP P_Binding bs ->
-    exists bs', substitute_bindings_nonrec x s bs bs'.
-
-Definition P_Bindings_Rec (bs : list Binding) : Prop :=
-  forall x s,
-    ForallP P_Binding bs ->
-    exists bs', substitute_bindings_rec x s bs bs'.
-
-Lemma P_Bindings_NonRec__holds_definitionally : forall bs, P_Bindings_NonRec bs.
+    exists bs' t', substitute x s (Let NonRec bs t) (Let NonRec bs' t').
 Proof.
   induction bs.
-  - unfold P_Bindings_NonRec. intros.
-    exists nil.
-    apply S_NilB_NonRec.
+  - intros.
+    unfold P_Term in H.
+    destruct (H x s) as [t' Hs__t'].
+    eauto.
   - rename a into b. 
-    unfold P_Bindings_NonRec. intros.
-    apply ForallP_uncons in H.
-    destruct H.
+    intros.
+    apply ForallP_uncons in H0.
+    destruct H0.
     destruct p with x s.
     rename x0 into b'.
-    assert (exists bs', substitute_bindings_nonrec x s bs bs') by eauto.
-    destruct H0 as [bs' H0].
 
-    assert ({In x (term_vars_bound_by_binding b)} + {~ In x (term_vars_bound_by_binding b)}) by eauto using in_dec, string_dec.
+    eapply IHbs in f; eauto.
+    destruct f as [bs' [t' Hs]].
+
+    
+    assert ({In x (bound_var_in_binding b)} + {~ In x (bound_var_in_binding b)}) by eauto using in_dec, string_dec.
     destruct H1.
-    + exists (b' :: bs).
-      apply S_ConsB_NonRec1; auto.
-    + exists (b' :: bs').
-      apply S_ConsB_NonRec2; auto.
+    + exists (b' :: bs), t. apply S_LetNonRec_Cons1. all: eauto.
+    + exists (b' :: bs'), t'. apply S_LetNonRec_Cons2. all: eauto. 
 Qed. 
 
-
-Lemma P_Bindings_Rec__holds_definitionally : forall bs, P_Bindings_Rec bs.
+Lemma P_letrec : forall bs x s t,
+    P_Term t ->
+    ForallP P_Binding bs ->
+    exists bs' t', substitute_letrec x s (Let Rec bs t) (Let Rec bs' t').
 Proof.
   induction bs.
-  - unfold P_Bindings_Rec. intros.
-    exists nil.
-    apply S_NilB_Rec.
+  - intros.
+    unfold P_Term in H.
+    destruct (H x s) as [t' Hs__t'].
+    eauto.
   - rename a into b. 
-    unfold P_Bindings_Rec. intros.
-    apply ForallP_uncons in H.
-    destruct H.
+    intros.
+    apply ForallP_uncons in H0.
+    destruct H0.
     destruct p with x s.
     rename x0 into b'.
-    assert (exists bs', substitute_bindings_rec x s bs bs') by eauto.
-    destruct H0 as [bs' H0].
 
-    exists (b' :: bs').
-    apply S_ConsB_Rec; auto.
+    eapply IHbs in f; eauto.
+    destruct f as [bs' [t' Hs]].
+
+    eauto.
 Qed.
 
-Lemma substitute_models_total_function : 
-  (forall t, P_Term t) /\ (forall b, P_Binding b).
+Lemma substitute__total : 
+  (forall t, P_Term t) /\ 
+  (forall b, P_Binding b).
 Proof.
   apply Term__multind with (P := P_Term) (Q := P_Binding).
   - (* Let *)
@@ -78,22 +80,17 @@ Proof.
     unfold P_Term. 
     intros x s.
 
-    assert (temp: exists bs', substitute_bindings_nonrec x s bs bs') by (eapply P_Bindings_NonRec__holds_definitionally; eauto).
-    destruct temp as [bs'_nr Hsubst_nr].
-    assert (temp: exists bs', substitute_bindings_rec x s bs bs') by (eapply P_Bindings_Rec__holds_definitionally; eauto).
-    destruct temp as [bs'_r Hsubst_r].
-    assert (temp: exists t', substitute x s t t') by eauto.
-    destruct temp as [t' Hsubst].
+    assert (temp: exists bs' t', substitute x s (Let NonRec bs t) (Let NonRec bs' t')) by (eapply P_letnonrec; eauto).
+    destruct temp as [bs'_nr [t'_nr Hs_nr]].
+    assert (temp: exists bs' t', substitute_letrec x s (Let Rec bs t) (Let Rec bs' t')) by (eapply P_letrec; eauto).
+    destruct temp as [bs'_r [t'r H_r]].
 
-    assert ({In x (term_vars_bound_by_bindings bs)} + {~ In x (term_vars_bound_by_bindings bs)}) 
+    assert ({In x (bound_vars_in_bindings bs)} + {~ In x (bound_vars_in_bindings bs)}) 
       by eauto using in_dec, string_dec.
 
     all: destruct rec.
     all: destruct H.
-    + eexists. apply S_Let1. assumption. eassumption. 
-    + eexists. apply S_Let2. assumption. eassumption. eassumption. 
-    + eexists. apply S_LetRec1. assumption. 
-    + eexists. apply S_LetRec2. assumption. eassumption. eassumption.
+    all: eauto.
 
   - (* Var *)
     intros y. 
@@ -146,58 +143,43 @@ Proof.
     destruct temp as [t2' Hsubst_t2].
 
     eauto.
+  - (* Constant *)
 Admitted.
 
-Corollary substitute_models_total_function__Term : forall t x s, 
+Corollary substitute_term__total : forall t x s, 
     exists t', substitute x s t t'.
-Proof. apply substitute_models_total_function. Qed.
+Proof. apply substitute__total. Qed.
 
-Corollary substitute_models_total_function__Binding : forall b x s,
+Corollary substitute_binding__total : forall b x s,
     exists b', substitute_binding x s b b'.
-Proof. apply substitute_models_total_function. Qed.
+Proof. apply substitute__total. Qed.
 
-Corollary substitute_models_total_function__Bindings_NonRec : forall bs x s,
-    exists bs', substitute_bindings_nonrec x s bs bs'.
-Proof.
-  intros.
-  eapply P_Bindings_NonRec__holds_definitionally; eauto.
-  assert (forall bs0, Util.ForallP P_Binding bs0). {
-    induction bs0.
-    - constructor.
-    - constructor.
-      + apply substitute_models_total_function.
-      + assumption.
-  }
-  apply H.
-Qed.
-
-Corollary substitute_models_total_function__Bindings_Rec : forall bs x s,
-    exists bs', substitute_bindings_rec x s bs bs'.
-Proof.
-  intros.
-  eapply P_Bindings_Rec__holds_definitionally; eauto.
-  assert (forall bs0, Util.ForallP P_Binding bs0). {
-    induction bs0.
-    - constructor.
-    - constructor.
-      + apply substitute_models_total_function.
-      + assumption.
-  }
-  apply H.
-Qed.
-
-
-Lemma msubst_total : forall env t,
-    exists t', msubst env t t'.
+Lemma msubst_term__total : forall env t,
+    exists t', msubst_term env t t'.
 Proof.
   induction env; intros.
   - exists t. constructor.
   - destruct a as [a T].
-    assert (exists t', substitute a T t t') by (eapply substitute_models_total_function__Term; eauto).
+    assert (exists t', substitute a T t t') by (eapply substitute_term__total; eauto).
     destruct H as [t' Hs__t'].
     destruct (IHenv t') as [t'' Hms__t''].
     exists t''.
     econstructor.
     + apply Hs__t'.
     + apply Hms__t''.
+Qed.
+
+Lemma msubst_binding__total : forall env b,
+    exists b', msubst_binding env b b'.
+Proof.
+  induction env; intros.
+  - exists b. constructor.
+  - destruct a as [a T].
+    assert (exists b', substitute_binding a T b b') by (eapply substitute_binding__total; eauto).
+    destruct H as [b' Hs__b'].
+    destruct (IHenv b') as [b'' Hms__b''].
+    exists b''.
+    econstructor.
+    + apply Hs__b'.
+    + apply Hms__b''.
 Qed.

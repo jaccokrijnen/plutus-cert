@@ -12,8 +12,8 @@ Require Import Coq.Logic.Decidable.
 
 
 Lemma msubst_IWrap : forall ss F T M t',
-    msubst ss (IWrap F T M) t' ->
-    exists M', msubst ss M M' /\ t' = IWrap F T M'.
+    msubst_term ss (IWrap F T M) t' ->
+    exists M', msubst_term ss M M' /\ t' = IWrap F T M'.
 Proof.
   induction ss; intros.
   - inversion H. subst.
@@ -26,7 +26,7 @@ Proof.
     subst.
     exists M''.
     split.
-    + eapply msubst_cons; eauto.
+    + eapply msubst_term__cons; eauto.
     + reflexivity.
 Qed.
 

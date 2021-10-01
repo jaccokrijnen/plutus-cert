@@ -9,7 +9,7 @@ Require Import Arith.
 Lemma msubst_Var : forall ss x,
     closed_env ss ->
     forall t',
-      msubst ss (Var x) t' ->
+      msubst_term ss (Var x) t' ->
         match lookup x ss with
         | Datatypes.Some t => t' = t
         | None=> t' = Var x
@@ -24,8 +24,8 @@ Proof.
     + rewrite String.eqb_refl.
       eapply msubst_closed; eauto.
       inversion H; auto.
-    + apply String.eqb_neq in H5.
-      rewrite H5.
+    + apply String.eqb_neq in H2.
+      rewrite H2.
       apply IHss; eauto.
       inversion H; auto.
 Qed.

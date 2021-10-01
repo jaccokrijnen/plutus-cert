@@ -9,15 +9,15 @@ Require Import Arith.
 
 
 Lemma msubst_TyInst : forall ss t0 T0 t',
-    msubst ss (TyInst t0 T0) t' ->
-    exists t0', msubst ss t0 t0' /\ t' = TyInst t0' T0.
+    msubst_term ss (TyInst t0 T0) t' ->
+    exists t0', msubst_term ss t0 t0' /\ t' = TyInst t0' T0.
 Proof.
   induction ss.
   - intros. 
     inversion H. subst.
     exists t0.
     split. 
-    + apply msubst_nil.
+    + apply msubst_term__nil.
     + reflexivity. 
   - intros.
     inversion H. subst.
@@ -27,8 +27,8 @@ Proof.
     edestruct IHss as [t0'' Hms0']; eauto.
     eexists.
     split.
-    + eapply msubst_cons.
-      * apply H7.
+    + eapply msubst_term__cons.
+      * apply H4.
       * apply Hms0'.
     + destruct Hms0'.
       subst.

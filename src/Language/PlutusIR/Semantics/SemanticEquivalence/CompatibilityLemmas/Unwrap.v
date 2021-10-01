@@ -12,8 +12,8 @@ Require Import Arith.
 Require Import Coq.Logic.Decidable.
 
 Lemma msubst_Unwrap : forall ss M t',
-    msubst ss (Unwrap M) t' ->
-    exists M', msubst ss M M' /\ t' = Unwrap M'.
+    msubst_term ss (Unwrap M) t' ->
+    exists M', msubst_term ss M M' /\ t' = Unwrap M'.
 Proof.
   induction ss; intros.
   - inversion H. subst.
@@ -22,11 +22,11 @@ Proof.
     inversion H2. subst.
     rename t0' into M'.
     eapply IHss in H5.
-    destruct H5 as [M'' [H0 H1]].
+    destruct H5 as [M'' [H0 H3]].
     subst.
     exists M''.
     split.
-    + eapply msubst_cons; eauto.
+    + eapply msubst_term__cons; eauto.
     + reflexivity.
 Qed.
 

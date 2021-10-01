@@ -16,13 +16,13 @@ Require Import Coq.Lists.List.
 
 Definition env := list (name * Term).
 
-Inductive msubst : env -> Term -> Term -> Prop :=
+Inductive msubst_term : env -> Term -> Term -> Prop :=
   | msubst_nil : forall t,
-      msubst nil t t
+      msubst_term nil t t
   | msubst_cons : forall x s ss t t' t'',
       substitute x s t t' ->
-      msubst ss t' t'' ->
-      msubst ((x, s) :: ss) t t''
+      msubst_term ss t' t'' ->
+      msubst_term ((x, s) :: ss) t t''
   .
 
 Definition tass := list (name * Ty).
@@ -378,7 +378,7 @@ Proof. Admitted.
 Lemma msubst_closed : forall t,
     closed t ->
     forall ss t',
-      msubst ss t t' ->
+      msubst_term ss t t' ->
       t' = t.
 Proof. Admitted.
 
@@ -393,8 +393,8 @@ Lemma subst_msubst : forall env x v t,
     closed_env env ->
     forall t1 t2 t3 t4,
       substitute x v t t1 ->
-      msubst env t1 t2 ->
-      msubst (drop x env) t t3 ->
+      msubst_term env t1 t2 ->
+      msubst_term (drop x env) t t3 ->
       substitute x v t3 t4 ->
       t2 = t4.
 Proof. Admitted.
@@ -402,7 +402,7 @@ Proof. Admitted.
 Lemma msubst_Var : forall ss x,
     closed_env ss ->
     forall t',
-      msubst ss (Var x) t' ->
+      msubst_term ss (Var x) t' ->
       t' =
         match lookup x ss with
         | Datatypes.Some t => t 
@@ -426,8 +426,8 @@ Qed.
 
 Lemma msubst_LamAbs : forall ss x T t0 t',
     closed_env ss ->
-    msubst ss (LamAbs x T t0) t' ->
-    exists t0', msubst (drop x ss) t0 t0' /\ t' = LamAbs x T t0'.
+    msubst_term ss (LamAbs x T t0) t' ->
+    exists t0', msubst_term (drop x ss) t0 t0' /\ t' = LamAbs x T t0'.
 Proof.
   induction ss.
   - intros. 
@@ -461,8 +461,8 @@ Proof.
 Qed.
 
 Lemma msubst_Apply : forall ss t1 t2 t',
-    msubst ss (Apply t1 t2) t' ->
-    exists t1' t2', msubst ss t1 t1' /\ msubst ss t2 t2' /\ t' = (Apply t1' t2').
+    msubst_term ss (Apply t1 t2) t' ->
+    exists t1' t2', msubst_term ss t1 t1' /\ msubst_term ss t2 t2' /\ t' = (Apply t1' t2').
 Proof.
   induction ss; intros.
   - inversion H. subst.
@@ -634,7 +634,7 @@ Lemma msubst_preserves_typing_1 : forall c e1 e2,
     instantiation c e1 e2 ->
     forall Gamma t t' S,
       (mupdate Gamma c) |-+ t : S ->
-      msubst e1 t t' ->
+      msubst_term e1 t t' ->
       Gamma |-+ t': S. 
 Proof.
   intros c e1 e2 V.
@@ -659,7 +659,7 @@ Lemma msubst_preserves_typing_2 : forall c e1 e2,
     instantiation c e1 e2 ->
     forall Gamma t t' S,
       (mupdate Gamma c) |-+ t : S ->
-      msubst e2 t t' ->
+      msubst_term e2 t t' ->
       Gamma |-+ t': S. 
 Proof.
   intros c e1 e2 V.
@@ -690,8 +690,8 @@ Definition P_has_type Gamma t1 T :=
     instantiation c e1 e2 ->
     CNR_Term t1 t2 ->
     forall t1' t2' v1' v2',
-      msubst e1 t1 t1' ->
-      msubst e2 t2 t2' ->
+      msubst_term e1 t1 t1' ->
+      msubst_term e2 t2 t2' ->
       t1' ==> v1' ->
       t2' ==> v2' ->
       R T empty t1' t2'.
@@ -712,8 +712,8 @@ Axiom skip : forall P, P.
     instantiation c e1 e2 ->
     CNR_Term t1 t2 ->
     forall t1' t2',
-      msubst e1 t1 t1' ->
-      msubst e2 t2 t2' ->
+      msubst_term e1 t1 t1' ->
+      msubst_term e2 t2 t2' ->
       R T t1' t2'.*)
 
 Lemma msubst_R : forall Gamma t1 T,
@@ -808,10 +808,10 @@ Proof.
     destruct (R_evaluable _ _ _ _ Hrse_s1s2) as [vs1 [vs2 [Hvs1 Hvs2]]].
 
 
-    assert (exists t0_1'', msubst ((x, vs1) :: e1) t0_1 t0_1''). {
+    assert (exists t0_1'', msubst_term ((x, vs1) :: e1) t0_1 t0_1''). {
       apply skip.
     }
-    assert (exists t0_2'', msubst ((x, vs2) :: e2) t0_2 t0_2''). {
+    assert (exists t0_2'', msubst_term ((x, vs2) :: e2) t0_2 t0_2''). {
       apply skip.
     }
     destruct H1 as [t0_1'' Hms__t0_1''].

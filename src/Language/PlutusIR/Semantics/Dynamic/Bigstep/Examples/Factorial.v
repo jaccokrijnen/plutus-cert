@@ -80,8 +80,6 @@ Proof with eauto.
       invert_contra.
     } {    
       solve_substitute.
-    } {
-      solve_substitute.
     }
   }
   apply E_NilB_Rec.
@@ -91,8 +89,6 @@ Proof with eauto.
       apply S_LetRec2. {
         invert_contra.
       } {    
-        solve_substitute.
-      } {
         solve_substitute.
       }
     }
@@ -127,7 +123,7 @@ Proof with eauto.
              ++ apply S_TermBind.
                 apply S_LamAbs1.
              ++ apply S_NilB_Rec.
-          -- apply S_LamAbs1.
+                apply S_LamAbs1.
         * apply S_Apply.
           -- apply S_Apply.
              ++ apply S_Builtin.
@@ -199,8 +195,6 @@ Proof with eauto.
             invert_contra.
           } {    
             solve_substitute.
-          } {
-            solve_substitute.
           }
         }
         eapply E_NilB_Rec.
@@ -256,8 +250,6 @@ Proof with eauto.
           eapply S_Apply. {
             eapply S_LetRec2. {
               destruct_invert_contra.
-            } {
-              solve_substitute.
             } {
               solve_substitute.
             }
@@ -326,8 +318,6 @@ Proof with eauto.
                   invert_contra.
                 } {
                   solve_substitute.
-                } {
-                  solve_substitute.
                 }
               }
               eapply E_NilB_Rec.
@@ -363,8 +353,6 @@ Proof with eauto.
                 eapply S_Apply... {
                   eapply S_LetRec2. {
                     destruct_invert_contra.
-                  } {
-                    solve_substitute.
                   } {
                     solve_substitute.
                   }
