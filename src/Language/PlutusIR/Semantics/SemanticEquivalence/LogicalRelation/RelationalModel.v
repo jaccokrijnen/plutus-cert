@@ -503,6 +503,14 @@ Lemma subst_msubst : forall env x v t,
       t2 = t4.
 Proof. Admitted.
 
+Lemma subst_msubst' : forall env x v t,
+    closed v ->
+    closed_env env ->
+    forall t1 t2 t3,
+      (substitute x v t t1 /\ msubst_term env t1 t2) <->
+      (msubst_term (drop x env) t t3 /\ substitute x v t3 t2).
+Proof. Admitted.
+
 Lemma substA_msubstA : forall env x v t,
     closed_Ty v ->
     (* closed_env env -> *)
@@ -576,6 +584,51 @@ Lemma mdrop_nil : forall X ns,
 Proof. induction ns; auto. Qed.
 
 (** ** Properties of Instantiations *)
+
+Lemma RD_rel : forall ck rho,
+    RD ck rho ->
+    forall X Chi T1 T2,
+      sem rho X = Datatypes.Some Chi ->
+      syn1 rho X = Datatypes.Some T1 ->
+      syn2 rho X = Datatypes.Some T2 ->
+      Rel T1 T2 Chi.
+Proof.
+  induction 1.
+  - intros.
+    unfold sem in H.
+    inversion H.
+  - intros.
+    unfold sem in H3.
+    unfold syn1 in H4.
+    unfold syn2 in H5.
+    destruct (X0 =? X) eqn:Heqb.
+    + inversion H3. subst.
+      inversion H4. subst.
+      inversion H5. subst.
+      assumption.
+    + fold sem in H3.
+      fold syn1 in H4.
+      fold syn2 in H5.
+      eapply IHRD; eauto.
+Qed.
+
+Lemma RD_sem_syn : forall ck rho,
+    RD ck rho ->
+    forall X Chi,
+      sem rho X = Datatypes.Some Chi ->
+      exists T1 T2, 
+        syn1 rho X = Datatypes.Some T1 /\
+        syn2 rho X = Datatypes.Some T2.
+Proof.
+  induction 1.
+  - intros.
+    unfold sem in H.
+    inversion H.
+  - intros.
+    unfold sem in H3.
+    simpl.
+    destruct (X0 =? X) eqn:Heqb; eauto.
+Qed.
 
 Lemma RG_extend_rho : forall X Chi T1 T2 rho k c env env' ,
     RG rho k c env env' ->
@@ -874,7 +927,9 @@ Equations RB (k : nat) (rho : tymapping) (b b' : Binding) : Prop :=
     match b, b' with
     | TermBind s (VarDecl x T) e, TermBind s' vd' e' =>
         RC k T rho e e'
-    | _, _ => b = b'
+    | TypeBind _ _, TypeBind _ _ => b = b'
+    | DatatypeBind _, DatatypeBind _ => b = b'
+    | _, _ => False
     end.
 
 Definition LR_logically_approximate_binding (Delta : Delta) (Gamma : Gamma) (b b' : Binding) :=

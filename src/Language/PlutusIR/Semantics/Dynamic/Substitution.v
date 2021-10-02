@@ -16,14 +16,14 @@ Definition bound_var_in_constructor (c : NamedTerm.constructor) : string :=
   | Constructor (VarDecl x _) _ => x
   end.
 
-Definition bound_var_in_binding (b : NamedTerm.Binding) : list string :=
+Definition bound_vars_in_binding (b : NamedTerm.Binding) : list string :=
   match b with
   | TermBind _ (VarDecl x _) _ => cons x nil
   | TypeBind (TyVarDecl X _) _ => nil
   | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => matchFunc :: (rev (map bound_var_in_constructor cs))
   end.
 
-Definition bound_vars_in_bindings (bs : list NamedTerm.Binding) : list string := List.concat (map bound_var_in_binding bs).
+Definition bound_vars_in_bindings (bs : list NamedTerm.Binding) : list string := List.concat (map bound_vars_in_binding bs).
 
 (** ** Implementation of substitution on terms as inductive datatype *)
 Inductive substitute (x : name) (s : Term) :Term -> Term -> Prop :=
@@ -31,11 +31,11 @@ Inductive substitute (x : name) (s : Term) :Term -> Term -> Prop :=
       substitute x s t t' ->
       substitute x s (Let NonRec nil t) (Let NonRec nil t')
   | S_LetNonRec_Cons1 : forall b b' bs t,
-      In x (bound_var_in_binding b) ->
+      In x (bound_vars_in_binding b) ->
       substitute_binding x s b b' ->
       substitute x s (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs) t)
   | S_LetNonRec_Cons2 : forall b b' bs bs' t t',
-      ~(In x (bound_var_in_binding b)) ->
+      ~(In x (bound_vars_in_binding b)) ->
       substitute_binding x s b b' ->
       substitute x s (Let NonRec bs t) (Let NonRec bs' t') ->
       substitute x s (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t')

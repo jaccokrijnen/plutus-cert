@@ -41,7 +41,7 @@ Proof.
     destruct f as [bs' [t' Hs]].
 
     
-    assert ({In x (bound_var_in_binding b)} + {~ In x (bound_var_in_binding b)}) by eauto using in_dec, string_dec.
+    assert ({In x (bound_vars_in_binding b)} + {~ In x (bound_vars_in_binding b)}) by eauto using in_dec, string_dec.
     destruct H1.
     + exists (b' :: bs), t. apply S_LetNonRec_Cons1. all: eauto.
     + exists (b' :: bs'), t'. apply S_LetNonRec_Cons2. all: eauto. 

@@ -41,7 +41,7 @@ Proof.
     assert (exists bs', substituteA_bindings_nonrec x s bs bs') by eauto.
     destruct H0 as [bs' H0].
 
-    assert ({In x (tyvars_bound_by_binding b)} + {~ In x (tyvars_bound_by_binding b)}) by eauto using in_dec, string_dec.
+    assert ({In x (bound_tyvars_in_binding b)} + {~ In x (bound_tyvars_in_binding b)}) by eauto using in_dec, string_dec.
     destruct H1.
     + exists (b' :: bs).
       apply SA_ConsB_NonRec1; auto.

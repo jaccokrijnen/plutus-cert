@@ -10,31 +10,31 @@ Local Open Scope string_scope.
 (** * Substitution of types in type annotations *)
 
 (** ** Utilities *)
-Definition tyvars_bound_by_binding (b : NamedTerm.Binding) : list tyname :=
+Definition bound_tyvars_in_binding (b : NamedTerm.Binding) : list tyname :=
   match b with
   | TermBind _ (VarDecl x _) _ => nil
   | TypeBind (TyVarDecl X _) _ => cons X nil
   | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => cons X nil
   end.
 
-Definition tyvars_bound_by_bindings (bs : list NamedTerm.Binding) : list tyname := List.concat (map tyvars_bound_by_binding bs).
+Definition bound_tyvars_in_bindings (bs : list NamedTerm.Binding) : list tyname := List.concat (map bound_tyvars_in_binding bs).
 
 (** ** Implementation as an inductive datatype *)
 Inductive substituteA : tyname -> Ty -> Term -> Term -> Prop :=
   | SA_Let1 : forall X S bs t0 bs',
-      In X (tyvars_bound_by_bindings bs) ->
+      In X (bound_tyvars_in_bindings bs) ->
       substituteA_bindings_nonrec X S bs bs' ->
       substituteA X S (Let NonRec bs t0) (Let NonRec bs' t0)
   | SA_Let2 : forall X S bs t0 bs' t0',
-      ~(In X (tyvars_bound_by_bindings bs)) ->
+      ~(In X (bound_tyvars_in_bindings bs)) ->
       substituteA_bindings_nonrec X S bs bs' ->
       substituteA X S t0 t0' ->
       substituteA X S (Let NonRec bs t0) (Let NonRec bs' t0')
   | SA_LetRec1 : forall X S bs t0,
-      In X (tyvars_bound_by_bindings bs)->
+      In X (bound_tyvars_in_bindings bs)->
       substituteA X S (Let Rec bs t0) (Let Rec bs t0)
   | SA_LetRec2 : forall X S bs t0 bs' t0',
-      ~(In X (tyvars_bound_by_bindings bs)) ->
+      ~(In X (bound_tyvars_in_bindings bs)) ->
       substituteA_bindings_rec X S bs bs' ->
       substituteA X S t0 t0' ->
       substituteA X S (Let Rec bs t0) (Let Rec bs' t0')
@@ -73,11 +73,11 @@ with substituteA_bindings_nonrec : tyname -> Ty -> list Binding -> list Binding 
   | SA_NilB_NonRec : forall X S, 
       substituteA_bindings_nonrec X S nil nil
   | SA_ConsB_NonRec1 : forall X S b b' bs,
-      In X (tyvars_bound_by_binding b) ->
+      In X (bound_tyvars_in_binding b) ->
       substituteA_binding X S b b' ->
       substituteA_bindings_nonrec X S (b :: bs) (b' :: bs)
   | SA_ConsB_NonRec2 : forall X S b b' bs bs',
-      ~(In X (tyvars_bound_by_binding b)) ->
+      ~(In X (bound_tyvars_in_binding b)) ->
       substituteA_binding X S b b' ->
       substituteA_bindings_nonrec X S bs bs' ->
       substituteA_bindings_nonrec X S (b :: bs) (b' :: bs')
