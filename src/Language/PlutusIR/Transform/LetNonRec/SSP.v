@@ -59,7 +59,7 @@ Definition P_binding_well_formed ctx b1 :=
     ).
 
 
-Theorem CNR_Term__preserves_typing : forall ctx t1 T,
+Theorem CNR_Term__SSP : forall ctx t1 T,
     ctx |-+ t1 : T ->
     P_has_type ctx t1 T.
 Proof.
