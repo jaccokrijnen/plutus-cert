@@ -45,9 +45,7 @@ Proof.
 
   destruct T; try solve [eauto || intros; eapply RV; eauto using helper].
   - intros.
-    Axiom skip: forall P, P.
-    apply skip.
-Qed.
+Admitted.
     
 (*
 Lemma RV_monotone : forall k T j v v',

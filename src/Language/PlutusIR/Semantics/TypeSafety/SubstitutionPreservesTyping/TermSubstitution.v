@@ -222,18 +222,6 @@ Proof.
       * reflexivity.
 Qed.
 
-Lemma context_invariance_T__constructor_well_formed : forall ctx_T' ctx_T ctx_K c ,
-  (ctx_K, ctx_T) |-ok_c c ->
-  (ctx_K, ctx_T') |-ok_c c.
-Proof.
-  intros.
-  inversion H. subst.
-  apply W_Con.
-  intros.
-  apply H0.
-  assumption.
-Qed.
-
 Definition P_Term (t : Term) :=
   forall ctx x U v T t',
     extendT x U ctx |-+ t : T ->
@@ -275,8 +263,8 @@ Proof.
     inversion H8. subst.
     inversion H3. 
     + subst.
-      apply binds_binds_bound_vars in H6.
-      destruct H6 as [U' Hlu].
+      apply binds_binds_bound_vars in H6 as H15.
+      destruct H15 as [U' Hlu].
       split.
       * eapply T_Let.
         -- reflexivity.
@@ -288,7 +276,7 @@ Proof.
               assert (binds a = binds b') by (eapply H2; eauto).
               rewrite <- H4.
               erewrite append_extendT_shadow in H9; eauto.
-        -- simpl. 
+        -- eapply weakening; eauto.
 Admitted.
 
 Lemma P_letrec : forall bs t ctx x U v bs' T t',
@@ -455,8 +443,6 @@ Proof.
     + eapply W_Data.
       * reflexivity.
       * intros.
-        destruct ctx.
-        eapply context_invariance_T__constructor_well_formed.
         eauto.
     + reflexivity.
 Qed.

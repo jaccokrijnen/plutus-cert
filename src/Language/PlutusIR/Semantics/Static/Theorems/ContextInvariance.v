@@ -87,10 +87,10 @@ Definition P_has_type (Gamma : Context) (t : Term) (T : Ty) :=
     (forall X, lookupK Gamma X = lookupK Gamma' X) ->
     Gamma' |-+ t : T.
 
-Definition P_constructor_well_formed (Gamma : Context) (c : constructor) :=
-  forall Gamma',
-    (forall X, lookupK Gamma X = lookupK Gamma' X) ->
-    Gamma' |-ok_c c.
+Definition P_constructor_well_formed (Delta : Delta) (c : constructor) :=
+  forall Delta',
+    (forall X, Delta X = Delta' X) ->
+    Delta' |-ok_c c.
 
 Definition P_bindings_well_formed_nonrec (Gamma : Context) (bs : list Binding) :=
   forall Gamma',
@@ -300,8 +300,6 @@ Proof with eauto.
     intros. unfold P_constructor_well_formed. intros.
     constructor.
     intros.
-    destruct Gamma'.
-    destruct ctx.
     eapply context_invariance__typelevel.
     + apply H.
       assumption.

@@ -97,10 +97,10 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
       normalise (unwrapIFix F K T) S ->
       ctx |-+ (Unwrap M) : S
 
-  with constructor_well_formed : Context -> constructor -> Prop :=
-    | W_Con : forall ctx x T ar,
-        (forall U, In U (listOfArgumentTypes T) -> (fst ctx) |-* U : Kind_Base) ->
-        constructor_well_formed ctx (Constructor (VarDecl x T) ar)
+  with constructor_well_formed : Delta -> constructor -> Prop :=
+    | W_Con : forall Delta x T ar,
+        (forall U, In U (listOfArgumentTypes T) -> Delta |-* U : Kind_Base) ->
+        constructor_well_formed Delta (Constructor (VarDecl x T) ar)
 
   with bindings_well_formed_nonrec : Context -> list Binding -> Prop :=
     | W_NilB_NonRec : forall ctx,
@@ -128,7 +128,7 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
         binding_well_formed ctx (TypeBind (TyVarDecl X K) T)
     | W_Data : forall ctx X YKs cs matchFunc ctx',
         ctx' = append (flatten (map fromDecl YKs)) ctx ->
-        (forall c, In c cs -> constructor_well_formed ctx' c) ->
+        (forall c, In c cs -> constructor_well_formed (fst ctx') c) ->
         binding_well_formed ctx (DatatypeBind (Datatype X YKs matchFunc cs))
 
   where "ctx '|-+' tm ':' T" := (has_type ctx tm T).

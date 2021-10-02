@@ -96,10 +96,10 @@ Definition P_has_type ctx t T : Prop :=
     inclusion ctx ctx' ->
     ctx' |-+ t : T.
 
-Definition P_constructor_well_formed ctx c : Prop :=
-  forall ctx',
-    inclusion ctx ctx' ->
-    ctx' |-ok_c c.
+Definition P_constructor_well_formed Delta c : Prop :=
+  forall Delta',
+    Map.inclusion Delta Delta' ->
+    Delta' |-ok_c c.
 
 Definition P_bindings_well_formed_nonrec ctx bs : Prop :=
   forall ctx',
@@ -225,7 +225,7 @@ Proof.
     intros. unfold P_constructor_well_formed. intros.
     apply W_Con.
     intros.
-    apply weakening__has_kind with (fst ctx).
+    apply weakening__has_kind with Delta.
     + apply H0.
     + apply H.
       assumption.
