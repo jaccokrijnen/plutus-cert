@@ -22,21 +22,15 @@ Definition P_bindings_well_formed_rec ctx bs1 := ctx |-oks_r bs1.
 Definition P_binding_well_formed ctx b := 
   LR_logically_approximate_binding (fst ctx) (snd ctx) b b.
 
-Axiom skip : forall P, P.
-
- (*forall c e1 e2 t1 t2 T,
-    (mupdate emptyContext c) |-+ t1 : T ->
-    (mupdate emptyContext c) |-+ t2 : T ->
-    instantiation c e1 e2 ->
-    CNR_Term t1 t2 ->
-    forall t1' t2',
-      msubst_term e1 t1 t1' ->
-      msubst_term e2 t2 t2' ->
-      R T t1' t2'.*)
+#[export] Hint Unfold 
+  P_has_type
+  P_constructor_well_formed
+  P_bindings_well_formed_nonrec
+  P_bindings_well_formed_rec
+  P_binding_well_formed : core.
 
 
-
-Lemma msubst_R : forall ctx e T,
+Lemma LR_reflexivity : forall ctx e T,
     ctx |-+ e : T ->
     P_has_type ctx e T.
 Proof.
@@ -47,15 +41,9 @@ Proof.
     (P2 := P_bindings_well_formed_rec)
     (P3 := P_binding_well_formed).
 
-  all : unfold P_has_type; intros; subst.
-  all : eauto with DSP_compatibility_lemmas.
+  all : autounfold; intros; subst.
+  all : eauto with DSP_compatibility_lemmas typing.
   - apply skip.
-  - unfold P_constructor_well_formed. eauto with typing.
-  - unfold P_bindings_well_formed_nonrec. constructor. 
-  - unfold P_bindings_well_formed_nonrec. econstructor; eauto with DSP_compatibility_lemmas.
-  - unfold P_bindings_well_formed_rec. eauto with typing.
-  - unfold P_bindings_well_formed_rec. eauto with typing.
-  - unfold LR_logically_approximate in H1. apply skip. (* TODO *)
-  - apply skip. (* TODO *)
-  - apply skip. (* TODO *)
+  - constructor. 
+  - econstructor; eauto with DSP_compatibility_lemmas.
 Qed.
