@@ -1,16 +1,8 @@
-Require Import PlutusCert.Language.PlutusIR.
-Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RelationalModel.
 
 Require Import Arith.
-
-Lemma e2 : forall j j0 k j1,
-    j <= k ->
-    j0 < j - j1 ->
-    j0 < k - j1.
-Proof. Admitted.
 
 Lemma helper : forall i k j i0,
     i <= k ->
@@ -43,25 +35,21 @@ Proof.
 
   exists e'_f, j'. split; auto.
 
-  destruct T; try solve [eauto || intros; eapply RV; eauto using helper].
-  - intros.
+  destruct T; try solve [eauto || intros; eapply RV; eauto using helper]. 
+  - intros. apply skip.
 Admitted.
     
-(*
-Lemma RV_monotone : forall k T j v v',
-    value v ->
-    0 < k ->
-    RC k T v v' ->  
-    j <= k ->
-    RC j T v v'.
+Lemma RV_monotone : forall k rho T i v v',
+    RV k T rho v v' ->  
+    i <= k ->
+    RV i T rho v v'.
 Proof.
-  intros k T j v v' Hval_v RC Hlt.
-
-  eapply RC_monotone; eauto.
-  split.
-  - eapply eval_value. assumption.
-  - assumption. 
-Qed.*)
+  intros k rho T i v v' HRV Hlt__i.
+  destruct HRV as [Hval__v [Hval__v' HRC]].
+  split. auto.
+  split. auto.
+  eapply RC_monotone. eauto. eauto.
+Qed.
 
 Lemma RG_monotone : forall c rho i k env env',
     RG rho k c env env' ->  
@@ -77,5 +65,5 @@ Proof.
     inversion H.
     subst.
     eapply RG_cons; eauto.
-    eapply RC_monotone; eauto.
-Qed.
+    eapply RV_monotone; eauto.
+Qed. 

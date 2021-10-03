@@ -1,8 +1,7 @@
-Require Import PlutusCert.Language.PlutusIR.
-Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.Preservation.
 
 Require Import Arith.
 Require Import Coq.Lists.List.
@@ -119,214 +118,263 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
 
         (* RV for built-in types *)
         | Ty_Builtin st => 
-            forall v v' sv sv',
+            exists sv sv',
               (* Determine the shape of e_f and e'_f *)
-              e_f = v ->
-              e'_f = v' ->
-              v = Constant sv ->
-              v' = Constant sv' ->
+              e_f = Constant sv /\
+              e'_f = Constant sv' /\
               (* Syntactic equality *)
-              v = v'
+              e_f = e'_f
 
         (* RV for function types *)
         | Ty_Fun T1 T2 =>
-            forall x e_body x' e'_body,
-              (* Determine the shape of e_f and e'_f *)
-              e_f = LamAbs x (msubstT (msyn1 rho) T1) e_body ->
-              e'_f = LamAbs x' (msubstT (msyn2 rho) T1) e'_body ->
-              (* Extensional equivalence *)
-              forall i (Hlt_i : i < k - j) v v' e_body' e'_body',
-                value v /\ value v' /\ RC i T1 rho v v' ->
-                substitute x v e_body e_body' ->
-                substitute x' v' e'_body e'_body' ->
-                RC i T2 rho e_body' e'_body'
+            (
+              exists x e_body x' e'_body,
+                (* Determine the shape of e_f and e'_f *)
+                LamAbs x (msubstT (msyn1 rho) T1) e_body = e_f /\
+                LamAbs x' (msubstT (msyn2 rho) T1) e'_body = e'_f /\
+                (* Extensional equivalence *)
+                forall i (Hlt_i : i < k - j) v_0 v'_0,
+                  value v_0 /\ value v'_0 /\ RC i T1 rho v_0 v'_0 ->
+                  RC i T2 rho <{ [v_0 / x] e_body }> <{ [v'_0 / x'] e'_body }>
+            )
 
         (* RV for recursive types *)
         | Ty_IFix F T =>
-            forall v v',
+            exists v_0 v'_0,
               (* Determine the shape of e_f and e_f' *)
-              e_f = IWrap (msubstT (msyn1 rho) F) (msubstT (msyn1 rho) T) v ->
-              e'_f = IWrap (msubstT (msyn2 rho) F) (msubstT (msyn2 rho) T) v' ->
+              e_f = IWrap (msubstT (msyn1 rho) F) (msubstT (msyn1 rho) T) v_0 /\
+              e'_f = IWrap (msubstT (msyn2 rho) F) (msubstT (msyn2 rho) T) v'_0 /\
               (* Uwrap *)
               forall i (Hlt_i : i < k - j) K S,
                 empty |-* (msubstT (msyn2 rho) T) : K ->
                 normalise (unwrapIFix F K T) S ->
-                RC i S rho v v'
+                RC i S rho v_0 v'_0
 
         (* RV for universal types *)
         | Ty_Forall bX K T => 
-            forall e_body e'_body,
-              (* Determine the shape of e_f and e_f' *)
-              e_f = TyAbs bX K e_body ->
-              e'_f = TyAbs bX K e'_body ->
-              (* Instantiational equivalence *)
-              forall T1 T2 Chi e_body' e'_body',
-                empty |-* T1 : K ->
-                empty |-* T2 : K ->
-                Rel T1 T2 Chi ->
-                substituteA bX T1 e_body e_body' ->
-                substituteA bX T2 e'_body e'_body' ->
-                forall i (Hlt_i : i < k - j),
-                  RC i T ((bX, (Chi, T1, T2)) :: rho) e_body e'_body
+            (
+              exists e_body e'_body,
+                (* Determine the shape of e_f and e_f' *)
+                e_f = TyAbs bX K e_body /\
+                e'_f = TyAbs bX K e'_body /\
+                (* Instantiational equivalence *)
+                forall T1 T2 Chi,
+                  empty |-* T1 : K ->
+                  empty |-* T2 : K ->
+                  Rel T1 T2 Chi ->
+                  forall i (Hlt_i : i < k - j),
+                    RC i T ((bX, (Chi, T1, T2)) :: rho) <{ [[T1 / bX ] e_body }> <{ [[T2 / bX ] e'_body }>
+            )
       end.
 Proof. all: eapply RC_termination_helper. all: eauto. Qed.
 
 Definition RV (k : nat) (T : Ty) (rho : tymapping) (v v' : Term) : Prop :=
   value v /\ value v' /\ RC k T rho v v'.
 
-Definition possible_type (T : Ty) : Prop :=
-  match T with
-  | Ty_Forall _ _ _ => True
-  | Ty_Fun _ _ => True
-  | Ty_Builtin _  => True
-  | Ty_IFix _ _ => True
-  | _ => False
-  end.
-
-Definition impossible_type (T : Ty) : Prop := ~ possible_type T.
-
 (** ** Helper lemmas for RC *)
 
-Lemma RC_typable_empty : forall k T rho e e',
-    RC k T rho e e' ->
+Lemma RV_typable_empty : forall k T rho e e',
+    RV k T rho e e' ->
     emptyContext |-+ e : (msubstT (msyn1 rho) T) /\ emptyContext |-+ e' : (msubstT (msyn2 rho) T).
-Proof. intros. destruct T; edestruct H as [He [He' _]]; eauto. Qed.
+Proof. intros. autorewrite with RC in H. destruct H as [_ [_ H]]. destruct T; edestruct H as [He [He' _]]; eauto. Qed.
 
-Lemma RC_typable_empty_1 : forall k T rho e e',
-    RC k T rho e e' ->
+Lemma RV_typable_empty_1 : forall k T rho e e',
+    RV k T rho e e' ->
     emptyContext |-+ e : (msubstT (msyn1 rho) T).
-Proof. intros. destruct (RC_typable_empty _ _ _ _ _ H). eauto. Qed.
+Proof. intros. destruct (RV_typable_empty _ _ _ _ _ H). eauto. Qed.
 
-Lemma RC_typable_empty_2 : forall k T rho e e',
-    RC k T rho e e' ->
+Lemma RV_typable_empty_2 : forall k T rho e e',
+    RV k T rho e e' ->
     emptyContext |-+ e' : (msubstT (msyn2 rho) T).
-Proof. intros. destruct (RC_typable_empty _ _ _ _ _ H). eauto. Qed.
-(*
-Lemma RC_evaluable : forall k T rho e j e_f e',
-    terminates_excl e j e_f k ->
+Proof. intros. destruct (RV_typable_empty _ _ _ _ _ H). eauto. Qed.
+
+Lemma RC_to_RV : forall k T rho e e',
     RC k T rho e e' ->
-    exists e'_f j', j < k /\ e =[j]=> e_f /\ e' =[j']=> e'_f.
-Proof. intros. destruct H. autorewrite with RC in H1.
-  destruct T; destruct H0 as [_ [_ [e'_f [j' [Hev_e' _]]]]]; eauto.
-  Unshelve. all: eauto.
+    forall j (Hlt_j : j < k) e_f,
+      e =[j]=> e_f ->
+      exists e'_f j', e' =[j']=> e'_f /\
+        RV (k - j) T rho e_f e'_f.
+Proof.
+  intros k T rho e e' HRC j Hlt__j e_f Hev__e_f.
+  autorewrite with RC in HRC.
+  destruct HRC as [Htyp__e [Htyp__e' HRC]].
+  apply HRC in Hev__e_f as temp; eauto.
+  clear HRC.
+  destruct temp as [e'_f [j' [Hev__e'_f H]]].
+  eexists. eexists.
+  split. eauto.
+  split. eauto using eval_value, eval_to_value.
+  split. eauto using eval_value, eval_to_value.
+  autorewrite with RC.
+  split. eauto using preservation.
+  split. eauto using preservation.
+  intros.
+  assert (e_f =[0]=> e_f). {
+    eapply eval_value.
+    eapply eval_to_value.
+    eauto.
+  }
+  assert (e_f0 = e_f /\ j0 = 0) by (eapply eval__deterministic; eauto).
+  destruct H2. subst.
+  assert (forall i, i < k - 0 -> i < k - j) by apply skip.
+  eexists. eexists.
+  split. eapply eval_value. eapply eval_to_value. eauto.
+  rewrite <- minus_n_O.
+  eauto.
 Qed.
 
-Lemma RC_evaluable_1 : forall k T rho e j e_f e',
-    terminates_excl e j e_f k ->
-    RC k T rho e e' ->
-    j < k /\ e =[j]=> e_f.
-Proof. intros. destruct H. eauto. Qed.
+Lemma RV_to_RC : forall k T rho v v',
+  RV k T rho v v' ->
+  RC k T rho v v'.
+Proof. intros. apply H. Qed.
 
-Lemma RC_evaluable_2 : forall k rho T e j e_f e',
-    terminates_excl e j e_f k ->
-    RC k rho T e e' ->
-    exists e'_f j', e' =[j']=> e'_f.
-Proof. intros. destruct (RC_evaluable _ _ _ _ _ _ _ H H0) as [e'_f [j' [_ [_ Hev_e']]]]; eauto. Qed.
+Lemma RV_condition : forall k T rho v v',
+    0 < k ->
+    RV k T rho v v' ->
 
-Lemma RC_syntactic_equality : forall k st rho e j e_f e',
-    terminates_excl e j e_f k ->
-    RC k (Ty_Builtin st) rho e e' ->
+    match T with
 
-    (exists e'_f j',
-      e' =[j']=> e'_f /\
+        (* RV for type variable *)
+        | Ty_Var a =>
+            forall Chi,
+            sem rho a = Datatypes.Some Chi ->  
+            Chi k v v'
 
-      forall v v' sv sv',
+        (* RV for type lambda *)
+        | Ty_Lam bX K T =>
+            False
+
+        (* RV for type application *)
+        | Ty_App T1 T2 => 
+            False
+
+        (* RV for built-in types *)
+        | Ty_Builtin st => 
+            exists sv sv',
+              (* Determine the shape of e_f and e'_f *)
+              v = Constant sv /\
+              v' = Constant sv' /\
+              (* Syntactic equality *)
+              v = v'
+
+        (* RV for function types *)
+        | Ty_Fun T1 T2 =>
+            (
+              exists x e_body x' e'_body,
+                (* Determine the shape of e_f and e'_f *)
+                LamAbs x (msubstT (msyn1 rho) T1) e_body = v /\
+                LamAbs x' (msubstT (msyn2 rho) T1) e'_body = v' /\
+                (* Extensional equivalence *)
+                forall i (Hlt_i : i < k) v_2 v'_2,
+                  RV i T1 rho v_2 v'_2 ->
+                  RC i T2 rho <{ [v_2 / x] e_body }> <{ [v'_2 / x'] e'_body }>
+            )
+
+        (* RV for recursive types *)
+        | Ty_IFix F T =>
+            exists v_2 v'_2,
+              (* Determine the shape of e_f and e_f' *)
+              v = IWrap (msubstT (msyn1 rho) F) (msubstT (msyn1 rho) T) v_2 /\
+              v' = IWrap (msubstT (msyn2 rho) F) (msubstT (msyn2 rho) T) v'_2 /\
+              (* Uwrap *)
+              forall i (Hlt_i : i < k) K S,
+                empty |-* (msubstT (msyn2 rho) T) : K ->
+                normalise (unwrapIFix F K T) S ->
+                RC i S rho v_2 v'_2
+
+        (* RV for universal types *)
+        | Ty_Forall bX K T => 
+            (
+              exists e_body e'_body,
+                (* Determine the shape of e_f and e_f' *)
+                v = TyAbs bX K e_body /\
+                v' = TyAbs bX K e'_body /\
+                (* Instantiational equivalence *)
+                forall T1 T2 Chi,
+                  empty |-* T1 : K ->
+                  empty |-* T2 : K ->
+                  Rel T1 T2 Chi ->
+                  forall i (Hlt_i : i < k),
+                    RC i T ((bX, (Chi, T1, T2)) :: rho) <{ [[T1 / bX ] e_body }> <{ [[T2 / bX ] e'_body }>
+            )
+      end.
+Proof.
+  intros.
+  destruct H0 as [Hval__v [Hval__v' HRC]].
+  apply eval_value in Hval__v as Hev__v.
+  unfold P_value in Hev__v.
+  apply eval_value in Hval__v' as Hev__v'.
+  unfold P_value in Hev__v'.
+  autorewrite with RC in HRC.
+  destruct HRC as [_ [_ HRC]].
+  apply HRC in Hev__v as temp; eauto.
+  clear HRC.
+  destruct temp as [v'' [j'' [Hev__v'' inner]]].
+  assert (v'' = v' /\ j'' = 0) by (eapply eval__deterministic; eauto).
+  destruct H0. subst.
+  rewrite <- minus_n_O in inner.
+  eauto. 
+Qed.
+  
+Corollary RV_syntactic_equality : forall k st rho v v',
+    0 < k ->
+    RV k (Ty_Builtin st) rho v v' ->
+
+    exists sv sv',
+      (* Determine the shape of e_f and e'_f *)
+      v = Constant sv /\
+      v' = Constant sv' /\
+      (* Syntactic equality *)
+      v = v'.
+Proof. intros. eapply RV_condition in H0. all: eauto. Qed.
+
+Corollary RV_functional_extensionality : forall k T1 T2 rho v v',
+    0 < k ->
+    RV k (Ty_Fun T1 T2) rho v v' ->
+
+    (
+      exists x e_body x' e'_body,
         (* Determine the shape of e_f and e'_f *)
-        e_f = v ->
-        e'_f = v' ->
-        v = Constant sv ->
-        v' = Constant sv' ->
-        (* Syntactic equality *)
-        v = v').
-Proof. intros. destruct H. destruct H0 as [_ [_ [e'_f [j' [Hev_e' Heq]]]]]; eauto. Qed.
-
-Lemma RC_functional_extensionality : forall k T1 T2 rho e j e_f e',
-    terminates_excl e j e_f k ->
-    RC k (Ty_Fun T1 T2) rho e e' ->
-
-    exists e'_f j',
-      e' =[j']=> e'_f /\
-
-      (forall x e_body x' e'_body,
-        (* Determine the shape of e_f and e'_f *)
-        e_f = LamAbs x (msubstT (msyn1 rho) T1) e_body ->
-        e'_f = LamAbs x' (msubstT (msyn2 rho) T1) e'_body ->
+        LamAbs x (msubstT (msyn1 rho) T1) e_body = v /\
+        LamAbs x' (msubstT (msyn2 rho) T1) e'_body = v' /\
         (* Extensional equivalence *)
-        forall i (Hlt_i : i < k - j) v v' e_body' e'_body',
-          value v /\ value v' /\ RC i T1 rho v v' ->
-          substitute x v e_body e_body' ->
-          substitute x' v' e'_body e'_body' ->
-          RC i T2 rho e_body' e'_body').
-Proof. 
-  intros k T1 T2 rho t1 j1 v1 t2 Hterm RC. 
-  destruct Hterm.
-  autorewrite with RC in RC.
-  destruct RC as [_ [_ [e'_f [j' [Hev_e' Hfe]]]]]; eauto.
-Qed.
+        forall i (Hlt_i : i < k) v_2 v'_2,
+          RV i T1 rho v_2 v'_2 ->
+          RC i T2 rho <{ [v_2 / x] e_body }> <{ [v'_2 / x'] e'_body }>
+    ).
+Proof. intros. eapply RV_condition in H0. all: eauto. Qed.
 
-Lemma RC_unwrap : forall k F T rho e j e_f e',
-    terminates_excl e j e_f k ->
-    RC k (Ty_IFix F T) rho e e' ->
+Corollary RV_unwrap : forall k F T rho v v' ,
+    0 < k ->
+    RV k (Ty_IFix F T) rho v v' ->
 
-    exists e'_f j',
-      e' =[j']=> e'_f /\
+    exists v_2 v'_2,
+      (* Determine the shape of e_f and e_f' *)
+      v = IWrap (msubstT (msyn1 rho) F) (msubstT (msyn1 rho) T) v_2 /\
+      v' = IWrap (msubstT (msyn2 rho) F) (msubstT (msyn2 rho) T) v'_2 /\
+      (* Uwrap *)
+      forall i (Hlt_i : i < k) K S,
+        empty |-* (msubstT (msyn2 rho) T) : K ->
+        normalise (unwrapIFix F K T) S ->
+        RC i S rho v_2 v'_2.
+Proof. intros. eapply RV_condition in H0. all: eauto. Qed.
 
-      (forall v v',
-        (* Determine the shape of e_f and e_f' *)
-        IWrap F T v = e_f ->
-        IWrap F T v' = e'_f ->
-        (* Uwrap *)
-        forall i (Hlt_i : i < k - j) K T',
-          empty |-* T : K ->
-          normalise (unwrapIFix F K T) T' ->
-          RC i T' rho v v').
-Proof.
-  intros k F T rho t1 j1 v1 t2 Hterm RC.
-  destruct Hterm. 
-  autorewrite with RC in RC.
-  destruct RC as [_ [_ [e'_f [j' [Hev_e' Hunwrap]]]]]; eauto.
-Qed.
+Corollary RC_instantiational_extensionality : forall k bX K T rho v v',
+    0 < k ->
+    RV k (Ty_Forall bX K T) rho v v' ->
 
-Lemma RC_instantiational_extensionality : forall k bX K T rho e j e_f e',
-    terminates_excl e j e_f k ->
-    RC k (Ty_Forall bX K T) rho e e' ->
-
-    exists e'_f j',
-      e' =[j']=> e'_f /\
-
-      (forall e_body e'_body,
-        (* Determine the shape of e_f and e_f' *)
-        e_f = TyAbs bX K e_body ->
-        e'_f = TyAbs bX K e'_body ->
-        (* Instantiational equivalence *)
-        forall T1 T2 Chi,
-          Rel T1 T2 Chi ->
-          forall i (Hlt_i : i < k - j),
-            RC i T ((bX, (Chi, T1, T2)) :: rho) e_body e'_body).
-Proof.
-  intros k X K T rho t1 j1 v1 t2 Hterm RC. 
-  destruct Hterm.
-  autorewrite with RC in RC.
-  destruct RC as [_ [_ [e'_f [j' [Hev_e' Hie]]]]]; eauto.
-Qed.
-
-
-Lemma RC_impossible_type : forall k rho e j e_f e',
-    terminates_excl e j e_f k ->
-
-    (forall bX K T, ~(RC k (Ty_Lam bX K T) rho e e')) /\
-    (forall T1 T2, ~(RC k (Ty_App T1 T2) rho e e')).
-Proof. intros. destruct H. split; try split; try solve [intros; intro Hcon; destruct Hcon as [_ [_ [_ [_ [_ Hfls]]]]]; eauto]. Qed.
-
-(*
-Lemma RC_nontermination : forall k T rho e e',
-    ~(exists e_f j, terminates_excl e j e_f k) ->
-    emptyContext |-+ e : (msubstT_rho_syn1 rho T) ->
-    emptyContext |-+ e' : (msubstT_rho_syn2 rho T) ->
-    RC k T rho e e'.
-Proof. intros. unfold terminates_excl in H. destruct T; try solve [split; auto; split; auto; intros; exfalso; apply H; eauto]. Qed.
-*)
-*)
+    exists e_body e'_body,
+      (* Determine the shape of e_f and e_f' *)
+      v = TyAbs bX K e_body /\
+      v' = TyAbs bX K e'_body /\
+      (* Instantiational equivalence *)
+      forall T1 T2 Chi,
+        empty |-* T1 : K ->
+        empty |-* T2 : K ->
+        Rel T1 T2 Chi ->
+        forall i (Hlt_i : i < k),
+          RC i T ((bX, (Chi, T1, T2)) :: rho) <{ [[T1 / bX ] e_body }> <{ [[T2 / bX ] e'_body }>.
+Proof. intros. eapply RV_condition in H0. all: eauto. Qed.
 
 
 (** ** Multisubstitutions, multi-extensions, and instantiations *)
@@ -351,14 +399,10 @@ Definition tass := list (name * Ty).
 Inductive RG (rho : tymapping) (k : nat) : tass -> env -> env -> Prop :=
   | RG_nil :
       RG rho k nil nil nil
-  | RG_cons : forall x T v1 v2 c e1 e2 v1_s v2_s,
-      msubstA (msyn1 rho) v1 v1_s ->
-      msubstA (msyn2 rho) v2 v2_s ->
-      value v1_s ->
-      value v2_s ->
-      RC k T rho v1_s v2_s ->
+  | RG_cons : forall x T v1 v2 c e1 e2,
+      RV k T rho (msubstA_term (msyn1 rho) v1) (msubstA_term (msyn2 rho) v2) ->
       RG rho k c e1 e2 ->
-      RG rho k ((x, T) :: c) ((x, v1_s) :: e1) ((x, v2_s) :: e2).
+      RG rho k ((x, T) :: c) ((x, msubstA_term (msyn1 rho) v1) :: e1) ((x, msubstA_term (msyn2 rho) v2) :: e2).
 
 Fixpoint mupdate {X:Type} (m : partial_map X) (xts : list (string * X)) :=
   match xts with
@@ -387,9 +431,8 @@ Fixpoint mdrop {X:Type} (ns : list string) (nxs: list (string * X)) : list (stri
 
 Lemma subst_closed : forall t,
     closed t -> 
-    forall x s t',
-      substitute x s t t' ->
-      t' = t.
+    forall x s,
+      <{ [s / x] t }> = t.
 Proof.
   intros.
   eapply vacuous_substitution; eauto.
@@ -399,9 +442,8 @@ Qed.
 
 Lemma substA_closed : forall t,
     closed t -> 
-    forall X T t',
-      substituteA X T t t' ->
-      t' = t.
+    forall X T,
+      <{ [[T / X] t }> = t.
 Proof.
   intros.
   eapply vacuous_substituteA; eauto.
@@ -411,30 +453,29 @@ Qed.
 
 Lemma subst_not_afi : forall t x v,
     closed v ->
-    forall t',
-      substitute x v t t' ->
-      ~(appears_free_in_Term x t').
-Proof. Abort.
+    ~(appears_free_in_Term x <{ [v / x] t }> ).
+Proof.
+  unfold closed, not.
+  induction t; intros x v P A.
+  - simpl in A. destruct r.
+    + destruct (existsb (eqb x) (bound_vars_in_bindings l)) eqn:Hexb.
+      * inversion A.
+        -- subst.
+Admitted.
 
-Lemma duplicate_subst : forall x t v s,
+Lemma duplicate_subst : forall x t v v',
     closed v ->
-    forall t' t'',
-      substitute x v t t' ->
-      substitute x s t' t'' ->
-      t'' = t'.
-Proof. Abort.
+    <{ [v' / x] ([v / x] t) }> = <{ [v / x] t }>.
+Proof. 
+  intros. eapply vacuous_substitution. apply subst_not_afi. assumption.
+Qed.
 
 Lemma swap_subst : forall t x x1 v v1,
     x <> x1 ->
     closed v ->
     closed v1 ->
-    forall t1 t2 t3 t4,
-      substitute x v t t1 ->
-      substitute x1 v1 t1 t2 ->
-      substitute x1 v1 t t3 ->
-      substitute x v t3 t4 ->
-      t2 = t4.
-Proof. Abort.
+    <{ [v1/x1]([v/x]t) }> = <{ [v/x]([v1/x1]t) }>.
+Proof. Admitted.
 
 
 
@@ -442,42 +483,26 @@ Proof. Abort.
 
 Lemma msubst_closed : forall t,
     closed t ->
-    forall ss t',
-      msubst_term ss t t' ->
-      t' = t.
+    forall ss,
+       msubst_term ss t = t.
 Proof.
   induction ss.
-  - intros.
-    inversion H0. 
-    subst.
-    reflexivity.
-  - intros.
-    inversion H0. 
-    subst.
-    assert (t'0 = t) by eauto using subst_closed.
-    subst.
-    apply IHss.
-    assumption.
+  - reflexivity.
+  - destruct a.
+    simpl.
+    rewrite subst_closed; assumption.
 Qed.
 
 Lemma msubstA_closed : forall t,
     closed t ->
-    forall ss t',
-      msubstA ss t t' ->
-      t' = t.
+    forall ss,
+      msubstA_term ss t = t.
 Proof.
   induction ss.
-  - intros.
-    inversion H0. 
-    subst.
-    reflexivity.
-  - intros.
-    inversion H0. 
-    subst.
-    assert (t'0 = t) by eauto using substA_closed.
-    subst.
-    apply IHss.
-    assumption.
+  - reflexivity.
+  - destruct a.
+    simpl.
+    rewrite substA_closed; assumption.
 Qed.
 
 Fixpoint closed_env (env : env) :=
@@ -495,31 +520,22 @@ Fixpoint value_env (env : env) :=
 Lemma subst_msubst : forall env x v t,
     closed v ->
     closed_env env ->
-    forall t1 t2 t3 t4,
-      substitute x v t t1 ->
-      msubst_term env t1 t2 ->
-      msubst_term (drop x env) t t3 ->
-      substitute x v t3 t4 ->
-      t2 = t4.
-Proof. Admitted.
+    msubst_term env <{ [v/x]t }> = <{ [v/x] {msubst_term (drop x env) t} }>.
+Proof.
+  induction env0; intros; auto.
+  destruct a. simpl.
+  inversion H0.
+  destruct (s =? x) eqn:Heqb.
+  - apply eqb_eq in Heqb as Heq.
+    subst.
+    rewrite duplicate_subst; auto.
+  - apply eqb_neq in Heqb as Hneq.
+    rewrite swap_subst; eauto.
+Qed.
 
-Lemma subst_msubst' : forall env x v t,
-    closed v ->
-    closed_env env ->
-    forall t1 t2 t3,
-      (substitute x v t t1 /\ msubst_term env t1 t2) <->
-      (msubst_term (drop x env) t t3 /\ substitute x v t3 t2).
-Proof. Admitted.
-
-Lemma substA_msubstA : forall env x v t,
-    closed_Ty v ->
-    (* closed_env env -> *)
-    forall t1 t2 t3 t4,
-      substituteA x v t t1 ->
-      msubstA env t1 t2 ->
-      msubstA (drop x env) t t3 ->
-      substituteA x v t3 t4 ->
-      t2 = t4.
+Lemma substA_msubstA : forall envA X U t,
+    closed_Ty U ->
+    msubstA_term envA <{ [[U/X]t }> = <{ [[U/X] {msubstA_term (drop X envA) t} }>.
 Proof. Admitted.
 
 (** ** Properties of multi-extensions *)
@@ -649,7 +665,7 @@ Proof.
   - simpl.
     simpl in C.
     destruct (x =? x0) eqn:Heqb.
-    + exists v1_s, v2_s. auto.
+    + exists (msubstA_term (msyn1 rho) v1), (msubstA_term (msyn2 rho) v2). split; auto.
     + apply IHV with T0.
       assumption.
 Qed.
@@ -665,12 +681,12 @@ Proof.
     + simpl.
       split.
       * eapply typable_empty__closed.
-        eapply RC_typable_empty_1 in H3; eauto.
+        eapply RV_typable_empty_1 in H; eauto.
       * apply IHV.
     + simpl.
       split.
       * eapply typable_empty__closed.
-        eapply RC_typable_empty_2 in H3; eauto.
+        eapply RV_typable_empty_2 in H; eauto.
     * apply IHV.
 Qed.
 
@@ -694,12 +710,11 @@ Proof.
   - split.
     + simpl.
       split.
-      * assumption.
+      * eapply H.
       * apply IHV. 
-    + simpl.
-      split.
-      * assumption.
-      * apply IHV. 
+    + split.
+      * eapply H.
+      * apply IHV.  
 Qed.
 
 Lemma RG_env_values_1 : forall rho k c e1 e2,
@@ -712,13 +727,13 @@ Lemma RG_env_values_2 : forall rho k c e1 e2,
     value_env e2.
 Proof. intros. destruct (RG_env_values _ _ _ _ _ H). assumption. Qed. 
 
-Lemma RG_RC : forall rho k c e1 e2,
+Lemma RG_RV : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
     forall x T v1 v2,
       lookup x c = Datatypes.Some T ->
       lookup x e1 = Datatypes.Some v1 ->
       lookup x e2 = Datatypes.Some v2 ->
-      RC k T rho v1 v2.
+      RV k T rho v1 v2.
 Proof.
   intros rho k c e1 e2 V.
   induction V; intros x' T' v1' v2' G E1 E2.
@@ -727,9 +742,9 @@ Proof.
     inversion E1. subst.
     inversion E2. subst.
     destruct (x =? x').
-    + inversion H5. subst.
-      inversion H6. subst.
-      inversion H7. subst.
+    + inversion H1. subst.
+      inversion H2. subst.
+      inversion H3. subst.
       assumption. 
     + apply IHV with x'; assumption.
 Qed.
@@ -747,10 +762,6 @@ Proof.
     + apply IHV.
     + eapply RG_cons.
       * eassumption.
-      * eassumption.
-      * assumption.
-      * assumption.
-      * assumption.
       * apply IHV.
 Qed.
 
@@ -786,21 +797,18 @@ Proof. induction xts; auto. simpl. destruct a. auto. Qed.
 
 Lemma msubstA_preserves_typing_1 : forall rho ck,
     RD ck rho ->
-    forall Delta Gamma t t' T,
+    forall Delta Gamma t T,
       (mupdate Delta ck, Gamma) |-+ t : T ->
-      msubstA (msyn1 rho) t t' ->
-      (Delta, mupd (msyn1 rho) Gamma) |-+ t': (msubstT (msyn1 rho) T). 
+      (Delta, mupd (msyn1 rho) Gamma) |-+ (msubstA_term (msyn1 rho) t) : (msubstT (msyn1 rho) T). 
 Proof.
   intros rho ck V.
   induction V.
   - intros.
     subst.
-    inversion H0. subst.
     simpl.
     assumption.
   - intros.
     subst.
-    inversion H3. subst.
     simpl.
     unfold mupd.
     simpl.
@@ -810,21 +818,18 @@ Qed.
 
 Lemma msubstA_preserves_typing_2 : forall rho ck,
     RD ck rho ->
-    forall Delta Gamma t t' T,
+    forall Delta Gamma t T,
       (mupdate Delta ck, Gamma) |-+ t : T ->
-      msubstA (msyn2 rho) t t' ->
-      (Delta, mupd (msyn2 rho) Gamma) |-+ t': (msubstT (msyn2 rho) T). 
+      (Delta, mupd (msyn2 rho) Gamma) |-+ (msubstA_term (msyn2 rho) t) : (msubstT (msyn2 rho) T). 
 Proof.
   intros rho ck V.
   induction V.
   - intros.
     subst.
-    inversion H0. subst.
     simpl.
     assumption.
   - intros.
     subst.
-    inversion H3. subst.
     simpl.
     unfold mupd.
     simpl.
@@ -834,56 +839,44 @@ Qed.
 
 Lemma msubst_preserves_typing_1 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
-    forall Gamma T t t',
+    forall Gamma T t,
       (empty, mupd (msyn1 rho) (mupdate Gamma c)) |-+ t : (msubstT (msyn1 rho) T) ->
-      msubst_term e1 t t' ->
-      (empty, mupd (msyn1 rho) Gamma) |-+ t': (msubstT (msyn1  rho) T). 
+      (empty, mupd (msyn1 rho) Gamma) |-+ (msubst_term e1 t) : (msubstT (msyn1  rho) T). 
 Proof.
   intros rho k c e1 e2 V.
   induction V.
   - intros.
-    inversion H0. subst.
+    simpl.
     assumption.
   - intros.
-    inversion H5. subst.
     eapply IHV.
-    + eapply substitution_preserves_typing.
-      * simpl in H4.
-        rewrite mupd_absorbs_msubstT in H4.
-        eauto.
-      * eapply RC_typable_empty_1 in H3.
-        
-        subst.
-        eauto.
-      * eassumption.
-    + assumption.
+    eapply substitution_preserves_typing.
+    + simpl in H0.
+      rewrite mupd_absorbs_msubstT in H0.
+      eauto.
+    + eapply RV_typable_empty_1 in H.
+      eauto.
 Qed. 
 
 Lemma msubst_preserves_typing_2 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
-    forall Gamma T t t',
+    forall Gamma T t,
       (empty, mupd (msyn2 rho) (mupdate Gamma c)) |-+ t : (msubstT (msyn2 rho) T) ->
-      msubst_term e2 t t' ->
-      (empty, mupd (msyn2 rho) Gamma) |-+ t': (msubstT (msyn2 rho) T). 
+      (empty, mupd (msyn2 rho) Gamma) |-+ (msubst_term e2 t) : (msubstT (msyn2 rho) T). 
 Proof.
   intros rho k c e1 e2 V.
   induction V.
   - intros.
-    inversion H0. subst.
+    simpl.
     assumption.
   - intros.
-    inversion H5. subst.
     eapply IHV.
-    + eapply substitution_preserves_typing.
-      * simpl in H4.
-        rewrite mupd_absorbs_msubstT in H4.
-        eauto.
-      * eapply RC_typable_empty_2 in H3.
-        
-        subst.
-        eauto.
-      * eassumption.
-    + assumption.
+    eapply substitution_preserves_typing.
+    + simpl in H0.
+      rewrite mupd_absorbs_msubstT in H0.
+      eauto.
+    + eapply RV_typable_empty_2 in H.
+      eauto.
 Qed. 
 
 
@@ -899,15 +892,11 @@ Definition LR_logically_approximate (Delta : partial_map Kind) (Gamma : partial_
     (Delta, Gamma) |-+ e : T /\
     (Delta, Gamma) |-+ e' : T /\
     forall k rho env env' ct ck,
-      Delta = mupdate empty ck -> Gamma = mupdate empty ct ->
-      RD ck rho /\
+      Delta = mupdate empty ck -> 
+      Gamma = mupdate empty ct ->
+      RD ck rho ->
       RG rho k ct env env' ->
-      forall e_msa e'_msa e_ms e'_ms,
-        msubstA (msyn1 rho) e e_msa ->
-        msubstA (msyn2 rho) e' e'_msa ->
-        msubst_term env e_msa e_ms ->
-        msubst_term env' e'_msa e'_ms ->
-        RC k T rho e_ms e'_ms.
+      RC k T rho (msubst_term env (msubstA_term (msyn1 rho) e)) (msubst_term env' (msubstA_term (msyn2 rho) e')).
       
 (** Logical relation: logical equivalence 
 
@@ -936,15 +925,11 @@ Definition LR_logically_approximate_binding (Delta : Delta) (Gamma : Gamma) (b b
   (Delta, Gamma) |-ok b /\
   (Delta, Gamma) |-ok b' /\
   forall k rho env env' ct ck,
-    Delta = mupdate empty ck -> Gamma = mupdate empty ct ->
-    RD ck rho /\
+    Delta = mupdate empty ck -> 
+    Gamma = mupdate empty ct ->
+    RD ck rho ->
     RG rho k ct env env' ->
-    forall b_msa b'_msa b_ms b'_ms,
-      msubstA_binding (msyn1 rho) b b_msa ->
-      msubstA_binding (msyn2 rho) b' b'_msa ->
-      msubst_binding env b_msa b_ms ->
-      msubst_binding env' b'_msa b'_ms ->
-      RB k rho b_ms b'_ms.
+    RB k rho (msubst_binding env (msubstA_binding (msyn1 rho) b)) (msubst_binding env' (msubstA_binding (msyn2 rho) b')).
 
 Inductive LR_logically_approximate_bindings_nonrec : Delta -> Gamma -> list Binding -> list Binding -> Prop :=
   | LR_NonRec_Nil : forall Delta Gamma,

@@ -1,47 +1,32 @@
-Require Import PlutusCert.Language.PlutusIR.
-Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RelationalModel.
 
 Require Import Arith.
 
-Lemma msubst_Constant : forall ss sv t',
-  msubst_term ss (Constant sv) t' ->
-  t' = Constant sv.
+Lemma msubst_Constant : forall ss sv,
+    msubst_term ss (Constant sv) = Constant sv.
 Proof.
-  induction ss; intros.
-  - inversion H. subst. reflexivity.
-  - inversion H. subst.
-    inversion H2. subst.
+  induction ss; intros. 
+  - reflexivity.
+  - destruct a.
     eauto.
 Qed.
 
-Lemma msubstA_Constant : forall ss sv t',
-  msubstA ss (Constant sv) t' ->
-  t' = (Constant sv).
+Lemma msubstA_Constant : forall ss sv ,
+    msubstA_term ss (Constant sv) = Constant sv.
 Proof.
-  induction ss; intros.
-  - inversion H.
-    subst.
-    reflexivity.
-  - inversion H.
-    subst.
-    inversion H2. 
-    subst.
-    apply IHss.
-    assumption.
+  induction ss; intros. 
+  - reflexivity.
+  - destruct a. eauto.
 Qed.
 
 Lemma msubstT_TyBuiltin : forall ss u,
     msubstT ss (Ty_Builtin (Some (TypeIn u))) = Ty_Builtin (Some (TypeIn u)).
 Proof.
-  induction ss.
+  induction ss; intros.
   - reflexivity.
-  - intros.
-    simpl.
-    destruct a.
-    apply IHss.
+  - destruct a. eauto.
 Qed.
 
 Lemma compatibility_Constant : forall Delta Gamma u a,
@@ -53,18 +38,13 @@ Proof.
   split. { apply T_Constant. }
   split. { apply T_Constant. }
 
-  intros k rho env env' ct ck HeqDelta HeqGamma [H_RD H_RG].
+  intros k rho env env' ct ck HeqDelta HeqGamma H_RD H_RG.
   subst.
 
-  intros e_sa e'_sa  e_s e'_s HmsA__e_sa HmsA__e'_sa Hms__e_s Hms__e'_s.
-  
-  apply msubstA_Constant in HmsA__e_sa.
-  apply msubstA_Constant in HmsA__e'_sa.
-  subst.
-  apply msubst_Constant in Hms__e_s.
-  apply msubst_Constant in Hms__e'_s.
-  subst.
-
+  rewrite msubstA_Constant.
+  rewrite msubstA_Constant.
+  rewrite msubst_Constant.
+  rewrite msubst_Constant.
 
   autorewrite with RC.
 
@@ -77,12 +57,6 @@ Proof.
 
   exists (Constant (Some (ValueOf u a))), 0.
   split. { apply eval_value. apply V_Constant. }
-  
-  intros v v' sv sv' Heq Heq'.
-  subst.
 
-  intros Heq0 Heq0'.
-  inversion Heq0. inversion Heq0'. subst.
-
-  reflexivity.
+  eauto.
 Qed.

@@ -1,34 +1,23 @@
-Require Import PlutusCert.Language.PlutusIR.
-Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
-Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.Preservation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RelationalModel.
 
 Require Import Arith.
 
-Lemma msubst_Error : forall ss T t',
-    msubst_term ss (Error T) t' ->
-    t' = Error T.
+Lemma msubst_Error : forall ss T,
+    msubst_term ss (Error T) = Error T.
 Proof. 
   induction ss; intros.
-  - inversion H. subst.
-    reflexivity.
-  - inversion H. subst.
-    inversion H2. subst.
-    auto.
+  - reflexivity.
+  - destruct a. eauto.
 Qed.
 
-Lemma msubstA_Error : forall ss T t',
-    msubstA ss (Error T) t' ->
-    exists T', T' = msubstT ss T /\ t' = Error T'.
+Lemma msubstA_Error : forall ss T,
+    msubstA_term ss (Error T) = Error (msubstT ss T).
 Proof.
   induction ss; intros.
-  - inversion H. subst.
-    exists T. auto.
-  - inversion H. subst.
-    inversion H2. subst.
-    eauto.
+  - reflexivity.
+  - destruct a. eauto.
 Qed.
 
 Lemma compatibility_Error: forall Delta Gamma T,
@@ -41,17 +30,7 @@ Proof.
   split. { apply T_Error. assumption. }
   split. { apply T_Error. assumption. }
   
-  intros k rho env env' ct ck HeqDelta HeqGamma [H_RD H_RG].
-  subst.
-
-  intros e_msa e'_msa e_ms e'_ms.
-  intros HmsA__e_msa HmsA__e'_msa Hms__e_ms Hms__e'_ms.
-
-  destruct (msubstA_Error _ _ _ HmsA__e_msa) as [T' [HmsT__T' Heq]].
-  destruct (msubstA_Error _ _ _ HmsA__e'_msa) as [T'' [HmsT__T'' Heq']].
-  subst.
-  apply msubst_Error in Hms__e_ms as Heq.
-  apply msubst_Error in Hms__e'_ms as Heq'.
+  intros k rho env env' ct ck HeqDelta HeqGamma H_RD H_RG.
   subst.
   
   autorewrite with RC.
@@ -70,6 +49,9 @@ Proof.
     - rewrite mupd_empty. reflexivity.
   }
 
+  rewrite msubstA_Error. rewrite msubstA_Error.
+  rewrite msubst_Error. rewrite msubst_Error.
+
   intros j Hlt__j e_f Hev__e_f.
   inversion Hev__e_f. subst.
   exists (Error (msubstT (msyn2 rho) T)).
@@ -77,4 +59,6 @@ Proof.
   split. {
     eapply E_Error.
   }
+
+  (* TODO: Actually handle errors in the relational model *)
 Admitted.
