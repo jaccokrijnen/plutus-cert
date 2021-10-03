@@ -22,25 +22,25 @@ Proof.
 Qed.
 
 (** ** Predicates *)
-Definition P_eval x y1 (k1 : nat) :=
-  forall y2 k2,
-    x =[k2]=> y2 ->
-    y1 = y2 /\ k1 = k2.
+Definition P_eval x y1 (j1 : nat) :=
+  forall y2 j2,
+    x =[j2]=> y2 ->
+    y1 = y2 /\ j1 = j2.
 
-Definition P_eval_bindings_nonrec x y1 (k1 : nat) :=
-  forall y2 k2,
-    eval_bindings_nonrec x y2 k2 ->
-    y1 = y2 /\ k1 = k2.
+Definition P_eval_bindings_nonrec x y1 (j1 : nat) :=
+  forall y2 j2,
+    eval_bindings_nonrec x y2 j2 ->
+    y1 = y2 /\ j1 = j2.
 
-Definition P_eval_bindings_rec bs0 x y1 (k1 : nat) :=
-  forall y2 k2,
-    eval_bindings_rec bs0 x y2 k2->
-    y1 = y2 /\ k1 = k2.
+Definition P_eval_bindings_rec bs0 x y1 (j1 : nat) :=
+  forall y2 j2,
+    eval_bindings_rec bs0 x y2 j2->
+    y1 = y2 /\ j1 = j2.
 
 (** ** The main result *)
-Theorem eval__deterministic : forall x y1 k1,
-  x =[k1]=> y1 ->
-  P_eval x y1 k1.
+Theorem eval__deterministic : forall x y1 j1,
+  x =[j1]=> y1 ->
+  P_eval x y1 j1.
 Proof.
   apply eval__ind with (P := P_eval) (P0 := P_eval_bindings_nonrec) (P1 := P_eval_bindings_rec).
   - (* E_Let *)
@@ -79,13 +79,13 @@ Proof.
       split.
       * eapply H4. 
         eassumption.
-      * assert (k1 = k4). {
+      * assert (j1 = j4). {
           eapply H0. eassumption.
         }
-        assert (k2 = k5). {
+        assert (j2 = j5). {
           eapply H2. eassumption.
         }
-        assert (k0 = k6). {
+        assert (j0 = j6). {
           eapply H4. eassumption.
         } 
         subst.
@@ -269,7 +269,7 @@ Proof.
       reflexivity.
     + (* E_TyInst *)  
       subst.
-      assert (Builtin IfThenElse = TyAbs X K t2). {
+      assert (Builtin IfThenElse = TyAbs X j t2). {
         eapply H0. eassumption.
       }
       inversion H2.
@@ -469,13 +469,13 @@ Proof.
     inversion H4.
     + (* E_IfTyInst *)
       subst.
-      assert (TyAbs X K t0 = Builtin IfThenElse). {
+      assert (TyAbs X j t0 = Builtin IfThenElse). {
         eapply H0. eassumption.
       }
       inversion H5.
     + (* E_TyInst *)
       subst.
-      assert (TyAbs X K t0 = TyAbs X0 K0 t3). {
+      assert (TyAbs X j t0 = TyAbs X0 j0 t3). {
         eapply H0. eassumption.
       }
       inversion H5. subst.
