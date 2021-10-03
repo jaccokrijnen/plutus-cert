@@ -3,20 +3,18 @@ Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.Substitution.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 
-
 Definition P_Term (t : Term) :=
   forall x,
     ~(appears_free_in_Term x t) ->
-    forall s t', 
-      substitute x s t t' ->
-      t' = t.
+    forall s,
+      <{ [s / x] t }> = t.
 
 Definition P_Binding (b : Binding) :=
   forall x,
     ~(appears_free_in_Term__binding x b) ->
-    forall s b',
-      substitute_binding x s b b' ->
-      b' = b.
+    forall s ,
+      <{ [s / x][b] b }> = b.
+
 (*
 Definition P_Bindings_NonRec (bs : list Binding) :=
   Util.ForallT P_Binding bs ->

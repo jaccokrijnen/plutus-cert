@@ -2,199 +2,6 @@ Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.Bigstep.
 
-
-(** * [substitute] is deterministic*)
-
-Definition P_substitute (t t' : Term) : Prop :=
-  forall x s t'',
-    substitute x s t t'' ->
-    t' = t''. 
-
-Definition P_substitute_letrec (t t' : Term) : Prop :=
-  forall x s t'',
-    substitute_letrec x s t t'' ->
-    t' = t''.
-
-Definition P_substitute_binding (b b' : Binding) : Prop :=
-  forall x s b'',
-    substitute_binding x s b b'' ->
-    b' = b''.
-    
-Theorem substitute__deterministic : forall x s,
-    (* P =  *) (forall t t', substitute x s t t' -> (forall t'', substitute x s t t'' -> t' = t'')) /\
-    (* P0 = *) (forall t t', substitute_letrec x s t t' -> (forall t'', substitute_letrec x s t t'' -> t' = t'')) /\
-    (* P1 = *) (forall b b', substitute_binding x s b b' -> (forall b'', substitute_binding x s b b'' -> b' = b'')).
-Proof.
-  intros x s.
-  apply substitute__mutind.
-  - (* S_LetNonRec_Nil1 *)
-    intros. 
-    inversion H1.
-    subst.
-    f_equal.
-    eapply H0; eauto.
-  - (* S_LetNonRec_Cons1 *)
-    intros. 
-    inversion H2.
-    + subst.
-      f_equal.
-      f_equal.
-      eapply H1; eauto.
-    + subst.
-      exfalso.
-      auto.
-  - (* S_LetNonRec_Cons2 *)
-    intros. 
-    inversion H4.
-    + subst.
-      exfalso.
-      auto.
-    + subst.
-      apply H3 in H11.
-      inversion H11. subst.
-      f_equal.
-      f_equal. 
-      auto.
-  - (* S_LetRec1 *)
-    intros.
-    inversion H0. 
-    + subst.
-      reflexivity.
-    + subst.
-      exfalso.
-      auto.
-  - (* S_LetRec2 *)
-    intros.
-    inversion H2.
-    + subst.
-      exfalso.
-      auto.
-    + subst.
-      eauto.
-  - (* S_Var1 *)
-    intros. 
-    inversion H. 
-    + subst.
-      reflexivity.
-    + subst.
-      assert (x = x) by reflexivity.
-      exfalso.
-      auto.
-  - (* S_Var2 *)
-    intros. 
-    inversion H0. subst.
-    + subst.
-      assert (y = y) by reflexivity.
-      apply H in H1.
-      destruct H1.
-    + subst.
-      reflexivity.
-  - (* S_TyAbs *)
-    intros.  
-    inversion H1. subst.
-    assert (t0' = t0'0) by auto.
-    subst.
-    reflexivity.
-  - (* S_LamAbs1 *)
-    intros. 
-    inversion H.
-    + subst.
-      reflexivity.
-    + subst.
-      assert (x = x) by auto.
-      exfalso.
-      auto.
-  - (* S_LamAbs2 *)
-    intros. 
-    inversion H2. 
-    + subst.
-      assert (bx = bx) by auto.
-      apply H in H3.
-      destruct H3.
-    + subst.
-      assert (t0' = t0'0) by auto.
-      subst.
-      reflexivity.
-  - (* S_Apply *)
-    intros. 
-    inversion H3. subst.
-    assert (t1' = t1'0) by auto.
-    assert (t2' = t2'0) by auto.
-    subst.
-    reflexivity.
-  - (* S_Constant *)
-    intros. 
-    inversion H. subst.
-    reflexivity.
-  - (* S_Builtin *)
-    intros. 
-    inversion H. subst.
-    reflexivity.
-  - (* S_TyInst *)
-    intros. 
-    inversion H1. subst.
-    assert (t0' = t0'0) by auto.
-    subst.
-    reflexivity.
-  - (* S_Error *)
-    intros. 
-    inversion H. subst.
-    reflexivity.
-  - (* S_IWrap *)
-    intros. 
-    inversion H1. subst.
-    assert (t0' = t0'0) by auto.
-    subst.
-    reflexivity.
-  - (* S_Unwrap *)
-    intros. 
-    inversion H1. subst.
-    assert (t0' = t0'0) by auto.
-    subst.
-    reflexivity.
-
-  - (* S_NilB_Rec *)
-    intros.
-    inversion H1. subst.
-    f_equal.
-    auto.
-  - (* S_ConsB_Rec *)
-    intros.
-    inversion H3. subst.
-    apply H2 in H9.
-    inversion H9. subst.
-    f_equal.
-    f_equal.
-    auto.
-  
-  - (* S_TermBind *)
-    intros. 
-    inversion H1. subst.
-    assert (t' = t'0) by auto.
-    subst.
-    reflexivity.
-  - (* S_TypeBind *)
-    intros.
-    inversion H. subst.
-    reflexivity.
-  - (* S_DatatypeBind *)
-    intros.
-    inversion H. subst.
-    reflexivity.
-Qed.
-
-Corollary substitute_term__deterministic : forall x s t t' t'', 
-    substitute x s t t' -> 
-    substitute x s t t'' -> 
-    t' = t''.
-Proof. intros. eapply substitute__deterministic in H; eauto. Qed.
-
-Theorem substituteA__deterministic : forall X S t t' t'', 
-    substituteA X S t t' ->
-    substituteA X S t t'' ->
-    t' = t''. 
-Proof. Admitted.
-
 (** * [eval] is deterministic *)
 
 (** The next Lemma seems to follow easily from inversion on the assumption and it is 
@@ -235,7 +42,6 @@ Theorem eval__deterministic : forall x y1 k1,
   x =[k1]=> y1 ->
   P_eval x y1 k1.
 Proof.
-  (*
   apply eval__ind with (P := P_eval) (P0 := P_eval_bindings_nonrec) (P1 := P_eval_bindings_rec).
   - (* E_Let *)
     intros. unfold P_eval. intros.
@@ -257,27 +63,21 @@ Proof.
     split; auto.
   - (* E_Apply *)
     intros. unfold P_eval. intros.
-    inversion H6.
+    inversion H5.
     + (* E_Apply *)
       subst.
 
       assert (LamAbs x T t0 = LamAbs x0 T0 t5). {
         eapply H0. eassumption.
       }
-      inversion H7. subst.
+      inversion H6. subst.
       assert (v2 = v1). {
         eapply H2. eassumption.
       }
       subst.
-      assert (t0'0 = t0'). {
-        apply substitute__deterministic with x0 v1 t5.
-        + assumption.
-        + assumption.
-      }
-      subst. 
 
       split.
-      * eapply H5.
+      * eapply H4. 
         eassumption.
       * assert (k1 = k4). {
           eapply H0. eassumption.
@@ -286,7 +86,7 @@ Proof.
           eapply H2. eassumption.
         }
         assert (k0 = k6). {
-          eapply H5. eassumption.
+          eapply H4. eassumption.
         } 
         subst.
         reflexivity.
@@ -296,46 +96,47 @@ Proof.
         eapply H0. eassumption.
       }
       subst.
-      inversion H14.
+      inversion H13.
     + (* E_ApplyBuiltin2 *) 
       subst. 
       assert (LamAbs x T t0 = v1). {
         eapply H0. eassumption.
       }
       subst.
-      inversion H10.
+      inversion H14.
     + (* E_IfCondition*)
       subst.
       assert (LamAbs x T t0 = TyInst (Builtin IfThenElse) T0). {
         eapply H0. eassumption.
       }
-      inversion H7.
+      inversion H6.
     + (* E_IfThenBranch *)
       subst.
       assert (LamAbs x T t0 = Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool cond)))). {
         eapply H0. eassumption.
       }
-      inversion H7.
+      inversion H6.
     + (* E_IfTrue *)
       subst.
       assert (LamAbs x T t0 = Apply (Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool true)))) t_t). {
         eapply H0. eassumption.
       }
-      inversion H7.
+      inversion H6.
     + (* E_IfFalse *)
       subst.
       assert (LamAbs x T t0 = Apply (Apply (TyInst (Builtin IfThenElse) T0) (Constant (Some (ValueOf DefaultUniBool false)))) t_t). {
         eapply H0. eassumption.
       }
-      inversion H7.
+      inversion H6.
   - (* E_Constant *)
     intros. unfold P_eval. intros.
     inversion H. subst.
-    reflexivity.
+    auto.
   - (* E_Builtin *)
     intros. unfold P_eval. intros.
     inversion H. subst.
-    reflexivity.
+    auto.
+  (*
   - (* E_ApplyBuiltin1 *)
     intros. unfold P_eval. intros.
     inversion H5.

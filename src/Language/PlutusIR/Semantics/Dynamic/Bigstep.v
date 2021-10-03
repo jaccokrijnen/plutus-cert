@@ -24,11 +24,10 @@ Inductive eval : Term -> Term -> nat -> Prop :=
       TyAbs X K t =[0]=> TyAbs X K t
   | E_LamAbs : forall x T t,
       LamAbs x T t =[0]=> LamAbs x T t
-  | E_Apply : forall t1 t2 x T t0 t0' v2 v0 k1 k2 k0,
+  | E_Apply : forall t1 t2 x T t0 v2 v0 k1 k2 k0,
       t1 =[k1]=> LamAbs x T t0 ->
       t2 =[k2]=> v2 ->
-      substitute x v2 t0 t0' ->
-      t0' =[k0]=> v0 ->
+      <{ [v2 / x] t0 }> =[k0]=> v0 ->
       Apply t1 t2 =[k1 + k2 + 1 + k0]=> v0
   | E_Constant : forall a,
       Constant a =[0]=> Constant a
@@ -73,10 +72,9 @@ Inductive eval : Term -> Term -> nat -> Prop :=
       t_e =[k_e]=> v_e ->
       Apply t_bct t_e =[k_bct + k_e]=> v_e
   (* Type instantiation *)
-  | E_TyInst : forall t1 T2 X K t0 t0' v0 k1 k0,
+  | E_TyInst : forall t1 T2 X K t0 v0 k1 k0,
       t1 =[k1]=> TyAbs X K t0 ->
-      substituteA X T2 t0 t0' ->
-      t0' =[k0]=> v0 ->
+      <{ [[T2 / X] t0 }> =[k0]=> v0 ->
       TyInst t1 T2 =[k1 + 1 + k0]=> v0
   (* Errors and their propagation *)
   | E_Error : forall T,
@@ -96,19 +94,17 @@ with eval_bindings_nonrec : Term -> Term -> nat -> Prop :=
   | E_NilB_NonRec : forall t v k,
       t =[k]=> v ->
       eval_bindings_nonrec (Let NonRec nil t) v (S k)
-  | E_ConsB_NonRec : forall s x T tb bs t vb bs' t' v kb k,
+  | E_ConsB_NonRec : forall s x T tb bs t vb v kb k,
       tb =[kb]=> vb ->
-      substitute x vb (Let NonRec bs t) (Let NonRec bs' t') ->
-      eval_bindings_nonrec (Let NonRec bs' t') v k ->
+      eval_bindings_nonrec <{ [vb / x] ({Let NonRec bs t}) }> v k ->
       eval_bindings_nonrec (Let NonRec ((TermBind s (VarDecl x T) tb) :: bs) t) v (kb + 1 + k)
 
 with eval_bindings_rec : list Binding -> Term -> Term -> nat -> Prop :=
   | E_NilB_Rec : forall bs0 t v k,
       t =[k]=> v ->
       eval_bindings_rec bs0 (Let Rec nil t) v (S k)
-  | E_ConsB_Rec : forall bs0 s x T tb bs t bs' t' v k,
-      substitute x (Let Rec bs0 tb) (Let Rec bs t) (Let Rec bs' t') ->
-      eval_bindings_rec bs0 (Let Rec bs' t') v k ->
+  | E_ConsB_Rec : forall bs0 s x T tb bs t v k,
+      eval_bindings_rec bs0 <{ [ {Let Rec bs0 tb} / x] {Let Rec bs t} }>  v k ->
       eval_bindings_rec bs0 (Let Rec ((TermBind s (VarDecl x T) tb) :: bs) t) v (k + 1)
 
 where "t '=[' k ']=>' v" := (eval t v k).

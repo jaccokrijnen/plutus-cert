@@ -137,11 +137,11 @@ Proof.
     assumption. 
   - (* E_Apply *) 
     intros. unfold P_eval. intros.
-    inversion H6. subst.
-    apply H0 in H10.
-    apply H2 in H12.
-    eapply substitution_preserves_typing in H3; eauto.
-    inversion H10. subst.
+    inversion H5. subst.
+    eapply H4.
+    eapply substitution_preserves_typing__Term; eauto.
+    eapply H0 in H9.
+    inversion H9. subst.
     eauto.
   - (* E_Constant *) 
     intros. unfold P_eval. intros.
@@ -205,13 +205,7 @@ Proof.
     apply skip. (* TODO *)
   - (* E_TyInst *) 
     intros. unfold P_eval. intros.
-    inversion H4. subst.
-    apply H3.
-    apply H0 in H7.
-    inversion H7. subst.
-    eapply substituteA_preserves_typing in H8; eauto.
-    apply H8 in H1.
-
+    inversion H3. subst.
     apply skip.
 
   - (* E_Error *)
@@ -243,25 +237,24 @@ Proof.
   - (* E_ConsB_NonRec *)
     intros. unfold P_eval_bindings_nonrec. intros.
     inversion H4. subst.
-    inversion H5. subst.
-    eapply H3.
+    inversion H3. subst.
+    eapply H2.
     + reflexivity.
     + eapply substitution_preserves_typing__Term.
       * eapply T_Let.
         -- reflexivity.
-        -- inversion H10. subst.
-           simpl in H11.
+        -- inversion H9. subst.
+           simpl in H10.
+           rewrite append_emptyContext_r in H10.
+           apply H10.
+        -- simpl in H11.
+           rewrite flatten_extract in H11.
            rewrite append_emptyContext_r in H11.
            apply H11.
-        -- simpl in H12.
-           rewrite flatten_extract in H12.
-           rewrite append_emptyContext_r in H12.
-           apply H12.
-      * inversion H10. subst.
-        inversion H9. subst.
+      * inversion H9. subst.
+        inversion H8. subst.
         apply H0.
-        apply H16.
-      * assumption.
+        apply H15.
 
   - (* E_NilB_Rec *)
     intros. unfold P_eval_bindings_rec. intros.
@@ -272,39 +265,38 @@ Proof.
   - (* E_ConsB_Rec *)
     intros. unfold P_eval_bindings_rec. intros.
     inversion H3. subst.
-    inversion H4. subst.    
-    eapply H1. 
+    inversion H2. subst.    
+    eapply H0. 
     + assumption.
-    + reflexivity.
+    + simpl. apply skip.
     + eapply substitution_preserves_typing__Term.
       * eapply T_LetRec.
         -- reflexivity.
-        -- inversion H9. subst.
+        -- inversion H8. subst.
+           simpl in H9.
+           rewrite flatten_extract in H9.
+           rewrite append_emptyContext_r in H9.
+           apply H9.
+        -- inversion H8. subst.
            simpl in H10.
            rewrite flatten_extract in H10.
            rewrite append_emptyContext_r in H10.
            apply H10.
-        -- inversion H9. subst.
-           simpl in H11.
-           rewrite flatten_extract in H11.
-           rewrite append_emptyContext_r in H11.
-           apply H11.
       * eapply T_LetRec.
         -- reflexivity.
         -- rewrite append_emptyContext_r. 
-           apply H2.
+           apply H1.
         -- rewrite append_emptyContext_r.
-           rewrite append_emptyContext_r in H11.
-           rewrite append_emptyContext_r in H9.
-           inversion H9. subst.
+           rewrite append_emptyContext_r in H10.
+           rewrite append_emptyContext_r in H8.
            inversion H8. subst.
+           inversion H7. subst.
            eapply context_invariance.
-           ++ apply H15.
+           ++ apply H14.
            ++ intros.
               apply skip.
            ++ intros.
               apply skip.
-      * assumption.
 Abort.
 
 Theorem preservation : forall t v k T,

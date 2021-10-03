@@ -564,3 +564,22 @@ Inductive BindingBy (R : NamedTerm.Term -> NamedTerm.Term -> Type) : NamedTerm.B
   | BB_OtherBind: forall b, BindingBy R b b. (* Todo, enforce no overlap with other constructor? *)
 
 
+
+
+
+Declare Custom Entry plutus_term.
+Declare Custom Entry plutus_ty.
+Declare Custom Entry plutus_kind.
+
+Notation "<{ e }>" := e (e custom plutus_term at level 99).
+Notation "<{{ e }}>" := e (e custom plutus_ty at level 99).
+Notation "<{{{ e }}}>" := e (e custom plutus_kind at level 99).
+Notation "( x )" := x (in custom plutus_term, x at level 99).
+Notation "( x )" := x (in custom plutus_ty, x at level 99).
+Notation "( x )" := x (in custom plutus_kind, x at level 99).
+Notation "x" := x (in custom plutus_term at level 0, x constr at level 0).
+Notation "x" := x (in custom plutus_ty at level 0, x constr at level 0).
+Notation "x" := x (in custom plutus_kind at level 0, x constr at level 0).
+Notation "{ x }" := x (in custom plutus_term at level 1, x constr).
+Notation "{ x }" := x (in custom plutus_ty at level 1, x constr).
+Notation "{ x }" := x (in custom plutus_kind at level 1, x constr).

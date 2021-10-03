@@ -223,31 +223,29 @@ Proof.
 Qed.
 
 Definition P_Term (t : Term) :=
-  forall ctx x U v T t',
+  forall ctx x U v T,
     extendT x U ctx |-+ t : T ->
     emptyContext |-+ v : U ->
-    substitute x v t t' ->
-    ctx |-+ t' : T.
+    ctx |-+ <{ [v / x] t }> : T.
 #[export] Hint Unfold P_Term : core.
 
 Definition P_Binding (b : Binding) : Prop :=
-  forall ctx x U v b',
+  forall ctx x U v,
     extendT x U ctx |-ok b ->
     emptyContext |-+ v : U ->
-    substitute_binding x v b b' ->
-    ctx |-ok b' /\ binds b = binds b'.
+    ctx |-ok <{ [v / x][b] b }> /\ binds b = binds <{ [v / x][b] b }>.
 #[export] Hint Unfold P_Binding : core.
 
-Lemma P_letnonrec : forall bs t ctx x U v bs' T t',
+Lemma P_letnonrec : forall bs t ctx x U v T,
     P_Term t ->
     extendT x U ctx |-+ (Let NonRec bs t) : T ->
     emptyContext |-+ v : U ->
     Util.ForallP P_Binding bs ->
-    substitute x v (Let NonRec bs t) (Let NonRec bs' t') ->
-    ctx |-+ (Let NonRec bs' t') : T /\ List.map binds bs = List.map binds bs'.
+    ctx |-+ <{ [v / x] {Let NonRec bs t} }> : T /\ 
+    List.map binds bs = List.map binds <{ [v / x][bnr] bs }>.
 Proof.
   induction bs; intros.
-  - inversion H3. subst.
+  - simpl.
     split.
     + eapply T_Let.
       * reflexivity.
@@ -260,10 +258,9 @@ Proof.
         eauto.
     + auto.
   - inversion H0. subst.
-    inversion H8. subst.
-    inversion H3. 
-    + subst.
-      apply binds_binds_bound_vars in H6 as H15.
+    simpl.
+    destruct (List.existsb (eqb x) (bound_vars_in_binding a)) eqn:Hexb.
+    + (* apply binds_binds_bound_vars in H6 as H15.
       destruct H15 as [U' Hlu].
       split.
       * eapply T_Let.
@@ -276,16 +273,16 @@ Proof.
               assert (binds a = binds b') by (eapply H2; eauto).
               rewrite <- H4.
               erewrite append_extendT_shadow in H9; eauto.
-        -- eapply weakening; eauto.
+        -- eapply weakening; eauto. *)
 Admitted.
 
-Lemma P_letrec : forall bs t ctx x U v bs' T t',
+Lemma P_letrec : forall bs t ctx x U v T,
     P_Term t ->
     extendT x U ctx |-+ (Let Rec bs t) : T ->
     emptyContext |-+ v : U ->
     Util.ForallP P_Binding bs ->
-    substitute x v (Let Rec bs t) (Let Rec bs' t') ->
-    ctx |-+ (Let Rec bs' t') : T /\ List.map binds bs = List.map binds bs'.
+    ctx |-+ <{ [v / x] {Let Rec bs t} }> : T /\ 
+    List.map binds bs = List.map binds <{ [v / x][br] bs }>.
 Proof. Admitted.
 
 Lemma substitution_preserves_typing : 
@@ -295,84 +292,83 @@ Proof.
   apply Term__multind with (P := P_Term) (Q := P_Binding).
   - intros. autounfold. intros.
     destruct rec.
-    + inversion H3; subst. 
+    + simpl.
       all: eapply P_letnonrec; eauto.
-    + inversion H3; subst.
+    + simpl.
       all: eapply P_letrec; eauto.
   - intros. autounfold. intros.
-    inversion H1.
-    + subst.
+    simpl.
+    destruct (x =? s) eqn:Heqb.
+    + apply eqb_eq in Heqb as Heq.
+      subst.
       inversion H.
       subst.
-      inversion H4.
+      simpl in H3.
       rewrite update_eq in H3.
       inversion H3. subst. 
       eapply weakening_empty; eauto.
-    + subst.
+    + apply eqb_neq in Heqb as Hneq.
       apply T_Var.
       inversion H.
       subst.
-      simpl in H5.
-      rewrite update_neq in H5; auto.
+      simpl in H3.
+      rewrite update_neq in H3; auto.
   - (* TyAbs *) 
     intros. autounfold. intros.
-    inversion H2. subst.
     inversion H0. subst.
+    simpl.
     apply T_TyAbs.
-    rewrite extendT_extendK_permute in H9.
+    rewrite extendT_extendK_permute in H7.
     eapply H.
-    + eauto.
     + eauto.
     + eauto.
   - (* LamAbs *)
     intros. autounfold. intros.
     inversion H0. subst.
-    inversion H2.
-    + subst.
+    simpl.
+    destruct (x =? s) eqn:Heqb.
+    + apply eqb_eq in Heqb as Heq. 
+      subst.
       apply T_LamAbs.
-      * rewrite extendT_shadow in H8.
+      * rewrite extendT_shadow in H7.
         assumption.
       * destruct ctx.
         eauto.
-    + subst.
+    + apply eqb_neq in Heqb as Hneq.
       apply T_LamAbs.
       * eapply H.
-        -- rewrite extendT_permute in H8; auto.
-           apply H8.
+        -- rewrite extendT_permute; auto.
+           apply H7.
         -- eassumption.
-        -- assumption.
       * destruct ctx.
         eauto.
   - (* Apply *)
     intros. autounfold. intros.
     inversion H1. subst.
-    inversion H3. subst.
+    simpl.
     eapply T_Apply.
     + eapply H.
       * eassumption.
       * eassumption.
-      * assumption.
     + eapply H0.
       * eassumption.
       * eassumption.
-      * assumption.
   - (* Constant *)
     intros. autounfold. intros.
     inversion H. subst.
-    inversion H1. subst.
+    simpl.
     apply T_Constant.
   - (* Builtin *) 
     intros. autounfold. intros.
     inversion H. subst.
-    inversion H1. subst.
+    simpl.
     apply T_Builtin.
   - (* TyInst *)
     intros. autounfold. intros.
     inversion H0. subst.
-    inversion H2. subst.
+    simpl.
     eapply T_TyInst.
     + eapply H.
-      * eassumption.
       * eassumption.
       * eassumption.
     + destruct ctx.
@@ -382,18 +378,17 @@ Proof.
   - (* Error *)
     intros. autounfold. intros.
     inversion H. subst.
-    inversion H1. subst.
+    simpl.
     apply T_Error.
     destruct ctx.
     eauto.
   - (* IWrap *)
     intros. autounfold. intros.
     inversion H0. subst.
-    inversion H2. subst.
+    simpl.
     eapply T_IWrap.
     + eassumption.
     + eapply H.
-      * eassumption.
       * eassumption.
       * eassumption.
     + destruct ctx.
@@ -403,12 +398,11 @@ Proof.
   - (* Unwrap *)
     intros. autounfold. intros.
     inversion H0. subst.
-    inversion H2. subst.
+    simpl.
     eapply T_Unwrap.
     + eapply H.
       * eassumption.
       * eassumption.
-      * assumption.
     + destruct ctx.
       eauto.
     + eassumption.
@@ -416,7 +410,7 @@ Proof.
   - (* TermBind *)
     intros. autounfold. intros.
     inversion H0. subst.
-    inversion H2. subst. 
+    simpl.
     split.
     + apply W_Term.
       * destruct ctx.
@@ -424,12 +418,11 @@ Proof.
       * eapply H.
         -- eassumption.
         -- eassumption.
-        -- assumption.
     + reflexivity. 
   - (* TypeBind *)
     intros. autounfold. intros.
     inversion H. subst.
-    inversion H1. subst.
+    simpl.
     split. 
     + apply W_Type.
       destruct ctx.
@@ -438,25 +431,23 @@ Proof.
   - (* DatatypeBind *)
     intros. autounfold. intros.
     inversion H. subst.
-    inversion H1. subst.
     split.
-    + eapply W_Data.
+    + simpl.
+      eapply W_Data.
       * reflexivity.
       * intros.
         eauto.
     + reflexivity.
 Qed.
 
-Corollary substitution_preserves_typing__Term : forall t ctx x U v T t',
+Corollary substitution_preserves_typing__Term : forall t ctx x U v T,
     extendT x U ctx |-+ t : T ->
     emptyContext |-+ v : U ->
-    substitute x v t t' ->
-    ctx |-+ t' : T.
+    ctx |-+ <{ [v / x] t }> : T.
 Proof. apply substitution_preserves_typing. Qed.
 
-Corollary substitution_preserves_typing__Binding : forall b ctx x U v b',
+Corollary substitution_preserves_typing__Binding : forall b ctx x U v,
     extendT x U ctx |-ok b ->
     emptyContext |-+ v : U ->
-    substitute_binding x v b b' ->
-    ctx |-ok b' /\ binds b = binds b'.
+    ctx |-ok <{ [v / x][b] b }> /\ binds b = binds <{ [v / x][b] b }>.
 Proof. apply substitution_preserves_typing. Qed.

@@ -4,19 +4,17 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.AnnotationSubstitu
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 
 Definition P_Term (t : Term) :=
-  forall x,
-    ~(appears_free_in_Annotation x t) ->
-    forall s t', 
-      substituteA x s t t' ->
-      t' = t.
+  forall X,
+    ~(appears_free_in_Annotation X t) ->
+    forall U, 
+      <{ [[ U / X ] t }> = t.
 
 Definition P_Binding (b : Binding) :=
-  forall x,
-    ~(appears_free_in_Annotation__binding x b) ->
-    forall s b',
-      substituteA_binding x s b b' ->
-      b' = b.
-
+  forall X,
+    ~(appears_free_in_Annotation__binding X b) ->
+    forall U,
+      <{ [[ U / X ][b] b }> = b.
+(*
 Definition P_Bindings_NonRec (bs : list Binding) :=
   Util.ForallT P_Binding bs ->
   forall x,
@@ -101,9 +99,10 @@ Proof.
         assumption.
       * assumption.
 Qed.
+*)
 
 Lemma vacuous_substituteA : forall t, P_Term t.
-Proof.
+Proof. (*
   apply Term_rect' with (P := P_Term) (Q := P_Binding).
   - (* Let *)
     intros. unfold P_Term. intros.
@@ -279,5 +278,5 @@ Proof.
     intros. unfold P_Binding. intros.
     inversion H0. subst.
     reflexivity.
-Qed.*)
+Qed.*)*)
 Admitted.

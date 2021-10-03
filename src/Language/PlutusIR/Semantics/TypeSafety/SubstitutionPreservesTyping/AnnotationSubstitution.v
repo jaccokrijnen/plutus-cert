@@ -59,18 +59,16 @@ Qed.
 
 (** ** Predicates *)
 Definition P_Term (t : Term) :=
-  forall Delta Gamma X K U T t',
+  forall Delta Gamma X K U T,
     (X |K-> K; (Delta, Gamma)) |-+ t : T ->
     empty |-* U : K ->
-    substituteA X U t t' ->
-    (Delta, upd X U Gamma) |-+ t' : (substituteT X U T).
+    (Delta, upd X U Gamma) |-+ <{ [[U / X] t }> : (substituteT X U T).
     
 Definition P_Binding (b : Binding) : Prop :=
-  forall Delta Gamma X K U b',
+  forall Delta Gamma X K U,
     (X |K-> K; (Delta, Gamma)) |-ok b ->
     empty |-* U : K ->
-    substituteA_binding X U b b' ->
-    (Delta, upd X U Gamma) |-ok b'.
+    (Delta, upd X U Gamma) |-ok <{ [[U / X][b] b }>.
 
 Theorem substituteA_preserves_typing : 
   forall t, P_Term t.
@@ -80,10 +78,10 @@ Proof.
   - (* Var *)
     intros x. 
     unfold P_Term. 
-    intros Delta Gamma X K U T t' Htyp Hkind Hsa__t'.
+    intros Delta Gamma X K U T Htyp Hkind.
 
     inversion Htyp. subst.
-    inversion Hsa__t'. subst.
+    simpl.
 
     apply T_Var.
     simpl in H1.
@@ -93,15 +91,13 @@ Proof.
   - (* TyAbs*) 
     intros bX K t_body IH__t_body.
     unfold P_Term.
-    intros Delta Gamma X L U T t' Htyp Hkind Hsa__t'.
+    intros Delta Gamma X L U T Htyp Hkind.
 
     inversion Htyp. subst.
-    inversion Hsa__t'.
-    + subst.
-      simpl.
-      rewrite eqb_refl.
-      apply T_TyAbs.
-      unfold extendK.
+    simpl.
+    destruct (X =? bX) eqn:Heqb.
+    + apply eqb_eq in Heqb as Heq.
+      subst.
       simpl.
       (*
       unfold extendK in H4.
@@ -114,10 +110,7 @@ Proof.
       unfold P_Term in IH__t_body.
       eapply IH__t_body.*)
       apply skip.
-    + subst.
-      simpl.
-      apply eqb_neq in H6 as Heqb.
-      rewrite Heqb.
+    + apply eqb_neq in Heqb as Hneq.
       apply T_TyAbs.
       eapply IH__t_body.
       * simpl.
@@ -125,14 +118,12 @@ Proof.
         apply H4. 
         assumption.
       * apply Hkind.
-      * assumption.
   - (* LamAbs *)
     intros bx T0 t_body IH__t_body.
     unfold P_Term. 
-    intros Delta Gamma X L U T t' Htyp Hkind Hsa__t'.
+    intros Delta Gamma X L U T Htyp Hkind.
 
     inversion Htyp. subst.
-    inversion Hsa__t'. subst.
     
     simpl.
     apply T_LamAbs.
@@ -151,10 +142,11 @@ Proof.
   - (* Apply *) 
     intros t1 IH__t1 t2 IH__t2.
     unfold P_Term.
-    intros Delta Gamma X L U T t' Htyp Hkind Hsa__t'.
+    intros Delta Gamma X L U T Htyp Hkind.
 
     inversion Htyp. subst.
-    inversion Hsa__t'. subst.
+    
+    simpl.
 
     eapply T_Apply.
     + eapply IH__t1 in H2; eauto.
@@ -162,20 +154,18 @@ Proof.
   - (* Constant *)
     intros sv.
     unfold P_Term.
-    intros Delta Gamma X L U T t' Htyp Hkind Hsa__t'.
+    intros Delta Gamma X L U T Htyp Hkind.
 
     inversion Htyp. subst.
-    inversion Hsa__t'. subst.
 
     simpl.
     eauto with typing.
   - (* Builtin *)
     intros d.
     unfold P_Term.
-    intros Delta Gamma X L U T t' Htyp Hkind Hsa__t'.
+    intros Delta Gamma X L U T Htyp Hkind.
 
     inversion Htyp. subst.
-    inversion Hsa__t'. subst.
 
     destruct d; try simpl; try apply T_Builtin. 
     destruct (X =? "a") eqn:Heqb.
@@ -185,12 +175,12 @@ Proof.
   - (* TyInst *)
     intros t_body IH__t_body V.
     unfold P_Term.
-    intros Delta Gamma X L U T t' Htyp Hkind Hsa__t'.
+    intros Delta Gamma X L U T Htyp Hkind.
 
     inversion Htyp. subst.
-    inversion Hsa__t'. subst.
+    simpl.
 
-    assert ((Delta, upd X U Gamma) |-+ t0' : (substituteT X U (Ty_Forall X0 K2 T1))) by eauto.
+    assert ((Delta, upd X U Gamma) |-+ <{ [[U / X] t_body }>: (substituteT X U (Ty_Forall X0 K2 T1))) by eauto.
     
     simpl in H.
     destruct (X =? X0) eqn:Heqb.
@@ -213,23 +203,21 @@ Proof.
   - (* Error *)
     intros T0.
     unfold P_Term.
-    intros Delta Gamma X L U T t' Htyp Hkind Hsa__t'.
+    intros Delta Gamma X L U T Htyp Hkind.
 
     inversion Htyp. subst.
-    inversion Hsa__t'. subst.
-
+  
     apply T_Error.
     eapply substituteT_preserves_kinding; eauto.
     apply H1.
   - (* IWrap *)
     intros F0 T0 t0 IH__t0.
     unfold P_Term.
-    intros Delta Gamma X L U T t' Htyp Hkind Hsa__t'.
+    intros Delta Gamma X L U T Htyp Hkind.
     
     inversion Htyp. subst.
-    inversion Hsa__t'. subst.
-
     simpl.
+
     eapply T_IWrap.
     + apply skip. (* TODO *)
     + eauto.
@@ -240,8 +228,8 @@ Proof.
   - (* Unwrap *)
     intros t0 IH__t0.
     unfold P_Term.
-    intros Delta Gamma X L U T t' Htyp Hkind Hsa__t'.
+    intros Delta Gamma X L U T Htyp Hkind.
     
     inversion Htyp. subst.
-    inversion Hsa__t'. subst.
+    simpl.
 Admitted.
