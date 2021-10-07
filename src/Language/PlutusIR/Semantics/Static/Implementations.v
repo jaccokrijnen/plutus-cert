@@ -1,5 +1,6 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
+Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Map.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.TypeSubstitution.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.TypeSubstitution.CaptureAvoiding.
@@ -371,11 +372,14 @@ Definition lookupBuiltinTy (f : DefaultFun) : Ty :=
   end.
 
 (** ** Well-formedness of constructors and bindings *)
-Fixpoint listOfArgumentTypes (T : Ty) : list Ty :=
+Fixpoint splitTy (T : Ty) : list Ty * Ty :=
   match T with
-  | Ty_Fun T1 T2 => cons T1 (listOfArgumentTypes T2)
-  | _ => nil
+  | Ty_Fun Targ T' => (cons Targ (fst (splitTy T')), snd (splitTy T'))
+  | Tr => (nil, Tr)
   end.
+
+Definition combineTy (Targs : list Ty) (Tr : Ty) : Ty :=
+  fold_right (@Ty_Fun tyname binderTyname) Tr Targs.
 
 Definition fromDecl (tvd : tvdecl tyname) : Context :=
   match tvd with

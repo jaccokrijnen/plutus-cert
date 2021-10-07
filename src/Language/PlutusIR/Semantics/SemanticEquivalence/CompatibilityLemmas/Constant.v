@@ -1,6 +1,7 @@
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RelationalModel.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Auto.
 
 Require Import Arith.
 
@@ -31,32 +32,30 @@ Qed.
 
 Lemma compatibility_Constant : forall Delta Gamma u a,
     LR_logically_approximate Delta Gamma (Constant (Some (ValueOf u a))) (Constant (Some (ValueOf u a))) (Ty_Builtin (Some (TypeIn u))).
-Proof.
+Proof with eauto_LR.
   intros Delta Gamma u a.
   unfold LR_logically_approximate.
 
-  split. { apply T_Constant. }
-  split. { apply T_Constant. }
+  split...
+  split...
 
   intros k rho env env' ct ck HeqDelta HeqGamma H_RD H_RG.
   subst.
 
-  rewrite msubstA_Constant.
-  rewrite msubstA_Constant.
-  rewrite msubst_Constant.
-  rewrite msubst_Constant.
-
   autorewrite with RC.
 
-  split. { rewrite msubstT_TyBuiltin. apply T_Constant. }
-  split. { rewrite msubstT_TyBuiltin. apply T_Constant. }
+  rewrite msubstA_Constant. rewrite msubstA_Constant.
+  rewrite msubst_Constant. rewrite msubst_Constant.
+  rewrite msubstT_TyBuiltin. rewrite msubstT_TyBuiltin.
+  
+  split...
+  split...
 
   intros j Hlt__j e_f Hev__e_f.
-
   inversion Hev__e_f. subst.
 
   exists (Constant (Some (ValueOf u a))), 0.
-  split. { apply eval_value. apply V_Constant. }
+  split...
 
-  eauto.
+
 Qed.

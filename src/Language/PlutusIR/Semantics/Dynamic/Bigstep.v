@@ -33,26 +33,28 @@ Inductive eval : Term -> Term -> nat -> Prop :=
       Constant a =[0]=> Constant a
   (* Builtins *)
   | E_Builtin : forall f,
-      Builtin f =[0]=> Builtin f
-  | E_ApplyBuiltin1 : forall t1 t2 v1 v2 j1 j2,
-      t1 =[j1]=> v1 ->
-      value_builtin v1 ->
+      f <> IfThenElse ->
+      Builtin f =[1]=> ExtBuiltin f nil
+  | E_ExtBuiltinPartiallyApplied : forall f args,
+      length args < arity f ->
+      ExtBuiltin f args =[0]=> ExtBuiltin f args
+  | E_ExtBuiltinFullyApplied : forall f args v,
+      length args = arity f ->
+      compute_defaultfun (ExtBuiltin f args) = Datatypes.Some v ->
+      ExtBuiltin f args =[1]=> v
+  | E_ApplyExtBuiltin : forall t1 t2 f args v2 j1 j2 j3 v0,
+      t1 =[j1]=> ExtBuiltin f args ->
       t2 =[j2]=> v2 ->
-      value_builtin (Apply v1 v2) ->
-      Apply t1 t2 =[j1 + j2]=> Apply v1 v2
-  | E_ApplyBuiltin2 : forall t1 t2 v1 v2 v0 j1 j2,
-      t1 =[j1]=> v1 ->
-      value_builtin v1 ->
-      t2 =[j2]=> v2 ->
-      ~(value_builtin (Apply v1 v2)) ->
-      compute_defaultfun (Apply v1 v2) = Datatypes.Some v0 ->
-      Apply t1 t2 =[j1 + j2 + 1]=> v0
+      ExtBuiltin f (v2 :: args) =[j3]=> v0 ->
+      Apply t1 t2 =[j1 + j2 + 1 + j3]=> v0
   (** Builtins: If-Then-Else 
 
       We handle this built-in function separately because it has a unique behaviour:
       The ``then''-branch should only be evaluated when the condition is true,
       and the opposite is true for the ``else''-branch.
   *)
+  | E_If :
+      Builtin IfThenElse =[0]=> Builtin IfThenElse
   | E_IfTyInst : forall t1 T j1,
       t1 =[j1]=> Builtin IfThenElse ->
       TyInst t1 T =[j1]=> TyInst (Builtin IfThenElse) T

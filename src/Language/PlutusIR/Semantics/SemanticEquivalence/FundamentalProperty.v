@@ -1,12 +1,8 @@
-Require Import PlutusCert.Language.PlutusIR.
-Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RelationalModel.
 Require Import PlutusCert.Util.
-
-(** ** The [R] Lemma *)
 
 
 Definition P_has_type ctx e T := 

@@ -3,6 +3,7 @@ Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Compat
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.Constant.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.DatatypeBind.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.Error.
+Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.ExtBuiltin.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.IWrap.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.LamAbs.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.LetNonRec.
@@ -20,6 +21,7 @@ Create HintDb DSP_compatibility_lemmas.
   compatibility_Constant
   compatibility_DatatypeBind
   compatibility_Error
+  compatibility_ExtBuiltin
   compatibility_IWrap
   compatibility_LamAbs
   compatibility_LetNonRec

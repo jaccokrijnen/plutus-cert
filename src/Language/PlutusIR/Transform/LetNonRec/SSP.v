@@ -164,11 +164,16 @@ Proof.
     + apply H0. assumption.
     + assumption.
     + assumption.
+
+  - (* T_ExtBuiltin *)
+    intros. unfold P_has_type. intros.
+    inversion X. subst.
+    inversion X0.
     
   - (* W_Con *)
     intros. unfold P_constructor_well_formed. intros.
-    apply W_Con. assumption.
-
+    eapply W_Con; eauto.
+    
   - (* W_NilB_NonRec *)
     intros. unfold P_bindings_well_formed_nonrec. intros.
     split.

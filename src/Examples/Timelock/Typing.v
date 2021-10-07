@@ -27,15 +27,17 @@ Proof.
       + intros. simpl.
         destruct H. {
           subst.
-          apply W_Con.
-          intros.
-          destruct H.
+          eapply W_Con.
+          + simpl. eauto.
+          + intros.
+            destruct H.
         }
         destruct H. {
           subst.
-          apply W_Con.
-          intros.
-          destruct H.
+          eapply W_Con.
+          + simpl. eauto.
+          + intros.
+            destruct H.
         }
         destruct H.
     - auto with typing.
@@ -118,9 +120,10 @@ Proof.
       + intros. simpl.
         destruct H. {
           subst.
-          apply W_Con.
-          intros.
-          destruct H.
+          eapply W_Con.
+          - simpl. eauto.
+          - intros.
+            destruct H.
         }
         destruct H.
     - auto with typing.
@@ -867,19 +870,21 @@ Proof.
       + intros.
         destruct H. {
           subst.
-          apply W_Con.
-          intros.
-          destruct H. {
-            subst.
-            apply K_Builtin.
-          }
-          destruct H.
+          eapply W_Con.
+          - simpl. eauto.
+          - intros.
+            destruct H. {
+              subst.
+              apply K_Builtin.
+            }
+            destruct H.
         }
         destruct H. {
           subst.
-          apply W_Con.
-          intros.
-          destruct H.
+          eapply W_Con.
+          - simpl. eauto.
+          - intros.
+            destruct H.
         }
         destruct H.
     - auto with typing.

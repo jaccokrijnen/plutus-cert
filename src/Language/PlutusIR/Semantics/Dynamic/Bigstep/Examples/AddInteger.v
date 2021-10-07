@@ -22,40 +22,19 @@ Proof.
   eexists.
   eapply E_Apply.
   - apply E_LamAbs.
-  - eapply E_ApplyBuiltin1.
+  - eapply E_ApplyExtBuiltin.
     + apply E_Builtin.
-    + apply V_Builtin0.
-      simpl.
-      apply le_S.
-      apply le_n.
+      intros Hcon.
+      discriminate.
     + apply E_Constant.
-    + apply V_Builtin1.
-      * simpl.
-        apply le_n.
-      * apply V_Constant.
-  - apply S_Apply.
-    + apply S_Var1.
-    + apply S_Constant.
-  - eapply E_ApplyBuiltin2.
-    + eapply E_ApplyBuiltin1.
-      * apply E_Builtin.
-      * apply V_Builtin0.
-        simpl.
-        apply le_S.
-        apply le_n.
-      * apply E_Constant.
-      * apply V_Builtin1.
-        -- simpl.
-           apply le_n.
-        -- apply V_Constant.
-    + apply V_Builtin1.
-      -- apply le_n.
-      -- apply V_Constant.
+    + apply E_ExtBuiltinPartiallyApplied.
+      auto.
+  - simpl.
+    rewrite eqb_refl.
+    eapply E_ApplyExtBuiltin.
+    + eapply E_ExtBuiltinPartiallyApplied.
+      auto.
     + apply E_Constant.
-    + intros Hcon.
-      inversion Hcon. subst.
-      simpl in H2.
-      apply PeanoNat.Nat.lt_irrefl in H2.
-      inversion H2. 
-    +  reflexivity.
+    + apply E_ExtBuiltinFullyApplied.
+      all: auto.
 Qed.

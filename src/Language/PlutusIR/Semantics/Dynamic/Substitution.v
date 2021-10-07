@@ -11,19 +11,19 @@ Local Open Scope string_scope.
 (** * Substitution of terms *)
 
 (** ** Utilities *)
-Definition bound_var_in_constructor (c : NamedTerm.constructor) : string :=
+Definition bvc (c : NamedTerm.constructor) : string :=
   match c with
   | Constructor (VarDecl x _) _ => x
   end.
 
-Definition bound_vars_in_binding (b : NamedTerm.Binding) : list string :=
+Definition bvb (b : NamedTerm.Binding) : list string :=
   match b with
   | TermBind _ (VarDecl x _) _ => cons x nil
   | TypeBind (TyVarDecl X _) _ => nil
-  | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => matchFunc :: (rev (map bound_var_in_constructor cs))
+  | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => matchFunc :: (rev (map bvc cs))
   end.
 
-Definition bound_vars_in_bindings (bs : list NamedTerm.Binding) : list string := List.concat (map bound_vars_in_binding bs).
+Definition bvbs (bs : list NamedTerm.Binding) : list string := List.concat (map bvb bs).
 
 
 
@@ -35,9 +35,9 @@ Section SubstBindings.
     | nil => 
         nil
     | b :: bs' => 
-        if existsb (eqb x) (bound_vars_in_binding b)
+        if existsb (eqb x) (bvb b)
           then
-            substb x s b :: bs
+            substb x s b :: bs'
           else
             substb x s b :: substitute_bindings_nonrec x s bs'
     end.
@@ -56,12 +56,12 @@ Fixpoint substitute (x : name) (s : Term) (t : Term) {struct t} : Term :=
   match t with
   | Let NonRec bs t0 =>
       Let NonRec (@substitute_bindings_nonrec substitute_binding x s bs)
-        (if existsb (eqb x) (bound_vars_in_bindings bs) 
+        (if existsb (eqb x) (bvbs bs) 
           then t0
           else substitute x s t0
         ) 
   | Let Rec bs t0 =>
-      if existsb (eqb x) (bound_vars_in_bindings bs) 
+      if existsb (eqb x) (bvbs bs) 
         then 
           Let Rec bs t0
         else
@@ -90,6 +90,8 @@ Fixpoint substitute (x : name) (s : Term) (t : Term) {struct t} : Term :=
       IWrap F T (substitute x s t0)
   | Unwrap t0 =>
       Unwrap (substitute x s t0)
+  | ExtBuiltin f args =>
+      ExtBuiltin f (map (substitute x s) args)
   end
 
 with substitute_binding (x : name) (s : Term) (b : Binding) {struct b} : Binding :=
@@ -119,3 +121,13 @@ Fixpoint msubst_binding (ss : env) (b : Binding) : Binding :=
   | nil => b
   | (x, s) :: ss' => msubst_binding ss' <{ [s / x][b] b }>
   end.
+
+Fixpoint msubst_bindings_nonrec (ss : env) (bs : list Binding) : list Binding :=
+  match ss with
+  | nil => bs
+  | (x, s) :: ss' => msubst_bindings_nonrec ss' <{ [s / x][bnr] bs }>
+  end.
+
+Notation "'/[' ss '/]' t" := (msubst_term ss t) (in custom plutus_term at level 20, ss constr).
+Notation "'/[' ss '/][b]' b" := (msubst_binding ss b) (in custom plutus_term at level 20, ss constr).
+Notation "'/[' ss '/][bnr]' bs" := (msubst_bindings_nonrec ss bs) (in custom plutus_term at level 20, ss constr).

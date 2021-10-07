@@ -104,6 +104,7 @@ Fixpoint freeVars (t : term var tyvar var tyvar) : list var :=
    | (Error ty)        => []
    | (Constant v)      => []
    | (Builtin f)       => []
+   | (ExtBuiltin f args) => concat (map freeVars args)
    end
 
 with freeVarsBinding (b : binding var tyvar var tyvar) :=
@@ -128,7 +129,8 @@ Equations fv' : Term -> list string := {
   fv' (Unwrap t)        := fv' t;
   fv' (Error ty)        := nil;
   fv' (Constant v)      := nil;
-  fv' (Builtin f)       := nil
+  fv' (Builtin f)       := nil;
+  fv' (ExtBuiltin f args) := concat (map fv' args)
   }
   where fv_bindings : list Binding -> list string := {
     fv_bindings ((TermBind _ (VarDecl n _) t) :: bs) := cons n (fv_bindings bs) ++ fv' t;

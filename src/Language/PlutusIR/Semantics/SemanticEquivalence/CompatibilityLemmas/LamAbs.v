@@ -2,67 +2,29 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RelationalModel.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Monotonicity.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Auto.
 
 Require Import Arith.
 
 
-Lemma msubst_LamAbs : forall ss x T t0 t',
-    msubst_term ss (LamAbs x T t0) t' ->
-    exists t0', msubst_term (drop x ss) t0 t0' /\ t' = LamAbs x T t0'.
+Lemma msubst_LamAbs : forall ss x T t0,
+    msubst_term ss (LamAbs x T t0) = LamAbs x T (msubst_term (drop x ss) t0).
 Proof.
-  induction ss.
-  - intros. 
-    inversion H. subst.
-    exists t0.
-    split. 
-    + apply msubst_term__nil.
-    + reflexivity. 
-  - intros.
-    inversion H. subst.
-    rename t'0 into t''.
-    inversion H2.
-    + subst.
-      simpl.
-      rewrite eqb_refl.
-      eapply IHss; eauto.
-    + subst.
-      simpl.
-      apply eqb_neq in H6.
-      rewrite H6.
-      edestruct IHss as [t0'' Hms0']; eauto.
-      eexists.
-      split.
-      -- eapply msubst_term__cons.
-         ++ apply H7.
-         ++ apply Hms0'.
-      -- destruct Hms0'.
-         subst.
-         reflexivity.
+  induction ss; intros.
+  - reflexivity.
+  - destruct a.
+    simpl.
+    destruct (s =? x) eqn:Heqb.
+    + eauto using eqb_eq.
+    + eauto using eqb_neq.
 Qed.
 
-Lemma msubstA_LamAbs : forall ss x T t0 t',
-    msubstA ss (LamAbs x T t0) t' ->
-    exists t0', msubstA ss t0 t0' /\ t' = LamAbs x (msubstT ss T) t0'.
+Lemma msubstA_LamAbs : forall ss x T t0,
+    msubstA_term ss (LamAbs x T t0) = LamAbs x (msubstT ss T) (msubstA_term ss t0).
 Proof.
-  induction ss.
-  - intros. 
-    inversion H. subst.
-    exists t0.
-    split. 
-    + apply msubstA_nil.
-    + reflexivity. 
-  - intros.
-    inversion H. subst.
-    rename t'0 into t''.
-    inversion H2.
-    subst.
-    simpl.
-    edestruct IHss as [t0'' [HmsA__t0'' Heq]]; eauto.
-    subst.
-    eexists.
-    split.
-    + eapply msubstA_cons. eauto. eauto.
-    + reflexivity. 
+  induction ss; intros.
+  - reflexivity.
+  - destruct a. eauto.
 Qed.
 
 Lemma msubstT_TyFun : forall ss T1 T2,
@@ -70,132 +32,73 @@ Lemma msubstT_TyFun : forall ss T1 T2,
 Proof.
   induction ss.
   - reflexivity.
-  - intros.
-    simpl.
-    destruct a.
-    apply IHss.
+  - destruct a. eauto.
 Qed.
+
+Lemma msubst_term__fold : forall ss x v t,
+    msubst_term ss <{ [v / x] t }> = msubst_term ((x, v) :: ss) t.
+Proof. induction ss; intros; auto. Qed.
 
 
 Lemma compatibility_LamAbs : forall Delta Gamma x T1 e e' T2,
     Delta |-* T1 : Kind_Base ->
     LR_logically_approximate Delta (x |-> T1; Gamma) e e' T2 ->
     LR_logically_approximate Delta Gamma (LamAbs x T1 e) (LamAbs x T1 e') (Ty_Fun T1 T2).
-Proof.
+Proof with eauto_LR.
   intros Delta Gamma x T1 eb eb' T2 Hkind__T1 IH_LR.
   unfold LR_logically_approximate.
 
-  split. {
-    edestruct IH_LR as [Htyp__e [Htyp__e' H]].
-    apply T_LamAbs. auto. auto.
-  }
+  destruct IH_LR as [Htyp__e [Htyp__e' IH]].
 
-  split. {
-    edestruct IH_LR as [Htyp__e [Htyp__e' H]].
-    apply T_LamAbs. auto. auto.
-  }
+  split...
+  split...
 
-  intros k rho env env' ct ck HeqDelta HeqGamma [H_RD H_RG].
-  subst.
-
-  intros e_sa e'_sa e_s e'_s.
-  intros HmsA__e_sa HmsA__e'_sa Hms__e_s Hms__e'_s.
-
-  destruct (msubstA_LamAbs _ _ _ _ _ HmsA__e_sa) as [eb_sa [HmsA__eb_sa Heq]].
-  destruct (msubstA_LamAbs _ _ _ _ _ HmsA__e'_sa) as [eb'_sa [HmsA__eb'_sa Heq']].
-  subst.
-  destruct (msubst_LamAbs _ _ _ _ _ Hms__e_s) as [eb_s [Hms__eb_s Heq]].
-  destruct (msubst_LamAbs _ _ _ _ _ Hms__e'_s) as [eb'_s [Hms__eb'_s Heq']].
+  intros k rho env env' ct ck HeqDelta HeqGamma H_RD H_RG.
   subst.
 
   autorewrite with RC.
-  split. {
-    replace emptyContext with (@empty Kind, mupd (msyn1 rho) empty).
-    - eapply msubst_preserves_typing_1; eauto.
-      eapply msubstA_preserves_typing_1; eauto.
-      destruct IH_LR.
-      eapply T_LamAbs; eauto.
-    - rewrite mupd_empty; eauto.
-  }
-  split. {
-    replace emptyContext with (@empty Kind, mupd (msyn2 rho) empty).
-    - eapply msubst_preserves_typing_2; eauto.
-      eapply msubstA_preserves_typing_2; eauto.
-      destruct IH_LR. destruct H0.
-      eapply T_LamAbs; eauto.
-    - rewrite mupd_empty; eauto.
-  }
+
+  split...
+  split...
+
+  rewrite msubstA_LamAbs. rewrite msubstA_LamAbs.
+  rewrite msubst_LamAbs. rewrite msubst_LamAbs.
 
   intros j Hlt__j e_f Hev__e_f.
   inversion Hev__e_f. subst.
-  exists (LamAbs x (msubstT (msyn2 rho) T1) eb'_s).
-  exists 0.
-  split. {
-    eapply eval_value. apply V_LamAbs.
-  }
-  intros.
-  symmetry in H. inversion H. subst.
-  symmetry in H0. inversion H0. subst.
+  
+  eexists. eexists.
 
-  assert (exists v_sa, msubstA (msyn1 rho) v v_sa) by eapply msubstA_total.
-  destruct H4 as [v_sa Hmsa__v_sa].
-  assert (v_sa = v). { eapply msubstA_closed; eauto. eapply typable_empty__closed. eapply RC_typable_empty_1. eapply H1. }
-  subst.
-  assert (exists v'_sa, msubstA (msyn2 rho) v' v'_sa) by eapply msubstA_total.
-  destruct H4 as [v'_sa Hmsa__v'_sa].
-  assert (v'_sa = v'). { eapply msubstA_closed; eauto. eapply typable_empty__closed. eapply RC_typable_empty_2. eapply H1. }
-  subst.
+  split. eapply eval_value. apply V_LamAbs.
 
-  assert (exists aaa, substitute x v eb_sa aaa) by eauto using substitute_term__total.
-  destruct H4 as [aaa Haaa].
-  assert (exists bbb, msubst_term env aaa bbb) by eauto using msubst_term__total.
-  destruct H4 as [bbb Hbbb].
-  assert (bbb = e_body'). {
-    eapply subst_msubst; eauto.
-    - eapply typable_empty__closed.
-      eapply RC_typable_empty_1.
-      eapply H1.
-    - eapply RG_env_closed_1. eauto.
-  }
-  subst.
-  assert (msubst_term ((x, v) :: env) eb_sa e_body'). {
-    econstructor; eauto.
-  }
+  left.
 
-  assert (exists ccc, substitute x v' eb'_sa ccc) by eauto using substitute_term__total.
-  destruct H5 as [ccc Hccc].
-  assert (exists ddd, msubst_term env' ccc ddd) by eauto using msubst_term__total.
-  destruct H5 as [ddd Hddd].
-  assert (ddd = e'_body'). {
-    eapply subst_msubst; eauto.
-    - eapply typable_empty__closed.
-      eapply RC_typable_empty_2.
-      eapply H1.
-    - eapply RG_env_closed_2. eauto.
-  }
-  subst.
-  assert (msubst_term ((x, v') :: env') eb'_sa e'_body'). {
-    econstructor; eauto.
-  }
+  eexists. eexists. eexists. eexists.
 
-  unfold LR_logically_approximate in IH_LR.
-  destruct IH_LR as [_ [_ IH_LR]].
-  eapply IH_LR.
-  - reflexivity.
-  - rewrite mupdate_unfold.  reflexivity.
-  - split; auto.
-    eapply RG_cons.
-    + apply Hmsa__v_sa.
-    + apply Hmsa__v'_sa.
-    + apply H1.
-    + apply H1.
-    + apply H1.
-    + eapply RG_monotone; eauto.
-      rewrite <- minus_n_O in Hlt_i.
-      apply Nat.lt_le_incl.
-      assumption.
-  - eassumption.
-  - eassumption.
-  - apply H4.
-  - apply H5.
+  split...
+  split...
+
+  rewrite <- minus_n_O.
+  intros i Hlt__i v_0 v'_0 HRV.
+
+  apply RV_unfolded_to_RV in HRV.
+
+  assert (closed v_0) by eauto using RV_typable_empty_1, typable_empty__closed.
+  assert (closed v'_0) by eauto using RV_typable_empty_2, typable_empty__closed.
+  eapply RG_env_closed in H_RG as Hclss.
+  destruct Hclss as [Hcls__env Hcls__env'].
+
+  rewrite <- subst_msubst...
+  rewrite <- subst_msubst...
+  rewrite msubst_term__fold.
+  rewrite msubst_term__fold. 
+
+  eapply IH...
+  + apply mupdate_unfold.
+  + replace v_0 with (msubstA_term (msyn1 rho) v_0) by eauto using msubstA_closed.
+    replace v'_0 with (msubstA_term (msyn2 rho) v'_0) by eauto using msubstA_closed.
+    eapply RG_cons...
+    * rewrite msubstA_closed...
+      rewrite msubstA_closed...
+    * eapply RG_monotone...
 Qed.

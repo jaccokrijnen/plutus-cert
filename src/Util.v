@@ -194,9 +194,31 @@ Ltac notIn2 :=
     | [ |- ~(In ?x ?xs)] => exact (sumboolOut (in_dec string_dec x xs))
   end.
 
-(* Creates a list of nats of 0 up to and not including i *)
-Fixpoint listNats (i : nat) : list nat :=
-  match i with
-  | O => nil
-  | S i' => cons i' (listNats i')
-  end.
+Lemma existsb_nexists : forall {A : Type} l (f : A -> bool),
+    existsb f l = false <-> ~ exists x, In x l /\ f x = true.
+Proof.
+  intros.
+  split.
+  - intros.
+    intros Hcon.
+    apply existsb_exists in Hcon.
+    rewrite H in Hcon.
+    discriminate.
+  - intros.
+    induction l.
+    + simpl.
+      reflexivity.
+    + simpl.
+      destruct (f a) eqn:Hf.
+      * exfalso.
+        apply H.
+        exists a.
+        split. left. auto. auto.
+      * simpl.
+        eapply IHl.
+        intros Hcon.
+        eapply H.
+        destruct Hcon as [x [HIn Hfx]].
+        exists x.
+        split. right. auto. auto.
+Qed.

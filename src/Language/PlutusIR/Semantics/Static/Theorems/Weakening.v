@@ -220,14 +220,19 @@ Proof.
       * apply H3. 
       * assumption.
     + assumption.
+  - (* T_ExtBuiltin *)
+    intros. unfold P_has_type. intros.
+    eapply T_ExtBuiltin; eauto.
+    intros.
+    eapply H2; eauto.
 
   - (* W_Con *)
     intros. unfold P_constructor_well_formed. intros.
-    apply W_Con.
+    eapply W_Con; eauto.
     intros.
     apply weakening__has_kind with Delta.
+    + apply H1.
     + apply H0.
-    + apply H.
       assumption.
   
   - (* W_NilB_NonRec *)

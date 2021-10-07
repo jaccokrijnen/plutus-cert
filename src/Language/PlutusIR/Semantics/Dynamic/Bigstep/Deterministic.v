@@ -90,20 +90,12 @@ Proof.
         } 
         subst.
         reflexivity.
-    + (* E_ApplyBuiltin1 *)
+    + (* E_ApplyExtBuiltin *)
       subst.
-      assert (LamAbs x T t0 = v1). {
+      assert (LamAbs x T t0 = ExtBuiltin f args). {
         eapply H0. eassumption.
       }
-      subst.
-      inversion H13.
-    + (* E_ApplyBuiltin2 *) 
-      subst. 
-      assert (LamAbs x T t0 = v1). {
-        eapply H0. eassumption.
-      }
-      subst.
-      inversion H14.
+      inversion H6.
     + (* E_IfCondition*)
       subst.
       assert (LamAbs x T t0 = TyInst (Builtin IfThenElse) T0). {
@@ -134,42 +126,57 @@ Proof.
     auto.
   - (* E_Builtin *)
     intros. unfold P_eval. intros.
-    inversion H. subst.
-    auto.
-  (*
-  - (* E_ApplyBuiltin1 *)
+    inversion H0.
+    + subst.
+      auto.
+    + subst.
+      exfalso.
+      eauto.
+  - (* E_ExtBuiltinPartiallyApplied *)
     intros. unfold P_eval. intros.
-    inversion H5.
+    inversion H0. all: subst.
+    + auto.
+    + rewrite H3 in H.
+      apply PeanoNat.Nat.lt_irrefl in H.
+      exfalso.
+      auto.
+  - (* E_ExtBuiltinFullyApplied *)
+    intros. unfold P_eval. intros.
+    inversion H1. all: subst.
+    + rewrite H in H6.
+      apply PeanoNat.Nat.lt_irrefl in H6.
+      exfalso. auto.
+    + rewrite H0 in H7.
+      inversion H7. subst. 
+      auto.
+  - (* E_ApplyExtBuiltin *)
+    intros. unfold P_eval. intros.
+    inversion H5. subst.
     + (* E_Apply *) 
       subst.
-      assert (v1 = LamAbs x T t4). {
+      assert (ExtBuiltin f args = LamAbs x T t4). {
         eapply H0. eassumption.
       }
+      inversion H6.
+    + (* E_ApplyExtBuiltin *)
       subst.
-      inversion H4.
-    + (* E_AppltBuiltin1 *)
-      subst.
-      assert (v1 = v0). {
+      assert (ExtBuiltin f args = ExtBuiltin f0 args0 /\ j1 = j4). {
         eapply H0. eassumption.
       }
+      destruct H6.
+      inversion H6.
       subst.
-      assert (v2 = v3). {
-        eapply H3. eassumption.
+      assert (v2 = v1 /\ j2 = j5). {
+        eapply H2. eassumption.
       }
+      destruct H7.
       subst.
-      reflexivity.
-    + (* E_ApplyBuiltin2 *)
-      subst.
-      assert (v1 = v0). {
-        eapply H0. eassumption.
+      assert (v0 = y2 /\ j3 = j6). {
+        eapply H4. assumption.
       }
-      subst.
-      assert (v2 = v3). {
-        eapply H3. eassumption.
-      }
-      subst.
-      apply H11 in H4.
-      destruct H4.
+      destruct H7. subst.
+      auto.
+(*
     + (* E_IfCondition*)
       subst.
       assert (v1 = TyInst (Builtin IfThenElse) T). {

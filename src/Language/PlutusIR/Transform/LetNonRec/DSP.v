@@ -1,5 +1,3 @@
-Require Import PlutusCert.Language.PlutusIR.
-Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Transform.LetNonRec.
 Require Import PlutusCert.Language.PlutusIR.Transform.LetNonRec.SSP.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
@@ -8,7 +6,7 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Compat
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RelationalModel.
 Require Import PlutusCert.Util.
 
-
+(*
 Lemma compatibility_desugar : forall Delta Gamma x Tb eb t eb' t' T Delta' Gamma', 
     Delta |-* Tb : Kind_Base ->
     Delta' = fst (append (binds (TermBind Strict (VarDecl x Tb) eb)) (Delta, Gamma)) ->
@@ -271,4 +269,4 @@ Proof.
       eauto with DSP_compatibility_lemmas.
     + intros.
       inversion X0.
-Qed.
+Qed.*)

@@ -10,14 +10,14 @@ Local Open Scope string_scope.
 (** * Substitution of types in type annotations *)
 
 (** ** Utilities *)
-Definition bound_tyvars_in_binding (b : NamedTerm.Binding) : list tyname :=
+Definition btvb (b : NamedTerm.Binding) : list tyname :=
   match b with
   | TermBind _ (VarDecl x _) _ => nil
   | TypeBind (TyVarDecl X _) _ => cons X nil
   | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => cons X nil
   end.
 
-Definition bound_tyvars_in_bindings (bs : list NamedTerm.Binding) : list tyname := List.concat (map bound_tyvars_in_binding bs).
+Definition btvbs (bs : list NamedTerm.Binding) : list tyname := List.concat (map btvb bs).
 
 Section SubstABindings.
   Context {substAb : tyname -> Ty -> Binding -> Binding}.
@@ -27,9 +27,9 @@ Section SubstABindings.
     | nil => 
         nil
     | b :: bs' => 
-        if find (eqb X) (bound_tyvars_in_binding b)
+        if existsb (eqb X) (btvb b)
           then
-            substAb X U b :: bs
+            substAb X U b :: bs'
           else
             substAb X U b :: substituteA_bindings_nonrec X U bs'
     end.
@@ -62,12 +62,12 @@ Fixpoint substituteA (X : tyname) (U : Ty) (t : Term) : Term :=
   match t with
   | Let NonRec bs t0 =>
       Let NonRec (@substituteA_bindings_nonrec substituteA_binding X U bs)
-        (if existsb (eqb X) (bound_tyvars_in_bindings bs) 
+        (if existsb (eqb X) (btvbs bs) 
           then t0
           else substituteA X U t0
         ) 
   | Let Rec bs t0 =>
-      if existsb (eqb X) (bound_tyvars_in_bindings bs) 
+      if existsb (eqb X) (btvbs bs) 
         then 
           Let Rec bs t0
         else
@@ -94,6 +94,8 @@ Fixpoint substituteA (X : tyname) (U : Ty) (t : Term) : Term :=
       IWrap (substituteT X U F) (substituteT X U T) (substituteA X U t0)
   | Unwrap t0 =>
       Unwrap (substituteA X U t0)
+  | ExtBuiltin f args =>
+      ExtBuiltin f (map (substituteA X U) args)
   end
 
 with substituteA_binding (X : tyname) (U : Ty) (b : Binding) {struct b} : Binding :=
@@ -128,3 +130,14 @@ Fixpoint msubstA_binding (ss : envA) (b : Binding) : Binding :=
   | nil => b
   | (X, U) :: ss' => msubstA_binding ss' <{ [[U / X][b] b }>
   end.
+
+Fixpoint msubstA_bindings_nonrec (ss : envA) (bs : list Binding) : list Binding :=
+  match ss with
+  | nil => bs
+  | (X, U) :: ss' => msubstA_bindings_nonrec ss' <{ [[U / X][bnr] bs }>
+  end.
+
+Notation "'/[[' ss '/]' t" := (msubstA_term ss t) (in custom plutus_term at level 20, ss constr).
+Notation "'/[[' ss '/][b]' b" := (msubstA_binding ss b) (in custom plutus_term at level 20, ss constr).
+Notation "'/[[' ss '/][bnr]' bs" := (msubstA_bindings_nonrec ss bs) (in custom plutus_term at level 20, ss constr).
+  

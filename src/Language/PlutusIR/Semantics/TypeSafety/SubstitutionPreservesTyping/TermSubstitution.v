@@ -70,7 +70,7 @@ Qed.
 
 
 Lemma binds_binds_bound_vars : forall a x,
-    List.In x (term_vars_bound_by_binding a) ->
+    List.In x (bvb a) ->
     exists U, lookupT (binds a) x = Datatypes.Some U.
 Proof.
   intros.
@@ -96,7 +96,7 @@ Proof.
 Admitted.
 
 Lemma mapbinds_binds_bound_vars : forall bs x,
-  List.In x (term_vars_bound_by_bindings bs) ->
+  List.In x (bvbs bs) ->
   exists U, lookupT (flatten (List.map binds bs)) x = Datatypes.Some U.
 Proof.
   induction bs.
@@ -259,7 +259,7 @@ Proof.
     + auto.
   - inversion H0. subst.
     simpl.
-    destruct (List.existsb (eqb x) (bound_vars_in_binding a)) eqn:Hexb.
+    destruct (List.existsb (eqb x) (bvb a)) eqn:Hexb.
     + (* apply binds_binds_bound_vars in H6 as H15.
       destruct H15 as [U' Hlu].
       split.
@@ -406,6 +406,25 @@ Proof.
     + destruct ctx.
       eauto.
     + eassumption.
+
+  - (* ExtBuiltin *)
+    intros. autounfold. intros.
+    inversion H0. subst.
+    simpl.
+    erewrite <- List.map_length.
+    eapply T_ExtBuiltin; eauto.
+    + rewrite List.map_length. auto.
+    + intros.
+      destruct p.
+      simpl.
+      apply List.in_combine_l in H2 as H3.
+      apply List.in_combine_r in H2 as H8.
+      eapply List.in_map_iff in H3 as H9.
+      destruct H9. 
+      destruct H6.
+      subst.
+
+      apply skip.
 
   - (* TermBind *)
     intros. autounfold. intros.

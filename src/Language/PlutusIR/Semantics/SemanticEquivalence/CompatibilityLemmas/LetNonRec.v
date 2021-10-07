@@ -1,11 +1,12 @@
-Require Import PlutusCert.Language.PlutusIR.
-Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RelationalModel.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Monotonicity.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Auto.
+Require Import PlutusCert.Util.
 
 Require Import Arith.
+Require Import Coq.Lists.List.
 
 Lemma In__mdrop : forall {X} ns ss x s,
     List.In x ns ->
@@ -26,7 +27,6 @@ Proof.
       * eapply IHns.
         assumption. 
 Qed.
-
 
 Lemma not_In__mdrop : forall {X} ns ss x s,
     ~ List.In x ns ->
@@ -50,301 +50,202 @@ Proof.
       assumption.
 Qed.
 
-Lemma substb__bound_vars : forall x s b b',
-    substitute_binding x s b b' ->
-    bound_vars_in_binding b = bound_vars_in_binding b'.
-Proof. intros. induction H. all: eauto. Qed.
+Lemma subst_b__bound_vars : forall x s b,
+    bvb b = bvb <{ [s/x][b] b }>.
+Proof. intros. induction b. all: eauto. destruct v. eauto. Qed.
 
+Lemma subst_bnr__bound_vars : forall x s bs,
+    bvbs bs = bvbs <{ [s/x][bnr] bs }>.
+Proof. 
+  intros. 
+  induction bs.
+  - reflexivity.
+  - simpl.
+    destruct (List.existsb (eqb x) (bvb a)) eqn:Hexb.
+    + unfold bvbs.
+      simpl.
+      f_equal.
+      apply subst_b__bound_vars.
+    + unfold bvbs.
+      simpl.
+      f_equal.
+      * apply subst_b__bound_vars.
+      * assumption.
+Qed.
 
-Lemma substAb__bound_tyvars : forall x s b b',
-    substituteA_binding x s b b' ->
-    bound_tyvars_in_binding b = bound_tyvars_in_binding b'.
-Proof. intros. induction H. all: eauto. Qed.
+Lemma msubst_bnr__bound_vars : forall bs ss,
+    bvbs bs = bvbs <{ /[ ss /][bnr] bs }>.
+Proof. Admitted.
 
-Lemma substA_bs_nr__bound_tyvars : forall x s bs bs',
-    substituteA_bindings_nonrec x s bs bs' ->
-    tyvars_bound_by_bindings bs = tyvars_bound_by_bindings bs'.
+Lemma substA_b__bound_tyvars : forall a T b,
+    btvb b = btvb <{ [[T/a][b] b }>.
+Proof. intros. induction b. all: eauto. destruct v; eauto. destruct d; eauto. Qed.
+
+Lemma substA_bnr__bound_tyvars : forall a T bs,
+    btvbs bs = btvbs <{ [[T/a][bnr] bs }>.
+Proof. 
+  intros. 
+  induction bs.
+  - reflexivity.
+  - simpl.
+    destruct (List.existsb (eqb a) (btvb a0)) eqn:Hfind.
+    + unfold btvbs.
+      simpl.
+      f_equal.
+      apply substA_b__bound_tyvars.
+    + unfold btvbs.
+      simpl.
+      f_equal.
+      * apply substA_b__bound_tyvars.
+      * assumption.
+Qed.
+
+Lemma msubstA_bnr__bvbs : forall bs ss,
+    bvbs bs = bvbs <{ /[[ ss /][bnr] bs }>.
+Proof. Admitted.
+    
+Lemma msubst_LetNonRec_nil : forall ss e,
+    msubst_term ss (Let NonRec nil e) = Let NonRec nil (msubst_term ss e).
+Proof.
+  induction ss; intros.
+  - reflexivity.
+  - destruct a. eauto.
+Qed.
+
+Lemma msubst_LetNonRec : forall ss bs e,
+    msubst_term ss (Let NonRec bs e) = Let NonRec (msubst_bindings_nonrec ss bs) (msubst_term (mdrop (bvbs bs) ss) e).
+Proof with auto.
+  induction ss; intros.
+  - rewrite mdrop_nil. reflexivity.
+  - destruct a. simpl.
+    destruct (existsb (eqb s) (bvbs bs)) eqn:Hexb.
+    + apply existsb_exists in Hexb.
+      destruct Hexb as [x [HIn Heqb]].
+      apply eqb_eq in Heqb as Heq.
+      subst.
+      rewrite In__mdrop...
+      erewrite subst_bnr__bound_vars.
+      eapply IHss.
+    + rewrite not_In__mdrop...
+      * simpl.
+        erewrite subst_bnr__bound_vars.
+        eapply IHss.
+      * intros Hcon.
+        eapply existsb_nexists.
+        -- eapply Hexb.
+        -- exists s.
+           rewrite eqb_refl.
+           auto.
+Qed.
+
+Lemma msubst_TermBind : forall ss stricty x T e,
+    msubst_binding ss (TermBind stricty (VarDecl x T) e) = TermBind stricty (VarDecl x T) (msubst_term ss e). 
+Proof.
+  induction ss; intros.
+  - reflexivity.
+  - destruct a. eauto.
+Qed.
+
+Lemma msubst_BindingsNonRec_cons : forall ss b bs,
+    msubst_bindings_nonrec ss (b :: bs) = msubst_binding ss b :: msubst_bindings_nonrec (mdrop (bvb b) ss) bs.
+Proof.
+  induction ss; intros.
+  - rewrite mdrop_nil. reflexivity.
+  - destruct a. 
+    simpl.
+    destruct (existsb (eqb s) (bvb b)) eqn:Hexb.
+    + apply existsb_exists in Hexb.
+      destruct Hexb as [x [HIn Heqb]].
+      apply eqb_eq in Heqb as Heq.
+      subst.
+      rewrite In__mdrop.
+      * erewrite subst_b__bound_vars.  
+        eapply IHss.
+      * assumption.
+    + apply existsb_nexists in Hexb.
+      rewrite not_In__mdrop.
+      * simpl.
+        erewrite subst_b__bound_vars.
+        eapply IHss.
+      * intros Hcon.
+        apply Hexb.
+        exists s.
+        rewrite eqb_refl.
+        auto.
+Qed.
+
+Lemma msubstA_LetNonRec_nil : forall ss e,
+    msubstA_term ss (Let NonRec nil e) = Let NonRec nil (msubstA_term ss e).
+Proof.
+  induction ss; intros.
+  - reflexivity.
+  - destruct a. eauto.
+Qed.
+
+Lemma msubstA_LetNonRec : forall ss bs e,
+    msubstA_term ss (Let NonRec bs e) = Let NonRec (msubstA_bindings_nonrec ss bs) (msubstA_term (mdrop (btvbs bs) ss) e).
+Proof. Admitted.
+
+Lemma msubstA_TermBind : forall ss stricty x T e,
+    msubstA_binding ss (TermBind stricty (VarDecl x T) e) = TermBind stricty (VarDecl x (msubstT ss T)) (msubstA_term ss e).
+Proof.
+  induction ss; intros.
+  - reflexivity.
+  - destruct a. eauto.
+Qed.
+
+Lemma msubstA_BindingsNonRec_cons : forall ss b bs,
+    msubstA_bindings_nonrec ss (b :: bs) = msubstA_binding ss b :: msubstA_bindings_nonrec (mdrop (btvb b) ss) bs.
+Proof.
+  induction ss; intros.
+  - rewrite mdrop_nil. reflexivity.
+  - destruct a. 
+    simpl.
+    destruct (List.find (eqb s) (btvb b)) eqn:Hfind.
+    + simpl. 
+Admitted.
+
+Inductive LR_logically_approximate_bindings_nonrec : Delta -> Gamma -> list Binding -> list Binding -> Prop :=
+  | LR_NonRec_Nil : forall Delta Gamma,
+      LR_logically_approximate_bindings_nonrec Delta Gamma nil nil
+  | LR_NonRec_Cons : forall Delta Gamma b b' Delta' Gamma' bs bs',
+      LR_logically_approximate_binding Delta Gamma b b' ->
+      (Delta', Gamma') = Implementations.append (binds b) (Delta, Gamma) ->
+      binds b = binds b' ->
+      LR_logically_approximate_bindings_nonrec Delta' Gamma' bs bs' ->
+      LR_logically_approximate_bindings_nonrec Delta Gamma (b :: bs) (b' :: bs').
+
+Lemma LR_la_bnr__oks : forall Delta Gamma bs bs',
+    LR_logically_approximate_bindings_nonrec Delta Gamma bs bs' ->
+    (Delta, Gamma) |-oks_nr bs /\ (Delta, Gamma) |-oks_nr bs' /\ List.map binds bs = List.map binds bs'.
 Proof.
   intros.
   induction H.
-  - reflexivity.
-  - destruct b. 
-    all: inversion H0; subst.
-    all: auto.
-  - destruct b.
-    all: inversion H0. subst.
-    all: unfold tyvars_bound_by_bindings.
-    all: simpl.
-    all: try solve [f_equal; auto].
-    apply IHsubstituteA_bindings_nonrec.
-Qed.
-    
-Lemma msubst_LetNonRec_nil : forall ss e t',
-    msubst_term ss (Let NonRec nil e) t' ->
-    exists e',
-      msubst_term ss e e' /\
-      t' = Let NonRec nil e'.
-Proof.
-  induction ss; intros.
-  - inversion H. subst.
-    exists e.
-    eauto using msubst_term__nil.
-  - inversion H. subst.
-    rename t'0 into t''.
-    inversion H2. subst.
-    rename t'0 into e''.
-    apply IHss in H5.
-    destruct H5 as [e' [Hms__e' Heq]].
-    subst.
-    eauto using msubst_term__cons.
+  - eauto with typing.
+  - split.
+    + econstructor.
+      * apply H.
+      * rewrite <- H0.
+        apply IHLR_logically_approximate_bindings_nonrec.
+    + split. 
+      * econstructor.
+        -- apply H.
+        -- rewrite <- H1.
+          rewrite <- H0.
+          apply IHLR_logically_approximate_bindings_nonrec.
+      * simpl.
+        rewrite H1.
+        f_equal.
+        apply IHLR_logically_approximate_bindings_nonrec.
 Qed.
 
-Lemma msubst_LetNonRec_cons : forall ss b bs e t',
-    msubst_term ss (Let NonRec (b :: bs) e) t' ->
-    exists b' bs' e',
-      msubst_binding ss b b' /\
-      msubst_term (mdrop (bound_vars_in_binding b) ss) (Let NonRec bs e) (Let NonRec bs' e') /\
-      t' = Let NonRec (b' :: bs') e'.
-Proof.
-  induction ss; intros.
-  - inversion H. subst.
-    exists b, bs, e.
-    rewrite mdrop_nil.
-    eauto using msubst_term__nil, msubst_binding__nil.
-  - inversion H. subst.
-    rename t'0 into t''.
-    inversion H2.
-    + subst.
-      eapply IHss in H5 as H8.
-      destruct H8 as [b'' [bs'' [e'' [Hms__b'' [Hms__t'' Heq]]]]].
-      subst.
-      exists b''.
-      exists bs''.
-      exists e''.
-      split. {
-        eapply msubst_binding__cons.
-        all: eassumption.
-      }
-      split. {
-        rewrite In__mdrop.
-        - erewrite substb__bound_vars.
-          all: eassumption.
-        - eassumption.
-      }
-      reflexivity.
-    + subst.
-      eapply IHss in H5 as H9.
-      destruct H9 as [b'' [bs'' [e'' [Hms__b'' [Hms__t'' Heq]]]]].
-      subst.
-      exists b''.
-      exists bs''.
-      exists e''.
-      split. {
-        eapply msubst_binding__cons.
-        all: eassumption.
-      }
-      split. {
-        rewrite not_In__mdrop.
-        - erewrite substb__bound_vars.
-          + eapply msubst_term__cons.
-            all: eassumption.
-          + eassumption.
-        - eassumption.
-      }
-      reflexivity.
-Qed.
+Lemma msubst_term__fold : forall ss x v t,
+    msubst_term ss <{ [v / x] t }> = msubst_term ((x, v) :: ss) t.
+Proof. induction ss; intros; auto. Qed.
 
-Lemma msubst_TermBind : forall ss stricty x T e b',
-    msubst_binding ss (TermBind stricty (VarDecl x T) e) b' ->
-    exists e',
-      msubst_term ss e e' /\
-      b' = TermBind stricty (VarDecl x T) e'.
-Proof.
-  induction ss; intros.
-  - inversion H. subst.
-    eauto using msubst_term__nil.
-  - inversion H. subst.
-    inversion H2. subst.
-    eapply IHss in H5.
-    destruct H5 as [e'' [Hms__e'' Heq]].
-    eauto using msubst_term__cons.
-Qed.
-
-Lemma msubstA_LetNonRec_nil : forall ss e t',
-    msubstA ss (Let NonRec nil e) t' ->
-    exists e',
-      msubstA ss e e' /\
-      t' = Let NonRec nil e'.
-Proof.
-  induction ss; intros.
-  - inversion H. subst.
-    exists e.
-    eauto using msubstA_nil.
-  - inversion H. subst.
-    rename t'0 into t''.
-    inversion H2.
-    + subst.
-      destruct H6.
-    + subst.
-      inversion H7. subst.
-      rename t0' into e''.
-      apply IHss in H5.
-      destruct H5 as [e' [Hmsa__e' Heq]].
-      subst.
-      eauto using msubstA_cons.
-Qed.
-
-Lemma msubstA_LetNonRec_cons : forall ss b bs e t',
-    msubstA ss (Let NonRec (b :: bs) e) t' ->
-    exists b' bs' e',
-      msubstA_binding ss b b' /\
-      msubstA (mdrop (bound_tyvars_in_binding b) ss) (Let NonRec bs e) (Let NonRec bs' e') /\
-      t' = Let NonRec (b' :: bs') e'.
-Proof.
-  induction ss; intros.
-  - inversion H. subst.
-    exists b, bs, e.
-    rewrite mdrop_nil.
-    eauto using msubstA_nil, msubstA_binding__nil.
-  - inversion H. subst.
-    rename t'0 into t''.
-    inversion H2.
-    + subst.
-      inversion H8.
-      * subst.
-        eapply IHss in H5 as H9.
-        destruct H9 as [b'' [bs'' [e'' [Hmsa__b'' [Hmsa__t'' Heq]]]]].
-        subst.
-        exists b''.
-        exists bs''.
-        exists e''.
-        split. {
-          eapply msubstA_binding__cons.
-          all: eassumption.
-        }
-        split. {
-          rewrite In__mdrop.
-          - erewrite substAb__bound_tyvars.
-            all: eassumption.
-          - eassumption.
-        }
-        reflexivity.
-      * subst.
-        unfold bound_tyvars_in_bindings in H6.
-        simpl in H6.
-        apply List.in_app_or in H6.
-        destruct H6.
-        -- exfalso. auto.
-        -- eapply IHss in H5 as H12.
-           destruct H12 as [b'' [bs'' [e'' [Hmsa__b'' [Hmsa__t'' Heq]]]]].
-           subst.
-           exists b''.
-           exists bs''.
-           exists e''.
-           split. {
-             eapply msubstA_binding__cons.
-             all: eassumption.
-           }
-           split. {
-             rewrite not_In__mdrop.
-             - eapply msubstA_cons.
-               + eapply SA_Let1; eauto.
-               + erewrite substAb__bound_tyvars.
-                all: eassumption.
-             - eassumption.
-           }
-          reflexivity.
-    + subst.
-      inversion H7.
-      * subst.
-        exfalso.
-        apply H3.
-        unfold bound_tyvars_in_bindings.
-        simpl.
-        apply List.in_or_app.
-        left.
-        assumption.
-      * subst.
-        eapply IHss in H5 as H13.
-        destruct H13 as [b'' [bs'' [e'' [Hms__b'' [Hms__t'' Heq]]]]].
-        subst.
-        exists b''.
-        exists bs''.
-        exists e''.
-        split. {
-          eapply msubstA_binding__cons.
-          all: eassumption.
-        }
-        split. {
-          rewrite not_In__mdrop.
-          - eapply msubstA_cons.
-            + eapply SA_Let2; eauto.
-              intros Hcon.
-              apply H3.
-              unfold bound_tyvars_in_bindings.
-              simpl.
-              apply List.in_or_app.
-              right.
-              assumption.
-            + erewrite substAb__bound_tyvars.
-            all: eassumption.
-          - eassumption.
-        }
-        reflexivity.
-Qed.
-
-Lemma msubstA_TermBind : forall ss stricty x T e b',
-    msubstA_binding ss (TermBind stricty (VarDecl x T) e) b' ->
-    exists e',
-      msubstA ss e e' /\
-      b' = TermBind stricty (VarDecl x (msubstT ss T)) e'.
-Proof.
-  induction ss; intros.
-  - inversion H. subst.
-    eauto using msubstA_nil.
-  - inversion H. subst.
-    inversion H2. subst.
-    eapply IHss in H5.
-    destruct H5 as [e'' [Hmsa__e'' Heq]].
-    eauto using msubstA_cons.
-Qed.
-
-Lemma inspect_eval__LetNonRec_nil : forall e j e_f,
-    Let NonRec nil e =[j]=> e_f ->
-    exists j_1, e =[j_1]=> e_f /\ j = j_1 + 1.
-Proof.
-  intros.
-  inversion H. subst.
-  inversion H4. subst.
-  exists k.
-  split.
-  - assumption.
-  - rewrite plus_comm.
-    reflexivity.
-Qed.
-
-Lemma inspect_eval__LetNonRec_cons : forall s x T eb bs e j e_f,
-    Let NonRec (TermBind s (VarDecl x T) eb :: bs) e =[j]=> e_f ->
-    exists j_1 eb_f, 
-      eb =[j_1]=> eb_f /\ j_1 <= j /\
-      exists bs' e',
-        substitute x eb_f (Let NonRec bs e) (Let NonRec bs' e') /\
-        exists j_2,
-          Let NonRec bs' e' =[j_2]=> e_f /\
-          j_1 + 1 + j_2 = j.
-Proof.
-  intros.
-  inversion H. subst.
-  inversion H4. subst.
-  exists kb, vb.
-  split. auto.
-  split. apply skip. (* TODO*)
-  exists bs', t'.
-  split. auto.
-  exists k.
-  split. apply E_Let. auto.
-  reflexivity.
-Qed.
+Lemma msubst_bindings_nonrec__fold : forall ss x v bs,
+    msubst_bindings_nonrec ss <{ [v / x][bnr] bs }> = msubst_bindings_nonrec ((x, v) :: ss) bs.
+Proof. induction ss; intros; auto. Qed.
 
 Lemma compatibility_LetNonRec : forall bs Delta Gamma t bs' t' T,
     forall Delta' Gamma',
@@ -352,291 +253,341 @@ Lemma compatibility_LetNonRec : forall bs Delta Gamma t bs' t' T,
       LR_logically_approximate Delta' Gamma' t t' T ->
       LR_logically_approximate_bindings_nonrec Delta Gamma bs bs' ->
       LR_logically_approximate Delta Gamma (Let NonRec bs t) (Let NonRec bs' t') T.
-Proof.
+Proof with eauto_LR.
   induction bs.
   - intros Delta Gamma t bs' t' T Delta' Gamma' Hbinds IH_LR__t IH_LR__bs.
     unfold LR_logically_approximate.
 
+    destruct IH_LR__t as [Htyp__t [Htyp__t' IH__t]].
     inversion IH_LR__bs. subst.
 
-    split. {
-      eapply T_Let.
-      all: eauto with typing.
-      unfold LR_logically_approximate in IH_LR__t.
-      apply IH_LR__t.
-    }
+    split...
+    split...
 
-    split. {
-      eapply T_Let.
-      all: eauto with typing.
-      unfold LR_logically_approximate in IH_LR__t.
-      apply IH_LR__t.
-    }
-
-    intros k rho env env' ct ck HeqDelta HeqGamma [H_RD H_RG].
-    subst.
-
-    intros e_msa e'_msa e_ms e'_ms.
-    intros Hmsa__e_msa Hmsa__e'_msa Hms__e_ms Hms__e'_ms.
-
-    destruct (msubstA_LetNonRec_nil _ _ _ Hmsa__e_msa) as [t_msa [Hmsa__t_msa Heq]].
-    destruct (msubstA_LetNonRec_nil _ _ _ Hmsa__e'_msa) as [t'_msa [Hmsa__t'_msa Heq']].
-    subst.
-    destruct (msubst_LetNonRec_nil _ _ _ Hms__e_ms) as [t_ms [Hms__t_ms Heq]].
-    destruct (msubst_LetNonRec_nil _ _ _ Hms__e'_ms) as [t'_ms [Hms__t'_ms Heq']].
+    intros k rho env env' ct ck HeqDelta HeqGamma H_RD H_RG.
     subst.
 
     autorewrite with RC.
 
-    split. {
-      replace emptyContext with (@empty Kind, mupd (msyn1 rho) empty).
-      - eapply msubst_preserves_typing_1; eauto.
-        eapply msubstA_preserves_typing_1; eauto.
-        eapply T_Let; eauto with typing. 
-        eapply IH_LR__t.
-      - rewrite mupd_empty; eauto.
-    }
-    split. {
-      replace emptyContext with (@empty Kind, mupd (msyn2 rho) empty).
-      - eapply msubst_preserves_typing_2; eauto.
-        eapply msubstA_preserves_typing_2; eauto.
-        eapply T_Let; eauto with typing. 
-        eapply IH_LR__t.
-      - rewrite mupd_empty; eauto.
-    }
+    split...
+    split...
+
+    rewrite msubstA_LetNonRec_nil. rewrite msubstA_LetNonRec_nil.
+    rewrite msubst_LetNonRec_nil. rewrite msubst_LetNonRec_nil.
 
     intros j Hlt__j e_f Hev__e_f.
-    apply inspect_eval__LetNonRec_nil in Hev__e_f as temp.
-    destruct temp as [j_1 [Hev'__e_f Heq]].
+
+    inversion Hev__e_f. subst.
+    inversion H3. subst.
+    rename j0 into j_1.
+    rename H3 into Hev'__e_f.
+    rename H0 into Hev''__e_f.
     
-    destruct IH_LR__t as [_ [_ IH_LR__t]].
-    assert (RC k T rho t_ms t'_ms). {
-      simpl in Hbinds.
+
+    assert (HRC__t : RC k T rho 
+      (msubst_term env (msubstA_term (msyn1 rho) t))
+      (msubst_term env' (msubstA_term (msyn2 rho) t'))
+    ). {
+      simpl in Hbinds. 
       rewrite flatten_nil in Hbinds.
       rewrite append_emptyContext_l in Hbinds.
       inversion Hbinds. subst.
-      eapply IH_LR__t.
-      all: eauto.
+      eapply IH__t...
     }
 
-    autorewrite with RC in H.
-    destruct H as [_ [_ H]].
+    apply RC_to_RV with (j := j_1) (e_f := e_f) in HRC__t as temp...
+    destruct temp as [e'_f1 [j'_1 [Hev__e'_f1 HRV__t]]].
 
-    assert (Hlt__j_1 : j_1 < k). {
-      subst. 
-      rewrite plus_comm in Hlt__j.
-      apply Nat.succ_lt_mono.
-      apply le_S.
-      assumption.
-    }
-    remember (H j_1 Hlt__j_1 e_f Hev'__e_f).
-    clear Heqe. rename e into H0.
+    eexists. eexists.
 
-    destruct H0 as [e'_f [j'_1 [Hev__e'_f H0]]].
-    exists e'_f. exists (S j'_1).
-    split. {
-      eapply E_Let.
-      eapply E_NilB_NonRec.
-      eassumption.
-    }
+    split. eapply E_Let. eapply E_NilB_NonRec...
 
-    assert (forall i, i < k - j -> i < k - j_1). { 
-      intros.
-      subst.
-      rewrite plus_comm in H1.
-      simpl in H1.
-      apply skip. 
-    }
-
-    destruct T.
-    all: eauto.
-    intros.
-    eapply RD_sem_syn in H2 as H3; eauto.
-    destruct H3 as [T1 [T2 [Hsyn1 Hsyn2]]].
-    apply H0 in H2 as H3; eauto.
-    eapply RD_rel in H2; eauto.
-    unfold Rel in H2.
-    eapply H2; eauto.
-    subst.
-    apply skip.
+    eapply RV_condition... 
+    eapply RV_monotone...
 
   - intros Delta Gamma t bs' t' T Delta' Gamma' Hbinds IH_LR__t IH_LR__bbs.
     unfold LR_logically_approximate.
     rename a into b.
-    remember IH_LR__t as IH_LR__t__copy.
-    clear HeqIH_LR__t__copy.
 
     inversion IH_LR__bbs. subst.
+
     rename bs'0 into bs'.
     rename Delta'0 into Delta''.
     rename Gamma'0 into Gamma''.
     rename H1 into IH_LR__b.
     rename H2 into Hbinds''.
-    rename H5 into Heqbinds.
     rename H7 into IH_LR__bs.
 
-    assert (IH_LR__let : LR_logically_approximate Delta'' Gamma'' (Let NonRec bs t) (Let NonRec bs' t') T). {
-      eapply IHbs.
-      all: eauto.
+    assert (IH_LR__let : 
+      LR_logically_approximate Delta'' Gamma''
+        (Let NonRec bs t) (Let NonRec bs' t') T
+    ). {
+      eapply IHbs...
+      simpl in Hbinds.
+      unfold flatten in Hbinds.
+      simpl in Hbinds.
+      rewrite concat_append in Hbinds.
+      simpl in Hbinds.
+      rewrite append_emptyContext_r in Hbinds.
       apply skip. (* TODO *)
     }
-    remember IH_LR__let as IH_LR__let__copy.
-    clear HeqIH_LR__let__copy.
 
-    split. {
-      eapply T_Let. 
-      - apply Hbinds.
-      - eapply LR_la_bnr__oks in IH_LR__bbs. 
-        apply IH_LR__bbs. 
-      - apply IH_LR__t.  
-    }
+    destruct IH_LR__t as [Htyp__t [Htyp__t' IH__t]].
+    destruct IH_LR__b as [Htyp__b [Htyp__b' IH__b]].
+    eapply LR_la_bnr__oks in IH_LR__bbs.
+    destruct IH_LR__bbs as [Htyp__bbs [Htyp__bbs' Heqbinds__bbs]].
 
-    split. {
-      eapply T_Let.
-      - eapply LR_la_bnr__oks in IH_LR__bbs.
-        destruct IH_LR__bbs as [_ [_ Heq]].
-        rewrite <- Heq.
-        apply Hbinds.
-      - eapply LR_la_bnr__oks in IH_LR__bbs.
-        apply IH_LR__bbs.
-      - apply IH_LR__t.
-    }
+    remember Hbinds as Hbinds'. clear HeqHbinds'.
+    rewrite Heqbinds__bbs in Hbinds'.
 
-    intros k rho env env' ct ck HeqDelta HeqGamma [H_RD H_RG].
-    subst.
+    split...
+    split...
 
-    intros e_msa e'_msa e_ms e'_ms.
-    intros Hmsa__e_msa Hmsa__e'_msa Hms__e_ms Hms__e'_ms.
-
-    destruct (msubstA_LetNonRec_cons _ _ _ _ _ Hmsa__e_msa) as [b_msa [bs_msa [t_msa [Hmsa__b_msa [Hmsa__eih_msa Heq]]]]].
-    destruct (msubstA_LetNonRec_cons _ _ _ _ _ Hmsa__e'_msa) as [b'_msa [bs'_msa [t'_msa [Hmsa__b'_msa [Hmsa__eih'_msa Heq']]]]].
-    subst.
-
-    destruct (msubst_LetNonRec_cons _ _ _ _ _ Hms__e_ms) as [b_ms [bs_ms [t_ms [Hms__b_ms [Hms__eih_ms Heq]]]]].
-    destruct (msubst_LetNonRec_cons _ _ _ _ _ Hms__e'_ms) as [b'_ms [bs'_ms [t'_ms [Hms__b'_ms [Hms__eih'_ms Heq']]]]].
+    intros k rho env env' ct ck HeqDelta HeqGamma H_RD H_RG.
     subst.
 
     autorewrite with RC.
-    split. {
-      replace emptyContext with (@empty Kind, mupd (msyn1 rho) empty).
-      - eapply msubst_preserves_typing_1; eauto.
-        eapply msubstA_preserves_typing_1; eauto.
-        eapply T_Let; eauto.
-        + eapply LR_la_bnr__oks in IH_LR__bbs. 
-          apply IH_LR__bbs.
-        + eapply IH_LR__t.
-      - rewrite mupd_empty; eauto.
-    }
-    split. {
-      replace emptyContext with (@empty Kind, mupd (msyn2 rho) empty).
-      - eapply LR_la_bnr__oks in IH_LR__bbs as H.
-        eapply msubst_preserves_typing_2; eauto.
-        eapply msubstA_preserves_typing_2; eauto.
-        eapply T_Let; eauto.
-        + apply H.
-        + destruct H. destruct H0. 
-          rewrite <- H1.
-          unfold LR_logically_approximate in IH_LR__t.
-          inversion Hbinds. subst.
-          apply IH_LR__t.
-      - rewrite mupd_empty; eauto.
-    }
 
-    assert (H_RB : RB k rho b_ms b'_ms) by (eapply IH_LR__b; eauto).
-    autorewrite with RB in H_RB.
+    split...
+    split...
+
+    (* Some context management *)
+    clear IHbs.
+    clear Htyp__t.
+    clear Htyp__t'.
+    clear Htyp__bbs.
+    clear Htyp__bbs'.
+    clear Heqbinds__bbs.
+    clear Htyp__b.
+    clear Htyp__b'.
+    clear H5.
+    clear IH_LR__bs. 
+    clear IH__t.
 
     destruct b, b'.
-    + destruct v.
-      rename s into stricty.
+    + destruct v. destruct v0.
+      rename s into s.
+      rename s0 into s'.
       rename s1 into x.
+      rename s2 into x'.
       rename t2 into Tb.
-      rename t0 into eb.
-    
-      destruct v0.
-      rename s0 into stricty'.
-      rename s into x'.
-      rename t0 into Tb'.
-      rename t1 into eb'.
-      
-      assert (x' = x /\ Tb' = Tb). {
-        inversion Heqbinds.
-        apply skip.
-      }
+      rename t3 into Tb'.
+      rename t0 into tb.
+      rename t1 into tb'.
 
-      destruct H.
+      destruct IH__b as [Heq1 [Heq2 [Heq3 IH_LR__tb]]].
       subst.
 
-      destruct (msubstA_TermBind _ _ _ _ _ _ Hmsa__b_msa) as [eb_msa [Hmsa__eb_msa Heq]].
-      destruct (msubstA_TermBind _ _ _ _ _ _ Hmsa__b'_msa) as [eb'_msa [Hmsa__eb'_msa Heq']].
-      subst.
-      destruct (msubst_TermBind _ _ _ _ _ _ Hms__b_ms) as [eb_ms [Hms__eb_ms Heq]].
-      destruct (msubst_TermBind _ _ _ _ _ _ Hms__b'_ms) as [eb'_ms [Hms__eb'_ms Heq']].
-      subst.
+      rewrite msubstA_LetNonRec. rewrite msubstA_LetNonRec.
+      rewrite msubstA_BindingsNonRec_cons. rewrite msubstA_BindingsNonRec_cons.
+      rewrite msubst_LetNonRec. rewrite msubst_LetNonRec.
+      rewrite msubst_BindingsNonRec_cons. rewrite msubst_BindingsNonRec_cons.
+      rewrite msubstA_TermBind. rewrite msubstA_TermBind.
+      rewrite msubst_TermBind. rewrite msubst_TermBind.
 
       intros j Hlt__j e_f Hev__e_f.
-      apply inspect_eval__LetNonRec_cons in Hev__e_f as temp.
-      destruct temp as [j_1 [eb_f [Hev__eb_f [Hle__j_1 [bs0 [t0 [Hsubs__ih [j_2 [Hev__ih Heq]]]]]]]]].
-      
-      
-      destruct H_RB as [_ [ _ H_RC]].
-      autorewrite with RC in H_RC.
+      inversion Hev__e_f. subst.
+      clear Hev__e_f. rename H3 into Hev__e_f.
+      inversion Hev__e_f. subst.
+      rename H7 into Hev__vb.
+      rename H8 into Hev'__e_f.
 
-      destruct H_RC as [_ [_ H_RC]].
-      assert (Hlt__j_1 : j_1 < k). { apply skip. }
-      remember (H_RC j_1 Hlt__j_1 eb_f Hev__eb_f).
-      clear Heqe. clear H_RC. rename e into H_RC.
+      destruct IH_LR__tb as [_ [_ IH__tb]].
+      assert (HRC__tb :
+        RC k Tb rho
+          (msubst_term env (msubstA_term (msyn1 rho) tb))
+          (msubst_term env' (msubstA_term (msyn2 rho) tb'))  
+      )...
 
-      destruct H_RC as [eb'_f [j'_1 [Hev__eb'_f H_RC]]].
-      clear H_RC.
+      eapply RC_to_RV with (j := jb) (e_f := vb) in HRC__tb as temp...
+      destruct temp as [vb' [jb' [Hev__vb' HRV__vb]]].
+      clear Hev__vb.
 
-      simpl in Hms__eih_ms.
-      assert (msubst_term ((x, eb_f) :: env) (Let NonRec bs_msa t_msa) (Let NonRec bs0 t0)). {
-        apply skip.
-      }
-      simpl in Hms__eih'_ms.
-      assert (exists bs0' t0', substitute x eb'_f (Let NonRec bs'_ms t'_ms) (Let NonRec bs0' t0')). {
-        apply skip.
-      }
-      destruct H0 as [bs0' [t0' H1]].
-      assert (msubst_term ((x, eb'_f) :: env') (Let NonRec bs'_msa t'_msa) (Let NonRec bs0' t0')). {
-        apply skip.
-      }
-       
-      destruct IH_LR__let as [_ [_ IH_LR__let]].
-      assert (RC k T rho (Let NonRec bs0 t0) (Let NonRec bs0' t0')). {
-        eapply IH_LR__let.
-        - apply skip.
-        - apply skip.
-        - split. eassumption.
-          eapply RG_cons. 
-          all: apply skip.
-        - eassumption.
-        - eassumption.
-        - eassumption.
-        - eassumption.
-      }
+      destruct IH_LR__let as [_ [_ IH__let]].
 
-      autorewrite with RC in H2.
-      destruct H2 as [_ [_ H2]].
-      assert (Hlt__j_2 : j_2 < k). {  apply skip. }
-      remember (H2 _ Hlt__j_2 _ Hev__ih).
-      clear Heqe. clear H2. rename e into H2.
-      destruct H2 as [e'_f [j'_2 [Hev__e'_f H2]]].
-
-      eexists. eexists.
-      split. {
-        eapply E_Let.
-        eapply E_ConsB_NonRec.
-        all: eauto.
-        inversion Hev__e'_f.
-        subst.
-        eauto.
+      assert (HRC__let :
+        RC (k - jb -1) T rho
+          <{ /[ (x, vb) :: drop x env /] ( /[[ msyn1 rho /] {Let NonRec bs t} ) }>
+          <{ /[ (x, vb') :: drop x env' /] ( /[[ msyn2 rho /] {Let NonRec bs' t'} ) }>
+      ). {
+        apply IH__let with (ct := (x, Tb) :: drop x ct) (ck := ck).
+        - simpl in Hbinds''.
+          rewrite append_singleton_l in Hbinds''.
+          inversion Hbinds''. subst.
+          reflexivity.
+        - simpl in Hbinds''.
+          rewrite append_singleton_l in Hbinds''.
+          inversion Hbinds''. subst.
+          simpl.
+          apply mupdate_drop.
+        - assumption.
+        - assert (closed vb). {
+            eapply typable_empty__closed.
+            eapply RV_typable_empty_1...
+          }
+          assert (closed vb'). {
+            eapply typable_empty__closed.
+            eapply RV_typable_empty_2...
+          }
+          replace vb with (msubstA_term (msyn1 rho) vb) by (eapply msubstA_closed; eauto).
+          replace vb' with (msubstA_term (msyn2 rho) vb') by (eapply msubstA_closed; eauto).
+          apply RG_cons.
+          + apply RV_monotone with (k := k - jb)...
+            rewrite msubstA_closed...
+            rewrite msubstA_closed...
+          + apply RG_monotone with (k := k)...
+            apply RG_drop...
       }
 
-      assert (forall i, i < k - j -> i < k - j_2). { apply skip. } 
+      apply RC_to_RV with (j := j0) (e_f := e_f) in HRC__let as temp...
+      * destruct temp as [e'_f [j0' [Hev__e'_f HRV0]]].
 
-      destruct T.
-      all: eauto.
-      apply skip.
-    +
+        rewrite msubstA_LetNonRec in Hev__e'_f.
+        rewrite msubst_LetNonRec in Hev__e'_f.
+
+        rewrite <- msubstA_bnr__bvbs in Hev__e'_f.
+
+        inversion Hev__e'_f. subst.
+
+        eexists. eexists.
+        split. {
+          apply E_Let.
+          apply E_ConsB_NonRec with (vb := vb') (jb := jb') (v := e'_f) (j := j0')...
+          simpl.
+          rewrite <- msubst_bnr__bound_vars.
+          rewrite <- msubstA_bnr__bvbs.
+          destruct (existsb (eqb x) (bvbs bs')) eqn:Hexb.
+          - assert (closed vb). {
+              eapply typable_empty__closed.
+              eapply RV_typable_empty_1...
+            }
+            assert (closed vb'). {
+              eapply typable_empty__closed.
+              eapply RV_typable_empty_2...
+            }
+            apply RG_env_closed in H_RG as Hclss.
+            destruct Hclss as [Hcls__env Hcls__env'].
+            rewrite <- subst_bnr__msubst_bnr'...
+            replace (concat (map bvb <{ /[[ msyn2 rho /][bnr] bs' }>)) with
+              (bvbs  <{ /[[ msyn2 rho /][bnr] bs' }>)...
+            rewrite <- msubstA_bnr__bvbs.
+
+            apply existsb_exists in Hexb.
+            destruct Hexb as [y [HIn Heqb]].
+            apply eqb_eq in Heqb as Heq.
+            subst.
+            rewrite In__mdrop in H3...
+          - assert (closed vb). {
+              eapply typable_empty__closed.
+              eapply RV_typable_empty_1...
+            }
+            assert (closed vb'). {
+              eapply typable_empty__closed.
+              eapply RV_typable_empty_2...
+            }
+            apply RG_env_closed in H_RG as Hclss.
+            destruct Hclss as [Hcls__env Hcls__env'].
+            rewrite <- subst_bnr__msubst_bnr'...
+            replace (concat (map bvb <{ /[[ msyn2 rho /][bnr] bs' }>)) with
+              (bvbs  <{ /[[ msyn2 rho /][bnr] bs' }>)...
+            rewrite <- msubstA_bnr__bvbs.
+
+            apply existsb_nexists in Hexb.
+            rewrite not_In__mdrop in H3...
+            + unfold btvbs. simpl.
+              replace (concat (map btvb bs')) with (btvbs bs')...
+
+              rewrite <- subst_msubst''...
+              * eapply RG_env_closed.
+                eapply RG_drop...
+              * intros Hcon.
+                apply Hexb.
+                exists x.
+                rewrite eqb_refl.
+                eauto.
+            + intros Hcon.
+              apply Hexb.
+              exists x.
+              rewrite eqb_refl.
+              eauto.
+        }
+
+        eapply RV_condition...
+        replace (k - (jb + 1 + j0)) with (k - jb - 1 - j0)...
+      * rewrite msubstA_LetNonRec.
+        rewrite msubst_LetNonRec. 
+        apply E_Let.
+
+        simpl.
+        simpl in Hev'__e_f.
+
+        rewrite <- msubst_bnr__bound_vars in Hev'__e_f.
+        rewrite <- msubstA_bnr__bvbs in Hev'__e_f.
+
+        destruct (existsb (eqb x) (bvbs bs)) eqn:Hexb. {
+          assert (closed vb). {
+            eapply typable_empty__closed.
+            eapply RV_typable_empty_1...
+          }
+          assert (closed vb'). {
+            eapply typable_empty__closed.
+            eapply RV_typable_empty_2...
+          }
+          apply RG_env_closed in H_RG as Hclss.
+          destruct Hclss as [Hcls__env Hcls__env'].
+          rewrite <- subst_bnr__msubst_bnr' in Hev'__e_f...
+          replace (concat (map bvb <{ /[[ msyn1 rho /][bnr] bs }>)) with
+            (bvbs <{ /[[ msyn1 rho /][bnr] bs }>) in Hev'__e_f...
+          
+          unfold btvbs in Hev'__e_f.
+          simpl in Hev'__e_f.
+          rewrite <- msubstA_bnr__bvbs.
+          rewrite <- msubstA_bnr__bvbs in Hev'__e_f.
+
+          apply existsb_exists in Hexb.
+          destruct Hexb as [y [HIn Heqb]].
+          apply eqb_eq in Heqb as Heq.
+          subst.
+          rewrite In__mdrop...
+        } {
+          assert (closed vb). {
+            eapply typable_empty__closed.
+            eapply RV_typable_empty_1...
+          }
+          assert (closed vb'). {
+            eapply typable_empty__closed.
+            eapply RV_typable_empty_2...
+          }
+          apply RG_env_closed in H_RG as Hclss.
+          destruct Hclss as [Hcls__env Hcls__env'].
+          rewrite <- subst_bnr__msubst_bnr' in Hev'__e_f...
+          replace (concat (map bvb <{ /[[ msyn1 rho /][bnr] bs }>)) with
+            (bvbs <{ /[[ msyn1 rho /][bnr] bs }>) in Hev'__e_f...
+          
+          unfold btvbs in Hev'__e_f.
+          simpl in Hev'__e_f.
+          rewrite <- msubstA_bnr__bvbs.
+          rewrite <- msubstA_bnr__bvbs in Hev'__e_f.
+
+          apply existsb_nexists in Hexb.
+          rewrite not_In__mdrop.
+          - replace (concat (map btvb bs)) with (btvbs bs) in Hev'__e_f...
+            rewrite <- subst_msubst'' in Hev'__e_f...
+            + eapply RG_env_closed_1.
+              eapply RG_drop...
+            + intros Hcon.
+              apply Hexb.
+              exists x.
+              rewrite eqb_refl.
+              eauto.
+          - intros Hcon.
+            apply Hexb.
+            exists x.
+            rewrite eqb_refl.
+            eauto.
+        }
+  + destruct v. exfalso. auto.
+  + destruct v. exfalso. auto.
+  + exfalso. auto.
+  + 
 Admitted.

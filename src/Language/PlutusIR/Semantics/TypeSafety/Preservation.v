@@ -9,79 +9,29 @@ Lemma preservation__compute_defaultfun : forall t T,
     forall v,
       compute_defaultfun t = Datatypes.Some v ->
       emptyContext |-+ v : T.
-Proof.
+Proof with (try discriminate).
   intros.
-  destruct t; inversion H0.
-  destruct t1; inversion H0. {
-    destruct t1_1; inversion H0. {
-      destruct t1_1_1; inversion H0. 
-      destruct d; inversion H0.
-      destruct t1_1_2; inversion H0.
-      destruct s; inversion H0.
-      destruct u; inversion H0.
-      destruct v0; inversion H0.
-      destruct t1_2; inversion H0.
-      destruct s; inversion H0.
-      destruct u0; inversion H0.
-      destruct v0; inversion H0.
-      destruct t2; inversion H0.
-      destruct s; inversion H0.
-      destruct u1; inversion H0.
-      destruct v0; inversion H0.
-      inversion H. subst.
-      inversion H23; subst.
-      apply Eqdep.EqdepTheory.inj_pair2 in H20.
-      subst.
-      inversion H21; subst.
-      inversion H24; subst.
-      apply Eqdep.EqdepTheory.inj_pair2 in H22.
-      subst.
-      inversion H20; subst.
-      inversion H26; subst.
-      apply Eqdep.EqdepTheory.inj_pair2 in H25.
-      subst.
-      inversion H22; subst.
-      apply T_Constant.
-    } {
-      destruct d; inversion H2; 
-        try solve [
-          destruct t1_2; inversion H2;
-          destruct s; inversion H2;
-          destruct u; inversion H2;
-          destruct v0; inversion H0;
-          destruct t2; inversion H0;
-          destruct s; inversion H0;
-          destruct u0; inversion H0;
-          destruct v0; inversion H0;
-          inversion H13; subst;
-          inversion H; subst;
-          clear H;
-          inversion H16; subst;
-          clear H16;
-          inversion H18; subst;
-          clear H18;
-          inversion H15; subst;
-          clear H15;
-          inversion H19; subst;
-          clear H19;
-          apply Eqdep.EqdepTheory.inj_pair2 in H16;
-          subst;
-          apply Eqdep.EqdepTheory.inj_pair2 in H15;
-          subst;
-          apply T_Constant
-        ].
-      }
-    } {
-      destruct d; inversion H2;
-      destruct t2; inversion H2;
-      destruct s; inversion H2;
-      destruct u; inversion H2;
-      destruct v0; inversion H2;
-      inversion H; subst;
-      inversion H11; subst;
-      inversion H11; subst;
-      apply T_Constant.
-    }
+  destruct t...
+  simpl in H0.
+  destruct d...
+  all: destruct l...
+  all: destruct t...
+  all: destruct s...
+  all: destruct u...
+  all: destruct v0...
+  all: destruct l...
+  all: try destruct t...
+  all: try destruct s...
+  all: try destruct u0...
+  all: try destruct v0...
+  all: try destruct l...
+  all: try solve [inversion H0; subst; inversion H; subst; inversion H4; subst; simpl; eauto with typing].
+  destruct t...
+  destruct s...
+  destruct u1...
+  destruct v0...
+  destruct l...
+  try solve [inversion H0; subst; inversion H; subst; inversion H4; subst; simpl; eauto with typing].
 Qed.
 
 
@@ -144,27 +94,29 @@ Proof.
   - (* E_Constant *) 
     intros. unfold P_eval. intros.
     assumption.
-  - (* E_Builtin *) 
+  - (* E_Builtin *)
+    intros. unfold P_eval. intros.
+    inversion H0. subst.
+    destruct f; simpl.
+    all: eapply T_ExtBuiltin; simpl; eauto.
+    all: intros; exfalso; eauto.
+  - (* E_ExtBuiltinPartiallyApplied *) 
     intros. unfold P_eval. intros.
     assumption.
-  - (* E_ApplyBuiltin1 *) 
+  - (* E_ExtBuiltinFullApplied *)
+    intros. unfold P_eval. intros.
+    eapply preservation__compute_defaultfun; eauto.
+  - (* E_ApplyExtBuiltin *) 
     intros. unfold P_eval. intros.
     inversion H5. subst.
-    apply T_Apply with T1.
-    + apply H0.
-      assumption. 
-    + apply H3.
-      assumption.
-  - (* E_ApplyBuiltin2 *) 
+    eapply H0 in H9; eauto.
+    inversion H9. subst.
+    unfold combineTy in H15.
+    apply skip.
+
+  - (* E_If *)
     intros. unfold P_eval. intros.
-    inversion H6. subst.
-    eapply preservation__compute_defaultfun.
-    + apply T_Apply with T1. 
-      * apply H0.
-        assumption.
-      * apply H3.
-        assumption.
-    + assumption.
+    assumption.
   - (* E_IfTyInst *) 
     intros. unfold P_eval. intros.
     inversion H1; subst.

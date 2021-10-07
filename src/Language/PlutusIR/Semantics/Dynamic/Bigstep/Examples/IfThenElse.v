@@ -25,19 +25,16 @@ Proof.
       eapply E_Apply.
       * apply E_LamAbs.
       * apply E_Constant.
-      * apply S_Builtin.
-      * apply E_Builtin.
+      * simpl. 
+        apply E_If.
     + apply E_Constant.
-  - apply S_Apply.
-    + apply S_Apply.
-      * apply S_Var1.
-      * apply S_Constant.
-    + apply S_Constant.
-  - eapply E_IfTrue.
+  - simpl.
+    rewrite eqb_refl.
+    eapply E_IfTrue.
     + apply E_IfThenBranch.
       * apply E_IfCondition.
         -- apply E_IfTyInst.
-           apply E_Builtin.
+           apply E_If.
         -- apply E_Constant.
     + apply E_Constant.
 Qed.

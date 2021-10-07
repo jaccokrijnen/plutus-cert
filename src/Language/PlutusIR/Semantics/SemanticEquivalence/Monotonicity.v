@@ -34,9 +34,8 @@ Proof.
   destruct RC as [e'_f [j' [Hev__e' RV]]].
 
   exists e'_f, j'. split; auto.
-
-  destruct T; try solve [eauto || intros; eapply RV; eauto using helper]. 
-  - intros. apply skip.
+  
+  destruct T; try solve [eauto || intros; eapply RV; eauto using helper].  
 Admitted.
     
 Lemma RV_monotone : forall k rho T i v v',

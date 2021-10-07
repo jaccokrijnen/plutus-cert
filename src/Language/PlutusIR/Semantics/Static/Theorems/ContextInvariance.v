@@ -5,6 +5,7 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.ContextInv
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Rules.
 
 Require Import Coq.Lists.List.
+Require Import PlutusCert.Util.
 
 (** * Context invariance *)
 
@@ -295,16 +296,33 @@ Proof with eauto.
       * intros.
         apply H4.
     + assumption.
+  - (* T_ExtBuiltin *)
+    intros. unfold P_has_type. intros.
+    eapply T_ExtBuiltin.
+    + eauto.
+    + eauto.
+    + intros.
+      eapply H2.
+      all: eauto.
+      destruct p.
+      simpl.
+      intros.
+      eapply H4.
+      apply AFIT_ExtBuiltin.
+      exists t.
+      split. apply in_combine_l in H6. assumption.
+      auto.
+    + auto.
   
   - (* W_Con *)
     intros. unfold P_constructor_well_formed. intros.
-    constructor.
+    econstructor. eauto.
     intros.
     eapply context_invariance__typelevel.
-    + apply H.
+    + apply H0.
       assumption.
     + intros.
-      apply H0.
+      apply H1.
   
   - (* W_NilB_NonRec *)
     intros. unfold P_bindings_well_formed_nonrec. intros.

@@ -103,6 +103,9 @@ Inductive appears_free_in_Term : name -> Term -> Prop :=
   | AFIT_Unwrap : forall x t0,
       appears_free_in_Term x t0 ->
       appears_free_in_Term x (Unwrap t0)
+  | AFIT_ExtBuiltin : forall x f args,
+      (exists arg, In arg args /\ appears_free_in_Term x arg) ->
+      appears_free_in_Term x (ExtBuiltin f args)
 
 with appears_free_in_Term__bindings_nonrec : name -> list Binding -> Prop :=
   | AFIT_ConsB1_NonRec : forall x b bs,

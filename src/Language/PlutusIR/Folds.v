@@ -15,7 +15,7 @@ Algebra for the AST types.
 This can probably be generated as a mutual recursion scheme
 *)
 Section Algebras.
-  Context (rTerm rBinding rBindings : Type).
+  Context (rTerm rTerms rBinding rBindings : Type).
 
 Record AlgTerm: Type := mkTermAlg
   { a_Let      : Recursivity -> rBindings -> rTerm -> rTerm
@@ -29,6 +29,12 @@ Record AlgTerm: Type := mkTermAlg
   ; a_Error    : Ty -> rTerm
   ; a_IWrap    : Ty -> Ty -> rTerm -> rTerm
   ; a_Unwrap   : rTerm -> rTerm
+  ; a_ExtBuiltin : DefaultFun -> rTerms -> rTerm
+  }
+
+with AlgTerms: Type := mkTermsAlg
+  { a_cons_t : rTerm -> rTerms -> rTerms
+  ; a_nil_t  : rTerms
   }
 
 with AlgBinding : Type := mkBindingAlg
@@ -38,8 +44,8 @@ with AlgBinding : Type := mkBindingAlg
   }
 
 with AlgBindings : Type := mkBindingsAlg
-  { a_cons : rBinding -> rBindings -> rBindings
-  ; a_nil  : rBindings
+  { a_cons_b : rBinding -> rBindings -> rBindings
+  ; a_nil_b  : rBindings
   }.
 
 End Algebras.
@@ -54,7 +60,7 @@ Print Visibility.
 Definition algProd (alg : Type -> Type) :=
   forall {a b},  alg a -> alg b -> alg (a * b)%type. (* type scope is not inferred because alg is not yet typed *)
 
-Definition algBindingProd {rTerm rBindings} : algProd (fun x => AlgBinding rTerm x rBindings) :=
+Definition algBindingProd {rTerm rTerms rBindings} : algProd (fun x => AlgBinding rTerm rTerms x rBindings) :=
   fun _ _ a1 a2 =>
     {| a_TermBind     := fun s v t => (a_TermBind a1 s v t , a_TermBind a2 s v t)
     ;  a_TypeBind     := fun tv ty => (a_TypeBind a1 tv ty , a_TypeBind a2 tv ty)
@@ -64,14 +70,19 @@ Definition algBindingProd {rTerm rBindings} : algProd (fun x => AlgBinding rTerm
 
 Section Folds.
 
-  Context {rt rb rbs : Type}. (* Algebra return types *)
-  Context (algTerm     : AlgTerm     rt rb rbs).
-  Context (algBinding  : AlgBinding  rt rb rbs).
-  Context (algBindings : AlgBindings rt rb rbs).
+  Context {rt rts rb rbs : Type}. (* Algebra return types *)
+  Context (algTerm     : AlgTerm     rt rts rb rbs).
+  Context (algTerms    : AlgTerms    rt rts rb rbs).
+  Context (algBinding  : AlgBinding  rt rts rb rbs).
+  Context (algBindings : AlgBindings rt rts rb rbs).
+
+  Definition foldTerms (foldTerm : Term -> rt) (ts : list Term) : rts :=
+    fold_right (a_cons_t algTerms) (a_nil_t algTerms) (map foldTerm ts)
+  .
 
   (* See note [Structural Recursion Checker] *)
   Definition foldBindings (foldBinding : Binding -> rb) (bs : list Binding) : rbs :=
-    fold_right (a_cons algBindings) (a_nil algBindings) (map foldBinding bs)
+    fold_right (a_cons_b algBindings) (a_nil_b algBindings) (map foldBinding bs)
   .
 
   Fixpoint foldTerm (t : Term) : rt := match t with
@@ -86,6 +97,7 @@ Section Folds.
     | (Error ty)        => a_Error algTerm ty
     | (IWrap ty1 ty2 t) => a_IWrap algTerm ty1 ty2 (foldTerm t)
     | (Unwrap t)        => a_Unwrap algTerm (foldTerm t)
+    | (ExtBuiltin f args) => a_ExtBuiltin algTerm f (foldTerms foldTerm args)
   end
 
   with foldBinding (b : Binding) : rb := match b with
@@ -266,7 +278,7 @@ Section Use. (* name comes from "use" rules in attribute grammars *)
   *)
 
   Context {a : Type} (f : list a -> a).
-  Definition useAlg : AlgTerm a a a.
+  Definition useAlg : AlgTerm a a a a.
   refine (
     {|
     a_Let := fun (_ : Recursivity) (rBs : a) (r : a) => f [rBs; r];
@@ -279,12 +291,13 @@ Section Use. (* name comes from "use" rules in attribute grammars *)
     a_TyInst := fun (X : a) (_ : Ty) => f [X];
     a_Error := fun _ : Ty => f [];
     a_IWrap := fun (_ _ : Ty) (X : a) => f [X];
-    a_Unwrap := fun X : a => f [X]
+    a_Unwrap := fun X : a => f [X];
+    a_ExtBuiltin := fun (_ : DefaultFun) (rTs : a) => f [rTs]
     |}
     ).
   Defined.
 
-  Definition useAlgBinding : AlgBinding a a a :=
+  Definition useAlgBinding : AlgBinding a a a a :=
     {|
     a_TermBind := fun (_ : Strictness) (_ : VDecl) (X : a) => f [X];
     a_TypeBind := fun (_ : TVDecl) (_ : Ty) => f [];
@@ -292,17 +305,23 @@ Section Use. (* name comes from "use" rules in attribute grammars *)
     |}
     .
 
-  Definition useAlgBindings : AlgBindings a a a :=
+  Definition useAlgTerms : AlgTerms a a a a :=
     {|
-    a_nil := f [];
-    a_cons := fun rx rxs => f [rx; rxs]
+    a_nil_t := f [];
+    a_cons_t := fun rx rxs => f [rx; rxs]
+    |}.
+
+  Definition useAlgBindings : AlgBindings a a a a :=
+    {|
+    a_nil_b := f [];
+    a_cons_b := fun rx rxs => f [rx; rxs]
     |}.
 
   Definition foldTermUse (t : Term) : a :=
-    foldTerm useAlg useAlgBinding useAlgBindings t.
+    foldTerm useAlg useAlgTerms useAlgBinding useAlgBindings t.
 
   Definition foldBindingUse (b : Binding) : a :=
-    foldBinding useAlg useAlgBinding useAlgBindings b.
+    foldBinding useAlg useAlgTerms useAlgBinding useAlgBindings b.
 
   Definition foldBindingsUse (bs : list Binding) : a :=
     foldBindings useAlgBindings foldBindingUse bs.
@@ -364,6 +383,7 @@ Inductive con_term :=
   | con_Error
   | con_IWrap
   | con_Unwrap
+  | con_ExtBuiltin
   .
 
 Definition con_type (v v' b b': Set) P Q : con_term -> Type :=
@@ -379,6 +399,7 @@ Definition con_type (v v' b b': Set) P Q : con_term -> Type :=
     | con_Error     => forall t : ty v' b', P (Error t)
     | con_IWrap     => forall (t t0 : ty v' b') (t1 : term v v' b b'), P t1 -> P (IWrap t t0 t1)
     | con_Unwrap    => forall t : term v v' b b', P t -> P (Unwrap t)
+    | con_ExtBuiltin => forall f ts, ForallT P ts -> P (ExtBuiltin f ts)
     end.
 
 Inductive con_binding :=

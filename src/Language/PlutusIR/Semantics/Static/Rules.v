@@ -97,9 +97,18 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
       normalise (unwrapIFix F K T) S ->
       ctx |-+ (Unwrap M) : S
 
+  (* Extras *)
+  | T_ExtBuiltin : forall ctx f args Targs Tr Tr',
+      List.length args <= arity f ->
+      (Targs, Tr) = splitTy (lookupBuiltinTy f) ->
+      (forall p, In p (List.combine args Targs) -> ctx |-+ (fst p) : (snd p)) ->
+      Tr' = combineTy (skipn (List.length args) Targs) Tr ->
+      ctx |-+ (ExtBuiltin f args) : Tr'
+
   with constructor_well_formed : Delta -> constructor -> Prop :=
-    | W_Con : forall Delta x T ar,
-        (forall U, In U (listOfArgumentTypes T) -> Delta |-* U : Kind_Base) ->
+    | W_Con : forall Delta x T ar Targs Tr,
+        (Targs, Tr) = splitTy T -> 
+        (forall U, In U Targs -> Delta |-* U : Kind_Base) ->
         constructor_well_formed Delta (Constructor (VarDecl x T) ar)
 
   with bindings_well_formed_nonrec : Context -> list Binding -> Prop :=
