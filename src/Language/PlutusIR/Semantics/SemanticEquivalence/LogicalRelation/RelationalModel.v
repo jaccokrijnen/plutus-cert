@@ -2,6 +2,7 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.Preservation.
+Require Import PlutusCert.Util.Map.Mupdate.
 
 From Coq Require Import Lia.
 Require Import Arith.
@@ -65,8 +66,8 @@ Definition Rel
   forall j v v',
     Chi j v v' ->
     (* value v /\ value v' /\ *)
-    emptyContext |-+ v : T /\
-    emptyContext |-+ v' : T' /\ 
+    empty ,, empty |-+ v : T /\
+    (empty ,, empty |-+ v' : T') /\ 
     forall i,
       i <= j ->
       Chi i v v'.
@@ -79,8 +80,8 @@ Definition Rel
 Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k :=
   RC k T rho e e' =>
     (* RC *)
-    emptyContext |-+ e : (msubstT (msyn1 rho) T) /\
-    emptyContext |-+ e' : (msubstT (msyn2 rho) T) /\
+    empty ,, empty |-+ e : (msubstT (msyn1 rho) T) /\
+    (empty ,, empty |-+ e' : (msubstT (msyn2 rho) T)) /\
 
     forall j (Hlt_j : j < k) e_f,
       e =[j]=> e_f ->
@@ -171,17 +172,17 @@ Definition RV (k : nat) (T : Ty) (rho : tymapping) (v v' : Term) : Prop :=
 
 Lemma RV_typable_empty : forall k T rho v v',
     RV k T rho v v' ->
-    emptyContext |-+ v : (msubstT (msyn1 rho) T) /\ emptyContext |-+ v' : (msubstT (msyn2 rho) T).
+    empty ,, empty |-+ v : (msubstT (msyn1 rho) T) /\ (empty ,, empty |-+ v' : (msubstT (msyn2 rho) T)).
 Proof. intros. autorewrite with RC in H. destruct H as [_ [_ H]]. destruct T; edestruct H as [He [He' _]]; eauto. Qed.
 
 Lemma RV_typable_empty_1 : forall k T rho v v',
     RV k T rho v v' ->
-    emptyContext |-+ v : (msubstT (msyn1 rho) T).
+    empty ,, empty |-+ v : (msubstT (msyn1 rho) T).
 Proof. intros. destruct (RV_typable_empty _ _ _ _ _ H). eauto. Qed.
 
 Lemma RV_typable_empty_2 : forall k T rho v v',
     RV k T rho v v' ->
-    emptyContext |-+ v' : (msubstT (msyn2 rho) T).
+    empty ,, empty |-+ v' : (msubstT (msyn2 rho) T).
 Proof. intros. destruct (RV_typable_empty _ _ _ _ _ H). eauto. Qed.
 
 Lemma RC_to_RV : forall k T rho e e',
@@ -422,12 +423,6 @@ Inductive RG (rho : tymapping) (k : nat) : tass -> env -> env -> Prop :=
       RV k T rho (msubstA_term (msyn1 rho) v1) (msubstA_term (msyn2 rho) v2) ->
       RG rho k c e1 e2 ->
       RG rho k ((x, T) :: c) ((x, msubstA_term (msyn1 rho) v1) :: e1) ((x, msubstA_term (msyn2 rho) v2) :: e2).
-
-Fixpoint mupdate {X:Type} (m : partial_map X) (xts : list (string * X)) :=
-  match xts with
-  | nil => m
-  | ((x, v) :: xts') => x |-> v ; (mupdate m xts')
-  end.
   
 Fixpoint lookup {X:Type} (k : string) (l : list (name * X)) : option X :=
   match l with
@@ -874,8 +869,8 @@ Proof. induction xts; auto. simpl. destruct a. auto. Qed.
 Lemma msubstA_preserves_typing_1 : forall rho ck,
     RD ck rho ->
     forall Delta Gamma t T,
-      (mupdate Delta ck, Gamma) |-+ t : T ->
-      (Delta, mupd (msyn1 rho) Gamma) |-+ (msubstA_term (msyn1 rho) t) : (msubstT (msyn1 rho) T). 
+      mupdate Delta ck ,, Gamma |-+ t : T ->
+      Delta ,, mupd (msyn1 rho) Gamma |-+ (msubstA_term (msyn1 rho) t) : (msubstT (msyn1 rho) T). 
 Proof.
   intros rho ck V.
   induction V.
@@ -895,8 +890,8 @@ Qed.
 Lemma msubstA_preserves_typing_2 : forall rho ck,
     RD ck rho ->
     forall Delta Gamma t T,
-      (mupdate Delta ck, Gamma) |-+ t : T ->
-      (Delta, mupd (msyn2 rho) Gamma) |-+ (msubstA_term (msyn2 rho) t) : (msubstT (msyn2 rho) T). 
+      mupdate Delta ck ,, Gamma |-+ t : T ->
+      Delta ,, mupd (msyn2 rho) Gamma |-+ (msubstA_term (msyn2 rho) t) : (msubstT (msyn2 rho) T). 
 Proof.
   intros rho ck V.
   induction V.
@@ -916,8 +911,8 @@ Qed.
 Lemma msubst_preserves_typing_1 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
     forall Gamma T t,
-      (empty, mupd (msyn1 rho) (mupdate Gamma c)) |-+ t : (msubstT (msyn1 rho) T) ->
-      (empty, mupd (msyn1 rho) Gamma) |-+ (msubst_term e1 t) : (msubstT (msyn1  rho) T). 
+      empty ,, (mupd (msyn1 rho) (mupdate Gamma c)) |-+ t : (msubstT (msyn1 rho) T) ->
+      empty ,, (mupd (msyn1 rho) Gamma) |-+ (msubst_term e1 t) : (msubstT (msyn1  rho) T). 
 Proof.
   intros rho k c e1 e2 V.
   induction V.
@@ -937,8 +932,8 @@ Qed.
 Lemma msubst_preserves_typing_2 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
     forall Gamma T t,
-      (empty, mupd (msyn2 rho) (mupdate Gamma c)) |-+ t : (msubstT (msyn2 rho) T) ->
-      (empty, mupd (msyn2 rho) Gamma) |-+ (msubst_term e2 t) : (msubstT (msyn2 rho) T). 
+      empty ,, (mupd (msyn2 rho) (mupdate Gamma c)) |-+ t : (msubstT (msyn2 rho) T) ->
+      empty ,, (mupd (msyn2 rho) Gamma) |-+ (msubst_term e2 t) : (msubstT (msyn2 rho) T). 
 Proof.
   intros rho k c e1 e2 V.
   induction V.
@@ -965,8 +960,8 @@ Qed.
     $\gamma(e')$ are related for $k$ steps as computations of type $\tau$.
 *)
 Definition LR_logically_approximate (Delta : partial_map Kind) (Gamma : partial_map Ty) (e e' : Term) (T : Ty) :=
-    (Delta, Gamma) |-+ e : T /\
-    (Delta, Gamma) |-+ e' : T /\
+    Delta ,, Gamma |-+ e : T /\
+    (Delta ,, Gamma |-+ e' : T) /\
     forall k rho env env' ct ck,
       Delta = mupdate empty ck -> 
       Gamma = mupdate empty ct ->
@@ -984,44 +979,9 @@ Definition LR_logically_approximate (Delta : partial_map Kind) (Gamma : partial_
 Definition LR_logically_equivalent (Delta : partial_map Kind) (Gamma : partial_map Ty) (e e' : Term) (T : Ty) :=
   LR_logically_approximate Delta Gamma e e' T /\ LR_logically_approximate Delta Gamma e' e T.
 
-Equations RB (k : nat) (rho : tymapping) (b b' : Binding) : Prop :=
-  RB k rho b b' =>
-    emptyContext |-ok b /\
-    emptyContext |-ok b' /\
-
-    match b, b' with
-    | TermBind s (VarDecl x T) e, TermBind s' (VarDecl x' T') e' =>
-        s' = s /\ 
-        x' = x /\
-        (exists T0, 
-          msubstT (msyn1 rho) T0 = T /\ 
-          msubstT (msyn2 rho) T0 = T') /\
-        RC k T rho e e'
-    | TypeBind _ _, TypeBind _ _ => b = b'
-    | DatatypeBind _, DatatypeBind _ => b = b'
-    | _, _ => False
-    end.
-
-Lemma RB_condition : forall k rho b b',
-    RB k rho b b' ->
-
-    match b, b' with
-    | TermBind s (VarDecl x T) e, TermBind s' (VarDecl x' T') e' =>
-        s' = s /\ 
-        x' = x /\
-        (exists T0, 
-          msubstT (msyn1 rho) T0 = T /\ 
-          msubstT (msyn2 rho) T0 = T') /\
-        RC k T rho e e'
-    | TypeBind _ _, TypeBind _ _ => b = b'
-    | DatatypeBind _, DatatypeBind _ => b = b'
-    | _, _ => False
-    end.
-Proof. intros. autorewrite with RB in H. apply H. Qed.
-
 Definition LR_logically_approximate_binding (Delta : Delta) (Gamma : Gamma) (b b' : Binding) :=
-  (Delta, Gamma) |-ok b /\
-  (Delta, Gamma) |-ok b' /\
+  Delta ,, Gamma |-ok b /\
+  (Delta ,, Gamma |-ok b') /\
   match b, b' with
   | TermBind s (VarDecl x T) e, TermBind s' (VarDecl x' T') e' =>
       s' = s /\

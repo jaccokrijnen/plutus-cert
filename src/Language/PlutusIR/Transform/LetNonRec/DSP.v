@@ -4,200 +4,297 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RelationalModel.
-Require Import PlutusCert.Util.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Monotonicity.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Auto.
 
-(*
-Lemma compatibility_desugar : forall Delta Gamma x Tb eb t eb' t' T Delta' Gamma', 
-    Delta |-* Tb : Kind_Base ->
-    Delta' = fst (append (binds (TermBind Strict (VarDecl x Tb) eb)) (Delta, Gamma)) ->
-    Gamma' = snd (append (binds (TermBind Strict (VarDecl x Tb) eb)) (Delta, Gamma)) ->
-    LR_logically_approximate Delta Gamma eb eb' Tb ->
-    LR_logically_approximate Delta' Gamma' t t' T ->
-    LR_logically_approximate Delta Gamma (Let NonRec (TermBind Strict (VarDecl x Tb) eb :: nil) t) (Apply (LamAbs x Tb t') eb') T.
-Proof.
-  intros Delta Gamma x Tb eb t eb' t' T Delta' Gamma' Hkind__Tb HeqDelta' HeqGamma' IH_LR__eb IH_LR__t. 
+Require Import Coq.Lists.List.
+Require Import Coq.Program.Basics.
+
+
+
+
+(** * [CNR] is semantics preserving *)
+
+(** ** Translation relation specific compatibility lemmas *)
+
+Lemma compatibility_LetNonRec_nil__desugar : forall Delta Gamma t t' T,
+    LR_logically_approximate Delta Gamma t t' T ->
+    LR_logically_approximate Delta Gamma (Let NonRec nil t) t' T.
+Proof with eauto_LR.
+  intros Delta Gamma t t' T IHLR__t.
   unfold LR_logically_approximate.
 
-  unfold binds in HeqDelta'.
-  unfold binds in HeqGamma'.
-  rewrite append_singleton_l in HeqDelta'.
-  rewrite append_singleton_l in HeqGamma'.
-  simpl in HeqDelta'.
-  simpl in HeqGamma'.
-  subst. 
-  
+  destruct IHLR__t as [Htyp__t [Htyp__t' IH__t]].
 
-  split. {
-    eapply T_Let; eauto with typing.
-    - eapply W_ConsB_NonRec.
-      all: eauto with typing.
-      apply W_Term. 
-      all: eauto with typing.
-      apply IH_LR__eb.
-    - simpl.
-      unfold flatten.
-      simpl.
-      rewrite append_emptyContext_r.
-      rewrite append_singleton_l.
-      apply IH_LR__t.
-  }
+  split...
+  split...
 
-  split. {
-    eapply T_Apply; eauto with typing.
-    - eapply T_LamAbs.
-      all: eauto with typing.
-      apply IH_LR__t.
-    - apply IH_LR__eb.
-  }
-
-  intros k rho env env' ct ck HeqDelta HeqGamma [H_RD H_RG].
-  subst.
-
-  intros e_msa e'_msa e_ms e'_ms.
-  intros Hmsa__e_msa Hmsa__e'_msa Hms__e_ms Hms__e'_ms.
-
-  apply msubstA_LetNonRec_cons in Hmsa__e_msa as temp.
-  destruct temp as [b_msa [bs_msa [t_msa [Hmsa__b_msa [Hmsa__eih_msa Heq]]]]].
-  subst.
-
-  apply msubstA_TermBind in Hmsa__b_msa as temp.
-  destruct temp as [eb_msa [Hmsa__eb_msa Heq]].
-  subst.
-
-  apply msubstA_LetNonRec_nil in Hmsa__eih_msa as temp.
-  destruct temp as [t_msa__temp [Hms__t_msa Heq]].
-  inversion Heq. symmetry in H1. subst. clear Heq.
-
-  apply msubstA_Apply in Hmsa__e'_msa as temp.
-  destruct temp as [t1' [eb'_msa [Hmsa__t1' [Hmsa__eb'_msa Heq]]]].
-  subst.
-
-  apply msubstA_LamAbs in Hmsa__t1' as temp.
-  destruct temp as [t'_msa [ Hmsa__t'_msa Heq]].
-  subst.
-
-  apply msubst_LetNonRec_cons in Hms__e_ms as temp.
-  destruct temp as [b_ms [bs_ms [t_ms [Hms__b_ms [Hms__eih_ms Heq]]]]].
-  subst.
-
-  apply msubst_TermBind in Hms__b_ms as temp.
-  destruct temp as [eb_ms [Hms__eb_ms Heq]].
-  subst.
-
-  apply msubst_LetNonRec_nil in Hms__eih_ms as temp.
-  destruct temp as [t_ms__temp [Hms__t_ms Heq]].
-  inversion Heq. symmetry in H1. subst. clear Heq.
-  
-  apply msubst_Apply in Hms__e'_ms as temp.
-  destruct temp as [t1' [eb'_ms [Hms__t1' [Hms__eb'_ms Heq]]]].
-  subst.
-
-  apply msubst_LamAbs in Hms__t1' as temp.
-  destruct temp as [t'_ms [ Hms__t'_ms Heq]].
+  intros k rho env env' ct ck HeqDelta HeqGamma H_RD H_RG.
   subst.
 
   autorewrite with RC.
 
-  split. {
-    replace emptyContext with (@ empty Kind, mupd (msyn1 rho) empty).
-    - eapply msubst_preserves_typing_1; eauto.
-      eapply msubstA_preserves_typing_1; eauto.
-      eapply T_Let; eauto.
-      + eapply W_ConsB_NonRec; eauto with typing.
-        eapply W_Term; eauto with typing.
-        apply IH_LR__eb.
-      + simpl.
-        unfold flatten.
-        simpl.
-        rewrite append_emptyContext_r.
-        rewrite append_singleton_l.
-        eapply IH_LR__t.
-    - rewrite mupd_empty. reflexivity.
-  }
+  split...
+  split...
 
-  split. {
-    replace emptyContext with (@ empty Kind, mupd (msyn2 rho) empty).
-    - eapply msubst_preserves_typing_2; eauto.
-      eapply msubstA_preserves_typing_2; eauto.
-      eapply T_Apply; eauto.
-      + eapply T_LamAbs; eauto.
-        eapply IH_LR__t.
-      + eapply IH_LR__eb.
-    - rewrite mupd_empty. reflexivity.
-  }
+  rewrite msubstA_LetNonRec_nil.
+  rewrite msubst_LetNonRec_nil.
 
   intros j Hlt__j e_f Hev__e_f.
-  apply inspect_eval__LetNonRec_cons in Hev__e_f as temp.
-  destruct temp as [j_1 [eb_f [Hev__eb_f [Hle__j_1 [bs0 [t0 [Hs [j_2 [Hev'__e_f Heq__j]]]]]]]]].
-  inversion Hs. subst.
-  apply inspect_eval__LetNonRec_nil in Hev'__e_f as temp.
-  destruct temp as [j_3 [Hev''__e_f Heq__j_2]].
+
+  inversion Hev__e_f. subst.
+  inversion H3. subst.
+  rename j0 into j_1.
+  rename H3 into Hev'__e_f.
+  rename H0 into Hev''__e_f.
+  
+
+  assert (HRC__t : RC k T rho 
+    (msubst_term env (msubstA_term (msyn1 rho) t))
+    (msubst_term env' (msubstA_term (msyn2 rho) t'))
+  )...
+
+  apply RC_to_RV with (j := j_1) (e_f := e_f) in HRC__t as temp...
+  destruct temp as [e'_f1 [j'_1 [Hev__e'_f1 HRV__t]]].
+
+  eexists. eexists.
+
+  split...
+
+  eapply RV_condition... 
+  eapply RV_monotone...
+Qed.
+
+Lemma compatibility_TermBind__desugar : forall Delta Gamma t t' T b bs fbs' tb tb' x Tb,
+  Delta |-* Tb : Kind_Base ->
+  forall Delta_ih Gamma_ih,
+    b = TermBind Strict (VarDecl x Tb) tb ->
+    Delta_ih = mupdate Delta (binds_Delta b) ->
+    Gamma_ih = mupdate Gamma (binds_Gamma b) ->
+    LR_logically_approximate Delta_ih Gamma_ih (Let NonRec bs t) (fold_right apply t' fbs') T ->
+    LR_logically_approximate Delta Gamma tb tb' Tb ->
+    LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (Apply (LamAbs x Tb (fold_right apply t' fbs')) tb') T.
+Proof with eauto_LR. 
+  intros Delta Gamma t t' T b bs fbs' tb tb' x Tb Hkind__Tb Delta_ih Gamma_ih Heq__b Heq__Delta_ih Heq__Gamma_ih IHLR__ih IHLR__tb.
   subst.
 
-  (* eb *)
-  unfold LR_logically_approximate in IH_LR__eb.
-  destruct IH_LR__eb as [_ [_ IH_LR__eb]].
-  assert (HRC__eb : RC k Tb rho eb_ms eb'_ms) by eauto.
+  destruct IHLR__ih as [Htyp__ih [Htyp__ih' IH__ih]].
+  destruct IHLR__tb as [Htyp__tb [Htyp__tb' IH__tb]].
 
-  autorewrite with RC in HRC__eb.
+  inversion Htyp__ih. subst.
 
-  destruct HRC__eb as [_ [_ HRC__eb]].
-  assert (Hlt__j_1 : j_1 < k) by apply skip.
-  eapply HRC__eb in Hlt__j_1 as H; eauto.
+  rewrite <- mupdate_flatten in H7.
+  rewrite <- mupdate_flatten in H7.
 
-  destruct H as [eb'_f [j'_1 [Hev__eb'_f H]]].
-  clear H HRC__eb. (* DANGER *)
+  split... 
+  split...
 
+  intros k rho env env' cG cD Heq__Delta Heq__Gamma HRD HRG.
+  subst.
 
-  (* t *)
-  unfold LR_logically_approximate in IH_LR__t.
-  destruct IH_LR__t as [_ [_ IH_LR__t]].
-  assert (HRC__t : RC k T rho t_ms t'_ms). {
-    eapply IH_LR__t.
+  autorewrite with RC.
+
+  split...
+  split...
+
+  clear H5 H7.
+  clear Hkind__Tb.
+  clear Htyp__ih Htyp__ih' Htyp__tb Htyp__tb'.
+
+  rewrite msubstA_LetNonRec.
+  rewrite msubstA_BindingsNonRec_cons.
+  rewrite msubstA_TermBind.
+  rewrite msubst_LetNonRec.
+  rewrite msubst_BindingsNonRec_cons.
+  rewrite msubst_TermBind.
+
+  rewrite msubstA_Apply.
+  rewrite msubstA_LamAbs.
+  rewrite msubst_Apply.
+  rewrite msubst_LamAbs.
+
+  intros j Hlt__j e_f Hev__e_f.
+  
+  inversion Hev__e_f. subst.
+  clear Hev__e_f. rename H3 into Hev__e_f.
+  inversion Hev__e_f. subst.
+  clear Hev__e_f.
+  rename H7 into Hev__vb.
+  rename H8 into Hev__e_f.
+
+  assert (HRC__tb :
+    RC k Tb rho
+      (msubst_term env (msubstA_term (msyn1 rho) tb))
+      (msubst_term env' (msubstA_term (msyn2 rho) tb'))  
+  )...
+  clear IH__tb.
+
+  eapply RC_to_RV with (j := jb) (e_f := vb) in HRC__tb as temp...
+  destruct temp as [vb' [jb' [Hev__vb' HRV__vb]]].
+  clear Hev__vb.
+  clear HRC__tb.
+
+  assert (HRC__ih :
+    RC (k - jb - 1) T rho
+      <{ /[ (x, vb) :: drop x env /] ( /[[ msyn1 rho /] {Let NonRec bs t} ) }>
+      <{ /[ (x, vb') :: drop x env' /] ( /[[ msyn2 rho /] {fold_right apply t' fbs'} ) }>
+  ). {
+    apply IH__ih with (ct := (x, Tb) :: drop x cG) (ck := cD).
     - reflexivity.
-    - rewrite mupdate_unfold.
-      reflexivity.
-    - apply skip.
-    - eauto.
-    - eauto.
-    - eauto.
-    - eauto.
+    - apply mupdate_drop.
+    - assumption.
+    - assert (closed vb). {
+        eapply typable_empty__closed.
+        eapply RV_typable_empty_1...
+      }
+      assert (closed vb'). {
+        eapply typable_empty__closed.
+        eapply RV_typable_empty_2...
+      }
+      replace vb with (msubstA_term (msyn1 rho) vb) by (eapply msubstA_closed; eauto).
+      replace vb' with (msubstA_term (msyn2 rho) vb') by (eapply msubstA_closed; eauto).
+      apply RG_cons.
+      + apply RV_monotone with (k := k - jb)...
+        rewrite msubstA_closed...
+        rewrite msubstA_closed...
+      + apply RG_monotone with (k := k)...
+        apply RG_drop...
   }
+  clear IH__ih.
 
-  autorewrite with RC in HRC__t.
+  apply RC_to_RV with (j := j0) (e_f := e_f) in HRC__ih as temp...
+  * destruct temp as [e'_f [j0' [Hev__e'_f HRV0]]].
+    clear Hev__e_f.
 
-  destruct HRC__t as [_ [_ HRC__t]].
-  assert (Hlt__j_3 : j_3 < k) by apply skip.
-  eapply HRC__t in Hlt__j_3 as H0; eauto.
+    eexists. eexists.
+    split. {
+      eapply E_Apply...
+      - eapply E_LamAbs.
+      - rewrite <- subst_msubst'...
+        + eapply typable_empty__closed...
+          eapply RV_typable_empty_2...
+        + eapply RG_env_closed_2...
+    }
 
-Admitted.
+    eapply RV_condition...
+    eapply RV_monotone...
+  * rewrite msubstA_LetNonRec.
+    rewrite msubst_LetNonRec. 
+    apply E_Let.
 
-Definition P_has_type ctx e T := 
+    simpl.
+    simpl in Hev__e_f.
+
+    rewrite <- msubst_bnr__bound_vars in Hev__e_f.
+    rewrite <- msubstA_bnr__bvbs in Hev__e_f.
+
+    destruct (existsb (eqb x) (bvbs bs)) eqn:Hexb. {
+      assert (closed vb). {
+        eapply typable_empty__closed.
+        eapply RV_typable_empty_1...
+      }
+      assert (closed vb'). {
+        eapply typable_empty__closed.
+        eapply RV_typable_empty_2...
+      }
+      apply RG_env_closed in HRG as Hclss.
+      destruct Hclss as [Hcls__env Hcls__env'].
+      rewrite <- subst_bnr__msubst_bnr' in Hev__e_f...
+      replace (concat (map bvb <{ /[[ msyn1 rho /][bnr] bs }>)) with
+        (bvbs <{ /[[ msyn1 rho /][bnr] bs }>) in Hev__e_f...
+      
+      unfold btvbs in Hev__e_f.
+      simpl in Hev__e_f.
+      rewrite <- msubstA_bnr__bvbs.
+      rewrite <- msubstA_bnr__bvbs in Hev__e_f.
+
+      apply existsb_exists in Hexb.
+      destruct Hexb as [y [HIn Heqb]].
+      apply eqb_eq in Heqb as Heq.
+      subst.
+      rewrite In__mdrop...
+    } {
+      assert (closed vb). {
+        eapply typable_empty__closed.
+        eapply RV_typable_empty_1...
+      }
+      assert (closed vb'). {
+        eapply typable_empty__closed.
+        eapply RV_typable_empty_2...
+      }
+      apply RG_env_closed in HRG as Hclss.
+      destruct Hclss as [Hcls__env Hcls__env'].
+      rewrite <- subst_bnr__msubst_bnr' in Hev__e_f...
+      replace (concat (map bvb <{ /[[ msyn1 rho /][bnr] bs }>)) with
+        (bvbs <{ /[[ msyn1 rho /][bnr] bs }>) in Hev__e_f...
+      
+      unfold btvbs in Hev__e_f.
+      simpl in Hev__e_f.
+      rewrite <- msubstA_bnr__bvbs.
+      rewrite <- msubstA_bnr__bvbs in Hev__e_f.
+
+      apply Util.existsb_nexists in Hexb.
+      rewrite not_In__mdrop.
+      - replace (concat (map btvb bs)) with (btvbs bs) in Hev__e_f...
+        rewrite <- subst_msubst'' in Hev__e_f...
+        + eapply RG_env_closed_1.
+          eapply RG_drop...
+        + intros Hcon.
+          apply Hexb.
+          exists x.
+          rewrite eqb_refl.
+          eauto.
+      - intros Hcon.
+        apply Hexb.
+        exists x.
+        rewrite eqb_refl.
+        eauto.
+    }
+Qed.
+
+(** ** Predicates *)
+
+Definition P_has_type Delta Gamma e T := 
   forall e',
     CNR_Term e e' ->
-    LR_logically_approximate (fst ctx) (snd ctx) e e' T.
+    LR_logically_approximate Delta Gamma e e' T.
 
-Definition P_constructor_well_formed ctx c := ctx |-ok_c c.
+Definition P_constructor_well_formed Delta c := Delta |-ok_c c.
 
-Definition P_bindings_well_formed_nonrec ctx bs := 
-  forall bs',
-    Congruence.Cong_Bindings CNR_Term bs bs' ->
-    LR_logically_approximate_bindings_nonrec (fst ctx) (snd ctx) bs bs'.
+Definition P_bindings_well_formed_nonrec Delta Gamma bs := 
+  (
+    forall bs',
+      Congruence.Cong_Bindings CNR_Term bs bs' ->
+      forall Delta_t Gamma_t t t' T,
+        Delta_t = mupdate Delta (flatten (List.map binds_Delta bs)) ->
+        Gamma_t = mupdate Gamma (flatten (List.map binds_Gamma bs)) ->
+        LR_logically_approximate Delta_t Gamma_t t t' T ->
+        LR_logically_approximate Delta Gamma (Let NonRec bs t) (Let NonRec bs' t') T
+  ) /\ (
+    forall fbs',
+      CNR_Bindings bs fbs' ->
+      forall Delta_t Gamma_t t t' T,
+        Delta_t = mupdate Delta (flatten (List.map binds_Delta bs)) ->
+        Gamma_t = mupdate Gamma (flatten (List.map binds_Gamma bs)) ->
+        LR_logically_approximate Delta_t Gamma_t t t' T ->
+        LR_logically_approximate Delta Gamma (Let NonRec bs t) (fold_right apply t' fbs') T
+  ).
 
-Definition P_bindings_well_formed_rec ctx bs1 := ctx |-oks_r bs1.
+Definition P_bindings_well_formed_rec Delta Gamma bs1 := Delta ,, Gamma |-oks_r bs1.
 
-Definition P_binding_well_formed ctx b := 
+Definition P_binding_well_formed Delta Gamma b := 
   (
     forall b',
       Congruence.Cong_Binding CNR_Term b b' ->
-      LR_logically_approximate_binding (fst ctx) (snd ctx) b b'
+      LR_logically_approximate_binding Delta Gamma b b'
   ) /\ (
-    forall fb' t t' T Delta' Gamma',
+    forall fb',
       CNR_Binding b fb' ->
-      Delta' = fst (append (binds b) (fst ctx, snd ctx)) ->
-      Gamma' = snd (append (binds b) (fst ctx, snd ctx)) ->
-      LR_logically_approximate Delta' Gamma' t t' T ->
-      LR_logically_approximate (fst ctx) (snd ctx) (Let NonRec (b :: nil) t) (fb' t') T
+      forall Delta_t Gamma_t t t' T bs fbs',
+        Delta_t = mupdate Delta (binds_Delta b) ->
+        Gamma_t = mupdate Gamma (binds_Gamma b) ->
+        LR_logically_approximate Delta_t Gamma_t (Let NonRec bs t) (fold_right apply t' fbs') T ->
+        LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (fold_right apply t' (fb' :: fbs')) T
   ).
 
 #[export] Hint Unfold 
@@ -207,10 +304,12 @@ Definition P_binding_well_formed ctx b :=
   P_bindings_well_formed_rec
   P_binding_well_formed : core.
 
-Lemma CNR_Term__DSP : forall ctx e T,
-    ctx |-+ e : T ->
-    P_has_type ctx e T.
-Proof.
+(** ** The main theorem *)
+
+Theorem CNR_Term__DSP : forall Delta Gamma e T,
+    Delta ,, Gamma |-+ e : T ->
+    P_has_type Delta Gamma e T.
+Proof with eauto_LR.
   apply has_type__ind with 
     (P := P_has_type)
     (P0 := P_constructor_well_formed)
@@ -232,41 +331,63 @@ Proof.
   all : try solve [
     eauto with typing
   ].
-  - inversion X.
+  - (* T_Let *)
+    inversion X.
     + subst.
-      apply skip.
+      eapply H2...
     + subst.
       inversion X0. subst.
-      eauto with DSP_compatibility_lemmas.
-  - apply skip.
-  - inversion X. subst. 
-    constructor. 
-  - inversion X. subst. 
-    econstructor.
-    all: eauto with DSP_compatibility_lemmas.
-    apply H0. eauto. 
-    inversion X0. 
-    subst. 
-    all: eauto.
-  - split.
-    + intros.
-      inversion X. subst. 
-      eauto with DSP_compatibility_lemmas.
-    + intros.
+      eapply H2...
+  - (* T_NilB_NonRec *)
+    split.
+    + intros. subst.
       inversion X. subst.
-      apply H1 in X0.
-      eapply compatibility_desugar.
-      all: auto.
-  - split.
-    + intros.
+      eauto with DSP_compatibility_lemmas.
+    + intros. subst.
+      inversion X. subst.
+      simpl.
+      apply compatibility_LetNonRec_nil__desugar...
+  - (* T_ConsB_NonRec *)
+    destruct H0.
+    destruct H2.
+    split.
+    + intros. subst.
+      inversion X. subst.
+      eauto with DSP_compatibility_lemmas typing.
+    + intros. subst.
+      inversion X. subst.
+      inversion X0. subst.
+
+      clear H2.
+      clear H0.
+
+      eapply H3...
+      eapply H4...
+      simpl in H7.
+      rewrite mupdate_flatten in H7.
+      rewrite mupdate_flatten in H7.
+      apply H7.
+  - (* W_Term *)
+    split.
+    + intros. subst.
+      inversion X. subst.
+      eauto with DSP_compatibility_lemmas.
+    + intros. subst.
+      inversion X. subst.
+      simpl.
+      eapply compatibility_TermBind__desugar...
+  - (* W_Type *)
+    split. 
+    + intros. subst.
       inversion X0. subst.
       eauto with DSP_compatibility_lemmas.
-    + intros.
-      inversion X0. 
-  - split.
-    + intros.
-      inversion X0. subst.
-      eauto with DSP_compatibility_lemmas.
-    + intros.
+    + intros. subst.
       inversion X0.
-Qed.*)
+  - (* W_Data *)
+    split.
+    + intros. subst.
+      inversion X0. subst.
+      eauto with DSP_compatibility_lemmas typing.
+    + intros. subst.
+      inversion X0.
+Qed.

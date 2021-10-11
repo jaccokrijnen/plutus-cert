@@ -4,6 +4,7 @@ Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.ContextInvariance.AFI.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Rules.
 
+Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Lists.List.
 Require Import PlutusCert.Util.
 
@@ -82,42 +83,44 @@ Qed.
 
 (** ** Context invariance (Theorem) *)
 
-Definition P_has_type (Gamma : Context) (t : Term) (T : Ty) :=
+Definition P_has_type (Delta : Delta) (Gamma : Gamma) (t : Term) (T : Ty) :=
   forall Gamma',
-    (forall x, appears_free_in_Term x t -> lookupT Gamma x = lookupT Gamma' x) ->
-    (forall X, lookupK Gamma X = lookupK Gamma' X) ->
-    Gamma' |-+ t : T.
+    (forall x, appears_free_in_Term x t -> Gamma x = Gamma' x) ->
+    Delta ,, Gamma' |-+ t : T.
 
 Definition P_constructor_well_formed (Delta : Delta) (c : constructor) :=
-  forall Delta',
-    (forall X, Delta X = Delta' X) ->
-    Delta' |-ok_c c.
+  Delta |-ok_c c.
 
-Definition P_bindings_well_formed_nonrec (Gamma : Context) (bs : list Binding) :=
+Definition P_bindings_well_formed_nonrec (Delta : Delta) (Gamma : Gamma) (bs : list Binding) :=
   forall Gamma',
-    (forall x, appears_free_in_Term__bindings_nonrec x bs -> lookupT Gamma x = lookupT Gamma' x) ->
-    (forall X, lookupK Gamma X = lookupK Gamma' X) ->
-    Gamma' |-oks_nr bs.  
+    (forall x, appears_free_in_Term__bindings_nonrec x bs -> Gamma x = Gamma' x) ->
+    Delta ,, Gamma' |-oks_nr bs.  
 
-Definition P_bindings_well_formed_rec (Gamma : Context) (bs : list Binding) :=
+Definition P_bindings_well_formed_rec (Delta : Delta) (Gamma : Gamma) (bs : list Binding) :=
   forall Gamma',
-    (forall x, appears_free_in_Term__bindings_rec x bs -> lookupT Gamma x = lookupT Gamma' x) ->
-    (forall X, lookupK Gamma X = lookupK Gamma' X) ->
-    Gamma' |-oks_r bs.  
+    (forall x, appears_free_in_Term__bindings_rec x bs -> Gamma x = Gamma' x) ->
+    Delta ,, Gamma' |-oks_r bs.  
 
-Definition P_binding_well_formed (Gamma : Context) (b : Binding) :=
+Definition P_binding_well_formed (Delta : Delta) (Gamma : Gamma) (b : Binding) :=
   forall Gamma',
-    (forall x, appears_free_in_Term__binding x b -> lookupT Gamma x = lookupT Gamma' x) ->
-    (forall X, lookupK Gamma X = lookupK Gamma' X) ->
-    Gamma' |-ok b.
+    (forall x, appears_free_in_Term__binding x b -> Gamma x = Gamma' x) ->
+    Delta ,, Gamma' |-ok b.
+
+#[export] Hint Unfold 
+  P_has_type
+  P_constructor_well_formed
+  P_bindings_well_formed_nonrec
+  P_bindings_well_formed_rec
+  P_binding_well_formed 
+  : core.
 
 Axiom skip : forall P, P.
 
 Theorem context_invariance : 
-  (forall Gamma t T, Gamma |-+ t : T -> P_has_type Gamma t T) /\
-  (forall Gamma bs, Gamma |-oks_nr bs -> P_bindings_well_formed_nonrec Gamma bs) /\
-  (forall Gamma bs, Gamma |-oks_r bs -> P_bindings_well_formed_rec Gamma bs) /\
-  (forall Gamma b, Gamma |-ok b -> P_binding_well_formed Gamma b).
+  (forall Delta Gamma t T, Delta ,, Gamma |-+ t : T -> P_has_type Delta Gamma t T) /\
+  (forall Delta Gamma bs, Delta ,, Gamma |-oks_nr bs -> P_bindings_well_formed_nonrec Delta Gamma bs) /\
+  (forall Delta Gamma bs, Delta ,, Gamma |-oks_r bs -> P_bindings_well_formed_rec Delta Gamma bs) /\
+  (forall Delta Gamma b, Delta ,, Gamma |-ok b -> P_binding_well_formed Delta Gamma b).
 Proof with eauto.
   apply has_type__multind with
     (P := P_has_type)
@@ -125,179 +128,116 @@ Proof with eauto.
     (P1 := P_bindings_well_formed_nonrec)
     (P2 := P_bindings_well_formed_rec)
     (P3 := P_binding_well_formed).
+  all: intros; autounfold; intros.
   - (* T_Let *)
-    intros. unfold P_has_type. intros.
     subst.
     eapply T_Let.
     + reflexivity.
-    + apply H1.
-      * intros.
-        apply H4.
-        apply AFIT_LetNonRec.
-        assumption.
-      * assumption.
-    + apply H3.
-      * intros.
-        apply lookupT_append_r.
-        apply H4.
-        apply AFIT_Let.
-        -- apply skip. (* TODO *) 
-        -- assumption.
-      * intros.
-        apply lookupK_append_r.
-        apply H5.
+    + reflexivity.
+    + apply H2.
+      intros.
+      apply H5.
+      apply AFIT_LetNonRec.
+      assumption.
+    + simpl. apply H4.
+      intros.
+      apply mupdate_eq_cong.
+      apply H5.
+      apply AFIT_Let.
+      -- apply skip. (* TODO *) 
+      -- assumption.
   - (* T_LetRec *)
-    intros. unfold P_has_type. intros.
     subst.
     eapply T_LetRec.
     + reflexivity.
-    + apply H1.
-      * intros.
-        apply lookupT_append_r.
-        apply H4.
-        apply AFIT_LetRec; auto.
-        apply skip. (* TODO *)
-      * intros.
-        apply lookupK_append_r.
-        apply H5.
-    + apply H3.
-      * intros.
-        apply lookupT_append_r.
-        apply H4.
-        apply AFIT_Let.
-        -- apply skip. (* TODO *)
-        -- assumption.
-      * intros.
-        apply lookupK_append_r.
-        apply H5.
+    + reflexivity.
+    + apply H2.
+      intros.
+      apply mupdate_eq_cong.
+      apply H5.
+      apply AFIT_LetRec; auto.
+      apply skip.
+    + apply H4.
+      intros.
+      apply mupdate_eq_cong.
+      apply H5.
+      apply AFIT_Let.
+      -- apply skip. (* TODO *)
+      -- assumption.
   - (* T_Var *)
-    intros. unfold P_has_type. intros.
     apply T_Var.
     rewrite <- H0; auto.
   - (* T_TyForall *)
-    intros. unfold P_has_type. intros.
     apply T_TyAbs.
     apply H0.
-    + intros x Hafi.
-      rewrite lookupT_extendK.
-      rewrite lookupT_extendK.
-      apply H1.
-      apply AFIT_TyAbs.
-      assumption.
-    + intros Y.
-      destruct (X =? Y) eqn:Heqb.
-      * apply eqb_eq in Heqb.
-        subst.
-        rewrite lookupK_eq.
-        rewrite lookupK_eq.
-        reflexivity.
-      * apply eqb_neq in Heqb.
-        rewrite lookupK_neq; auto.
-        rewrite lookupK_neq; auto.
+    intros x Hafi.
+    apply H1.
+    apply AFIT_TyAbs.
+    assumption.
   - (* T_LamAbs *)
-    intros. unfold P_has_type. intros.
     apply T_LamAbs.
     + apply H0.
-      * intros.
-        destruct (x =? x0) eqn:Heqb.
-        -- apply eqb_eq in Heqb.
-          subst.
-          rewrite lookupT_eq.
-          rewrite lookupT_eq.
-          reflexivity.
-        -- apply eqb_neq in Heqb.
-          rewrite lookupT_neq; auto.
-          rewrite lookupT_neq; auto.
-      * intros.
-        -- rewrite lookupK_extendT.
-           rewrite lookupK_extendT.
-           apply H3.
-    + apply context_invariance__typelevel with (fst ctx).
-      * assumption.
-      * intros.
-        apply H3.
+      intros.
+      destruct (x =? x0) eqn:Heqb.
+      * apply eqb_eq in Heqb.
+        subst.
+        rewrite update_eq.
+        rewrite update_eq.
+        reflexivity.
+      * apply eqb_neq in Heqb.
+        rewrite update_neq; auto.
+        rewrite update_neq; auto.
+    + auto.
   - (* T_Apply *)
-    intros. unfold P_has_type. intros.
     apply T_Apply with T1.
     + apply H0.
-      * intros.
-        apply H3.
-        apply AFIT_Apply1.
-        assumption.
-      * intros.
-        apply H4.
+      intros.
+      apply H3.
+      apply AFIT_Apply1.
+      assumption.
     + apply H2.
-      * intros.
-        apply H3.
-        apply AFIT_Apply2.
-        assumption.
-      * intros.
-        apply H4.
+      intros.
+      apply H3.
+      apply AFIT_Apply2.
+      assumption.
   - (* T_Constant *)
-    intros. unfold P_has_type. intros.
     apply T_Constant.
   - (* T_Builtin *)
-    intros. unfold P_has_type. intros.
     apply T_Builtin.
+    assumption.
   - (* T_TyInst *)
-    intros. unfold P_has_type. intros.
     apply T_TyInst with T1 X K2 T1'.
     + apply H0.
-      * intros.
-        apply H4.
-        apply AFIT_TyInst.
-        assumption.
-      * intros.
-        apply H5.
-    + apply context_invariance__typelevel with (fst ctx).
-      * assumption.
-      * intros.
-        apply H5.
+      intros.
+      apply H4.
+      apply AFIT_TyInst.
+      assumption.
+    + assumption.
     + assumption.
     + assumption.
   - (* T_Error *)
-    intros. unfold P_has_type. intros.
     apply T_Error.
-    apply context_invariance__typelevel with (fst ctx).
-    + assumption.
-    + intros.
-      apply H1.
+    assumption.
   - (* T_IWrap *)
-    intros. unfold P_has_type. intros.
     apply T_IWrap with K S.
     + assumption.
     + apply H1.
-      * intros.
-        apply H4.
-        apply AFIT_IWrap.
-        assumption.
-      * intros.
-        apply H5.
-    + apply context_invariance__typelevel with (fst ctx).
-      * assumption.
-      * intros.
-        apply H5.
-    + apply context_invariance__typelevel with (fst ctx).
-      * assumption.
-      * intros.
-        apply H5.
+      intros.
+      apply H4.
+      apply AFIT_IWrap.
+      assumption.
+    + assumption.
+    + assumption.
   - (* T_Unwrap *)
-    intros. unfold P_has_type. intros.
     apply T_Unwrap with F K T.
     + apply H0.
-      * intros.
-        apply H3.
-        apply AFIT_Unwrap.
-        assumption.
-      * intros.
-        apply H4.
-    + apply context_invariance__typelevel with (fst ctx).
-      * assumption.
-      * intros.
-        apply H4.
+      intros.
+      apply H3.
+      apply AFIT_Unwrap.
+      assumption.
+    + assumption.
     + assumption.
   - (* T_ExtBuiltin *)
-    intros. unfold P_has_type. intros.
     eapply T_ExtBuiltin.
     + eauto.
     + eauto.
@@ -310,120 +250,93 @@ Proof with eauto.
       eapply H4.
       apply AFIT_ExtBuiltin.
       exists t.
-      split. apply in_combine_l in H6. assumption.
+      split. apply in_combine_l in H5. assumption.
       auto.
     + auto.
   
   - (* W_Con *)
-    intros. unfold P_constructor_well_formed. intros.
     econstructor. eauto.
     intros.
-    eapply context_invariance__typelevel.
-    + apply H0.
-      assumption.
-    + intros.
-      apply H1.
+    eapply H0.
+    assumption.
   
   - (* W_NilB_NonRec *)
-    intros. unfold P_bindings_well_formed_nonrec. intros.
     constructor.
   - (* W_ConsB_NonRec *)
-    intros. unfold P_bindings_well_formed_nonrec. intros.
     apply W_ConsB_NonRec.
     + apply H0.
       intros.
       apply H3.
       apply AFIT_ConsB1_NonRec.
-      * assumption.
-      * assumption.
+      assumption.
     + apply H2.
       intros.
-      apply lookupT_append_r.
+      apply mupdate_eq_cong.
       apply H3.
       apply AFIT_ConsB2_NonRec.
       * unfold P_binding_well_formed in H0.
         unfold P_bindings_well_formed_nonrec in H2. apply skip. (* TODO *) 
       * assumption.
-      * intros.
-        apply lookupK_append_r.
-        apply H4.
   
   - (* W_NilB_Rec *)
-    intros. unfold P_bindings_well_formed_rec. intros.
     constructor.
   - (* W_ConsB_Rec *)
-    intros. unfold P_bindings_well_formed_rec. intros.
     apply W_ConsB_Rec.
     + apply H0.
-      * intros.
-        apply H3.
-        apply AFIT_ConsB1_Rec.
-        assumption.
-      * assumption.
+      intros.
+      apply H3.
+      apply AFIT_ConsB1_Rec.
+      assumption.
     + apply H2.
-      * intros.
-        apply H3.
-        apply AFIT_ConsB2_Rec.
-        assumption.
-      * assumption.
+      intros.
+      apply H3.
+      apply AFIT_ConsB2_Rec.
+      assumption.
   
   - (* W_Term *)
-    intros. unfold P_binding_well_formed. intros.
     apply W_Term.
-    + apply context_invariance__typelevel with (fst ctx).
-      * assumption.
-      * intros.
-        apply H3.
+    + assumption.
     + apply H1.
-      * intros.
-        apply H2.
-        apply AFIT_TermBind.
-        assumption.
-      * intros.
-        apply H3.
+      intros.
+      apply H2.
+      apply AFIT_TermBind.
+      assumption.
   - (* W_Type *)
-    intros. unfold P_binding_well_formed. intros.
     apply W_Type.
-    apply context_invariance__typelevel with (fst ctx).
-    * assumption.
-    * intros.
-      apply H1.
+    assumption.
   - (* W_Data *)
-    intros. unfold P_binding_well_formed. intros.
     subst.
     eapply W_Data.
     + reflexivity.
+    + reflexivity.
     + intros.
       apply H1.
-      * assumption. 
-      * intros.
-        apply lookupK_append_r.
-        apply H3.
+      assumption.
 Qed.
 
     
 
-Lemma free_in_context : forall x t T Gamma,
+Lemma free_in_context : forall x t T Delta Gamma,
     appears_free_in_Term x t ->
-    Gamma |-+ t : T ->
-    exists T', lookupT Gamma x = Datatypes.Some T'.
+    Delta ,, Gamma |-+ t : T ->
+    exists T', Gamma x = Datatypes.Some T'.
 Proof. Admitted.
 
 Corollary typable_empty__closed_Term : forall t T,
-    emptyContext |-+ t : T ->
+    empty ,, empty |-+ t : T ->
     closed_Term t.
 Proof.
   intros. unfold closed_Term. intros x H1.
-  destruct (free_in_context _ _ _ _ H1 H) as [T' C].
+  destruct (free_in_context _ _ _ _ _ H1 H) as [T' C].
   discriminate C.
 Qed.
 
-Corollary typable_emptyT__closed_Term : forall ctxK t T,
-    (ctxK, empty) |-+ t : T ->
+Corollary typable_emptyT__closed_Term : forall Delta t T,
+    Delta ,, empty |-+ t : T ->
     closed_Term t.
 Proof.
   intros. unfold closed_Term. intros x H1.
-  destruct (free_in_context _ _ _ _ H1 H) as [T' C].
+  destruct (free_in_context _ _ _ _ _ H1 H) as [T' C].
   discriminate C.
 Qed.
 
@@ -435,8 +348,8 @@ Qed.
 
 Lemma free_in_context_Term : forall x t T Delta Gamma,
     appears_free_in_Term x t ->
-    (Delta, Gamma) |-+ t : T ->
-    exists T', lookupT (Delta, Gamma) x = Datatypes.Some T'.
+    Delta ,, Gamma |-+ t : T ->
+    exists T', Gamma x = Datatypes.Some T'.
 Proof.
   intros x t T Delta Gamma Hafi Htyp.
   generalize dependent x.
@@ -444,8 +357,8 @@ Proof.
   - intros.
     inversion Hafi.
     + subst.
-      apply IHHtyp in H6.
-      destruct H6.
+      apply IHHtyp in H7.
+      destruct H7.
       apply skip.
     + subst.
       apply skip.
@@ -467,8 +380,8 @@ Admitted.
 
 Lemma free_in_context_Annotation : forall X t T Delta Gamma,
     appears_free_in_Annotation X t ->
-    (Delta, Gamma) |-+ t : T ->
-    exists K, lookupK (Delta, Gamma) X = Datatypes.Some K.
+    Delta ,, Gamma |-+ t : T ->
+    exists K, Delta X = Datatypes.Some K.
 Proof.
   intros x t T Delta Gamma Hafi Htyp.
   generalize dependent x.
@@ -480,7 +393,7 @@ Proof.
   - intros.
     inversion Hafi.
     subst.
-    erewrite <- lookupK_neq; eauto.
+    erewrite <- update_neq; eauto.
   - intros.
     inversion Hafi.
     + subst.
@@ -500,7 +413,7 @@ Proof.
 Admitted.
 
 Corollary typable_empty__closed : forall t T,
-    emptyContext |-+ t : T ->
+    empty ,, empty |-+ t : T ->
     closed t.
 Proof.
   intros. unfold closed.

@@ -9,99 +9,118 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 
 
 
-Definition P_has_type ctx t1 T := 
+Definition P_has_type Delta Gamma t1 T := 
   forall t2, 
     CNR_Term t1 t2 -> 
-    ctx |-+ t2 : T.
+    Delta ,, Gamma |-+ t2 : T.
 
-Definition P_constructor_well_formed ctx c := ctx |-ok_c c.
+Definition P_constructor_well_formed Delta c := Delta |-ok_c c.
 
-Definition P_bindings_well_formed_nonrec ctx bs1 :=
+Definition P_bindings_well_formed_nonrec Delta Gamma bs1 :=
     forall bs2, (
-      ctx |-oks_nr bs1 ->
+      Delta ,, Gamma |-oks_nr bs1 ->
       Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
-      ctx |-oks_nr bs2
+      Delta ,, Gamma |-oks_nr bs2
     ) /\ (
       Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
-      map binds bs1 = map binds bs2
+      map binds_Delta bs1 = map binds_Delta bs2 /\
+      map binds_Gamma bs1 = map binds_Gamma bs2
     ) /\ (
       forall f_bs2 t T,
-        ctx |-oks_nr bs1 -> 
+        Delta ,, Gamma |-oks_nr bs1 -> 
         CNR_Bindings bs1 f_bs2 ->
-        (append (flatten (map binds bs1)) ctx) |-+ t : T ->
-        ctx |-+ (fold_right apply t f_bs2) : T
+        (mupdate Delta (flatten (map binds_Delta bs1))) ,, (mupdate Gamma (flatten (map binds_Gamma bs1))) |-+ t : T ->
+        Delta ,, Gamma |-+ (fold_right apply t f_bs2) : T
     ).
 
-Definition P_bindings_well_formed_rec ctx bs1 :=
+Definition P_bindings_well_formed_rec Delta Gamma bs1 :=
   forall bs2, (
-    ctx |-oks_r bs1 ->
+    Delta ,, Gamma |-oks_r bs1 ->
     Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
-    ctx |-oks_r bs2
+    Delta ,, Gamma |-oks_r bs2
   ) /\ (
     Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
-    map binds bs1 = map binds bs2
+    map binds_Delta bs1 = map binds_Delta bs2 /\
+    map binds_Gamma bs1 = map binds_Gamma bs2
   ).
 
-Definition P_binding_well_formed ctx b1 := 
+Definition P_binding_well_formed Delta Gamma b1 := 
   forall b2, (
-      ctx |-ok b1 ->
+      Delta ,, Gamma |-ok b1 ->
       Congruence.Cong_Binding CNR_Term b1 b2 ->
-      ctx |-ok b2
+      Delta ,, Gamma |-ok b2
     ) /\ (
       Congruence.Cong_Binding CNR_Term b1 b2 ->
-      binds b1 = binds b2
+      binds_Delta b1 = binds_Delta b2 /\
+      binds_Gamma b1 = binds_Gamma b2
     ) /\ (
       forall f_b2 t T,
-        ctx |-ok b1 ->
+        Delta ,, Gamma |-ok b1 ->
         CNR_Binding b1 f_b2 ->
-        (append (binds b1) ctx) |-+ t : T ->
-        ctx |-+ (f_b2 t) : T  
+        mupdate Delta (binds_Delta b1) ,, mupdate Gamma (binds_Gamma b1) |-+ t : T ->
+        Delta ,, Gamma |-+ (f_b2 t) : T  
     ).
 
+#[export] Hint Unfold
+  P_has_type
+  P_constructor_well_formed
+  P_bindings_well_formed_nonrec
+  P_bindings_well_formed_rec
+  P_binding_well_formed
+  : core.
 
-Theorem CNR_Term__SSP : forall ctx t1 T,
-    ctx |-+ t1 : T ->
-    P_has_type ctx t1 T.
+Theorem CNR_Term__SSP : forall Delta Gamma t1 T,
+    Delta ,, Gamma |-+ t1 : T ->
+    P_has_type Delta Gamma t1 T.
 Proof.
-  apply has_type__ind with (P := P_has_type) (P0 := P_constructor_well_formed) (P1 := P_bindings_well_formed_nonrec) (P2 := P_bindings_well_formed_rec) (P3 := P_binding_well_formed).
+  apply has_type__ind with 
+    (P := P_has_type) 
+    (P0 := P_constructor_well_formed) 
+    (P1 := P_bindings_well_formed_nonrec) 
+    (P2 := P_bindings_well_formed_rec) 
+    (P3 := P_binding_well_formed).
+  all: intros; autounfold; intros.
   - (* T_Let *)
-    intros. unfold P_has_type. intros.
     inversion X; subst.
-    + apply H1.
+    + apply H2.
       * apply bs.
       * assumption.
       * assumption.
-      * apply H3.
+      * apply H4.
         assumption.
     + inversion X0. subst. 
       eapply T_Let.
       * reflexivity.
-      * apply H1. assumption. assumption.
-      * unfold P_bindings_well_formed_rec in H2. edestruct H1 as [_ [Heq _]]. apply Heq in X1. rewrite <- X1. apply H3. assumption. 
+      * reflexivity.
+      * apply H2. assumption. assumption.
+      * unfold P_bindings_well_formed_rec in H2. edestruct H2 as [_ [Heq _]]. apply Heq in X1. 
+        destruct X1. rewrite <- H. rewrite <- H0. apply H4. assumption. 
   - (* T_LetRec *)
-    intros. unfold P_has_type. intros.
     inversion X. subst.
     inversion X0. subst.
     eapply T_LetRec.
     + reflexivity.
+    + reflexivity.
     + unfold P_bindings_well_formed_rec in H1.
-      edestruct H1 as [IHH Heq].
+      edestruct H2 as [IHH Heq].
       apply Heq in X1 as Hsu.
-      rewrite <- Hsu.
+      destruct Hsu.
+      rewrite <- H.
+      rewrite <- H0.
       apply IHH. auto. auto.
     + unfold P_bindings_well_formed_rec in H1.
-      edestruct H1 as [IHH Heq].
+      edestruct H2 as [IHH Heq].
       apply Heq in X1 as Hsu.
-      rewrite <- Hsu.
-      apply H3.
+      destruct Hsu.
+      rewrite <- H.
+      rewrite <- H0.
+      apply H4.
       assumption.
   - (* T_Var *)
-    intros. unfold P_has_type. intros.
     inversion X. subst.
     inversion X0. subst.
     apply T_Var. assumption.
   - (* T_TyAbs *)
-    intros. unfold P_has_type. intros.
     inversion X0. subst.
     inversion X1. subst.
     apply T_TyAbs.
@@ -109,31 +128,27 @@ Proof.
     apply H0.
     apply X2.
   - (* T_LamAbs *)
-    intros. unfold P_has_type. intros.
     inversion X. subst.
     inversion X0. subst.
     apply T_LamAbs.
     + apply H0. assumption.
     + assumption.
   - (* T_Apply *)
-    intros. unfold P_has_type. intros.
     inversion X. subst.
     inversion X0. subst.
     apply T_Apply with T1.
     + apply H0. assumption.
     + apply H2. assumption.
   - (* T_Constant *)
-    intros. unfold P_has_type. intros.
     inversion X. subst.
     inversion X0. subst.
     apply T_Constant.
   - (* T_Builtin *)
-    intros. unfold P_has_type. intros.
     inversion X. subst.
     inversion X0. subst.
     apply T_Builtin.
+    reflexivity.
   - (* T_TyInst *)
-    intros. unfold P_has_type. intros.
     inversion X0. subst.
     inversion X1. subst.
     apply T_TyInst with (T1 := T1) (X := X) (K2 := K2) (T1' := T1').
@@ -142,13 +157,11 @@ Proof.
     + assumption.
     + assumption.
   - (* T_Error *)
-    intros. unfold P_has_type. intros.
     inversion X. subst.
     inversion X0. subst.
     apply T_Error.
     apply H.
   - (* T_IWrap *)
-    intros. unfold P_has_type. intros.
     inversion X. subst.
     inversion X0. subst.
     apply T_IWrap with (K := K) (S := S).
@@ -157,7 +170,6 @@ Proof.
     + assumption.
     + assumption.
   - (* T_Unwrap *)
-    intros. unfold P_has_type. intros.
     inversion X. subst.
     inversion X0. subst.
     apply T_Unwrap with (F := F) (K := K) (T := T).
@@ -166,16 +178,13 @@ Proof.
     + assumption.
 
   - (* T_ExtBuiltin *)
-    intros. unfold P_has_type. intros.
     inversion X. subst.
     inversion X0.
     
   - (* W_Con *)
-    intros. unfold P_constructor_well_formed. intros.
     eapply W_Con; eauto.
     
   - (* W_NilB_NonRec *)
-    intros. unfold P_bindings_well_formed_nonrec. intros.
     split.
     + intros.
       inversion X. subst.
@@ -183,15 +192,12 @@ Proof.
     + split.
       * intros.
         inversion X. subst.
-        reflexivity.
+        auto.
       * intros.
         inversion X. subst.
         simpl in H0.
-        rewrite flatten_nil in H0.
-        rewrite append_emptyContext_l in H0.
         assumption.
   - (* W_ConsB_NonRec *)
-    intros. unfold P_bindings_well_formed_nonrec. intros.
     split.
     + intros.
       inversion X. subst.
@@ -200,15 +206,21 @@ Proof.
       * unfold P_binding_well_formed in H0.
         edestruct H0 as [_ [Heq _]].
         apply Heq in X0.
-        rewrite <- X0.
+        destruct X0.
+        rewrite <- H4.
+        rewrite <- H5.
         apply H2. assumption. assumption.
     + split.
       * intros.
         inversion X. subst.
         simpl.
-        f_equal.
-        -- apply H0. assumption.
-        -- apply H2. assumption.
+        split.
+        -- f_equal.
+           ++ apply H0. assumption.
+           ++ apply H2. assumption.
+        -- f_equal.
+           ++ apply H0. assumption.
+           ++ apply H2. assumption.
       * intros.
         inversion X. subst.
         inversion X0. subst.
@@ -225,24 +237,23 @@ Proof.
            ++ simpl.
               simpl in H4.
               unfold flatten in H4.
-              simpl in H4. 
-              rewrite concat_append in H4.
+              simpl in H4.  
+              rewrite concat_app in H4.
               simpl in H4.
-              rewrite <- append_assoc in H4.
-              rewrite append_emptyContext_r in H4.
+              rewrite app_nil_r in H4.
+              rewrite concat_app in H4.
+              rewrite mupdate_app in H4.
               simpl in H4.
               apply H4.
   - (* W_NilB_Rec *)
-    intros. unfold P_bindings_well_formed_rec. intros.
     split.
     + intros.
       inversion X. subst.
       assumption.
     + intros.
       inversion X. subst.
-      reflexivity.
+      auto.
   - (* W_ConsB_Rec*)
-    intros. unfold P_bindings_well_formed_rec. intros.
     split.
     + intros.
       inversion X. subst.
@@ -252,12 +263,15 @@ Proof.
     + intros.
       inversion X. subst.
       simpl.
-      f_equal.
-      -- apply H0. assumption.
-      -- apply H2. assumption.
+      split.
+      -- f_equal.
+         ++ apply H0. assumption.
+         ++ apply H2. assumption.
+      -- f_equal.
+         ++ apply H0. assumption.
+         ++ apply H2. assumption.
            
   - (* W_Term *)
-    intros. unfold P_binding_well_formed. intros.
     split.
     + intros. 
       inversion X. subst.
@@ -267,18 +281,16 @@ Proof.
     + split. 
       * intros.
         inversion X. subst.
-        reflexivity.
+        auto.
       * intros.
         inversion X. subst.
         eapply T_Apply.
         -- apply T_LamAbs.
           ++ simpl in H3.
-             rewrite append_singleton_l in H3. 
              assumption. 
           ++ assumption.
         -- apply H1. assumption.
   - (* W_Type *)
-    intros. unfold P_binding_well_formed. intros.
     split.
     + intros. 
       inversion X0. subst.
@@ -287,11 +299,10 @@ Proof.
     + split.
       * intros.
         inversion X0. subst.
-        reflexivity.
+        auto.
       * intros.
         inversion X0.
   - (* W_Data *)
-    intros. unfold P_binding_well_formed. intros.
     split.
     + intros.
       inversion X0. subst.
@@ -299,7 +310,7 @@ Proof.
     + split.
       * intros.
         inversion X0. subst.
-        reflexivity.
+        auto.
       * intros.
         inversion X0.
 

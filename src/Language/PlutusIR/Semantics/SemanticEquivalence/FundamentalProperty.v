@@ -2,21 +2,24 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RelationalModel.
-Require Import PlutusCert.Util.
 
 
-Definition P_has_type ctx e T := 
-  LR_logically_approximate (fst ctx) (snd ctx) e e T.
+Definition P_has_type Delta Gamma e T := 
+  LR_logically_approximate Delta Gamma e e T.
 
-Definition P_constructor_well_formed ctx c := ctx |-ok_c c.
+Definition P_constructor_well_formed Delta c := Delta |-ok_c c.
 
-Definition P_bindings_well_formed_nonrec ctx bs := 
-  LR_logically_approximate_bindings_nonrec (fst ctx) (snd ctx) bs bs.
+Definition P_bindings_well_formed_nonrec Delta Gamma (bs : list Binding) := 
+  forall Delta_t Gamma_t t t' T,
+    Delta_t = mupdate Delta (flatten (List.map binds_Delta bs)) ->
+    Gamma_t = mupdate Gamma (flatten (List.map binds_Gamma bs)) ->
+    LR_logically_approximate Delta_t Gamma_t t t' T ->
+    LR_logically_approximate Delta Gamma (Let NonRec bs t) (Let NonRec bs t') T.
 
-Definition P_bindings_well_formed_rec ctx bs1 := ctx |-oks_r bs1.
+Definition P_bindings_well_formed_rec Delta Gamma bs1 := Delta ,, Gamma |-oks_r bs1.
 
-Definition P_binding_well_formed ctx b := 
-  LR_logically_approximate_binding (fst ctx) (snd ctx) b b.
+Definition P_binding_well_formed Delta Gamma b := 
+    LR_logically_approximate_binding Delta Gamma b b.
 
 #[export] Hint Unfold 
   P_has_type
@@ -26,9 +29,9 @@ Definition P_binding_well_formed ctx b :=
   P_binding_well_formed : core.
 
 
-Lemma LR_reflexivity : forall ctx e T,
-    ctx |-+ e : T ->
-    P_has_type ctx e T.
+Lemma LR_reflexivity : forall Delta Gamma e T,
+    Delta ,, Gamma |-+ e : T ->
+    P_has_type Delta Gamma e T.
 Proof.
   apply has_type__ind with 
     (P := P_has_type)
@@ -39,7 +42,4 @@ Proof.
 
   all : autounfold; intros; subst.
   all : eauto with DSP_compatibility_lemmas typing.
-  - apply skip.
-  - constructor. 
-  - econstructor; eauto with DSP_compatibility_lemmas.
 Qed.

@@ -69,6 +69,7 @@ Proof.
     inversion Hkind. subst.
     simpl.
     apply K_Builtin.
+    reflexivity.
   - (* Ty_Lam *)  
     intros.
     inversion Hkind. subst.

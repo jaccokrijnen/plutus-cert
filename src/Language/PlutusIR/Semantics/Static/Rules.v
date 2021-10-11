@@ -26,8 +26,9 @@ Inductive has_kind : Delta -> Ty -> Kind -> Prop :=
   | K_Forall : forall Delta X K T,
       (X |-> K; Delta) |-* T : Kind_Base ->
       Delta |-* (Ty_Forall X K T) : Kind_Base
-  | K_Builtin : forall Delta u,
-      Delta |-* (Ty_Builtin (Some (TypeIn u))) : (lookupBuiltinKind u)
+  | K_Builtin : forall Delta u T,
+      T = lookupBuiltinKind u ->
+      Delta |-* (Ty_Builtin (Some (TypeIn u))) : T
   | K_Lam : forall Delta X K1 T K2,
       (X |-> K1; Delta) |-* T : K2 ->
       Delta |-* (Ty_Lam X K1 T) : (Kind_Arrow K1 K2)
@@ -38,72 +39,76 @@ Inductive has_kind : Delta -> Ty -> Kind -> Prop :=
 where "Delta '|-*' ty ':' K" := (has_kind Delta ty K).
 
 (** ** Typing of terms *)
-Reserved Notation "ctx '|-+' tm ':' T" (at level 40, tm at level 0, T at level 0).
-Inductive has_type : Context -> Term -> Ty -> Prop :=
+Reserved Notation "Delta ',,' Gamma '|-+' t ':' T" (at level 101, t at level 0, T at level 0).
+
+Inductive has_type : Delta -> Gamma -> Term -> Ty -> Prop :=
   (** Let-bindings
       Note: The rules for let-constructs differ significantly from the paper definitions
       because we had to adapt the typing rules to the compiler implementation of type checking.
       Reference: The Haskell module Language.PlutusIR.TypeCheck.Internal in the 
       iohk/plutus/plutus-core/plutus-ir project.
   **)
-  | T_Let : forall ctx bs t T ctx',
-      ctx' = append (flatten (map binds bs)) ctx ->
-      bindings_well_formed_nonrec ctx bs ->
-      ctx' |-+ t : T ->
-      ctx |-+ (Let NonRec bs t) : T
-  | T_LetRec : forall ctx bs t T ctx',
-      ctx' = append (flatten (map binds bs)) ctx ->
-      bindings_well_formed_rec ctx' bs ->
-      ctx' |-+ t : T ->
-      ctx |-+ (Let Rec bs t) : T
+  | T_Let : forall Delta Gamma bs t T Delta' Gamma',
+      Delta' = mupdate Delta (flatten (map binds_Delta bs)) ->
+      Gamma' = mupdate Gamma (flatten (map binds_Gamma bs)) ->
+      bindings_well_formed_nonrec Delta Gamma bs ->
+      Delta' ,, Gamma' |-+ t : T ->
+      Delta ,, Gamma |-+ (Let NonRec bs t) : T
+  | T_LetRec : forall Delta Gamma bs t T Delta' Gamma',
+      Delta' = mupdate Delta (flatten (map binds_Delta bs)) ->
+      Gamma' = mupdate Gamma (flatten (map binds_Gamma bs)) ->
+      bindings_well_formed_rec Delta' Gamma' bs ->
+      Delta' ,, Gamma' |-+ t : T ->
+      Delta ,, Gamma |-+ (Let Rec bs t) : T
   (* Basic constructs *)
-  | T_Var : forall ctx x T,
-      lookupT ctx x = Coq.Init.Datatypes.Some T ->
-      ctx |-+ (Var x) : T
-  | T_TyAbs : forall ctx X K t T,
-      (extendK X K ctx) |-+ t : T ->
-      ctx |-+ (TyAbs X K t) : (Ty_Forall X K T)
-  | T_LamAbs : forall ctx x T1 t T2,
-      (extendT x T1 ctx) |-+ t : T2 -> 
-      (fst ctx) |-* T1 : Kind_Base ->
-      ctx |-+ (LamAbs x T1 t) : (Ty_Fun T1 T2)
-  | T_Apply : forall ctx t1 t2 T1 T2,
-      ctx |-+ t1 : (Ty_Fun T1 T2) ->
-      ctx |-+ t2 : T1 ->
-      ctx |-+ (Apply t1 t2) : T2
-  | T_Constant : forall ctx u a,
-      ctx |-+ (Constant (Some (ValueOf u a))) : (Ty_Builtin (Some (TypeIn u)))
-  | T_Builtin : forall ctx f,
-      ctx |-+ (Builtin f) : (lookupBuiltinTy f)
-  | T_TyInst : forall ctx t1 T2 T1 X K2 S T1',
-      ctx |-+ t1 : (Ty_Forall X K2 T1) ->
-      (fst ctx) |-* T2 : K2 ->
+  | T_Var : forall Gamma Delta x T,
+      Gamma x = Coq.Init.Datatypes.Some T ->
+      Delta ,, Gamma |-+ (Var x) : T
+  | T_TyAbs : forall Delta Gamma X K t T,
+      (X |-> K; Delta) ,, Gamma |-+ t : T ->
+      Delta ,, Gamma |-+ (TyAbs X K t) : (Ty_Forall X K T)
+  | T_LamAbs : forall Delta Gamma x T1 t T2,
+      Delta ,, x |-> T1; Gamma |-+ t : T2 -> 
+      Delta |-* T1 : Kind_Base ->
+      Delta ,, Gamma |-+ (LamAbs x T1 t) : (Ty_Fun T1 T2)
+  | T_Apply : forall Delta Gamma t1 t2 T1 T2,
+      Delta ,, Gamma |-+ t1 : (Ty_Fun T1 T2) ->
+      Delta ,, Gamma |-+ t2 : T1 ->
+      Delta ,, Gamma |-+ (Apply t1 t2) : T2
+  | T_Constant : forall Delta Gamma u a,
+      Delta ,, Gamma |-+ (Constant (Some (ValueOf u a))) : (Ty_Builtin (Some (TypeIn u)))
+  | T_Builtin : forall Delta Gamma f T,
+      T = lookupBuiltinTy f ->
+      Delta ,, Gamma |-+ (Builtin f) : T
+  | T_TyInst : forall Delta Gamma t1 T2 T1 X K2 S T1',
+      Delta ,, Gamma |-+ t1 : (Ty_Forall X K2 T1) ->
+      Delta |-* T2 : K2 ->
       substituteTCA X T2 T1 T1' ->
       normalise T1' S ->
-      ctx |-+ (TyInst t1 T2) : S
-  | T_Error : forall ctx T,
-      (fst ctx) |-* T : Kind_Base ->
-      ctx |-+ (Error T) : T 
+      Delta ,, Gamma |-+ (TyInst t1 T2) : S
+  | T_Error : forall Delta Gamma T,
+      Delta |-* T : Kind_Base ->
+      Delta ,, Gamma |-+ (Error T) : T 
   (* Recursive types *)
-  | T_IWrap : forall ctx F T M K S,
+  | T_IWrap : forall Delta Gamma F T M K S,
       normalise (unwrapIFix F K T) S ->
-      ctx |-+ M : S ->
-      (fst ctx) |-* T : K ->
-      (fst ctx) |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
-      ctx |-+ (IWrap F T M) : (Ty_IFix F T)
-  | T_Unwrap : forall ctx M F K T S,
-      ctx |-+ M : (Ty_IFix F T) ->
-      (fst ctx) |-* T : K ->
+      Delta ,, Gamma |-+ M : S ->
+      Delta |-* T : K ->
+      Delta |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
+      Delta ,, Gamma |-+ (IWrap F T M) : (Ty_IFix F T)
+  | T_Unwrap : forall Delta Gamma M F K T S,
+      Delta ,, Gamma |-+ M : (Ty_IFix F T) ->
+      Delta |-* T : K ->
       normalise (unwrapIFix F K T) S ->
-      ctx |-+ (Unwrap M) : S
+      Delta ,, Gamma |-+ (Unwrap M) : S
 
   (* Extras *)
-  | T_ExtBuiltin : forall ctx f args Targs Tr Tr',
+  | T_ExtBuiltin : forall Delta Gamma f args Targs Tr Tr',
       List.length args <= arity f ->
       (Targs, Tr) = splitTy (lookupBuiltinTy f) ->
-      (forall p, In p (List.combine args Targs) -> ctx |-+ (fst p) : (snd p)) ->
+      (forall p, In p (List.combine args Targs) -> Delta ,, Gamma |-+ (fst p) : (snd p)) ->
       Tr' = combineTy (skipn (List.length args) Targs) Tr ->
-      ctx |-+ (ExtBuiltin f args) : Tr'
+      Delta ,, Gamma |-+ (ExtBuiltin f args) : Tr'
 
   with constructor_well_formed : Delta -> constructor -> Prop :=
     | W_Con : forall Delta x T ar Targs Tr,
@@ -111,41 +116,42 @@ Inductive has_type : Context -> Term -> Ty -> Prop :=
         (forall U, In U Targs -> Delta |-* U : Kind_Base) ->
         constructor_well_formed Delta (Constructor (VarDecl x T) ar)
 
-  with bindings_well_formed_nonrec : Context -> list Binding -> Prop :=
-    | W_NilB_NonRec : forall ctx,
-        bindings_well_formed_nonrec ctx nil
-    | W_ConsB_NonRec : forall ctx b bs,
-        binding_well_formed ctx b ->
-        bindings_well_formed_nonrec (append (binds b) ctx) bs ->
-        bindings_well_formed_nonrec ctx (b :: bs)
+  with bindings_well_formed_nonrec : Delta -> Gamma -> list Binding -> Prop :=
+    | W_NilB_NonRec : forall Delta Gamma,
+        bindings_well_formed_nonrec Delta Gamma nil
+    | W_ConsB_NonRec : forall Delta Gamma b bs,
+        binding_well_formed Delta Gamma b ->
+        bindings_well_formed_nonrec (mupdate Delta (binds_Delta b)) (mupdate Gamma (binds_Gamma b)) bs ->
+        bindings_well_formed_nonrec Delta Gamma (b :: bs)
 
-  with bindings_well_formed_rec : Context -> list Binding -> Prop :=
-    | W_NilB_Rec : forall ctx,
-        bindings_well_formed_rec ctx nil
-    | W_ConsB_Rec : forall ctx b bs,
-        binding_well_formed ctx b ->
-        bindings_well_formed_rec ctx bs ->
-        bindings_well_formed_rec ctx (b :: bs)
+  with bindings_well_formed_rec : Delta -> Gamma -> list Binding -> Prop :=
+    | W_NilB_Rec : forall Delta Gamma,
+        bindings_well_formed_rec Delta Gamma nil
+    | W_ConsB_Rec : forall Delta Gamma b bs,
+        binding_well_formed Delta Gamma b ->
+        bindings_well_formed_rec Delta Gamma bs ->
+        bindings_well_formed_rec Delta Gamma (b :: bs)
 
-  with binding_well_formed : Context -> Binding -> Prop :=
-    | W_Term : forall ctx s x T t,
-        (fst ctx) |-* T : Kind_Base ->
-        ctx |-+ t : T ->
-        binding_well_formed ctx (TermBind s (VarDecl x T) t)
-    | W_Type : forall ctx X K T,
-        (fst ctx) |-* T : K ->
-        binding_well_formed ctx (TypeBind (TyVarDecl X K) T)
-    | W_Data : forall ctx X YKs cs matchFunc ctx',
-        ctx' = append (flatten (map fromDecl YKs)) ctx ->
-        (forall c, In c cs -> constructor_well_formed (fst ctx') c) ->
-        binding_well_formed ctx (DatatypeBind (Datatype X YKs matchFunc cs))
+  with binding_well_formed : Delta -> Gamma -> Binding -> Prop :=
+    | W_Term : forall Delta Gamma s x T t,
+        Delta |-* T : Kind_Base ->
+        Delta ,, Gamma |-+ t : T ->
+        binding_well_formed Delta Gamma (TermBind s (VarDecl x T) t)
+    | W_Type : forall Delta Gamma X K T,
+        Delta |-* T : K ->
+        binding_well_formed Delta Gamma (TypeBind (TyVarDecl X K) T)
+    | W_Data : forall Delta Gamma X YKs cs matchFunc Delta' Gamma',
+        Delta' = mupdate Delta (rev (map fromDecl YKs)) ->
+        Gamma' = Gamma ->
+        (forall c, In c cs -> constructor_well_formed Delta' c) ->
+        binding_well_formed Delta Gamma (DatatypeBind (Datatype X YKs matchFunc cs))
 
-  where "ctx '|-+' tm ':' T" := (has_type ctx tm T).
+  where "Delta ',,' Gamma '|-+' t ':' T" := (has_type Delta Gamma t T).
 
-Notation "ctx '|-ok_c' c" := (constructor_well_formed ctx c) (at level 40, c at level 0).
-Notation "ctx '|-oks_nr' bs" := (bindings_well_formed_nonrec ctx bs) (at level 40, bs at level 0).
-Notation "ctx '|-oks_r' bs" := (bindings_well_formed_rec ctx bs) (at level 40, bs at level 0).
-Notation "ctx '|-ok' tm" := (binding_well_formed ctx tm) (at level 40, tm at level 0).
+Notation "Delta '|-ok_c' c" := (constructor_well_formed Delta c) (at level 101, c at level 0).
+Notation "Delta ',,' Gamma '|-oks_nr' bs" := (bindings_well_formed_nonrec Delta Gamma bs) (at level 101, bs at level 0).
+Notation "Delta ',,' Gamma '|-oks_r' bs" := (bindings_well_formed_rec Delta Gamma bs) (at level 101, bs at level 0).
+Notation "Delta ',,' Gamma '|-ok' b" := (binding_well_formed Delta Gamma b) (at level 101, b at level 0).
 
 Scheme has_type__ind := Minimality for has_type Sort Prop
   with constructor_well_formed__ind := Minimality for constructor_well_formed Sort Prop

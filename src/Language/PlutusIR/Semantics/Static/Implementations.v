@@ -1,7 +1,8 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
-Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Map.
+Require Export PlutusCert.Util.Map.
+Require Export PlutusCert.Util.Map.Mupdate.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.TypeSubstitution.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.TypeSubstitution.CaptureAvoiding.
 
@@ -10,199 +11,11 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Strings.String.
 Require Import Coq.Logic.FunctionalExtensionality.
 
-Local Open Scope string_scope.
-
 (** ** Contexts and lookups *)
 Definition Delta : Type := partial_map Kind.
 Definition Gamma : Type := partial_map Ty.
-Definition Context : Type := Delta * Gamma.
 
-Definition emptyContext : Context := (Map.empty, Map.empty).
-
-Definition lookupK (ctx : Context) (X : tyname) : option Kind :=
-  fst ctx X.
-Definition lookupT (ctx : Context) (x : name) : option Ty :=
-  snd ctx x.
-
-Definition extendK X K ctx : Context := (X |-> K; fst ctx, snd ctx).
-Definition extendT x T ctx : Context := (fst ctx, x |-> T ; snd ctx).
-
-Notation "x '|T->' T ';' ctx" := (extendT x T ctx) (at level 60, right associativity).
-Notation "X '|K->' K ';' ctx" := (extendK X K ctx) (at level 60, right associativity).
-
-Lemma cong_eq : forall {A B} (x1 x2 : A) (y1 y2 : B), x1 = x2 -> y1 = y2 -> (x1, y1) = (x2, y2).
-Proof. intros. f_equal; auto. Qed. 
-
-Lemma lookupT_eq : forall ctx x T,
-    lookupT (x |T-> T ; ctx) x = Datatypes.Some T.
-Proof. intros. unfold lookupT. simpl. rewrite update_eq. reflexivity. Qed.
-
-Lemma lookupK_eq : forall ctx X K,
-    lookupK (X |K-> K ; ctx) X = Datatypes.Some K.
-Proof. intros. unfold lookupK. simpl. rewrite update_eq. reflexivity. Qed.
-
-Lemma lookupT_neq : forall ctx x1 x2 T,
-    x2 <> x1->
-    lookupT (x2 |T-> T ; ctx) x1 = lookupT ctx x1.
-Proof. intros. unfold lookupT. simpl. rewrite update_neq. reflexivity. assumption. Qed.
-
-Lemma lookupK_neq : forall ctx X1 X2 K,
-    X2 <> X1 ->
-    lookupK (X2 |K-> K ; ctx) X1 = lookupK ctx X1.
-Proof. intros. unfold lookupT. simpl. rewrite update_neq. reflexivity. assumption. Qed.
-
-Lemma lookupT_extendK : forall ctx X K x,
-  lookupT (X |K-> K; ctx) x = lookupT ctx x.
-Proof. reflexivity. Qed.
-
-Lemma lookupK_extendT : forall ctx x T X,
-  lookupK (x |T-> T; ctx) X = lookupK ctx X.
-Proof. reflexivity. Qed.
-
-Lemma extendT_shadow : forall ctx x T1 T2,
-    (x |T-> T1; x |T-> T2; ctx) = (x |T-> T1; ctx).
-Proof. 
-  intros. destruct ctx. unfold extendT. simpl. 
-  f_equal.
-  apply update_shadow.
-Qed.
-
-Lemma extendK_shadow : forall ctx x K1 K2,
-    (x |K-> K1; x |K-> K2; ctx) = (x |K-> K1; ctx).
-Proof. 
-  intros. destruct ctx. unfold extendK. simpl. 
-  f_equal.
-  apply update_shadow.
-Qed.
-
-Lemma extendT_permute : forall ctx x1 x2 T1 T2,
-    x2 <> x1 ->
-    (x1 |T-> T1 ; x2 |T-> T2 ; ctx) = (x2 |T-> T2 ; x1 |T-> T1 ; ctx).
-Proof.
-  intros. destruct ctx. unfold extendT. simpl. f_equal. apply update_permute. assumption. Qed.
-
-Lemma extendK_permute : forall ctx X1 X2 K1 K2,
-    X2 <> X1 ->
-    (X1 |K-> K1 ; X2 |K-> K2 ; ctx) = (X2 |K-> K2 ; X1 |K-> K1 ; ctx).
-Proof. intros. destruct ctx. unfold extendK. simpl. f_equal. apply update_permute. assumption. Qed.
-
-Lemma extendT_extendK_permute : forall x T Y K ctx,
-    (Y |K-> K ; x |T-> T ; ctx) = (x |T-> T ; Y |K-> K ; ctx).
-Proof.
-  intros.
-  destruct ctx.
-  unfold extendT.
-  unfold extendK.
-  simpl.
-  apply cong_eq; auto.
-Qed.
-
-Definition append ctx1 ctx2 : Context := 
-  pair
-    (fun X =>
-      match lookupK ctx1 X with
-      | Coq.Init.Datatypes.Some K => Coq.Init.Datatypes.Some K
-      | None => lookupK ctx2 X
-      end)
-    (fun x =>
-      match lookupT ctx1 x with
-      | Coq.Init.Datatypes.Some T => Coq.Init.Datatypes.Some T
-      | None => lookupT ctx2 x
-      end).
-Definition concat ctxs : Context := List.fold_right append emptyContext ctxs.
-Definition flatten ctxs : Context := concat (rev ctxs).
-
-Lemma append_emptyContext_l : forall ctx,
-    append emptyContext ctx = ctx.
-Proof. intros. destruct ctx. reflexivity. Qed.
-
-Lemma append_emptyContext_r : forall ctx,
-    append ctx emptyContext = ctx.
-Proof. 
-  intros. destruct ctx. unfold append. simpl.
-  apply cong_eq.
-  - apply functional_extensionality.
-    intros.
-    destruct (d x); auto.
-  - apply functional_extensionality.
-    intros.
-    destruct (g x); auto.
-Qed.
-
-Lemma append_singleton_l : forall x T ctx,
-    append (x |T-> T ; emptyContext) ctx = (x |T-> T ; ctx).
-Proof. 
-  intros. unfold append. simpl. destruct ctx. unfold extendT. simpl. 
-  apply cong_eq.
-  - reflexivity.
-  - apply functional_extensionality.
-    intros.
-    unfold update.
-    unfold t_update.
-    destruct (x =? x0); auto.
-Qed.
-
-Lemma lookupT_append_r : forall ctx ctx' ctx'' x,
-    lookupT ctx' x = lookupT ctx'' x ->
-    lookupT (append ctx ctx') x = lookupT (append ctx ctx'') x.
-Proof. intros. destruct ctx. simpl. destruct (g x); auto. Qed.
-
-Lemma lookupK_append_r : forall ctx ctx' ctx'' X,
-    lookupK ctx' X = lookupK ctx'' X ->
-    lookupK (append ctx ctx') X = lookupK (append ctx ctx'') X.
-Proof. intros. destruct ctx. simpl. destruct (d X); auto. Qed.
-
-Lemma append_assoc : forall ctx1 ctx2 ctx3,
-    append ctx1 (append ctx2 ctx3) = append (append ctx1 ctx2) ctx3.
-Proof.
-  intros.
-  destruct ctx1.
-  destruct ctx2.
-  destruct ctx3.
-  unfold append.
-  f_equal.
-  - simpl.
-    apply functional_extensionality.
-    intros.
-    destruct (d x); auto.
-  - simpl.
-    apply functional_extensionality.
-    intros.
-    destruct (g x); auto.
-Qed.
-
-Lemma concat_append : forall ctx1 ctx2,
-    concat (ctx1 ++ ctx2) = append (concat ctx1) (concat ctx2).
-Proof. 
-  induction ctx1.
-  - intros.
-    simpl.
-    rewrite append_emptyContext_l.
-    reflexivity.
-  - intros.
-    simpl.
-    rewrite <- append_assoc.
-    f_equal.
-    apply IHctx1.
-Qed.
-
-Lemma flatten_nil : flatten nil = emptyContext.
-Proof. reflexivity. Qed.
-
-Lemma flatten_extract : forall ctx ctxs,
-    flatten (ctx :: ctxs) = append (flatten ctxs) ctx.
-Proof.
-  intros.
-  unfold flatten.
-  simpl.
-  replace ctx with (concat (ctx :: nil)) by eauto using append_emptyContext_r.
-  rewrite concat_append.
-  simpl.
-  rewrite append_emptyContext_r.
-  reflexivity.
-Qed.
-
-
+Definition flatten {A : Type} (l : list (list A)) := List.concat (rev l).
 
 Definition constructorDecl : constructor -> VDecl :=
   fun c => match c with
@@ -296,7 +109,7 @@ Definition constrBind (d : DTDecl) (c : constructor) : name * Ty :=
 Definition constrBinds (d : DTDecl) : list (name * Ty) :=
   match d with
   | Datatype X YKs matchFunc cs =>
-    map (constrBind d) cs
+    rev (map (constrBind d) cs)
   end.
 
 Definition matchBind (d : DTDecl) : name * Ty :=
@@ -307,11 +120,11 @@ Definition matchBind (d : DTDecl) : name * Ty :=
 
 Import ListNotations.
 Open Scope list_scope.
-
-Definition binds (b : Binding) : Context :=
+(*
+Definition binds (b : Binding) : list (name * Ty) * list (tyname * Kind) :=
   match b with
-  | TermBind _ vd _ => (getName vd |T-> getTy vd ; emptyContext)
-  | TypeBind tvd ty => (getTyname tvd |K-> getKind tvd ; emptyContext)
+  | TermBind _ vd _ => ((getName vd, getTy vd) :: nil, nil)
+  | TypeBind tvd ty => (nil, (getTyname tvd, getKind tvd) :: nil)
   | DatatypeBind d =>
     let dataB := dataBind d in 
     let constrBs := constrBinds d in
@@ -319,6 +132,25 @@ Definition binds (b : Binding) : Context :=
     let matchB := matchBind d in
     (fst matchB |T-> snd matchB ; (append constrBs_ctx (fst dataB |K-> snd dataB ; emptyContext)))
   end.
+*)
+
+Definition binds_Delta (b : Binding) : list (tyname * Kind) :=
+  match b with
+  | TermBind _ _ _ => nil
+  | TypeBind (TyVarDecl X K) ty => (X, K) :: nil
+  | DatatypeBind d => dataBind d :: nil
+  end.
+
+Definition binds_Gamma (b : Binding) : list (name * Ty) :=
+  match b with
+  | TermBind _ (VarDecl x T) _ => (x, T) :: nil
+  | TypeBind _ _ => nil 
+  | DatatypeBind d => 
+      let constrBs := constrBinds d in
+      let matchB := matchBind d in
+      matchB :: constrBs
+  end.
+
 
 (** ** Kinds of builtin types *)
 Definition lookupBuiltinKind (u : DefaultUni) : Kind := 
@@ -381,9 +213,9 @@ Fixpoint splitTy (T : Ty) : list Ty * Ty :=
 Definition combineTy (Targs : list Ty) (Tr : Ty) : Ty :=
   fold_right (@Ty_Fun tyname binderTyname) Tr Targs.
 
-Definition fromDecl (tvd : tvdecl tyname) : Context :=
+Definition fromDecl (tvd : tvdecl tyname) : tyname * Kind :=
   match tvd with
-  | TyVarDecl v K => extendK v K emptyContext
+  | TyVarDecl v K => (v, K)   
   end.
     
 Definition unwrapIFix (F : Ty) (K : Kind) (T : Ty) : Ty := (Ty_App (Ty_App F (Ty_Lam "X" K (Ty_IFix F (Ty_Var "X")))) T).

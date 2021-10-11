@@ -6,6 +6,7 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.Substitution.
 Require Import Coq.Strings.String.
 Require Import Coq.Logic.FunctionalExtensionality.
 
+(*
 Lemma append_extendT_shadow : forall ctx' x T U ctx,
     lookupT ctx' x = Datatypes.Some T ->
     Implementations.append ctx' (x |T-> U; ctx) = Implementations.append ctx' ctx.
@@ -220,39 +221,44 @@ Proof.
            left.
            assumption.
       * reflexivity.
-Qed.
+Qed. *)
 
 Definition P_Term (t : Term) :=
-  forall ctx x U v T,
-    extendT x U ctx |-+ t : T ->
-    emptyContext |-+ v : U ->
-    ctx |-+ <{ [v / x] t }> : T.
-#[export] Hint Unfold P_Term : core.
+  forall Delta Gamma x U v T,
+    Delta ,, (x |-> U; Gamma) |-+ t : T ->
+    empty ,, empty |-+ v : U ->
+    Delta ,, Gamma |-+ <{ [v / x] t }> : T.
 
 Definition P_Binding (b : Binding) : Prop :=
-  forall ctx x U v,
-    extendT x U ctx |-ok b ->
-    emptyContext |-+ v : U ->
-    ctx |-ok <{ [v / x][b] b }> /\ binds b = binds <{ [v / x][b] b }>.
-#[export] Hint Unfold P_Binding : core.
+  forall Delta Gamma x U v,
+    Delta ,, (x |-> U; Gamma) |-ok b ->
+    empty ,, empty |-+ v : U ->
+    Delta ,, Gamma |-ok <{ [v / x][b] b }> /\ 
+    binds_Delta b = binds_Delta <{ [v / x][b] b }> /\
+    binds_Gamma b = binds_Gamma <{ [v / x][b] b}>.
 
-Lemma P_letnonrec : forall bs t ctx x U v T,
+#[export] Hint Unfold
+  P_Term
+  P_Binding
+  : core.
+
+Lemma P_letnonrec : forall bs t Delta Gamma x U v T,
     P_Term t ->
-    extendT x U ctx |-+ (Let NonRec bs t) : T ->
-    emptyContext |-+ v : U ->
+    Delta ,, (x |-> U; Gamma) |-+ (Let NonRec bs t) : T ->
+    empty ,, empty |-+ v : U ->
     Util.ForallP P_Binding bs ->
-    ctx |-+ <{ [v / x] {Let NonRec bs t} }> : T /\ 
-    List.map binds bs = List.map binds <{ [v / x][bnr] bs }>.
+    Delta ,, Gamma |-+ <{ [v / x] {Let NonRec bs t} }> : T /\ 
+    List.map binds_Delta bs = List.map binds_Delta <{ [v / x][bnr] bs }> /\
+    List.map binds_Gamma bs = List.map binds_Gamma <{ [v / x][bnr] bs }>.
 Proof.
   induction bs; intros.
   - simpl.
     split.
     + eapply T_Let.
       * reflexivity.
+      * reflexivity.
       * econstructor.
       * simpl.
-        rewrite flatten_nil.
-        rewrite append_emptyContext_l.
         eapply H; eauto.
         inversion H0. subst.
         eauto.
@@ -276,74 +282,67 @@ Proof.
         -- eapply weakening; eauto. *)
 Admitted.
 
-Lemma P_letrec : forall bs t ctx x U v T,
+Lemma P_letrec : forall bs t Delta Gamma x U v T,
     P_Term t ->
-    extendT x U ctx |-+ (Let Rec bs t) : T ->
-    emptyContext |-+ v : U ->
+    Delta ,, (x |-> U; Gamma) |-+ (Let Rec bs t) : T ->
+    empty ,, empty |-+ v : U ->
     Util.ForallP P_Binding bs ->
-    ctx |-+ <{ [v / x] {Let Rec bs t} }> : T /\ 
-    List.map binds bs = List.map binds <{ [v / x][br] bs }>.
+    Delta ,, Gamma |-+ <{ [v / x] {Let Rec bs t} }> : T /\ 
+    List.map binds_Delta bs = List.map binds_Delta <{ [v / x][br] bs }> /\
+    List.map binds_Gamma bs = List.map binds_Gamma <{ [v / x][br] bs}>.
 Proof. Admitted.
 
 Lemma substitution_preserves_typing : 
   (forall t, P_Term t) /\ (forall b, P_Binding b).
 Proof.
-  intros.
-  apply Term__multind with (P := P_Term) (Q := P_Binding).
-  - intros. autounfold. intros.
-    destruct rec.
+  apply Term__multind with 
+    (P := P_Term) 
+    (Q := P_Binding).
+  all: intros; autounfold; intros.
+  - destruct rec.
     + simpl.
       all: eapply P_letnonrec; eauto.
     + simpl.
       all: eapply P_letrec; eauto.
-  - intros. autounfold. intros.
-    simpl.
+  - simpl.
     destruct (x =? s) eqn:Heqb.
     + apply eqb_eq in Heqb as Heq.
       subst.
       inversion H.
       subst.
-      simpl in H3.
-      rewrite update_eq in H3.
-      inversion H3. subst. 
+      rewrite update_eq in H4.
+      inversion H4. subst. 
       eapply weakening_empty; eauto.
     + apply eqb_neq in Heqb as Hneq.
       apply T_Var.
       inversion H.
       subst.
-      simpl in H3.
-      rewrite update_neq in H3; auto.
+      rewrite update_neq in H4; auto.
   - (* TyAbs *) 
-    intros. autounfold. intros.
     inversion H0. subst.
     simpl.
     apply T_TyAbs.
-    rewrite extendT_extendK_permute in H7.
     eapply H.
     + eauto.
     + eauto.
   - (* LamAbs *)
-    intros. autounfold. intros.
     inversion H0. subst.
     simpl.
     destruct (x =? s) eqn:Heqb.
     + apply eqb_eq in Heqb as Heq. 
       subst.
       apply T_LamAbs.
-      * rewrite extendT_shadow in H7.
+      * rewrite update_shadow in H8.
         assumption.
-      * destruct ctx.
-        eauto.
+      * eauto.
     + apply eqb_neq in Heqb as Hneq.
       apply T_LamAbs.
       * eapply H.
-        -- rewrite extendT_permute; auto.
-           apply H7.
+        -- rewrite update_permute; auto.
+           apply H8.
         -- eassumption.
-      * destruct ctx.
-        eauto.
+      * eauto.
   - (* Apply *)
-    intros. autounfold. intros.
     inversion H1. subst.
     simpl.
     eapply T_Apply.
@@ -354,36 +353,30 @@ Proof.
       * eassumption.
       * eassumption.
   - (* Constant *)
-    intros. autounfold. intros.
     inversion H. subst.
     simpl.
     apply T_Constant.
   - (* Builtin *) 
-    intros. autounfold. intros.
     inversion H. subst.
     simpl.
     apply T_Builtin.
+    reflexivity.
   - (* TyInst *)
-    intros. autounfold. intros.
     inversion H0. subst.
     simpl.
     eapply T_TyInst.
     + eapply H.
       * eassumption.
       * eassumption.
-    + destruct ctx.
-      eauto.
+    + eauto.
     + eassumption.
     + eassumption.
   - (* Error *)
-    intros. autounfold. intros.
     inversion H. subst.
     simpl.
     apply T_Error.
-    destruct ctx.
     eauto.
   - (* IWrap *)
-    intros. autounfold. intros.
     inversion H0. subst.
     simpl.
     eapply T_IWrap.
@@ -391,24 +384,19 @@ Proof.
     + eapply H.
       * eassumption.
       * eassumption.
-    + destruct ctx.
-      eauto.
-    + destruct ctx.
-      eauto.
+    + eauto.
+    + eauto.
   - (* Unwrap *)
-    intros. autounfold. intros.
     inversion H0. subst.
     simpl.
     eapply T_Unwrap.
     + eapply H.
       * eassumption.
       * eassumption.
-    + destruct ctx.
-      eauto.
+    + eauto.
     + eassumption.
 
   - (* ExtBuiltin *)
-    intros. autounfold. intros.
     inversion H0. subst.
     simpl.
     erewrite <- List.map_length.
@@ -418,55 +406,53 @@ Proof.
       destruct p.
       simpl.
       apply List.in_combine_l in H2 as H3.
-      apply List.in_combine_r in H2 as H8.
-      eapply List.in_map_iff in H3 as H9.
-      destruct H9. 
+      apply List.in_combine_r in H2 as H9.
+      eapply List.in_map_iff in H3 as H10.
+      destruct H10. 
       destruct H6.
       subst.
 
       apply skip.
 
   - (* TermBind *)
-    intros. autounfold. intros.
     inversion H0. subst.
     simpl.
     split.
     + apply W_Term.
-      * destruct ctx.
-        eauto.
+      * eauto.
       * eapply H.
         -- eassumption.
         -- eassumption.
-    + reflexivity. 
+    + auto. 
   - (* TypeBind *)
-    intros. autounfold. intros.
     inversion H. subst.
     simpl.
     split. 
     + apply W_Type.
-      destruct ctx.
       eauto.
-    + reflexivity.
+    + auto.
   - (* DatatypeBind *)
-    intros. autounfold. intros.
     inversion H. subst.
     split.
     + simpl.
       eapply W_Data.
       * reflexivity.
+      * reflexivity.
       * intros.
         eauto.
-    + reflexivity.
+    + auto.
 Qed.
 
-Corollary substitution_preserves_typing__Term : forall t ctx x U v T,
-    extendT x U ctx |-+ t : T ->
-    emptyContext |-+ v : U ->
-    ctx |-+ <{ [v / x] t }> : T.
+Corollary substitution_preserves_typing__Term : forall t Delta Gamma x U v T,
+    Delta ,, (x |-> U; Gamma)  |-+ t : T ->
+    empty ,, empty |-+ v : U ->
+    Delta ,, Gamma |-+ <{ [v / x] t }> : T.
 Proof. apply substitution_preserves_typing. Qed.
 
-Corollary substitution_preserves_typing__Binding : forall b ctx x U v,
-    extendT x U ctx |-ok b ->
-    emptyContext |-+ v : U ->
-    ctx |-ok <{ [v / x][b] b }> /\ binds b = binds <{ [v / x][b] b }>.
+Corollary substitution_preserves_typing__Binding : forall b Delta Gamma x U v,
+    Delta ,, (x |-> U; Gamma) |-ok b ->
+    empty ,, empty |-+ v : U ->
+    Delta ,, Gamma |-ok <{ [v / x][b] b }> /\ 
+    binds_Delta b = binds_Delta <{ [v / x][b] b }> /\
+    binds_Gamma b = binds_Gamma <{ [v / x][b] b }>.
 Proof. apply substitution_preserves_typing. Qed.

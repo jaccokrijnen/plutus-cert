@@ -5,10 +5,10 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPre
 
 
 Lemma preservation__compute_defaultfun : forall t T,
-    emptyContext |-+ t : T ->
+    empty ,, empty |-+ t : T ->
     forall v,
       compute_defaultfun t = Datatypes.Some v ->
-      emptyContext |-+ v : T.
+      empty ,, empty |-+ v : T.
 Proof with (try discriminate).
   intros.
   destruct t...
@@ -39,32 +39,32 @@ Qed.
 
 Definition P_eval (t v : Term) (k : nat) :=
   forall T,
-    emptyContext |-+ t : T ->
-    emptyContext |-+ v : T.
+    empty ,, empty |-+ t : T ->
+    empty ,, empty |-+ v : T.
 
     
 Definition P_eval_bindings_nonrec (t v : Term) (k : nat) :=
   forall bs t0,
     t = Let NonRec bs t0 ->
     forall T,
-      emptyContext |-+ t : T ->
-      emptyContext |-+ v : T.
+      empty ,, empty |-+ t : T ->
+      empty ,, empty |-+ v : T.
 
 Definition P_eval_bindings_rec (bs0 : list Binding) (t v : Term) (k : nat) :=
-  flatten (List.map binds bs0) |-oks_r bs0 ->
+  (mupdate empty (flatten (List.map binds_Delta bs0))) ,, (mupdate empty (flatten (List.map binds_Gamma bs0))) |-oks_r bs0 ->
   forall bs t0,
     t = Let Rec bs t0 ->
     forall T,
-      emptyContext |-+ t : T ->
-      emptyContext |-+ v : T.
+      empty ,, empty |-+ t : T ->
+      empty ,, empty |-+ v : T.
 
 
 Axiom skip : forall P, P.
 
 Theorem preservation : 
-  (forall (t v : Term) (k : nat), t =[k]=> v -> P_eval t v k) /\
-  (forall (t v : Term) (k : nat), eval_bindings_nonrec t v k -> P_eval_bindings_nonrec t v k) /\
-  (forall (bs0 : list Binding) (t v : Term) (k : nat), eval_bindings_rec bs0 t v k -> P_eval_bindings_rec bs0 t v k). 
+  (forall (t v : Term) (j : nat), t =[j]=> v -> P_eval t v j) /\
+  (forall (t v : Term) (j : nat), eval_bindings_nonrec t v j -> P_eval_bindings_nonrec t v j) /\
+  (forall (bs0 : list Binding) (t v : Term) (j : nat), eval_bindings_rec bs0 t v j -> P_eval_bindings_rec bs0 t v j). 
 Proof.
   apply eval__multind with
     (P := P_eval)
@@ -74,9 +74,8 @@ Proof.
     eapply H0; eauto.
   - intros. unfold P_eval. intros.
     eapply H0; eauto.
-    + inversion H1. subst.
-      rewrite append_emptyContext_r in H6.
-      assumption.
+    inversion H1. subst.
+    assumption.
   - (* E_TyAbs *)
     intros. unfold P_eval. intros.
     assumption.
@@ -88,8 +87,8 @@ Proof.
     inversion H5. subst.
     eapply H4.
     eapply substitution_preserves_typing__Term; eauto.
-    eapply H0 in H9.
-    inversion H9. subst.
+    eapply H0 in H10.
+    inversion H10. subst.
     eauto.
   - (* E_Constant *) 
     intros. unfold P_eval. intros.
@@ -109,9 +108,9 @@ Proof.
   - (* E_ApplyExtBuiltin *) 
     intros. unfold P_eval. intros.
     inversion H5. subst.
-    eapply H0 in H9; eauto.
-    inversion H9. subst.
-    unfold combineTy in H15.
+    eapply H0 in H10; eauto.
+    inversion H10. subst.
+    unfold combineTy in H16.
     apply skip.
 
   - (* E_If *)
@@ -132,25 +131,15 @@ Proof.
   - (* E_IfTrue *) 
     intros. unfold P_eval. intros.
     inversion H3; subst.
-    apply H0 in H7.
+    apply H0 in H8.
     apply H2.
-
-    inversion H7. subst.
-    inversion H8. subst.
-    inversion H10; subst.
-    inversion H6. subst.
     
     apply skip. (* TODO *)
   - (* E_IfFalse *)
     intros. unfold P_eval. intros.
     inversion H3. subst.
-    apply H0 in H7.
+    apply H0 in H8.
     apply H2.
-
-    inversion H7. subst.
-    inversion H8. subst.
-    inversion H10. subst.
-    inversion H6. subst.
 
     apply skip. (* TODO *)
   - (* E_TyInst *) 
@@ -180,8 +169,7 @@ Proof.
     inversion H1. subst.
     inversion H2. subst.
     simpl in H9.
-    rewrite flatten_nil in H9.
-    rewrite append_emptyContext_l in H9.
+    simpl in H11.
     apply H0.
     assumption.
   - (* E_ConsB_NonRec *)
@@ -193,18 +181,24 @@ Proof.
     + eapply substitution_preserves_typing__Term.
       * eapply T_Let.
         -- reflexivity.
-        -- inversion H9. subst.
+        -- reflexivity.
+        -- inversion H11. subst.
            simpl in H10.
-           rewrite append_emptyContext_r in H10.
            apply H10.
-        -- simpl in H11.
-           rewrite flatten_extract in H11.
-           rewrite append_emptyContext_r in H11.
-           apply H11.
-      * inversion H9. subst.
-        inversion H8. subst.
+        -- simpl in H13.
+           unfold flatten in H13.
+           simpl in H13.
+           rewrite List.concat_app in H13.
+           rewrite List.concat_app in H13.
+           simpl in H13.
+           rewrite mupdate_app in H13.
+           rewrite mupdate_app in H13.
+           simpl in H13.
+           apply H13.
+      * inversion H11. subst.
+        inversion H9. subst.
         apply H0.
-        apply H15.
+        apply H16.
 
   - (* E_NilB_Rec *)
     intros. unfold P_eval_bindings_rec. intros.
@@ -222,35 +216,37 @@ Proof.
     + eapply substitution_preserves_typing__Term.
       * eapply T_LetRec.
         -- reflexivity.
-        -- inversion H8. subst.
+        -- reflexivity.
+        -- inversion H10. subst.
            simpl in H9.
-           rewrite flatten_extract in H9.
-           rewrite append_emptyContext_r in H9.
+           unfold flatten in H9.
+           simpl in H9.
+           rewrite List.concat_app in H9.
+           rewrite List.concat_app in H9.
+           simpl in H9.
+           rewrite mupdate_app in H9.
+           rewrite mupdate_app in H9.
+           simpl in H9.
            apply H9.
-        -- inversion H8. subst.
-           simpl in H10.
-           rewrite flatten_extract in H10.
-           rewrite append_emptyContext_r in H10.
-           apply H10.
+        -- simpl in H12.
+           unfold flatten in H12.
+           simpl in H12.
+           rewrite List.concat_app in H12.
+           rewrite List.concat_app in H12.
+           simpl in H12.
+           rewrite mupdate_app in H12.
+           rewrite mupdate_app in H12.
+           simpl in H12.
+           apply H12.
       * eapply T_LetRec.
         -- reflexivity.
-        -- rewrite append_emptyContext_r. 
-           apply H1.
-        -- rewrite append_emptyContext_r.
-           rewrite append_emptyContext_r in H10.
-           rewrite append_emptyContext_r in H8.
-           inversion H8. subst.
-           inversion H7. subst.
-           eapply context_invariance.
-           ++ apply H14.
-           ++ intros.
-              apply skip.
-           ++ intros.
-              apply skip.
+        -- reflexivity.
+        --  apply H1.
+        -- apply skip.
 Abort.
 
-Theorem preservation : forall t v k T,
-    emptyContext |-+ t : T ->
-    t =[k]=> v ->
-    emptyContext |-+ v : T.
+Theorem preservation : forall t v j T,
+    empty ,, empty |-+ t : T ->
+    t =[j]=> v ->
+    empty ,, empty |-+ v : T.
 Proof. Admitted.

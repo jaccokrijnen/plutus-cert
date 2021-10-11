@@ -1,7 +1,5 @@
-Require Import PlutusCert.Language.PlutusIR.
-Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.AnnotationSubstitution.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.NormalisationPreservesKinding.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.TypeSubstitution.
 
@@ -37,7 +35,6 @@ Lemma upd_absorbs_substituteT : forall x X U T Gamma,
     (x |-> (substituteT X U T); upd X U Gamma) = upd X U (x |-> T; Gamma).
 Proof.
   intros.
-  unfold extendT.
   simpl.
   f_equal.
   apply functional_extensionality.
@@ -60,15 +57,15 @@ Qed.
 (** ** Predicates *)
 Definition P_Term (t : Term) :=
   forall Delta Gamma X K U T,
-    (X |K-> K; (Delta, Gamma)) |-+ t : T ->
+    (X |-> K; Delta) ,, Gamma |-+ t : T ->
     empty |-* U : K ->
-    (Delta, upd X U Gamma) |-+ <{ [[U / X] t }> : (substituteT X U T).
+    Delta ,, (upd X U Gamma) |-+ <{ [[U / X] t }> : (substituteT X U T).
     
 Definition P_Binding (b : Binding) : Prop :=
   forall Delta Gamma X K U,
-    (X |K-> K; (Delta, Gamma)) |-ok b ->
+    (X |-> K; Delta) ,, Gamma |-ok b ->
     empty |-* U : K ->
-    (Delta, upd X U Gamma) |-ok <{ [[U / X][b] b }>.
+    Delta ,, (upd X U Gamma) |-ok <{ [[U / X][b] b }>.
 
 Theorem substituteA_preserves_typing : 
   forall t, P_Term t.
@@ -84,8 +81,6 @@ Proof.
     simpl.
 
     apply T_Var.
-    simpl in H1.
-    simpl.
     apply upd__substituteT.
     assumption.
   - (* TyAbs*) 
@@ -114,9 +109,8 @@ Proof.
       apply T_TyAbs.
       eapply IH__t_body.
       * simpl.
-        rewrite extendK_permute in H4.
-        apply H4. 
-        assumption.
+        rewrite update_permute; auto.
+        apply H5. 
       * apply Hkind.
   - (* LamAbs *)
     intros bx T0 t_body IH__t_body.
@@ -128,16 +122,11 @@ Proof.
     simpl.
     apply T_LamAbs.
     + unfold P_Term in IH__t_body.
-      unfold extendT.
-      simpl.
       rewrite upd_absorbs_substituteT.
       eapply IH__t_body; eauto.
-      unfold extendT in H4.
-      simpl in H4.
-      apply H4.
     + simpl.
       eapply substituteT_preserves_kinding.
-      * eapply H5.
+      * eapply H6.
       * assumption.
   - (* Apply *) 
     intros t1 IH__t1 t2 IH__t2.
@@ -149,7 +138,7 @@ Proof.
     simpl.
 
     eapply T_Apply.
-    + eapply IH__t1 in H2; eauto.
+    + eapply IH__t1 in H3; eauto.
     + eapply IH__t2; eauto.
   - (* Constant *)
     intros sv.
@@ -167,10 +156,10 @@ Proof.
 
     inversion Htyp. subst.
 
-    destruct d; try simpl; try apply T_Builtin. 
+    destruct d; try simpl; try apply T_Builtin; auto. 
     destruct (X =? "a") eqn:Heqb.
-    + apply T_Builtin.
-    + apply T_Builtin.
+    + reflexivity.
+    + reflexivity.
   
   - (* TyInst *)
     intros t_body IH__t_body V.
@@ -180,7 +169,7 @@ Proof.
     inversion Htyp. subst.
     simpl.
 
-    assert ((Delta, upd X U Gamma) |-+ <{ [[U / X] t_body }>: (substituteT X U (Ty_Forall X0 K2 T1))) by eauto.
+    assert (Delta ,, (upd X U Gamma) |-+ <{ [[U / X] t_body }>: (substituteT X U (Ty_Forall X0 K2 T1))) by eauto.
     
     simpl in H.
     destruct (X =? X0) eqn:Heqb.
@@ -188,16 +177,11 @@ Proof.
       eapply T_TyInst.
       * apply H.
       * eapply substituteT_preserves_kinding; eauto.
-        simpl in H2.
-        simpl.
-        apply H2.
       * apply skip. (* TODO *)
       * apply skip.
     + eapply T_TyInst.
       * apply H.
       * eapply substituteT_preserves_kinding; eauto.
-        simpl in H2.
-        apply H2.
       * apply skip.
       * apply skip. (* TODO *)
   - (* Error *)
@@ -209,7 +193,6 @@ Proof.
   
     apply T_Error.
     eapply substituteT_preserves_kinding; eauto.
-    apply H1.
   - (* IWrap *)
     intros F0 T0 t0 IH__t0.
     unfold P_Term.
@@ -222,9 +205,7 @@ Proof.
     + apply skip. (* TODO *)
     + eauto.
     + eapply substituteT_preserves_kinding; eauto.
-      apply H6.
     + eapply substituteT_preserves_kinding; eauto.
-      apply H7.
   - (* Unwrap *)
     intros t0 IH__t0.
     unfold P_Term.
