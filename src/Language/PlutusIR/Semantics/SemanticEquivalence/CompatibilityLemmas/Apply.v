@@ -41,13 +41,9 @@ Proof with eauto_LR.
   subst.
 
   autorewrite with RC.
-
-  split...
-  split...
   
   rewrite msubstA_Apply. rewrite msubstA_Apply. 
   rewrite msubst_Apply. rewrite msubst_Apply.
-
 
   intros j Hlt__j e_f Hev__e_f.
 
@@ -84,7 +80,7 @@ Proof with eauto_LR.
     + destruct temp as [x0 [e_body [ x0' [e'_body [Heq [Heq' Hfe]]]]]].
       inversion Heq. subst. clear Heq.
 
-      apply RV_monotone with (i := k - j_1 - j_2 - 1) in HRV2...
+      apply RV_monotone with (i := k - j_1 - j_2 - 1) (ck := ck)  in HRV2...
 
       apply Hfe with (i := k - j_1 - j_2 - 1) in HRV2 as HRC0...
 
@@ -97,6 +93,10 @@ Proof with eauto_LR.
 
       eexists. eexists. 
       split. eapply E_Apply...
+
+      split. eapply RV_typable_empty_1...
+      split. eapply RV_typable_empty_2...
+
       eapply RV_condition...
     + destruct temp as [f [args [f' [args' [H _]]]]]. inversion H.
   - (* E_ApplyExtBuiltin *)
@@ -133,7 +133,7 @@ Proof with eauto_LR.
     + destruct temp as [f0 [args0 [f0' [args0' [Heq [Heq' Hfe]]]]]].
       inversion Heq. inversion Heq'. subst. clear H. 
 
-      apply RV_monotone with (i := k - j_1 - j_2 - 1) in HRV2...
+      apply RV_monotone with (i := k - j_1 - j_2 - 1) (ck := ck) in HRV2...
 
       apply Hfe with (i := k - j_1 - j_2 - 1) in HRV2 as HRC0...
 
@@ -146,6 +146,10 @@ Proof with eauto_LR.
 
       eexists. eexists. 
       split. eapply E_ApplyExtBuiltin...
+
+      split. eapply RV_typable_empty_1...
+      split. eapply RV_typable_empty_2...
+
       eapply RV_condition...
   - (* E_IfCondition *)
     apply skip.

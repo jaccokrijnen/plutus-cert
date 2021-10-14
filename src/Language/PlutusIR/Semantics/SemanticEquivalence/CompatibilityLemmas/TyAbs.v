@@ -37,8 +37,6 @@ Proof with eauto_LR.
 
   autorewrite with RC.
 
-  split... split...
-
   rewrite msubstA_TyAbs. rewrite msubstA_TyAbs.
   rewrite msubst_TyAbs. rewrite msubst_TyAbs.
 
@@ -50,6 +48,9 @@ Proof with eauto_LR.
   split. {
     eapply eval_value. apply V_TyAbs.
   }
+
+  split... apply skip. 
+  split... apply skip.
 
   eexists. eexists.
   

@@ -33,9 +33,6 @@ Proof with eauto_LR.
 
   autorewrite with RC.
 
-  split...
-  split...
-
   rewrite msubstA_Unwrap. rewrite msubstA_Unwrap.
   rewrite msubst_Unwrap. rewrite msubst_Unwrap.
 
@@ -60,6 +57,9 @@ Proof with eauto_LR.
 
   eexists. eexists.
   split. eapply E_Unwrap...
+
+  split... apply skip.
+  split... apply skip.
 
   eapply RV_condition...
   eapply RV_unfolded_to_RV.

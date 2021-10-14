@@ -48,14 +48,12 @@ Proof with eauto_LR.
   rewrite msubst_Constant. rewrite msubst_Constant.
   rewrite msubstT_TyBuiltin. rewrite msubstT_TyBuiltin.
   
-  split...
-  split...
-
   intros j Hlt__j e_f Hev__e_f.
   inversion Hev__e_f. subst.
 
   exists (Constant (Some (ValueOf u a))), 0.
   split...
 
-
+  split...
+  split...
 Qed.

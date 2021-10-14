@@ -58,18 +58,20 @@ Proof with eauto_LR.
 
   autorewrite with RC.
 
-  split...
-  split...
-
   rewrite msubstA_LamAbs. rewrite msubstA_LamAbs.
   rewrite msubst_LamAbs. rewrite msubst_LamAbs.
+  rewrite msubstT_TyFun. rewrite msubstT_TyFun.
 
   intros j Hlt__j e_f Hev__e_f.
   inversion Hev__e_f. subst.
   
+  
   eexists. eexists.
 
   split. eapply eval_value. apply V_LamAbs.
+
+  split... apply skip.
+  split... apply skip.
 
   left.
 
@@ -78,21 +80,25 @@ Proof with eauto_LR.
   split...
   split...
 
-  rewrite <- minus_n_O.
+  rewrite <- minus_n_O. 
   intros i Hlt__i v_0 v'_0 HRV.
 
   apply RV_unfolded_to_RV in HRV.
 
-  assert (closed v_0) by eauto using RV_typable_empty_1, typable_empty__closed.
-  assert (closed v'_0) by eauto using RV_typable_empty_2, typable_empty__closed.
-  eapply RG_env_closed in H_RG as Hclss.
+  apply RC_lt.
+  
+  intros Hlt.
+
+  assert (closed v_0) by eauto using typable_empty__closed, RV_typable_empty_1.
+  assert (closed v'_0) by eauto using typable_empty__closed, RV_typable_empty_2.
+  eapply RG_env_closed in H_RG as Hclss...
   destruct Hclss as [Hcls__env Hcls__env'].
 
   rewrite <- subst_msubst...
   rewrite <- subst_msubst...
   rewrite msubst_term__fold.
-  rewrite msubst_term__fold. 
-
+  rewrite msubst_term__fold.
+  
   eapply IH...
   + apply mupdate_unfold.
   + replace v_0 with (msubstA_term (msyn1 rho) v_0) by eauto using msubstA_closed.

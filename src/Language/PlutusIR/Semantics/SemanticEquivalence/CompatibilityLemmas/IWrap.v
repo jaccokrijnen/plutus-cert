@@ -51,11 +51,9 @@ Proof with eauto_LR.
 
   autorewrite with RC.
 
-  split...
-  split...
-  
   rewrite msubstA_IWrap. rewrite msubstA_IWrap.
   rewrite msubst_IWrap. rewrite msubst_IWrap.
+  rewrite msubstT_IFix. rewrite msubstT_IFix.
   
   intros j Hlt__j e_f Hev__e_f.
 
@@ -75,6 +73,10 @@ Proof with eauto_LR.
   eexists. eexists.
   split. eapply E_IWrap...
 
+  split... apply skip.
+  split... apply skip.
+  
+
   eexists. eexists.
   split...
   split...
@@ -89,6 +91,7 @@ Proof with eauto_LR.
   eapply RV_to_RC.
 
   eapply RV_monotone.
+  + eapply H_RD.
   + eapply HRV. 
   + eauto_LR.
 Qed.

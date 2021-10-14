@@ -1,5 +1,6 @@
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RelationalModel.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Auto.
 
@@ -37,20 +38,19 @@ Proof with eauto_LR.
   
   autorewrite with RC.
 
-  split...
-  split...
-  
   rewrite msubstA_Error. rewrite msubstA_Error.
   rewrite msubst_Error. rewrite msubst_Error.
   
-  
-
   intros j Hlt__j e_f Hev__e_f.
   inversion Hev__e_f. subst.
 
   exists (Error (msubstT (msyn2 rho) T)).
   exists 0.
-
+  
   split. eapply E_Error...
+
+  split. eapply T_Error. eapply msubstT_preserves_kinding_1...
+  split. eapply T_Error. eapply msubstT_preserves_kinding_2...
+
   (* TODO: Actually handle errors in the relational model *)
 Admitted.

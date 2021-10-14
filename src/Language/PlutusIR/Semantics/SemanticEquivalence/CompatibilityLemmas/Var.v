@@ -52,8 +52,11 @@ Proof with eauto_LR.
   subst.
   rewrite H in Hx.
 
+  apply RC_lt.
+  intros Hlt.
+
   destruct (RG_domains_match _ _ _ _ _ HRG _ _ Hx) as [v [v' [Hlu__v Hlu__v']]].
-  destruct (RG_env_closed _ _ _ _ _ HRG) as [Hcls__env Hcls__env'].
+  destruct (RG_env_closed _ _ _ _ _ HRG) as [Hcls__env Hcls__env']...
 
   eapply RG_RV.
   - apply HRG.

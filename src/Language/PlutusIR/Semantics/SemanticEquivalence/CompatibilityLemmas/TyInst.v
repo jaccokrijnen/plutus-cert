@@ -35,8 +35,6 @@ Proof with eauto_LR.
 
   autorewrite with RC.
 
-  split... split...
-
   rewrite msubstA_TyInst. rewrite msubstA_TyInst.
   rewrite msubst_TyInst. rewrite msubst_TyInst.
 
@@ -65,5 +63,5 @@ Proof with eauto_LR.
 
     eexists. eexists.
 
-    split. eapply E_TyInst... 
+    split. eapply E_TyInst...
 Admitted.

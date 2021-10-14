@@ -48,9 +48,6 @@ Proof with eauto_LR.
 
   autorewrite with RC.
 
-  split...
-  split...
-  
   rewrite msubstA_Builtin. rewrite msubstA_Builtin.
   rewrite msubst_Builtin. rewrite msubst_Builtin.
 
