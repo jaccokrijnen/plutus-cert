@@ -2,12 +2,17 @@ Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 
+Theorem substituteTCA_preserves_kinding : forall T Delta X K U L,
+    (X |-> L; Delta) |-* T : K ->
+    empty |-* U : L ->
+    Delta |-* (substituteTCA X U T) : K.
+Proof. Admitted.
 
 
-Theorem substituteTCA_preserves_kinding : forall T T' Delta X K U L,
+Theorem substituteTCA'_preserves_kinding : forall T T' Delta X K U L,
   (X |-> L; Delta) |-* T : K ->
   empty |-* U : L ->
-  substituteTCA X U T T' ->
+  substituteTCA' X U T T' ->
   Delta |-* T' : K.
 Proof.
   intros T T' Delta X K U L Hkind Hkind' Hstca__T'.

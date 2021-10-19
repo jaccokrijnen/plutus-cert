@@ -76,28 +76,21 @@ Proof with eauto using weakening__has_kind, inclusion_update with typing.
   all: intros; autounfold; intros...
   - (* T_Let *)
     subst.
-    eapply T_Let.
-    + reflexivity.
-    + reflexivity.
-    + apply H2.
-      * assumption.
-      * assumption.
-    + apply H4.
+    eapply T_Let...
+    + apply H5.
       * apply inclusion_mupdate.
         assumption.
       * apply inclusion_mupdate.
         assumption.
   - (* T_LetRec *)
     subst.
-    eapply T_LetRec.
-    + reflexivity.
-    + reflexivity.
-    + apply H2.
+    eapply T_LetRec...
+    + apply H3.
       * apply inclusion_mupdate.
         assumption.
       * apply inclusion_mupdate.
         assumption.
-    + apply H4.
+    + apply H5.
       * apply inclusion_mupdate.
         assumption.
       * apply inclusion_mupdate.
@@ -107,11 +100,8 @@ Proof with eauto using weakening__has_kind, inclusion_update with typing.
     intros.
     eapply H2; eauto.
   - (* W_ConsB_NonRec *)
-    apply W_ConsB_NonRec.
-    + apply H0.
-      assumption.
-      assumption.
-    + apply H2.
+    eapply W_ConsB_NonRec...
+    + apply H3.
       apply inclusion_mupdate.
       assumption.
       apply inclusion_mupdate.

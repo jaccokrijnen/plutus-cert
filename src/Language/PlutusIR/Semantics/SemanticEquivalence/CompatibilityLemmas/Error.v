@@ -23,11 +23,12 @@ Proof.
   - destruct a. eauto.
 Qed.
 
-Lemma compatibility_Error: forall Delta Gamma T,
+Lemma compatibility_Error: forall Delta Gamma T Tn,
     Delta |-* T : Kind_Base ->
-    LR_logically_approximate Delta Gamma (Error T) (Error T) T.
+    normalise T Tn ->
+    LR_logically_approximate Delta Gamma (Error T) (Error T) Tn.
 Proof with eauto_LR.
-  intros Delta Gamma T Hkind__T.
+  intros Delta Gamma T Tn Hnorm Hkind__T.
   unfold LR_logically_approximate.
 
   split...

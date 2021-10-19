@@ -3,7 +3,7 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
 
-
+(*
 Lemma preservation__compute_defaultfun : forall t T,
     empty ,, empty |-+ t : T ->
     forall v,
@@ -249,4 +249,4 @@ Theorem preservation : forall t v j T,
     empty ,, empty |-+ t : T ->
     t =[j]=> v ->
     empty ,, empty |-+ v : T.
-Proof. Admitted.
+Proof. Admitted.*)

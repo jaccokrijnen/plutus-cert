@@ -238,35 +238,3 @@ Fixpoint beta_reduce (T : Ty) : Ty :=
   | Ty_Builtin st => Ty_Builtin st
   end.
 *)
-
-
-Inductive normalise : Ty -> Ty -> Prop :=
-  | N_BetaReduce : forall bX K T1 T2 T',
-      substituteTCA bX T2 T1 T' ->
-      normalise (Ty_App (Ty_Lam bX K T1) T2) T'
-  | N_TyApp : forall T1 T2 T1' T2',
-      ~(exists X K T1_body, T1 = Ty_Lam X K T1_body) ->
-      normalise T1 T1' ->
-      normalise T2 T2' ->
-      normalise (Ty_App T1 T2) (Ty_App T1' T2')
-  | N_TyFun : forall T1 T2 T1' T2',
-      normalise T1 T1' ->
-      normalise T2 T2' ->
-      normalise (Ty_Fun T1 T2) (Ty_Fun T1' T2')
-  | N_TyForall : forall bX K T0 T0',
-      normalise T0 T0' ->
-      normalise (Ty_Forall bX K T0) (Ty_Forall bX K T0')
-  | N_TyLam : forall bX K T0 T0',
-      normalise T0 T0' ->
-      normalise (Ty_Lam bX K T0) (Ty_Lam bX K T0')
-  | N_TyVar : forall X,
-      normalise (Ty_Var X) (Ty_Var X)
-  | N_TyIFix : forall F T F' T',
-      normalise F F' ->
-      normalise T T' ->
-      normalise (Ty_IFix F T) (Ty_IFix F' T')
-  | N_TyBuiltin : forall st,
-      normalise (Ty_Builtin st) (Ty_Builtin st)
-  .
-
-#[export] Hint Constructors normalise : core.

@@ -6,6 +6,7 @@ Import Coq.Lists.List.
 Import Coq.Strings.String.
 
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.
+Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Normalisation.
 
 Create HintDb typing.
 
@@ -48,59 +49,66 @@ Inductive has_type : Delta -> Gamma -> Term -> Ty -> Prop :=
       Reference: The Haskell module Language.PlutusIR.TypeCheck.Internal in the 
       iohk/plutus/plutus-core/plutus-ir project.
   **)
-  | T_Let : forall Delta Gamma bs t T Delta' Gamma',
+  | T_Let : forall Delta Gamma bs t Tn Delta' Gamma' bsGn,
       Delta' = mupdate Delta (flatten (map binds_Delta bs)) ->
-      Gamma' = mupdate Gamma (flatten (map binds_Gamma bs)) ->
+      map_normalise (flatten (map binds_Gamma bs)) bsGn -> 
+      Gamma' = mupdate Gamma bsGn ->
       bindings_well_formed_nonrec Delta Gamma bs ->
-      Delta' ,, Gamma' |-+ t : T ->
-      Delta ,, Gamma |-+ (Let NonRec bs t) : T
-  | T_LetRec : forall Delta Gamma bs t T Delta' Gamma',
+      Delta' ,, Gamma' |-+ t : Tn ->
+      Delta ,, Gamma |-+ (Let NonRec bs t) : Tn
+  | T_LetRec : forall Delta Gamma bs t Tn Delta' Gamma' bsGn,
       Delta' = mupdate Delta (flatten (map binds_Delta bs)) ->
-      Gamma' = mupdate Gamma (flatten (map binds_Gamma bs)) ->
+      map_normalise (flatten (map binds_Gamma bs)) bsGn -> 
+      Gamma' = mupdate Gamma bsGn ->
       bindings_well_formed_rec Delta' Gamma' bs ->
-      Delta' ,, Gamma' |-+ t : T ->
-      Delta ,, Gamma |-+ (Let Rec bs t) : T
+      Delta' ,, Gamma' |-+ t : Tn ->
+      Delta ,, Gamma |-+ (Let Rec bs t) : Tn
   (* Basic constructs *)
-  | T_Var : forall Gamma Delta x T,
+  | T_Var : forall Gamma Delta x T Tn,
       Gamma x = Coq.Init.Datatypes.Some T ->
-      Delta ,, Gamma |-+ (Var x) : T
-  | T_TyAbs : forall Delta Gamma X K t T,
-      (X |-> K; Delta) ,, Gamma |-+ t : T ->
-      Delta ,, Gamma |-+ (TyAbs X K t) : (Ty_Forall X K T)
-  | T_LamAbs : forall Delta Gamma x T1 t T2,
-      Delta ,, x |-> T1; Gamma |-+ t : T2 -> 
+      normalise T Tn ->
+      Delta ,, Gamma |-+ (Var x) : Tn
+  | T_TyAbs : forall Delta Gamma X K t Tn,
+      (X |-> K; Delta) ,, Gamma |-+ t : Tn ->
+      Delta ,, Gamma |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
+  | T_LamAbs : forall Delta Gamma x T1 t T2n T1n,
       Delta |-* T1 : Kind_Base ->
-      Delta ,, Gamma |-+ (LamAbs x T1 t) : (Ty_Fun T1 T2)
-  | T_Apply : forall Delta Gamma t1 t2 T1 T2,
-      Delta ,, Gamma |-+ t1 : (Ty_Fun T1 T2) ->
-      Delta ,, Gamma |-+ t2 : T1 ->
-      Delta ,, Gamma |-+ (Apply t1 t2) : T2
+      normalise T1 T1n ->
+      Delta ,, x |-> T1n; Gamma |-+ t : T2n -> 
+      Delta ,, Gamma |-+ (LamAbs x T1 t) : (Ty_Fun T1n T2n)
+  | T_Apply : forall Delta Gamma t1 t2 T1n T2n,
+      Delta ,, Gamma |-+ t1 : (Ty_Fun T1n T2n) ->
+      Delta ,, Gamma |-+ t2 : T1n ->
+      Delta ,, Gamma |-+ (Apply t1 t2) : T2n
   | T_Constant : forall Delta Gamma u a,
       Delta ,, Gamma |-+ (Constant (Some (ValueOf u a))) : (Ty_Builtin (Some (TypeIn u)))
-  | T_Builtin : forall Delta Gamma f T,
-      T = lookupBuiltinTy f ->
-      Delta ,, Gamma |-+ (Builtin f) : T
-  | T_TyInst : forall Delta Gamma t1 T2 T1 X K2 S T1',
-      Delta ,, Gamma |-+ t1 : (Ty_Forall X K2 T1) ->
+  | T_Builtin : forall Delta Gamma f Tn,
+      Tn = lookupBuiltinTy f ->
+      Delta ,, Gamma |-+ (Builtin f) : Tn
+  | T_TyInst : forall Delta Gamma t1 T2 T1n X K2 T0n T2n,
+      Delta ,, Gamma |-+ t1 : (Ty_Forall X K2 T1n) ->
       Delta |-* T2 : K2 ->
-      substituteTCA X T2 T1 T1' ->
-      normalise T1' S ->
-      Delta ,, Gamma |-+ (TyInst t1 T2) : S
-  | T_Error : forall Delta Gamma T,
+      normalise T2 T2n ->
+      normalise (substituteTCA X T2n T1n) T0n ->
+      Delta ,, Gamma |-+ (TyInst t1 T2) : T0n
+  | T_Error : forall Delta Gamma T Tn,
       Delta |-* T : Kind_Base ->
-      Delta ,, Gamma |-+ (Error T) : T 
+      normalise T Tn ->
+      Delta ,, Gamma |-+ (Error T) : Tn
   (* Recursive types *)
-  | T_IWrap : forall Delta Gamma F T M K S,
-      normalise (unwrapIFix F K T) S ->
-      Delta ,, Gamma |-+ M : S ->
+  | T_IWrap : forall Delta Gamma F T M K T0n Tn Fn,
+      normalise (unwrapIFix F K T) T0n ->
+      Delta ,, Gamma |-+ M : T0n ->
       Delta |-* T : K ->
+      normalise T Tn ->
       Delta |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
-      Delta ,, Gamma |-+ (IWrap F T M) : (Ty_IFix F T)
-  | T_Unwrap : forall Delta Gamma M F K T S,
-      Delta ,, Gamma |-+ M : (Ty_IFix F T) ->
-      Delta |-* T : K ->
-      normalise (unwrapIFix F K T) S ->
-      Delta ,, Gamma |-+ (Unwrap M) : S
+      normalise F Fn ->
+      Delta ,, Gamma |-+ (IWrap F T M) : (Ty_IFix Fn Tn)
+  | T_Unwrap : forall Delta Gamma M Fn K Tn T0n,
+      Delta ,, Gamma |-+ M : (Ty_IFix Fn Tn) ->
+      Delta |-* Tn : K ->
+      normalise (unwrapIFix Fn K Tn) T0n ->
+      Delta ,, Gamma |-+ (Unwrap M) : T0n
 
   (* Extras *)
   | T_ExtBuiltin : forall Delta Gamma f args Targs Tr Tr',
@@ -119,9 +127,10 @@ Inductive has_type : Delta -> Gamma -> Term -> Ty -> Prop :=
   with bindings_well_formed_nonrec : Delta -> Gamma -> list Binding -> Prop :=
     | W_NilB_NonRec : forall Delta Gamma,
         bindings_well_formed_nonrec Delta Gamma nil
-    | W_ConsB_NonRec : forall Delta Gamma b bs,
+    | W_ConsB_NonRec : forall Delta Gamma b bs bsGn,
         binding_well_formed Delta Gamma b ->
-        bindings_well_formed_nonrec (mupdate Delta (binds_Delta b)) (mupdate Gamma (binds_Gamma b)) bs ->
+        map_normalise (binds_Gamma b) bsGn ->
+        bindings_well_formed_nonrec (mupdate Delta (binds_Delta b)) (mupdate Gamma bsGn) bs ->
         bindings_well_formed_nonrec Delta Gamma (b :: bs)
 
   with bindings_well_formed_rec : Delta -> Gamma -> list Binding -> Prop :=
@@ -172,3 +181,56 @@ Combined Scheme has_type__multind from
 #[export] Hint Constructors bindings_well_formed_nonrec : typing.
 #[export] Hint Constructors bindings_well_formed_rec : typing.
 #[export] Hint Constructors binding_well_formed : typing.
+
+Lemma strong_normalisation : forall Delta T K,
+    Delta |-* T : K ->
+    exists T_norm, normalise T T_norm.
+Proof.
+  induction 1; eauto.
+  - destruct IHhas_kind1.
+    destruct IHhas_kind2.
+    eauto.
+  - destruct IHhas_kind1.
+    destruct IHhas_kind2.
+    eauto.
+  - destruct IHhas_kind.
+    eauto.
+  - destruct IHhas_kind.
+    eauto.
+  - destruct IHhas_kind1.
+    destruct IHhas_kind2.
+    inversion H; subst.
+    + eauto.
+    + destruct u; inversion H3.
+    + Axiom skip: forall P, P. apply skip.
+    + inversion H1; subst.
+      * apply skip.
+      * apply normalise_to_normal in H1 as Hnorm.
+        inversion Hnorm; subst.
+        eauto.
+Qed.
+
+Lemma has_type__normal : forall Delta Gamma t T,
+    Delta ,, Gamma |-+ t : T ->
+    normal_Ty T.
+Proof with eauto.
+  induction 1; intros.
+  - assumption.
+  - assumption.
+  - eapply normalise_to_normal; eauto.
+  - eauto.
+  - eapply normalise_to_normal in H0...
+  - inversion IHhas_type1; subst...
+    inversion H1.
+  - eauto.
+  - destruct f; simpl in H; inversion H; subst...
+    apply NO_TyForall...
+    apply NO_TyFun...
+    apply NO_TyFun...
+  - eapply normalise_to_normal...
+  - eapply normalise_to_normal...
+  - eapply normalise_to_normal in H2...
+    eapply normalise_to_normal in H4...
+  - eapply normalise_to_normal...
+  - apply skip.
+Qed.

@@ -3,6 +3,7 @@ Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Rules.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.TypeSubstitution.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.TypeSubstitution.CaptureAvoiding.
+Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Normalisation.
 
 (** Important theorems *)
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.ContextInvariance.

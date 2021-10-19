@@ -7,6 +7,6 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Static.TypeSubstitution.Ca
 
 Lemma equiv__substituteT__substituteTCA : forall a U T T',
     closed_Ty U ->
-    substituteTCA a U T T' ->
+    substituteTCA' a U T T' ->
     T' = substituteT a U T.
 Proof. Admitted.

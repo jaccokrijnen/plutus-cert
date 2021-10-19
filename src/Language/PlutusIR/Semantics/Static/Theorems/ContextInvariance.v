@@ -133,16 +133,17 @@ Proof with eauto.
     subst.
     eapply T_Let.
     + reflexivity.
+    + eassumption.
     + reflexivity.
-    + apply H2.
+    + apply H3.
       intros.
-      apply H5.
+      apply H6.
       apply AFIT_LetNonRec.
       assumption.
-    + simpl. apply H4.
+    + simpl. apply H5.
       intros.
       apply mupdate_eq_cong.
-      apply H5.
+      apply H6.
       apply AFIT_Let.
       -- apply skip. (* TODO *) 
       -- assumption.
@@ -150,23 +151,24 @@ Proof with eauto.
     subst.
     eapply T_LetRec.
     + reflexivity.
+    + eassumption.
     + reflexivity.
-    + apply H2.
+    + apply H3.
       intros.
       apply mupdate_eq_cong.
-      apply H5.
+      apply H6.
       apply AFIT_LetRec; auto.
       apply skip.
-    + apply H4.
+    + apply H5.
       intros.
       apply mupdate_eq_cong.
-      apply H5.
+      apply H6.
       apply AFIT_Let.
       -- apply skip. (* TODO *)
       -- assumption.
   - (* T_Var *)
-    apply T_Var.
-    rewrite <- H0; auto.
+    eapply T_Var...
+    rewrite <- H1; auto.
   - (* T_TyForall *)
     apply T_TyAbs.
     apply H0.
@@ -176,7 +178,9 @@ Proof with eauto.
     assumption.
   - (* T_LamAbs *)
     apply T_LamAbs.
-    + apply H0.
+    + assumption.
+    + assumption.
+    + apply H2.
       intros.
       destruct (x =? x0) eqn:Heqb.
       * apply eqb_eq in Heqb.
@@ -187,9 +191,8 @@ Proof with eauto.
       * apply eqb_neq in Heqb.
         rewrite update_neq; auto.
         rewrite update_neq; auto.
-    + auto.
   - (* T_Apply *)
-    apply T_Apply with T1.
+    apply T_Apply with T1n.
     + apply H0.
       intros.
       apply H3.
@@ -206,7 +209,7 @@ Proof with eauto.
     apply T_Builtin.
     assumption.
   - (* T_TyInst *)
-    apply T_TyInst with T1 X K2 T1'.
+    apply T_TyInst with T1n X K2 T2n.
     + apply H0.
       intros.
       apply H4.
@@ -218,18 +221,21 @@ Proof with eauto.
   - (* T_Error *)
     apply T_Error.
     assumption.
+    assumption.
   - (* T_IWrap *)
-    apply T_IWrap with K S.
+    apply T_IWrap with K T0n.
     + assumption.
     + apply H1.
       intros.
-      apply H4.
+      apply H6.
       apply AFIT_IWrap.
       assumption.
     + assumption.
     + assumption.
+    + assumption.
+    + assumption.
   - (* T_Unwrap *)
-    apply T_Unwrap with F K T.
+    apply T_Unwrap with Fn K Tn.
     + apply H0.
       intros.
       apply H3.
@@ -237,6 +243,7 @@ Proof with eauto.
       assumption.
     + assumption.
     + assumption.
+
   - (* T_ExtBuiltin *)
     eapply T_ExtBuiltin.
     + eauto.
@@ -263,16 +270,17 @@ Proof with eauto.
   - (* W_NilB_NonRec *)
     constructor.
   - (* W_ConsB_NonRec *)
-    apply W_ConsB_NonRec.
+    eapply W_ConsB_NonRec.
     + apply H0.
       intros.
-      apply H3.
+      apply H4.
       apply AFIT_ConsB1_NonRec.
       assumption.
-    + apply H2.
+    + eassumption.
+    + apply H3.
       intros.
       apply mupdate_eq_cong.
-      apply H3.
+      apply H4.
       apply AFIT_ConsB2_NonRec.
       * unfold P_binding_well_formed in H0.
         unfold P_bindings_well_formed_nonrec in H2. apply skip. (* TODO *) 
@@ -357,8 +365,8 @@ Proof.
   - intros.
     inversion Hafi.
     + subst.
-      apply IHHtyp in H7.
-      destruct H7.
+      apply IHHtyp in H8.
+      destruct H8.
       apply skip.
     + subst.
       apply skip.

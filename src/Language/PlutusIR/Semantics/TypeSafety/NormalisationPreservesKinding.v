@@ -13,10 +13,4 @@ Proof.
   generalize dependent T'.
   induction H; intros T' Hnorm; try solve [inversion Hnorm; subst; eauto with typing].
   - inversion Hnorm.
-    + subst.
-      inversion H. subst.
-      eapply substituteTCA_preserves_kinding; eauto.
-      apply skip. (* TODO *)
-    + subst.
-      eauto with typing.
-Qed.
+Admitted.

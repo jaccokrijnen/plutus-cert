@@ -256,12 +256,15 @@ Proof.
     split.
     + eapply T_Let.
       * reflexivity.
+      * simpl; eauto.
       * reflexivity.
       * econstructor.
       * simpl.
         eapply H; eauto.
         inversion H0. subst.
         eauto.
+        apply skip.
+      
     + auto.
   - inversion H0. subst.
     simpl.
@@ -310,14 +313,17 @@ Proof.
       subst.
       inversion H.
       subst.
-      rewrite update_eq in H4.
-      inversion H4. subst. 
+      rewrite update_eq in H2.
+      inversion H2. subst.
+      apply has_type__normal in H0 as H7.
+      eapply normalisation__stability in H7; eauto.
+      subst. 
       eapply weakening_empty; eauto.
     + apply eqb_neq in Heqb as Hneq.
-      apply T_Var.
-      inversion H.
-      subst.
-      rewrite update_neq in H4; auto.
+      inversion H. subst.
+      eapply T_Var.
+      * rewrite update_neq in H2; eauto.
+      * eassumption.
   - (* TyAbs *) 
     inversion H0. subst.
     simpl.
@@ -332,16 +338,18 @@ Proof.
     + apply eqb_eq in Heqb as Heq. 
       subst.
       apply T_LamAbs.
-      * rewrite update_shadow in H8.
-        assumption.
+      * assumption.
       * eauto.
+      * rewrite update_shadow in H10.
+        eauto.
     + apply eqb_neq in Heqb as Hneq.
       apply T_LamAbs.
-      * eapply H.
-        -- rewrite update_permute; auto.
-           apply H8.
-        -- eassumption.
       * eauto.
+      * eauto.
+      * eapply H.
+      -- rewrite update_permute; auto.
+         apply H10.
+      -- eassumption.
   - (* Apply *)
     inversion H1. subst.
     simpl.
@@ -376,6 +384,7 @@ Proof.
     simpl.
     apply T_Error.
     eauto.
+    eauto.
   - (* IWrap *)
     inversion H0. subst.
     simpl.
@@ -384,6 +393,8 @@ Proof.
     + eapply H.
       * eassumption.
       * eassumption.
+    + eauto.
+    + eauto.
     + eauto.
     + eauto.
   - (* Unwrap *)
@@ -405,11 +416,11 @@ Proof.
     + intros.
       destruct p.
       simpl.
-      apply List.in_combine_l in H2 as H3.
-      apply List.in_combine_r in H2 as H9.
-      eapply List.in_map_iff in H3 as H10.
-      destruct H10. 
-      destruct H6.
+      apply List.in_combine_l in H2 as H15.
+      apply List.in_combine_r in H2 as H16.
+      eapply List.in_map_iff in H15 as H17.
+      destruct H17. 
+      destruct H3.
       subst.
 
       apply skip.
@@ -441,7 +452,7 @@ Proof.
       * intros.
         eauto.
     + auto.
-Qed.
+Qed. 
 
 Corollary substitution_preserves_typing__Term : forall t Delta Gamma x U v T,
     Delta ,, (x |-> U; Gamma)  |-+ t : T ->

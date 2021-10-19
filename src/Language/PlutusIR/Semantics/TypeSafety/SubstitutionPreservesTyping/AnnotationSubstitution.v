@@ -69,7 +69,7 @@ Definition P_Binding (b : Binding) : Prop :=
 
 Theorem substituteA_preserves_typing : 
   forall t, P_Term t.
-Proof.
+Proof. (*
   apply Term__ind with P_Binding.
   - apply skip.
   - (* Var *)
@@ -83,10 +83,27 @@ Proof.
     apply T_Var.
     apply upd__substituteT.
     assumption.
+
+    subst.
+    simpl.
+
+    apply T_Var.
+    apply upd__substituteT.
+    apply skip.
+
   - (* TyAbs*) 
     intros bX K t_body IH__t_body.
     unfold P_Term.
     intros Delta Gamma X L U T Htyp Hkind.
+
+    simpl.
+    destruct (X =? bX) eqn:Heqb.
+    + apply eqb_eq in Heqb as Heq.
+      subst.
+      simpl.
+      apply skip.
+    + apply eqb_neq in Heqb as Hneq.
+      apply T_TyAbs.
 
     inversion Htyp. subst.
     simpl.
@@ -112,6 +129,11 @@ Proof.
         rewrite update_permute; auto.
         apply H5. 
       * apply Hkind.
+
+    + subst.
+    {
+
+    }
   - (* LamAbs *)
     intros bx T0 t_body IH__t_body.
     unfold P_Term. 
@@ -212,5 +234,5 @@ Proof.
     intros Delta Gamma X L U T Htyp Hkind.
     
     inversion Htyp. subst.
-    simpl.
+    simpl.*)
 Admitted.
