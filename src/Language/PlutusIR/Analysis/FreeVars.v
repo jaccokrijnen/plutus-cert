@@ -90,7 +90,6 @@ Fixpoint free_vars (t : term var tyvar var tyvar) : list var :=
    | (Error ty)        => []
    | (Constant v)      => []
    | (Builtin f)       => []
-   | (ExtBuiltin f args) => concat (map free_vars args)
    end
 
 with free_vars_binding rec (b : binding') : list var :=

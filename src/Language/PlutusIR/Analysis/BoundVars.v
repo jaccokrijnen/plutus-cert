@@ -36,7 +36,6 @@ Fixpoint bound_vars (t : term') : list var :=
    | (Error ty)        => []
    | (Constant v)      => []
    | (Builtin f)       => []
-   | (ExtBuiltin f args)    => concat (map bound_vars args)
    end.
 
 Fixpoint bv_term {v v'} (t : term v v' v v') : list v :=
@@ -52,7 +51,6 @@ Fixpoint bv_term {v v'} (t : term v v' v v') : list v :=
   | Error _   => []
   | IWrap _ _ t => bv_term t
   | Unwrap t => bv_term t
-  | ExtBuiltin f args => concat (map bv_term args)
   end
 with bv_binding {v v'} (b : binding v v' v v') : list v:=
   match b with
@@ -78,8 +76,7 @@ Section UniqueVars.
     | UV_Error : forall ty, UniqueVars (Error ty)
     | UV_IWrap : forall ty1 ty2 t, UniqueVars t -> UniqueVars (IWrap ty1 ty2 t)
     | UV_Unwrap : forall t, UniqueVars t -> UniqueVars (Unwrap t)
-    | UV_ExtBuiltin : forall f args, ForallT (UniqueVars) args -> UniqueVars (ExtBuiltin f args)
-
+    
     with UniqueVars_binding : binding name tyname name tyname -> Type :=
     | UV_TermBind : forall s v t ty, ~(In v (bound_vars t)) -> UniqueVars t -> UniqueVars_binding (TermBind s (VarDecl v ty) t)
     | UV_TypeBind : forall tvd ty, UniqueVars_binding (TypeBind tvd ty)

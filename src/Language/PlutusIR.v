@@ -11,6 +11,8 @@ Set Implicit Arguments.
 
 Require Import Coq.Program.Basics.
 
+
+
 (*
   Simplification of the names in the AST
 
@@ -30,20 +32,33 @@ Require Import Coq.Program.Basics.
   AST
 
 *)
+
+(** Recursivity and strictness *)
 Inductive Recursivity := NonRec | Rec.
 
 Inductive Strictness := NonStrict | Strict.
 
-
+(** Universes *)
 Inductive DefaultUni : Type :=
-    | DefaultUniInteger    (* : DefaultUni nat (* Integer *) *)
+    | DefaultUniInteger    (* : DefaultUni Z (* Integer *) *)
     | DefaultUniByteString (* : DefaultUni string (* BS.ByteString *)*)
     | DefaultUniString     (* : DefaultUni string (* String *)*)
     | DefaultUniChar       (* : DefaultUni ascii (* Char *)*)
     | DefaultUniUnit       (* : DefaultUni unit (* () *)*)
     | DefaultUniBool       (* : DefaultUni bool (* Bool *)*)
     .
+    
+(** Existentials as a datype *)
+Inductive some {f : DefaultUni -> Type} :=
+  Some : forall {u : DefaultUni}, f u -> some.
+Arguments some _ : clear implicits.
 
+(** Builtin types *)
+Inductive typeIn (u : DefaultUni) :=
+  TypeIn : typeIn u.
+Arguments TypeIn _ : clear implicits.
+
+(** Constants *)
 Definition uniType (x : DefaultUni) : Type :=
   match x with
     | DefaultUniInteger    => Z
@@ -52,9 +67,13 @@ Definition uniType (x : DefaultUni) : Type :=
     | DefaultUniChar       => ascii
     | DefaultUniUnit       => unit
     | DefaultUniBool       => bool
-  end
-  .
+  end.
 
+Inductive valueOf (u : DefaultUni) :=
+  ValueOf : uniType u -> valueOf u.
+Arguments ValueOf _ _ : clear implicits.
+
+(** Built-in functions*)
 Inductive DefaultFun :=
     | AddInteger
     | SubtractInteger
@@ -82,43 +101,18 @@ Inductive DefaultFun :=
     | Append
     | Trace.
 
-Set Implicit Arguments.
-
-
-
-
-Inductive valueOf (u : DefaultUni) :=
-  ValueOf : uniType u -> valueOf u.
-Arguments ValueOf _ _ : clear implicits.
-
-(* Inductive valueOf a :=
-  ValueOf : uni a -> a -> valueOf a.
-Arguments ValueOf {_} {_}.
-*)
-
-Inductive some {f : DefaultUni -> Type} :=
-  Some : forall {u : DefaultUni}, f u -> some.
-Arguments some _ : clear implicits.
-(*Inductive some := Some : forall a, valueOf a -> some.*)
-
-(** ** Builtin types *)
-Inductive typeIn (u : DefaultUni) :=
-  TypeIn : typeIn u.
-Arguments TypeIn _ : clear implicits.
 
 
 Section AST_term.
 Context (name tyname : Set).
 Context (binderName binderTyname : Set).
 
-(** * Kinds and types *)
-
-(** ** Kinds *)
+(** Kinds *)
 Inductive kind :=
   | Kind_Base : kind
   | Kind_Arrow : kind -> kind -> kind.
 
-(** ** Types *)
+(** Types *)
 Inductive ty :=
   | Ty_Var : tyname -> ty
   | Ty_Fun : ty -> ty -> ty
@@ -127,7 +121,6 @@ Inductive ty :=
   | Ty_Builtin : @some typeIn -> ty
   | Ty_Lam : binderTyname -> kind -> ty -> ty
   | Ty_App : ty -> ty -> ty.
-
 
 (*
   Simplification of attached values in the AST
@@ -140,18 +133,16 @@ Inductive ty :=
   in each constructor (have to add types for the possible values that can occur when dumping)
 *)
 
+(** Declarations *)
 Inductive vdecl := VarDecl : binderName -> ty -> vdecl.
 Inductive tvdecl := TyVarDecl : binderTyname -> kind -> tvdecl.
 
-(* Inductive DTDecl := Datatype : TVDecl -> list TVDecl -> name -> list VDecl -> DTDecl.*)
-
 (* This is a bit in-between hack of having types in the AST and completely ignoring them*)
 (* Constructor name and arity, needed for Scott encoding *)
-Inductive constr :=
-  | Constructor : vdecl -> nat -> constr.
-
+Inductive constr := Constructor : vdecl -> nat -> constr.
 Inductive dtdecl := Datatype : tvdecl -> list tvdecl -> binderName -> list constr -> dtdecl.
 
+(** Terms and bindings *)
 Inductive term :=
   | Let      : Recursivity -> list binding -> term -> term
   | Var      : name -> term
@@ -164,8 +155,6 @@ Inductive term :=
   | Error    : ty -> term
   | IWrap    : ty -> ty -> term -> term
   | Unwrap   : term -> term
-
-  | ExtBuiltin : DefaultFun -> list term -> term
 
 with binding :=
   | TermBind : Strictness -> vdecl -> term -> binding
@@ -189,7 +178,6 @@ Inductive pass :=
 Inductive compilation_trace :=
   | CompilationTrace : term -> list (pass * term) -> compilation_trace.
 
-
 End AST_term.
 
 Definition constructorName {tyname binderName binderTyname} : constr tyname binderName binderTyname -> binderName :=
@@ -197,7 +185,6 @@ Definition constructorName {tyname binderName binderTyname} : constr tyname bind
   | Constructor (VarDecl n _) _ => n
   end
   .
-Arguments constructorName _ _ _.
 
 (** * Named terms (all variables and binders are strings) *)
 Module NamedTerm.
@@ -444,21 +431,12 @@ Section Term_rect.
     (H_TyInst   : forall t : Term, P t -> forall t0 : Ty, P (TyInst t t0))
     (H_Error    : forall t : Ty, P (Error t))
     (H_IWrap    : forall (t t0 : Ty) (t1 : Term), P t1 -> P (IWrap t t0 t1))
-    (H_Unwrap   : forall t : Term, P t -> P (Unwrap t))
+    (H_Unwrap   : forall t : Term, P t -> P (Unwrap t)).
     
-    (H_ExtBuiltin : forall f args, ForallT P args -> P (ExtBuiltin f args)).
-
   Context
     (H_TermBind : forall s v t, P t -> Q (TermBind s v t))
     (H_TypeBind : forall v ty, Q (TypeBind v ty))
     (H_DatatypeBind : forall dtd, Q (DatatypeBind dtd)).
-
-  Definition Terms_rect' (Term_rect' : forall (t : Term), P t) :=
-    fix Terms_rect' ts :=
-    match ts as p return ForallT P p with
-      | nil       => ForallT_nil
-      | cons t ts' => ForallT_cons (Term_rect' t) (Terms_rect' ts')
-    end.
 
   Definition Bindings_rect' (Binding_rect' : forall (b : Binding), Q b) :=
     fix Bindings_rect' bs :=
@@ -480,7 +458,6 @@ Section Term_rect.
       | Error ty        => H_Error ty
       | Constant v      => H_Constant v
       | Builtin f       => H_Builtin f
-      | ExtBuiltin f args => H_ExtBuiltin f args (Terms_rect' Term_rect' args)
     end
   with Binding_rect' (b : Binding) : Q b :=
     match b with
@@ -509,21 +486,12 @@ Section Term__ind.
     (H_TyInst   : forall t : Term, P t -> forall t0 : Ty, P (TyInst t t0))
     (H_Error    : forall t : Ty, P (Error t))
     (H_IWrap    : forall (t t0 : Ty) (t1 : Term), P t1 -> P (IWrap t t0 t1))
-    (H_Unwrap   : forall t : Term, P t -> P (Unwrap t))
+    (H_Unwrap   : forall t : Term, P t -> P (Unwrap t)).
     
-    (H_ExtBuiltin : forall f args, ForallP P args -> P (ExtBuiltin f args)).
-
   Context
     (H_TermBind : forall s v t, P t -> Q (TermBind s v t))
     (H_TypeBind : forall v ty, Q (TypeBind v ty))
     (H_DatatypeBind : forall dtd, Q (DatatypeBind dtd)).
-
-  Definition Terms__ind (Term__ind : forall (t : Term), P t) :=
-    fix Terms__ind ts :=
-    match ts as p return ForallP P p with
-      | nil       => ForallP_nil
-      | cons t ts' => ForallP_cons (Term__ind t) (Terms__ind ts')
-    end.
 
   Definition Bindings__ind (Binding__ind : forall (b : Binding), Q b) :=
     fix Bindings__ind bs :=
@@ -545,7 +513,6 @@ Section Term__ind.
       | Error ty        => H_Error ty
       | Constant v      => H_Constant v
       | Builtin f       => H_Builtin f
-      | ExtBuiltin f args => H_ExtBuiltin f args (Terms__ind Term__ind args)
     end
   with Binding__ind (b : Binding) : Q b :=
     match b with
@@ -563,7 +530,6 @@ Section term_rect.
   Variable (P : term v v' b b' -> Type).
   Variable (Q : binding v v' b b' -> Type).
   Variable (R : list (binding v v' b b') -> Type).
-  Variable (R' : list (term v v' b b') -> Type).
 
   Context
     (* (H_Let      : forall rec bs t, ForallT Q bs -> P t -> P (Let rec bs t)) *)
@@ -577,8 +543,7 @@ Section term_rect.
     (H_TyInst   : forall t : term v v' b b', P t -> forall t0 : ty v' b', P (TyInst t t0))
     (H_Error    : forall t : ty v' b', P (Error t))
     (H_IWrap    : forall (t t0 : ty v' b') (t1 : term v v' b b'), P t1 -> P (IWrap t t0 t1))
-    (H_Unwrap   : forall t : term v v' b b', P t -> P (Unwrap t))
-    (H_ExtBuiltin : forall f args, R' args -> P (ExtBuiltin f args)).
+    (H_Unwrap   : forall t : term v v' b b', P t -> P (Unwrap t)).
 
   Context
     (H_TermBind     : forall s v t, P t -> Q (TermBind s v t))
@@ -588,14 +553,7 @@ Section term_rect.
   Context
     (H_cons         : forall b bs, Q b -> R bs -> R (b :: bs))
     (H_nil          : R nil).
-
-  Context
-    (H_cons'         : forall t ts, P t -> R' ts -> R' (t :: ts))
-    (H_nil'          : R' nil).
-
     
-    
-
   (*
   Definition bindings_rect' (Binding_rect' : forall (b : binding v), Q b) :=
     fix Bindings_rect' bs :=
@@ -604,13 +562,6 @@ Section term_rect.
       | cons b bs => ForallT_cons (Binding_rect' b) (Bindings_rect' bs)
     end.
     *)
-
-  Definition terms_rect' (term_rect' : forall (t : term v v' b b'), P t) :=
-    fix terms_rect' ts :=
-    match ts as p return R' p with
-      | nil       => @H_nil'
-      | cons t ts' => @H_cons' _ ts' (term_rect' t) (terms_rect' ts')
-    end.
 
   Definition bindings_rect' (binding_rect' : forall (b : binding v v' b b'), Q b) :=
     fix bindings_rect' bs :=
@@ -632,7 +583,6 @@ Section term_rect.
       | Error ty        => @H_Error ty
       | Constant v      => @H_Constant v
       | Builtin f       => @H_Builtin f
-      | ExtBuiltin f args => @H_ExtBuiltin f args (terms_rect' term_rect' args)
     end
   with binding_rect' (b : binding v v' b b') : Q b :=
     match b with
