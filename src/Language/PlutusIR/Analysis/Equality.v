@@ -43,7 +43,7 @@ Definition valueOf_dec : forall t, EqDec (valueOf t). solveEq. apply uniType_dec
   Hint Resolve valueOf_dec : Eqs.
 
 Definition typeIn_dec : forall t, EqDec (typeIn t). solveEq. Defined.
-  Hint Resolve typeIn_dec : Eqs.  
+  Hint Resolve typeIn_dec : Eqs.
 
 (* Somewhat cumbersome, cannot use "decide equality" tactic *)
 Definition some_valueOf_dec: forall (x y : @some valueOf), {x = y} + {x <> y}.
@@ -120,8 +120,12 @@ Proof.
   - solveEq.
 Defined.
 
+Definition pass_dec {name : Set} (name_dec : EqDec name) (p1 p2 : pass name) :
+  {p1 = p2} + {p1 <> p2}.
+  Proof. solveEq. Defined.
 
-
+Definition pair_dec {a b} (a_dec : EqDec a) (b_dec : EqDec b) : EqDec (a * b).
+  Proof. solveEq. Defined.
 (* boolean equality
 I define this separately from the dec_* functions to avoid carrying around
 proof terms at run-time.

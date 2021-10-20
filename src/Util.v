@@ -106,6 +106,8 @@ Notation "x <*> y" := (option_app x y) (at level 81, left associativity).
 Notation "f <$> x" := (option_map f x) (at level 80, right associativity).
 Notation "x <|> y" := (option_alt x y) (at level 82, right associativity).
 
+Definition cat_options {a} : list (option a) -> option (list a) :=
+  fun os => fold_right (fun mx mxs => cons <$> mx <*> mxs) (pure nil) os.
 
 (* sumbool to bool *)
 Definition sumbool_to_bool (A : Type) (a b : A) : {a = b} + {a <> b} -> bool
@@ -222,3 +224,13 @@ Proof.
         exists x.
         split. right. auto. auto.
 Qed.
+
+Definition remove_list {A} (dec : forall x y, {x = y} + {x <> y}) : list A -> list A -> list A :=
+  fun rs xs => fold_right (remove dec) xs rs.
+
+Fixpoint remove_eqb {a} a_eqb xs : list a :=
+  match xs with
+    | nil => nil
+    | x :: xs => if a_eqb x : bool then remove_eqb a_eqb xs else x :: remove_eqb a_eqb xs
+  end
+  .

@@ -1,51 +1,82 @@
-Require Import Coq.Strings.String.
-Local Open Scope string_scope.
-Require Import Coq.Lists.List.
+From Coq Require Import
+  Strings.String
+  Lists.List.
+
 From Equations Require Import Equations.
+
+From PlutusCert Require Import
+  Util
+  Language.PlutusIR
+  Language.PlutusIR.Analysis.FreeVars
+  Language.PlutusIR.Analysis.Equality
+  Language.PlutusIR.Transform.Congruence
+  Language.PlutusIR.Semantics.Dynamic.Values.
+
+Import NamedTerm.
 
 Set Implicit Arguments.
 Set Equations Transparent.
 
-From PlutusCert Require Import Util.
-From PlutusCert Require Import Language.PlutusIR.
-Import NamedTerm.
-From PlutusCert Require Import Language.PlutusIR.Analysis.FreeVars.
-From PlutusCert Require Import Language.PlutusIR.Analysis.Equality.
-From PlutusCert Require Import Language.PlutusIR.Transform.Congruence.
 
+Notation fv := (free_vars String.eqb).
+Notation fv_binding := (free_vars_binding String.eqb).
+Notation fv_bindings := (free_vars_bindings String.eqb fv_binding).
 
 (* DBE_Term relates terms t and t' such that t' is the result of eliminating dead bindings in t *)
-Generalizable All Variables.
 Inductive DBE_Term : Term -> Term -> Type :=
 
-    | DBE_Congruence    : `{ Cong DBE_Term t t' ->
-        DBE_Term t t' }
+    | DBE_Congruence : forall {t t'},
+        Cong DBE_Term t t' ->
+        DBE_Term t t'
 
-    | DBE_RemoveBindings : `{ DBE_Term t t' -> DBE_Bindings bs bs' (Let rec bs' t') ->
-        DBE_Term (Let rec bs t) (Let rec bs' t') }
+    | DBE_RemoveBindings : forall {t_body t_body' bs bs' rec},
+        DBE_Term t_body t_body' ->
+        DBE_Bindings rec bs' bs bs' t_body' ->
+        DBE_Term (Let rec bs t_body) (Let rec bs' t_body')
 
-    | DBE_RemoveLet      : `{ DBE_Term t t' -> DBE_Bindings bs nil t' ->
-        DBE_Term (Let rec bs t) t' }
+    | DBE_RemoveLet : forall {t t' bs rec},
+        DBE_Term t t' -> DBE_Bindings rec nil bs nil t' ->
+        DBE_Term (Let rec bs t) t'
 
-  with DBE_Binding : Binding -> Term -> Type :=
+  with DBE_Binding :
+    list string -> (* The free variables in the (resulting) terms this binding scopes over *)
+    Binding ->
+    Type :=
   (* To check if a term-binding `x = e` can be eliminated,
-     we check that its variable is not free in the resulting term*)
-    | DBE_RemoveTermBind : `{ ~ In n (fv' t) ->
-             DBE_Binding (TermBind stric (VarDecl n T) s) t}
+     we check that its variable does not occur freely in
+     the _resulting_ terms that the binding scopes over
+     (for a letrec, this includes the other bindings of that group)
+  *)
+    | DBE_RemoveTermBind : forall {v stric t_bound T vars},
+        ~ In v vars ->
+        (stric = Strict -> value t_bound) -> (* strict bindings may have side-effects and can safely be removed when they are values *)
+        DBE_Binding vars (TermBind stric (VarDecl v T) t_bound)
 
-   (* For type or datatype bindings, we allow that these are eliminated, since the AST currently
-      contains no types (hence they are always dead bindings).
-   *)
-    | DBE_RemoveTypeBind : `{ DBE_Binding (TypeBind d T) t}
-    | DBE_RemoveDatatype : `{ DBE_Binding (DatatypeBind (Datatype tv ds n vs)) t}
+  with DBE_Bindings : Recursivity ->
+    list Binding ->  (* resulting bindings before&after this binding (needed for checking free variables in recursive binding groups) *)
+    list Binding ->  (* original bindings after this binding *)
+    list Binding ->  (* resulting bindings after this binding *)
+    Term ->  (* let-body *)
+    Type :=
 
-  with DBE_Bindings : list Binding -> list Binding -> Term -> Type :=
-    | DBE_Keep   : forall {b bs bs' t}, DBE_Bindings bs bs' t                   -> DBE_Bindings (b :: bs) (b :: bs') t
-    | DBE_Remove : forall {b bs bs' t}, DBE_Bindings bs bs' t -> DBE_Binding b t -> DBE_Bindings (b :: bs) (     bs') t
-    | DBE_Nil    : forall {t}, DBE_Bindings nil nil t
+    | DBE_Keep   : forall {rec b bs'_all bs bs' t},
+        DBE_Bindings rec bs'_all bs bs' t ->
+        DBE_Bindings rec bs'_all (b :: bs) (b :: bs') t
+
+    | DBE_Remove : forall {rec bs'_all b bs bs' t_body' vars},
+        DBE_Bindings rec bs'_all bs bs' t_body' ->
+        (vars = (fv t_body') ++ (fv_bindings rec
+          (match rec with | Rec => bs'_all | NonRec => bs' end))
+        ) ->
+        DBE_Binding vars b ->
+        DBE_Bindings rec bs'_all (b :: bs) (     bs') t_body'
+
+    | DBE_Nil    : forall {bs'_all rec t},
+        DBE_Bindings rec bs'_all nil nil t
     .
 
 
+Local Open Scope string_scope.
 (* TODO: Does not consider types, tt is mapped to built-in strings *)
 Definition tt := @Ty_Builtin tyname binderTyname (Some (@TypeIn DefaultUniString)).
 Definition subTerm : Term :=
@@ -68,9 +99,9 @@ Definition subTerm : Term :=
                       (Var (Name "False" (Unique 3)))))
                 (Var (Name "Unit" (Unique 12)))))).
 
-Lemma test2 : ~(In "trace" (fv' subTerm)). notIn2. Qed.
+Lemma test2 : ~(In "trace" (fv subTerm)). notIn2. Qed.
 
-Lemma test : ~(In "trace" (fv' subTerm)).
+Lemma test : ~(In "trace" (fv subTerm)).
 Proof. notIn. Qed.
 
 (* This must be somewhere in the standard lib*)
@@ -83,7 +114,7 @@ Equations dbe_dec_Term (t1 t2 : Term) : option (DBE_Term t1 t2) :=
   where dbe_dec_Binding (b : Binding) (t : Term)  : option (DBE_Binding b t) :=
 
     dbe_dec_Binding (TermBind stric (VarDecl n ty) t') t    :=
-      DBE_RemoveTermBind <$> in_dec_option n (fv' t);
+      DBE_RemoveTermBind <$> in_dec_option n (free_vars t);
 
      dbe_dec_Binding (TypeBind (TyVarDecl n k) ty) t        :=
       pure DBE_RemoveTypeBind;
@@ -118,10 +149,12 @@ end.
 
 
 
+(* Old decision procedure *)
+(*
 Fixpoint dbe_dec_Binding (b : Binding) (t : Term) {struct b} : option (DBE_Binding b t) :=
     match b with
       | TermBind stric (VarDecl n T) t'   =>
-          DBE_RemoveTermBind <$> in_dec_option n (fv' t)
+          DBE_RemoveTermBind <$> in_dec_option n (free_vars t)
 
       | TypeBind (TyVarDecl n k) ty        =>
           pure DBE_RemoveTypeBind
@@ -209,6 +242,7 @@ Equations dbe_dec_Term (t1 t2 : Term) : option (DBE_Term t1 t2) :=
     dbe_dec_rmbnd _ _ := Nothing
     }.
 
+*)
 
 
 
@@ -239,6 +273,7 @@ Tactic Notation "step" hyp(n) :=
   ].
 
 
+(*
 Definition is_dbe : forall (n : nat) (t t' : Term) ,
   option (DBE_Term t t').
 Proof.
@@ -274,6 +309,9 @@ refine (
   for is_dbe
 ).
 Abort.
+*)
+
+
 (*
 [is_dbe_remove_let]: {.
 intros t t'.

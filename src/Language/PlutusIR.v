@@ -30,27 +30,6 @@ Require Import Coq.Program.Basics.
   AST
 
 *)
-
-Definition Unique (n : nat) := tt.
-(*
-Inductive unique := Unique : nat -> unique.
-  Definition unique_dec : forall u u' : unique, {u = u'} + {u <> u'}.
-  Proof. decide equality. apply Nat.eq_dec. Defined.
-*)
-
-Definition Name (s : string) (n : unit) := s.
-(*
-Inductive name := Name : string -> unique -> name.
-
-Definition name_dec : forall n1 n2 : name, {n1 = n2} + {n1 <> n2}.
-Proof. decide equality. apply unique_dec. apply string_dec. Defined.
-*)
-
-Definition TyName (s : string) := s.
-(*
-Inductive tyname := TyName : name -> tyname.
-*)
-
 Inductive Recursivity := NonRec | Rec.
 
 Inductive Strictness := NonStrict | Strict.
@@ -64,7 +43,7 @@ Inductive DefaultUni : Type :=
     | DefaultUniUnit       (* : DefaultUni unit (* () *)*)
     | DefaultUniBool       (* : DefaultUni bool (* Bool *)*)
     .
-    
+
 Definition uniType (x : DefaultUni) : Type :=
   match x with
     | DefaultUniInteger    => Z
@@ -194,13 +173,58 @@ with binding :=
   | DatatypeBind : dtdecl -> binding
 .
 
+(** ** Trace of compilation *)
+Inductive pass :=
+  | PassRename
+  | PassTypeCheck
+  | PassInline : list name -> pass
+  | PassDeadCode
+  | PassThunkRec
+  | PassFloatTerm
+  | PassLetNonStrict
+  | PassLetTypes
+  | PassLetRec
+  | PassLetNonRec.
+
+Inductive compilation_trace :=
+  | CompilationTrace : term -> list (pass * term) -> compilation_trace.
+
+
 End AST_term.
+
+Definition constructorName {tyname binderName binderTyname} : constr tyname binderName binderTyname -> binderName :=
+  fun c => match c with
+  | Constructor (VarDecl n _) _ => n
+  end
+  .
+Arguments constructorName _ _ _.
 
 (** * Named terms (all variables and binders are strings) *)
 Module NamedTerm.
 
 (* Perhaps parametrize to mimic original AST in haskell more closely? We really only need one instantiation for now. *)
 (* Context {func : Type} {uni : Type -> Type} {name : Type} {tyname : Type}. *)
+
+
+Definition Unique (n : nat) := tt.
+(*
+Inductive unique := Unique : nat -> unique.
+  Definition unique_dec : forall u u' : unique, {u = u'} + {u <> u'}.
+  Proof. decide equality. apply Nat.eq_dec. Defined.
+*)
+
+Definition Name (s : string) (n : unit) := s.
+(*
+Inductive name := Name : string -> unique -> name.
+
+Definition name_dec : forall n1 n2 : name, {n1 = n2} + {n1 <> n2}.
+Proof. decide equality. apply unique_dec. apply string_dec. Defined.
+*)
+
+Definition TyName (s : string) := s.
+(*
+Inductive tyname := TyName : name -> tyname.
+*)
 
 (* TODO: Coq prints wrong notation for LamAbs type, perhaps just use string
     everywhere? *)
@@ -239,27 +263,8 @@ Notation constructor := (constr tyname binderName binderTyname).
 Notation Term := (term name tyname binderName binderTyname).
 Notation Binding := (binding name tyname binderName binderTyname).
 
-Definition constructorName : constructor -> name := 
-  fun c => match c with
-  | Constructor (VarDecl n _) _ => n
-  end
-  .
 
-(** ** Trace of compilation *)
-Inductive Pass :=
-  | PassRename
-  | PassTypeCheck
-  | PassInline : list name -> Pass
-  | PassDeadCode
-  | PassThunkRec
-  | PassFloatTerm
-  | PassLetNonStrict
-  | PassLetTypes
-  | PassLetRec
-  | PassLetNonRec.
 
-Inductive CompTrace :=
-  | CompilationTrace : Term -> list (Pass * Term) -> CompTrace.
 
 End NamedTerm.
 
@@ -335,17 +340,89 @@ where shift_bindings' : nat -> nat -> list Binding -> list Binding := {
   shift_bindings' k c nil => nil ;
   shift_bindings' k c (TermBind s (VarDecl bn T) t :: bs) => TermBind s (VarDecl bn (shift_ty' k c T)) (shift_term' k c t) :: shift_bindings' k c bs ;
   shift_bindings' k c (TypeBind tvd T :: bs) => TypeBind tvd (shift_ty' k c T) :: shift_bindings' k c bs ;
-  shift_bindings' k c (DatatypeBind (Datatype X YKs matchFunc cs) :: bs) => DatatypeBind (Datatype X YKs matchFunc (shift_constructors' k c cs)) :: shift_bindings' k c bs} 
+  shift_bindings' k c (DatatypeBind (Datatype X YKs matchFunc cs) :: bs) => DatatypeBind (Datatype X YKs matchFunc (shift_constructors' k c cs)) :: shift_bindings' k c bs}
 
 where shift_constructors' : nat -> nat -> list constructor -> list constructor := {
   shift_constructors' k c nil => nil ;
-  shift_constructors' k c (Constructor (VarDecl bn T) ar :: cs) => Constructor (VarDecl bn (shift_ty' k c T)) ar :: shift_constructors' k c cs }. 
+  shift_constructors' k c (Constructor (VarDecl bn T) ar :: cs) => Constructor (VarDecl bn (shift_ty' k c T)) ar :: shift_constructors' k c cs }.
 
 Definition shift_term (t : Term) := shift_term' 1 0 t.
 *)
 
 End DeBruijnTerm.
 
+
+Module UniqueTerm.
+
+
+Open Scope type_scope.
+Definition name         := string * Z.
+Definition tyname       := string * Z.
+Definition binderName   := string * Z.
+Definition binderTyname := string * Z.
+
+(* These constructors should treat the type parameter
+   as implicit too
+
+   Using maximally inserted implicits for ease of use with
+   partial application *)
+
+Arguments Ty_Var {_ _}.
+Arguments Ty_Fun {_ _}.
+Arguments Ty_IFix {_ _}.
+Arguments Ty_Forall {_ _}.
+Arguments Ty_Builtin {_ _}.
+Arguments Ty_Lam {_ _}.
+
+Arguments Let {_ _ _ _}.
+Arguments Var {_ _ _ _}.
+Arguments TyAbs {_ _ _ _}.
+Arguments LamAbs {_ _ _ _}.
+Arguments Apply {_ _ _ _}.
+Arguments Constant {_ _ _ _}.
+Arguments Builtin {_ _ _ _}.
+Arguments TyInst {_ _ _ _}.
+Arguments Error {_ _ _ _}.
+Arguments IWrap {_ _ _ _}.
+Arguments Unwrap {_ _ _ _}.
+
+Arguments TermBind {_ _ _ _}.
+Arguments TypeBind {_ _ _ _}.
+Arguments DatatypeBind {_ _ _ _}.
+
+Arguments VarDecl {_ _ _}.
+Arguments TyVarDecl {_}.
+Arguments Datatype {_ _ _}.
+
+Arguments PassRename {_}%type_scope.
+Arguments PassTypeCheck {_}%type_scope.
+Arguments PassInline {_}%type_scope.
+Arguments PassDeadCode {_}%type_scope.
+Arguments PassThunkRec {_}%type_scope.
+Arguments PassFloatTerm {_}%type_scope.
+Arguments PassLetNonStrict {_}%type_scope.
+Arguments PassLetTypes {_}%type_scope.
+Arguments PassLetRec {_}%type_scope.
+Arguments PassLetNonRec {_}%type_scope.
+
+Arguments CompilationTrace {name tyname binderName binderTyname}.
+
+Notation Kind := (kind).
+Notation Ty := (ty tyname binderTyname).
+Notation VDecl := (vdecl name tyname binderName).
+Notation TVDecl := (tvdecl binderTyname).
+Notation DTDecl := (dtdecl name tyname binderTyname).
+Notation constructor := (constr tyname binderName binderTyname).
+Notation Term := (term name tyname binderName binderTyname).
+Notation Binding := (binding name tyname binderName binderTyname).
+
+
+Definition Name x y : string * Z := (x, y).
+Definition Unique x : Z := x.
+Definition TyName name : string * Z := name.
+
+
+End UniqueTerm.
 
 
 Section Term_rect.

@@ -63,3 +63,31 @@ pastEnd = $$(compile [|| \(end::EndDate) (current::Integer) ->
     Fixed n -> n `lessThanEqInteger` current
     Never   -> keep
   ||])
+
+-- Experimenting with what let-bindings become strict/non-strcit
+-- in PIR.
+--
+-- thunkrec :: CompiledCode (EndDate -> Integer -> Bool)
+-- thunkrec = $$(compile [|| \(end::EndDate) (current::Integer) ->
+--     let rec_loops :: Bool = rec_loops
+--
+--         myNil :: [a]
+--         myNil = []
+--
+--         {-# NOINLINE myTrue#-}
+--         myTrue = True
+--
+--         {-# NOINLINE idBool#-}
+--         idBool :: Bool -> Bool
+--         idBool = idBool
+--
+--         {-# NOINLINE rec_loops #-}
+--         mymap :: (a -> b) -> [a] -> [b]
+--         mymap f [] = []
+--         mymap f (x:xs) = f x : mymap f xs
+--
+--         head :: [a] -> a
+--         head (x : xs) = x
+--         head [] = Language.PlutusTx.Builtins.error ()
+--     in head (idBool myTrue : mymap (\x -> rec_loops) [1,2,3])
+--     ||])
