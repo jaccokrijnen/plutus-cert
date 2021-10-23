@@ -1,5 +1,6 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
+
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Rules.
 
 

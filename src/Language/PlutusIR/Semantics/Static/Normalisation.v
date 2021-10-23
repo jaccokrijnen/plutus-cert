@@ -1,14 +1,9 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 
-Import Coq.Lists.List.
-Import Coq.Strings.String.
+Require Export PlutusCert.Language.PlutusIR.Semantics.Static.TypeSubstitution.
 
-Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.
-
-
-
-(** ** Type equality *)
+(** Type equality *)
 Reserved Notation "T1 '=b' T2" (at level 40).
 Inductive EqT : Ty -> Ty -> Prop :=
   (* Beta-reduction *)
@@ -40,11 +35,15 @@ Inductive EqT : Ty -> Ty -> Prop :=
       S1 =b S2 ->
       T1 =b T2 ->
       Ty_App S1 T1 =b Ty_App S2 T2
+  | Q_IFix : forall F1 F2 T1 T2,
+      F1 =b F2 ->
+      T1 =b T2 ->
+      Ty_IFix F1 T1 =b Ty_IFix F2 T2
 where "T1 '=b' T2" := (EqT T1 T2).
 
+#[export] Hint Constructors EqT : core.
 
-(** ** Normal types *)
-
+(** Normal types *)
 Inductive normal_Ty : Ty -> Prop :=
   | NO_TyLam : forall bX K T,
       normal_Ty T ->
@@ -83,46 +82,16 @@ Combined Scheme normal_Ty__multind from
 
 #[export] Hint Constructors normal_Ty neutral_Ty : core.
 
-Inductive is_TyLam : Ty -> Prop :=
-  | Is_TyLam : forall bX K T_body,
-      is_TyLam (Ty_Lam bX K T_body).
-
-#[export] Hint Constructors is_TyLam : core.
-
-(*
-Equations? normalise (T : Ty) : Ty :=
-  normalise (Ty_App T1 T2) =>
-    match normalise T1 with
-    | Ty_Lam bX K T1_body =>
-        normalise (substituteTCA bX (normalise T2) T1_body)
-    | T1' =>
-        Ty_App T1' (normalise T2)
-    end ;
-  normalise (Ty_Fun T1 T2) =>
-    Ty_Fun (normalise T1) (normalise T2) ;
-  normalise (Ty_Forall bX K T0) =>
-    Ty_Forall bX K (normalise T0) ;
-  normalise (Ty_Lam bX K T0) =>
-    Ty_Lam bX K (normalise T0) ;
-  normalise (Ty_Var X) =>
-    Ty_Var X ;
-  normalise (Ty_IFix F T) =>
-    Ty_IFix (normalise F) (normalise T) ;
-  normalise (Ty_Builtin st) =>
-    Ty_Builtin st
-  .
-*)
-
+(** Type normalisation *)
 Inductive normalise : Ty -> Ty -> Prop :=
-  | N_BetaReduce : forall bX K T1 T2 T1_body T2' T' T'',
-      normalise T1 (Ty_Lam bX K T1_body) ->
+  | N_BetaReduce : forall bX K T1 T2 T1' T2' T,
+      normalise T1 (Ty_Lam bX K T1') ->
       normalise T2 T2' ->
-      substituteTCA bX T2' T1_body = T' ->
-      normalise T' T'' ->
-      normalise (Ty_App T1 T2) T''
+      normalise (substituteTCA bX T2' T1') T ->
+      normalise (Ty_App T1 T2) T
   | N_TyApp : forall T1 T2 T1' T2',
-      neutral_Ty T1' ->
       normalise T1 T1' ->
+      neutral_Ty T1' ->
       normalise T2 T2' ->
       normalise (Ty_App T1 T2) (Ty_App T1' T2')
   | N_TyFun : forall T1 T2 T1' T2',
@@ -147,28 +116,36 @@ Inductive normalise : Ty -> Ty -> Prop :=
 
 #[export] Hint Constructors normalise : core.
 
-Lemma normalise_deterministic : forall T T_norm T'_norm,
-  normalise T T_norm ->
-  normalise T T'_norm ->
-  T_norm = T'_norm.
+(** Properties of type normalisation *)
+Lemma normalise_to_normal : forall T T_norm,
+    normalise T T_norm ->
+    normal_Ty T_norm.
+Proof. 
+  induction 1; eauto.
+Qed.
+
+Lemma normalisation__deterministic : forall T T_norm T'_norm,
+    normalise T T_norm ->
+    normalise T T'_norm ->
+    T_norm = T'_norm.
 Proof.
   intros.
   generalize dependent T'_norm.
   induction H; intros.
-  - inversion H3.
+  - inversion H2.
     + subst.
-      apply IHnormalise1 in H6. inversion H6. subst.
-      apply IHnormalise2 in H7. subst.
+      apply IHnormalise1 in H5. inversion H5. subst.
+      apply IHnormalise2 in H6. subst.
       apply IHnormalise3; eauto.
     + subst.
-      apply IHnormalise1 in H7. 
-      inversion H7. subst.
+      apply IHnormalise1 in H5. 
+      inversion H5. subst.
       inversion H6.
   - inversion H2.
     + subst.
       apply IHnormalise1 in H5.
       inversion H5. subst.
-      inversion H.
+      inversion H0.
     + subst.
       f_equal; eauto.
   - inversion H1. subst.
@@ -185,32 +162,38 @@ Proof.
     eauto.
 Qed.
 
-Lemma normalise_to_normal : forall T T_norm,
-    normalise T T_norm ->
-    normal_Ty T_norm.
-Proof. 
-  induction 1; eauto.
+Ltac invert_normalise :=
+  match goal with
+  | H : normalise ?T ?T_norm |- _ => inversion H; subst; f_equal; eauto
+  end.
+
+Theorem normalisation__stable :
+  (forall T, normal_Ty T -> (forall T_norm, normalise T T_norm -> T = T_norm)) /\
+  (forall T, neutral_Ty T -> (forall T_norm, normalise T T_norm -> T = T_norm)).
+Proof with eauto.
+  eapply normal_Ty__multind; intros...
+  all: try solve [invert_normalise].
+  - inversion H3.
+    + subst.
+      eapply H0 in H6.
+      subst.
+      inversion H.
+    + subst.
+      f_equal...
 Qed.
 
-Lemma normalisation__completeness : forall S T S_norm T_norm,
-  S =b T ->
-  normalise S S_norm ->
-  normalise T T_norm ->
-  S_norm = T_norm.
-Proof. Admitted.
-
-Theorem normalisation__soundness : forall T T_norm,
+Theorem normalisation__sound : forall T T_norm,
     normalise T T_norm ->
     T =b T_norm.
-Proof. Admitted.
+Proof with eauto. induction 1... Qed.
 
-Theorem normalisation__stability : forall T T_norm,
-    normal_Ty T ->
-    normalise T T_norm ->
-    T = T_norm.
-Proof. Admitted.
+Lemma normalisation__complete : forall S T S_norm,
+    S =b T ->
+    normalise S S_norm ->
+    normalise T S_norm.
+Proof. Abort.
 
-
+(** Normalisation of lists of types*)
 Inductive map_normalise : list (tyname * Ty) -> list (tyname * Ty) -> Prop :=
   | MN_nil : 
       map_normalise nil nil
@@ -220,6 +203,8 @@ Inductive map_normalise : list (tyname * Ty) -> list (tyname * Ty) -> Prop :=
       map_normalise ((X, T) :: Ts) ((X, Tn) :: Tsn).
 
 #[export] Hint Constructors map_normalise : core.
+
+Require Import Coq.Lists.List.
 
 Lemma map_normalise__app : forall l1 l2 ln,
     map_normalise (l1 ++ l2) ln ->
@@ -238,7 +223,6 @@ Proof.
     exists l2n'.
     eauto.
 Qed.
-
 
 Lemma map_normalise__deterministic : forall l ln ln',
     map_normalise l ln ->
