@@ -2,7 +2,7 @@ Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.ContextInvariance.AFI.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Rules.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Typing.
 
 Module Ty.
 

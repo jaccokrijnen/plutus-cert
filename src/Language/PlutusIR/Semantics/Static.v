@@ -1,8 +1,10 @@
 (** The static semantics *)
-Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.
-Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Rules.
-Require Export PlutusCert.Language.PlutusIR.Semantics.Static.TypeSubstitution.
+Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Auxiliary.
+Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Context.
+Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Kinding.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Normalisation.
+Require Export PlutusCert.Language.PlutusIR.Semantics.Static.TypeSubstitution.
+Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Typing.
 
 (** Important theorems *)
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.ContextInvariance.
@@ -19,3 +21,6 @@ Create HintDb typing.
 #[export] Hint Constructors bindings_well_formed_nonrec : typing.
 #[export] Hint Constructors bindings_well_formed_rec : typing.
 #[export] Hint Constructors binding_well_formed : typing.
+#[export] Hint Constructors Ty.appears_free_in : typing.
+#[export] Hint Constructors Term.appears_free_in : typing.
+#[export] Hint Constructors Annotation.appears_free_in : typing.

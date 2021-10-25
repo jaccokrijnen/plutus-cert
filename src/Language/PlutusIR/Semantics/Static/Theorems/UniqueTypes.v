@@ -1,7 +1,7 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Rules.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Typing.
 
 
 Theorem unique_kinds : forall ctx T K K',
