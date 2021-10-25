@@ -204,34 +204,6 @@ Combined Scheme has_type__multind from
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
 
-Lemma strong_normalisation : forall Delta T K,
-    Delta |-* T : K ->
-    exists T_norm, normalise T T_norm.
-Proof.
-  induction 1; eauto.
-  - destruct IHhas_kind1.
-    destruct IHhas_kind2.
-    eauto.
-  - destruct IHhas_kind1.
-    destruct IHhas_kind2.
-    eauto.
-  - destruct IHhas_kind.
-    eauto.
-  - destruct IHhas_kind.
-    eauto.
-  - destruct IHhas_kind1.
-    destruct IHhas_kind2.
-    inversion H; subst.
-    + eauto.
-    + destruct u; inversion H3.
-    + admit.
-    + inversion H1; subst.
-      * admit.
-      * apply normalise_to_normal in H1 as Hnorm.
-        inversion Hnorm; subst.
-        eauto.
-Admitted.
-
 Lemma has_type__normal : forall Delta Gamma flag t T,
     Delta ,, Gamma ;; flag |-+ t : T ->
     normal_Ty T.
