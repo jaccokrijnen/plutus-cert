@@ -33,7 +33,7 @@ Module Typing.
     forall Delta' Gamma',
       inclusion Delta Delta' ->
       inclusion Gamma Gamma' ->
-      Delta' ,, Gamma' [ flag ]|-+ t : T.
+      Delta' ,, Gamma' ;; flag |-+ t : T.
 
   Definition P_constructor_well_formed Delta c T : Prop :=
     forall Delta',
@@ -44,19 +44,19 @@ Module Typing.
     forall Delta' Gamma',
       inclusion Delta Delta' ->
       inclusion Gamma Gamma' ->
-      Delta' ,, Gamma' [ flag ]|-oks_nr bs.
+      Delta' ,, Gamma' ;; flag |-oks_nr bs.
 
   Definition P_bindings_well_formed_rec flag Delta Gamma bs : Prop :=
     forall Delta' Gamma',
       inclusion Delta Delta' ->
       inclusion Gamma Gamma' ->
-      Delta' ,, Gamma' [ flag ]|-oks_r bs.
+      Delta' ,, Gamma' ;; flag |-oks_r bs.
 
   Definition P_binding_well_formed flag Delta Gamma b : Prop :=
     forall Delta' Gamma',
       inclusion Delta Delta' ->
       inclusion Gamma Gamma' ->
-      Delta' ,, Gamma' [ flag ]|-ok_b b.
+      Delta' ,, Gamma' ;; flag |-ok_b b.
 
   #[export] Hint Unfold
     P_has_type
@@ -67,10 +67,10 @@ Module Typing.
     : core.
 
   Lemma weakening : 
-    (forall flag Delta Gamma t T, Delta ,, Gamma [ flag ]|-+ t : T -> P_has_type flag Delta Gamma t T) /\
-    (forall flag Delta Gamma bs, Delta ,, Gamma [ flag ]|-oks_nr bs -> P_bindings_well_formed_nonrec flag Delta Gamma bs) /\
-    (forall flag Delta Gamma bs, Delta ,, Gamma [ flag ]|-oks_r bs -> P_bindings_well_formed_rec flag Delta Gamma bs) /\
-    (forall flag Delta Gamma b, Delta ,, Gamma [ flag ]|-ok_b b -> P_binding_well_formed flag Delta Gamma b).
+    (forall flag Delta Gamma t T, Delta ,, Gamma ;; flag |-+ t : T -> P_has_type flag Delta Gamma t T) /\
+    (forall flag Delta Gamma bs, Delta ,, Gamma ;; flag |-oks_nr bs -> P_bindings_well_formed_nonrec flag Delta Gamma bs) /\
+    (forall flag Delta Gamma bs, Delta ,, Gamma ;; flag |-oks_r bs -> P_bindings_well_formed_rec flag Delta Gamma bs) /\
+    (forall flag Delta Gamma b, Delta ,, Gamma ;; flag |-ok_b b -> P_binding_well_formed flag Delta Gamma b).
   Proof with eauto using Kinding.weakening, inclusion_update, inclusion_mupdate.
     apply has_type__multind with 
       (P := P_has_type) 
@@ -90,8 +90,8 @@ Module Typing.
   Qed.
 
   Lemma weakening_empty : forall flag Delta Gamma t T,
-      empty ,, empty [ flag ]|-+ t : T ->
-      Delta ,, Gamma [ flag ]|-+ t : T.
+      empty ,, empty ;; flag |-+ t : T ->
+      Delta ,, Gamma ;; flag |-+ t : T.
   Proof.
     intros flag Delta Gamma t T Ht.
     apply weakening in Ht.

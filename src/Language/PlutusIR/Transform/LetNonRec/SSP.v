@@ -9,58 +9,58 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 
 
 
-Definition P_has_type Delta Gamma t1 T := 
+Definition P_has_type flag Delta Gamma t1 T := 
   forall t2, 
     CNR_Term t1 t2 -> 
-    Delta ,, Gamma |-+ t2 : T.
+    Delta ,, Gamma ;; flag |-+ t2 : T.
 
-Definition P_constructor_well_formed Delta c := Delta |-ok_c c.
+Definition P_constructor_well_formed Delta c T := Delta |-ok_c c : T.
 
-Definition P_bindings_well_formed_nonrec Delta Gamma bs1 :=
+Definition P_bindings_well_formed_nonrec flag Delta Gamma bs1 :=
     forall bs2, (
-      Delta ,, Gamma |-oks_nr bs1 ->
+      Delta ,, Gamma ;; flag |-oks_nr bs1 ->
       Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
-      Delta ,, Gamma |-oks_nr bs2
+      Delta ,, Gamma ;; flag |-oks_nr bs2
     ) /\ (
       Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
       map binds_Delta bs1 = map binds_Delta bs2 /\
       map binds_Gamma bs1 = map binds_Gamma bs2
     ) /\ (
       forall f_bs2 t T bs1Gn,
-        Delta ,, Gamma |-oks_nr bs1 -> 
+        Delta ,, Gamma ;; flag |-oks_nr bs1 -> 
         CNR_Bindings bs1 f_bs2 ->
         map_normalise (flatten (map binds_Gamma bs1)) bs1Gn ->
-        (mupdate Delta (flatten (map binds_Delta bs1))) ,, (mupdate Gamma bs1Gn) |-+ t : T ->
-        Delta ,, Gamma |-+ (fold_right apply t f_bs2) : T
+        (mupdate Delta (flatten (map binds_Delta bs1))) ,, (mupdate Gamma bs1Gn) ;; flag |-+ t : T ->
+        Delta ,, Gamma ;; flag |-+ (fold_right apply t f_bs2) : T
     ).
 
-Definition P_bindings_well_formed_rec Delta Gamma bs1 :=
+Definition P_bindings_well_formed_rec flag Delta Gamma bs1 :=
   forall bs2, (
-    Delta ,, Gamma |-oks_r bs1 ->
+    Delta ,, Gamma ;; flag |-oks_r bs1 ->
     Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
-    Delta ,, Gamma |-oks_r bs2
+    Delta ,, Gamma ;; flag |-oks_r bs2
   ) /\ (
     Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
     map binds_Delta bs1 = map binds_Delta bs2 /\
     map binds_Gamma bs1 = map binds_Gamma bs2
   ).
 
-Definition P_binding_well_formed Delta Gamma b1 := 
+Definition P_binding_well_formed flag Delta Gamma b1 := 
   forall b2, (
-      Delta ,, Gamma |-ok b1 ->
+      Delta ,, Gamma ;; flag |-ok_b b1 ->
       Congruence.Cong_Binding CNR_Term b1 b2 ->
-      Delta ,, Gamma |-ok b2
+      Delta ,, Gamma ;; flag |-ok_b b2
     ) /\ (
       Congruence.Cong_Binding CNR_Term b1 b2 ->
       binds_Delta b1 = binds_Delta b2 /\
       binds_Gamma b1 = binds_Gamma b2
     ) /\ (
       forall f_b2 t T bs1Gn,
-        Delta ,, Gamma |-ok b1 ->
+        Delta ,, Gamma ;; flag |-ok_b b1 ->
         CNR_Binding b1 f_b2 ->
         map_normalise (binds_Gamma b1) bs1Gn ->
-        mupdate Delta (binds_Delta b1) ,, mupdate Gamma bs1Gn |-+ t : T ->
-        Delta ,, Gamma |-+ (f_b2 t) : T  
+        mupdate Delta (binds_Delta b1) ,, mupdate Gamma bs1Gn ;; flag |-+ t : T ->
+        Delta ,, Gamma ;; flag |-+ (f_b2 t) : T  
     ).
 
 #[export] Hint Unfold
@@ -71,10 +71,10 @@ Definition P_binding_well_formed Delta Gamma b1 :=
   P_binding_well_formed
   : core.
 
-Theorem CNR_Term__SSP : forall Delta Gamma t1 T,
-    Delta ,, Gamma |-+ t1 : T ->
-    P_has_type Delta Gamma t1 T.
-Proof.
+Theorem CNR_Term__SSP : forall flag Delta Gamma t1 T,
+    Delta ,, Gamma ;; flag |-+ t1 : T ->
+    P_has_type flag Delta Gamma t1 T.
+Proof with (eauto with typing).
   apply has_type__ind with 
     (P := P_has_type) 
     (P0 := P_constructor_well_formed) 
@@ -82,40 +82,33 @@ Proof.
     (P2 := P_bindings_well_formed_rec) 
     (P3 := P_binding_well_formed).
   all: intros; autounfold; intros.
-  - (* T_Let *)
+  all: try solve [eauto with typing].
+  all: try solve [inversion X; subst; inversion X0; subst; eauto with typing].
+  all: try solve [inversion X0; subst; inversion X1; subst; eauto with typing].
+  - (* T_Let *) 
     inversion X; subst.
-    + eapply H3.
-      * apply bs.
-      * assumption.
-      * assumption.
-      * eassumption.
-      * apply H5.
-        assumption.
-    + inversion X0. subst. 
-      eapply T_Let.
-      * reflexivity.
+    + eapply H3...
+    + inversion X0; subst...
+      eapply T_Let...
       * unfold P_bindings_well_formed_nonrec in H3.
         edestruct H3 as [_ [Heq _]].
         apply Heq in X1.
         destruct X1.
         rewrite <- H1.
         eassumption.
-      * reflexivity.
-      * apply H3. assumption. assumption.
+      * apply H3...
       * unfold P_bindings_well_formed_nonrec in H3. edestruct H3 as [_ [Heq _]]. apply Heq in X1. 
         destruct X1. rewrite <- H. apply H5. assumption. 
   - (* T_LetRec *)
     inversion X. subst.
     inversion X0. subst.
-    eapply T_LetRec.
-    + reflexivity.
+    eapply T_LetRec...
     + unfold P_bindings_well_formed_rec in H3.
       edestruct H3 as [IHH Heq].
       apply Heq in X1 as Hsu.
       destruct Hsu.
       rewrite <- H1.
       eassumption.
-    + reflexivity.
     + unfold P_bindings_well_formed_rec in H3.
       edestruct H3 as [IHH Heq].
       apply Heq in X1 as Hsu.
@@ -129,79 +122,6 @@ Proof.
       rewrite <- H.
       apply H5.
       assumption.
-  - (* T_Var *)
-    inversion X. subst.
-    inversion X0. subst.
-    apply T_Var with T. 
-    assumption.
-    assumption.
-  - (* T_TyAbs *)
-    inversion X0. subst.
-    inversion X1. subst.
-    apply T_TyAbs.
-    unfold P_has_type in H0.
-    apply H0.
-    apply X2.
-  - (* T_LamAbs *)
-    inversion X. subst.
-    inversion X0. subst.
-    apply T_LamAbs.
-    + assumption.
-    + assumption.
-    + apply H2. assumption.
-  - (* T_Apply *)
-    inversion X. subst.
-    inversion X0. subst.
-    apply T_Apply with T1n.
-    + apply H0. assumption.
-    + apply H2. assumption.
-  - (* T_Constant *)
-    inversion X. subst.
-    inversion X0. subst.
-    apply T_Constant.
-  - (* T_Builtin *)
-    inversion X. subst.
-    inversion X0. subst.
-    apply T_Builtin.
-    reflexivity.
-  - (* T_TyInst *)
-    inversion X0. subst.
-    inversion X1. subst.
-    apply T_TyInst with T1n X K2 T2n.
-    + apply H0. assumption.
-    + assumption.
-    + assumption.
-    + assumption.
-  - (* T_Error *)
-    inversion X. subst.
-    inversion X0. subst.
-    apply T_Error.
-    assumption.
-    assumption.
-  - (* T_IWrap *)
-    inversion X. subst.
-    inversion X0. subst.
-    apply T_IWrap with K T0n.
-    + assumption.
-    + apply H1. assumption.
-    + assumption.
-    + assumption.
-    + assumption.
-    + assumption.
-  - (* T_Unwrap *)
-    inversion X. subst.
-    inversion X0. subst.
-    apply T_Unwrap with Fn K Tn.
-    + apply H0. assumption.
-    + assumption.
-    + assumption.
-    
-  - (* T_ExtBuiltin *)
-    inversion X. subst.
-    inversion X0.
-    
-  - (* W_Con *)
-    eapply W_Con; eauto.
     
   - (* W_NilB_NonRec *)
     split.
@@ -312,33 +232,31 @@ Proof.
     split.
     + intros. 
       inversion X. subst.
-      apply W_Term.
-      * assumption.
-      * apply H1. assumption.
+      eapply W_Term...
     + split. 
       * intros.
         inversion X. subst.
         auto.
       * intros.
         inversion X. subst.
-        apply strong_normalisation in H as He.
-        destruct He.
-        eapply T_Apply.
-        -- apply T_LamAbs.
-          ++ simpl in H3.
-             assumption. 
-          ++ apply H5.
+        eapply T_Apply...
+        -- apply T_LamAbs...
           ++ simpl in H4.
+             inversion H4. subst.
+             inversion H10. subst.
+             eapply normalisation__deterministic in H0; eauto.
+             subst.
+             inversion H3. subst.
              simpl in H3.
              inversion H3. subst.
              inversion H10. subst.
-             eapply normalise_deterministic in H5; eauto.
-             subst.
-             simpl in H4.
-            eassumption.
-        -- apply has_type__normal in H0 as H10.
-           eapply normalisation__stability in H10; eauto.
-           subst. eapply H1. assumption.
+             eassumption.
+        -- apply has_type__normal in H1 as H10.
+           unfold P_has_type in H2.
+           destruct flag; eauto.
+           eapply typing_subsumes_escaped_typing.
+           eapply H2.
+           eauto.
   - (* W_Type *)
     split.
     + intros. 

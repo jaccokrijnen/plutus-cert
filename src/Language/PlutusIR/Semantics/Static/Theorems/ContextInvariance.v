@@ -53,7 +53,7 @@ Module Typing.
   Definition P_has_type (flag : TypingFlag) (Delta : Delta) (Gamma : Gamma) (t : Term) (T : Ty) :=
     forall Gamma',
       (forall x, Term.appears_free_in x t -> Gamma x = Gamma' x) ->
-      Delta ,, Gamma' [ flag ]|-+ t : T.
+      Delta ,, Gamma' ;; flag |-+ t : T.
 
   Definition P_constructor_well_formed (Delta : Delta) (c : constructor) (T : Ty) :=
     Delta |-ok_c c : T.
@@ -61,17 +61,17 @@ Module Typing.
   Definition P_bindings_well_formed_nonrec (flag : TypingFlag) (Delta : Delta) (Gamma : Gamma) (bs : list Binding) :=
     forall Gamma',
       (forall x, Term.appears_free_in__bindings_nonrec x bs -> Gamma x = Gamma' x) ->
-      Delta ,, Gamma' [ flag ]|-oks_nr bs.  
+      Delta ,, Gamma' ;; flag |-oks_nr bs.  
 
   Definition P_bindings_well_formed_rec (flag : TypingFlag) (Delta : Delta) (Gamma : Gamma) (bs : list Binding) :=
     forall Gamma',
       (forall x, Term.appears_free_in__bindings_rec x bs -> Gamma x = Gamma' x) ->
-      Delta ,, Gamma' [ flag ]|-oks_r bs.  
+      Delta ,, Gamma' ;; flag |-oks_r bs.  
 
   Definition P_binding_well_formed (flag : TypingFlag) (Delta : Delta) (Gamma : Gamma) (b : Binding) :=
     forall Gamma',
       (forall x, Term.appears_free_in__binding x b -> Gamma x = Gamma' x) ->
-      Delta ,, Gamma' [ flag ]|-ok_b b.
+      Delta ,, Gamma' ;; flag |-ok_b b.
 
   #[export] Hint Unfold 
     P_has_type
@@ -82,10 +82,10 @@ Module Typing.
     : core.
 
   Theorem context_invariance : 
-    (forall flag Delta Gamma t T, Delta ,, Gamma [ flag ]|-+ t : T -> P_has_type flag Delta Gamma t T) /\
-    (forall flag Delta Gamma bs, Delta ,, Gamma [ flag ]|-oks_nr bs -> P_bindings_well_formed_nonrec flag Delta Gamma bs) /\
-    (forall flag Delta Gamma bs, Delta ,, Gamma [ flag ]|-oks_r bs -> P_bindings_well_formed_rec flag Delta Gamma bs) /\
-    (forall flag Delta Gamma b, Delta ,, Gamma [ flag ]|-ok_b b -> P_binding_well_formed flag Delta Gamma b).
+    (forall flag Delta Gamma t T, Delta ,, Gamma ;; flag |-+ t : T -> P_has_type flag Delta Gamma t T) /\
+    (forall flag Delta Gamma bs, Delta ,, Gamma ;; flag |-oks_nr bs -> P_bindings_well_formed_nonrec flag Delta Gamma bs) /\
+    (forall flag Delta Gamma bs, Delta ,, Gamma ;; flag |-oks_r bs -> P_bindings_well_formed_rec flag Delta Gamma bs) /\
+    (forall flag Delta Gamma b, Delta ,, Gamma ;; flag |-ok_b b -> P_binding_well_formed flag Delta Gamma b).
   Proof with eauto.
     apply has_type__multind with
       (P := P_has_type)

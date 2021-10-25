@@ -59,10 +59,10 @@ Module Term.
     : core.
 
   Lemma free_in_context :
-      (forall flag Delta Gamma t T, Delta ,, Gamma [ flag ]|-+ t : T -> P_has_type flag Delta Gamma t T) /\
-      (forall flag Delta Gamma bs, Delta ,, Gamma [ flag ]|-oks_nr bs -> P_bindings_well_formed_nonrec flag Delta Gamma bs) /\
-      (forall flag Delta Gamma bs, Delta ,, Gamma [ flag ]|-oks_r bs -> P_bindings_well_formed_rec flag Delta Gamma bs) /\
-      (forall flag Delta Gamma b, Delta ,, Gamma [ flag ]|-ok_b b -> P_binding_well_formed flag Delta Gamma b).
+      (forall flag Delta Gamma t T, Delta ,, Gamma ;; flag |-+ t : T -> P_has_type flag Delta Gamma t T) /\
+      (forall flag Delta Gamma bs, Delta ,, Gamma ;; flag |-oks_nr bs -> P_bindings_well_formed_nonrec flag Delta Gamma bs) /\
+      (forall flag Delta Gamma bs, Delta ,, Gamma ;; flag |-oks_r bs -> P_bindings_well_formed_rec flag Delta Gamma bs) /\
+      (forall flag Delta Gamma b, Delta ,, Gamma ;; flag |-ok_b b -> P_binding_well_formed flag Delta Gamma b).
   Proof with eauto.
     apply has_type__multind with
       (P := P_has_type)
@@ -134,10 +134,10 @@ Module Annotation.
     : core.
 
   Lemma free_in_context : 
-      (forall flag Delta Gamma t T, Delta ,, Gamma [ flag ]|-+ t : T -> P_has_type flag Delta Gamma t T) /\
-      (forall flag Delta Gamma bs, Delta ,, Gamma [ flag ]|-oks_nr bs -> P_bindings_well_formed_nonrec flag Delta Gamma bs) /\
-      (forall flag Delta Gamma bs, Delta ,, Gamma [ flag ]|-oks_r bs -> P_bindings_well_formed_rec flag Delta Gamma bs) /\
-      (forall flag Delta Gamma b, Delta ,, Gamma [ flag ]|-ok_b b -> P_binding_well_formed flag Delta Gamma b).
+      (forall flag Delta Gamma t T, Delta ,, Gamma ;; flag |-+ t : T -> P_has_type flag Delta Gamma t T) /\
+      (forall flag Delta Gamma bs, Delta ,, Gamma ;; flag |-oks_nr bs -> P_bindings_well_formed_nonrec flag Delta Gamma bs) /\
+      (forall flag Delta Gamma bs, Delta ,, Gamma ;; flag |-oks_r bs -> P_bindings_well_formed_rec flag Delta Gamma bs) /\
+      (forall flag Delta Gamma b, Delta ,, Gamma ;; flag |-ok_b b -> P_binding_well_formed flag Delta Gamma b).
   Proof with (eauto using Ty.free_in_context).
     apply has_type__multind with
       (P := P_has_type)
@@ -173,7 +173,7 @@ Module Annotation.
 End Annotation.
 
 Corollary typable_empty__closed : forall flag t T,
-    empty ,, empty [ flag ]|-+ t : T ->
+    empty ,, empty ;; flag |-+ t : T ->
     closed t.
 Proof with eauto.
   intros. unfold closed.
