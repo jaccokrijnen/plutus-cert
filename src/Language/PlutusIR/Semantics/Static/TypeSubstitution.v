@@ -7,22 +7,22 @@ Local Open Scope string_scope.
 
 (** * Regular substitution of types *)
 
-Fixpoint substituteT (X : tyname) (S T : Ty) : Ty :=
+Fixpoint substituteT (X : tyname) (U T : Ty) : Ty :=
   match T with
   | Ty_Var Y => 
-    if X =? Y then S else Ty_Var Y
+    if X =? Y then U else Ty_Var Y
   | Ty_Fun T1 T2 =>
-    Ty_Fun (substituteT X S T1) (substituteT X S T2)
+    Ty_Fun (substituteT X U T1) (substituteT X U T2)
   | Ty_IFix F T =>
-    Ty_IFix (substituteT X S F) (substituteT X S T)
+    Ty_IFix (substituteT X U F) (substituteT X U T)
   | Ty_Forall Y K T' =>
-    if X =? Y then Ty_Forall Y K T' else Ty_Forall Y K (substituteT X S T')
+    if X =? Y then Ty_Forall Y K T' else Ty_Forall Y K (substituteT X U T')
   | Ty_Builtin u => 
     Ty_Builtin u
   | Ty_Lam Y K1 T' =>
-    if X =? Y then Ty_Lam Y K1 T' else Ty_Lam Y K1 (substituteT X S T')
+    if X =? Y then Ty_Lam Y K1 T' else Ty_Lam Y K1 (substituteT X U T')
   | Ty_App T1 T2 =>
-    Ty_App (substituteT X S T1) (substituteT X S T2)
+    Ty_App (substituteT X U T1) (substituteT X U T2)
   end.
 
 (** Multi-substitutions of types*)
@@ -57,8 +57,41 @@ Fixpoint ftv (T : Ty) : list tyname :=
       ftv T1 ++ ftv T2
   end.
 
-(* TODO: Actually generate a fresh type variable *)
-Definition fresh (T : Ty) (X : tyname) : tyname := "a".
+(** Assume that we compute the substitution of U for X in (LamAbs Y K T). 
+    We reduce the  problem of generating a fresh type variable to generating 
+    a type variable A such that:
+
+    A <> X /\ ~ In A (ftv U) /\ ~ In A (ftv T)
+
+    We generate a ``fresh'' type variable naively: We concatenate X, all 
+    free type variables in U and all free type variables in T together. 
+    By appending an arbitrary letter such as "a" to the result of the previous, 
+    we get a type variable string which is strictly larger than [X], the 
+    free type variables in U and the free type variables in T. This means
+    that the abovementioned formula holds.
+
+    TODO: The above is only an informal proof, so we should prove freshness
+    formally as well.  
+*)
+Definition fresh (X : tyname) (U T : Ty) : tyname := 
+  "a" ++ X ++ (concat EmptyString (ftv U)) ++ (concat EmptyString (ftv T)).
+
+Lemma fresh__X : forall X U T,
+    X <> fresh X U T.
+Proof with eauto.
+  intros. intros Hcon.
+  induction X; induction (ftv U); induction (ftv T).
+  all: simpl in Hcon.
+  all: inversion Hcon; subst...
+Qed.
+
+Lemma fresh__S : forall X U T,
+    ~ In (fresh X U T) (ftv U).
+Proof. Abort.
+
+Lemma fresh__T : forall X U T,
+    ~ In (fresh X U T) (ftv T).
+Proof. Abort.
 
 Definition rename (X Y : tyname) (T : Ty) := substituteT X (Ty_Var Y) T.
 
@@ -90,38 +123,38 @@ Equations? substituteTCA (X : tyname) (U T : Ty) : Ty by wf (size T) :=
       Ty_Fun (substituteTCA X U T1) (substituteTCA X U T2) ;
   substituteTCA X U (Ty_IFix F T) =>
       Ty_IFix (substituteTCA X U F) (substituteTCA X U T) ;
-  substituteTCA X U (Ty_Forall Y K T0) =>
+  substituteTCA X U (Ty_Forall Y K T) =>
       if X =? Y 
         then 
-          Ty_Forall Y K T0
+          Ty_Forall Y K T
         else 
           if existsb (eqb Y) (ftv U) 
             then 
-              let Y' := fresh U Y in
-              let T0' := rename Y Y' T0 in
-              Ty_Forall Y' K (substituteTCA X U T0')
+              let Y' := fresh X U T in
+              let T' := rename Y Y' T in
+              Ty_Forall Y' K (substituteTCA X U T')
             else
-              Ty_Forall Y K T0 ;
+              Ty_Forall Y K T ;
   substituteTCA X U (Ty_Builtin u) =>
       Ty_Builtin u ;
-  substituteTCA X U (Ty_Lam Y K T0) =>
+  substituteTCA X U (Ty_Lam Y K T) =>
       if X =? Y 
         then 
-          Ty_Lam Y K T0 
+          Ty_Lam Y K T
         else 
           if existsb (eqb Y) (ftv U) 
             then 
-              let Y' := fresh U Y in
-              let T0' := rename Y Y' T0 in
-              Ty_Lam Y' K (substituteTCA X U T0') 
+              let Y' := fresh X U T in
+              let T' := rename Y Y' T in
+              Ty_Lam Y' K (substituteTCA X U T') 
             else
-              Ty_Lam Y K (substituteTCA X U T0) ;
+              Ty_Lam Y K (substituteTCA X U T) ;
   substituteTCA X U (Ty_App T1 T2) => 
       Ty_App (substituteTCA X U T1) (substituteTCA X U T2)
   .
 Proof. 
   all: try solve 
     [ lia 
-    || replace T0' with (rename Y Y' T0); eauto; rewrite <- rename_preserves_size; eauto
+    || replace T' with (rename Y Y' T); eauto; rewrite <- rename_preserves_size; eauto
     ].
 Qed.
