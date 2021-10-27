@@ -149,42 +149,42 @@ Inductive has_type : TypingFlag -> Delta -> Gamma -> Term -> Ty -> Prop :=
       (flag = NoEscape -> Delta |-* Tn : Kind_Base) ->
       Delta ,, Gamma ;; flag |-+ (Let Rec bs t) : Tn
 
-  with constructor_well_formed : Delta -> constructor -> Ty -> Prop :=
-    | W_Con : forall Delta x T ar Targs Tr,
-        (Targs, Tr) = splitTy T -> 
-        (forall U, In U Targs -> Delta |-* U : Kind_Base) ->
-        Delta |-ok_c (Constructor (VarDecl x T) ar) : Tr
+with constructor_well_formed : Delta -> constructor -> Ty -> Prop :=
+  | W_Con : forall Delta x T ar Targs Tr,
+      (Targs, Tr) = splitTy T ->
+      (forall U, In U Targs -> Delta |-* U : Kind_Base) ->
+      Delta |-ok_c (Constructor (VarDecl x T) ar) : Tr
 
-  with bindings_well_formed_nonrec : TypingFlag -> Delta -> Gamma -> list Binding -> Prop :=
-    | W_NilB_NonRec : forall Delta Gamma flag,
-      Delta ,, Gamma ;; flag |-oks_nr nil
-    | W_ConsB_NonRec : forall Delta Gamma b bs bsGn flag,
-        Delta ,, Gamma ;; flag |-ok_b b ->
-        map_normalise (binds_Gamma b) bsGn ->
-        (mupdate Delta (binds_Delta b)) ,, (mupdate Gamma bsGn) ;; flag |-oks_nr bs ->
-        Delta ,, Gamma ;; flag |-oks_nr (b :: bs)
+with bindings_well_formed_nonrec : TypingFlag -> Delta -> Gamma -> list Binding -> Prop :=
+  | W_NilB_NonRec : forall Delta Gamma flag,
+    Delta ,, Gamma ;; flag |-oks_nr nil
+  | W_ConsB_NonRec : forall Delta Gamma b bs bsGn flag,
+      Delta ,, Gamma ;; flag |-ok_b b ->
+      map_normalise (binds_Gamma b) bsGn ->
+      (mupdate Delta (binds_Delta b)) ,, (mupdate Gamma bsGn) ;; flag |-oks_nr bs ->
+      Delta ,, Gamma ;; flag |-oks_nr (b :: bs)
 
-  with bindings_well_formed_rec : TypingFlag -> Delta -> Gamma -> list Binding -> Prop :=
-    | W_NilB_Rec : forall Delta Gamma flag,
-        Delta ,, Gamma ;; flag |-oks_r nil
-    | W_ConsB_Rec : forall Delta Gamma b bs flag,
-        Delta ,, Gamma ;; flag |-ok_b b ->
-        Delta ,, Gamma ;; flag |-oks_r bs ->
-        Delta ,, Gamma ;; flag |-oks_r (b :: bs)
+with bindings_well_formed_rec : TypingFlag -> Delta -> Gamma -> list Binding -> Prop :=
+  | W_NilB_Rec : forall Delta Gamma flag,
+      Delta ,, Gamma ;; flag |-oks_r nil
+  | W_ConsB_Rec : forall Delta Gamma b bs flag,
+      Delta ,, Gamma ;; flag |-ok_b b ->
+      Delta ,, Gamma ;; flag |-oks_r bs ->
+      Delta ,, Gamma ;; flag |-oks_r (b :: bs)
 
-  with binding_well_formed : TypingFlag -> Delta -> Gamma -> Binding -> Prop :=
-    | W_Term : forall Delta Gamma s x T t Tn flag,
-        Delta |-* T : Kind_Base ->
-        normalise T Tn ->
-        Delta ,, Gamma ;; NoEscape |-+ t : Tn ->
-        Delta ,, Gamma ;; flag |-ok_b (TermBind s (VarDecl x T) t)
-    | W_Type : forall Delta Gamma X K T flag,
-        Delta |-* T : K ->
-        Delta ,, Gamma ;; flag |-ok_b (TypeBind (TyVarDecl X K) T)
-    | W_Data : forall Delta Gamma X YKs cs matchFunc Delta' flag,
-        Delta' = mupdate Delta (rev (map fromDecl YKs)) ->
-        (forall c, In c cs -> Delta' |-ok_c c : (constrLastTy (Datatype X YKs matchFunc cs))) ->
-        Delta ,, Gamma ;; flag |-ok_b (DatatypeBind (Datatype X YKs matchFunc cs))
+with binding_well_formed : TypingFlag -> Delta -> Gamma -> Binding -> Prop :=
+  | W_Term : forall Delta Gamma s x T t Tn flag,
+      Delta |-* T : Kind_Base ->
+      normalise T Tn ->
+      Delta ,, Gamma ;; NoEscape |-+ t : Tn ->
+      Delta ,, Gamma ;; flag |-ok_b (TermBind s (VarDecl x T) t)
+  | W_Type : forall Delta Gamma X K T flag,
+      Delta |-* T : K ->
+      Delta ,, Gamma ;; flag |-ok_b (TypeBind (TyVarDecl X K) T)
+  | W_Data : forall Delta Gamma X YKs cs matchFunc Delta' flag,
+      Delta' = mupdate Delta (rev (map fromDecl YKs)) ->
+      (forall c, In c cs -> Delta' |-ok_c c : (constrLastTy (Datatype X YKs matchFunc cs))) ->
+      Delta ,, Gamma ;; flag |-ok_b (DatatypeBind (Datatype X YKs matchFunc cs))
 
   where "Delta ',,' Gamma ';;' flag '|-+' t ':' T" := (has_type flag Delta Gamma t T)
   and  "Delta '|-ok_c' c ':' T" := (constructor_well_formed Delta c T)
