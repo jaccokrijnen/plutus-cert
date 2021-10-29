@@ -9,12 +9,6 @@ Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.Substitution.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.Values.
 
 (** ** Theorems and lemmas about the big-step semantics *)
-Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.Bigstep.Congruence.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.Bigstep.Deterministic.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.Bigstep.EvalToValue.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.Bigstep.EvalValue.
-
-(** ** Theorems and lemmas about substitution *)
-Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.Substitution.Vacuous.
-Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.AnnotationSubstitution.PreservesValue.
-Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.AnnotationSubstitution.Vacuous.

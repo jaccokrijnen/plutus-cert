@@ -7,9 +7,10 @@ Import Coq.Strings.String.
 
 Local Open Scope string_scope.
 
-(** * Substitution of types in type annotations *)
 
-(** ** Utilities *)
+
+(** Substitution of types in type annotations *)
+
 Definition btvb (b : NamedTerm.Binding) : list tyname :=
   match b with
   | TermBind _ (VarDecl x _) _ => nil
@@ -94,8 +95,6 @@ Fixpoint substituteA (X : tyname) (U : Ty) (t : Term) : Term :=
       IWrap (substituteT X U F) (substituteT X U T) (substituteA X U t0)
   | Unwrap t0 =>
       Unwrap (substituteA X U t0)
-  | ExtBuiltin f args =>
-      ExtBuiltin f (map (substituteA X U) args)
   end
 
 with substituteA_binding (X : tyname) (U : Ty) (b : Binding) {struct b} : Binding :=
@@ -115,7 +114,7 @@ Notation "'[[' U '/' X '][br]' bs" := (@substituteA_bindings_rec substituteA_bin
 Notation "'[[' U '/' X '][cs]' cs" := (substituteA_constructors X U cs) (in custom plutus_term at level 20, X constr).
 Notation "'[[' U '/' X '][c]' c" := (substituteA_constructor X U c) (in custom plutus_term at level 20, X constr).
 
-(** * Multi-substitutions of types in type annotations *)
+(** Multi-substitutions of types in type annotations *)
 
 Definition envA := list (tyname * Ty).
 

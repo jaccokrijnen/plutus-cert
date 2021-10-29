@@ -2,107 +2,64 @@ Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 
+
+
 Theorem substituteTCA_preserves_kinding : forall T Delta X K U L,
     (X |-> L; Delta) |-* T : K ->
     empty |-* U : L ->
     Delta |-* (substituteTCA X U T) : K.
-Proof. Admitted.
-
-
-Theorem substituteTCA'_preserves_kinding : forall T T' Delta X K U L,
-  (X |-> L; Delta) |-* T : K ->
-  empty |-* U : L ->
-  substituteTCA' X U T T' ->
-  Delta |-* T' : K.
-Proof.
-  intros T T' Delta X K U L Hkind Hkind' Hstca__T'.
-  generalize dependent L.
-  generalize dependent U.
-  generalize dependent K.
-  generalize dependent X.
-  generalize dependent Delta.
-  generalize dependent T'.
-
+Proof with eauto with typing.
   induction T.
+  all: intros Delta X K U L Hkind__T HHkind__U.
+  all: autorewrite with substituteTCA.
+  all: simpl.
+  all: inversion Hkind__T; subst...
   - (* Ty_Var *)
-    intros.
     rename t into Y.
-    inversion Hkind. subst.
-    inversion Hstca__T'.
-    + (* STCA_TyVar1 *)
+    destruct (X =? Y)%string eqn:Heqb.
+    + (* X = Y *)
+      apply eqb_eq in Heqb as Heq.
       subst.
-      apply weakening_empty__has_kind.
+      apply Kinding.weakening_empty.
       rewrite update_eq in H1.
       inversion H1.
-      subst.
-      apply Hkind'.
-    + (* STCA_TyVar2 *)
-      subst.
-      rewrite update_neq in H1; auto.
-      auto with typing.
-  - (* Ty_Fun *)
-    intros.
-    inversion Hkind. subst.
-    inversion Hstca__T'. subst.
-    eauto with typing.
-  - (* Ty_IFix *)
-    intros.
-    inversion Hkind. subst.
-    inversion Hstca__T'. subst.
-    simpl.
-    eauto with typing.
+      subst...
+    + (* X <> Y *)
+      apply eqb_neq in Heqb as Hneq.
+      rewrite update_neq in H1...
+Admitted.
+
+(*
   - (* Ty_Forall *)
-    intros.
     rename b into bX.
-    inversion Hkind. subst.
-    inversion Hstca__T'. subst.
-    + (* STCA_TyForall1 *)
+    destruct (X =? bX)%string eqn:Heqb.
+    + (* X = bX *)
+      apply eqb_eq in Heqb as Heq.
       subst.
+      apply K_Forall...
+      rewrite update_shadow in H4...
+    + (* X <> bX *)
+      apply eqb_neq in Heqb as Hneq.
+      admit.
+      (*
       apply K_Forall.
-      rewrite update_shadow in H4.
-      assumption.
-    + (* STCA_TyForall2 *)
-      subst.
-      apply K_Forall.
-      apply skip. (* TODO *)
-    + (* STCA_TyForall3 *)
-      apply K_Forall.
-      eapply IHT; eauto.
-      rewrite update_permute.
-      assumption.
-      auto.
-  - (* Ty_Builtin *)
-    intros.
-    inversion Hkind. subst.
-    inversion Hstca__T'. subst.
-    simpl.
-    apply K_Builtin.
-    reflexivity.
+      eapply IHT...
+      rewrite update_permute...
+      *)
   - (* Ty_Lam *)  
-    intros.
-    inversion Hkind. subst.
     rename b into bX.
-    simpl.
-    inversion Hstca__T'.
-    + (* STCA_TyLam1 *)
+    destruct (X =? bX)%string eqn:Heqb.
+    + (* X = bX *)
+      apply eqb_eq in Heqb as Heq.
       subst.
       apply K_Lam.
-      rewrite update_shadow in H4.
-      assumption.
-    + (* STCA_TyLam2 *)
-      subst.
+      rewrite update_shadow in H4...
+    + (* X <> bX *)
+      apply eqb_neq in Heqb as Hneq.
+      admit.
+      (*
       apply K_Lam.
-      apply skip.
-    + (* STCA_TyLam3 *)
-      subst.
-      apply K_Lam.
-      rewrite update_permute in H4.
-      eauto.
-      assumption.
-  - (* Ty_App *)
-    intros. 
-    inversion Hkind. subst.
-    inversion Hstca__T'. subst.
-    simpl.
-    eauto with typing.
+      rewrite update_permute in H4...
+      *)
 Qed.
+*)

@@ -8,9 +8,8 @@ Local Open Scope string_scope.
 
 
 
-(** * Substitution of terms *)
+(** Substitution of terms *)
 
-(** ** Utilities *)
 Definition bvc (c : NamedTerm.constructor) : string :=
   match c with
   | Constructor (VarDecl x _) _ => x
@@ -90,8 +89,6 @@ Fixpoint substitute (x : name) (s : Term) (t : Term) {struct t} : Term :=
       IWrap F T (substitute x s t0)
   | Unwrap t0 =>
       Unwrap (substitute x s t0)
-  | ExtBuiltin f args =>
-      ExtBuiltin f (map (substitute x s) args)
   end
 
 with substitute_binding (x : name) (s : Term) (b : Binding) {struct b} : Binding :=
@@ -106,7 +103,7 @@ Notation "'[' s '/' x '][b]' b" := (substitute_binding x s b) (in custom plutus_
 Notation "'[' s '/' x '][bnr]' bs" := (@substitute_bindings_nonrec substitute_binding x s bs) (in custom plutus_term at level 20, x constr).
 Notation "'[' s '/' x '][br]' bs" := (@substitute_bindings_rec substitute_binding x s bs) (in custom plutus_term at level 20, x constr).
 
-(** * Multi-substitutions of types in type annotations *)
+(** Multi-substitutions of terms *)
 
 Definition env := list (name * Term).
 

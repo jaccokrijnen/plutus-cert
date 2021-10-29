@@ -70,344 +70,122 @@ Ltac destruct_invert_contra := let Hcon := fresh "Hcon" in intros Hcon; destruct
 Ltac solve_substitute := repeat (econstructor || eauto || invert_contra || destruct_invert_contra).
 Ltac solve_value_builtin := repeat econstructor.
 
-(*
+Ltac invert_neutrals :=
+  match goal with
+  | H : neutral_value ?n ?t |- False =>
+      inversion H; clear H; subst; try invert_neutrals
+  | H : neutral ?t |- False =>
+      inversion H; clear H; subst; try invert_neutrals
+  end.
+
+Ltac decide_neutral :=
+  match goal with
+  | |- neutral_value ?n ?nv =>
+      econstructor; eauto; try decide_neutral
+  | |- ?f <> ?f' =>
+      let Hcon := fresh "Hcon" in
+      try solve [intros Hcon; inversion Hcon]
+  end.
+
 Example fact_term_evaluates : exists k,
   fact_term 2 =[k]=> Constant (Some (ValueOf DefaultUniInteger 2)).
-Proof with eauto.
+Proof with (autounfold; simpl; eauto || (try reflexivity) || (try solve [intros Hcon; inversion Hcon])).
+  unfold fact_term.
   eexists.
   apply E_LetRec.
-  eapply E_ConsB_Rec. {
-    apply S_LetRec2. {
-      invert_contra.
-    } {    
-      solve_substitute.
-    }
-  }
-  apply E_NilB_Rec.
-  eapply E_Apply. {
+  eapply E_LetRec_TermBind.
+  simpl.
+  eapply E_LetRec_Nil.
+  eapply E_Apply... {
     eapply E_LetRec.
-    eapply E_ConsB_Rec. {
-      apply S_LetRec2. {
-        invert_contra.
-      } {    
-        solve_substitute.
-      }
-    }
-    apply E_NilB_Rec.
-    apply E_LamAbs.
+    eapply E_LetRec_TermBind.
+    simpl.
+    eapply E_LetRec_Nil...
   } {
-    apply E_Constant.
-  } {
-    apply S_Apply.
-    - apply S_Apply.
-      + apply S_Apply.
-        * apply S_TyInst.
-          apply S_Builtin.
-        * apply S_Apply.
-          -- apply S_Apply.
-             ++ apply S_Builtin.
-             ++ apply S_Var1.
-          -- apply S_Constant.
-      + apply S_Constant.
-    - apply S_Apply. 
-      + apply S_Apply.
-        * apply S_Builtin.
-        * apply S_Var1.
-      + apply S_Apply.
-        * apply S_LetRec2.
-          -- intros Hcon.
-             simpl in Hcon.
-             destruct Hcon.
-             ++ inversion H.
-             ++ destruct H.
-          -- apply S_ConsB_Rec.
-             ++ apply S_TermBind.
-                apply S_LamAbs1.
-             ++ apply S_NilB_Rec.
-                apply S_LamAbs1.
-        * apply S_Apply.
-          -- apply S_Apply.
-             ++ apply S_Builtin.
-             ++ apply S_Var1.
-          -- apply S_Constant.
-  }
-  eapply E_IfFalse. { 
-    eapply E_IfThenBranch. {
-      eapply E_IfCondition. {
-        eapply E_IfTyInst. {
-          apply E_Builtin.
-        }
-      } {
-        eapply E_ApplyBuiltin2. {
-          eapply E_ApplyBuiltin1. {
-            apply E_Builtin.
-          } {
-            eapply V_Builtin0.
-            apply PeanoNat.Nat.lt_0_succ.
-          } {
-            apply E_Constant.
-          } {
-            apply V_Builtin1.
-            - apply le_n.
-            - apply V_Constant.
-          }
-        } {
-          eapply V_Builtin1.
-          - apply le_n.
-          - apply V_Constant.
-        } {
-          apply E_Constant.
-        } {
-          intros Hcon.
-          inversion Hcon. subst.
-          apply PeanoNat.Nat.lt_irrefl in H2.
-          destruct H2.
-        } 
-        reflexivity.
-      }
-    }
-  } 
-  eapply E_ApplyBuiltin2. {
-    eapply E_ApplyBuiltin1. {
-      apply E_Builtin.
+    simpl.
+    eapply E_IfFalse... {
+      eapply E_NeutralApplyFull...
+      eapply FA_Apply...
+      eapply FA_Apply...
+      eapply FA_Builtin...
     } {
-      eapply V_Builtin0.
-      apply PeanoNat.Nat.lt_0_succ.
-    } {
-      eapply E_Constant.
-    } {
-      eapply V_Builtin1. {
-        apply le_n.
-      } {
-        eapply V_Constant.
-      }
-    }
-  } {
-    eapply V_Builtin1. {
-      apply le_n.
-    } {
-      eapply V_Constant.
-    }
-  } {
-    eapply E_Apply. {
-      eapply E_LetRec. {
-        eapply E_ConsB_Rec. {
-          apply S_LetRec2. {
-            invert_contra.
-          } {    
-            solve_substitute.
-          }
-        }
-        eapply E_NilB_Rec.
-        eapply E_LamAbs.
-      }
-    } {
-      eapply E_ApplyBuiltin2. {
-        eapply E_ApplyBuiltin1. {
-          eapply E_Builtin.
-        } {
-          eapply V_Builtin0.
-          apply PeanoNat.Nat.lt_0_succ.
-        } {
-          eapply E_Constant.
-        } {
-          eapply V_Builtin1. {
-            eapply le_n.
-          } {
-            eapply V_Constant.
-          }
-        }
-      } {
-        eapply V_Builtin1. {
-          eapply le_n.
-        } {
-          eapply V_Constant.
-        }
-      } {
-        eapply E_Constant.
-      } {
+      eapply E_NeutralApplyPartial. {
         intros Hcon.
-        inversion Hcon. subst.
-        apply PeanoNat.Nat.lt_irrefl in H2.
-        destruct H2.
+        invert_neutrals.
+        simpl in H5.
+        apply PeanoNat.Nat.lt_irrefl in H5...
       } {
-        reflexivity.
-      }
-    } {
-      eapply S_Apply. {
-        eapply S_Apply. {
-          eapply S_Apply. {
-            solve_substitute.
-          } {
-            solve_substitute.
+        eapply E_NeutralApply...
+        decide_neutral...
+      } {
+        simpl...
+        decide_neutral...
+      } {
+        eapply E_Apply... {
+          eapply E_LetRec... 
+          eapply E_LetRec_TermBind...
+        } {
+          eapply E_NeutralApplyFull...
+          eapply FA_Apply...
+          eapply FA_Apply...
+          eapply FA_Builtin...
+        } {
+          simpl...
+        } {
+          simpl...
+          eapply E_IfFalse... {
+            eapply E_NeutralApplyFull...
+            eapply FA_Apply...
+            eapply FA_Apply...
+            eapply FA_Builtin...
           }
-        } {
-          solve_substitute.
-        }
-      } {
-        eapply S_Apply. {
-          solve_substitute.
-        } {
-          eapply S_Apply. {
-            eapply S_LetRec2. {
-              destruct_invert_contra.
+          eapply E_NeutralApplyPartial. {
+            intros Hcon.
+            invert_neutrals...
+            simpl in H5.
+            apply PeanoNat.Nat.lt_irrefl in H5...
+          } {
+            eapply E_NeutralApply...
+            decide_neutral...
+          } {
+            unfold constInt...
+            decide_neutral...
+          } {
+            eapply E_Apply... {
+              eapply E_LetRec...
+              eapply E_LetRec_TermBind...
             } {
-              solve_substitute.
+              eapply E_NeutralApplyFull... 
+              eapply FA_Apply...
+              eapply FA_Apply...
+              eapply FA_Builtin...
+            } {
+              intros Hcon. inversion Hcon.
+            } {
+              simpl...
+              eapply E_IfTrue...
+              eapply E_NeutralApplyFull...
+              eapply FA_Apply...
+              eapply FA_Apply...
+              eapply FA_Builtin...
             }
           } {
-            solve_substitute.
-          }
-        }
-      }
-    } {
-      eapply E_IfFalse. {
-        eapply E_IfThenBranch. {
-          eapply E_IfCondition. {
-            eapply E_IfTyInst.
-            eapply E_Builtin.
+            simpl...
           } {
-            eapply E_ApplyBuiltin2. {
-              eapply E_ApplyBuiltin1. {
-                eapply E_Builtin.
-              } {
-                eapply V_Builtin0.
-                apply PeanoNat.Nat.lt_0_succ.
-              } {
-                eapply E_Constant.
-              } {
-                eapply V_Builtin1. {
-                  eapply le_n.
-                } {
-                  eapply V_Constant.
-                }
-              }
-            } {
-              eapply V_Builtin1. {
-                eapply le_n.
-              } {
-                eapply V_Constant.
-              }
-            } {
-              eapply E_Constant.
-            } {
-              invert_contra.
-              apply PeanoNat.Nat.lt_irrefl in H2.
-              destruct H2.
-            } {
-              reflexivity.
-            }
+            eapply E_NeutralApplyFull...
+            eapply FA_Apply...
+            eapply FA_Apply...
+            eapply FA_Builtin...
           }
         }
       } {
-        eapply E_ApplyBuiltin2. {
-          eapply E_ApplyBuiltin1. {
-            eapply E_Builtin.
-          } {
-            solve_value_builtin.
-          } {
-            eapply E_Constant.
-          } {
-            solve_value_builtin.
-          }
-        } {
-          solve_value_builtin.
-        } {
-          eapply E_Apply. {
-            eapply E_LetRec. {
-              eapply E_ConsB_Rec. {
-                apply S_LetRec2. {
-                  invert_contra.
-                } {
-                  solve_substitute.
-                }
-              }
-              eapply E_NilB_Rec.
-              eapply E_LamAbs.
-            }
-          } {
-            eapply E_ApplyBuiltin2. {
-              eapply E_ApplyBuiltin1. {
-                eapply E_Builtin.
-              } {
-                solve_value_builtin.
-              } {
-                eapply E_Constant.
-              } {
-                solve_value_builtin.
-              }
-            } {
-              solve_value_builtin.
-            } {
-              eapply E_Constant.
-            } {
-              invert_contra.
-              apply PeanoNat.Nat.lt_irrefl in H2.
-              destruct H2.
-            } {
-              reflexivity.
-            }
-          } {
-            eapply S_Apply. {
-              solve_substitute.
-            } {
-              eapply S_Apply... {
-                eapply S_Apply... {
-                  eapply S_LetRec2. {
-                    destruct_invert_contra.
-                  } {
-                    solve_substitute.
-                  }
-                }
-              }
-            }
-          } {
-            eapply E_IfTrue. {
-              eapply E_IfThenBranch. {
-                eapply E_IfCondition. {
-                  eapply E_IfTyInst. 
-                  eapply E_Builtin.
-                } {
-                  eapply E_ApplyBuiltin2. {
-                    eapply E_ApplyBuiltin1. {
-                      eapply E_Builtin.
-                    } {
-                      solve_substitute.
-                    } {
-                      eapply E_Constant.
-                    } {
-                      solve_value_builtin.
-                    }
-                  } {
-                    solve_value_builtin.
-                  } {
-                    eapply E_Constant.
-                  } {
-                    invert_contra.
-                    apply PeanoNat.Nat.lt_irrefl in H2.
-                    destruct H2.
-                  } {
-                    reflexivity.
-                  }
-                }
-              }
-            } {
-              apply E_Constant.
-            }
-          }
-        } {
-          invert_contra.
-          apply PeanoNat.Nat.lt_irrefl in H2.
-          destruct H2.
-        } {
-          reflexivity.
-        }
+        simpl...
+      } {
+        eapply E_NeutralApplyFull...
+        eapply FA_Apply...
+        eapply FA_Apply...
+        eapply FA_Builtin...
       }
     }
-  } {
-    invert_contra.
-    apply PeanoNat.Nat.lt_irrefl in H2.
-    destruct H2.
-  } {
-    reflexivity.
   }
-Qed.*)
+Qed.

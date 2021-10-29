@@ -17,24 +17,20 @@ Definition int_to_int : Ty := Ty_Fun Ty_int Ty_int.
 Example test_addInteger : forall x, exists k,
   Apply (LamAbs x int_to_int (Apply (Var x) (constInt 17))) (Apply (Builtin AddInteger) (constInt 3))
   =[k]=> constInt 20.
-Proof.
+Proof with (autounfold; eauto || (try solve [intros Hcon; inversion Hcon])).
+  unfold constInt.
   intros.
   eexists.
-  eapply E_Apply.
-  - apply E_LamAbs.
-  - eapply E_ApplyExtBuiltin.
-    + apply E_Builtin.
-      intros Hcon.
-      discriminate.
-    + apply E_Constant.
-    + apply E_ExtBuiltinPartiallyApplied.
-      auto.
+  eapply E_Apply...
+  - eapply E_NeutralApply...
+    eapply NV_Apply...
+    eapply NV_Builtin...
+  - intros Hcon. 
+    inversion Hcon.
   - simpl.
     rewrite eqb_refl.
-    eapply E_ApplyExtBuiltin.
-    + eapply E_ExtBuiltinPartiallyApplied.
-      auto.
-    + apply E_Constant.
-    + apply E_ExtBuiltinFullyApplied.
-      all: auto.
+    eapply E_NeutralApplyFull...
+    eapply FA_Apply...
+    eapply FA_Apply...
+    eapply FA_Builtin...
 Qed.
