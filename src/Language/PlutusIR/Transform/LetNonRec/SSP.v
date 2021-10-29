@@ -9,58 +9,58 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 
 
 
-Definition P_has_type flag Delta Gamma t1 T := 
+Definition P_has_type Delta Gamma t1 T := 
   forall t2, 
     CNR_Term t1 t2 -> 
-    Delta ,, Gamma ;; flag |-+ t2 : T.
+    Delta ,, Gamma |-+ t2 : T.
 
 Definition P_constructor_well_formed Delta c T := Delta |-ok_c c : T.
 
-Definition P_bindings_well_formed_nonrec flag Delta Gamma bs1 :=
+Definition P_bindings_well_formed_nonrec Delta Gamma bs1 :=
     forall bs2, (
-      Delta ,, Gamma ;; flag |-oks_nr bs1 ->
+      Delta ,, Gamma |-oks_nr bs1 ->
       Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
-      Delta ,, Gamma ;; flag |-oks_nr bs2
+      Delta ,, Gamma |-oks_nr bs2
     ) /\ (
       Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
       map binds_Delta bs1 = map binds_Delta bs2 /\
       map binds_Gamma bs1 = map binds_Gamma bs2
     ) /\ (
       forall f_bs2 t T bs1Gn,
-        Delta ,, Gamma ;; flag |-oks_nr bs1 -> 
+        Delta ,, Gamma |-oks_nr bs1 -> 
         CNR_Bindings bs1 f_bs2 ->
         map_normalise (flatten (map binds_Gamma bs1)) bs1Gn ->
-        (mupdate Delta (flatten (map binds_Delta bs1))) ,, (mupdate Gamma bs1Gn) ;; flag |-+ t : T ->
-        Delta ,, Gamma ;; flag |-+ (fold_right apply t f_bs2) : T
+        (mupdate Delta (flatten (map binds_Delta bs1))) ,, (mupdate Gamma bs1Gn) |-+ t : T ->
+        Delta ,, Gamma |-+ (fold_right apply t f_bs2) : T
     ).
 
-Definition P_bindings_well_formed_rec flag Delta Gamma bs1 :=
+Definition P_bindings_well_formed_rec Delta Gamma bs1 :=
   forall bs2, (
-    Delta ,, Gamma ;; flag |-oks_r bs1 ->
+    Delta ,, Gamma |-oks_r bs1 ->
     Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
-    Delta ,, Gamma ;; flag |-oks_r bs2
+    Delta ,, Gamma |-oks_r bs2
   ) /\ (
     Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
     map binds_Delta bs1 = map binds_Delta bs2 /\
     map binds_Gamma bs1 = map binds_Gamma bs2
   ).
 
-Definition P_binding_well_formed flag Delta Gamma b1 := 
+Definition P_binding_well_formed Delta Gamma b1 := 
   forall b2, (
-      Delta ,, Gamma ;; flag |-ok_b b1 ->
+      Delta ,, Gamma |-ok_b b1 ->
       Congruence.Cong_Binding CNR_Term b1 b2 ->
-      Delta ,, Gamma ;; flag |-ok_b b2
+      Delta ,, Gamma |-ok_b b2
     ) /\ (
       Congruence.Cong_Binding CNR_Term b1 b2 ->
       binds_Delta b1 = binds_Delta b2 /\
       binds_Gamma b1 = binds_Gamma b2
     ) /\ (
       forall f_b2 t T bs1Gn,
-        Delta ,, Gamma ;; flag |-ok_b b1 ->
+        Delta ,, Gamma |-ok_b b1 ->
         CNR_Binding b1 f_b2 ->
         map_normalise (binds_Gamma b1) bs1Gn ->
-        mupdate Delta (binds_Delta b1) ,, mupdate Gamma bs1Gn ;; flag |-+ t : T ->
-        Delta ,, Gamma ;; flag |-+ (f_b2 t) : T  
+        mupdate Delta (binds_Delta b1) ,, mupdate Gamma bs1Gn |-+ t : T ->
+        Delta ,, Gamma |-+ (f_b2 t) : T  
     ).
 
 #[export] Hint Unfold
@@ -71,9 +71,9 @@ Definition P_binding_well_formed flag Delta Gamma b1 :=
   P_binding_well_formed
   : core.
 
-Theorem CNR_Term__SSP : forall flag Delta Gamma t1 T,
-    Delta ,, Gamma ;; flag |-+ t1 : T ->
-    P_has_type flag Delta Gamma t1 T.
+Theorem CNR_Term__SSP : forall Delta Gamma t1 T,
+    Delta ,, Gamma |-+ t1 : T ->
+    P_has_type Delta Gamma t1 T.
 Proof with (eauto with typing).
   apply has_type__ind with 
     (P := P_has_type) 
@@ -240,23 +240,17 @@ Proof with (eauto with typing).
       * intros.
         inversion X. subst.
         eapply T_Apply...
-        -- apply T_LamAbs...
-          ++ simpl in H4.
-             inversion H4. subst.
-             inversion H10. subst.
-             eapply normalisation__deterministic in H0; eauto.
-             subst.
-             inversion H3. subst.
-             simpl in H3.
-             inversion H3. subst.
-             inversion H10. subst.
-             eassumption.
-        -- apply has_type__normal in H1 as H10.
-           unfold P_has_type in H2.
-           destruct flag; eauto.
-           eapply typing_subsumes_escaped_typing.
-           eapply H2.
-           eauto.
+        apply T_LamAbs...
+        simpl in H4.
+        inversion H4. subst.
+        inversion H10. subst.
+        eapply normalisation__deterministic in H0; eauto.
+        subst.
+        inversion H3. subst.
+        simpl in H3.
+        inversion H3. subst.
+        inversion H10. subst.
+        eassumption.
   - (* W_Type *)
     split.
     + intros. 

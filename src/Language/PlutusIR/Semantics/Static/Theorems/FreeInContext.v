@@ -27,7 +27,7 @@ End Ty.
 
 Module Term.
 
-  Definition P_has_type (flag : TypingFlag) (Delta : Delta) (Gamma : Gamma) (t : Term) (T : Ty) :=
+  Definition P_has_type (Delta : Delta) (Gamma : Gamma) (t : Term) (T : Ty) :=
     forall x,
       Term.appears_free_in x t ->
       exists T', Gamma x = Datatypes.Some T'.
@@ -35,17 +35,17 @@ Module Term.
   Definition P_constructor_well_formed (Delta : Delta) (c : constructor) (T : Ty) :=
     Delta |-ok_c c : T.
 
-  Definition P_bindings_well_formed_nonrec (flag : TypingFlag) (Delta : Delta) (Gamma : Gamma) (bs : list Binding) :=
+  Definition P_bindings_well_formed_nonrec (Delta : Delta) (Gamma : Gamma) (bs : list Binding) :=
     forall x,
       Term.appears_free_in__bindings_nonrec x bs ->
       exists T', Gamma x = Datatypes.Some T'.
 
-  Definition P_bindings_well_formed_rec (flag : TypingFlag) (Delta : Delta) (Gamma : Gamma) (bs : list Binding) :=
+  Definition P_bindings_well_formed_rec  (Delta : Delta) (Gamma : Gamma) (bs : list Binding) :=
     forall x,
       Term.appears_free_in__bindings_rec x bs ->
       exists T', Gamma x = Datatypes.Some T'.
 
-  Definition P_binding_well_formed (flag : TypingFlag) (Delta : Delta) (Gamma : Gamma) (b : Binding) :=
+  Definition P_binding_well_formed (Delta : Delta) (Gamma : Gamma) (b : Binding) :=
     forall x,
       Term.appears_free_in__binding x b ->
       exists T', Gamma x = Datatypes.Some T'.
@@ -59,10 +59,10 @@ Module Term.
     : core.
 
   Lemma free_in_context :
-      (forall flag Delta Gamma t T, Delta ,, Gamma ;; flag |-+ t : T -> P_has_type flag Delta Gamma t T) /\
-      (forall flag Delta Gamma bs, Delta ,, Gamma ;; flag |-oks_nr bs -> P_bindings_well_formed_nonrec flag Delta Gamma bs) /\
-      (forall flag Delta Gamma bs, Delta ,, Gamma ;; flag |-oks_r bs -> P_bindings_well_formed_rec flag Delta Gamma bs) /\
-      (forall flag Delta Gamma b, Delta ,, Gamma ;; flag |-ok_b b -> P_binding_well_formed flag Delta Gamma b).
+      (forall Delta Gamma t T, Delta ,, Gamma |-+ t : T -> P_has_type Delta Gamma t T) /\
+      (forall Delta Gamma bs, Delta ,, Gamma |-oks_nr bs -> P_bindings_well_formed_nonrec Delta Gamma bs) /\
+      (forall Delta Gamma bs, Delta ,, Gamma |-oks_r bs -> P_bindings_well_formed_rec Delta Gamma bs) /\
+      (forall Delta Gamma b, Delta ,, Gamma |-ok_b b -> P_binding_well_formed Delta Gamma b).
   Proof with eauto.
     apply has_type__multind with
       (P := P_has_type)
@@ -99,7 +99,7 @@ End Term.
 
 Module Annotation.
 
-  Definition P_has_type (flag : TypingFlag) (Delta : Delta) (Gamma : Gamma) (t : Term) (T : Ty) :=
+  Definition P_has_type (Delta : Delta) (Gamma : Gamma) (t : Term) (T : Ty) :=
     forall X,
       Annotation.appears_free_in X t ->
       exists K', Delta X = Datatypes.Some K'.
@@ -109,17 +109,17 @@ Module Annotation.
       Annotation.appears_free_in__constructor X c ->
       exists K', Delta X = Datatypes.Some K'.
 
-  Definition P_bindings_well_formed_nonrec (flag : TypingFlag) (Delta : Delta) (Gamma : Gamma) (bs : list Binding) :=
+  Definition P_bindings_well_formed_nonrec (Delta : Delta) (Gamma : Gamma) (bs : list Binding) :=
     forall X,
       Annotation.appears_free_in__bindings_nonrec X bs ->
       exists K', Delta X = Datatypes.Some K'.
 
-  Definition P_bindings_well_formed_rec (flag : TypingFlag) (Delta : Delta) (Gamma : Gamma) (bs : list Binding) :=
+  Definition P_bindings_well_formed_rec (Delta : Delta) (Gamma : Gamma) (bs : list Binding) :=
     forall X,
       Annotation.appears_free_in__bindings_rec X bs ->
       exists K', Delta X = Datatypes.Some K'.
 
-  Definition P_binding_well_formed (flag : TypingFlag) (Delta : Delta) (Gamma : Gamma) (b : Binding) :=
+  Definition P_binding_well_formed (Delta : Delta) (Gamma : Gamma) (b : Binding) :=
     forall X,
       Annotation.appears_free_in__binding X b ->
       exists K', Delta X = Datatypes.Some K'.
@@ -134,10 +134,10 @@ Module Annotation.
     : core.
 
   Lemma free_in_context : 
-      (forall flag Delta Gamma t T, Delta ,, Gamma ;; flag |-+ t : T -> P_has_type flag Delta Gamma t T) /\
-      (forall flag Delta Gamma bs, Delta ,, Gamma ;; flag |-oks_nr bs -> P_bindings_well_formed_nonrec flag Delta Gamma bs) /\
-      (forall flag Delta Gamma bs, Delta ,, Gamma ;; flag |-oks_r bs -> P_bindings_well_formed_rec flag Delta Gamma bs) /\
-      (forall flag Delta Gamma b, Delta ,, Gamma ;; flag |-ok_b b -> P_binding_well_formed flag Delta Gamma b).
+      (forall Delta Gamma t T, Delta ,, Gamma |-+ t : T -> P_has_type Delta Gamma t T) /\
+      (forall Delta Gamma bs, Delta ,, Gamma |-oks_nr bs -> P_bindings_well_formed_nonrec Delta Gamma bs) /\
+      (forall Delta Gamma bs, Delta ,, Gamma |-oks_r bs -> P_bindings_well_formed_rec Delta Gamma bs) /\
+      (forall Delta Gamma b, Delta ,, Gamma |-ok_b b -> P_binding_well_formed Delta Gamma b).
   Proof with (eauto using Ty.free_in_context).
     apply has_type__multind with
       (P := P_has_type)
@@ -172,8 +172,8 @@ Module Annotation.
 
 End Annotation.
 
-Corollary typable_empty__closed : forall flag t T,
-    empty ,, empty ;; flag |-+ t : T ->
+Corollary typable_empty__closed : forall t T,
+    empty ,, empty |-+ t : T ->
     closed t.
 Proof with eauto.
   intros. unfold closed.

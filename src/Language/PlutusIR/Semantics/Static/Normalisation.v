@@ -182,6 +182,11 @@ Proof with eauto.
       f_equal...
 Qed.
 
+Lemma normalisation__stable' : 
+  (forall T_norm, normal_Ty T_norm -> normalise T_norm T_norm) /\
+  (forall T_norm, neutral_Ty T_norm -> normalise T_norm T_norm).
+Proof. apply normal_Ty__multind; eauto. Qed.
+
 Theorem normalisation__sound : forall T T_norm,
     normalise T T_norm ->
     T =b T_norm.

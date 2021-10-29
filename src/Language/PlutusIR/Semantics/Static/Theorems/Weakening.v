@@ -29,34 +29,34 @@ End Kinding.
 
 Module Typing.
 
-  Definition P_has_type flag Delta Gamma t T : Prop :=
+  Definition P_has_type Delta Gamma t T : Prop :=
     forall Delta' Gamma',
       inclusion Delta Delta' ->
       inclusion Gamma Gamma' ->
-      Delta' ,, Gamma' ;; flag |-+ t : T.
+      Delta' ,, Gamma' |-+ t : T.
 
   Definition P_constructor_well_formed Delta c T : Prop :=
     forall Delta',
       inclusion Delta Delta' ->
       Delta' |-ok_c c : T.
 
-  Definition P_bindings_well_formed_nonrec flag Delta Gamma bs : Prop :=
+  Definition P_bindings_well_formed_nonrec Delta Gamma bs : Prop :=
     forall Delta' Gamma',
       inclusion Delta Delta' ->
       inclusion Gamma Gamma' ->
-      Delta' ,, Gamma' ;; flag |-oks_nr bs.
+      Delta' ,, Gamma' |-oks_nr bs.
 
-  Definition P_bindings_well_formed_rec flag Delta Gamma bs : Prop :=
+  Definition P_bindings_well_formed_rec Delta Gamma bs : Prop :=
     forall Delta' Gamma',
       inclusion Delta Delta' ->
       inclusion Gamma Gamma' ->
-      Delta' ,, Gamma' ;; flag |-oks_r bs.
+      Delta' ,, Gamma' |-oks_r bs.
 
-  Definition P_binding_well_formed flag Delta Gamma b : Prop :=
+  Definition P_binding_well_formed Delta Gamma b : Prop :=
     forall Delta' Gamma',
       inclusion Delta Delta' ->
       inclusion Gamma Gamma' ->
-      Delta' ,, Gamma' ;; flag |-ok_b b.
+      Delta' ,, Gamma' |-ok_b b.
 
   #[export] Hint Unfold
     P_has_type
@@ -67,10 +67,10 @@ Module Typing.
     : core.
 
   Lemma weakening : 
-    (forall flag Delta Gamma t T, Delta ,, Gamma ;; flag |-+ t : T -> P_has_type flag Delta Gamma t T) /\
-    (forall flag Delta Gamma bs, Delta ,, Gamma ;; flag |-oks_nr bs -> P_bindings_well_formed_nonrec flag Delta Gamma bs) /\
-    (forall flag Delta Gamma bs, Delta ,, Gamma ;; flag |-oks_r bs -> P_bindings_well_formed_rec flag Delta Gamma bs) /\
-    (forall flag Delta Gamma b, Delta ,, Gamma ;; flag |-ok_b b -> P_binding_well_formed flag Delta Gamma b).
+    (forall Delta Gamma t T, Delta ,, Gamma |-+ t : T -> P_has_type Delta Gamma t T) /\
+    (forall Delta Gamma bs, Delta ,, Gamma |-oks_nr bs -> P_bindings_well_formed_nonrec Delta Gamma bs) /\
+    (forall Delta Gamma bs, Delta ,, Gamma |-oks_r bs -> P_bindings_well_formed_rec Delta Gamma bs) /\
+    (forall  Delta Gamma b, Delta ,, Gamma |-ok_b b -> P_binding_well_formed Delta Gamma b).
   Proof with eauto using Kinding.weakening, inclusion_update, inclusion_mupdate.
     apply has_type__multind with 
       (P := P_has_type) 
@@ -89,11 +89,11 @@ Module Typing.
       eapply H1...
   Qed.
 
-  Lemma weakening_empty : forall flag Delta Gamma t T,
-      empty ,, empty ;; flag |-+ t : T ->
-      Delta ,, Gamma ;; flag |-+ t : T.
+  Lemma weakening_empty : forall Delta Gamma t T,
+      empty ,, empty |-+ t : T ->
+      Delta ,, Gamma |-+ t : T.
   Proof.
-    intros flag Delta Gamma t T Ht.
+    intros Delta Gamma t T Ht.
     apply weakening in Ht.
     unfold P_has_type in Ht.
     apply Ht.

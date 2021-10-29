@@ -68,86 +68,84 @@ Definition fromDecl (tvd : tvdecl tyname) : tyname * Kind :=
 Definition unwrapIFix (F : Ty) (K : Kind) (T : Ty) : Ty := (Ty_App (Ty_App F (Ty_Lam "X" K (Ty_IFix F (Ty_Var "X")))) T).
 
 (** Typing of terms *)
-Reserved Notation "Delta ',,' Gamma ';;' flag '|-+' t ':' T" (at level 101, flag at level 0, t at level 0, T at level 0, no associativity).
+Reserved Notation "Delta ',,' Gamma '|-+' t ':' T" (at level 101, t at level 0, T at level 0, no associativity).
 Reserved Notation "Delta '|-ok_c' c ':' T" (at level 101, c at level 0, T at level 0).
-Reserved Notation "Delta ',,' Gamma ';;' flag '|-oks_nr' bs" (at level 101, flag at level 0, bs at level 0, no associativity).
-Reserved Notation "Delta ',,' Gamma ';;' flag '|-oks_r' bs" (at level 101, flag at level 0, bs at level 0, no associativity).
-Reserved Notation "Delta ',,' Gamma ';;' flag '|-ok_b' b" (at level 101, flag at level 0, b at level 0, no associativity).
+Reserved Notation "Delta ',,' Gamma  '|-oks_nr' bs" (at level 101, bs at level 0, no associativity).
+Reserved Notation "Delta ',,' Gamma '|-oks_r' bs" (at level 101, bs at level 0, no associativity).
+Reserved Notation "Delta ',,' Gamma '|-ok_b' b" (at level 101, b at level 0, no associativity).
 
-Inductive TypingFlag : Type := | Escape | NoEscape .
-
-Inductive has_type : TypingFlag -> Delta -> Gamma -> Term -> Ty -> Prop :=
+Inductive has_type : Delta -> Gamma -> Term -> Ty -> Prop :=
   (* Simply typed lambda caclulus *)
-  | T_Var : forall Gamma Delta x T Tn flag,
+  | T_Var : forall Gamma Delta x T Tn,
       Gamma x = Coq.Init.Datatypes.Some T ->
       normalise T Tn ->
-      Delta ,, Gamma ;; flag |-+ (Var x) : Tn
-  | T_LamAbs : forall Delta Gamma x T1 t T2n T1n flag,
+      Delta ,, Gamma |-+ (Var x) : Tn
+  | T_LamAbs : forall Delta Gamma x T1 t T2n T1n,
       Delta |-* T1 : Kind_Base ->
       normalise T1 T1n ->
-      Delta ,, x |-> T1n; Gamma ;; flag |-+ t : T2n -> 
-      Delta ,, Gamma ;; flag |-+ (LamAbs x T1 t) : (Ty_Fun T1n T2n)
-  | T_Apply : forall Delta Gamma t1 t2 T1n T2n flag,
-      Delta ,, Gamma ;; flag |-+ t1 : (Ty_Fun T1n T2n) ->
-      Delta ,, Gamma ;; flag |-+ t2 : T1n ->
-      Delta ,, Gamma ;; flag |-+ (Apply t1 t2) : T2n
-  (* Universal quantification*)
-  | T_TyAbs : forall Delta Gamma X K t Tn flag,
-      (X |-> K; Delta) ,, Gamma ;; flag |-+ t : Tn ->
-      Delta ,, Gamma ;; flag |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
-  | T_TyInst : forall Delta Gamma t1 T2 T1n X K2 T0n T2n flag,
-      Delta ,, Gamma ;; flag |-+ t1 : (Ty_Forall X K2 T1n) ->
+      Delta ,, x |-> T1n; Gamma |-+ t : T2n -> 
+      Delta ,, Gamma |-+ (LamAbs x T1 t) : (Ty_Fun T1n T2n)
+  | T_Apply : forall Delta Gamma t1 t2 T1n T2n,
+      Delta ,, Gamma |-+ t1 : (Ty_Fun T1n T2n) ->
+      Delta ,, Gamma |-+ t2 : T1n ->
+      Delta ,, Gamma |-+ (Apply t1 t2) : T2n
+  (* Universal types *)
+  | T_TyAbs : forall Delta Gamma X K t Tn,
+      (X |-> K; Delta) ,, Gamma |-+ t : Tn ->
+      Delta ,, Gamma |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
+  | T_TyInst : forall Delta Gamma t1 T2 T1n X K2 T0n T2n,
+      Delta ,, Gamma |-+ t1 : (Ty_Forall X K2 T1n) ->
       Delta |-* T2 : K2 ->
       normalise T2 T2n ->
       normalise (substituteTCA X T2n T1n) T0n ->
-      Delta ,, Gamma ;; flag |-+ (TyInst t1 T2) : T0n
+      Delta ,, Gamma |-+ (TyInst t1 T2) : T0n
   (* Recursive types *)
-  | T_IWrap : forall Delta Gamma F T M K Tn Fn T0n flag,
+  | T_IWrap : forall Delta Gamma F T M K Tn Fn T0n,
       Delta |-* T : K ->
       normalise T Tn ->
       Delta |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
       normalise F Fn ->
       normalise (unwrapIFix Fn K Tn) T0n ->
-      Delta ,, Gamma ;; flag |-+ M : T0n ->
-      Delta ,, Gamma ;; flag |-+ (IWrap F T M) : (Ty_IFix Fn Tn)
-  | T_Unwrap : forall Delta Gamma M Fn K Tn T0n flag,
-      Delta ,, Gamma ;; flag |-+ M : (Ty_IFix Fn Tn) ->
+      Delta ,, Gamma |-+ M : T0n ->
+      Delta ,, Gamma |-+ (IWrap F T M) : (Ty_IFix Fn Tn)
+  | T_Unwrap : forall Delta Gamma M Fn K Tn T0n,
+      Delta ,, Gamma |-+ M : (Ty_IFix Fn Tn) ->
       Delta |-* Tn : K ->
       normalise (unwrapIFix Fn K Tn) T0n ->
-      Delta ,, Gamma ;; flag |-+ (Unwrap M) : T0n
+      Delta ,, Gamma |-+ (Unwrap M) : T0n
   (* Additional constructs *)
-  | T_Constant : forall Delta Gamma u a flag,
-      Delta ,, Gamma ;; flag |-+ (Constant (Some (ValueOf u a))) : (Ty_Builtin (Some (TypeIn u)))
-  | T_Builtin : forall Delta Gamma f T Tn flag,
+  | T_Constant : forall Delta Gamma u a,
+      Delta ,, Gamma |-+ (Constant (Some (ValueOf u a))) : (Ty_Builtin (Some (TypeIn u)))
+  | T_Builtin : forall Delta Gamma f T Tn,
       T = lookupBuiltinTy f ->
       normalise T Tn ->
-      Delta ,, Gamma ;; flag |-+ (Builtin f) : Tn
-  | T_Error : forall Delta Gamma S T Tn flag,
+      Delta ,, Gamma |-+ (Builtin f) : Tn
+  | T_Error : forall Delta Gamma S T Tn,
       Delta |-* T : Kind_Base ->
       normalise T Tn ->
-      Delta ,, Gamma ;; flag |-+ (Error S) : Tn
+      Delta ,, Gamma |-+ (Error S) : Tn
   (** Let-bindings
       Note: The rules for let-constructs differ significantly from the paper definitions
       because we had to adapt the typing rules to the compiler implementation of type checking.
       Reference: The Haskell module Language.PlutusIR.TypeCheck.Internal in the 
       iohk/plutus/plutus-core/plutus-ir project.
   **)
-  | T_Let : forall Delta Gamma bs t Tn Delta' Gamma' bsGn flag,
+  | T_Let : forall Delta Gamma bs t Tn Delta' Gamma' bsGn,
       Delta' = mupdate Delta (flatten (map binds_Delta bs)) ->
       map_normalise (flatten (map binds_Gamma bs)) bsGn -> 
       Gamma' = mupdate Gamma bsGn ->
-      Delta ,, Gamma ;; flag |-oks_nr bs ->
-      Delta' ,, Gamma' ;; flag |-+ t : Tn ->
-      (flag = NoEscape -> Delta |-* Tn : Kind_Base) ->
-      Delta ,, Gamma ;; flag |-+ (Let NonRec bs t) : Tn
-  | T_LetRec : forall Delta Gamma bs t Tn Delta' Gamma' bsGn flag,
+      Delta ,, Gamma |-oks_nr bs ->
+      Delta' ,, Gamma' |-+ t : Tn ->
+      Delta |-* Tn : Kind_Base ->
+      Delta ,, Gamma |-+ (Let NonRec bs t) : Tn
+  | T_LetRec : forall Delta Gamma bs t Tn Delta' Gamma' bsGn,
       Delta' = mupdate Delta (flatten (map binds_Delta bs)) ->
       map_normalise (flatten (map binds_Gamma bs)) bsGn -> 
       Gamma' = mupdate Gamma bsGn ->
-      Delta' ,, Gamma' ;; flag |-oks_r bs ->
-      Delta' ,, Gamma' ;; flag |-+ t : Tn ->
-      (flag = NoEscape -> Delta |-* Tn : Kind_Base) ->
-      Delta ,, Gamma ;; flag |-+ (Let Rec bs t) : Tn
+      Delta' ,, Gamma' |-oks_r bs ->
+      Delta' ,, Gamma' |-+ t : Tn ->
+      Delta |-* Tn : Kind_Base ->
+      Delta ,, Gamma |-+ (Let Rec bs t) : Tn
 
 with constructor_well_formed : Delta -> constructor -> Ty -> Prop :=
   | W_Con : forall Delta x T ar Targs Tr,
@@ -155,42 +153,42 @@ with constructor_well_formed : Delta -> constructor -> Ty -> Prop :=
       (forall U, In U Targs -> Delta |-* U : Kind_Base) ->
       Delta |-ok_c (Constructor (VarDecl x T) ar) : Tr
 
-with bindings_well_formed_nonrec : TypingFlag -> Delta -> Gamma -> list Binding -> Prop :=
-  | W_NilB_NonRec : forall Delta Gamma flag,
-    Delta ,, Gamma ;; flag |-oks_nr nil
-  | W_ConsB_NonRec : forall Delta Gamma b bs bsGn flag,
-      Delta ,, Gamma ;; flag |-ok_b b ->
+with bindings_well_formed_nonrec : Delta -> Gamma -> list Binding -> Prop :=
+  | W_NilB_NonRec : forall Delta Gamma,
+    Delta ,, Gamma |-oks_nr nil
+  | W_ConsB_NonRec : forall Delta Gamma b bs bsGn,
+      Delta ,, Gamma |-ok_b b ->
       map_normalise (binds_Gamma b) bsGn ->
-      (mupdate Delta (binds_Delta b)) ,, (mupdate Gamma bsGn) ;; flag |-oks_nr bs ->
-      Delta ,, Gamma ;; flag |-oks_nr (b :: bs)
+      (mupdate Delta (binds_Delta b)) ,, (mupdate Gamma bsGn) |-oks_nr bs ->
+      Delta ,, Gamma |-oks_nr (b :: bs)
 
-with bindings_well_formed_rec : TypingFlag -> Delta -> Gamma -> list Binding -> Prop :=
-  | W_NilB_Rec : forall Delta Gamma flag,
-      Delta ,, Gamma ;; flag |-oks_r nil
-  | W_ConsB_Rec : forall Delta Gamma b bs flag,
-      Delta ,, Gamma ;; flag |-ok_b b ->
-      Delta ,, Gamma ;; flag |-oks_r bs ->
-      Delta ,, Gamma ;; flag |-oks_r (b :: bs)
+with bindings_well_formed_rec : Delta -> Gamma -> list Binding -> Prop :=
+  | W_NilB_Rec : forall Delta Gamma,
+      Delta ,, Gamma |-oks_r nil
+  | W_ConsB_Rec : forall Delta Gamma b bs,
+      Delta ,, Gamma |-ok_b b ->
+      Delta ,, Gamma |-oks_r bs ->
+      Delta ,, Gamma |-oks_r (b :: bs)
 
-with binding_well_formed : TypingFlag -> Delta -> Gamma -> Binding -> Prop :=
-  | W_Term : forall Delta Gamma s x T t Tn flag,
+with binding_well_formed : Delta -> Gamma -> Binding -> Prop :=
+  | W_Term : forall Delta Gamma s x T t Tn,
       Delta |-* T : Kind_Base ->
       normalise T Tn ->
-      Delta ,, Gamma ;; NoEscape |-+ t : Tn ->
-      Delta ,, Gamma ;; flag |-ok_b (TermBind s (VarDecl x T) t)
-  | W_Type : forall Delta Gamma X K T flag,
+      Delta ,, Gamma |-+ t : Tn ->
+      Delta ,, Gamma |-ok_b (TermBind s (VarDecl x T) t)
+  | W_Type : forall Delta Gamma X K T,
       Delta |-* T : K ->
-      Delta ,, Gamma ;; flag |-ok_b (TypeBind (TyVarDecl X K) T)
-  | W_Data : forall Delta Gamma X YKs cs matchFunc Delta' flag,
+      Delta ,, Gamma |-ok_b (TypeBind (TyVarDecl X K) T)
+  | W_Data : forall Delta Gamma X YKs cs matchFunc Delta',
       Delta' = mupdate Delta (rev (map fromDecl YKs)) ->
       (forall c, In c cs -> Delta' |-ok_c c : (constrLastTy (Datatype X YKs matchFunc cs))) ->
-      Delta ,, Gamma ;; flag |-ok_b (DatatypeBind (Datatype X YKs matchFunc cs))
+      Delta ,, Gamma |-ok_b (DatatypeBind (Datatype X YKs matchFunc cs))
 
-  where "Delta ',,' Gamma ';;' flag '|-+' t ':' T" := (has_type flag Delta Gamma t T)
+  where "Delta ',,' Gamma '|-+' t ':' T" := (has_type Delta Gamma t T)
   and  "Delta '|-ok_c' c ':' T" := (constructor_well_formed Delta c T)
-  and "Delta ',,' Gamma ';;' flag '|-oks_nr' bs" := (bindings_well_formed_nonrec flag Delta Gamma bs)
-  and "Delta ',,' Gamma ';;' flag '|-oks_r' bs" := (bindings_well_formed_rec flag Delta Gamma bs)
-  and "Delta ',,' Gamma ';;' flag '|-ok_b' b" := (binding_well_formed flag Delta Gamma b).
+  and "Delta ',,' Gamma '|-oks_nr' bs" := (bindings_well_formed_nonrec Delta Gamma bs)
+  and "Delta ',,' Gamma '|-oks_r' bs" := (bindings_well_formed_rec Delta Gamma bs)
+  and "Delta ',,' Gamma '|-ok_b' b" := (binding_well_formed Delta Gamma b).
 
 Scheme has_type__ind := Minimality for has_type Sort Prop
   with constructor_well_formed__ind := Minimality for constructor_well_formed Sort Prop
@@ -204,28 +202,11 @@ Combined Scheme has_type__multind from
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
 
-Lemma has_type__normal : forall Delta Gamma flag t T,
-    Delta ,, Gamma ;; flag |-+ t : T ->
+Lemma has_type__normal : forall Delta Gamma t T,
+    Delta ,, Gamma |-+ t : T ->
     normal_Ty T.
 Proof with eauto.
   induction 1; intros; eauto using normalise_to_normal...
   - inversion IHhas_type1; subst...
     inversion H1.
-Qed.
-
-Lemma typing_subsumes_escaped_typing : 
-  (forall flag Delta Gamma t T, Delta ,, Gamma ;; flag |-+ t : T -> 
-    (Delta ,, Gamma ;; Escape |-+ t : T)) /\
-  (forall flag Delta Gamma bs, Delta ,, Gamma ;; flag |-oks_nr bs ->
-    (Delta ,, Gamma ;; Escape |-oks_nr bs)) /\
-  (forall flag Delta Gamma bs, Delta ,, Gamma ;; flag |-oks_r bs ->
-    (Delta ,, Gamma ;; Escape |-oks_r bs)) /\
-  (forall flag Delta Gamma b, Delta ,, Gamma ;; flag |-ok_b b ->
-    (Delta ,, Gamma ;; Escape |-ok_b b)).
-Proof with eauto.
-  apply has_type__multind
-    with (P0 := fun (Delta : Delta) (c : constructor) (T : Ty) => True).
-  all: intros.
-  all: try (destruct flag).
-  all: try solve [econstructor; eauto].
 Qed.
