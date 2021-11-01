@@ -60,12 +60,12 @@ Inductive eval : Term -> Term -> nat -> Prop :=
       ~ is_error v2 ->
       Apply nv1 v2 =[j0]=> v0 ->
       Apply t1 t2 =[j1 + j2 + 1 + j0]=> v0
-  | E_NeutralTyInstPartial : forall t1 T nv1 v0 j1 j2 j0,
+  | E_NeutralTyInstPartial : forall t1 T nv1 v0 j1 j0,
       ~ neutral (TyInst t1 T) ->
       t1 =[j1]=> nv1 ->
       neutral nv1 ->
       TyInst nv1 T =[j0]=> v0 ->
-      TyInst t1 T =[j1 + j2 + 1 + j0]=> v0
+      TyInst t1 T =[j1 + 1 + j0]=> v0
   | E_NeutralApplyFull: forall nv1 v2 v,
       fully_applied (Apply nv1 v2) ->
       compute_defaultfun (Apply nv1 v2) = Datatypes.Some v ->
@@ -121,7 +121,6 @@ Inductive eval : Term -> Term -> nat -> Prop :=
   | E_Error_Unwrap : forall t0 j0 T,
       t0 =[j0]=> Error T ->
       Unwrap t0 =[j0 + 1]=> Error T
-  (* TODO: Errors propagate *)
 
   (** Let-bindings *)
   | E_Let : forall bs t v j,
@@ -137,30 +136,24 @@ with eval_bindings_nonrec : Term -> Term -> nat -> Prop :=
       Let NonRec nil t0 =[ j0 + 1 ]=>nr v0
   | E_Let_TermBind : forall s x T t1 j1 v1 j2 v2 bs t0,
       t1 =[j1]=> v1 ->
+      ~ is_error v1 ->
       <{ [v1 / x] ({Let NonRec bs t0}) }> =[j2]=>nr v2 ->
       Let NonRec ((TermBind s (VarDecl x T) t1) :: bs) t0 =[j1 + 1 + j2]=>nr v2
-  | E_Let_TypeBind : forall X K T bs t j1 v1,
-      <{ [[T / X] ({Let NonRec bs t}) }> =[j1]=> v1 ->
-      Let NonRec ((TypeBind (TyVarDecl X K) T) :: bs) t =[j1 + 1]=>nr v1
+  | E_Let_TypeBind : forall X K T bs t0 j1 v1,
+      <{ [[T / X] ({Let NonRec bs t0}) }> =[j1]=> v1 ->
+      Let NonRec ((TypeBind (TyVarDecl X K) T) :: bs) t0 =[j1 + 1]=>nr v1
   (* Error propagation *)
   | E_Error_Let_TermBind : forall s x T t1 j1 T' bs t0,
       t1 =[j1]=> Error T' ->
       Let NonRec ((TermBind s (VarDecl x T) t1) :: bs) t0 =[j1 + 1]=>nr Error T'
-  | E_Error_Let_TypeBind : forall X K T bs t j1 T',
-      <{ [[T / X] ({Let NonRec bs t}) }> =[j1]=> Error T' ->
-      Let NonRec ((TypeBind (TyVarDecl X K) T) :: bs) t =[j1 + 1]=>nr Error T'
 
 with eval_bindings_rec : list Binding -> Term -> Term -> nat -> Prop :=
   | E_LetRec_Nil : forall bs0 t0 v0 j0,
       t0 =[j0]=> v0 ->
       Let Rec nil t0 =[j0 + 1]=>r v0 WITH bs0
-  | E_LetRec_TermBind : forall bs0 s x T bs t0 t1 v2 j2,
-      <{ [ {Let Rec bs0 t1} / x] {Let Rec bs t0} }> =[j2]=>r v2 WITH bs0 ->
-      Let Rec ((TermBind s (VarDecl x T) t1) :: bs) t0 =[j2 + 1]=>r v2 WITH bs0
-  (* Error propagation *)
-  | E_Error_LetRec_TermBind : forall bs0 s x T bs t0 t1 T' j2,
-      <{ [ {Let Rec bs0 t1} / x] {Let Rec bs t0} }> =[j2]=>r Error T' WITH bs0 ->
-      Let Rec ((TermBind s (VarDecl x T) t1) :: bs) t0 =[j2 + 1]=>r Error T' WITH bs0
+  | E_LetRec_TermBind : forall bs0 s x T bs t0 t1 v1 j1,
+      <{ [ {Let Rec bs0 t1} / x] {Let Rec bs t0} }> =[j1]=>r v1 WITH bs0 ->
+      Let Rec ((TermBind s (VarDecl x T) t1) :: bs) t0 =[j1 + 1]=>r v1 WITH bs0
 
 where "t '=[' j ']=>' v" := (eval t v j)
 and "t '=[' j ']=>nr' v" := (eval_bindings_nonrec t v j)

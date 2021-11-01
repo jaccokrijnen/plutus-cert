@@ -11,10 +11,10 @@ Inductive value : Term -> Prop :=
       value (LamAbs x T t0) 
   | V_TyAbs : forall X K t,
       value (TyAbs X K t)
-  | V_IWrap : forall F T t,
-      ~ is_error t ->
-      value t ->
-      value (IWrap F T t)
+  | V_IWrap : forall F T v,
+      value v ->
+      ~ is_error v ->
+      value (IWrap F T v)
   | V_Constant : forall u,
       value (Constant u)
   | V_Error : forall T,
