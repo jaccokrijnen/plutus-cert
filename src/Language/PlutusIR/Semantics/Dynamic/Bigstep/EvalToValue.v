@@ -36,17 +36,13 @@ Proof with (try discriminate).
   all: try constructor.
 Qed.
 
-Definition P_eval (t v : Term) (k : nat) := value v.
-Definition P_eval_bindings_nonrec (t v : Term) (k : nat) := value v.
-Definition P_eval_bindings_rec (bs0 : list Binding) (t v : Term) (k : nat) := value v.
-#[export] Hint Unfold P_eval P_eval_bindings_nonrec P_eval_bindings_rec : core.
-
-Lemma eval_to_value : forall t v k,
-    t =[k]=> v -> value v.
+Lemma eval_to_value : 
+    (forall t v k, t =[k]=> v -> value v) /\
+    (forall t v k, t =[k]=>nr v -> value v) /\
+    (forall bs0 t v k, t =[k]=>r v WITH bs0 -> value v).
 Proof with eauto.
-  eapply eval__ind with (P := P_eval) (P0 := P_eval_bindings_nonrec) (P1 := P_eval_bindings_rec).
+  apply eval__multind.
   all: intros.
-  all: autounfold.
   all: eauto using compute_defaultfun__to_value.
   - (* E_IWrap *)
     inversion H0...
