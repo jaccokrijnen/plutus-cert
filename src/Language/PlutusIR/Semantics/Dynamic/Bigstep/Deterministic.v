@@ -112,8 +112,6 @@ Ltac h n :=
       end
   end.
 
-Axiom skip : forall P, P.
-
 (** ** The main result *)
 Theorem eval__deterministic : forall x y1 j1,
   x =[j1]=> y1 ->

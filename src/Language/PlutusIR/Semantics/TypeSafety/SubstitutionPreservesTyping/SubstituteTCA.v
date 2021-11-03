@@ -6,7 +6,7 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 
 Theorem substituteTCA_preserves_kinding : forall T Delta X K U L,
     (X |-> L; Delta) |-* T : K ->
-    empty |-* U : L ->
+    Delta |-* U : L ->
     Delta |-* (substituteTCA X U T) : K.
 Proof with eauto with typing.
   induction T.
@@ -20,7 +20,6 @@ Proof with eauto with typing.
     + (* X = Y *)
       apply eqb_eq in Heqb as Heq.
       subst.
-      apply Kinding.weakening_empty.
       rewrite update_eq in H1.
       inversion H1.
       subst...

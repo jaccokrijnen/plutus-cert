@@ -63,11 +63,14 @@ src/Language/PlutusIR/Semantics/Static/Theorems/UniqueTypes.v
 src/Language/PlutusIR/Semantics/Static/Theorems/Weakening.v
 src/Language/PlutusIR/Semantics/Static/TypeSubstitution.v
 
+src/Language/PlutusIR/Semantics/TypeSafety/BaseKindedness.v
 src/Language/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping.v
 src/Language/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping/AnnotationSubstitution.v
 src/Language/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping/TermSubstitution.v
 src/Language/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping/TypeSubstitution.v
 src/Language/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping/SubstituteTCA.v
+src/Language/PlutusIR/Semantics/TypeSafety/TypeLanguage/StrongNormalisation.v
+src/Language/PlutusIR/Semantics/TypeSafety/TypeLanguage/Preservation.v
 
 # src/Language/PlutusIR/Semantics/SemanticEquivalence/Auto.v
 # src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas.v

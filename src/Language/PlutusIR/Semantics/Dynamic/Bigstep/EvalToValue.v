@@ -55,3 +55,18 @@ Proof with eauto.
     all: try solve [intros Hcon; inversion Hcon].
     all: unfold arity...
 Qed.
+
+Corollary eval_to_value__eval : forall t v k, 
+    t =[k]=> v -> 
+    value v.
+Proof. apply eval_to_value. Qed.
+
+Corollary eval_to_value__eval_bindings_nonrec : forall t v k, 
+    t =[k]=>nr v -> 
+    value v.
+Proof. apply eval_to_value. Qed.
+
+Corollary eval_to_value__eval_bindings_rec : forall bs0 t v k, 
+    t =[k]=>r v WITH bs0 -> 
+    value v.
+Proof. apply eval_to_value. Qed.

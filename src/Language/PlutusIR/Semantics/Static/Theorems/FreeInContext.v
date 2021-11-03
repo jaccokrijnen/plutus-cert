@@ -23,6 +23,17 @@ Module Ty.
       rewrite update_neq in H5...
   Qed.
 
+  Corollary kindable_empty__closed : forall T K,
+      empty |-* T : K ->
+      Ty.closed T.
+  Proof with eauto.
+    intros. unfold Ty.closed.
+    intros x H1.
+    eapply free_in_context in H1...
+    destruct H1 as [T' C]...
+    discriminate C.
+  Qed.
+
 End Ty.
 
 Module Term.
