@@ -44,7 +44,8 @@ Inductive eval : Term -> Term -> nat -> Prop :=
       Constant a =[0]=> Constant a
   (** Builtins *)
   | E_NeutralBuiltin : forall f,
-      f <> IfThenElse ->
+      (* NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity. *)
+      (* f <> IfThenElse -> *)
       Builtin f =[0]=> Builtin f
   | E_NeutralApply : forall nv v,
       neutral (Apply nv v) ->
@@ -79,8 +80,10 @@ Inductive eval : Term -> Term -> nat -> Prop :=
       We handle this built-in function separately because it has a unique behaviour:
       The ``then''-branch should only be evaluated when the condition is true,
       and the opposite is true for the ``else''-branch.
+
+      NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity.
   *)
-  | E_IfBuiltin :
+  (* | E_IfBuiltin :
       Builtin IfThenElse =[0]=> Builtin IfThenElse
   | E_IfTyInst : forall t1 T j1,
       t1 =[j1]=> Builtin IfThenElse ->
@@ -102,7 +105,7 @@ Inductive eval : Term -> Term -> nat -> Prop :=
   | E_IfFalse : forall T t1 t2 t3 j1 j3 v3,
       t1 =[j1]=> Constant (Some (ValueOf DefaultUniBool false)) ->
       t3 =[j3]=> v3 ->
-      Apply (Apply (Apply (TyInst (Builtin IfThenElse) T) t1) t2) t3 =[j1 + 1 + j3]=> v3
+      Apply (Apply (Apply (TyInst (Builtin IfThenElse) T) t1) t2) t3 =[j1 + 1 + j3]=> v3 *)
   (* Errors and their propagation *)
   | E_Error : forall T,
       Error T =[0]=> Error T
@@ -168,8 +171,36 @@ Combined Scheme eval__multind from
   eval_bindings_nonrec__ind,
   eval_bindings_rec__ind.
 
+Create HintDb hintdb__eval_no_error.
+
+#[export] Hint Resolve
+  E_LamAbs
+  E_Apply
+  E_TyAbs
+  E_TyInst
+  E_IWrap
+  E_Unwrap
+  E_Constant
+  E_NeutralBuiltin
+  E_NeutralApply
+  E_NeutralTyInst
+  E_NeutralApplyPartial
+  E_NeutralTyInstPartial
+  E_NeutralApplyFull
+  E_NeutralTyInstFull
+  E_Let
+  E_LetRec
+  E_Let_Nil
+  E_Let_TermBind
+  E_Let_TypeBind
+  E_LetRec_Nil
+  E_LetRec_TermBind
+  : hintdb__eval_no_error.
+
+Create HintDb hintdb__eval_with_error.
+
 #[export] Hint Constructors
   eval
   eval_bindings_nonrec
   eval_bindings_rec
-  : core.
+  : hintdb__eval_with_error.

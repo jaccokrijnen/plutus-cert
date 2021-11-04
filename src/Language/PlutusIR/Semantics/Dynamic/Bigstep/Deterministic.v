@@ -137,49 +137,4 @@ Proof with eauto.
       autounfold in H14.
       e.
       g.
-    + inversion H.
-      * subst. inversion H9.
-        -- subst. inversion H13.
-           ++ subst. inversion H17.
-           ++ subst. inversion H18.
-              ** subst. inversion H20.
-                 subst. exfalso...
-              ** subst. inversion H20.
-                 subst. exfalso...
-           ++ subst. inversion H17.
-              subst. inversion H18.
-              subst. exfalso...
-        -- subst. inversion H14.
-           ++ subst. inversion H19.
-           ++ subst. inversion H22.
-              subst. inversion H19.
-              subst. exfalso...
-           ++ subst. inversion H20.
-              ** subst. inversion H22.
-                 subst. exfalso...
-              ** subst. inversion H22.
-                 subst. exfalso...
-           ++ subst. inversion H19.
-              subst. inversion H20.
-              subst. exfalso...
-           ++ subst. inversion H16.
-              subst. inversion H19.
-              subst. exfalso...
-           ++ subst. inversion H16.
-        -- subst. inversion H13.
-           subst. inversion H19.
-           subst. inversion H16.
-           subst. exfalso...
-        -- subst.
-           inversion H13.
-           ++ subst. inversion H14.
-           ++ subst. inversion H16.
-              ** subst. exfalso... 
-              ** subst. inversion H18.
-                 subst. exfalso...
-           ++ subst. inversion H19.
-      * admit.
-      * admit.
-      * admit.
-    +  admit.
 Admitted.

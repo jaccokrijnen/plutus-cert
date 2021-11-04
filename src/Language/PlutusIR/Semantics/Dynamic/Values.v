@@ -23,19 +23,23 @@ Inductive value : Term -> Prop :=
   | V_Neutral : forall nv,
       neutral_value 0 nv ->
       value nv
-  (** If-Then-Else constructs *)
-  | V_If : 
+  (** If-Then-Else constructs 
+
+      NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity.
+  *)
+  (* | V_If : 
       value (Builtin IfThenElse)
   | V_If1 : forall T,
       value (TyInst (Builtin IfThenElse) T)
   | V_If2 : forall T cond,
       value (Apply (TyInst (Builtin IfThenElse) T) cond)
   | V_If3 : forall T cond t,
-      value (Apply (Apply (TyInst (Builtin IfThenElse) T) cond) t)
+      value (Apply (Apply (TyInst (Builtin IfThenElse) T) cond) t) *)
 
 with neutral_value : nat -> Term -> Prop :=
   | NV_Builtin : forall n f,
-      f <> IfThenElse ->
+      (* NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity. *)
+      (* f <> IfThenElse -> *)
       n < arity f ->
       neutral_value n (Builtin f)
   | NV_Apply : forall n nv v,
@@ -64,7 +68,8 @@ Definition neutral (t : Term) := neutral_value 0 t.
 
 Inductive fully_applied_neutral : nat -> Term -> Prop :=
   | FA_Builtin : forall n f,
-      f <> IfThenElse ->
+      (* NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity. *)
+      (* f <> IfThenElse -> *)
       n = arity f ->
       fully_applied_neutral n (Builtin f)
   | FA_Apply : forall n nv v,
