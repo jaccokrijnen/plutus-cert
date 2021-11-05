@@ -6,3 +6,6 @@ Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Logica
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RG.Helpers.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RV.Helpers.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.Subst.
+
+Require Export PlutusCert.Util.Map.Mupdate.
+Require Export PlutusCert.Util.List.

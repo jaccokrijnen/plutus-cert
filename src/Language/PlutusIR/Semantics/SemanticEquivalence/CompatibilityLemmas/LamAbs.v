@@ -1,7 +1,9 @@
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
-Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RelationalModel.
-Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Monotonicity.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.BaseKindedness.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Auto.
 
 Require Import Arith.
@@ -14,7 +16,7 @@ Proof.
   - reflexivity.
   - destruct a.
     simpl.
-    destruct (s =? x) eqn:Heqb.
+    destruct (s =? x)%string eqn:Heqb.
     + eauto using eqb_eq.
     + eauto using eqb_neq.
 Qed.
@@ -36,16 +38,17 @@ Proof.
 Qed.
 
 Lemma msubst_term__fold : forall ss x v t,
-    msubst_term ss <{ [v / x] t }> = msubst_term ((x, v) :: ss) t.
+    msubst_term ss <{ [v / x] t }> = msubst_term ((x, v) :: ss)%list t.
 Proof. induction ss; intros; auto. Qed.
 
 
-Lemma compatibility_LamAbs : forall Delta Gamma x T1 e e' T2,
+Lemma compatibility_LamAbs : forall Delta Gamma x T1 T1n T2n e e',
     Delta |-* T1 : Kind_Base ->
-    LR_logically_approximate Delta (x |-> T1; Gamma) e e' T2 ->
-    LR_logically_approximate Delta Gamma (LamAbs x T1 e) (LamAbs x T1 e') (Ty_Fun T1 T2).
+    normalise T1 T1n ->
+    LR_logically_approximate Delta (x |-> T1n; Gamma) e e' T2n ->
+    LR_logically_approximate Delta Gamma (LamAbs x T1 e) (LamAbs x T1 e') (Ty_Fun T1n T2n).
 Proof with eauto_LR.
-  intros Delta Gamma x T1 eb eb' T2 Hkind__T1 IH_LR.
+  intros Delta Gamma x T1 T1n T2n eb eb' Hkind__T1 Hnorm__T1n IH_LR.
   unfold LR_logically_approximate.
 
   destruct IH_LR as [Htyp__e [Htyp__e' IH]].
@@ -68,15 +71,53 @@ Proof with eauto_LR.
   
   eexists. eexists.
 
-  split. eapply eval_value. apply V_LamAbs.
+  split... eapply E_LamAbs...
 
-  split... apply skip.
-  split... apply skip.
+  split... {
+    rewrite <- msubst_LamAbs. rewrite <- msubstA_LamAbs.
+    eapply preservation in Hkind__T1 as H...
+    eapply msubstT_preserves_kinding_1 in H as H0...
+    eapply has_type__basekinded in Htyp__e as H1.
+    eapply msubstT_preserves_kinding_1 in H1 as H2...
+    apply K_Fun with (T1 := msubstT (msyn1 rho) T1n) in H2 as H3...
+    eapply strong_normalisation in H3 as H4.
+    destruct H4.
+    exists x0...
+    split...
+    inversion H4. subst.
+    replace (@empty Ty) with (mgsubst (msyn1 rho) empty) by eauto using mgsubst_empty.
+    eapply msubst_preserves_typing_1...
+    eapply msubstA_preserves_typing_1...
+    rewrite msubstT_TyFun.
+    econstructor...
+  }
+  split... {
+    rewrite <- msubst_LamAbs. rewrite <- msubstA_LamAbs.
+    eapply preservation in Hkind__T1 as H...
+    eapply msubstT_preserves_kinding_2 in H as H0...
+    eapply has_type__basekinded in Htyp__e' as H1.
+    eapply msubstT_preserves_kinding_2 in H1 as H2...
+    apply K_Fun with (T1 := msubstT (msyn2 rho) T1n) in H2 as H3...
+    eapply strong_normalisation in H3 as H4.
+    destruct H4.
+    exists x0...
+    split...
+    inversion H4. subst.
+    replace (@empty Ty) with (mgsubst (msyn2 rho) empty) by eauto using mgsubst_empty.
+    eapply msubst_preserves_typing_2...
+    eapply msubstA_preserves_typing_2...
+    rewrite msubstT_TyFun.
+    econstructor...
+  }
 
   left.
 
-  eexists. eexists. eexists. eexists.
+  split... intros Hcon. inversion Hcon.
+  split... intros Hcon. inversion Hcon.
 
+  eexists. eexists. eexists. eexists. eexists.
+
+  split...
   split...
   split...
 
@@ -85,12 +126,21 @@ Proof with eauto_LR.
 
   apply RV_unfolded_to_RV in HRV.
 
-  apply RC_lt.
+  apply RC_lt_obsolete.
   
   intros Hlt.
 
-  assert (closed v_0) by eauto using typable_empty__closed, RV_typable_empty_1.
-  assert (closed v'_0) by eauto using typable_empty__closed, RV_typable_empty_2.
+  assert (Hcls__v_0 : closed v_0). {
+    eapply RV_typable_empty_1 in HRV...
+    destruct HRV as [H [H0 H1]].
+    eapply typable_empty__closed...
+  }
+  assert (Hcls__v'_0 : closed v'_0). {
+    eapply RV_typable_empty_2 in HRV...
+    destruct HRV as [H [H0 H1]].
+    eapply typable_empty__closed...
+  }
+  
   eapply RG_env_closed in H_RG as Hclss...
   destruct Hclss as [Hcls__env Hcls__env'].
 

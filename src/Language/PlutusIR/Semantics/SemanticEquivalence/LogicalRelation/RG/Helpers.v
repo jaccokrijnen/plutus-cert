@@ -21,8 +21,10 @@ Proof.
   generalize dependent T2.
   induction H; intros.
   - econstructor.
-  -  
-Admitted.
+  - econstructor; eauto.
+    apply RV_extend_rho.
+    eauto.
+Qed.
 
 Lemma RG_domains_match : forall c e1 e2 k rho,
     RG rho k c e1 e2 ->
@@ -38,7 +40,7 @@ Proof.
   - simpl.
     simpl in C.
     destruct (x =? x0) eqn:Heqb.
-    + exists (msubstA_term (msyn1 rho) v1), (msubstA_term (msyn2 rho) v2). split; auto.
+    + exists v1, v2. split; auto.
     + apply IHV with T0.
       assumption.
 Qed.
@@ -69,7 +71,7 @@ Proof.
   - split; reflexivity.
   - split.
     + simpl.
-      split.
+      split. 
       * eapply RV_typable_empty_1 in H; eauto.
         destruct H as [Tn [Hnorm__Tn Htyp__v1]].
         eapply typable_empty__closed.

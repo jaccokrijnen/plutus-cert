@@ -34,22 +34,6 @@ Proof.
   - destruct a. eauto.
 Qed.
 
-
-Lemma test : forall ck k T rho e e',
-  RV k T rho e e' ->
-  RD ck rho ->
-  0 < k ->
-  ~ is_error e ->
-  ~ is_error e'.
-Proof with eauto.
-  intros.
-  apply RV_condition in H...
-  destruct H as [H | H].
-  - destruct H as [Hnerr [Hnerr' H]]...
-  - destruct H as [Herr Herr']...
-Qed.
-  
-
 Lemma compatibility_Apply : forall Delta Gamma e1 e2 e1' e2' T1 T2 ,
     LR_logically_approximate Delta Gamma e1 e1' (Ty_Fun T1 T2) ->
     LR_logically_approximate Delta Gamma e2 e2' T1 ->
@@ -120,7 +104,7 @@ Proof with eauto_LR.
       destruct temp as [e'_f [j'_3 [Hev__e'_f HRV0]]].
 
       eexists. eexists. 
-      split. eapply E_Apply... eapply test...
+      split. eapply E_Apply... apply RV_error in HRV2... destruct HRV2 as [ [Hnerr0 Hnerr0'] | [Herr0 Herr0']]...
 
       split. eapply RV_typable_empty_1...
       split. eapply RV_typable_empty_2...

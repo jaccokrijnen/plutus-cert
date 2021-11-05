@@ -43,7 +43,7 @@ Lemma RV_typable_empty_2 : forall k T rho v v',
     (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\ (empty ,, empty |-+ v' : Tn')).
 Proof. intros. destruct (RV_typable_empty _ _ _ _ _ H H0) as [Htyp__v Htyp__v']. eauto. Qed.
 
-(** Equivalnce of step-index implies equivalence of RV *)
+(** Equivalence of step-index implies equivalence of RV *)
 
 Lemma RV_equiv : forall k k' T rho e e',
     RV k T rho e e' ->
@@ -52,6 +52,26 @@ Lemma RV_equiv : forall k k' T rho e e',
 Proof. intros. subst. eauto. Qed.
 
 (** Easy access to the RV conditions *)
+
+Lemma RV_error : forall k T rho v v',
+    RV k T rho v v' ->
+    0 < k ->
+
+    (~ is_error v /\ ~ is_error v' ) \/
+    (is_error v /\ is_error v').
+Proof. 
+  intros.
+  destruct H as [Hval__v [Hval__v' HRC]].
+  apply eval_value__value in Hval__v as Hev__v.
+  apply eval_value__value in Hval__v' as Hev__v'.
+  autorewrite with RC in HRC.
+  apply HRC in Hev__v as temp; eauto.
+  clear HRC.
+  destruct temp as [v'' [j'' [Hev__v'' [_ [_ [ [Hnerr [Hnerr' _]] | Herr]]]]]].
+  all: assert (v'' = v' /\ j'' = 0) by (eapply eval__deterministic; eauto).
+  all: destruct H; subst.
+  all: eauto.
+Qed.
 
 Lemma RV_condition : forall k T rho v v',
     RV k T rho v v' ->
@@ -234,3 +254,28 @@ Corollary RV_instantiational_extensionality : forall k bX K T rho v v',
       is_error v'
     ).
 Proof. intros. eapply RV_condition in H. all: eauto. Qed.
+
+(** Tymapping extension *)
+
+Lemma RV_extend_rho : forall X Chi T1 T2 rho k T v v',
+    RV k T rho v v' ->
+    RV k T ((X, (Chi, T1, T2)) :: rho) v v'.
+Proof with eauto.
+  intros.
+  remember H as H0.
+  clear HeqH0.
+  destruct H0 as [Hval__v [Hval__v' HRC]].
+  apply eval_value__value in Hval__v as Hev__v.
+  unfold RV.
+  split... split...
+  autorewrite with RC.
+  intros j Hlt__j e_f Hev__e_f.
+  assert (e_f = v /\ j = 0) by (eapply eval__deterministic; eauto).
+  destruct H0. subst.
+  exists v', 0. split. eapply eval_value__value...
+  apply RV_condition in H...
+Admitted.
+(* TODO: We admit this, but this is not entirely correct. This lemma
+   is only correct if X does not appear
+   freely in the type annotations and types of v and v'.
+*)

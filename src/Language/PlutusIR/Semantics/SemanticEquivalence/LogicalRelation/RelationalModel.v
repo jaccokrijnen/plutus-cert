@@ -187,10 +187,10 @@ Inductive RG (rho : tymapping) (k : nat) : tass -> env -> env -> Prop :=
   | RG_nil :
       RG rho k nil nil nil
   | RG_cons : forall x T v1 v2 c e1 e2,
-      RV k T rho (msubstA_term (msyn1 rho) v1) (msubstA_term (msyn2 rho) v2) ->
+      RV k T rho v1 v2 ->
       normal_Ty T ->
       RG rho k c e1 e2 ->
-      RG rho k ((x, T) :: c) ((x, msubstA_term (msyn1 rho) v1) :: e1) ((x, msubstA_term (msyn2 rho) v2) :: e2).
+      RG rho k ((x, T) :: c) ((x, v1) :: e1) ((x, v2) :: e2).
   
 Fixpoint closed_env (env : env) :=
   match env with
