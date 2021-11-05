@@ -1,7 +1,10 @@
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
-Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RelationalModel.
-Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Monotonicity.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.BaseKindedness.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.Monotonicity.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Auto.
 
 From Coq Require Import Lia.
@@ -22,6 +25,30 @@ Proof.
   - reflexivity.
   - destruct a. eauto.
 Qed.
+
+Lemma msubstT_TyFun : forall ss T1 T2,
+    msubstT ss (Ty_Fun T1 T2) = Ty_Fun (msubstT ss T1) (msubstT ss T2).
+Proof.
+  induction ss.
+  - reflexivity.
+  - destruct a. eauto.
+Qed.
+
+
+Lemma test : forall ck k T rho e e',
+  RV k T rho e e' ->
+  RD ck rho ->
+  0 < k ->
+  ~ is_error e ->
+  ~ is_error e'.
+Proof with eauto.
+  intros.
+  apply RV_condition in H...
+  destruct H as [H | H].
+  - destruct H as [Hnerr [Hnerr' H]]...
+  - destruct H as [Herr Herr']...
+Qed.
+  
 
 Lemma compatibility_Apply : forall Delta Gamma e1 e2 e1' e2' T1 T2 ,
     LR_logically_approximate Delta Gamma e1 e1' (Ty_Fun T1 T2) ->
@@ -77,7 +104,8 @@ Proof with eauto_LR.
     apply RV_functional_extensionality in HRV1 as temp...
 
     destruct temp as [temp | temp].
-    + destruct temp as [x0 [e_body [ x0' [e'_body [Heq [Heq' Hfe]]]]]].
+    + destruct temp as [Hnerr [Hnerr' temp]]. 
+      destruct temp as [x0 [e_body [x0' [e'_body [T1p [Hnorm__T1p [Heq [Heq' Hfe]]]]]]]].
       inversion Heq. subst. clear Heq.
 
       apply RV_monotone with (i := k - j_1 - j_2 - 1) (ck := ck)  in HRV2...
@@ -92,71 +120,102 @@ Proof with eauto_LR.
       destruct temp as [e'_f [j'_3 [Hev__e'_f HRV0]]].
 
       eexists. eexists. 
-      split. eapply E_Apply...
+      split. eapply E_Apply... eapply test...
 
       split. eapply RV_typable_empty_1...
       split. eapply RV_typable_empty_2...
-
       eapply RV_condition...
-    + destruct temp as [f [args [f' [args' [H _]]]]]. inversion H.
-  - (* E_ApplyExtBuiltin *)
-    rename v2 into e_f2.
+    + destruct temp as [Herr Herr'].
+      inversion Herr.
+  - (* E_NeutralApply *)
+    admit.
+  - (* E_NeutralApplyPartial *)
+    admit.
+  - (* E_NeutralApplyFull *)
+    admit.
+  - (* E_Error_Apply1 *)
     rename j1 into j_1.
-    rename j2 into j_2.
-    rename j3 into j_3.
 
     assert (HRC1 : 
       RC k (Ty_Fun T1 T2) rho 
         (msubst_term env (msubstA_term (msyn1 rho) e1)) 
         (msubst_term env' (msubstA_term (msyn2 rho) e1'))
-    ) by eauto.
+    )...
 
-    eapply RC_to_RV with (j := j_1) (e_f := ExtBuiltin f args) in HRC1 as temp...
+    apply RC_to_RV with (j := j_1) (e_f := Error T) in HRC1 as temp...
     destruct temp as [e'_f1 [j'_1 [Hev__e'_f1 HRV1]]].
 
-    assert (k - j_1 <= k)...
+    apply RV_condition in HRV1 as temp...
+    destruct temp as [temp | temp].
+    + destruct temp. exfalso. apply H. econstructor.
+    + destruct temp.
+      inversion H0. subst.
+
+      eexists. eexists.
+      split. eapply E_Error_Apply1...
+
+      split. {
+        apply has_type__basekinded in Htyp__e1.
+        inversion Htyp__e1. subst.
+        eapply msubstT_preserves_kinding_1 in H6...
+        apply strong_normalisation in H6 as H7.
+        destruct H7.
+        exists x.
+        split...
+      }
+
+      split. {
+        apply has_type__basekinded in Htyp__e1.
+        inversion Htyp__e1. subst.
+        eapply msubstT_preserves_kinding_2 in H6...
+        apply strong_normalisation in H6 as H7.
+        destruct H7.
+        exists x.
+        split...
+      }
+
+      right...
+      
+  - (* E_Error_Apply2 *)
+    rename j2 into j_2.
+
     assert (HRC2 : 
-      RC (k - j_1) T1 rho 
+      RC k T1 rho 
         (msubst_term env (msubstA_term (msyn1 rho) e2)) 
         (msubst_term env' (msubstA_term (msyn2 rho) e2'))
     ) by eauto using RG_monotone.
-    clear H.
 
-    apply RC_to_RV  with (j := j_2) (e_f := e_f2) in HRC2 as temp...
+    apply RC_to_RV  with (j := j_2) (e_f := Error T) in HRC2 as temp...
     destruct temp as [e'_f2 [j'_2 [Hev__e'_f2 HRV2]]].
 
-    apply RV_functional_extensionality in HRV1 as temp...
-
+    apply RV_condition in HRV2 as temp...
     destruct temp as [temp | temp].
-    + destruct temp as [x0 [e_body [ x0' [e'_body [Heq [Heq' Hfe]]]]]].
-      inversion Heq.
-    + destruct temp as [f0 [args0 [f0' [args0' [Heq [Heq' Hfe]]]]]].
-      inversion Heq. inversion Heq'. subst. clear H. 
+    + destruct temp. exfalso. apply H. econstructor.
+    + destruct temp.
+      inversion H0. subst.
 
-      apply RV_monotone with (i := k - j_1 - j_2 - 1) (ck := ck) in HRV2...
+      eexists. eexists.
+      split. eapply E_Error_Apply2...
 
-      apply Hfe with (i := k - j_1 - j_2 - 1) in HRV2 as HRC0...
+      split. {
+        apply has_type__basekinded in Htyp__e1.
+        inversion Htyp__e1. subst.
+        eapply msubstT_preserves_kinding_1 in H6...
+        apply strong_normalisation in H6 as H7.
+        destruct H7.
+        exists x.
+        split...
+      }
 
-      assert (k - (j_1 + j_2 + 1 + j_3) = k - j_1 - j_2 - 1 - j_3)...
-      rewrite H.
-      clear H.
+      split. {
+        apply has_type__basekinded in Htyp__e1.
+        inversion Htyp__e1. subst.
+        eapply msubstT_preserves_kinding_2 in H6...
+        apply strong_normalisation in H6 as H7.
+        destruct H7.
+        exists x.
+        split...
+      }
 
-      apply RC_to_RV with (j := j_3) (e_f := e_f) in HRC0 as temp...
-      destruct temp as [e'_f [j'_3 [Hev__e'_f HRV0]]].
-
-      eexists. eexists. 
-      split. eapply E_ApplyExtBuiltin...
-
-      split. eapply RV_typable_empty_1...
-      split. eapply RV_typable_empty_2...
-
-      eapply RV_condition...
-  - (* E_IfCondition *)
-    apply skip.
-  - (* E_IfThenBranch *)
-    apply skip.
-  - (* E_IfTrue *)
-    apply skip.
-  - (* E_IfFalse *)
-    apply skip.
+      right...
 Admitted.
