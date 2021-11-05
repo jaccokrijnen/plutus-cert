@@ -5,6 +5,8 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Auto.
 
 Require Import Arith.
 
+
+
 Lemma msubst_Constant : forall ss sv,
     msubst_term ss (Constant sv) = Constant sv.
 Proof.

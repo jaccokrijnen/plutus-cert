@@ -1,7 +1,7 @@
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
-Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RelationalModel.
-Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Monotonicity.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.Monotonicity.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Auto.
 Require Import PlutusCert.Util.
 Require Import PlutusCert.Util.Map.
@@ -17,7 +17,7 @@ Proof.
   induction ns; intros.
   - destruct H.
   - simpl.
-    destruct (x =? a) eqn:Heqb.
+    destruct (x =? a)%string eqn:Heqb.
     + apply eqb_eq in Heqb as Heq.
       subst.
       reflexivity.
@@ -37,7 +37,7 @@ Proof.
   induction ns; intros.
   - reflexivity.
   - simpl.
-    destruct (x =? a) eqn:Heqb.
+    destruct (x =? a)%string eqn:Heqb.
     + apply eqb_eq in Heqb as Heq.
       subst.
       exfalso.
@@ -216,15 +216,16 @@ Lemma msubst_bindings_nonrec__fold : forall ss x v bs,
 Proof. induction ss; intros; auto. Qed.
 
 Lemma compatibility_LetNonRec_nil : forall Delta Gamma t t' T,
+    Delta |-* T : Kind_Base ->
     LR_logically_approximate Delta Gamma t t' T ->
     LR_logically_approximate Delta Gamma (Let NonRec nil t) (Let NonRec nil t') T.
 Proof with eauto_LR.
-  intros Delta Gamma t t' T IHLR__t.
+  intros Delta Gamma t t' T Hkind__T IHLR__t.
   unfold LR_logically_approximate.
 
   destruct IHLR__t as [Htyp__t [Htyp__t' IH__t]].
 
-  split...
+  split... 
   split...
 
   intros k rho env env' ct ck HeqDelta HeqGamma H_RD H_RG.
@@ -254,7 +255,7 @@ Proof with eauto_LR.
 
   eexists. eexists.
 
-  split. eapply E_Let. eapply E_NilB_NonRec...
+  split. eapply E_Let. eapply E_Let_Nil...
   split. eapply RV_typable_empty_1...
   split. eapply RV_typable_empty_2...
 

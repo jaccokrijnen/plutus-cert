@@ -10,6 +10,8 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Auto.
 From Coq Require Import Lia.
 From Coq Require Import Arith.
 
+
+
 Lemma msubst_Apply : forall ss t1 t2,
     msubst_term ss (Apply t1 t2) = Apply (msubst_term ss t1) (msubst_term ss t2).
 Proof.
