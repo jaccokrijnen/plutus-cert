@@ -262,6 +262,60 @@ Notation Binding := (binding name tyname binderName binderTyname).
 
 
 
+Declare Custom Entry pir_kind.
+Notation "<[ e ]>" := e
+  (e custom pir_kind at level 99).
+Notation "( x )"   := x
+  (in custom pir_kind, x at level 99).
+Notation "x"       := x
+  (in custom pir_kind at level 0, x constr at level 0).
+Notation "S -> T"  := (Kind_Arrow S T)
+  (in custom pir_kind at level 50, right associativity).
+Notation "'*'"     := Kind_Base
+  (in custom pir_kind at level 0).
+
+Declare Custom Entry pir_type.
+Notation "<( e )>" := e
+  (e custom pir_type at level 99).
+Notation "( x )"   := x
+  (in custom pir_type, x at level 99).
+Notation "x"       := x
+  (in custom pir_type at level 0, x constr at level 0).
+Notation "S -> T"  := (Ty_Fun S T)
+  (in custom pir_type at level 50, right associativity).
+Notation "'∀' '(' x '::' k ')' ty "     := (Ty_Forall x k ty)
+  (in custom pir_type at level 90).
+Notation "S T"  := (Ty_App S T)
+  (in custom pir_type at level 1, left associativity).
+Notation "'λ' '(' x ':' k ')' '.'  ty" := (TyAbs x k ty)
+  (in custom pir_type at level 90,
+  k custom pir_kind at level 99,
+  ty custom pir_type at level 99,
+  left associativity).
+Definition string_to_ty : string -> Ty := fun x => Ty_Var x.
+Coercion string_to_ty : string >-> Ty.
+
+
+Declare Custom Entry pir_term.
+Notation "<( e )>" := e
+  (e custom pir_term at level 99).
+Notation "( x )"   := x
+  (in custom pir_term, x at level 99).
+Notation "x"       := x
+  (in custom pir_term at level 0, x constr at level 0).
+(* Notation "S T"  := (Apply S T)
+     (in custom pir_term at level 1, left associativity). *)
+Notation "'λ' '(' x ':' ty ')' '.'  t" := (LamAbs x ty t)
+  (in custom pir_term at level 90,
+  ty custom pir_type at level 99,
+  t custom pir_term at level 99,
+  left associativity).
+
+Notation "'Λ' '(' x ':' k ')' '.'  t" := (TyAbs x k t)
+  (in custom pir_term at level 90,
+  k custom pir_kind at level 99,
+  t custom pir_term at level 99,
+  left associativity).
 
 End NamedTerm.
 
