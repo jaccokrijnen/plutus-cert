@@ -8,18 +8,14 @@ Require Import Eqdep.
 Set Implicit Arguments.
 
 From PlutusCert Require Import Language.PlutusIR.
+From PlutusCert Require Import Util.
 Import NamedTerm.
 
-Definition EqDec := fun A : Type => forall x y : A, {x = y} + {x <> y}.
 
 
 Create HintDb Eqs.
 Hint Resolve Nat.eq_dec Z.eq_dec ascii_dec bool_dec string_dec list_eq_dec : Eqs.
 
-Ltac solveEq :=
-  intros;
-  unfold EqDec;
-  decide equality; auto with Eqs. (* debug auto with Eqs.*)
 
 Definition unit_dec: EqDec unit. Proof. solveEq. Defined.
   Hint Resolve unit_dec : Eqs.
@@ -124,8 +120,7 @@ Definition pass_dec {name : Set} (name_dec : EqDec name) (p1 p2 : pass name) :
   {p1 = p2} + {p1 <> p2}.
   Proof. solveEq. Defined.
 
-Definition pair_dec {a b} (a_dec : EqDec a) (b_dec : EqDec b) : EqDec (a * b).
-  Proof. solveEq. Defined.
+
 (* boolean equality
 I define this separately from the dec_* functions to avoid carrying around
 proof terms at run-time.

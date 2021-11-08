@@ -8,10 +8,11 @@ From PlutusCert Require Import
   FreeVars
   BoundVars
   Equality
-  Examples.Game.Trace
+  Examples.Timelock.Trace
   Util.
 
-Import UniqueTerm.
+
+Import NamedTerm.
 Import ListNotations.
 
 Local Open Scope Z_scope.
@@ -26,7 +27,7 @@ Definition pass_eqb := fun p1 p2 =>
   match p1, p2 with
     | PassInline _, PassInline _ => true (* hack for lookups *)
     | _, _ =>
-      if pass_dec (pair_dec string_dec Z.eq_dec) p1 p2
+      if pass_dec dec_name p1 p2
         then true
         else false
     end.
@@ -42,8 +43,11 @@ Definition trace_passes := fun trace => match trace with
 Definition t0 := trace_t0 trace.
 Definition ps := trace_passes trace.
 
+Eval cbv in t0.
+(*
 Example t0_closed : free_vars var_eqb t0 = nil.
   Proof. reflexivity. Qed.
+  *)
 
 Compute Datatypes.length (bound_vars t0).
 
@@ -53,14 +57,32 @@ Definition some_exists {a} : forall {v} (s : option a), (s = Datatypes.Some v) -
     | eq_refl => v
   end.
 
+
+Definition option_out {a} := fun (x : option a) =>
+  match x
+  return match x
+    with
+    | Datatypes.Some x => a
+    | _ => unit
+    end
+  with
+    | Datatypes.Some x => x
+    | _ => tt
+  end.
+
 (* Lookup the AST after a given pass *)
 Definition lookup_pass p :=
-  option_map
-    snd
-    (find (fun (x : prod (pass name) Term) => pass_eqb (fst x) p) ps)
+  option_out (
+    option_map
+      snd
+      (find (fun (x : prod (pass name) Term) => pass_eqb (fst x) p) ps)
+      )
     .
 
 
+Definition t_plc : Term := lookup_pass PassLetNonRec.
+
+Eval cbv in t_plc.
 
 (* Will the let node be replaced by its body? This happens
    when all bindings have been eliminated *)

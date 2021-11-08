@@ -114,7 +114,18 @@ Definition sumbool_to_optionr {a b} (x : sumbool a b) : option b :=
   end.
 
 
+Definition EqDec := fun A : Type => forall x y : A, {x = y} + {x <> y}.
+
+Ltac solveEq :=
+  intros;
+  unfold EqDec;
+  decide equality; auto with Eqs. (* debug auto with Eqs.*)
+
+
 Definition string_dec_option := fun x y => sumbool_to_optionl (string_dec x y).
+
+Definition pair_dec {a b} (a_dec : EqDec a) (b_dec : EqDec b) : EqDec (a * b).
+  Proof. solveEq. Defined.
 
 (* lookup with evidence *)
 Definition lookup {a b} (dec : forall x1 x2 : a, {x1 = x2} + {x1 <> x2}) :

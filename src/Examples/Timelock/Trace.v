@@ -5,7 +5,8 @@ From Coq Require Import
 From PlutusCert Require Import
   Language.PlutusIR.
 
-Import UniqueTerm.
+Import NamedTerm.
+(* Import UniqueTerm. *)
 
 Local Open Scope Z_scope.
 Local Open Scope string_scope.

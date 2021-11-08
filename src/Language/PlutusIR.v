@@ -231,6 +231,9 @@ Notation tyname := string.
 Notation binderName := string.
 Notation binderTyname := string.
 
+Definition get_name : name -> string := id.
+Definition dec_name := string_dec.
+
 (* These constructors should treat the type parameter
    as implicit too (this is already correctly generated for the recursive
    constructors. *)
@@ -409,6 +412,8 @@ Definition tyname       := string * Z.
 Definition binderName   := string * Z.
 Definition binderTyname := string * Z.
 
+Definition get_name : name -> string := fst.
+Definition dec_name := pair_dec string_dec Z.eq_dec.
 (* These constructors should treat the type parameter
    as implicit too
 
