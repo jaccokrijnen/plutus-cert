@@ -1,3 +1,4 @@
+--
 -- Necessary language extensions for the Plutus Tx compiler to work.
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE NoImplicitPrelude   #-}
