@@ -1,13 +1,13 @@
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.Apply.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.Builtin.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.Constant.
-(* Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.DatatypeBind. *)
+Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.DatatypeBind.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.Error.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.IWrap.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.LamAbs.
 (* Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.LetNonRec.
-Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.LetRec. 
-Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.TermBind. *)
+Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.LetRec. *)
+Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.TermBind.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.TyAbs.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.TyInst.
 (* Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.TypeBind. *)
@@ -19,14 +19,14 @@ Create HintDb DSP_compatibility_lemmas.
   compatibility_Apply
   compatibility_Builtin
   compatibility_Constant
-  (* compatibility_DatatypeBind *)
+  compatibility_DatatypeBind
   compatibility_Error
   compatibility_IWrap 
   compatibility_LamAbs
   (* compatibility_LetNonRec_nil
   compatibility_LetNonRec_cons
   compatibility_LetRec *)
-  (* compatibility_TermBind *)
+  compatibility_TermBind
   compatibility_TyAbs
   compatibility_TyInst
   (* compatibility_TypeBind *)

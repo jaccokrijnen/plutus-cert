@@ -23,3 +23,11 @@ Fixpoint mdrop {X:Type} (ns : list string) (nxs: list (string * X)) : list (stri
   | n :: ns' =>
       mdrop ns' (drop n nxs) 
   end.
+
+
+
+
+
+Lemma mdrop_nil : forall X ns,
+    @mdrop X ns nil = nil.
+Proof. induction ns; auto. Qed.

@@ -136,7 +136,14 @@ Fixpoint msubstA_bindings_nonrec (ss : envA) (bs : list Binding) : list Binding 
   | (X, U) :: ss' => msubstA_bindings_nonrec ss' <{ [[U / X][bnr] bs }>
   end.
 
+Fixpoint msubstA_constructors (ss : envA) (cs : list constructor) : list constructor :=
+  match ss with
+  | nil => cs
+  | (X, U) :: ss' => msubstA_constructors ss' <{ [[U / X][cs] cs}>
+  end.
+
 Notation "'/[[' ss '/]' t" := (msubstA_term ss t) (in custom plutus_term at level 20, ss constr).
 Notation "'/[[' ss '/][b]' b" := (msubstA_binding ss b) (in custom plutus_term at level 20, ss constr).
 Notation "'/[[' ss '/][bnr]' bs" := (msubstA_bindings_nonrec ss bs) (in custom plutus_term at level 20, ss constr).
+Notation "'/[[' ss '/][cs]' cs" := (msubstA_constructors ss cs) (in custom plutus_term at level 20, ss constr).
   

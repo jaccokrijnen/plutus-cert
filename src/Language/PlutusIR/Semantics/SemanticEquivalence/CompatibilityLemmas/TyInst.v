@@ -17,14 +17,16 @@ Lemma msubstA_TyInst : forall ss t0 T0,
     msubstA_term ss (TyInst t0 T0) = TyInst (msubstA_term ss t0) (msubstT ss T0).
 Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
-Lemma validRV : forall ck rho Delta T K,
+Lemma validRV : forall ck rho T K,
     RD ck rho ->
-    Delta |-* T : K ->
+    mupdate empty ck |-* T : K ->
     Rel (msubstT (msyn1 rho) T) (msubstT (msyn2 rho) T) (fun k e e' => RV k T rho e e').
 Proof with eauto_LR.
   intros.
   unfold Rel.
   intros.
+  split. apply H1. 
+  split. apply H1.
   apply RV_typable_empty in H1 as H3...
   destruct H3. destruct H3. destruct H3.
   destruct H4. destruct H4.

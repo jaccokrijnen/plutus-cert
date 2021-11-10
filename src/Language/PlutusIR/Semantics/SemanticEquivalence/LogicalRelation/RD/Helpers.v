@@ -51,3 +51,22 @@ Proof.
     simpl.
     destruct (X0 =? X) eqn:Heqb; eauto.
 Qed.
+
+Lemma RD_syn_closed : forall ck rho,
+    RD ck rho ->
+      forall X T1 T2,
+        syn1 rho X = Datatypes.Some T1 ->
+        syn2 rho X = Datatypes.Some T2 ->
+        Ty.closed T1 /\ Ty.closed T2.
+Proof with eauto.
+  induction 1; intros...
+  - discriminate.
+  - simpl in H3.
+    simpl in H4.
+    destruct (X0 =? X).
+    + inversion H3; subst.
+      inversion H4; subst.
+      split.
+      all: eauto using Ty.kindable_empty__closed.
+    + eauto.
+Qed.

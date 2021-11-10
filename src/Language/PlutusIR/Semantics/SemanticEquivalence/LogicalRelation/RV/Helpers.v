@@ -43,6 +43,32 @@ Lemma RV_typable_empty_2 : forall k T rho v v',
     (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\ (empty ,, empty |-+ v' : Tn')).
 Proof. intros. destruct (RV_typable_empty _ _ _ _ _ H H0) as [Htyp__v Htyp__v']. eauto. Qed.
 
+(** Closedness *)
+
+Lemma RV_closed : forall k T rho v v',
+    RV k T rho v v' ->
+    0 < k ->
+    closed v /\ closed v'.
+Proof with eauto.
+  intros.
+  eapply RV_typable_empty in H...
+  destruct H as [ [Tn [Hnorm__Tn Htyp__v]] [Tn' [Hnorm__Tn' Htyp__v']]].
+  split.
+  all: eapply typable_empty__closed...
+Qed.
+
+Lemma RV_closed_1 : forall k T rho v v',
+    RV k T rho v v' ->
+    0 < k ->
+    closed v.
+Proof with eauto. apply RV_closed. Qed.
+
+Lemma RV_closed_2 : forall k T rho v v',
+    RV k T rho v v' ->
+    0 < k ->
+    closed v'.
+Proof with eauto. apply RV_closed. Qed.
+
 (** Equivalence of step-index implies equivalence of RV *)
 
 Lemma RV_equiv : forall k k' T rho e e',

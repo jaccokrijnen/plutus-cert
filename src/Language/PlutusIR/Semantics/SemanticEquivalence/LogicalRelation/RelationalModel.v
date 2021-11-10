@@ -11,18 +11,15 @@ Require Import Coq.Strings.String.
 Local Open Scope list_scope.
 Local Open Scope string_scope.
 
-Definition Rel 
-    (T T' : Ty) 
-    (Chi : nat -> Term -> Term -> Prop)
-    : Prop :=
+Definition Rel (T T' : Ty) (Chi : nat -> Term -> Term -> Prop) : Prop :=
   forall j v v',
-    Chi j v v' ->
-    0 < j ->
-    (exists Tn, normalise T Tn /\ (empty ,, empty |-+ v : Tn)) /\
-    (exists Tn', normalise T' Tn' /\ (empty ,, empty |-+ v' : Tn')) /\ 
-    forall i,
-      i <= j ->
-      Chi i v v'.
+    Chi j v v' -> 0 < j ->
+      value v /\ value v' /\
+      (exists Tn, normalise T Tn /\ (empty ,, empty |-+ v : Tn)) /\
+      (exists Tn', normalise T' Tn' /\ (empty ,, empty |-+ v' : Tn')) /\ 
+      forall i,
+        i <= j ->
+        Chi i v v'.
 
 (** Relation interpational of types as computations and values.
 
@@ -32,7 +29,6 @@ Definition Rel
 Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k :=
   RC k T rho e e' =>
     (* RC *)
-
     forall j (Hlt_j : j < k) e_f,
       e =[j]=> e_f ->
       exists e'_f j', e' =[j']=> e'_f /\
@@ -71,16 +67,16 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
                 e_f = e'_f
 
           (* RV for function types *)
-          | Ty_Fun T1 T2 =>
+          | Ty_Fun T1n T2n =>
               (* Determine the shape of e_f and e'_f *)
-              exists x e_body x' e'_body T1p,
-                normalise T1p T1 /\   
-                LamAbs x (msubstT (msyn1 rho) T1p) e_body = e_f /\
-                LamAbs x' (msubstT (msyn2 rho) T1p) e'_body = e'_f /\
+              exists x e_body x' e'_body T1,
+                normalise T1 T1n /\   
+                LamAbs x (msubstT (msyn1 rho) T1) e_body = e_f /\
+                LamAbs x' (msubstT (msyn2 rho) T1) e'_body = e'_f /\
                 (* Extensional equivalence *)
                 forall i (Hlt_i : i < k - j) v_0 v'_0,
-                  value v_0 /\ value v'_0 /\ RC i T1 rho v_0 v'_0 ->
-                  RC i T2 rho <{ [v_0 / x] e_body }> <{ [v'_0 / x'] e'_body }>
+                  value v_0 /\ value v'_0 /\ RC i T1n rho v_0 v'_0 ->
+                  RC i T2n rho <{ [v_0 / x] e_body }> <{ [v'_0 / x'] e'_body }>
 
           (* RV for recursive types *)
           | Ty_IFix F T =>
@@ -207,7 +203,7 @@ Fixpoint closed_env (env : env) :=
     $\gamma(e')$ are related for $k$ steps as computations of type $\tau$.
 *)
 Definition LR_logically_approximate (Delta : partial_map Kind) (Gamma : partial_map Ty) (e e' : Term) (T : Ty) :=
-    Delta ,, Gamma |-+ e : T /\
+    (Delta ,, Gamma |-+ e : T) /\
     (Delta ,, Gamma |-+ e' : T) /\
     forall k rho env env' ct ck,
       Delta = mupdate empty ck -> 
@@ -226,6 +222,7 @@ Definition LR_logically_approximate (Delta : partial_map Kind) (Gamma : partial_
 Definition LR_logically_equivalent (Delta : partial_map Kind) (Gamma : partial_map Ty) (e e' : Term) (T : Ty) :=
   LR_logically_approximate Delta Gamma e e' T /\ LR_logically_approximate Delta Gamma e' e T.
 
+(* TODO: remove *)
 Definition LR_logically_approximate_binding (Delta : Delta) (Gamma : Gamma) (b b' : Binding) :=
   Delta ,, Gamma |-ok_b b /\
   (Delta ,, Gamma |-ok_b b') /\

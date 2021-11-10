@@ -3,8 +3,7 @@ Require Import PlutusCert.Language.PlutusIR.Transform.LetNonRec.SSP.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.
-Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RelationalModel.
-Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Monotonicity.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Auto.
 
 Require Import Coq.Lists.List.

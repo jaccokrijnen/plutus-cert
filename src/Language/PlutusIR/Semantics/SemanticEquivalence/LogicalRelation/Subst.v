@@ -226,9 +226,6 @@ Lemma mupdate_unfold : forall {X : Type} (c : list (string * X)) x (v : X),
     (x |-> v; mupdate empty c) = mupdate empty ((x, v) :: c).
 Proof. intros. auto. Qed.
 
-Lemma mdrop_nil : forall X ns,
-    @mdrop X ns nil = nil.
-Proof. induction ns; auto. Qed.
 
 (** ** Properties of Instantiations *)
 
