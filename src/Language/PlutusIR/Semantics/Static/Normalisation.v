@@ -84,32 +84,32 @@ Combined Scheme normal_Ty__multind from
 
 (** Type normalisation *)
 Inductive normalise : Ty -> Ty -> Prop :=
-  | N_BetaReduce : forall bX K T1 T2 T1' T2' T,
-      normalise T1 (Ty_Lam bX K T1') ->
-      normalise T2 T2' ->
-      normalise (substituteTCA bX T2' T1') T ->
+  | N_BetaReduce : forall bX K T1 T2 T1n T2n T,
+      normalise T1 (Ty_Lam bX K T1n) ->
+      normalise T2 T2n ->
+      normalise (substituteTCA bX T2n T1n) T ->
       normalise (Ty_App T1 T2) T
-  | N_TyApp : forall T1 T2 T1' T2',
-      normalise T1 T1' ->
-      neutral_Ty T1' ->
-      normalise T2 T2' ->
-      normalise (Ty_App T1 T2) (Ty_App T1' T2')
-  | N_TyFun : forall T1 T2 T1' T2',
-      normalise T1 T1' ->
-      normalise T2 T2' ->
-      normalise (Ty_Fun T1 T2) (Ty_Fun T1' T2')
-  | N_TyForall : forall bX K T0 T0',
-      normalise T0 T0' ->
-      normalise (Ty_Forall bX K T0) (Ty_Forall bX K T0')
-  | N_TyLam : forall bX K T0 T0',
-      normalise T0 T0' ->
-      normalise (Ty_Lam bX K T0) (Ty_Lam bX K T0')
+  | N_TyApp : forall T1 T2 T1n T2n,
+      normalise T1 T1n ->
+      neutral_Ty T1n ->
+      normalise T2 T2n ->
+      normalise (Ty_App T1 T2) (Ty_App T1n T2n)
+  | N_TyFun : forall T1 T2 T1n T2n,
+      normalise T1 T1n ->
+      normalise T2 T2n ->
+      normalise (Ty_Fun T1 T2) (Ty_Fun T1n T2n)
+  | N_TyForall : forall bX K T0 T0n,
+      normalise T0 T0n ->
+      normalise (Ty_Forall bX K T0) (Ty_Forall bX K T0n)
+  | N_TyLam : forall bX K T0 T0n,
+      normalise T0 T0n ->
+      normalise (Ty_Lam bX K T0) (Ty_Lam bX K T0n)
   | N_TyVar : forall X,
       normalise (Ty_Var X) (Ty_Var X)
-  | N_TyIFix : forall F T F' T',
-      normalise F F' ->
-      normalise T T' ->
-      normalise (Ty_IFix F T) (Ty_IFix F' T')
+  | N_TyIFix : forall F T Fn Tn,
+      normalise F Fn ->
+      normalise T Tn ->
+      normalise (Ty_IFix F T) (Ty_IFix Fn Tn)
   | N_TyBuiltin : forall st,
       normalise (Ty_Builtin st) (Ty_Builtin st)
   .
@@ -117,20 +117,20 @@ Inductive normalise : Ty -> Ty -> Prop :=
 #[export] Hint Constructors normalise : core.
 
 (** Properties of type normalisation *)
-Lemma normalise_to_normal : forall T T_norm,
-    normalise T T_norm ->
-    normal_Ty T_norm.
+Lemma normalise_to_normal : forall T Tn,
+    normalise T Tn ->
+    normal_Ty Tn.
 Proof. 
   induction 1; eauto.
 Qed.
 
-Lemma normalisation__deterministic : forall T T_norm T'_norm,
-    normalise T T_norm ->
-    normalise T T'_norm ->
-    T_norm = T'_norm.
+Lemma normalisation__deterministic : forall T Tn T'n,
+    normalise T Tn ->
+    normalise T T'n ->
+    Tn = T'n.
 Proof.
   intros.
-  generalize dependent T'_norm.
+  generalize dependent T'n.
   induction H; intros.
   - inversion H2.
     + subst.
@@ -164,12 +164,12 @@ Qed.
 
 Ltac invert_normalise :=
   match goal with
-  | H : normalise ?T ?T_norm |- _ => inversion H; subst; f_equal; eauto
+  | H : normalise ?T ?Tn |- _ => inversion H; subst; f_equal; eauto
   end.
 
 Theorem normalisation__stable :
-  (forall T, normal_Ty T -> (forall T_norm, normalise T T_norm -> T = T_norm)) /\
-  (forall T, neutral_Ty T -> (forall T_norm, normalise T T_norm -> T = T_norm)).
+  (forall T, normal_Ty T -> (forall Tn, normalise T Tn -> T = Tn)) /\
+  (forall T, neutral_Ty T -> (forall Tn, normalise T Tn -> T = Tn)).
 Proof with eauto.
   eapply normal_Ty__multind; intros...
   all: try solve [invert_normalise].
@@ -184,40 +184,40 @@ Qed.
 
 Corollary normalisation__stable__normal : forall T, 
     normal_Ty T -> 
-    forall T_norm, 
-      normalise T T_norm -> T = T_norm.
+    forall Tn, 
+      normalise T Tn -> T = Tn.
 Proof. apply normalisation__stable. Qed.
 
 Corollary normalisation__stable__neutral : forall T,
     neutral_Ty T -> 
-    forall T_norm, 
-      normalise T T_norm -> T = T_norm.
+    forall Tn, 
+      normalise T Tn -> T = Tn.
 Proof. apply normalisation__stable. Qed.
 
 Lemma normalisation__stable' : 
-  (forall T_norm, normal_Ty T_norm -> normalise T_norm T_norm) /\
-  (forall T_norm, neutral_Ty T_norm -> normalise T_norm T_norm).
+  (forall Tn, normal_Ty Tn -> normalise Tn Tn) /\
+  (forall Tn, neutral_Ty Tn -> normalise Tn Tn).
 Proof. apply normal_Ty__multind; eauto. Qed.
 
-Corollary normalisation__stable'__normal : forall T_norm, 
-    normal_Ty T_norm -> 
-    normalise T_norm T_norm.
+Corollary normalisation__stable'__normal : forall Tn, 
+    normal_Ty Tn -> 
+    normalise Tn Tn.
 Proof. apply normalisation__stable'. Qed.
 
-Corollary normalisation__stable'__neutral : forall T_norm, 
-    neutral_Ty T_norm -> 
-    normalise T_norm T_norm.
+Corollary normalisation__stable'__neutral : forall Tn, 
+    neutral_Ty Tn -> 
+    normalise Tn Tn.
 Proof. apply normalisation__stable'. Qed.
 
-Theorem normalisation__sound : forall T T_norm,
-    normalise T T_norm ->
-    T =b T_norm.
+Theorem normalisation__sound : forall T Tn,
+    normalise T Tn ->
+    T =b Tn.
 Proof with eauto. induction 1... Qed.
 
-Lemma normalisation__complete : forall S T S_norm,
+Lemma normalisation__complete : forall S T Sn,
     S =b T ->
-    normalise S S_norm ->
-    normalise T S_norm.
+    normalise S Sn ->
+    normalise T Sn.
 Proof. Abort.
 
 (** Normalisation of lists of types*)

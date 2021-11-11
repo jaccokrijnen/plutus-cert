@@ -16,7 +16,7 @@ Proof with (eauto || solver).
   all: try solve [eauto using preservation]...
   - admit.
   - inversion IHhas_type1...
-  - admit.
+  - inversion IHhas_type. subst. admit.
   - unfold unwrapIFix in H1.
     inversion IHhas_type. subst.
     assert (K = K0) by admit.

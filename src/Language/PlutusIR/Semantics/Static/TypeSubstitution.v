@@ -26,9 +26,7 @@ Fixpoint substituteT (X : tyname) (U T : Ty) : Ty :=
   end.
 
 (** Multi-substitutions of types*)
-Definition envT := list (tyname * Ty).
-
-Fixpoint msubstT (ss : envT) (T : Ty) : Ty :=
+Fixpoint msubstT (ss : list (tyname * Ty)) (T : Ty) : Ty :=
   match ss with
   | nil => T
   | (a, T0) :: ss' => msubstT ss' (substituteT a T0 T)

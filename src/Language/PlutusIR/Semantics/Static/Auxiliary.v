@@ -32,10 +32,14 @@ Definition getKind (tvd : TVDecl) :=
 Definition branchTy (c : constructor) (R : Ty) : Ty :=
   match c with
   | Constructor (VarDecl x T) _ => 
-    match T with
-    | Ty_Fun T1 T2 => Ty_Fun T1 R
-    | _ => R
-    end
+    let 
+      fix branchTy' S :=
+        match S with
+        | Ty_Fun S1 S2 => Ty_Fun S1 (branchTy' S2)
+        | _ => R
+        end
+    in
+      branchTy' T
   end.
 
 Definition dataTy (d : DTDecl) : Ty :=
@@ -59,8 +63,7 @@ Definition constrTy (d : DTDecl) (c : constructor) : Ty :=
   match d, c with
   | Datatype X YKs matchFunc cs, Constructor (VarDecl x T) _ =>
     let indexTyVars := map (compose (@Ty_Var tyname binderTyname) getTyname) YKs in
-    let indexTyVarsAppliedToX := fold_left (@Ty_App tyname binderTyname) indexTyVars (Ty_Var (getTyname X)) in
-    let branchType := branchTy c indexTyVarsAppliedToX in
+    let branchType := branchTy c (constrLastTy d) in
     let indexForalls := map (fun YK => Ty_Forall (getTyname YK) (getKind YK)) YKs in
     fold_right apply branchType indexForalls
   end.
@@ -69,9 +72,8 @@ Definition matchTy (d : DTDecl) : Ty :=
   match d with
   | Datatype X YKs matchFunc cs =>
     let indexTyVars := map (compose (@Ty_Var tyname binderTyname) getTyname) YKs in
-    let indexTyVarsAppliedToX := fold_left (@Ty_App tyname binderTyname) indexTyVars (Ty_Var (getTyname X)) in
     let indexForalls := map (fun YK => Ty_Forall (getTyname YK) (getKind YK)) YKs in
-    fold_right apply (Ty_Fun indexTyVarsAppliedToX (fold_left (@Ty_App tyname binderTyname) indexTyVars (dataTy d))) indexForalls 
+    fold_right apply (Ty_Fun (constrLastTy d) (fold_left (@Ty_App tyname binderTyname) indexTyVars (dataTy d))) indexForalls 
   end.
 
 (** Binder functions *)
@@ -150,7 +152,7 @@ Definition d : Binding :=
       ; Constructor
           (VarDecl
             "Nothing"
-            (Ty_Fun (Ty_Var "Maybe") (Ty_Var "A"))
+            (Ty_App (Ty_Var "Maybe") (Ty_Var "A"))
           )
           0
       ]
@@ -160,4 +162,24 @@ Compute binds_Delta d.
 Compute binds_Gamma d.
 
 
-Compute (fun db => match db with | DatatypeBind dtd => constrLastTy dtd | _ => Ty_Var "X" end) d.*)
+Compute (fun db => match db with | DatatypeBind dtd => constrLastTy dtd | _ => Ty_Var "X" end) d.
+
+Definition d'' : Binding :=
+  DatatypeBind 
+    (Datatype 
+      (TyVarDecl "Simple" (Kind_Arrow Kind_Base (Kind_Arrow Kind_Base Kind_Base)))
+      [TyVarDecl "A" (Kind_Base); TyVarDecl "B" (Kind_Base)]
+      "matchSimple"
+      [ Constructor 
+          (VarDecl
+            "SimpleC"
+            (Ty_App (Ty_App (Ty_Var "Maybe") (Ty_Var "A")) (Ty_Var "B"))
+          )
+          1
+      ]
+    ).
+
+Compute binds_Delta d''.
+Compute binds_Gamma d''.
+
+*)
