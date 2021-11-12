@@ -5,12 +5,12 @@ Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Compat
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.Error.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.IWrap.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.LamAbs.
-(* Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.LetNonRec.
-Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.LetRec. *)
+Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.LetNonRec.
+Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.LetRec.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.TermBind.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.TyAbs.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.TyInst.
-(* Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.TypeBind. *)
+Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.TypeBind.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.Unwrap.
 Require Export PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.Var.
 
@@ -23,13 +23,12 @@ Create HintDb DSP_compatibility_lemmas.
   compatibility_Error
   compatibility_IWrap 
   compatibility_LamAbs
-  (* compatibility_LetNonRec_nil
-  compatibility_LetNonRec_cons
-  compatibility_LetRec *)
+  compatibility_LetNonRec_nil
+  compatibility_LetRec
   compatibility_TermBind
   compatibility_TyAbs
   compatibility_TyInst
-  (* compatibility_TypeBind *)
+  compatibility_TypeBind
   compatibility_Unwrap
   compatibility_Var : DSP_compatibility_lemmas.
 

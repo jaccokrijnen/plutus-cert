@@ -59,7 +59,7 @@ Section SubstAConstructors.
 End SubstAConstructors.
 
 
-Fixpoint substituteA (X : tyname) (U : Ty) (t : Term) : Term :=
+Fixpoint substituteA (X : tyname) (U : Ty) (t : Term) {struct t} : Term :=
   match t with
   | Let NonRec bs t0 =>
       Let NonRec (@substituteA_bindings_nonrec substituteA_binding X U bs)
@@ -115,28 +115,25 @@ Notation "'[[' U '/' X '][cs]' cs" := (substituteA_constructors X U cs) (in cust
 Notation "'[[' U '/' X '][c]' c" := (substituteA_constructor X U c) (in custom plutus_term at level 20, X constr).
 
 (** Multi-substitutions of types in type annotations *)
-
-Definition envA := list (tyname * Ty).
-
-Fixpoint msubstA_term (ss : envA) (t : Term) : Term :=
+Fixpoint msubstA_term (ss : list (tyname * Ty)) (t : Term) : Term :=
   match ss with
   | nil => t
   | (X, U) :: ss' => msubstA_term ss' <{ [[U / X] t }>
   end.
 
-Fixpoint msubstA_binding (ss : envA) (b : Binding) : Binding :=
+Fixpoint msubstA_binding (ss : list (tyname * Ty)) (b : Binding) : Binding :=
   match ss with
   | nil => b
   | (X, U) :: ss' => msubstA_binding ss' <{ [[U / X][b] b }>
   end.
 
-Fixpoint msubstA_bindings_nonrec (ss : envA) (bs : list Binding) : list Binding :=
+Fixpoint msubstA_bindings_nonrec (ss : list (tyname * Ty)) (bs : list Binding) : list Binding :=
   match ss with
   | nil => bs
   | (X, U) :: ss' => msubstA_bindings_nonrec ss' <{ [[U / X][bnr] bs }>
   end.
 
-Fixpoint msubstA_constructors (ss : envA) (cs : list constructor) : list constructor :=
+Fixpoint msubstA_constructors (ss : list (tyname * Ty)) (cs : list constructor) : list constructor :=
   match ss with
   | nil => cs
   | (X, U) :: ss' => msubstA_constructors ss' <{ [[U / X][cs] cs}>

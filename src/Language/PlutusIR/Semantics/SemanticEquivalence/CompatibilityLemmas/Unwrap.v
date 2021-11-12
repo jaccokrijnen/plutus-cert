@@ -55,7 +55,7 @@ Proof with eauto_LR.
     apply RV_unwrap in HRV as temp...
     destruct temp as [temp | temp].
     - destruct temp as [Hnerr [Hnerr' temp]].
-      destruct temp as [v_2 [v'_2 [Fp [Tp [Hnorm__Fp [Hnorm__Tp [Heq [Heq' Hunwr]]]]]]]].
+      destruct temp as [v_2 [v'_2 [F0 [F0' [T0 [T0' [Heq [Heq' Hunwr]]]]]]]].
       inversion Heq. subst.
 
       eexists. eexists.

@@ -38,74 +38,74 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
       (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\  (empty ,, empty |-+ e'_f : Tn')) /\
       
       ( 
-        ~ is_error e_f /\
-        ~ is_error e'_f /\
         (
-          match T with
+          ~ is_error e_f /\
+          ~ is_error e'_f /\
+          (
+            match T with
 
-          (* RV for type variable *)
-          | Ty_Var a =>
-              forall Chi,
-                sem rho a = Datatypes.Some Chi ->  
-                Chi (k - j) e_f e'_f
+            (* RV for type variable *)
+            | Ty_Var a =>
+                forall Chi,
+                  sem rho a = Datatypes.Some Chi ->  
+                  Chi (k - j) e_f e'_f
 
-          (* RV for type lambda *)
-          | Ty_Lam bX K T =>
-              False
+            (* RV for type lambda *)
+            | Ty_Lam X K T0 =>
+                False
 
-          (* RV for type application *)
-          | Ty_App T1 T2 => 
-              False
+            (* RV for type application *)
+            | Ty_App T1 T2 => 
+                False
 
-          (* RV for built-in types *)
-          | Ty_Builtin st => 
-              exists sv sv',
+            (* RV for built-in types *)
+            | Ty_Builtin st => 
+                exists sv sv',
+                  (* Determine the shape of e_f and e'_f *)
+                  e_f = Constant sv /\
+                  e'_f = Constant sv' /\
+                  (* Syntactic equality *)
+                  e_f = e'_f
+
+            (* RV for function types *)
+            | Ty_Fun T1n T2n =>
                 (* Determine the shape of e_f and e'_f *)
-                e_f = Constant sv /\
-                e'_f = Constant sv' /\
-                (* Syntactic equality *)
-                e_f = e'_f
+                exists x e_body e'_body T1 T1',
+                  LamAbs x T1 e_body = e_f /\
+                  LamAbs x T1' e'_body = e'_f /\
+                  (* Extensional equivalence *)
+                  forall i (Hlt_i : i < k - j) v_0 v'_0,
+                    value v_0 /\ value v'_0 /\ RC i T1n rho v_0 v'_0 ->
+                    RC i T2n rho <{ [v_0 / x] e_body }> <{ [v'_0 / x] e'_body }>
 
-          (* RV for function types *)
-          | Ty_Fun T1n T2n =>
-              (* Determine the shape of e_f and e'_f *)
-              exists x e_body x' e'_body T1,
-                normalise T1 T1n /\   
-                LamAbs x (msubstT (msyn1 rho) T1) e_body = e_f /\
-                LamAbs x' (msubstT (msyn2 rho) T1) e'_body = e'_f /\
-                (* Extensional equivalence *)
-                forall i (Hlt_i : i < k - j) v_0 v'_0,
-                  value v_0 /\ value v'_0 /\ RC i T1n rho v_0 v'_0 ->
-                  RC i T2n rho <{ [v_0 / x] e_body }> <{ [v'_0 / x'] e'_body }>
+            (* RV for recursive types *)
+            | Ty_IFix Fn Tn =>
+                exists v_0 v'_0 F F' T T',
+                  (* Determine the shape of e_f and e'_f *)
+                  e_f = IWrap F T v_0 /\
+                  e'_f = IWrap F' T' v'_0 /\
+                  (* Unwrap *)
+                  forall i (Hlt_i : i < k - j) K T0n,
+                    empty |-* (msubstT (msyn1 rho) Tn) : K ->
+                    empty |-* (msubstT (msyn2 rho) Tn) : K ->
+                    normalise (unwrapIFix Fn K Tn) T0n ->
+                    RC i T0n rho v_0 v'_0
 
-          (* RV for recursive types *)
-          | Ty_IFix F T =>
-              exists v_0 v'_0 Fp Tp,
-                (* Determine the shape of e_f and e'_f *)
-                normalise Fp F /\ normalise Tp T /\
-                e_f = IWrap (msubstT (msyn1 rho) Fp) (msubstT (msyn1 rho) Tp) v_0 /\
-                e'_f = IWrap (msubstT (msyn2 rho) Fp) (msubstT (msyn2 rho) Tp) v'_0 /\
-                (* Unwrap *)
-                forall i (Hlt_i : i < k - j) K T0n,
-                  empty |-* (msubstT (msyn1 rho) T) : K ->
-                  empty |-* (msubstT (msyn2 rho) T) : K ->
-                  normalise (unwrapIFix F K T) T0n ->
-                  RC i T0n rho v_0 v'_0
-
-          (* RV for universal types *)
-          | Ty_Forall bX K T => 
-              exists e_body e'_body,
-                (* Determine the shape of e_f and e_f' *)
-                e_f = TyAbs bX K e_body /\
-                e'_f = TyAbs bX K e'_body /\
-                (* Instantiational equivalence *)
-                forall T1 T2 Chi,
-                  empty |-* T1 : K ->
-                  empty |-* T2 : K ->
-                  Rel T1 T2 Chi ->
-                  forall i (Hlt_i : i < k - j),
-                    RC i T ((bX, (Chi, T1, T2)) :: rho) <{ [[T1 / bX ] e_body }> <{ [[T2 / bX ] e'_body }>
-          end
+            (* RV for universal types *)
+            | Ty_Forall X K Tn => 
+                exists e_body e'_body,
+                  (* Determine the shape of e_f and e_f' *)
+                  e_f = TyAbs X K e_body /\
+                  e'_f = TyAbs X K e'_body /\
+                  (* Instantiational equivalence *)
+                  forall T1 T2 Chi,
+                    empty |-* T1 : K ->
+                    empty |-* T2 : K ->
+                    Rel T1 T2 Chi ->
+                    forall i (Hlt_i : i < k - j),
+                      RC i Tn ((X, (Chi, T1, T2)) :: rho) <{ [[T1 / X ] e_body }> <{ [[T2 / X ] e'_body }>
+            end
+          )
         ) \/ (
           is_error e_f /\
           is_error e'_f

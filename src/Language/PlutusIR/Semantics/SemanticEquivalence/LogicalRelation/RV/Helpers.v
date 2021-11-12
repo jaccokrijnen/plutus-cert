@@ -133,29 +133,27 @@ Lemma RV_condition : forall k T rho v v',
               v = v'
 
         (* RV for function types *)
-        | Ty_Fun T1 T2 =>
+        | Ty_Fun T1n T2n =>
             (* Determine the shape of v and v' *)
-            exists x e_body x' e'_body T1p,
-              normalise T1p T1 /\   
-              LamAbs x (msubstT (msyn1 rho) T1p) e_body = v /\
-              LamAbs x' (msubstT (msyn2 rho) T1p) e'_body = v' /\
+            exists x e_body e'_body T1 T1',
+              LamAbs x T1 e_body = v /\
+              LamAbs x T1' e'_body = v' /\
               (* Extensional equivalence *)
               forall i (Hlt_i : i < k) v_0 v'_0,
-                value v_0 /\ value v'_0 /\ RC i T1 rho v_0 v'_0 ->
-                RC i T2 rho <{ [v_0 / x] e_body }> <{ [v'_0 / x'] e'_body }>
+                RV i T1n rho v_0 v'_0 ->
+                RC i T2n rho <{ [v_0 / x] e_body }> <{ [v'_0 / x] e'_body }>
 
         (* RV for recursive types *)
-        | Ty_IFix F T =>
-            exists v_0 v'_0 Fp Tp,
+        | Ty_IFix Fn Tn =>
+            exists v_0 v'_0 F F' T T',
               (* Determine the shape of v and v' *)
-              normalise Fp F /\ normalise Tp T /\
-              v = IWrap (msubstT (msyn1 rho) Fp) (msubstT (msyn1 rho) Tp) v_0 /\
-              v' = IWrap (msubstT (msyn2 rho) Fp) (msubstT (msyn2 rho) Tp) v'_0 /\
+              v = IWrap F T v_0 /\
+              v' = IWrap F' T' v'_0 /\
               (* Unwrap *)
               forall i (Hlt_i : i < k) K T0n,
-                empty |-* (msubstT (msyn1 rho) T) : K ->
-                empty |-* (msubstT (msyn2 rho) T) : K ->
-                normalise (unwrapIFix F K T) T0n ->
+                empty |-* (msubstT (msyn1 rho) Tn) : K ->
+                empty |-* (msubstT (msyn2 rho) Tn) : K ->
+                normalise (unwrapIFix Fn K Tn) T0n ->
                 RC i T0n rho v_0 v'_0
 
         (* RV for universal types *)
@@ -211,45 +209,43 @@ Corollary RV_syntactic_equality : forall k st rho v v',
     ).
 Proof. intros. eapply RV_condition in H. all: eauto. Qed.
 
-Corollary RV_functional_extensionality : forall k T1 T2 rho v v',
-    RV k (Ty_Fun T1 T2) rho v v' ->
+Corollary RV_functional_extensionality : forall k T1n T2n rho v v',
+    RV k (Ty_Fun T1n T2n) rho v v' ->
     0 < k ->
 
     ( 
       ~ is_error v /\
       ~ is_error v' /\
       (* Determine the shape of v and v' *)
-      exists x e_body x' e'_body T1p,
-        normalise T1p T1 /\   
-        LamAbs x (msubstT (msyn1 rho) T1p) e_body = v /\
-        LamAbs x' (msubstT (msyn2 rho) T1p) e'_body = v' /\
+      exists x e_body e'_body T1 T1',
+        LamAbs x T1 e_body = v /\
+        LamAbs x T1' e'_body = v' /\
         (* Extensional equivalence *)
         forall i (Hlt_i : i < k) v_0 v'_0,
-          value v_0 /\ value v'_0 /\ RC i T1 rho v_0 v'_0 ->
-          RC i T2 rho <{ [v_0 / x] e_body }> <{ [v'_0 / x'] e'_body }>
+          RV i T1n rho v_0 v'_0 ->
+          RC i T2n rho <{ [v_0 / x] e_body }> <{ [v'_0 / x] e'_body }>
     ) \/ (
       is_error v /\
       is_error v'
     ).
 Proof. intros. eapply RV_condition in H. all: eauto. Qed.
 
-Corollary RV_unwrap : forall k F T rho v v' ,
-    RV k (Ty_IFix F T) rho v v' ->
+Corollary RV_unwrap : forall k Fn Tn rho v v' ,
+    RV k (Ty_IFix Fn Tn) rho v v' ->
     0 < k ->
 
     (
       ~ is_error v /\
       ~ is_error v' /\
-      exists v_0 v'_0 Fp Tp,
-        (* Determine the shape of v and v' *)
-        normalise Fp F /\ normalise Tp T /\
-        v = IWrap (msubstT (msyn1 rho) Fp) (msubstT (msyn1 rho) Tp) v_0 /\
-        v' = IWrap (msubstT (msyn2 rho) Fp) (msubstT (msyn2 rho) Tp) v'_0 /\
+      (* Determine the shape of v and v' *)
+      exists v_0 v'_0 F F' T T',
+        v = IWrap F T v_0 /\
+        v' = IWrap F' T' v'_0 /\
         (* Unwrap *)
         forall i (Hlt_i : i < k) K T0n,
-          empty |-* (msubstT (msyn1 rho) T) : K ->
-          empty |-* (msubstT (msyn2 rho) T) : K ->
-          normalise (unwrapIFix F K T) T0n ->
+          empty |-* (msubstT (msyn1 rho) Tn) : K ->
+          empty |-* (msubstT (msyn2 rho) Tn) : K ->
+          normalise (unwrapIFix Fn K Tn) T0n ->
           RC i T0n rho v_0 v'_0
     ) \/ (
       is_error v /\

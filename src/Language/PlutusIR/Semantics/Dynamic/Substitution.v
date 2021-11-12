@@ -104,22 +104,19 @@ Notation "'[' s '/' x '][bnr]' bs" := (@substitute_bindings_nonrec substitute_bi
 Notation "'[' s '/' x '][br]' bs" := (@substitute_bindings_rec substitute_binding x s bs) (in custom plutus_term at level 20, x constr).
 
 (** Multi-substitutions of terms *)
-
-Definition env := list (name * Term).
-
-Fixpoint msubst_term (ss : env) (t : Term) : Term :=
+Fixpoint msubst_term (ss : list (name * Term)) (t : Term) : Term :=
   match ss with
   | nil => t
   | (x, s) :: ss' => msubst_term ss' <{ [s / x] t }>
   end.
 
-Fixpoint msubst_binding (ss : env) (b : Binding) : Binding :=
+Fixpoint msubst_binding (ss : list (name * Term)) (b : Binding) : Binding :=
   match ss with
   | nil => b
   | (x, s) :: ss' => msubst_binding ss' <{ [s / x][b] b }>
   end.
 
-Fixpoint msubst_bindings_nonrec (ss : env) (bs : list Binding) : list Binding :=
+Fixpoint msubst_bindings_nonrec (ss : list (name * Term)) (bs : list Binding) : list Binding :=
   match ss with
   | nil => bs
   | (x, s) :: ss' => msubst_bindings_nonrec ss' <{ [s / x][bnr] bs }>

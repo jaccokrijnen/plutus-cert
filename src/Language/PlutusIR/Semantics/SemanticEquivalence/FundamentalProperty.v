@@ -48,4 +48,6 @@ Proof.
 
   all : autounfold; intros; subst.
   all : eauto with DSP_compatibility_lemmas typing.
-Qed.
+  - admit.
+  - admit.
+Admitted.

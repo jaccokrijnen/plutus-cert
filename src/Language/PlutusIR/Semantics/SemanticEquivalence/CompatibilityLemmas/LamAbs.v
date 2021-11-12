@@ -116,8 +116,7 @@ Proof with eauto_LR.
   split... intros Hcon. inversion Hcon.
 
   eexists. eexists. eexists. eexists. eexists.
-
-  split...
+  
   split...
   split...
 

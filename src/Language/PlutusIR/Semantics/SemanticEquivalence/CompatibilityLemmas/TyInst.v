@@ -17,25 +17,7 @@ Lemma msubstA_TyInst : forall ss t0 T0,
     msubstA_term ss (TyInst t0 T0) = TyInst (msubstA_term ss t0) (msubstT ss T0).
 Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
-Lemma validRV : forall ck rho T K,
-    RD ck rho ->
-    mupdate empty ck |-* T : K ->
-    Rel (msubstT (msyn1 rho) T) (msubstT (msyn2 rho) T) (fun k e e' => RV k T rho e e').
-Proof with eauto_LR.
-  intros.
-  unfold Rel.
-  intros.
-  split. apply H1. 
-  split. apply H1.
-  apply RV_typable_empty in H1 as H3...
-  destruct H3. destruct H3. destruct H3.
-  destruct H4. destruct H4.
-  split. eauto using normalise_to_normal, normalisation__stable'__normal.
-  split. eauto using normalise_to_normal, normalisation__stable'__normal.
-  unfold RV.
-  intros.
-  eapply RV_monotone...
-Qed.
+
 
 Lemma compatibility_TyInst: forall Delta Gamma e e' X K2 T1n T2 T2n T0n,
     Delta |-* T2 : K2 ->
@@ -86,7 +68,7 @@ Proof with eauto_LR.
       remember (fun k t t' => RV k T2 rho t t') as Chi.
       assert (Rel (msubstT (msyn1 rho) T2) (msubstT (msyn2 rho) T2) Chi). {
         subst.
-        eapply validRV...
+        eapply validity...
       }
       remember (Hie (msubstT (msyn1 rho) T2) (msubstT (msyn2 rho) T2) Chi H10 H11 H).
       assert (HRC2 :

@@ -73,7 +73,7 @@ src/Language/PlutusIR/Semantics/TypeSafety/TypeLanguage/StrongNormalisation.v
 src/Language/PlutusIR/Semantics/TypeSafety/TypeLanguage/Preservation.v
 
 src/Language/PlutusIR/Semantics/SemanticEquivalence/Auto.v
-# src/Language/PlutusIR/Semantics/SemanticEquivalence/FundamentalProperty.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/FundamentalProperty.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/Multisubstitution/Congruence.v
 
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas.v
@@ -84,13 +84,13 @@ src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Datatype
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Error.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/IWrap.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/LamAbs.v
-# src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/LetNonRec.v
-# src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/LetRec.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/LetNonRec.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/LetRec.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Unwrap.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TermBind.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TyAbs.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TyInst.v
-# src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TypeBind.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TypeBind.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Var.v
 
 src/Language/PlutusIR/Semantics/SemanticEquivalence/LogicalRelation.v
@@ -102,6 +102,7 @@ src/Language/PlutusIR/Semantics/SemanticEquivalence/LogicalRelation/RG/Helpers.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/LogicalRelation/RV/Helpers.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/LogicalRelation/Subst.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/LogicalRelation/Tymapping.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/LogicalRelation/Validity.v
 
 
 src/Util/List.v

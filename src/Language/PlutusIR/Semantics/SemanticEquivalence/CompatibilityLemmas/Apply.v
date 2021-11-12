@@ -36,10 +36,10 @@ Proof.
   - destruct a. eauto.
 Qed.
 
-Lemma compatibility_Apply : forall Delta Gamma e1 e2 e1' e2' T1 T2 ,
-    LR_logically_approximate Delta Gamma e1 e1' (Ty_Fun T1 T2) ->
-    LR_logically_approximate Delta Gamma e2 e2' T1 ->
-    LR_logically_approximate Delta Gamma (Apply e1 e2) (Apply e1' e2') T2.
+Lemma compatibility_Apply : forall Delta Gamma e1 e2 e1' e2' T1n T2n,
+    LR_logically_approximate Delta Gamma e1 e1' (Ty_Fun T1n T2n) ->
+    LR_logically_approximate Delta Gamma e2 e2' T1n ->
+    LR_logically_approximate Delta Gamma (Apply e1 e2) (Apply e1' e2') T2n.
 Proof with eauto_LR.
   intros Delta Gamma e1 e2 e1' e2' T1 T2 IH_LR1 IH_LR2.
   unfold LR_logically_approximate.
@@ -91,7 +91,7 @@ Proof with eauto_LR.
 
     destruct temp as [temp | temp].
     + destruct temp as [Hnerr [Hnerr' temp]]. 
-      destruct temp as [x0 [e_body [x0' [e'_body [T1p [Hnorm__T1p [Heq [Heq' Hfe]]]]]]]].
+      destruct temp as [x0 [e_body [e'_body [T1a [T1'a [Heq [Heq' Hfe]]]]]]].
       inversion Heq. subst. clear Heq.
 
       apply RV_monotone with (i := k - j_1 - j_2 - 1) (ck := ck)  in HRV2...

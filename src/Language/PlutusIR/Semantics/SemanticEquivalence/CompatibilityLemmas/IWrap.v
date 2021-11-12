@@ -116,9 +116,9 @@ Proof with eauto_LR.
     split. intros Hcon. inversion Hcon.
     split. intros Hcon. inversion Hcon.
 
-    eexists. eexists. eexists. eexists.
-    split... split... split... split...
-
+    eexists. eexists. eexists. eexists. eexists. eexists.
+    split... split...
+    
     intros.
 
     assert (K0 = K). {
