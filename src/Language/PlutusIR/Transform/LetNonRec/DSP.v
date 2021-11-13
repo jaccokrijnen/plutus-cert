@@ -264,14 +264,14 @@ Admitted.
 
 (** ** Predicates *)
 
-Definition P_has_type Delta Gamma e T := 
-  forall e',
-    CNR_Term e e' ->
-    LR_logically_approximate Delta Gamma e e' T.
+Definition P_has_type Delta Gamma t T : Prop := 
+  forall t',
+    CNR_Term t t' ->
+    LR_logically_approximate Delta Gamma t t' T.
 
-Definition P_constructor_well_formed Delta c Tr := Delta |-ok_c c : Tr.
+Definition P_constructor_well_formed Delta c Tr : Prop := Delta |-ok_c c : Tr.
 
-Definition P_bindings_well_formed_nonrec Delta Gamma bs := 
+Definition P_bindings_well_formed_nonrec Delta Gamma bs : Prop := 
   (
     forall bs',
       Congruence.Cong_Bindings CNR_Term bs bs' ->
@@ -292,9 +292,9 @@ Definition P_bindings_well_formed_nonrec Delta Gamma bs :=
         LR_logically_approximate Delta Gamma (Let NonRec bs t) (fold_right apply t' fbs') T
   ).
 
-Definition P_bindings_well_formed_rec Delta Gamma bs1 := Delta ,, Gamma |-oks_r bs1.
+Definition P_bindings_well_formed_rec Delta Gamma bs1 : Prop := Delta ,, Gamma |-oks_r bs1.
 
-Definition P_binding_well_formed Delta Gamma b := 
+Definition P_binding_well_formed Delta Gamma b : Prop := 
   (
     forall b',
       Congruence.Cong_Binding CNR_Term b b' ->
