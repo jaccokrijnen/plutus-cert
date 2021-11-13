@@ -132,15 +132,15 @@ Proof with (eauto with typing).
       rewrite concat_app in H5.
       simpl in H5.
       apply map_normalise__app in H5 as H7.
-      destruct H7 as [l1n [l2n [Hn__l1n [H1__l2n Heql]]]].
-      simpl in H1__l2n.
-      inversion H1__l2n. subst.
+      destruct H7 as [l1n [l2n [Hn__l1n [Hn__l2n Heql]]]].
+      simpl in Hn__l2n.
+      inversion Hn__l2n. subst.
       inversion H9. subst.
 
       simpl in H1.
       inversion H1. subst.
       inversion H11. subst.
-
+      
       eapply normalisation__deterministic in H10...
       subst.
 

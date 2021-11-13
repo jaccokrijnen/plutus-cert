@@ -150,16 +150,8 @@ Proof with eauto_LR.
         subst.
         apply mupdate_drop.
       - assumption.
-      - assert (closed vb). {
-          eapply RV_typable_empty_1 in HRV__vb...
-          destruct HRV__vb as [Tbn' [_ Htyp]].
-          eapply typable_empty__closed...
-        }
-        assert (closed vb'). {
-          eapply RV_typable_empty_2 in HRV__vb...
-          destruct HRV__vb as [Tbn' [_ Htyp]].
-          eapply typable_empty__closed...
-        }
+      - assert (closed vb). eapply RV_closed_1...
+        assert (closed vb'). eapply RV_closed_2...
         replace vb with (msubstA_term (msyn1 rho) vb) by (eapply msubstA_closed; eauto).
         replace vb' with (msubstA_term (msyn2 rho) vb') by (eapply msubstA_closed; eauto).
         apply RG_cons.
@@ -173,7 +165,7 @@ Proof with eauto_LR.
     clear IH__ih.
 
     apply RC_to_RV with (j := j2) (e_f := e_f) in HRC__ih as temp...
-    + destruct temp as [e'_f [j0' [Hev__e'_f HRV0]]].
+    + destruct temp as [e'_f [j2' [Hev__e'_f HRV0]]].
       clear Hev__e_f.
 
       rewrite msubstA_LetNonRec.
@@ -193,7 +185,7 @@ Proof with eauto_LR.
       eexists. eexists.
       split. {
         apply E_Let.
-        apply E_Let_TermBind with (v1 := vb') (j1 := jb') (v2 := e'_f) (j2 := j0')...
+        apply E_Let_TermBind with (v1 := vb') (j1 := jb') (v2 := e'_f) (j2 := j2')...
         1: {
           eapply RV_error in HRV__vb...
           destruct HRV__vb as [ [Hnerr Hnerr'] | [Herr Herr']]...
