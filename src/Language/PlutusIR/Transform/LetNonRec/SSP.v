@@ -9,14 +9,15 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 
 
 
-Definition P_has_type Delta Gamma t1 T := 
+Definition P_has_type Delta Gamma t1 T : Prop := 
   forall t2, 
     CNR_Term t1 t2 -> 
     Delta ,, Gamma |-+ t2 : T.
 
-Definition P_constructor_well_formed Delta c T := Delta |-ok_c c : T.
+Definition P_constructor_well_formed Delta c T : Prop := 
+  Delta |-ok_c c : T.
 
-Definition P_bindings_well_formed_nonrec Delta Gamma bs1 :=
+Definition P_bindings_well_formed_nonrec Delta Gamma bs1 : Prop :=
   (
     forall bs2,
       Delta ,, Gamma |-oks_nr bs1 ->
@@ -33,7 +34,7 @@ Definition P_bindings_well_formed_nonrec Delta Gamma bs1 :=
       Delta ,, Gamma |-+ (fold_right apply t f_bs2) : T
   ).
 
-Definition P_bindings_well_formed_rec Delta Gamma bs1 :=
+Definition P_bindings_well_formed_rec Delta Gamma bs1 : Prop :=
   forall bs2,
     Delta ,, Gamma |-oks_r bs1 ->
     Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
@@ -41,7 +42,7 @@ Definition P_bindings_well_formed_rec Delta Gamma bs1 :=
     map binds_Delta bs2 = map binds_Delta bs1 /\
     map binds_Gamma bs2 = map binds_Gamma bs1.
 
-Definition P_binding_well_formed Delta Gamma b1 := 
+Definition P_binding_well_formed Delta Gamma b1 : Prop := 
   (
     forall b2,
       Delta ,, Gamma |-ok_b b1 ->
@@ -80,7 +81,7 @@ Proof with (eauto with typing).
   all: try solve [eauto with typing].
   all: try solve [inversion X; subst; inversion X0; subst; eauto with typing].
   all: try solve [inversion X0; subst; inversion X1; subst; eauto with typing].
-  
+
   - (* T_Let *) 
     inversion X; subst.
     + eapply H3...
