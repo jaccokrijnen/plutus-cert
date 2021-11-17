@@ -11,13 +11,18 @@ Require Import PlutusCert.Util.Map.Mupdate.
 Require Import Arith.
 Require Import Coq.Lists.List.
 
-Lemma compatibility_LetNonRec_nil : forall Delta Gamma t t' T,
-    Delta |-* T : Kind_Base ->
-    LR_logically_approximate Delta Gamma t t' T ->
-    LR_logically_approximate Delta Gamma (Let NonRec nil t) (Let NonRec nil t') T.
+Lemma compatibility_LetNonRec_Nil : forall Delta Gamma t t' Tn,
+    forall bsGn,
+      map_normalise nil bsGn ->
+      Delta |-* Tn : Kind_Base ->
+      LR_logically_approximate Delta (mupdate Gamma bsGn) t t' Tn ->
+      LR_logically_approximate Delta Gamma (Let NonRec nil t) (Let NonRec nil t') Tn.
 Proof with eauto_LR.
-  intros Delta Gamma t t' T Hkind__T IHLR__t.
+  intros Delta Gamma t t' Tn bsGn Hmapnorm__bsGn Hkind__T IHLR__t.
   unfold LR_logically_approximate.
+
+  inversion Hmapnorm__bsGn. subst.
+  simpl in IHLR__t.
 
   destruct IHLR__t as [Htyp__t [Htyp__t' IH__t]].
 
@@ -41,7 +46,7 @@ Proof with eauto_LR.
   rename H0 into Hev''__e_f.
   
 
-  assert (HRC__t : RC k T rho 
+  assert (HRC__t : RC k Tn rho 
     (msubst_term env (msubstA_term (msyn1 rho) t))
     (msubst_term env' (msubstA_term (msyn2 rho) t'))
   )...

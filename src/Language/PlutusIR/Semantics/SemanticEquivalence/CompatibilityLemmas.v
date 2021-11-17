@@ -23,7 +23,7 @@ Create HintDb DSP_compatibility_lemmas.
   compatibility_Error
   compatibility_IWrap 
   compatibility_LamAbs
-  compatibility_LetNonRec_nil
+  compatibility_LetNonRec_Nil
   compatibility_LetRec
   compatibility_TermBind
   compatibility_TyAbs

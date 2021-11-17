@@ -3,6 +3,9 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Auto.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
 
 Require Import PlutusCert.Util.
 
@@ -341,11 +344,23 @@ Proof with eauto_LR.
       }
       
       split. {
-        admit.
+        inversion Htyp__ih. subst.
+        simpl in H9.
+        eapply msubstT_preserves_kinding_1 in H9 as H10...
+        eapply strong_normalisation in H10 as H11...
+        destruct H11.
+        
+        eexists. split...
       }
 
       split. {
-        admit.
+        inversion Htyp__ih. subst.
+        simpl in H9.
+        eapply msubstT_preserves_kinding_2 in H9 as H10...
+        eapply strong_normalisation in H10 as H11...
+        destruct H11.
+        
+        eexists. split...
       }
       right...
-Admitted.
+Qed.

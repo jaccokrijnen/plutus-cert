@@ -1,11 +1,16 @@
 Require Import PlutusCert.Language.PlutusIR.Transform.LetNonRec.
 Require Import PlutusCert.Language.PlutusIR.Transform.LetNonRec.SSP.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Misc.Axiom.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Misc.BoundVars.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Auto.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation.
+
 
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Basics.
@@ -17,10 +22,10 @@ Require Import Coq.Program.Basics.
 
 (** ** Translation relation specific compatibility lemmas *)
 
-Lemma compatibility_LetNonRec_nil__desugar : forall Delta Gamma t t' T,
-    Delta |-* T : Kind_Base ->
-    LR_logically_approximate Delta Gamma t t' T ->
-    LR_logically_approximate Delta Gamma (Let NonRec nil t) t' T.
+Lemma compatibility_LetNonRec_Nil__desugar : forall Delta Gamma t t' Tn,
+    Delta |-* Tn : Kind_Base ->
+    LR_logically_approximate Delta Gamma t t' Tn ->
+    LR_logically_approximate Delta Gamma (Let NonRec nil t) t' Tn.
 Proof with eauto_LR.
   intros Delta Gamma t t' Tn Hkind__T IHLR__t.
   unfold LR_logically_approximate.
@@ -259,8 +264,50 @@ Proof with eauto_LR.
           rewrite eqb_refl.
           eauto.
       }
-  - admit.
-Admitted.
+  - clear Hev__e_f.
+    rename j1 into jb.
+    rename H7 into Hev__vb.
+
+    assert (HRC__tb :
+      RC k Tbn rho
+        (msubst_term env (msubstA_term (msyn1 rho) tb))
+        (msubst_term env' (msubstA_term (msyn2 rho) tb'))  
+    )...
+    clear IH__tb.
+
+    apply RC_to_RV with (j := jb) (e_f := Error T') in HRC__tb as temp...
+    destruct temp as [e'_f [j' [Hev__e'_f HRV__vb]]].
+
+    eapply RV_error in HRV__vb as temp...
+    
+    destruct temp as [ [Hnerr Hnerr'] | [Herr Herr']].
+    + exfalso. eapply Hnerr. econstructor.
+    + inversion Herr'. subst.
+
+      eexists. eexists.
+      split. eapply E_Error_Apply2...
+      
+      split. {
+        inversion Htyp__ih. subst.
+        simpl in H9.
+        eapply msubstT_preserves_kinding_1 in H9 as H10...
+        eapply strong_normalisation in H10 as H11...
+        destruct H11.
+        
+        eexists. split...
+      }
+
+      split. {
+        inversion Htyp__ih. subst.
+        simpl in H9.
+        eapply msubstT_preserves_kinding_2 in H9 as H10...
+        eapply strong_normalisation in H10 as H11...
+        destruct H11.
+        
+        eexists. split...
+      }
+      right...
+Qed.
 
 (** ** Predicates *)
 
@@ -275,21 +322,23 @@ Definition P_bindings_well_formed_nonrec Delta Gamma bs : Prop :=
   (
     forall bs',
       Congruence.Cong_Bindings CNR_Term bs bs' ->
-      forall Delta_t Gamma_t bsGn t t' T,
+      forall Delta_t Gamma_t bsGn t t' Tn,
         Delta_t = mupdate Delta (flatten (List.map binds_Delta bs)) ->
         map_normalise (flatten (List.map binds_Gamma bs)) bsGn ->
         Gamma_t = mupdate Gamma bsGn  ->
-        LR_logically_approximate Delta_t Gamma_t t t' T ->
-        LR_logically_approximate Delta Gamma (Let NonRec bs t) (Let NonRec bs' t') T
+        Delta |-* Tn : Kind_Base ->
+        LR_logically_approximate Delta_t Gamma_t t t' Tn ->
+        LR_logically_approximate Delta Gamma (Let NonRec bs t) (Let NonRec bs' t') Tn
   ) /\ (
     forall fbs',
       CNR_Bindings bs fbs' ->
-      forall Delta_t Gamma_t bsGn t t' T,
+      forall Delta_t Gamma_t bsGn t t' Tn,
         Delta_t = mupdate Delta (flatten (List.map binds_Delta bs)) ->
         map_normalise (flatten (List.map binds_Gamma bs)) bsGn ->
-        Gamma_t = mupdate Gamma bsGn  ->
-        LR_logically_approximate Delta_t Gamma_t t t' T ->
-        LR_logically_approximate Delta Gamma (Let NonRec bs t) (fold_right apply t' fbs') T
+        Gamma_t = mupdate Gamma bsGn ->
+        Delta |-* Tn : Kind_Base ->
+        LR_logically_approximate Delta_t Gamma_t t t' Tn ->
+        LR_logically_approximate Delta Gamma (Let NonRec bs t) (fold_right apply t' fbs') Tn
   ).
 
 Definition P_bindings_well_formed_rec Delta Gamma bs1 : Prop := Delta ,, Gamma |-oks_r bs1.
@@ -298,21 +347,23 @@ Definition P_binding_well_formed Delta Gamma b : Prop :=
   (
     forall b',
       Congruence.Cong_Binding CNR_Term b b' ->
-      forall Delta_t Gamma_t bsGn t t' T bs bs',
+      forall Delta_t Gamma_t bsGn t t' Tn bs bs',
         Delta_t = mupdate Delta (binds_Delta b) ->
         map_normalise (binds_Gamma b) bsGn ->
         Gamma_t = mupdate Gamma bsGn ->
-        LR_logically_approximate Delta_t Gamma_t (Let NonRec bs t) (Let NonRec bs' t') T ->
-        LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t') T
+        Delta |-* Tn : Kind_Base ->
+        LR_logically_approximate Delta_t Gamma_t (Let NonRec bs t) (Let NonRec bs' t') Tn ->
+        LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t') Tn
   ) /\ (
     forall fb',
       CNR_Binding b fb' ->
-      forall Delta_t Gamma_t bsGn t t' T bs fbs',
+      forall Delta_t Gamma_t bsGn t t' Tn bs fbs',
         Delta_t = mupdate Delta (binds_Delta b) ->
         map_normalise (binds_Gamma b) bsGn ->
         Gamma_t = mupdate Gamma bsGn ->
-        LR_logically_approximate Delta_t Gamma_t (Let NonRec bs t) (fold_right apply t' fbs') T ->
-        LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (fold_right apply t' (fb' :: fbs')) T
+        Delta |-* Tn : Kind_Base ->
+        LR_logically_approximate Delta_t Gamma_t (Let NonRec bs t) (fold_right apply t' fbs') Tn ->
+        LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (fold_right apply t' (fb' :: fbs')) Tn
   ).
 
 #[export] Hint Unfold 
@@ -327,7 +378,7 @@ Definition P_binding_well_formed Delta Gamma b : Prop :=
 Theorem CNR_Term__DSP : forall Delta Gamma e T,
     Delta ,, Gamma |-+ e : T ->
     P_has_type Delta Gamma e T.
-Proof with eauto_LR.
+Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
   apply has_type__ind with 
     (P := P_has_type)
     (P0 := P_constructor_well_formed)
@@ -358,105 +409,111 @@ Proof with eauto_LR.
   - (* W_NilB_NonRec *)
     split. all: intros. all: subst.
     + inversion X. subst.
-      inversion H0... subst.
-      simpl in H2.
-      eapply compatibility_LetNonRec_nil...
-      admit.
+      inversion H0... 
     + inversion X. subst.
       inversion H0. subst.
       simpl in H2.
-      eapply compatibility_LetNonRec_nil__desugar...
-      admit.
+      eapply compatibility_LetNonRec_Nil__desugar...
   - (* W_ConsB_NonRec *)
     split. all: intros. all: subst.
-    + inversion X. subst.
-      inversion X0; subst.
-      * destruct v. 
-
-        simpl in H5.
-        unfold flatten in H5.
-        simpl in H5.
-        rewrite concat_app in H5.
-        simpl in H5.
-        apply map_normalise__app in H5 as H6.
-        destruct H6 as [l1n [l2n [Hn__l1n [Hn__l2n Heql]]]].
-        simpl in Hn__l2n.
-        inversion Hn__l2n. subst.
-        inversion H10. subst.
-
-        simpl in H1.
-        inversion H1. subst.
-        inversion H12. subst.
-        
-        eapply normalisation__deterministic in H11... 
-        subst.
-
-        eapply H0...
-        eapply H3...
-
-        simpl in H7.
-        rewrite mupdate_app in H7.
-        unfold flatten in H7.
-        simpl in H7.
-        rewrite concat_app in H7.
-        simpl in H7.
-        rewrite app_nil_r in H7.
-
-        eapply H7.
-      * admit.
-      * admit.
-    + inversion X. subst.
-      inversion X0. subst.
-      
-      simpl in H5.
-      unfold flatten in H5.
-      simpl in H5.
-      rewrite concat_app in H5.
-      simpl in H5.
-      apply map_normalise__app in H5 as H6.
-      destruct H6 as [l1n [l2n [Hn__l1n [Hn__l2n Heql]]]].
-      simpl in Hn__l2n.
-      inversion Hn__l2n. subst.
-      inversion H10. subst.
-
-      simpl in H1.
-      inversion H1. subst.
-      inversion H12. subst.
-      
-      eapply normalisation__deterministic in H11... 
+    + rewrite flatten_app in H5.
+      apply map_normalise__app in H5.
+      destruct H5 as [l1n [l2n [Hmn__l1n [Hmn__l2n Heq]]]].
       subst.
+      eapply map_normalise__deterministic in H1...
+      subst.
+
+      inversion X. subst.
 
       eapply H0...
       eapply H3...
-      
-      simpl in H7.
-      rewrite mupdate_app in H7.
-      unfold flatten in H7.
-      simpl in H7.
-      rewrite concat_app in H7.
-      simpl in H7.
-      rewrite app_nil_r in H7.
+      * eapply Kinding.weakening; eauto.
+        destruct b.
+        -- simpl. eapply inclusion_refl.
+        -- simpl. destruct t0. simpl.
+            unfold inclusion.
+            intros.
+            destruct (s =? x)%string eqn:Heqb.
+            ++ eapply eqb_eq in Heqb as Heq.
+                subst.
+                assert (Annotation.appears_bound_in x (Let NonRec (TypeBind (TyVarDecl x k) t1 :: bs) t)) by eauto.
+                eapply uniqueness' in H4.
+                rewrite H4 in H1.
+                inversion H1.
+            ++ apply eqb_neq in Heqb as Hneq.
+                rewrite update_neq; eauto.
+        -- destruct d.
+            simpl. destruct t0.
+            simpl.
+            unfold inclusion.
+            intros.
+            destruct (s0 =? x)%string eqn:Heqb.
+            ++ eapply eqb_eq in Heqb as Heq.
+                subst.
+                assert (Annotation.appears_bound_in x (Let NonRec (DatatypeBind (Datatype (TyVarDecl x k) l s l0) :: bs) t)) by eauto.
+                eapply uniqueness' in H4.
+                rewrite H4 in H1.
+                inversion H1.
+            ++ apply eqb_neq in Heqb as Hneq.
+                rewrite update_neq;eauto.
+      * rewrite <- mupdate_app.
+        rewrite <- mupdate_app.
+        rewrite <- flatten_app...
+    + rewrite flatten_app in H5.
+      apply map_normalise__app in H5.
+      destruct H5 as [l1n [l2n [Hmn__l1n [Hmn__l2n Heq]]]].
+      subst.
+      eapply map_normalise__deterministic in H1...
+      subst. 
+    
+      inversion X. subst.
 
-      eapply H7.
+      eapply H0...
+      eapply H3...
+      * eapply Kinding.weakening; eauto.
+        destruct b.
+        -- simpl. eapply inclusion_refl.
+        -- simpl. destruct t0. simpl.
+            unfold inclusion.
+            intros.
+            destruct (s =? x)%string eqn:Heqb.
+            ++ eapply eqb_eq in Heqb as Heq.
+                subst.
+                assert (Annotation.appears_bound_in x (Let NonRec (TypeBind (TyVarDecl x k) t1 :: bs) t)) by eauto.
+                eapply uniqueness' in H4.
+                rewrite H4 in H1.
+                inversion H1.
+            ++ apply eqb_neq in Heqb as Hneq.
+                rewrite update_neq; eauto.
+        -- destruct d.
+            simpl. destruct t0.
+            simpl.
+            unfold inclusion.
+            intros.
+            destruct (s0 =? x)%string eqn:Heqb.
+            ++ eapply eqb_eq in Heqb as Heq.
+                subst.
+                assert (Annotation.appears_bound_in x (Let NonRec (DatatypeBind (Datatype (TyVarDecl x k) l s l0) :: bs) t)) by eauto.
+                eapply uniqueness' in H4.
+                rewrite H4 in H1.
+                inversion H1.
+            ++ apply eqb_neq in Heqb as Hneq.
+                rewrite update_neq;eauto.
+      * rewrite <- mupdate_app.
+        rewrite <- mupdate_app.
+        rewrite <- flatten_app...
 
   - (* W_Term *)
     split. all: intros. all: subst.
-    + inversion X. subst.
-      eauto with DSP_compatibility_lemmas.
+    + inversion X...
     + inversion X. subst.
       eapply compatibility_TermBind__desugar...
   - (* W_Type *)
-    split. 
-    + intros. subst.
-      inversion X0. subst.
-      eauto with DSP_compatibility_lemmas.
-    + intros. subst.
-      inversion X0.
+    split. all: intros. all: subst.
+    + inversion X0... 
+    + inversion X0.
   - (* W_Data *)
-    split.
-    + intros. subst.
-      inversion X0. subst.
-      eauto with DSP_compatibility_lemmas typing.
-    + intros. subst.
-      inversion X0.
-Admitted.
+    split. all: intros. all: subst.
+    + inversion X0...
+    + inversion X0...
+Qed.
