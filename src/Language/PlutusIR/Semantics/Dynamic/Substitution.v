@@ -1,6 +1,8 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 
+Require Export PlutusCert.Language.PlutusIR.Semantics.Misc.BoundVars.
+
 Import Coq.Lists.List.
 Import Coq.Strings.String.
 
@@ -9,22 +11,6 @@ Local Open Scope string_scope.
 
 
 (** Substitution of terms *)
-
-Definition bvc (c : NamedTerm.constructor) : string :=
-  match c with
-  | Constructor (VarDecl x _) _ => x
-  end.
-
-Definition bvb (b : NamedTerm.Binding) : list string :=
-  match b with
-  | TermBind _ (VarDecl x _) _ => cons x nil
-  | TypeBind (TyVarDecl X _) _ => nil
-  | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => matchFunc :: (rev (map bvc cs))
-  end.
-
-Definition bvbs (bs : list NamedTerm.Binding) : list string := List.concat (map bvb bs).
-
-
 
 Section SubstBindings.
   Context {substb : name -> Term -> Binding -> Binding}.

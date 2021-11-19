@@ -33,7 +33,6 @@ Fixpoint msubstT (ss : list (tyname * Ty)) (T : Ty) : Ty :=
   end.
 
 (** * Capture-avoiding substitution of types *)
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.ContextInvariance.AFI.
 Require Import Lia.
 Import ListNotations.
 

@@ -1,6 +1,9 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 
+Require Export PlutusCert.Language.PlutusIR.Semantics.Misc.BoundVars.
+Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Typing.
+
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
 
@@ -44,30 +47,16 @@ End Ty.
 
 Module Term.
 
-  Definition term_var_bound_by_constructor (c : NamedTerm.constructor) : string :=
-    match c with
-    | Constructor (VarDecl x _) _ => x
-    end.
-
-  Definition term_vars_bound_by_binding (b : NamedTerm.Binding) : list string :=
-    match b with
-    | TermBind _ (VarDecl x _) _ => cons x nil
-    | TypeBind (TyVarDecl X _) _ => nil
-    | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => matchFunc :: (rev (map term_var_bound_by_constructor cs))
-    end.
-
-  Definition term_vars_bound_by_bindings (bs : list NamedTerm.Binding) : list string := List.concat (map term_vars_bound_by_binding bs).
-
   Inductive appears_free_in : name -> Term -> Prop :=
     | AFIT_Let : forall x r bs t,
-        ~(In x (term_vars_bound_by_bindings bs)) ->
+        ~(In x (bvbs bs)) ->
         appears_free_in x t ->
         appears_free_in x (Let r bs t)
     | AFIT_LetNonRec : forall x bs t,
         appears_free_in__bindings_nonrec x bs ->
         appears_free_in x (Let NonRec bs t)
     | AFIT_LetRec : forall x bs t,
-        ~(In x (term_vars_bound_by_bindings bs)) ->
+        ~(In x (bvbs bs)) ->
         appears_free_in__bindings_rec x bs ->
         appears_free_in x (Let Rec bs t)
     | AFIT_Var : forall x,
@@ -100,7 +89,7 @@ Module Term.
         appears_free_in__binding x b ->
         appears_free_in__bindings_nonrec x (b :: bs)
     | AFIT_ConsB2_NonRec : forall x b bs,
-        ~(In x (term_vars_bound_by_binding b)) ->
+        ~(In x (bvb b)) ->
         appears_free_in__bindings_nonrec x bs ->
         appears_free_in__bindings_nonrec x (b :: bs)
 
@@ -125,25 +114,16 @@ End Term.
 
 Module Annotation.
 
-  Definition tyvars_bound_by_binding (b : NamedTerm.Binding) : list tyname :=
-    match b with
-    | TermBind _ (VarDecl x _) _ => nil
-    | TypeBind (TyVarDecl X _) _ => cons X nil
-    | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => cons X nil
-    end.
-
-  Definition tyvars_bound_by_bindings (bs : list NamedTerm.Binding) : list tyname := List.concat (map tyvars_bound_by_binding bs).
-
   Inductive appears_free_in (X : tyname) : Term -> Prop :=
     | AFIA_Let : forall r bs t,
-        ~(In X (tyvars_bound_by_bindings bs)) ->
+        ~(In X (btvbs bs)) ->
         appears_free_in X t ->
         appears_free_in X (Let r bs t)
     | AFIA_LetNonRec : forall bs t,
         appears_free_in__bindings_nonrec X bs ->
         appears_free_in X (Let NonRec bs t)
     | AFIA_LetRec : forall bs t,
-        ~(In X (tyvars_bound_by_bindings bs)) ->
+        ~(In X (btvbs bs)) ->
         appears_free_in__bindings_rec X bs ->
         appears_free_in X (Let Rec bs t)
     | AFIA_TyAbs : forall bX K t0,
@@ -182,14 +162,17 @@ Module Annotation.
         appears_free_in X (Unwrap t0)
 
   with appears_free_in__constructor (X : tyname) : constructor -> Prop :=
-    (* TODO *)
+    | AFIA_Constructor : forall x T ar Targs Tr,
+        (Targs, Tr) = splitTy T ->
+        (exists U, In U Targs /\ Ty.appears_free_in X U) ->
+        appears_free_in__constructor X (Constructor (VarDecl x T) ar)
 
   with appears_free_in__bindings_nonrec (X : tyname) : list Binding -> Prop :=
     | AFIA_ConsB1_NonRec : forall b bs,
         appears_free_in__binding X b ->
         appears_free_in__bindings_nonrec X (b :: bs)
     | AFIA_ConsB2_NonRec : forall b bs,
-        ~(In X (tyvars_bound_by_binding b)) ->
+        ~(In X (btvb b)) ->
         appears_free_in__bindings_nonrec X bs ->
         appears_free_in__bindings_nonrec X (b :: bs)
 
@@ -202,7 +185,20 @@ Module Annotation.
         appears_free_in__bindings_rec X (b :: bs)
 
   with appears_free_in__binding (X: tyname) : Binding -> Prop :=
-    (* TODO *) .
+    | AFIA_TermBind1 : forall s x T t0,
+        Ty.appears_free_in X T ->
+        appears_free_in__binding X (TermBind s (VarDecl x T) t0)
+    | AFIA_TermBind2 : forall s x T t0,
+        appears_free_in X t0 ->
+        appears_free_in__binding X (TermBind s (VarDecl x T) t0)
+    | AFI_TypeBind : forall Y K T,
+        Ty.appears_free_in X T ->
+        appears_free_in__binding X (TypeBind (TyVarDecl Y K) T)
+    | AFI_DatatypeBind : forall Y K ZKs matchFunc cs,
+        ~ In X (map fst (rev (map fromDecl ZKs))) ->
+        (exists c, In c cs /\ appears_free_in__constructor X c) ->
+        appears_free_in__binding X (DatatypeBind (Datatype (TyVarDecl Y K) ZKs matchFunc cs))
+  .
 
   Definition closed (t : Term) :=
     forall x, ~(appears_free_in x t).

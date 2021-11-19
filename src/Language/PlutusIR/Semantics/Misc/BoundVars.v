@@ -160,3 +160,31 @@ End Annotation.
   Term.appears_bound_in
   Annotation.appears_bound_in
   : core.
+
+
+(** Retrieve bound term variable bindings *)
+
+Definition bvc (c : NamedTerm.constructor) : string :=
+  match c with
+  | Constructor (VarDecl x _) _ => x
+  end.
+
+Definition bvb (b : NamedTerm.Binding) : list string :=
+  match b with
+  | TermBind _ (VarDecl x _) _ => cons x nil
+  | TypeBind (TyVarDecl X _) _ => nil
+  | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => matchFunc :: (rev (map bvc cs))
+  end.
+
+Definition bvbs (bs : list NamedTerm.Binding) : list string := List.concat (map bvb bs).
+  
+(** Retrieve bound type variable bindings *)
+
+Definition btvb (b : NamedTerm.Binding) : list tyname :=
+  match b with
+  | TermBind _ (VarDecl x _) _ => nil
+  | TypeBind (TyVarDecl X _) _ => cons X nil
+  | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => cons X nil
+  end.
+
+Definition btvbs (bs : list NamedTerm.Binding) : list tyname := List.concat (map btvb bs).

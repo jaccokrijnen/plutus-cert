@@ -2,6 +2,7 @@ Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.ContextInvariance.AFI.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.In_Auxiliary.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Typing.
 
 Module Ty.
@@ -93,18 +94,32 @@ Module Term.
       inversion Hafi.
       + subst.
         eapply H5 in H12...
-        admit.
+        apply notIn_bvbs_bindsG in H10.
+        eapply notIn__map_normalise in H10...
+        rewrite notIn__lookup_mupdate in H12...
       + subst.
         eapply H3 in H9...
     - (* T_LetRec *)
       inversion Hafi.
       + subst.
         eapply H5 in H12...
-        admit.
+        apply notIn_bvbs_bindsG in H10.
+        eapply notIn__map_normalise in H10...
+        rewrite notIn__lookup_mupdate in H12...
       + subst.
         eapply H3 in H11...
-        admit.
-  Admitted.
+        apply notIn_bvbs_bindsG in H10.
+        eapply notIn__map_normalise in H10...
+        rewrite notIn__lookup_mupdate in H11...
+    - (* W_ConsB_NonRec *)
+      inversion Hafi. 
+      + subst.
+        apply H0...
+      + subst.
+        apply notIn_bvb_bindsG in H7.
+        eapply notIn__map_normalise in H7...
+        erewrite <- notIn__lookup_mupdate...
+Qed.
 
 End Term.
 
@@ -168,18 +183,39 @@ Module Annotation.
       inversion Hafi.
       + subst.
         eapply H5 in H11...
-        admit.
+        apply notIn_btvbs_bindsD in H9.
+        rewrite notIn__lookup_mupdate in H11...
       + subst.
         eapply H3 in H8...
     - (* T_LetRec *)
       inversion Hafi.
       + subst.
         eapply H5 in H11...
-        admit.
+        apply notIn_btvbs_bindsD in H9.
+        rewrite notIn__lookup_mupdate in H11...
       + subst.
         eapply H3 in H10...
-        admit.
-  Admitted.
+        apply notIn_btvbs_bindsD in H9.
+        rewrite notIn__lookup_mupdate in H10...
+    - (* W_Con *)
+      inversion Hafi. subst.
+      rewrite <- H3 in H.
+      inversion H. subst.
+      destruct H5 as [U [HIn__U Hafi__U]].
+      eapply Ty.free_in_context...
+    - (* W_ConsB_NonRec *)
+      inversion Hafi.
+      + subst.
+        apply H0...
+      + subst.
+        apply notIn_btvb_bindsD in H6.
+        erewrite <- notIn__lookup_mupdate...
+    - (* W_Data *)
+      inversion Hafi. subst.
+      destruct H7 as [c [HIn__c Hafi__c]].
+      erewrite <- notIn__lookup_mupdate...
+      eapply H1...
+  Qed.
 
 End Annotation.
 

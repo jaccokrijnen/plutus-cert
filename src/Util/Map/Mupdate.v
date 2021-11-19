@@ -109,3 +109,22 @@ Proof.
     auto.
 Qed.
 
+Lemma notIn__lookup_mupdate : forall {X : Type} (xts : list (string * X)) (m : partial_map X) x,
+    ~ In x (map fst xts) ->
+    mupdate m xts x = m x.
+Proof with eauto.
+  induction xts. all: intros.
+  - reflexivity.
+  - simpl.
+    destruct a as [y v].
+    destruct (x =? y)%string eqn:Heqb.
+    + apply eqb_eq in Heqb as Heq.
+      simpl in H.
+      exfalso...
+    + apply eqb_neq in Heqb as Hneq.
+      rewrite update_neq...
+      simpl in H.
+      apply Decidable.not_or in H.
+      destruct H.
+      apply IHxts...
+Qed.

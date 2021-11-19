@@ -255,4 +255,15 @@ Lemma map_normalise__deterministic : forall l ln ln',
     map_normalise l ln ->
     map_normalise l ln' ->
     ln = ln'.
-Proof. Admitted.
+Proof with eauto. 
+  induction l. all: intros.
+  all: inversion H.
+  all: inversion H0.
+  all: subst.
+  - reflexivity.
+  - inversion H6. subst.
+    f_equal.
+    + f_equal.
+      eauto using normalisation__deterministic.
+    + eauto.
+Qed.

@@ -1,6 +1,8 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
+
+Require Import PlutusCert.Language.PlutusIR.Semantics.Static.TypeSubstitution.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Misc.BoundVars.
 
 Import Coq.Lists.List.
 Import Coq.Strings.String.
@@ -10,15 +12,6 @@ Local Open Scope string_scope.
 
 
 (** Substitution of types in type annotations *)
-
-Definition btvb (b : NamedTerm.Binding) : list tyname :=
-  match b with
-  | TermBind _ (VarDecl x _) _ => nil
-  | TypeBind (TyVarDecl X _) _ => cons X nil
-  | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => cons X nil
-  end.
-
-Definition btvbs (bs : list NamedTerm.Binding) : list tyname := List.concat (map btvb bs).
 
 Section SubstABindings.
   Context {substAb : tyname -> Ty -> Binding -> Binding}.
