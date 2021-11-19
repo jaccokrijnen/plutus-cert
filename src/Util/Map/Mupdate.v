@@ -128,3 +128,28 @@ Proof with eauto.
       destruct H.
       apply IHxts...
 Qed.
+
+Lemma In__lookup_mupdate : forall {X : Type} (xts : list (string * X)) (m m' : partial_map X) x,
+    In x (map fst xts) ->
+    mupdate m xts x = mupdate m' xts x.
+Proof with eauto.
+  induction xts. all: intros.
+  - inversion H.
+  - simpl.
+    destruct a as [y v].
+    destruct H.
+    + simpl in H.
+      subst.
+      rewrite update_eq.
+      rewrite update_eq.
+      reflexivity.
+    + destruct (x =? y)%string eqn:Heqb.
+      * apply eqb_eq in Heqb. 
+        subst.
+        rewrite update_eq.
+        rewrite update_eq.
+        reflexivity.
+      * apply eqb_neq in Heqb as Hneq.
+        rewrite update_neq...
+        rewrite update_neq...
+Qed.

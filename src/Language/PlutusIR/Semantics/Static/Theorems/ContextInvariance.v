@@ -2,9 +2,14 @@ Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.ContextInvariance.AFI.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.In_Auxiliary.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Typing.
 
+Require Import Coq.Lists.List.
+
 Local Open Scope string_scope.
+
+
 
 Module Kinding.
 
@@ -115,28 +120,43 @@ Module Typing.
     - (* T_Let *)
       subst.
       eapply T_Let...
-      simpl. apply H5.
+      apply H5.
       intros.
-      apply mupdate_eq_cong.
-      apply H7.
-      apply Term.AFIT_Let...
-      admit.
-
+      assert ({In x (bvbs bs)} + {~ In x (bvbs bs)}) by eauto using in_dec, string_dec.
+      destruct H1.
+      + apply In_bvbs_bindsG in i.
+        eapply In__map_normalise in i...
+        apply In__lookup_mupdate...
+      + apply mupdate_eq_cong...
     - (* T_LetRec *)
       subst.
       eapply T_LetRec...
       + apply H3.
         intros.
-        apply mupdate_eq_cong.
-        apply H7.
-        apply Term.AFIT_LetRec...
-        admit.
+        assert ({In x (bvbs bs)} + {~ In x (bvbs bs)}) by eauto using in_dec, string_dec.
+        destruct H1.
+        * apply In_bvbs_bindsG in i.
+          eapply In__map_normalise in i...
+          apply In__lookup_mupdate...
+        * apply mupdate_eq_cong...
       + apply H5.
         intros.
-        apply mupdate_eq_cong.
-        apply H7.
-        apply Term.AFIT_Let...
-        admit.
-  Admitted.
+        assert ({In x (bvbs bs)} + {~ In x (bvbs bs)}) by eauto using in_dec, string_dec.
+        destruct H1.
+        * apply In_bvbs_bindsG in i.
+          eapply In__map_normalise in i...
+          apply In__lookup_mupdate...
+        * apply mupdate_eq_cong...
+    - (* W_ConsB_NonRec *)
+      eapply W_ConsB_NonRec...
+      eapply H3.
+      intros.
+      assert ({In x (bvb b)} + {~ In x (bvb b)}) by eauto using in_dec, string_dec.
+      destruct H6.
+      + apply In_bvb_bindsG in i.
+        eapply In__map_normalise in i...
+        apply In__lookup_mupdate...
+      + apply mupdate_eq_cong...
+  Qed.
 
 End Typing.
