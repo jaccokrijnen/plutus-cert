@@ -14,7 +14,8 @@ Require Import Coq.Lists.List.
 
 Local Open Scope string_scope.
 
-
+(* ADMIT: We admit many lemmas here due to time constraints. They should hold or should at least hold with 
+   minor adjustements to our definitions. *)
 
 (** Properties of substitutions *)
 

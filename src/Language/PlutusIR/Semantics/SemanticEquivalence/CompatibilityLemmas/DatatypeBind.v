@@ -80,9 +80,11 @@ Proof with eauto_LR.
       simpl in Hmapnorm__bsGn.
       rewrite List.concat_app.
       eapply map_normalise__app'...
+      (* ADMIT: Should hold since map_normalise is total for well-kinded types. *)
       admit.
     - rewrite mupdate_app. eapply H7.
-    - admit. 
+    - (* ADMIT: Should follow from uniqueness property. *)
+      admit. 
   }
 
   split. {
@@ -95,9 +97,11 @@ Proof with eauto_LR.
       simpl in Hmapnorm__bsGn.
       rewrite List.concat_app.
       eapply map_normalise__app'...
+      (* ADMIT: Should hold since map_normalise is total for well-kinded types. *)
       admit.
     - rewrite mupdate_app. eapply H7.
-    - admit.
+    - (* ADMIT: Should follow from uniqueness property. *)
+      admit.
   }
 
   intros k rho env env' ct ck HeqDelta HeqGamma HRD HRG.
@@ -116,4 +120,5 @@ Proof with eauto_LR.
   inversion Hev__e_f. subst.
   clear Hev__e_f. rename H3 into Hev__e_f.
   inversion Hev__e_f; subst.
+(* ADMIT: Proof contains admits *)
 Admitted.

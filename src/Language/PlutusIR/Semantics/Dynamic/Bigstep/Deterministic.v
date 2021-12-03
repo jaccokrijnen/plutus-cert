@@ -7,23 +7,6 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.Bigstep.EvalValue.
 
 (** * [eval] is deterministic *)
 
-(** The next Lemma seems to follow easily from inversion on the assumption and it is 
-    therefore not really necessary to dedicate a Lemma to it. However, we need to  prove 
-    this Lemma separately because the [inversion] tactic could not figure out this equality 
-    during the [eval__deterministic] proof below. *)
-Lemma compare_IfThenElse_conditions : forall T T' (t_e t_e' : Term) cond cond', 
-    Apply (Apply (TyInst (Builtin IfThenElse) T) (Constant (Some (ValueOf DefaultUniBool cond)))) t_e = 
-      Apply (Apply (TyInst (Builtin IfThenElse) T') (Constant (Some (ValueOf DefaultUniBool cond')))) t_e' -> 
-    cond = cond'.
-Proof.
-  intros.
-  inversion H. 
-  subst.
-  apply Eqdep.EqdepTheory.inj_pair2 in H2.
-  subst.
-  reflexivity.
-Qed.
-
 (** ** Predicates *)
 Definition P_eval x y1 (j1 : nat) :=
   forall y2 j2,
@@ -57,7 +40,7 @@ Ltac unfold_predicates :=
   | |- _ => idtac
   end.
 
-Ltac e :=
+Ltac use_IH :=
   let y2 := fresh "y2" in
   let j2 := fresh "j2" in
   let H4 := fresh "H" in
@@ -80,13 +63,13 @@ Ltac e :=
     eapply H1 in H3; eauto; destruct H3 as [H4 H5]; try (inversion H4); subst
   end. 
 
-Ltac f :=
+Ltac error_is_error :=
   match goal with
   | H : ~ is_error (Error ?T) |- ?P =>
       exfalso; apply H; constructor
   end.
 
-Ltac g :=
+Ltac invert_neutral :=
   match goal with
   | H : neutral ?t |- ?P =>
       try solve [inversion H]
@@ -94,23 +77,8 @@ Ltac g :=
       try solve [inversion H]
   end.
 
-Ltac solf :=
-  try solve [repeat (e || f || g || eauto)].
-
-Ltac solf' :=
-  repeat (e || f || g || eauto).
-
-Ltac h n :=
-  match goal with
-  | H : ?t =[?j]=> ?v |- ?P =>
-      inversion H; clear H; subst; 
-      try solve [
-        solf' || exfalso; eauto
-      ];
-      match n with
-      | S (S ?n') => try (h (S n'))
-      end
-  end.
+Ltac try_solve :=
+  try solve [repeat (use_IH || error_is_error || invert_neutral || eauto)].
 
 (** ** The main result *)
 Theorem eval__deterministic : forall x y1 j1,
@@ -121,13 +89,13 @@ Proof with eauto.
   all: intros; autounfold.
   all: intros y5 j5 Hev.
   all: unfold_predicates.
-  all: try solve [inversion Hev; subst; solf].
+  all: try solve [inversion Hev; subst; try_solve].
   - inversion Hev; subst. 
-    all: try solve[solf].
+    all: try_solve.
     + inversion H10. subst.
       apply eval_value in H12.
       autounfold in H12.
-      e.
+      use_IH.
       inversion H10. subst.
       inversion H15.
     + inversion H8.
@@ -135,6 +103,10 @@ Proof with eauto.
       eapply fully_applied_neutral__subsumes__neutral_value in H13...
       eapply eval_value in H13 as H14.
       autounfold in H14.
-      e.
-      g.
+      use_IH.
+      invert_neutral.
+(* ADMIT: Remaining proof cases are technical overhead.
+    Since we have multiple evaluation rules for applications
+    and type instantiations, we need to do tedious work to 
+    derive contradictions. *)
 Admitted.

@@ -221,18 +221,3 @@ Definition LR_logically_approximate (Delta : partial_map Kind) (Gamma : partial_
 
 Definition LR_logically_equivalent (Delta : partial_map Kind) (Gamma : partial_map Ty) (e e' : Term) (T : Ty) :=
   LR_logically_approximate Delta Gamma e e' T /\ LR_logically_approximate Delta Gamma e' e T.
-
-(* TODO: remove *)
-Definition LR_logically_approximate_binding (Delta : Delta) (Gamma : Gamma) (b b' : Binding) :=
-  Delta ,, Gamma |-ok_b b /\
-  (Delta ,, Gamma |-ok_b b') /\
-  match b, b' with
-  | TermBind s (VarDecl x T) e, TermBind s' (VarDecl x' T') e' =>
-      s' = s /\
-      x' = x /\
-      T' = T /\
-      LR_logically_approximate Delta Gamma e e' T
-  | TypeBind _ _, TypeBind _ _ => b = b'
-  | DatatypeBind _, DatatypeBind _ => b = b'
-  | _, _ => False
-  end.

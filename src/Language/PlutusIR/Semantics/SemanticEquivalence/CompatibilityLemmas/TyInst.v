@@ -91,4 +91,10 @@ Proof with eauto_LR.
 
       eapply RV_condition...
       eapply RV_equiv...
+      
+      (* ADMIT: I had no time to finish this. Should hold if we prove Lemma C.12 from the paper by Ahmed. *)
+      admit.
+    + (* ADMIT: Both are errors, should hold. *)
+      admit.
+  - (* ADMIT: I had no time to finish this. *)
 Admitted.

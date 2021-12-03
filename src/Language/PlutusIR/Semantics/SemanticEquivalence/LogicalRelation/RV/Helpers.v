@@ -296,8 +296,9 @@ Proof with eauto.
   destruct H0. subst.
   exists v', 0. split. eapply eval_value__value...
   apply RV_condition in H...
-Admitted.
-(* TODO: We admit this, but this is not entirely correct. This lemma
+(* ADMIT: We admit this, but this is not entirely correct. This lemma
    is only correct if X does not appear
    freely in the type annotations and types of v and v'.
+   Should hold if the uniqueness property holds.
 *)
+Admitted.

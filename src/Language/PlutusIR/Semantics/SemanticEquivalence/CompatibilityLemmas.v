@@ -46,25 +46,3 @@ Proof.
   rewrite app_nil_r.
   reflexivity.
 Qed.
-
-Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
-
-Lemma helper : forall Delta Gamma b bs e e' T,
-    LR_logically_approximate 
-      (mupdate Delta (flatten (List.map binds_Delta (b :: bs)))) 
-      (mupdate Gamma (flatten (List.map binds_Gamma (b :: bs))))
-      e e' T ->
-    LR_logically_approximate
-      (mupdate (mupdate Delta (binds_Delta b)) (flatten (List.map binds_Delta bs)))
-      (mupdate (mupdate Gamma (binds_Gamma b)) (flatten (List.map binds_Gamma bs)))
-      e e' T.
-Proof.
-  intros.
-  rewrite <- mupdate_app.
-  rewrite <- mupdate_app.
-  rewrite <- flatten_app.
-  rewrite <- flatten_app.
-  assumption.
-Qed.
-
-#[export] Hint Resolve helper : DSP_compatibility_lemmas.

@@ -80,7 +80,9 @@ Qed.
 
 Lemma msubst_bnr__bound_vars : forall bs ss,
     bvbs bs = bvbs <{ /[ ss /][bnr] bs }>.
-Proof. Admitted.
+Proof. 
+(* ADMIT: I had no time to finish this. Should follow from subst_bnr__bound_vars *)
+Admitted.
 
 Lemma substA_b__bound_tyvars : forall a T b,
     btvb b = btvb <{ [[T/a][b] b }>.
@@ -107,7 +109,9 @@ Qed.
 
 Lemma msubstA_bnr__bvbs : forall bs ss,
     bvbs bs = bvbs <{ /[[ ss /][bnr] bs }>.
-Proof. Admitted.
+Proof. 
+(* ADMIT: I had no time to finish this. Should follow from substA_bnr__bound_tyvars *)
+Admitted.
     
 Lemma msubst_LetNonRec_nil : forall ss e,
     msubst_term ss (Let NonRec nil e) = Let NonRec nil (msubst_term ss e).
@@ -189,7 +193,9 @@ Qed.
 
 Lemma msubstA_LetNonRec : forall ss bs e,
     msubstA_term ss (Let NonRec bs e) = Let NonRec (msubstA_bindings_nonrec ss bs) (msubstA_term (mdrop (btvbs bs) ss) e).
-Proof. Admitted.
+Proof.
+(* ADMIT: I had no time to finish this. Should hold, it is a congruence lemma. *)
+Admitted.
 
 Lemma msubstA_TermBind : forall ss stricty x T e,
     msubstA_binding ss (TermBind stricty (VarDecl x T) e) = TermBind stricty (VarDecl x (msubstT ss T)) (msubstA_term ss e).
@@ -202,12 +208,7 @@ Qed.
 Lemma msubstA_BindingsNonRec_cons : forall ss b bs,
     msubstA_bindings_nonrec ss (b :: bs) = msubstA_binding ss b :: msubstA_bindings_nonrec (mdrop (btvb b) ss) bs.
 Proof.
-  induction ss; intros.
-  - rewrite mdrop_nil. reflexivity.
-  - destruct a. 
-    simpl.
-    destruct (List.find (eqb s) (btvb b)) eqn:Hfind.
-    + simpl. 
+(* ADMIT: I had no time to finish this. Should hold, it is a congruence lemma. *)
 Admitted.
 
 Lemma msubst_term__fold : forall ss x v t,

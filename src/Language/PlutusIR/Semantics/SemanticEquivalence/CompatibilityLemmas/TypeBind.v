@@ -14,4 +14,5 @@ Lemma compatibility_TypeBind : forall Delta Gamma X K Tb b b' bs bs' t t' Tn,
       LR_logically_approximate Delta_ih Gamma_ih (Let NonRec bs t) (Let NonRec bs' t') Tn ->
       LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t') Tn.
 Proof.
+(* ADMIT: I had no time to finish this. *)
 Admitted.

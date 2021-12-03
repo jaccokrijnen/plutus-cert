@@ -26,39 +26,5 @@ Proof with eauto with typing.
     + (* X <> Y *)
       apply eqb_neq in Heqb as Hneq.
       rewrite update_neq in H1...
+(* ADMIT: I had no time to finish this. Requires proofs about renamings. *)
 Admitted.
-
-(*
-  - (* Ty_Forall *)
-    rename b into bX.
-    destruct (X =? bX)%string eqn:Heqb.
-    + (* X = bX *)
-      apply eqb_eq in Heqb as Heq.
-      subst.
-      apply K_Forall...
-      rewrite update_shadow in H4...
-    + (* X <> bX *)
-      apply eqb_neq in Heqb as Hneq.
-      admit.
-      (*
-      apply K_Forall.
-      eapply IHT...
-      rewrite update_permute...
-      *)
-  - (* Ty_Lam *)  
-    rename b into bX.
-    destruct (X =? bX)%string eqn:Heqb.
-    + (* X = bX *)
-      apply eqb_eq in Heqb as Heq.
-      subst.
-      apply K_Lam.
-      rewrite update_shadow in H4...
-    + (* X <> bX *)
-      apply eqb_neq in Heqb as Hneq.
-      admit.
-      (*
-      apply K_Lam.
-      rewrite update_permute in H4...
-      *)
-Qed.
-*)

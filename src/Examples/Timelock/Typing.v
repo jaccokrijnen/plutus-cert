@@ -92,7 +92,7 @@ Ltac solve__BindingsNonRec :=
 Ltac solve__Let :=
   match goal with
   | |- ?Delta ,, ?Gamma |-+ (Let ?rec ?bs ?t) : ?T =>
-      eapply T_Let; try solve [eauto with typing || solve__map_normalise || solve__BindingsNonRec ]
+      eapply T_Let; try solve [eauto with typing || solve__map_normalise || solve__BindingsNonRec || solve__kinding ]
   end.
 
 Ltac solve__typing :=
@@ -100,11 +100,12 @@ Ltac solve__typing :=
 
 
 Example pir_0_original_shadowfix__typable :
-  empty ,, empty |-+ pir_0_original_shadowfix : (Ty_Fun (Ty_Var "EndDate") (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniInteger))) (Ty_Var "Bool"))).
+  ("EndDate" |-> Kind_Base ; "Bool" |-> Kind_Base ; empty) ,, empty |-+ pir_0_original_shadowfix : (Ty_Fun (Ty_Var "EndDate") (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniInteger))) (Ty_Var "Bool"))).
 Proof with (eauto with typing || (try solve [solve__map_normalise || solve__TVar])).
   unfold pir_0_original_shadowfix.
   unfold Name, TyName. simpl.
   solve__typing. {
+    (* ADMIT: alpha-equivalence is not implemented in the type rules yet *)
     admit.
   }
   repeat__econstructor.

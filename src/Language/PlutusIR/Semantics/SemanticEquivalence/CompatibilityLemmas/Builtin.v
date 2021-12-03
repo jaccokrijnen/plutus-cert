@@ -54,4 +54,5 @@ Proof with eauto_LR.
   autorewrite with RC.
   intros j Hlt__j e_f Hev__e_f.
   inversion Hev__e_f; subst.
+(* ADMIT: We do not handle built-in functions yet. *)
 Admitted.

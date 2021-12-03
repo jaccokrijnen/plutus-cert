@@ -1,7 +1,6 @@
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 
-Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Lists.List.
 
 

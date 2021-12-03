@@ -5,4 +5,6 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPre
 Theorem strong_normalisation : forall T K,
     empty |-* T : K ->
     exists Tn, normalise T Tn.
-Proof. Admitted.
+Proof. 
+(* ADMIT: I had no time to finish this. Should hold according to papers. *)
+Admitted.

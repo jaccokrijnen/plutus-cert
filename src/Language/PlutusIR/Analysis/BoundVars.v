@@ -38,27 +38,6 @@ Fixpoint bound_vars (t : term') : list var :=
    | (Builtin f)       => []
    end.
 
-Fixpoint bv_term {v v'} (t : term v v' v v') : list v :=
-  match t with
-  | Let _ bs t  => concat (map bv_binding bs)
-  | Var _       => []
-  | TyAbs _ _ t => bv_term t
-  | LamAbs v _ t => [v] ++ bv_term t
-  | Apply s t  => bv_term s ++ bv_term t
-  | Constant _ => []
-  | Builtin _  => []
-  | TyInst t _ => bv_term t
-  | Error _   => []
-  | IWrap _ _ t => bv_term t
-  | Unwrap t => bv_term t
-  end
-with bv_binding {v v'} (b : binding v v' v v') : list v:=
-  match b with
-  | TermBind _ (VarDecl v _) t => [v] ++ bv_term t
-  | TypeBind _ _   => []
-  | DatatypeBind _ => []
-  end
-.
 End BoundVars.
 
 Section UniqueVars.

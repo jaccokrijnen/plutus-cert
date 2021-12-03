@@ -86,11 +86,15 @@ Proof with eauto_LR.
       split. eapply N_TyIFix...
       eapply T_IWrap...
       - eapply msubstT_preserves_kinding_1...
-      - admit.
+      - (* ADMIT: normalisation and substitution commute *) 
+        admit.
       - eapply msubstT_preserves_kinding_1...
-      - admit.
-      - admit.
-      - admit. 
+      - (* ADMIT: normalisation and substitution commute *)  
+        admit.
+      - (* ADMIT: normalisation and substitution commute *) 
+        admit.
+      - (* ADMIT: Uninstantiated existential in proof depends on previous admits *)  
+        admit. 
     } 
     split... {
       rewrite msubstT_IFix.
@@ -105,11 +109,15 @@ Proof with eauto_LR.
       split. eapply N_TyIFix...
       eapply T_IWrap...
       - eapply msubstT_preserves_kinding_2...
-      - admit.
+      - (* ADMIT: normalisation and substitution commute *) 
+        admit.
       - eapply msubstT_preserves_kinding_2...
-      - admit.
-      - admit.
-      - admit. 
+      - (* ADMIT: normalisation and substitution commute *) 
+        admit.
+      - (* ADMIT: normalisation and substitution commute *) 
+        admit.
+      - (* ADMIT: Uninstantiated existential in proof depends on previous admits *)  
+        admit. 
     }
 
     left. 
@@ -187,4 +195,5 @@ Proof with eauto_LR.
         eapply N_TyIFix...
       }
       right...
+(* ADMIT: Proof contains admits. *)
 Admitted.

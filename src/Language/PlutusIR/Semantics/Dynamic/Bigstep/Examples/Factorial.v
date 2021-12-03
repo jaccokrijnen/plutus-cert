@@ -90,6 +90,7 @@ Ltac decide_neutral :=
 Example fact_term_evaluates : exists k,
   fact_term 2 =[k]=> Constant (Some (ValueOf DefaultUniInteger 2)).
 Proof with (autounfold; simpl; eauto || (try reflexivity) || (try solve [intros Hcon; inversion Hcon])).
+(* ADMIT: Factorial should use non-strict term bindings, but we do not model them yet. *)
 Admitted.
   (*
   unfold fact_term.

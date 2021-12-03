@@ -3,6 +3,8 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.Monotonicity.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Auto.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation.
 
 Require Import Arith.
 
@@ -40,7 +42,7 @@ Proof with eauto_LR.
   intros j Hlt__j e_f Hev__e_f.
 
   inversion Hev__e_f; subst.
-  + rename j0 into j_1.
+  - rename j0 into j_1.
     rename H0 into Hev'__e_f.
 
     assert (HRC : 
@@ -54,7 +56,7 @@ Proof with eauto_LR.
 
     apply RV_unwrap in HRV as temp...
     destruct temp as [temp | temp].
-    - destruct temp as [Hnerr [Hnerr' temp]].
+    + destruct temp as [Hnerr [Hnerr' temp]].
       destruct temp as [v_2 [v'_2 [F0 [F0' [T0 [T0' [Heq [Heq' Hunwr]]]]]]]].
       inversion Heq. subst.
 
@@ -62,9 +64,11 @@ Proof with eauto_LR.
       split. eapply E_Unwrap...
 
       split... {
+        (* ADMIT: I had no time to finish this, but should hold.*)
         admit.
       }
       split... {
+        (* ADMIT: I had no time to finish this, but should hold. *)
         admit.
       }
 
@@ -76,5 +80,9 @@ Proof with eauto_LR.
 
       eapply msubstT_preserves_kinding_1...
       eapply msubstT_preserves_kinding_2...
-    - 
+    + (* ADMIT: Both evaluate to errors, should hold. *)
+      admit.
+  - (* ADMIT: I had no time to finish this. *)
+    admit.
+(* ADMIT: Proof contains admits. *) 
 Admitted.

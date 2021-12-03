@@ -84,18 +84,5 @@ Proof with (eauto using substituteT_preserves_kinding with typing).
   all: unfold P_Binding.
   all: try (intros Delta Gamma X K U Htyp__b Hkind__U).
   all: try (inversion Htyp__t; subst).
-  - admit.
-  - admit.
-  - simpl.
-    eapply T_Var.
-    + apply gsubst__substituteT.
-      apply H0.
-    + admit.
-  - simpl.
-    admit.
-  - simpl.
-    simpl in Hnorm__Tn.
-    inversion Hnorm__Tn.
-    subst.
-    eapply T_LamAbs...
+(* ADMIT: I had no time to finish this. Should follow from uniqueness property, amongst others. *)
 Admitted.
