@@ -30,7 +30,50 @@ Proof.
     - reflexivity.
     - destruct a. eauto.
 Qed. 
-  
+
+Lemma normalise_msubstT_commutes_1 : forall T Tn Tn' ck rho K,
+    RD ck rho ->
+    mupdate empty ck |-* T : K ->
+    normalise T Tn ->
+    normalise (msubstT (msyn1 rho) Tn) Tn' ->
+    normalise (msubstT (msyn1 rho) T) Tn'.
+Proof. 
+(* ADMIT: Commutativity should hold. *)
+Admitted.
+
+Lemma normalise_msubstT_commutes_2 : forall T Tn Tn' ck rho K,
+    RD ck rho ->
+    mupdate empty ck |-* T : K ->
+    normalise T Tn ->
+    normalise (msubstT (msyn2 rho) Tn) Tn' ->
+    normalise (msubstT (msyn2 rho) T) Tn'.
+Proof. 
+(* ADMIT: Commutativity should hold. *)
+Admitted.
+
+Lemma normalise_unwrapIFix_commutes_1 : forall ck rho Fn K Tn T0n Fn' Tn' T0n',
+    RD ck rho ->
+    normalise (unwrapIFix Fn K Tn) T0n ->
+    normalise (msubstT (msyn1 rho) Fn) Fn' ->
+    normalise (msubstT (msyn1 rho) Tn) Tn' ->
+    normalise (msubstT (msyn1 rho) T0n) T0n' ->
+    normalise (unwrapIFix Fn' K Tn') T0n'.
+Proof.
+(* ADMIT: Commutativity should hold. Well-typedness of unwrapIFix term
+   should follow from uniqueness property. *)
+Admitted.
+
+Lemma normalise_unwrapIFix_commutes_2 : forall ck rho Fn K Tn T0n Fn' Tn' T0n',
+    RD ck rho ->
+    normalise (unwrapIFix Fn K Tn) T0n ->
+    normalise (msubstT (msyn2 rho) Fn) Fn' ->
+    normalise (msubstT (msyn2 rho) Tn) Tn' ->
+    normalise (msubstT (msyn2 rho) T0n) T0n' ->
+    normalise (unwrapIFix Fn' K Tn') T0n'.
+Proof.
+(* ADMIT: Commutativity should hold. Well-typedness of unwrapIFix term
+   should follow from uniqueness property. *)
+Admitted.
 
 Lemma compatibility_IWrap : forall Delta Gamma e e' T K Tn F Fn T0n,
     Delta |-* T : K ->
@@ -84,17 +127,14 @@ Proof with eauto_LR.
       destruct H3. destruct H6.
       eexists.
       split. eapply N_TyIFix...
+      eapply RV_typable_empty_1 in HRV as temp...
+      destruct temp as [T0n' [Hnorm__T0n' Htyp__e_f]].
       eapply T_IWrap...
       - eapply msubstT_preserves_kinding_1...
-      - (* ADMIT: normalisation and substitution commute *) 
-        admit.
+      - eapply normalise_msubstT_commutes_1...
       - eapply msubstT_preserves_kinding_1...
-      - (* ADMIT: normalisation and substitution commute *)  
-        admit.
-      - (* ADMIT: normalisation and substitution commute *) 
-        admit.
-      - (* ADMIT: Uninstantiated existential in proof depends on previous admits *)  
-        admit. 
+      - eapply normalise_msubstT_commutes_1...
+      - eapply normalise_unwrapIFix_commutes_1...
     } 
     split... {
       rewrite msubstT_IFix.
@@ -107,17 +147,14 @@ Proof with eauto_LR.
       destruct H3. destruct H6.
       eexists.
       split. eapply N_TyIFix...
+      eapply RV_typable_empty_2 in HRV as temp...
+      destruct temp as [T0n' [Hnorm__T0n' Htyp__e'_f]].
       eapply T_IWrap...
       - eapply msubstT_preserves_kinding_2...
-      - (* ADMIT: normalisation and substitution commute *) 
-        admit.
+      - eapply normalise_msubstT_commutes_2...
       - eapply msubstT_preserves_kinding_2...
-      - (* ADMIT: normalisation and substitution commute *) 
-        admit.
-      - (* ADMIT: normalisation and substitution commute *) 
-        admit.
-      - (* ADMIT: Uninstantiated existential in proof depends on previous admits *)  
-        admit. 
+      - eapply normalise_msubstT_commutes_2...
+      - eapply normalise_unwrapIFix_commutes_2...
     }
 
     left. 
@@ -195,5 +232,4 @@ Proof with eauto_LR.
         eapply N_TyIFix...
       }
       right...
-(* ADMIT: Proof contains admits. *)
-Admitted.
+Qed.

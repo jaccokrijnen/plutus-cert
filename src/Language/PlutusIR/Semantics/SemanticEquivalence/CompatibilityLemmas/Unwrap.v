@@ -1,5 +1,6 @@
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.IWrap.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.Monotonicity.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Auto.
@@ -16,6 +17,27 @@ Lemma msubstA_Unwrap : forall ss M ,
     msubstA_term ss (Unwrap M) = Unwrap (msubstA_term ss M).
 Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
+Lemma normalise_unwrapIFix_commutes'_1 : forall ck rho Fn K Tn T0n Fn' Tn' T0n',
+    RD ck rho ->
+    normalise (unwrapIFix Fn K Tn) T0n ->
+    normalise (msubstT (msyn1 rho) Fn) Fn' ->
+    normalise (msubstT (msyn1 rho) Tn) Tn' ->
+    normalise (unwrapIFix Fn' K Tn') T0n' ->
+    normalise (msubstT (msyn1 rho) T0n) T0n'.
+Proof.
+(* ADMIT: Commutativity should hold. *)
+Admitted.
+
+Lemma normalise_unwrapIFix_commutes'_2 : forall ck rho Fn K Tn T0n Fn' Tn' T0n',
+    RD ck rho ->
+    normalise (unwrapIFix Fn K Tn) T0n ->
+    normalise (msubstT (msyn2 rho) Fn) Fn' ->
+    normalise (msubstT (msyn2 rho) Tn) Tn' ->
+    normalise (unwrapIFix Fn' K Tn') T0n' ->
+    normalise (msubstT (msyn2 rho) T0n) T0n'.
+Proof.
+(* ADMIT: Commutativity should hold. *)
+Admitted.
 
 Lemma compatibility_Unwrap : forall Delta Gamma e e' Fn Tn K T0n,
     Delta |-* Tn : K ->
@@ -64,12 +86,32 @@ Proof with eauto_LR.
       split. eapply E_Unwrap...
 
       split... {
-        (* ADMIT: I had no time to finish this, but should hold.*)
-        admit.
+        eapply RV_typable_empty_1 in HRV as temp...
+        destruct temp as [T_ih [Hnorm__T_ih Htyp__ih]].
+        rewrite msubstT_IFix in Hnorm__T_ih.
+        inversion Hnorm__T_ih. subst.
+        inversion Htyp__ih. subst.
+
+        eexists. split...
+        eapply normalise_unwrapIFix_commutes'_1...
+        eapply preservation in H9...
+        eapply msubstT_preserves_kinding_1 in Hkind__Tn...
+        eapply preservation in Hkind__Tn...
+        eapply unique_kinds in H9... subst...
       }
       split... {
-        (* ADMIT: I had no time to finish this, but should hold. *)
-        admit.
+        eapply RV_typable_empty_2 in HRV as temp...
+        destruct temp as [T_ih [Hnorm__T_ih Htyp__ih]].
+        rewrite msubstT_IFix in Hnorm__T_ih.
+        inversion Hnorm__T_ih. subst.
+        inversion Htyp__ih. subst.
+
+        eexists. split...
+        eapply normalise_unwrapIFix_commutes'_2...
+        eapply preservation in H9...
+        eapply msubstT_preserves_kinding_2 in Hkind__Tn...
+        eapply preservation in Hkind__Tn...
+        eapply unique_kinds in H9... subst...
       }
 
       eapply RV_condition...
@@ -80,9 +122,31 @@ Proof with eauto_LR.
 
       eapply msubstT_preserves_kinding_1...
       eapply msubstT_preserves_kinding_2...
-    + (* ADMIT: Both evaluate to errors, should hold. *)
-      admit.
-  - (* ADMIT: I had no time to finish this. *)
-    admit.
+    + destruct temp as [Herr Herr'].
+      inversion Herr.
+  - rename j0 into j_0.
+    
+    assert (HRC :
+      RC k (Ty_IFix Fn Tn) rho
+        (msubst_term env (msubstA_term (msyn1 rho) e))
+        (msubst_term env' (msubstA_term (msyn2 rho) e'))
+    )...
+
+    apply RC_to_RV with (j := j_0) (e_f := Error T) in HRC as temp...
+    destruct temp as [e'_f [j'_0 [Hev__e'_f HRV]]].
+    apply RV_error in HRV as temp...
+    destruct temp as [temp | temp].
+    + destruct temp.
+      exfalso.
+      apply H.
+      econstructor.
+    + destruct temp.
+      inversion H1. subst.
+
+      eexists. eexists.
+      split. eapply E_Error_Unwrap...
+
+      split... admit. (* ADMIT: I had no time to finish this. Should hold. *)
+      split... admit. (* ADMIT: I had no time to finish this. Should hold. *)
 (* ADMIT: Proof contains admits. *) 
 Admitted.

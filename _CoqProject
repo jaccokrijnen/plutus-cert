@@ -4,8 +4,8 @@ src/Util.v
 src/Examples/Timelock.v
 src/Examples/Timelock/Typing.v
 src/Examples/Timelock/Trace.v
-# src/Examples/Game/Trace.v
-# src/Examples/MultiSig/Trace.v
+src/Examples/Game/Trace.v
+src/Examples/MultiSig/Trace.v
 src/Examples/TimelockDumps.v
 src/Language/PlutusIR.v
 src/Language/PlutusIR/Folds.v

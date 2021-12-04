@@ -55,7 +55,7 @@ Section UniqueVars.
     | UV_Error : forall ty, UniqueVars (Error ty)
     | UV_IWrap : forall ty1 ty2 t, UniqueVars t -> UniqueVars (IWrap ty1 ty2 t)
     | UV_Unwrap : forall t, UniqueVars t -> UniqueVars (Unwrap t)
-    
+
     with UniqueVars_binding : binding name tyname name tyname -> Type :=
     | UV_TermBind : forall s v t ty, ~(In v (bound_vars t)) -> UniqueVars t -> UniqueVars_binding (TermBind s (VarDecl v ty) t)
     | UV_TypeBind : forall tvd ty, UniqueVars_binding (TypeBind tvd ty)

@@ -17,6 +17,18 @@ Lemma msubstA_TyInst : forall ss t0 T0,
     msubstA_term ss (TyInst t0 T0) = TyInst (msubstA_term ss t0) (msubstT ss T0).
 Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
+Lemma per_type_substitution : forall ck rho T2 Chi X e e' T0n T1n T2n K k,
+    RD ck rho ->
+    mupdate empty ck |-* T2 : K ->
+    normalise T2 T2n ->
+    Chi = (fun k t t' => RV k T2 rho t t') ->
+    RV k T1n ((X, (Chi, msubstT (msyn1 rho) T2, msubstT (msyn2 rho) T2)) :: rho)%list e e' ->
+    normalise (substituteTCA X T2n T1n) T0n ->
+    RV k T0n rho e e'.
+Proof. 
+(* ADMIT: Proof should follow from Lemma C.12 by Ahmed. *)
+Admitted.
+
 
 
 Lemma compatibility_TyInst: forall Delta Gamma e e' X K2 T1n T2 T2n T0n,
@@ -86,15 +98,21 @@ Proof with eauto_LR.
       eexists. eexists.
       split. eapply E_TyInst...
 
-      split. admit.
-      split. admit.
+      split. {
+        (* ADMIT: I had no time to finish this. Should follow from the uniqueness property
+           and commutativity of substitution and normalisation. *)
+        admit. 
+      }
+      split. {
+        (* ADMIT: I had no time to finish this. Should follow from the uniqueness property
+           and commutativity of substitution and normalisation. *)
+        admit. 
+      }
 
       eapply RV_condition...
+      eapply per_type_substitution...
       eapply RV_equiv...
-      
-      (* ADMIT: I had no time to finish this. Should hold if we prove Lemma C.12 from the paper by Ahmed. *)
-      admit.
-    + (* ADMIT: Both are errors, should hold. *)
-      admit.
+    + destruct temp as [Herr Herr'].
+      inversion Herr.
   - (* ADMIT: I had no time to finish this. *)
 Admitted.
