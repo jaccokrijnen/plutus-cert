@@ -18,7 +18,13 @@ Proof with (eauto || solver).
   - (* ADMIT: See end of proof *)
     admit.
   - inversion IHhas_type1...
-  - inversion IHhas_type. subst. admit.
+  - inversion IHhas_type. subst. 
+    eapply preservation.
+    2:{
+      apply H2.
+    }
+    eapply substituteTCA_preserves_kinding...
+    eapply preservation...
   - unfold unwrapIFix in H1.
     inversion IHhas_type. subst.
     assert (K = K0) by admit.
