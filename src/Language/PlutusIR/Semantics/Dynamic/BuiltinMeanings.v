@@ -5,6 +5,7 @@ Import Coq.Strings.String.
 Import Ascii.
 Require Import Coq.Strings.BinaryString.
 From Equations Require Import Equations.
+Import ListNotations.
 
 Import NamedTerm.
 
@@ -53,6 +54,22 @@ Definition constUnit (a : unit) : Term := Constant (Some (ValueOf DefaultUniUnit
 Definition take (x : Z) (s : string) : string := substring 0 (Z.to_nat x) s.
 Definition drop (x : Z) (s : string) : string := substring (Z.to_nat x) (length s) s.
 
+#[export] Hint Unfold
+  constInt
+  constBool
+  constBS
+  constChar
+  constString
+  constUnit
+  take
+  drop
+  : core.
+
+(** Computes results of fully applied default functions where possible.
+    
+    Note that not all default functions have sensible implementations, such
+    as SHA2, SHA3 and VerifySignature. This is bound to change in the future.
+*)
 Definition compute_defaultfun (t : Term) : option Term :=
   match t with
   (** Binary operators on integers *)
@@ -234,7 +251,7 @@ Definition compute_defaultfun (t : Term) : option Term :=
       (Constant (@Some _ DefaultUniByteString (ValueOf _ bs2)))
     ) => Datatypes.Some (constBool (to_Z bs1 >? to_Z bs2))
   (** If-Then-Else *)
-  | (Apply
+  | (Apply  
       (Apply
         (Apply
           (TyInst
@@ -243,10 +260,10 @@ Definition compute_defaultfun (t : Term) : option Term :=
           )
           (Constant (@Some _ DefaultUniBool (ValueOf _ cond)))
         )
-        t
+        thenBranch
       )
-      f
-    ) => Datatypes.Some (if cond then t else f)
+      elseBranch
+    ) => Datatypes.Some (if cond then thenBranch else elseBranch)
   (* String operations *)
   (* CharToString *)
   | (Apply

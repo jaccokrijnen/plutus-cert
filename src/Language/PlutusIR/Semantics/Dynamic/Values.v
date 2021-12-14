@@ -2,53 +2,121 @@ Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
 
-
-(** * Values *)
+Inductive is_error : Term -> Prop :=
+  | IsError : forall T,
+      is_error (Error T).
 
 Inductive value : Term -> Prop :=
-  | V_TyAbs : forall bX K t0,
-      (* TODO: Should the line below be included? *)
-      value t0 ->
-      value (TyAbs bX K t0)
-  | V_LamAbs : forall bx T t0,
-      value (LamAbs bx T t0)
+  | V_LamAbs : forall x T t0,
+      value (LamAbs x T t0) 
+  | V_TyAbs : forall X K t,
+      value (TyAbs X K t)
+  | V_IWrap : forall F T v,
+      value v ->
+      ~ is_error v ->
+      value (IWrap F T v)
   | V_Constant : forall u,
       value (Constant u)
-  | V_Builtin : forall v,
-      value_builtin v ->
-      value v
   | V_Error : forall T,
       value (Error T)
-  | V_IWrap : forall F T t0,
-      (* TODO: Should the line below be included? *)
-      value t0 ->
-      value (IWrap F T t0)
+  (** Builtins *) 
+  | V_Neutral : forall nv,
+      neutral_value 0 nv ->
+      value nv
+  (** If-Then-Else constructs 
 
-with value_builtin : Term -> Prop :=
-| V_Builtin0 : forall f,
-    0 < arity f ->
-    value_builtin (Builtin f)
-| V_Builtin1 : forall f v1,
-    1 < arity f ->
-    value v1 ->
-    value_builtin (Apply (Builtin f) v1)
-| V_Builtin2 : forall f v1 v2,
-    2 < arity f ->
-    value v1 ->
-    value v2 ->
-    value_builtin (Apply (Apply (Builtin f) v1) v2)
-| V_Builtin1_WithTyInst : forall T,
-    1 < arity IfThenElse ->
-    value_builtin (TyInst (Builtin IfThenElse) T)
-| V_Builtin2_WithTyInst : forall T v1,
-    2 < arity IfThenElse ->
-    value v1 ->
-    value_builtin (Apply (TyInst (Builtin IfThenElse) T) v1)
-| V_Builtin3_WithTyInst : forall T v1 v2,
-    3 < arity IfThenElse ->
-    value v1 ->
-    value v2 ->
-    value_builtin (Apply (Apply (TyInst (Builtin IfThenElse) T) v1) v2).
+      NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity.
+  *)
+  (* | V_If : 
+      value (Builtin IfThenElse)
+  | V_If1 : forall T,
+      value (TyInst (Builtin IfThenElse) T)
+  | V_If2 : forall T cond,
+      value (Apply (TyInst (Builtin IfThenElse) T) cond)
+  | V_If3 : forall T cond t,
+      value (Apply (Apply (TyInst (Builtin IfThenElse) T) cond) t) *)
+
+with neutral_value : nat -> Term -> Prop :=
+  | NV_Builtin : forall n f,
+      (* NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity. *)
+      (* f <> IfThenElse -> *)
+      n < arity f ->
+      neutral_value n (Builtin f)
+  | NV_Apply : forall n nv v,
+      value v ->
+      ~ is_error v ->
+      neutral_value (S n) nv ->
+      neutral_value n (Apply nv v)
+  | NV_TyInst : forall n nv T,
+      neutral_value (S n) nv ->
+      neutral_value n (TyInst nv T)
+  .
+
+#[export] Hint Constructors value : core.
+#[export] Hint Constructors neutral_value : core.
 
 Scheme value__ind := Minimality for value Sort Prop
-  with value_builtin__ind := Minimality for value_builtin Sort Prop.
+  with neutral_value__ind := Minimality for neutral_value Sort Prop.
+
+Combined Scheme value__multind from 
+  value__ind,
+  neutral_value__ind.
+
+Definition neutral (t : Term) := neutral_value 0 t.
+
+#[export] Hint Unfold neutral : core.
+
+Inductive fully_applied_neutral : nat -> Term -> Prop :=
+  | FA_Builtin : forall n f,
+      (* NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity. *)
+      (* f <> IfThenElse -> *)
+      n = arity f ->
+      fully_applied_neutral n (Builtin f)
+  | FA_Apply : forall n nv v,
+      value v ->
+      ~ is_error v ->
+      fully_applied_neutral (S n) nv ->
+      fully_applied_neutral n (Apply nv v)
+  | FA_TyInst : forall n nv T,
+      fully_applied_neutral (S n) nv ->
+      fully_applied_neutral n (TyInst nv T)
+  .
+
+#[export] Hint Constructors fully_applied_neutral : core.
+
+Definition fully_applied (t : Term) := fully_applied_neutral 0 t.
+
+#[export] Hint Unfold fully_applied : core.
+
+Require Import Lia.
+
+Lemma neutral_value__monotone : forall n m nv,
+    neutral_value n nv ->
+    m <= n ->
+    neutral_value m nv.
+Proof with (eauto || (try lia)).
+  intros.
+  generalize dependent m.
+  induction H; intros...
+  - destruct f...
+    all: econstructor...
+  - econstructor...
+    eapply IHneutral_value...
+  - econstructor...
+    eapply IHneutral_value...
+Qed.
+
+Lemma fully_applied_neutral__subsumes__neutral_value : forall m n nv,
+  fully_applied_neutral n nv ->
+  m < n ->
+  neutral_value m nv.
+Proof with (eauto || (try lia)).
+  intros.
+  generalize dependent m.
+  induction H; intros...
+  - subst...
+  - econstructor...
+    eapply IHfully_applied_neutral...
+  - econstructor...
+    eapply IHfully_applied_neutral...
+Qed.
