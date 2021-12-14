@@ -1,925 +1,519 @@
-Require Import PlutusCert.Language.PlutusIR.
-Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Transform.LetNonRec.
 Require Import PlutusCert.Language.PlutusIR.Transform.LetNonRec.SSP.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Misc.Axiom.
+Require Import PlutusCert.Language.PlutusIR.Semantics.Misc.BoundVars.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Implementations.Named.
-Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.Preservation.
-Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.Progress.
-Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
-Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Def.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Auto.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation.
 
 
 Require Import Coq.Lists.List.
+Require Import Coq.Program.Basics.
 
 
 
-(** ** Context invariance *)
 
-Inductive appears_free_in : name -> Term -> Prop :=
-  | AFI_Let : forall x r bs t,
-      appears_free_in x t ->
-      appears_free_in x (Let r bs t)
-  | AFI_LetNonRec : forall x bs t,
-      appears_free_in_bindings_nonrec x bs ->
-      appears_free_in x (Let NonRec bs t)
-  | AFI_LetRec : forall x bs t,
-      ~(In x (term_vars_bound_by_bindings bs)) ->
-      appears_free_in_bindings_rec x bs ->
-      appears_free_in x (Let Rec bs t)
-  | AFI_Var : forall x,
-      appears_free_in x (Var x)
-  | AFI_TyAbs : forall x bX K t0,
-      appears_free_in x t0 ->
-      appears_free_in x (TyAbs bX K t0)
-  | AFI_LamAbs : forall x bx K t0,
-      appears_free_in x t0 ->
-      appears_free_in x (LamAbs bx K t0)
-  | AFI_Apply1 : forall x t1 t2,
-      appears_free_in x t1 ->
-      appears_free_in x (Apply t1 t2)
-  | AFI_Apply2 : forall x t1 t2,
-      appears_free_in x t2 ->
-      appears_free_in x (Apply t1 t2)
-  | AFI_TyInst : forall x t0 T,
-      appears_free_in x t0 ->
-      appears_free_in x (TyInst t0 T)
-  | AFI_IWrap : forall x F T t0,
-      appears_free_in x t0 ->
-      appears_free_in x (IWrap F T t0)
-  | AFI_Unwrap : forall x t0,
-      appears_free_in x t0 ->
-      appears_free_in x (Unwrap t0)
+(** * [CNR] is semantics preserving *)
 
-with appears_free_in_bindings_nonrec : name -> list Binding -> Prop :=
-  | AFI_ConsB1_NonRec : forall x b bs,
-      appears_free_in_binding x b ->
-      appears_free_in_bindings_nonrec x (b :: bs)
-  | AFI_ConsB2_NonRec : forall x b bs,
-      ~(In x (term_vars_bound_by_binding b)) ->
-      appears_free_in_bindings_nonrec x bs ->
-      appears_free_in_bindings_nonrec x (b :: bs)
+(** ** Translation relation specific compatibility lemmas *)
 
-with appears_free_in_bindings_rec : name -> list Binding -> Prop :=
-  | AFI_ConsB1_Rec : forall x b bs,
-      appears_free_in_binding x b ->
-      appears_free_in_bindings_rec x (b :: bs)
-  | AFI_ConsB2_Rec : forall x b bs,
-      appears_free_in_bindings_rec x bs ->
-      appears_free_in_bindings_rec x (b :: bs)
+Lemma compatibility_LetNonRec_Nil__desugar : forall Delta Gamma t t' Tn,
+    Delta |-* Tn : Kind_Base ->
+    LR_logically_approximate Delta Gamma t t' Tn ->
+    LR_logically_approximate Delta Gamma (Let NonRec nil t) t' Tn.
+Proof with eauto_LR.
+  intros Delta Gamma t t' Tn Hkind__T IHLR__t.
+  unfold LR_logically_approximate.
 
-with appears_free_in_binding : name -> Binding -> Prop :=
-  | AFI_TermBind : forall x s vd t0,
-      appears_free_in x t0 ->
-      appears_free_in_binding x (TermBind s vd t0)
-  .
+  destruct IHLR__t as [Htyp__t [Htyp__t' IH__t]].
 
-Definition closed (t : Term) :=
-  forall x, ~(appears_free_in x t).
+  split...
+  split...
 
-Lemma context_invariance : forall Gamma Gamma' t S,
-    Gamma |-+ t : S ->
-    (forall x, appears_free_in x t -> lookupT Gamma x = lookupT Gamma' x) ->
-    Gamma' |-+ t : S.
-Proof. Admitted.
+  intros k rho env env' ct ck HeqDelta HeqGamma H_RD H_RG.
+  subst.
 
-Lemma free_in_context : forall x t T Gamma,
-    appears_free_in x t ->
-    Gamma |-+ t : T ->
-    exists T', lookupT Gamma x = Datatypes.Some T'.
-Proof. Admitted.
+  rewrite msubstA_LetNonRec_nil.
+  rewrite msubst_LetNonRec_nil.
 
-Corollary typable_empty__closed : forall t T,
-    emptyContext |-+ t : T ->
-    closed t.
-Proof.
-  intros. unfold closed. intros x H1.
-  destruct (free_in_context _ _ _ _ H1 H) as [T' C].
-  discriminate C.
+  autorewrite with RC.
+
+  intros j Hlt__j e_f Hev__e_f.
+  inversion Hev__e_f. subst.
+  inversion H3. subst.
+  rename j0 into j_1.
+  rename H3 into Hev'__e_f.
+  rename H0 into Hev''__e_f.
+  
+
+  assert (HRC__t : RC k Tn rho 
+    (msubst_term env (msubstA_term (msyn1 rho) t))
+    (msubst_term env' (msubstA_term (msyn2 rho) t'))
+  )...
+
+  apply RC_to_RV with (j := j_1) (e_f := e_f) in HRC__t as temp...
+  destruct temp as [e'_f1 [j'_1 [Hev__e'_f1 HRV__t]]].
+
+  eexists. eexists.
+
+  split...
+
+  split... eapply RV_typable_empty_1...
+  split... eapply RV_typable_empty_2...
+
+  eapply RV_condition... 
+  eapply RV_monotone...
 Qed.
 
-(** ** Multisubstitutions, multi-extensions, and instantiations *)
+Lemma compatibility_TermBind__desugar : forall Delta Gamma t t' Tn b bs fbs' tb tb' x Tb Tbn,
+  Delta |-* Tb : Kind_Base ->
+  normalise Tb Tbn ->
+  forall Delta_ih Gamma_ih bsGn,
+    b = TermBind Strict (VarDecl x Tb) tb ->
+    Delta_ih = mupdate Delta (binds_Delta b) ->
+    map_normalise (binds_Gamma b) bsGn ->
+    Gamma_ih = mupdate Gamma bsGn ->
+    LR_logically_approximate Delta_ih Gamma_ih (Let NonRec bs t) (fold_right apply t' fbs') Tn ->
+    LR_logically_approximate Delta Gamma tb tb' Tbn ->
+    LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (Apply (LamAbs x Tb (fold_right apply t' fbs')) tb') Tn.
+Proof with eauto_LR. 
+  intros Delta Gamma t t' Tn b bs fbs' tb tb' x Tb Tbn.
+  intros Hkind__Tb Hnorm__Tbn.
+  intros Delta_ih Gamma_ih bsGn.
+  intros Heq__b Heq__Delta_ih Hmapnorm__bsGn Heq__Gamma_ih IHLR__ih IHLR__tb.
+  subst.
 
-Definition env := list (name * Term).
+  destruct IHLR__ih as [Htyp__ih [Htyp__ih' IH__ih]].
+  destruct IHLR__tb as [Htyp__tb [Htyp__tb' IH__tb]].
 
-Inductive msubst : env -> Term -> Term -> Prop :=
-  | msubst_nil : forall t,
-      msubst nil t t
-  | msubst_cons : forall x s ss t t' t'',
-      substitute x s t t' ->
-      msubst ss t' t'' ->
-      msubst ((x, s) :: ss) t t''
-  .
+  split. {
+    inversion Htyp__ih. subst.
+    rewrite <- mupdate_flatten in H7.
 
-Definition tass := list (name * Ty).
+    eapply T_Let...
+    - unfold flatten.
+      simpl.
+      simpl in Hmapnorm__bsGn.
+      rewrite List.concat_app.
+      eapply map_normalise__app'...
+    - rewrite mupdate_app...
+  }
 
-Fixpoint mupdate (Gamma : Context) (xts : tass) :=
-  match xts with
-  | nil => Gamma
-  | ((x, v) :: xts') => extendT x v (mupdate Gamma xts')
-  end. 
+  split. {
+    eapply T_Apply...
+    eapply T_LamAbs...
+    simpl in Hmapnorm__bsGn.
+    inversion Hmapnorm__bsGn. subst.
+    inversion H3. subst.
+    eapply normalisation__deterministic in Hnorm__Tbn...
+    subst...
+  }
+ 
+  intros k rho env env' ct ck Heq__Delta Heq__Gamma HRD HRG.
+  subst.
 
-Fixpoint lookup {X:Type} (k : string) (l : list (name * X)) : option X :=
-  match l with
-  | nil => None
-  | (j,x) :: l' => if String.eqb j k then Datatypes.Some x else lookup k l'
-  end.
+  rewrite msubstA_LetNonRec.
+  rewrite msubstA_BindingsNonRec_cons.
+  rewrite msubstA_TermBind.
+  rewrite msubst_LetNonRec.
+  rewrite msubst_BindingsNonRec_cons.
+  rewrite msubst_TermBind.
 
-Fixpoint drop {X:Type} (n:string) (nxs:list (string * X)) : list (string * X) :=
-  match nxs with
-  | nil => nil
-  | (n',x) :: nxs' => if String.eqb n' n then drop n nxs' else (n',x) :: (drop n nxs')
-  end.
+  rewrite msubstA_Apply.
+  rewrite msubstA_LamAbs.
+  rewrite msubst_Apply.
+  rewrite msubst_LamAbs.
 
-Inductive instantiation : tass -> env -> env -> Prop :=
-  | V_nil : 
-      instantiation nil nil nil
-  | V_cons : forall x T v1 v2 c e1 e2,
-      value v1 ->
-      value v2 ->
-      R T v1 v2 ->
-      instantiation c e1 e2 ->
-      instantiation ((x, T) :: c) ((x, v1) :: e1) ((x, v2) :: e2)
-  . 
+  autorewrite with RC.
 
+  intros j Hlt__j e_f Hev__e_f.
+  inversion Hev__e_f. subst.
+  clear Hev__e_f. rename H3 into Hev__e_f.
+  inversion Hev__e_f; subst.
+  - clear Hev__e_f.
+    rename v1 into vb.
+    rename j1 into jb.
+    rename H7 into Hev__vb.
+    rename H8 into Hnerr__vb.
+    rename H9 into Hev__e_f.
 
+    assert (HRC__tb :
+      RC k Tbn rho
+        (msubst_term env (msubstA_term (msyn1 rho) tb))
+        (msubst_term env' (msubstA_term (msyn2 rho) tb'))  
+    )...
+    clear IH__tb.
 
-(** ** More substitution facts *)
+    eapply RC_to_RV with (j := jb) (e_f := vb) in HRC__tb as temp...
+    destruct temp as [vb' [jb' [Hev__vb' HRV__vb]]].
+    clear Hev__vb.
+    clear HRC__tb.
 
-Definition P_Term (t : Term) :=
-  forall x,
-    ~(appears_free_in x t) ->
-    forall s t', 
-      substitute x s t t' ->
-      t' = t.
-
-Definition P_Binding (b : Binding) :=
-  forall x,
-    ~(appears_free_in_binding x b) ->
-    forall s b',
-      substitute_binding x s b b' ->
-      b' = b.
-
-Definition P_Bindings_NonRec (bs : list Binding) :=
-  Util.ForallT P_Binding bs ->
-  forall x,
-    ~(appears_free_in_bindings_nonrec x bs) ->
-    forall s bs',
-      substitute_bindings_nonrec x s bs bs' ->
-      bs' = bs.
-
-Lemma P_Bindings_NonRec__holds_definitionally : forall bs, P_Bindings_NonRec bs.
-Proof.
-  induction bs.
-  - unfold P_Bindings_NonRec. intros.
-    inversion H0. subst.
-    reflexivity.
-  - unfold P_Bindings_NonRec. intros.
-    inversion H0.
-    + subst.
-      f_equal.
-      apply Util.ForallT_hd in X.
-      unfold P_Binding in X.
-      apply X with x s.
-      * intros Hcon.
-        apply H.
-        apply AFI_ConsB1_NonRec.
-        assumption.
-      * assumption.
-    + subst.
-      f_equal.
-      * apply Util.ForallT_hd in X.
-        unfold P_Binding in X.
-        apply X with x s.
-        -- intros Hcon.
-           apply H.
-           apply AFI_ConsB1_NonRec.
-           assumption.
-        -- assumption.
-      * unfold P_Bindings_NonRec in IHbs.
-        apply IHbs with x s.
-        -- apply Util.ForallT_tl in X.
-           assumption.
-        -- intros Hcon.
-           apply H.
-           apply AFI_ConsB2_NonRec.
-           ++ assumption.
-           ++ assumption.
-        -- assumption.
-Qed.
-
-Definition P_Bindings_Rec (bs : list Binding) :=
-  Util.ForallT P_Binding bs ->
-  forall x,
-    ~(appears_free_in_bindings_rec x bs) ->
-    forall s bs',
-      substitute_bindings_rec x s bs bs' ->
-      bs' = bs.
-
-Lemma P_Bindings_Rec__holds_definitionally : forall bs, P_Bindings_Rec bs.
-Proof.
-  induction bs.
-  - unfold P_Bindings_Rec. intros.
-    inversion H0. subst.
-    reflexivity.
-  - unfold P_Bindings_Rec. intros.
-    inversion H0.
-    subst.
-    f_equal.
-    + apply Util.ForallT_hd in X.
-      unfold P_Binding in X.
-      apply X with x s.
-      * intros Hcon.
-        apply H.
-        apply AFI_ConsB1_Rec.
-        assumption.
-      * assumption.
-    + unfold P_Bindings_Rec in IHbs.
-      apply IHbs with x s.
-      * apply Util.ForallT_tl in X.
-        assumption.
-      * intros Hcon.
-        apply H.
-        apply AFI_ConsB2_Rec.
-        assumption.
-      * assumption.
-Qed.
-
-Lemma vacuous_substitution : forall t, P_Term t.
-Proof.
-  apply Term_rect' with (P := P_Term) (Q := P_Binding).
-  - (* Let *)
-    intros. unfold P_Term. intros.
-    inversion H1; subst.
-    + (* S_Let1 *)
-      f_equal.
-      assert (P_Bindings_NonRec bs) by apply P_Bindings_NonRec__holds_definitionally.
-      unfold P_Bindings_NonRec in H2.
-      apply H2 with x s.
-      * assumption.
-      * intros Hcon.
-        apply H0.
-        apply AFI_LetNonRec.
-        assumption.
-      * assumption.
-    + (* S_Let2 *)
-      f_equal.
-      * assert (P_Bindings_NonRec bs) by apply P_Bindings_NonRec__holds_definitionally.
-        unfold P_Bindings_NonRec in H2.
-        apply H2 with x s.
-        -- assumption.
-        -- intros Hcon.
-           apply H0.
-           apply AFI_LetNonRec.
-           assumption.
-        -- assumption.
-      * unfold P_Term in H.
-        apply H with x s.
-        -- intros Hcon.
-           apply H0.
-           apply AFI_Let.
-           assumption.
-        -- assumption.
-    + (* S_LetRec1 *)
-      reflexivity.
-    + (* S_LetRec2 *)
-      f_equal.
-      * assert (P_Bindings_Rec bs) by apply P_Bindings_Rec__holds_definitionally.
-        unfold P_Bindings_Rec in H2.
-        apply H2 with x s.
-        -- assumption.
-        -- intros Hcon.
-           apply H0.
-           apply AFI_LetRec.
-           ++ assumption.
-           ++ assumption.
-        -- assumption.
-      * unfold P_Term in H.
-        apply H with x s.
-        -- intros Hcon.
-           apply H0.
-           apply AFI_Let.
-           assumption.
-        -- assumption.
-  - (* Var *)
-    intros. unfold P_Term. intros.
-    inversion H0.
-    + (* S_Var1 *)
-      subst.
-      assert (appears_free_in s (Var s)) by constructor.
-      apply H in H1.
-      destruct H1.
-    + (* S_Var2 *)
-      reflexivity.
-  - (* TyAbs *)
-    intros. unfold P_Term. intros.
-    inversion H1. subst.
-    f_equal.
-    unfold P_Term in H.
-    apply H with x s0.
-    + intros Hcon.
-      apply H0.
-      apply AFI_TyAbs.
-      assumption.
-    + assumption.
-  - (* LamAbs *)
-    intros. unfold P_Term. intros.
-    inversion H1.
-    + (* S_LamAbs1 *)
-      reflexivity.
-    + (* S_LamAbs2 *)
-      subst.
-      f_equal.
-      unfold P_Term in H.
-      apply H with x s0.
-      * intros Hcon.
-        apply H0.
-        apply AFI_LamAbs.
-        assumption.
-      * assumption.
-  - (* Apply *)
-    intros. unfold P_Term. intros.
-    inversion H2. subst.
-    f_equal.
-    + unfold P_Term in H. 
-      apply H with x s.
-      * intros Hcon.
-        apply H1.
-        apply AFI_Apply1.
-        assumption.
-      * assumption.
-    + unfold P_Term in H0.
-      apply H0 with x s.
-      * intros Hcon.
-        apply H1.
-        apply AFI_Apply2.
-        assumption.
-      * assumption.
-  - (* Constant *)
-    intros. unfold P_Term. intros.
-    inversion H0. subst.
-    reflexivity.
-  - (* Builtin *)
-    intros. unfold P_Term. intros.
-    inversion H0. subst.
-    reflexivity.
-  - (* TyInst *)
-    intros. unfold P_Term. intros.
-    inversion H1. subst.
-    f_equal.
-    unfold P_Term in H.
-    apply H with x s.
-    + intros Hcon.
-      apply H0.
-      apply AFI_TyInst.
-      assumption.
-    + assumption.
-  - (* Error *)
-    intros. unfold P_Term. intros.
-    inversion H0. subst.
-    reflexivity.
-  - (* IWrap *)
-    intros. unfold P_Term. intros.
-    inversion H1. subst.
-    f_equal.
-    unfold P_Term in H.
-    apply H with x s.
-    + intros Hcon.
-      apply H0.
-      apply AFI_IWrap.
-      assumption.
-    + assumption.
-  - (* Unwrap *)
-    intros. unfold P_Term. intros.
-    inversion H1. subst.
-    f_equal.
-    unfold P_Term in H.
-    apply H with x s.
-    + intros Hcon.
-      apply H0.
-      apply AFI_Unwrap.
-      assumption.
-    + assumption.
-
-  - (* TermBind *)
-    intros. unfold P_Binding. intros.
-    inversion H1. subst.
-    f_equal.
-    unfold P_Term in H.
-    apply H with x s0.
-    + intros Hcon.
-      apply H0.
-      apply AFI_TermBind.
-      assumption.
-    + assumption.
-  - (* TypeBind *)
-    intros. unfold P_Binding. intros.
-    inversion H0. subst.
-    reflexivity.
-  - (* DatatypeBind *)
-    intros. unfold P_Binding. intros.
-    inversion H0. subst.
-    reflexivity.
-Qed.
-
-Lemma subst_closed : forall t,
-    closed t -> 
-    forall x s t',
-      substitute x s t t' ->
-      t' = t.
-Proof. Admitted.
-
-Lemma subst_not_afi : forall t x v,
-    closed v ->
-    forall t',
-      substitute x v t t' ->
-      ~(appears_free_in x t').
-Proof. Admitted.
-
-Lemma duplicate_subst : forall x t v s,
-    closed v ->
-    forall t' t'',
-      substitute x v t t' ->
-      substitute x s t' t'' ->
-      t'' = t'.
-Proof. Admitted.
-
-Lemma swap_subst : forall t x x1 v v1,
-    x <> x1 ->
-    closed v ->
-    closed v1 ->
-    forall t1 t2 t3 t4,
-      substitute x v t t1 ->
-      substitute x1 v1 t1 t2 ->
-      substitute x1 v1 t t3 ->
-      substitute x v t3 t4 ->
-      t2 = t4.
-Proof. Admitted.
-
-
-
-(** ** Properties of multi-substitutions *)
-
-Lemma msubst_closed : forall t,
-    closed t ->
-    forall ss t',
-      msubst ss t t' ->
-      t' = t.
-Proof. Admitted.
-
-Fixpoint closed_env (env : env) :=
-  match env with
-  | nil => True
-  | (x,t) :: env' => closed t /\ closed_env env'
-  end.
-
-Lemma subst_msubst : forall env x v t,
-    closed v ->
-    closed_env env ->
-    forall t1 t2 t3 t4,
-      substitute x v t t1 ->
-      msubst env t1 t2 ->
-      msubst (drop x env) t t3 ->
-      substitute x v t3 t4 ->
-      t2 = t4.
-Proof. Admitted.
-
-Lemma msubst_Var : forall ss x,
-    closed_env ss ->
-    forall t',
-      msubst ss (Var x) t' ->
-      t' =
-        match lookup x ss with
-        | Datatypes.Some t => t 
-        | None=> Var x
-        end.
-Proof. 
-  induction ss; intros.
-  - inversion H0. subst. 
-    reflexivity.
-  - inversion H0. subst.
-    simpl.
-    inversion H3; subst.
-    + rewrite String.eqb_refl.
-      eapply msubst_closed; eauto.
-      inversion H; auto.
-    + apply String.eqb_neq in H5.
-      rewrite H5.
-      apply IHss; eauto.
-      inversion H; auto.
-Qed.
-
-Lemma msubst_Apply : forall ss t1 t2 t',
-    msubst ss (Apply t1 t2) t' ->
-    exists t1' t2', msubst ss t1 t1' /\ msubst ss t2 t2' /\ t' = (Apply t1' t2').
-Proof.
-  induction ss; intros.
-  - inversion H. subst.
-    exists t1, t2.
-    eauto using msubst_nil, msubst_cons. 
-  - inversion H. subst.
-    rename t'0 into t''.
-    inversion H2. subst.
-    apply IHss in H5.
-    destruct H5 as [t1'' [t2'' [H9 [H10 H11]]]].
-    exists t1'', t2''.
-    split. {
-      apply msubst_cons with t1'.
-      + assumption.
-      + apply H9.
+    assert (HRC__ih :
+      RC (k - jb - 1) Tn rho
+        <{ /[ (x, vb) :: drop x env /] ( /[[ msyn1 rho /] {Let NonRec bs t} ) }>
+        <{ /[ (x, vb') :: drop x env' /] ( /[[ msyn2 rho /] {fold_right apply t' fbs'} ) }>
+    ). {
+      apply IH__ih with (ct0 := (x, Tbn) :: drop x ct) (ck0 := ck).
+      - reflexivity.
+      - inversion Hmapnorm__bsGn. subst.
+        inversion H3. subst.
+        simpl.
+        eapply normalisation__deterministic in Hnorm__Tbn...
+        subst.
+        apply mupdate_drop.
+      - assumption.
+      - assert (closed vb). eapply RV_closed_1...
+        assert (closed vb'). eapply RV_closed_2...
+        replace vb with (msubstA_term (msyn1 rho) vb) by (eapply msubstA_closed; eauto).
+        replace vb' with (msubstA_term (msyn2 rho) vb') by (eapply msubstA_closed; eauto).
+        apply RG_cons.
+        + apply RV_monotone with (k := k - jb) (ck := ck)...
+          rewrite msubstA_closed...
+          rewrite msubstA_closed...
+        + eapply normalise_to_normal...
+        + apply RG_monotone with (k := k) (ck := ck)...
+          apply RG_drop...
     }
-    split. {
-      apply msubst_cons with t2'.
-      + assumption.
-      + apply H10.
-    }
-    assumption.
-Qed.
+    clear IH__ih.
 
-(** ** Properties of multi-extensions *)
+    apply RC_to_RV with (j := j2) (e_f := e_f) in HRC__ih as temp...
+    * destruct temp as [e'_f [j2' [Hev__e'_f HRV0]]].
+      clear Hev__e_f.
 
-Lemma mupdate_lookup : forall (c : tass) (x : name),
-    lookup x c = lookupT (mupdate emptyContext c) x.
-Proof. Admitted.
+      eexists. eexists.
+      split. {
+        eapply E_Apply...
+        - eapply E_LamAbs.
+        - eapply RV_error in HRV__vb as temp...
+          destruct temp as [ [Herr Herr'] | [Hnerr Hnerr']]...
+        - rewrite <- subst_msubst'...
+          + eapply RV_closed_2...
+          + eapply RG_env_closed_2...
+      }
 
-Lemma mupdate_drop : forall (c : tass) Gamma x x',
-      lookupT (mupdate Gamma (drop x c)) x' 
-    = if String.eqb x x' 
-        then lookupT Gamma x' 
-        else lookupT (mupdate Gamma c) x'.
-Proof. Admitted.
-
-
-
-(** ** Properties of Instantiations *)
-
-Lemma instantiation_domains_match : forall c e1 e2,
-    instantiation c e1 e2 ->
-    forall x T,
-      lookup x c = Datatypes.Some T ->
-      exists t1 t2,
-        lookup x e1 = Datatypes.Some t1 /\
-        lookup x e2 = Datatypes.Some t2.
-Proof.
-  intros c e1 e2 V. 
-  induction V; intros x0 T0 C.
-  - discriminate.
-  - simpl.
-    simpl in C.
-    destruct (x =? x0) eqn:Heqb.
-    + eauto.
-    + apply IHV with T0.
-      assumption.
-Qed.
-
-Lemma instantiation_env_closed : forall c e1 e2,
-    instantiation c e1 e2 ->
-    closed_env e1 /\ closed_env e2.
-Proof.
-  intros c e1 e2 V.
-  induction V; intros.
-  - split; reflexivity.
-  - split.
-    + simpl.
-      split.
-      * apply typable_empty__closed with T.
-        apply R_typable_empty_1 with v2.
-        assumption.
-      * apply IHV.
-    + simpl.
-      split.
-      * apply typable_empty__closed with T.
-        apply R_typable_empty_2 with v1.
-        assumption.
-      * apply IHV.
-Qed.
+      split... eapply RV_typable_empty_1...
+      split... eapply RV_typable_empty_2...
     
+      eapply RV_condition...
+      eapply RV_monotone...
+    * rewrite msubstA_LetNonRec.
+      rewrite msubst_LetNonRec. 
 
-Corollary instantiation_env_closed_1 : forall c e1 e2,
-    instantiation c e1 e2 ->
-    closed_env e1.
-Proof. intros. destruct (instantiation_env_closed _ _ _ H). assumption. Qed.
+      apply E_Let.
 
-Corollary instantiation_env_closed_2 : forall c e1 e2,
-    instantiation c e1 e2 ->
-    closed_env e2.
-Proof. intros. destruct (instantiation_env_closed _ _ _ H). assumption. Qed.
+      simpl.
+      simpl in Hev__e_f.
 
-Lemma instantiation_R : forall c e1 e2,
-    instantiation c e1 e2 ->
-    forall x T v1 v2,
-      lookup x c = Datatypes.Some T ->
-      lookup x e1 = Datatypes.Some v1 ->
-      lookup x e2 = Datatypes.Some v2 ->
-      R T v1 v2.
-Proof.
-  intros c e1 e2 V.
-  induction V; intros x' T' v1' v2' G E1 E2.
-  - destruct x'; discriminate.
-  - inversion G. subst.
-    inversion E1. subst.
-    inversion E2. subst.
-    destruct (x =? x').
-    + inversion H3. subst.
-      inversion H4. subst.
-      inversion H5. subst.
-      assumption. 
-    + apply IHV with x'; assumption.
+      rewrite <- msubst_bnr__bound_vars in Hev__e_f.
+      rewrite <- msubstA_bnr__bvbs in Hev__e_f.
+
+      destruct (existsb (eqb x) (bvbs bs)) eqn:Hexb. {
+        assert (closed vb). eapply RV_closed_1...
+        assert (closed vb'). eapply RV_closed_2...
+        apply RG_env_closed in HRG as Hclss...
+        destruct Hclss as [Hcls__env Hcls__env'].
+        rewrite <- subst_bnr__msubst_bnr' in Hev__e_f...
+        replace (concat (map bvb <{ /[[ msyn1 rho /][bnr] bs }>)) with
+          (bvbs <{ /[[ msyn1 rho /][bnr] bs }>) in Hev__e_f...
+        
+        unfold btvbs in Hev__e_f.
+        simpl in Hev__e_f.
+        rewrite <- msubstA_bnr__bvbs.
+        rewrite <- msubstA_bnr__bvbs in Hev__e_f.
+
+        apply existsb_exists in Hexb.
+        destruct Hexb as [y [HIn Heqb]].
+        apply eqb_eq in Heqb as Heq.
+        subst.
+        rewrite In__mdrop...
+      } {
+        assert (closed vb). eapply RV_closed_1...
+        assert (closed vb'). eapply RV_closed_2...
+        apply RG_env_closed in HRG as Hclss...
+        destruct Hclss as [Hcls__env Hcls__env'].
+        rewrite <- subst_bnr__msubst_bnr' in Hev__e_f...
+        replace (concat (map bvb <{ /[[ msyn1 rho /][bnr] bs }>)) with
+          (bvbs <{ /[[ msyn1 rho /][bnr] bs }>) in Hev__e_f...
+        
+        unfold btvbs in Hev__e_f.
+        simpl in Hev__e_f.
+        rewrite <- msubstA_bnr__bvbs.
+        rewrite <- msubstA_bnr__bvbs in Hev__e_f.
+
+        apply Util.existsb_nexists in Hexb.
+        rewrite not_In__mdrop.
+        - replace (concat (map btvb bs)) with (btvbs bs) in Hev__e_f...
+          rewrite <- subst_msubst'' in Hev__e_f...
+          + eapply RG_env_closed_1.
+            eapply RG_drop...
+            eauto_LR.
+          + intros Hcon.
+            apply Hexb.
+            exists x.
+            rewrite eqb_refl.
+            eauto.
+        - intros Hcon.
+          apply Hexb.
+          exists x.
+          rewrite eqb_refl.
+          eauto.
+      }
+  - clear Hev__e_f.
+    rename j1 into jb.
+    rename H7 into Hev__vb.
+
+    assert (HRC__tb :
+      RC k Tbn rho
+        (msubst_term env (msubstA_term (msyn1 rho) tb))
+        (msubst_term env' (msubstA_term (msyn2 rho) tb'))  
+    )...
+    clear IH__tb.
+
+    apply RC_to_RV with (j := jb) (e_f := Error T') in HRC__tb as temp...
+    destruct temp as [e'_f [j' [Hev__e'_f HRV__vb]]].
+
+    eapply RV_error in HRV__vb as temp...
+    
+    destruct temp as [ [Hnerr Hnerr'] | [Herr Herr']].
+    + exfalso. eapply Hnerr. econstructor.
+    + inversion Herr'. subst.
+
+      eexists. eexists.
+      split. eapply E_Error_Apply2...
+      
+      split. {
+        inversion Htyp__ih. subst.
+        simpl in H9.
+        eapply msubstT_preserves_kinding_1 in H9 as H10...
+        eapply strong_normalisation in H10 as H11...
+        destruct H11.
+        
+        eexists. split...
+      }
+
+      split. {
+        inversion Htyp__ih. subst.
+        simpl in H9.
+        eapply msubstT_preserves_kinding_2 in H9 as H10...
+        eapply strong_normalisation in H10 as H11...
+        destruct H11.
+        
+        eexists. split...
+      }
+      right...
 Qed.
 
-Lemma instantiation_drop : forall c e1 e2,
-    instantiation c e1 e2 ->
-    forall x,
-      instantiation (drop x c) (drop x e1) (drop x e2).
-Proof.
-  intros c e1 e2 V.
-  induction V.
-  - intros. simpl. apply V_nil.
-  - intros. simpl.
-    destruct (x =? x0).
-    + apply IHV.
-    + apply V_cons.
-      * assumption.
-      * assumption.
-      * assumption.
-      * apply IHV.
-Qed.
+(** ** Predicates *)
 
-(** ** Congruence lemmas on [eval] *)
+Definition P_has_type Delta Gamma t T : Prop := 
+  forall t',
+    CNR_Term t t' ->
+    LR_logically_approximate Delta Gamma t t' T.
 
-(** ** Multi-substitutions preserve typing *)
+Definition P_constructor_well_formed Delta c Tr : Prop := Delta |-ok_c c : Tr.
 
-Lemma msubst_preserves_typing_1 : forall c e1 e2,
-    instantiation c e1 e2 ->
-    forall Gamma t t' S,
-      (mupdate Gamma c) |-+ t : S ->
-      msubst e1 t t' ->
-      Gamma |-+ t': S. 
-Proof.
-  intros c e1 e2 V.
-  induction V.
-  - intros.
-    simpl in H.
-    inversion H0. subst.
-    assumption.
-  - intros.
-    simpl in H2.
-    inversion H3. subst.
-    apply IHV with t'0.
-    + eapply substitution_preserves_typing.
-      * apply H2.
-      * apply R_typable_empty_1 with v2.
-        apply H1.
-      * apply H9.
-    + apply H10.
-Qed. 
+Definition P_bindings_well_formed_nonrec Delta Gamma bs : Prop := 
+  (
+    forall bs',
+      Congruence.Cong_Bindings CNR_Term bs bs' ->
+      forall Delta_t Gamma_t bsGn t t' Tn,
+        Delta_t = mupdate Delta (flatten (List.map binds_Delta bs)) ->
+        map_normalise (flatten (List.map binds_Gamma bs)) bsGn ->
+        Gamma_t = mupdate Gamma bsGn  ->
+        Delta |-* Tn : Kind_Base ->
+        LR_logically_approximate Delta_t Gamma_t t t' Tn ->
+        LR_logically_approximate Delta Gamma (Let NonRec bs t) (Let NonRec bs' t') Tn
+  ) /\ (
+    forall fbs',
+      CNR_Bindings bs fbs' ->
+      forall Delta_t Gamma_t bsGn t t' Tn,
+        Delta_t = mupdate Delta (flatten (List.map binds_Delta bs)) ->
+        map_normalise (flatten (List.map binds_Gamma bs)) bsGn ->
+        Gamma_t = mupdate Gamma bsGn ->
+        Delta |-* Tn : Kind_Base ->
+        LR_logically_approximate Delta_t Gamma_t t t' Tn ->
+        LR_logically_approximate Delta Gamma (Let NonRec bs t) (fold_right apply t' fbs') Tn
+  ).
 
-Lemma msubst_preserves_typing_2 : forall c e1 e2,
-    instantiation c e1 e2 ->
-    forall Gamma t t' S,
-      (mupdate Gamma c) |-+ t : S ->
-      msubst e2 t t' ->
-      Gamma |-+ t': S. 
-Proof.
-  intros c e1 e2 V.
-  induction V.
-  - intros.
-    simpl in H.
-    inversion H0. subst.
-    assumption.
-  - intros.
-    simpl in H2.
-    inversion H3. subst.
-    apply IHV with t'0.
-    + eapply substitution_preserves_typing.
-      * apply H2.
-      * apply R_typable_empty_2 with v1.
-        apply H1.
-      * apply H9.
-    + apply H10.
-Qed. 
+Definition P_bindings_well_formed_rec Delta Gamma bs1 : Prop := Delta ,, Gamma |-oks_r bs1.
 
-(** ** The [R] Lemma *)
+Definition P_binding_well_formed Delta Gamma b : Prop := 
+  (
+    forall b',
+      Congruence.Cong_Binding CNR_Term b b' ->
+      forall Delta_t Gamma_t bsGn t t' Tn bs bs',
+        Delta_t = mupdate Delta (binds_Delta b) ->
+        map_normalise (binds_Gamma b) bsGn ->
+        Gamma_t = mupdate Gamma bsGn ->
+        Delta |-* Tn : Kind_Base ->
+        LR_logically_approximate Delta_t Gamma_t (Let NonRec bs t) (Let NonRec bs' t') Tn ->
+        LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t') Tn
+  ) /\ (
+    forall fb',
+      CNR_Binding b fb' ->
+      forall Delta_t Gamma_t bsGn t t' Tn bs fbs',
+        Delta_t = mupdate Delta (binds_Delta b) ->
+        map_normalise (binds_Gamma b) bsGn ->
+        Gamma_t = mupdate Gamma bsGn ->
+        Delta |-* Tn : Kind_Base ->
+        LR_logically_approximate Delta_t Gamma_t (Let NonRec bs t) (fold_right apply t' fbs') Tn ->
+        LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (fold_right apply t' (fb' :: fbs')) Tn
+  ).
 
-Definition P_has_type ctx t1 T := 
-  forall c e1 e2 t2,
-    ctx = mupdate emptyContext c ->
-    ctx |-+ t1 : T ->
-    ctx |-+ t2 : T ->
-    instantiation c e1 e2 ->
-    CNR_Term t1 t2 ->
-    forall t1' t2',
-      msubst e1 t1 t1' ->
-      msubst e2 t2 t2' ->
-      R T t1' t2'.
+#[export] Hint Unfold 
+  P_has_type
+  P_constructor_well_formed
+  P_bindings_well_formed_nonrec
+  P_bindings_well_formed_rec
+  P_binding_well_formed : core.
 
-Definition P_constructor_well_formed ctx c := ctx |-ok_c c.
+(** ** The main theorem *)
 
-Definition P_bindings_well_formed_nonrec ctx bs1 := ctx |-oks_nr bs1.
-
-Definition P_bindings_well_formed_rec ctx bs1 := ctx |-oks_r bs1.
-
-Definition P_binding_well_formed ctx b1 := ctx |-ok b1.
-
-Axiom skip : forall P, P.
-
- (*forall c e1 e2 t1 t2 T,
-    (mupdate emptyContext c) |-+ t1 : T ->
-    (mupdate emptyContext c) |-+ t2 : T ->
-    instantiation c e1 e2 ->
-    CNR_Term t1 t2 ->
-    forall t1' t2',
-      msubst e1 t1 t1' ->
-      msubst e2 t2 t2' ->
-      R T t1' t2'.*)
-
-Lemma msubst_R : forall ctx t1 T,
-    ctx |-+ t1 : T ->
-    P_has_type ctx t1 T.
-Proof.
+Theorem CNR_Term__DSP : forall Delta Gamma e T,
+    Delta ,, Gamma |-+ e : T ->
+    P_has_type Delta Gamma e T.
+Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
   apply has_type__ind with 
     (P := P_has_type)
     (P0 := P_constructor_well_formed)
     (P1 := P_bindings_well_formed_nonrec)
     (P2 := P_bindings_well_formed_rec)
     (P3 := P_binding_well_formed).
-  - intros. unfold P_has_type. intros. subst.
-    apply skip.
-  - intros. unfold P_has_type. intros. subst.
-    apply skip.
 
-  - (* T_Var *)
-    intros. 
-    unfold P_has_type. 
-    intros c e1 e2 t2 Heq Ht1 Ht2 V Hds t1' t2' X1 X2.
-    subst.
+  all : intros; autounfold; intros; subst.
+  all : try solve [
+    inversion X; subst;
+    inversion X0; subst;
+    eauto with DSP_compatibility_lemmas typing
+  ].
+  all : try solve [
+    inversion X0; subst;
+    inversion X1; subst;
+    eauto with DSP_compatibility_lemmas typing
+  ].
+  all : try solve [
+    eauto with typing
+  ].
+  - (* T_Let *)
+    inversion X; subst.
+    + eapply H3...
+    + inversion X0; subst.
+      eapply H3...
 
-    inversion Hds. subst.
-    inversion X. subst.
-
-    assert (forall x, lookupT (mupdate emptyContext c) x = lookup x c). {
-      intros. rewrite mupdate_lookup. auto.
-    }
-    rewrite H0 in H.
-    destruct (instantiation_domains_match _ _ _ V _ _ H) as [t1'' [t2'' [Ht1'' Ht2'']]].
-    destruct (instantiation_env_closed _ _ _ V) as [He1 He2].
-    apply instantiation_R with c e1 e2 x.
-    + assumption.
-    + assumption.
-    + rewrite msubst_Var with e1 x t1'.
-      * rewrite Ht1''.
-        reflexivity.
-      * assumption.
-      * assumption.
-    + rewrite msubst_Var with e2 x t2'.
-      * rewrite Ht2''.
-        reflexivity.
-      * assumption.
-      * assumption.
-
-  - (* T_Forall *)
-    apply skip.
-
-  - (* T_LamAbs *)
-    apply skip.
-
-  - (* T_Apply *)
-    intros ctx t1_1 t1_2 T1 T2 Ht1_1 IH1_1 Ht1_2 IH1_2.
-    unfold P_has_type.
-    intros c e1 e2 t2 Heq Ht1 Ht2 V Hds t1' t2' Hms1 Hms2.
-    subst.
-
-    inversion Hds. subst.
-    inversion X. subst.
-    rename s' into t2_1.
-    rename t' into t2_2.
-    destruct (msubst_Apply _ _ _ _ Hms1) as [t1_1' [t1_2' [Hms_t1_1' [Hms_t1_2' Heq1']]]].
-    destruct (msubst_Apply _ _ _ _ Hms2) as [t2_1' [t2_2' [Hms_t2_1' [Hms_t2_2' Heq2']]]].
-    subst.
-
-    assert (emptyContext |-+ (Apply t1_1' t1_2') : T2) by eauto using msubst_preserves_typing_1.
-    assert (emptyContext |-+ (Apply t2_1' t2_2') : T2) by eauto using msubst_preserves_typing_2.
-
-    destruct (progress _ _ H) as [v1 Hv1].
-    destruct (progress _ _ H0) as [v2 Hv2].
-
-    assert (R (Ty_Fun T1 T2) t1_1' t2_1'). {
-      unfold P_has_type in IH1_1.
-      apply IH1_1 with c e1 e2 t2_1.
-      - reflexivity.
-      - assumption.
-      - eapply CNR_Term__preserves_typing; eauto.
-      - apply V.
-      - assumption.
-      - assumption.
-      - assumption.
-    }
-
-    assert (R T1 t1_2' t2_2'). {
-      unfold P_has_type in IH1_2.
-      apply IH1_2 with c e1 e2 t2_2. 
-      - reflexivity.
-      - assumption.
-      - eapply CNR_Term__preserves_typing; eauto.
-      - apply V.
-      - assumption.
-      - assumption.
-      - assumption.
-    }
-
-    destruct T2.
-    + (* Ty_Var *) 
-      apply R_functional_extensionality in H1.
-      destruct H1 as [v1' [v2' [Hv1' [Hv2' Hfe]]]].
-      apply Hfe in H2.
-      apply R_falsity in H2.
-      destruct H2.
-    + (* Ty_Fun *)
-      split; auto.
-      split; auto.
-      exists v1.
-      exists v2.
-      split; auto.
-      split; auto.
-
-      destruct (R_functional_extensionality _ _ _ _ H1) as [v1_1' [v2_1' [Hv1_1' [Hv2_1' Hfe']]]].
-      apply Hfe' in H2.
-
-      destruct (R_functional_extensionality _ _ _ _ H2) as [v1' [v2' [Hv1' [Hv2' Hfe]]]].
-
-      assert (Apply v1_1' t1_2' ==> v1). {
-        eapply eval_congr_Apply1.
-        - apply Hv1.
-        - assumption.
-      }
-      assert (Apply v2_1' t2_2' ==> v2). {
-        eapply eval_congr_Apply1.
-        - apply Hv2.
-        - assumption.
-      }
-
-      assert (v1 = v1') by (eapply eval__deterministic; eauto).
-      assert (v2 = v2') by (eapply eval__deterministic; eauto).
+  - (* W_NilB_NonRec *)
+    split. all: intros. all: subst.
+    + inversion X. subst.
+      inversion H0... 
+    + inversion X. subst.
+      inversion H0. subst.
+      simpl in H2.
+      eapply compatibility_LetNonRec_Nil__desugar...
+  - (* W_ConsB_NonRec *)
+    split. all: intros. all: subst.
+    + rewrite flatten_app in H5.
+      apply map_normalise__app in H5.
+      destruct H5 as [l1n [l2n [Hmn__l1n [Hmn__l2n Heq]]]].
       subst.
-      apply Hfe.
-    + (* Ty_IFix *)
-      split; auto.
-      split; auto.
-      eexists.
-      eexists.
-      eauto.
-    + (* Ty_Forall *)
-      split; auto.
-      split; auto.
-      eexists.
-      eexists.
-      eauto.
-    + (* Ty_Builtin *)
-      split; auto.
-      split; auto.
-      exists v1.
-      exists v2.
-      split; auto.
-      split; auto.
-
-      destruct (R_functional_extensionality _ _ _ _ H1) as [v1_1' [v2_1' [Hv1_1' [Hv2_1' Hfe']]]].
-      apply Hfe' in H2.
-
-      destruct (R_syntactic_equality _ _ _ H2) as [v1' [v2' [Hv1' [Hv2' Heq]]]].
+      eapply map_normalise__deterministic in H1...
       subst.
 
-      assert (Apply v1_1' t1_2' ==> v1). {
-        eapply eval_congr_Apply1.
-        - apply Hv1.
-        - assumption.
-      }
-      assert (Apply v2_1' t2_2' ==> v2). {
-        eapply eval_congr_Apply1.
-        - apply Hv2.
-        - assumption.
-      }
+      inversion X. subst.
 
-      assert (v1 = v2') by (eapply eval__deterministic; eauto).
-      assert (v2 = v2') by (eapply eval__deterministic; eauto).
-
+      eapply H0...
+      eapply H3...
+      * eapply Kinding.weakening; eauto.
+        destruct b.
+        -- simpl. eapply inclusion_refl.
+        -- simpl. destruct t0. simpl.
+            unfold inclusion.
+            intros.
+            destruct (s =? x)%string eqn:Heqb.
+            ++ eapply eqb_eq in Heqb as Heq.
+                subst.
+                assert (Annotation.appears_bound_in x (Let NonRec (TypeBind (TyVarDecl x k) t1 :: bs) t)) by eauto.
+                eapply uniqueness' in H4.
+                rewrite H4 in H1.
+                inversion H1.
+            ++ apply eqb_neq in Heqb as Hneq.
+                rewrite update_neq; eauto.
+        -- destruct d.
+            simpl. destruct t0.
+            simpl.
+            unfold inclusion.
+            intros.
+            destruct (s0 =? x)%string eqn:Heqb.
+            ++ eapply eqb_eq in Heqb as Heq.
+                subst.
+                assert (Annotation.appears_bound_in x (Let NonRec (DatatypeBind (Datatype (TyVarDecl x k) l s l0) :: bs) t)) by eauto.
+                eapply uniqueness' in H4.
+                rewrite H4 in H1.
+                inversion H1.
+            ++ apply eqb_neq in Heqb as Hneq.
+                rewrite update_neq;eauto.
+      * rewrite <- mupdate_app.
+        rewrite <- mupdate_app.
+        rewrite <- flatten_app...
+    + rewrite flatten_app in H5.
+      apply map_normalise__app in H5.
+      destruct H5 as [l1n [l2n [Hmn__l1n [Hmn__l2n Heq]]]].
       subst.
+      eapply map_normalise__deterministic in H1...
+      subst. 
+    
+      inversion X. subst.
 
-      reflexivity.
+      eapply H0...
+      eapply H3...
+      * eapply Kinding.weakening; eauto.
+        destruct b.
+        -- simpl. eapply inclusion_refl.
+        -- simpl. destruct t0. simpl.
+            unfold inclusion.
+            intros.
+            destruct (s =? x)%string eqn:Heqb.
+            ++ eapply eqb_eq in Heqb as Heq.
+                subst.
+                assert (Annotation.appears_bound_in x (Let NonRec (TypeBind (TyVarDecl x k) t1 :: bs) t)) by eauto.
+                eapply uniqueness' in H4.
+                rewrite H4 in H1.
+                inversion H1.
+            ++ apply eqb_neq in Heqb as Hneq.
+                rewrite update_neq; eauto.
+        -- destruct d.
+            simpl. destruct t0.
+            simpl.
+            unfold inclusion.
+            intros.
+            destruct (s0 =? x)%string eqn:Heqb.
+            ++ eapply eqb_eq in Heqb as Heq.
+                subst.
+                assert (Annotation.appears_bound_in x (Let NonRec (DatatypeBind (Datatype (TyVarDecl x k) l s l0) :: bs) t)) by eauto.
+                eapply uniqueness' in H4.
+                rewrite H4 in H1.
+                inversion H1.
+            ++ apply eqb_neq in Heqb as Hneq.
+                rewrite update_neq;eauto.
+      * rewrite <- mupdate_app.
+        rewrite <- mupdate_app.
+        rewrite <- flatten_app...
 
-    + (* Ty_Lam *)
-      apply R_functional_extensionality in H1.
-      destruct H1 as [v1' [v2' [Hv1' [Hv2' Hfe]]]].
-      apply Hfe in H2.
-      apply R_falsity in H2.
-      destruct H2.
-    + (* Ty_App *) 
-      apply R_functional_extensionality in H1.
-      destruct H1 as [v1' [v2' [Hv1' [Hv2' Hfe]]]].
-      apply Hfe in H2.
-      apply R_falsity in H2.
-      destruct H2.
-
-  - 
-
-Proof. Abort.
+  - (* W_Term *)
+    split. all: intros. all: subst.
+    + inversion X...
+    + inversion X. subst.
+      eapply compatibility_TermBind__desugar...
+  - (* W_Type *)
+    split. all: intros. all: subst.
+    + inversion X0... 
+    + inversion X0.
+  - (* W_Data *)
+    split. all: intros. all: subst.
+    + inversion X0...
+    + inversion X0...
+Qed.

@@ -1,5 +1,8 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
+
+Require Export PlutusCert.Language.PlutusIR.Semantics.Misc.BoundVars.
+
 Import Coq.Lists.List.
 Import Coq.Strings.String.
 
@@ -7,113 +10,104 @@ Local Open Scope string_scope.
 
 
 
-(** * Substitution *)
+(** Substitution of terms *)
 
-(** ** Utilities *)
-Definition term_var_bound_by_constructor (c : NamedTerm.constructor) : string :=
-  match c with
-  | Constructor (VarDecl x _) _ => x
-  end.
+Section SubstBindings.
+  Context {substb : name -> Term -> Binding -> Binding}.
 
-Definition term_vars_bound_by_binding (b : NamedTerm.Binding) : list string :=
+  Fixpoint substitute_bindings_nonrec (x : name) (s : Term) (bs : list Binding) : list Binding :=
+    match bs with
+    | nil => 
+        nil
+    | b :: bs' => 
+        if existsb (eqb x) (bvb b)
+          then
+            substb x s b :: bs'
+          else
+            substb x s b :: substitute_bindings_nonrec x s bs'
+    end.
+
+  Fixpoint substitute_bindings_rec (x : name) (s : Term) (bs : list Binding) : list Binding :=
+    match bs with
+    | nil =>
+        nil
+    | b :: bs' =>
+        substb x s b :: substitute_bindings_rec x s bs'
+    end.
+
+End SubstBindings.
+
+Fixpoint substitute (x : name) (s : Term) (t : Term) {struct t} : Term :=
+  match t with
+  | Let NonRec bs t0 =>
+      Let NonRec (@substitute_bindings_nonrec substitute_binding x s bs)
+        (if existsb (eqb x) (bvbs bs) 
+          then t0
+          else substitute x s t0
+        ) 
+  | Let Rec bs t0 =>
+      if existsb (eqb x) (bvbs bs) 
+        then 
+          Let Rec bs t0
+        else
+          Let Rec (@substitute_bindings_rec substitute_binding x s bs) (substitute x s t0)
+  | Var y => 
+      if x =? y
+        then s
+        else Var y
+  | TyAbs bX K t0 =>
+      TyAbs bX K (substitute x s t0)
+  | LamAbs bx T t0 =>
+      if x =? bx
+        then LamAbs bx T t0
+        else LamAbs bx T (substitute x s t0)
+  | Apply t1 t2 =>
+      Apply (substitute x s t1) (substitute x s t2)
+  | Constant u =>
+      Constant u
+  | Builtin d =>
+      Builtin d
+  | TyInst t0 T =>
+      TyInst (substitute x s t0) T
+  | Error T =>
+      Error T
+  | IWrap F T t0 =>
+      IWrap F T (substitute x s t0)
+  | Unwrap t0 =>
+      Unwrap (substitute x s t0)
+  end
+
+with substitute_binding (x : name) (s : Term) (b : Binding) {struct b} : Binding :=
   match b with
-  | TermBind _ (VarDecl x _) _ => cons x nil
-  | TypeBind (TyVarDecl X _) _ => nil
-  | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => matchFunc :: (rev (map term_var_bound_by_constructor cs))
+  | TermBind stricty (VarDecl y T) tb =>
+      TermBind stricty (VarDecl y T) (substitute x s tb)
+  | _ => b
   end.
 
-Definition term_vars_bound_by_bindings (bs : list NamedTerm.Binding) : list string := List.concat (map term_vars_bound_by_binding bs).
+Notation "'[' s '/' x ']' t" := (substitute x s t) (in custom plutus_term at level 20, x constr).
+Notation "'[' s '/' x '][b]' b" := (substitute_binding x s b) (in custom plutus_term at level 20, x constr).
+Notation "'[' s '/' x '][bnr]' bs" := (@substitute_bindings_nonrec substitute_binding x s bs) (in custom plutus_term at level 20, x constr).
+Notation "'[' s '/' x '][br]' bs" := (@substitute_bindings_rec substitute_binding x s bs) (in custom plutus_term at level 20, x constr).
 
-(** ** Implementation of substitution on terms as inductive datatype *)
-Inductive substitute : name -> Term -> Term -> Term -> Prop :=
-  | S_Let1 : forall x s bs t0 bs',
-      In x (term_vars_bound_by_bindings bs) ->
-      substitute_bindings_nonrec x s bs bs' ->
-      substitute x s (Let NonRec bs t0) (Let NonRec bs' t0)
-  | S_Let2 : forall x s bs t0 bs' t0',
-      ~(In x (term_vars_bound_by_bindings bs)) ->
-      substitute_bindings_nonrec x s bs bs' ->
-      substitute x s t0 t0' ->
-      substitute x s (Let NonRec bs t0) (Let NonRec bs' t0')
-  | S_LetRec1 : forall x s bs t0,
-      In x (term_vars_bound_by_bindings bs)->
-      substitute x s (Let Rec bs t0) (Let Rec bs t0)
-  | S_LetRec2 : forall x s bs t0 bs' t0',
-      ~(In x (term_vars_bound_by_bindings bs)) ->
-      substitute_bindings_rec x s bs bs' ->
-      substitute x s t0 t0' ->
-      substitute x s (Let Rec bs t0) (Let Rec bs' t0')
-  | S_Var1 : forall x s,
-      substitute x s (Var x) s
-  | S_Var2 : forall x s y,
-      x <> y ->
-      substitute x s (Var y) (Var y)
-  | S_TyAbs : forall x s bX K t0 t0',
-      substitute x s t0 t0' ->
-      substitute x s (TyAbs bX K t0) (TyAbs bX K t0')
-  | S_LamAbs1 : forall x s T t0,
-      substitute x s (LamAbs x T t0) (LamAbs x T t0)
-  | S_LamAbs2 : forall x s bx T t0 t0',
-      x <> bx ->
-      substitute x s t0 t0' ->
-      substitute x s (LamAbs bx T t0) (LamAbs bx T t0') 
-  | S_Apply : forall x s t1 t2 t1' t2',
-      substitute x s t1 t1' ->
-      substitute x s t2 t2' ->
-      substitute x s (Apply t1 t2) (Apply t1' t2')
-  | S_Constant : forall x s u,
-      substitute x s (Constant u) (Constant u)
-  | S_Builtin : forall x s d,
-      substitute x s (Builtin d) (Builtin d)
-  | S_TyInst : forall x s t0 T t0',
-      substitute x s t0 t0' ->
-      substitute x s (TyInst t0 T) (TyInst t0' T)
-  | S_Error : forall x s T,
-      substitute x s (Error T) (Error T)
-  | S_IWrap : forall x s F T t0 t0',
-      substitute x s t0 t0' ->
-      substitute x s (IWrap F T t0) (IWrap F T t0')
-  | S_Unwrap : forall x s t0 t0',
-      substitute x s t0 t0' ->
-      substitute x s (Unwrap t0) (Unwrap t0') 
-      
-with substitute_bindings_nonrec : name -> Term -> list Binding -> list Binding -> Prop :=
-  | S_NilB_NonRec : forall x s, 
-      substitute_bindings_nonrec x s nil nil
-  | S_ConsB_NonRec1 : forall x s b b' bs,
-      In x (term_vars_bound_by_binding b) ->
-      substitute_binding x s b b' ->
-      substitute_bindings_nonrec x s (b :: bs) (b' :: bs)
-  | S_ConsB_NonRec2 : forall x s b b' bs bs',
-      ~(In x (term_vars_bound_by_binding b)) ->
-      substitute_binding x s b b' ->
-      substitute_bindings_nonrec x s bs bs' ->
-      substitute_bindings_nonrec x s (b :: bs) (b' :: bs')
+(** Multi-substitutions of terms *)
+Fixpoint msubst_term (ss : list (name * Term)) (t : Term) : Term :=
+  match ss with
+  | nil => t
+  | (x, s) :: ss' => msubst_term ss' <{ [s / x] t }>
+  end.
 
-with substitute_bindings_rec : name -> Term -> list Binding -> list Binding -> Prop :=
-  | S_NilB_Rec : forall x s,
-      substitute_bindings_rec x s nil nil
-  | S_ConsB_Rec : forall x s b b' bs bs',
-      substitute_binding x s b b' ->
-      substitute_bindings_rec x s bs bs' ->
-      substitute_bindings_rec x s (b :: bs) (b' :: bs')
+Fixpoint msubst_binding (ss : list (name * Term)) (b : Binding) : Binding :=
+  match ss with
+  | nil => b
+  | (x, s) :: ss' => msubst_binding ss' <{ [s / x][b] b }>
+  end.
 
-with substitute_binding : name -> Term -> Binding -> Binding -> Prop :=
-  | S_TermBind : forall x s strictness bx T t t',
-      substitute x s t t' ->
-      substitute_binding x s (TermBind strictness (VarDecl bx T) t) (TermBind strictness (VarDecl bx T) t')
-  | S_TypeBind : forall x s tvd T,
-      substitute_binding x s (TypeBind tvd T) (TypeBind tvd T)
-  | S_DatatypeBind : forall x s dtd,
-      substitute_binding x s (DatatypeBind dtd) (DatatypeBind dtd).
+Fixpoint msubst_bindings_nonrec (ss : list (name * Term)) (bs : list Binding) : list Binding :=
+  match ss with
+  | nil => bs
+  | (x, s) :: ss' => msubst_bindings_nonrec ss' <{ [s / x][bnr] bs }>
+  end.
 
-Scheme substitute__ind := Minimality for substitute Sort Prop
-  with substitute_bindings_nonrec__ind := Minimality for substitute_bindings_nonrec Sort Prop
-  with substitute_bindings_rec__ind := Minimality for substitute_bindings_rec Sort Prop
-  with substitute_binding__ind := Minimality for substitute_binding Sort Prop.
-
-Combined Scheme substitute__mutind from 
-  substitute__ind, 
-  substitute_bindings_nonrec__ind, 
-  substitute_bindings_rec__ind, 
-  substitute_binding__ind.
+Notation "'/[' ss '/]' t" := (msubst_term ss t) (in custom plutus_term at level 20, ss constr).
+Notation "'/[' ss '/][b]' b" := (msubst_binding ss b) (in custom plutus_term at level 20, ss constr).
+Notation "'/[' ss '/][bnr]' bs" := (msubst_bindings_nonrec ss bs) (in custom plutus_term at level 20, ss constr).

@@ -47,6 +47,30 @@ Definition ForallT_tl {A P} {x : A} {xs} : ForallT P (x :: xs) -> ForallT P xs :
     | ForallT_cons p ps => ps
   end.
 
+(* ForallT for Props *)  
+Inductive ForallP (A : Type) (P : A -> Prop) : list A -> Prop :=
+  | ForallP_nil : ForallP P nil
+  | ForallP_cons : forall {x : A} {l : list A},
+                  P x -> ForallP P l -> ForallP P (x :: l).
+Arguments ForallP_nil {_} {_}.
+Arguments ForallP_cons {_} {_} {_} {_}.
+#[export] Hint Constructors ForallP : core.
+
+Definition ForallP_uncons {A P} {x : A} {xs} : ForallP P (x :: xs) -> (P x * ForallP P xs) :=
+  fun ps => match ps with
+    | ForallP_cons p ps => (p, ps)
+  end.
+
+Definition ForallP_hd {A P} {x : A} {xs} : ForallP P (x :: xs) -> P x :=
+  fun ps => match ps with
+    | ForallP_cons p _ps => p
+  end.
+
+Definition ForallP_tl {A P} {x : A} {xs} : ForallP P (x :: xs) -> ForallP P xs :=
+  fun ps => match ps with
+    | ForallP_cons p ps => ps
+  end.
+
 
 (* Prove P or Q depending on x *)
 Definition sumboolOut (P Q : Prop) (x : {P} + {Q}) :=
@@ -180,12 +204,34 @@ Ltac notIn2 :=
     | [ |- ~(In ?x ?xs)] => exact (sumboolOut (in_dec string_dec x xs))
   end.
 
-(* Creates a list of nats of 0 up to and not including i *)
-Fixpoint listNats (i : nat) : list nat :=
-  match i with
-  | O => nil
-  | S i' => cons i' (listNats i')
-  end.
+Lemma existsb_nexists : forall {A : Type} l (f : A -> bool),
+    existsb f l = false <-> ~ exists x, In x l /\ f x = true.
+Proof.
+  intros.
+  split.
+  - intros.
+    intros Hcon.
+    apply existsb_exists in Hcon.
+    rewrite H in Hcon.
+    discriminate.
+  - intros.
+    induction l.
+    + simpl.
+      reflexivity.
+    + simpl.
+      destruct (f a) eqn:Hf.
+      * exfalso.
+        apply H.
+        exists a.
+        split. left. auto. auto.
+      * simpl.
+        eapply IHl.
+        intros Hcon.
+        eapply H.
+        destruct Hcon as [x [HIn Hfx]].
+        exists x.
+        split. right. auto. auto.
+Qed.
 
 Definition remove_list {A} (dec : forall x y, {x = y} + {x <> y}) : list A -> list A -> list A :=
   fun rs xs => fold_right (remove dec) xs rs.
