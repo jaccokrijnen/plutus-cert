@@ -57,10 +57,12 @@ pastEnd :: CompiledCode (EndDate -> Integer -> Bool)
 pastEnd = $$(compile [|| \(end::EndDate) (current::Integer) ->
     let remove = Fixed 3
         {-# NOINLINE remove#-}
-        keep   = case Never of {Never -> False;_ -> True}
+        keep   = False
         {-# NOINLINE keep#-}
     in case end of
-    Fixed n -> n `lessThanEqInteger` current
+    Fixed n ->  (let floatme = if current `greaterThanEqInteger` 0 then n else 0
+                     {-# NOINLINE floatme#-}
+      in floatme) `lessThanEqInteger` current
     Never   -> keep
   ||])
 
