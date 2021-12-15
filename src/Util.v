@@ -4,6 +4,8 @@ Require Import PeanoNat.
 Set Implicit Arguments.
 Import ListNotations.
 
+Notation " f ∘ g " := (fun x => f (g x))
+  (at level 40, left associativity).
 
 
 Section list_rect'.
