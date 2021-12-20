@@ -11,7 +11,7 @@ From PlutusCert Require Import
   Util
   Language.PlutusIR
   Language.PlutusIR.Folds
-  FreeVars.
+  .
 
 
 Section BoundVars.
@@ -22,6 +22,34 @@ Section BoundVars.
 
 Notation term'    := (term var tyvar var tyvar).
 Notation binding' := (binding var tyvar var tyvar).
+Notation constr' := (constr tyvar var tyvar).
+
+
+Fixpoint bound_vars_binding (b : binding') : list var := match b with
+  | TermBind _ (VarDecl v _) _ => [v]
+  | DatatypeBind (Datatype _ _ matchf constructors ) => [matchf] ++ map constructorName constructors
+  | _                          => []
+  end.
+
+Definition bound_vars_bindings : list binding' -> list var :=
+  (@concat _) ∘ (map bound_vars_binding).
+
+Definition boundTerm_constructor (c : constr') : var :=
+  match c with
+    | Constructor (VarDecl v _) _ => v
+  end.
+
+Definition boundTerms_binding (b : binding') : list var :=
+  match b with
+    | TermBind _ (VarDecl v _) t          => [v]
+    | DatatypeBind (Datatype tv tvs m cs) => m :: map boundTerm_constructor cs
+    | TypeBind _ _ => []
+    end
+.
+
+Definition boundTerms_bindings : list binding' -> list var :=
+  (@concat _) ∘ map boundTerms_binding
+  .
 
 Fixpoint bound_vars (t : term') : list var :=
  match t with

@@ -1,11 +1,13 @@
 From Coq Require Import
   String
   List
+  Unicode.Utf8_core
   .
 From PlutusCert Require Import
   Util
   Language.PlutusIR
   Transform.Congruence
+  Analysis.BoundVars
   Analysis.FreeVars
   .
 
@@ -53,29 +55,62 @@ Definition binding_term (b : binding') : option term' :=
     end
   .
 
+
+
+
+Inductive var_scope :=
+  | LamScope       : term' -> var_scope
+
+  (* A bound var in let nonrec scopes over the rest of the bindings
+     and the let-body
+  *)
+  | LetNonRecScope : term' -> list binding' -> var_scope
+
+  (* A bound var in let rec scopes over the let-body and  all rhs' in that
+     group, there should be no shadowing of other binders in that group
+  *)
+  | LetRecScope    : list term' -> var_scope .
+
+
 (*
 Given the renaming (v, w), and the terms ts_v that v scopes over,
 there should be no (x, w) ∈ Δ such that x occurs free in ts_v, otherwise
 this renaming will capture it
-
-TODO: generalize this for a list of terms ts_v that v scopes over (in the case of let)
 *)
-Definition safe_rename (Δ : environment) (t_v : term') (bs_vs : list binding') (renaming : var * var) : Type :=
-  unit.
-(*
-  forall x,
-    In x (renamed_to w Δ) -> ~(In x (free_vars var_eqb t_v))
-.
-*)
+Definition no_capture
+  (Δ : environment)
+  (scope : var_scope)
+  (renaming : var * var) : Prop :=
+  match renaming with
+    | (v, w) => ∀ x, In x (renamed_to w Δ) ->
+      match scope with
+        | LamScope t          => ~In x (free_vars var_eqb t)
+        | LetNonRecScope t bs => ~In x (free_vars var_eqb t) *
+                                ~In x (free_vars_bindings var_eqb NonRec bs)
+        | LetRecScope ts      => Forall (fun t => ~ In x (free_vars var_eqb t)) ts
+      end
+  end
+  .
 
-(* When a construct introduces multiple binders simultaneously (such as
-   DatatypeBind, they cannot have the same name*)
-Definition no_duplicates : list var -> Type := fun vs => unit.
+Definition binding_rhs (b : binding') : option term' :=
+  match b with
+    | TermBind _ _ t => Datatypes.Some t
+    | TypeBind _ _   => Datatypes.None
+    | DatatypeBind _ => Datatypes.None
+ end.
+
+Definition mkLetScope (rec : Recursivity) (t_body : term') (bs : list binding')
+  : var_scope :=
+  match rec with
+    | Rec    => LetRecScope (t_body :: map_option binding_rhs bs)
+    | NonRec => LetNonRecScope t_body bs
+  end.
+
 
 (* Alpha renaming of term variables *)
 Polymorphic Inductive Rename : environment -> term' -> term' -> Type :=
   | RenameLamAbs : forall Δ v w ty t t',
-      safe_rename Δ t [] (v, w) ->
+      no_capture Δ (LamScope t) (v, w) ->
       Rename ((v, w) :: Δ) t t' ->
       Rename Δ (LamAbs v ty t) (LamAbs w ty t')
 
@@ -89,6 +124,7 @@ Polymorphic Inductive Rename : environment -> term' -> term' -> Type :=
       Rename Δ (Let NonRec bs t) (Let NonRec bs' t')
 
   | RenameLetRec    : forall Δ bs bs' Δ' t t',
+      NoDup (bound_vars_bindings bs') ->
       RenameBindingsRec Δ t bs Δ' bs bs' ->
       Rename Δ' t t' ->
       Rename Δ (Let Rec bs t) (Let Rec bs' t')
@@ -129,8 +165,6 @@ Polymorphic Inductive Rename : environment -> term' -> term' -> Type :=
 
 (*
 Non-recursive: the environment can be extended and passed down
-
-TODO: Find out if shadowing is allowed in letrec
 *)
 with RenameBindingsNonRec :
   environment   -> (* environment passed down (accumulating param) *)
@@ -141,7 +175,7 @@ with RenameBindingsNonRec :
   Type :=
 
   | NonRecCons : forall Δ t_body Δ' Δ_up b b' bs bs',
-      RenameBinding Δ bs t_body Δ_up b b' ->
+      RenameBinding Δ NonRec bs t_body Δ_up b b' ->
       RenameBindingsNonRec (Δ_up ++ Δ) t_body Δ'       bs         bs' ->
       RenameBindingsNonRec          Δ  t_body Δ' (b :: bs) (b' :: bs')
 
@@ -159,7 +193,7 @@ with RenameBindingsRec :
   Type :=
 
   | RecCons : forall Δ t_body all_bs Δ_b Δ_bs b b' bs bs',
-      RenameBinding     Δ all_bs t_body  Δ_b           b         b'        ->
+      RenameBinding     Δ Rec all_bs t_body  Δ_b           b         b'        ->
       RenameBindingsRec Δ t_body all_bs         Δ_bs        bs         bs' ->
       RenameBindingsRec Δ t_body all_bs (Δ_b ++ Δ_bs) (b :: bs) (b' :: bs')
 
@@ -168,31 +202,32 @@ with RenameBindingsRec :
 
 with RenameBinding :
   environment   ->
-  list binding' -> (* other bindings in group that this binding scopes over (before transformation) *)
+  Recursivity   -> (* recursivity of this let group *)
+  list binding' -> (* bindings in group that this binding scopes over (before transformation) *)
   term'         -> (* let-body it scopes over (before transformation) *)
   environment   -> (* rename results for this binding *)
   binding'      ->
   binding'      ->
   Type :=
 
-  | RenameTermBind : forall Δ bs t_body s v w t t' ty,
-      safe_rename Δ t_body bs (v, w)->
+  | RenameTermBind : ∀ Δ rec bs t_body s v w t t' ty,
+      no_capture Δ (mkLetScope rec t_body bs) (v, w) ->
       Rename Δ t t' ->
-      RenameBinding Δ bs t_body [(v, w)]
+      RenameBinding Δ rec bs t_body [(v, w)]
         (TermBind s (VarDecl v ty) t)
         (TermBind s (VarDecl w ty) t')
 
-  | RenameDatatypeBind : forall Δ bs t_body Δ_data Δ_cs tv tvs cs cs' m m',
-      Rename_constrs Δ_cs cs cs' ->               (* The renames of the constructors *)
-      Δ_data = ((m, m') :: Δ_cs) ->               (* The renames in the datatype are the rename of the matching and the renames of the constructors*)
-      no_duplicates (map snd Δ_data) ->           (* preserves well-scopedness (see note in problems/transform/rename-preconditions )*)
-      ForallT (safe_rename Δ t_body bs) Δ_data ->
-      RenameBinding Δ bs t_body Δ_data
+  | RenameDatatypeBind : ∀ Δ rec bs t_body Δ_data Δ_cs tv tvs cs cs' m m',
+      Rename_constrs Δ_cs cs cs' ->       (* The renames of the constructors *)
+      Δ_data = ((m, m') :: Δ_cs) ->       (* The renames in the datatype are the rename of the matching and the renames of the constructors*)
+      NoDup (map snd Δ_data) ->           (* preserves well-scopedness (see note in problems/transform/rename-preconditions )*)
+      ForallT (no_capture Δ (mkLetScope rec t_body bs)) Δ_data ->
+      RenameBinding Δ rec bs t_body Δ_data
         (DatatypeBind (Datatype tv tvs m  cs))
         (DatatypeBind (Datatype tv tvs m' cs'))
 
-  | RenameTypeBind  : forall Δ bs t_body  tv ty,
-      RenameBinding Δ bs t_body nil
+  | RenameTypeBind  : ∀ Δ rec bs t_body  tv ty,
+      RenameBinding Δ rec bs t_body nil
         (TypeBind tv ty)
         (TypeBind tv ty)
 

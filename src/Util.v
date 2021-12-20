@@ -94,6 +94,8 @@ Fixpoint cat_options {a} (xs : list (option a)) : (list a) :=
     | None     :: xs => cat_options xs
     end.
 
+Definition map_option {a b} (f : a -> option b) : list a -> list b :=
+  cat_options ∘ map f.
 
 (* sumbool to bool *)
 Definition sumbool_to_bool (A : Type) (a b : A) : {a = b} + {a <> b} -> bool

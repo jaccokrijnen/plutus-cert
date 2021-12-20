@@ -20,7 +20,7 @@ Set Equations Transparent.
 
 Notation fv := (free_vars String.eqb).
 Notation fv_binding := (free_vars_binding String.eqb).
-Notation fv_bindings := (free_vars_bindings String.eqb fv_binding).
+Notation fv_bindings := (free_vars_bindings String.eqb).
 
 (* DBE_Term relates terms t and t' such that t' is the result of eliminating dead bindings in t *)
 Inductive DBE_Term : Term -> Term -> Type :=

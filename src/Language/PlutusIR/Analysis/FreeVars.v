@@ -11,6 +11,7 @@ Set Implicit Arguments.
 From PlutusCert Require Import
   Language.PlutusIR
   Language.PlutusIR.Folds
+  BoundVars
   Util.
 
 
@@ -23,25 +24,6 @@ Section FreeVars.
 
 Notation term'    := (term var tyvar var tyvar).
 Notation binding' := (binding var tyvar var tyvar).
-
-Fixpoint bound_vars_binding (b : binding') : list var := match b with
-  | TermBind _ (VarDecl v _) _ => [v]
-  | DatatypeBind (Datatype _ _ matchf constructors ) => [matchf] ++ map constructorName constructors
-  | _                          => []
-  end.
-
-Fixpoint bound_vars_bindings (bs : list binding') : list var := match bs with
-    | (b :: bs)
-        => bound_vars_binding b ++ bound_vars_bindings bs
-    | nil       => nil
-    end.
-
-Fixpoint boundTerms_bindings (bs : list binding') : list (var * term var tyvar var tyvar) := match bs with
-    | ((TermBind _ (VarDecl v _) t) :: bs) => (v, t) :: boundTerms_bindings bs
-    | (b                :: bs) =>           boundTerms_bindings bs
-    | nil               => nil
-    end.
-
 Definition delete_all : var -> list var -> list var :=
   fun x xs => filter (fun y => negb (var_eqb x y)) xs.
 
@@ -63,7 +45,7 @@ Section fvbs.
 *)
 Context (free_vars_binding : Recursivity -> binding' -> list var).
 
-Fixpoint free_vars_bindings  rec (bs : list binding') : list var :=
+Fixpoint free_vars_bindings'  rec (bs : list binding') : list var :=
   match rec with
     | Rec    =>
         delete_all_many (bound_vars_bindings bs) (concat (map (free_vars_binding Rec) bs))
@@ -71,7 +53,7 @@ Fixpoint free_vars_bindings  rec (bs : list binding') : list var :=
         match bs with
           | nil     => []
           | b :: bs => free_vars_binding NonRec b
-                       ++ delete_all_many (bound_vars_binding b) (free_vars_bindings NonRec bs)
+                       ++ delete_all_many (bound_vars_binding b) (free_vars_bindings' NonRec bs)
         end
   end.
 End fvbs.
@@ -79,7 +61,7 @@ End fvbs.
 
 Fixpoint free_vars (t : term var tyvar var tyvar) : list var :=
  match t with
-   | Let rec bs t => free_vars_bindings free_vars_binding rec bs ++ delete_all_many (bound_vars_bindings bs) (free_vars t)
+   | Let rec bs t => free_vars_bindings' free_vars_binding rec bs ++ delete_all_many (bound_vars_bindings bs) (free_vars t)
    | (LamAbs n ty t)   => delete_all n (free_vars t)
    | (Var n)           => [n]
    | (TyAbs n k t)     => free_vars t
@@ -101,6 +83,8 @@ with free_vars_binding rec (b : binding') : list var :=
     | _        => []
   end
   .
+
+Definition free_vars_bindings := free_vars_bindings' free_vars_binding.
 
 End FreeVars.
 
