@@ -162,6 +162,34 @@ with binding :=
   | DatatypeBind : dtdecl -> binding
 .
 
+Inductive context :=
+  | C_Hole     : context
+
+  | C_LamAbs   : binderName -> ty -> context -> context
+  | C_Apply_L    : context -> term -> context
+  | C_Apply_R    : term -> context -> context
+  .
+
+Fixpoint context_apply (C : context) (t : term) :=
+  match C with
+    | C_Hole           => t
+    | C_LamAbs bn ty C => LamAbs bn ty (context_apply C t)
+    | C_Apply_L C t'   => Apply (context_apply C t) t'
+    | C_Apply_R t' C   => Apply t' (context_apply C t)
+  end
+.
+
+(*
+  | Let      : Recursivity -> list binding -> term -> term
+  | TyAbs    : binderTyname -> kind -> term -> term
+  | Constant : @some valueOf -> term
+  | Builtin  : DefaultFun -> term
+  | TyInst   : term -> ty -> term
+  | Error    : ty -> term
+  | IWrap    : ty -> ty -> term -> term
+  | Unwrap   : term -> term
+*)
+
 (** ** Trace of compilation *)
 Inductive pass :=
   | PassRename
@@ -250,7 +278,9 @@ Notation constructor := (constr tyname binderName binderTyname).
 Notation Term := (term name tyname binderName binderTyname).
 Notation Binding := (binding name tyname binderName binderTyname).
 
+Notation Context := (context name tyname binderName binderTyname).
 
+Arguments C_Hole { _ _ _ _ }.
 
 
 End NamedTerm.

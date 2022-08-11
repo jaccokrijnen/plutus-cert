@@ -210,3 +210,73 @@ Proof with eauto.
   - inversion IHhas_type1; subst...
     inversion H1.
 Qed.
+
+
+
+(* Notation for types of holes *)
+Notation "Δ ',,' Γ '▷' T" := (Δ, Γ, T) (at level 101).
+
+Reserved Notation "Δ₁ ',,' Γ₁ '|-C' C ':' HTy ↝ T₁" (at level 101, C at level 0, T₁ at level 0, no associativity).
+
+(* Typing rules for one-hole contexts *)
+Inductive context_has_type : Delta -> Gamma -> Context -> (Delta * Gamma * Ty) -> Ty -> Prop :=
+
+  | T_C_Hole : forall Δ Γ Tn,
+      normal_Ty Tn ->
+      Δ ,, Γ |-C C_Hole : (Δ ,, Γ ▷ Tn) ↝ Tn
+
+  | T_C_LamAbs : forall Δ₁ Γ₁ x T1 C Δ Γ Tn T2n T1n,
+      Δ₁ |-* T1 : Kind_Base ->
+      normalise T1 T1n ->
+      Δ₁ ,, x |-> T1n; Γ₁ |-C C                 : (Δ ,, Γ ▷ Tn) ↝ T2n -> 
+      Δ₁ ,,            Γ₁ |-C (C_LamAbs x T1 C) : (Δ ,, Γ ▷ Tn) ↝ (Ty_Fun T1n T2n)
+
+  | T_C_Apply_L : forall Δ₁ Γ₁ Δ Γ C t Tn T1n T2n,
+      Δ₁ ,, Γ₁ |-C C : (Δ ,, Γ ▷ Tn) ↝ (Ty_Fun T1n T2n) ->
+      Δ₁ ,, Γ₁ |-+ t : T1n ->
+      Δ₁ ,, Γ₁ |-C (C_Apply_L C t) : (Δ ,, Γ ▷ Tn) ↝ T2n
+
+  | T_C_Apply_R : forall Δ₁ Γ₁ Δ Γ C t Tn T1n T2n,
+      Δ₁ ,, Γ₁ |-+ t : (Ty_Fun T1n T2n) ->
+      Δ₁ ,, Γ₁ |-C C : (Δ ,, Γ ▷ Tn) ↝ T1n ->
+      Δ₁ ,, Γ₁ |-C (C_Apply_R t C) : (Δ ,, Γ ▷ Tn) ↝ T2n
+
+  where
+    "Δ₁ ',,' Γ₁ '|-C' C ':' Hty ↝ T₁" := (context_has_type Δ₁ Γ₁ C Hty T₁)
+.
+
+Lemma context_has_type__normal : forall Δ₁ Γ₁ C Δ Γ T T₁,
+    Δ₁ ,, Γ₁ |-C C : (Δ ,, Γ ▷ T) ↝ T₁ ->
+    normal_Ty T₁.
+Proof with eauto using normalise_to_normal.
+  intros Δ₁ Γ₁ C Δ Γ T T₁ Cty.
+  induction Cty...
+
+  (* C_App_L *)
+  - inversion IHCty...
+    (* NO_Neutral *)
+    + inversion H0.
+
+  (* C_App_R *)
+  - apply has_type__normal in H.
+    inversion H...
+    (* NO_Neutral *)
+    + inversion H0.
+Qed.
+
+Lemma context_has_type__hole_normal : forall Δ₁ Γ₁ C Δ Γ T T₁,
+    Δ₁ ,, Γ₁ |-C C : (Δ ,, Γ ▷ T) ↝ T₁ ->
+    normal_Ty T.
+Proof.
+  intros Δ₁ Γ₁ C Δ Γ T T₁ Cty.
+  Require Import Coq.Program.Equality.
+  dependent induction Cty.
+  all: eauto.
+Qed.
+
+
+Lemma context_has_type__apply : forall C t Δ₁ Γ₁ Δ Γ T T₁,
+  (Δ₁ ,, Γ₁ |-C C : (Δ ,, Γ ▷ T) ↝ T₁) ->
+  (Δ ,, Γ |-+ t : T) ->
+  (Δ₁ ,, Γ₁ |-+ (context_apply C t) : T₁).
+Admitted.
