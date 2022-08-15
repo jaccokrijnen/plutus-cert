@@ -6,6 +6,9 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Misc.Axiom.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Misc.BoundVars.
 
 
+(*
+Fundamental property (reflexivity) of LR_logically_approximate
+*)
 
 Definition P_has_type Delta Gamma e T := 
   LR_logically_approximate Delta Gamma e e T.
@@ -97,3 +100,11 @@ Proof.
       rewrite <- mupdate_app; eauto.
       rewrite <- flatten_app; eauto. 
 Qed.
+
+
+(* Reflexivity of one-hole contexts *)
+
+Lemma LR_reflexivity_context : forall Δ₁ Γ₁ C Δ Γ T T₁,
+  Δ₁ ,, Γ₁ |-C C : (Δ ,, Γ ▷ T) ↝ T₁ ->
+  LR_logically_approximate_context Δ₁ Γ₁ C C Δ Γ T T₁.
+Admitted.

@@ -221,3 +221,13 @@ Definition LR_logically_approximate (Delta : partial_map Kind) (Gamma : partial_
 
 Definition LR_logically_equivalent (Delta : partial_map Kind) (Gamma : partial_map Ty) (e e' : Term) (T : Ty) :=
   LR_logically_approximate Delta Gamma e e' T /\ LR_logically_approximate Delta Gamma e' e T.
+
+
+
+(*
+Logical approximation of one-hole contexts
+*)
+Definition LR_logically_approximate_context Δ₁ Γ₁ C C' Δ Γ T T₁ :=
+  forall e e',
+    LR_logically_approximate Δ Γ e e' T ->
+    LR_logically_approximate Δ₁ Γ₁ (context_apply C e) (context_apply C' e') T₁.

@@ -73,6 +73,7 @@ src/Language/PlutusIR/Semantics/TypeSafety/TypeLanguage/Preservation.v
 
 src/Language/PlutusIR/Semantics/SemanticEquivalence/Auto.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/FundamentalProperty.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/Contextual.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/Multisubstitution/Congruence.v
 
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas.v
