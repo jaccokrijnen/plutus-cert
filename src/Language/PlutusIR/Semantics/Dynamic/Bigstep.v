@@ -204,3 +204,7 @@ Create HintDb hintdb__eval_with_error.
   eval_bindings_nonrec
   eval_bindings_rec
   : hintdb__eval_with_error.
+
+
+Definition terminates t := exists v j, t =[ j ]=> v.
+Notation "t '⇓'" := (terminates t) (at level 101).
