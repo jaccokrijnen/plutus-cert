@@ -128,17 +128,8 @@ Lemma LR_reflexivity_context : forall C Δ₁ Γ₁ Δ Γ T T₁,
   Δ₁ ,, Γ₁ |-C C : (Δ ,, Γ ▷ T) ↝ T₁ ->
   LR_logically_approximate_context Δ₁ Γ₁ C C Δ Γ T T₁.
 Proof with eauto with hintdb_compat_context.
-  induction C...
+  induction C.
 
-  (* C_LamAbs *)
-  - intros.
-    inversion H; subst...
-
-  (* C_Apply_L *)
-  - intros.
-    inversion H; subst...
-
-  (* C_Apply_R *)
-  - intros.
-    inversion H; subst...
+  all: intros Δ₁ Γ₁ Δ Γ T T₁ H_C_ty.
+  all: inversion H_C_ty; subst...
 Qed.

@@ -5,6 +5,9 @@ From PlutusCert Require Import
 .
 
 
-Lemma compatibility_C_Hole : forall Δ₁ Γ₁ Δ Γ T T₁,
-  LR_logically_approximate_context Δ₁ Γ₁ C_Hole C_Hole Δ Γ T T₁.
-Admitted.
+Lemma compatibility_C_Hole : forall Δ Γ T,
+  LR_logically_approximate_context Δ Γ C_Hole C_Hole Δ Γ T T.
+Proof with auto.
+  intros.
+  unfold LR_logically_approximate_context...
+Qed.
