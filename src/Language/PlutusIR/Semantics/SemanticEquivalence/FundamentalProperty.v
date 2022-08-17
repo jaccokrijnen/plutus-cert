@@ -47,7 +47,8 @@ Definition P_binding_well_formed Delta Gamma b :=
 
 Lemma LR_reflexivity : forall Delta Gamma e T,
     Delta ,, Gamma |-+ e : T ->
-    P_has_type Delta Gamma e T.
+    LR_logically_approximate Delta Gamma e e T.
+    (* P_has_type Delta Gamma e T. *)
 Proof.
   apply has_type__ind with 
     (P := P_has_type)
@@ -104,7 +105,40 @@ Qed.
 
 (* Reflexivity of one-hole contexts *)
 
-Lemma LR_reflexivity_context : forall Δ₁ Γ₁ C Δ Γ T T₁,
+From PlutusCert Require Import
+  CompatibilityLemmas.Context.C_Lam
+  CompatibilityLemmas.Context.C_Apply_L
+  CompatibilityLemmas.Context.C_Apply_R
+  CompatibilityLemmas.Context.C_Hole.
+
+Create HintDb hintdb_compat_context.
+#[global]
+Hint Resolve
+  compatibility_C_Hole
+  compatibility_C_LamAbs
+  compatibility_C_Apply_L
+  compatibility_C_Apply_R
+
+  LR_reflexivity
+  : hintdb_compat_context.
+
+Hint Unfold P_has_type : hintdb_compat_context.
+
+Lemma LR_reflexivity_context : forall C Δ₁ Γ₁ Δ Γ T T₁,
   Δ₁ ,, Γ₁ |-C C : (Δ ,, Γ ▷ T) ↝ T₁ ->
   LR_logically_approximate_context Δ₁ Γ₁ C C Δ Γ T T₁.
-Admitted.
+Proof with eauto with hintdb_compat_context.
+  induction C...
+
+  (* C_LamAbs *)
+  - intros.
+    inversion H; subst...
+
+  (* C_Apply_L *)
+  - intros.
+    inversion H; subst...
+
+  (* C_Apply_R *)
+  - intros.
+    inversion H; subst...
+Qed.

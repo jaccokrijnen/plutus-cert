@@ -93,6 +93,12 @@ src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TyInst.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TypeBind.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Var.v
 
+
+src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Context/C_Lam.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Context/C_Apply_R.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Context/C_Apply_L.v
+src/Language/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Context/C_Hole.v
+
 src/Language/PlutusIR/Semantics/SemanticEquivalence/LogicalRelation.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/LogicalRelation/Monotonicity.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/LogicalRelation/RelationalModel.v
