@@ -10,54 +10,57 @@ From PlutusCert Require Import
   Language.PlutusIR.Semantics.SemanticEquivalence.FundamentalProperty
   .
 
+Ltac destruct_hypos := repeat (match goal with
+  | H : exists a, _ |- _ => destruct H
+  | H : ?x /\ ?y |- _ => destruct H
+  end).
+
+
 Theorem LR_sound : forall Δ Γ e e' T,
   LR_logically_approximate Δ Γ e e' T ->
   Δ ,, Γ |- e ⪯-ctx e' : T.
 Proof with eauto.
-  intros.
+  intros Δ Γ e e' T H_approx_e_e'.
   unfold contextually_approximate.
-  assert (H' := H).
-  unfold LR_logically_approximate in H'.
+  repeat split.
 
-  repeat (match goal with
-    | H : ?x /\ ?y |- _ => destruct H
-    | |- ?x /\ ?y => split
-    end)...
-  clear H2 H0 H1.
+  1,2:
+    unfold LR_logically_approximate in *;
+    destruct_hypos;
+    auto.
 
-  intros.
-  unfold terminates in H1.
-  destruct H1 as [v [j H_Ce_v]].
 
-  apply LR_reflexivity_context in H0.
-  unfold LR_logically_approximate_context in H0.
-  apply H0 in H.
-  unfold LR_logically_approximate in H.
-  repeat (match goal with | H : ?x /\ ?y |- _ => destruct H end).
-  assert (H3 := H2 (1 + j) nil nil nil nil nil eq_refl eq_refl RD_nil (RG_nil _ _)). clear H2.
-  simpl in H3.
+  intros C T₁ H_C_Ty H_C_e_terminates.
+  destruct H_C_e_terminates as [v [j H_steps_C_e]].
 
-  autorewrite with RC in H3.
+  (* apply fundamental theorem of contexts (reflexivity) *)
+  apply LR_reflexivity_context in H_C_Ty as H_approx_C_C.
 
-  assert (H4 := H3 j (PeanoNat.Nat.lt_succ_diag_r j)). clear H3.
+  unfold LR_logically_approximate_context in *.
+  assert (H_approx_C_e_C_e' := H_approx_C_C _ _ H_approx_e_e').
+  clear H_approx_C_C.
 
-  apply H4 in H_Ce_v. clear H4.
+  unfold LR_logically_approximate in H_approx_C_e_C_e'.
+  repeat (apply proj2 in H_approx_C_e_C_e').
+  assert (H_RC_C_e_C_e' := H_approx_C_e_C_e' (S j) nil nil nil nil nil eq_refl eq_refl RD_nil (RG_nil _ _)).
+  clear H_approx_C_e_C_e'.
+  simpl in H_RC_C_e_C_e'.
 
-  destruct H_Ce_v as [e'_f [j' [H_Ce'_v' _]]].
+  autorewrite with RC in *.
+
+  assert (H4 := H_RC_C_e_C_e' _ (PeanoNat.Nat.lt_succ_diag_r j) _ H_steps_C_e).
+  clear H_RC_C_e_C_e'.
 
   unfold terminates.
-  exists e'_f.
-  exists j'.
-  assumption.
+  destruct_hypos...
 Qed.
 
 Corollary LR_equivalent_sound : forall Δ Γ e e' T,
   LR_logically_equivalent Δ Γ e e' T ->
   Δ ,, Γ |- e ≃-ctx e' : T.
-Proof.
-  intros.
+Proof with eauto using LR_sound.
+  intros Δ Γ e e' T H.
   unfold LR_logically_equivalent in H.
-  destruct H as [H1 H2].
-  unfold contextually_equivalent.
-  split; apply LR_sound; assumption.
+  destruct_hypos.
+  split...
 Qed.
