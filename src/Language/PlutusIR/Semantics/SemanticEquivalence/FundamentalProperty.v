@@ -106,7 +106,7 @@ Qed.
 (* Reflexivity of one-hole contexts *)
 
 From PlutusCert Require Import
-  CompatibilityLemmas.Context.C_Lam
+  CompatibilityLemmas.Context.C_LamAbs
   CompatibilityLemmas.Context.C_Apply_L
   CompatibilityLemmas.Context.C_Apply_R
   CompatibilityLemmas.Context.C_Hole.
