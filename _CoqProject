@@ -20,7 +20,6 @@ src/Language/PlutusIR/Transform/ThunkRecursions.v
 src/Language/PlutusIR/Transform/Inline.v
 src/Language/PlutusIR/Transform/Rename.v
 src/Language/PlutusIR/Transform/Inline/DecideStepBool.v
-src/Language/PlutusIR/Transform/Desugar/DecideBool.v
 src/Language/PlutusIR/Transform/Congruence.v
 src/Language/PlutusIR/Transform/Compose.v
 src/Language/PlutusIR/Transform/Functional.v
@@ -28,6 +27,7 @@ src/Language/PlutusIR/Transform/FloatLet.v
 src/Language/PlutusIR/Transform/LetNonStrict.v
 src/Language/PlutusIR/Transform/LetRec.v
 src/Language/PlutusIR/Transform/LetNonRec.v
+src/Language/PlutusIR/Transform/LetNonRec/DecideBool.v
 src/Language/PlutusIR/Transform/LetNonRec/DSP.v
 src/Language/PlutusIR/Transform/LetNonRec/SSP.v
 src/Language/PlutusIR/Transform/LetTypes.v
