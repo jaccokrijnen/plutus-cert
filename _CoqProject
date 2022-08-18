@@ -31,9 +31,9 @@ src/Language/PlutusIR/Transform/LetNonRec/DecideBool.v
 src/Language/PlutusIR/Transform/LetNonRec/DSP.v
 src/Language/PlutusIR/Transform/LetNonRec/SSP.v
 src/Language/PlutusIR/Transform/LetTypes.v
+src/Language/PlutusIR/Transform/DeadBindings.v
 #src/Language/PlutusIR/Transform/ScottEnc.v
 src/Language/PlutusIR/Transform.v
-src/Language/PlutusIR/Optimizer/DeadBindings.v
 
 src/Language/PlutusIR/Semantics/Dynamic.v
 src/Language/PlutusIR/Semantics/Dynamic/AnnotationSubstitution.v

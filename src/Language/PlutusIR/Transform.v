@@ -7,7 +7,7 @@ From PlutusCert Require Import
   Language.PlutusIR
   Language.PlutusIR.Transform.Compose
   Language.PlutusIR.Transform.Rename
-  Language.PlutusIR.Optimizer.DeadBindings
+  Language.PlutusIR.Transform.DeadBindings
   Language.PlutusIR.Transform.Inline
   Language.PlutusIR.Transform.Equal
   Language.PlutusIR.Transform.ThunkRecursions
