@@ -36,6 +36,18 @@ Notation "Δ ',,' Γ '|-' e1 ≃-ctx e2 ':' T" := (contextually_equivalent e1 e2
   , no associativity).
 
 
+Definition ciu_equivalent e e' T :=
+  (empty,, empty |-+ e  : T)  /\
+  (empty,, empty |-+ e' : T) /\
+  ((e ⇓) <-> (e' ⇓)).
+
+Notation "|- e1 ≃-ciu e2 ':' T" := (ciu_equivalent e1 e2 T)
+  ( at level 101
+  , e1 at level 0
+  , e2 at level 0
+  , T at level 0
+  , no associativity).
+
 Section contextually_approximate_lemmas.
 
   Lemma contextually_approximate_reflexive : forall Δ Γ e T,

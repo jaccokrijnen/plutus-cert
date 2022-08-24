@@ -64,3 +64,32 @@ Proof with eauto using LR_sound.
   destruct_hypos.
   split...
 Qed.
+
+Lemma LR_approximate_sound_ciu : forall e e' T,
+  normal_Ty T ->
+  empty,, empty |- e ⪯-ctx e' : T ->
+  e  ⇓ ->
+  e' ⇓.
+Proof.
+  intros e e' T H_norm_T H_approx_e_e' e_terminates.
+  unfold contextually_approximate in *.
+  destruct H_approx_e_e' as [H_ty_e [H_ty_e' H_steps]].
+  assert (H := H_steps C_Hole T).
+  eauto using context_has_type.
+Qed.
+
+
+Corollary LR_equivalent_sound_ciu : forall e e' T,
+  normal_Ty T ->
+  LR_logically_equivalent empty empty e e' T ->
+  ciu_equivalent e e' T.
+Proof with eauto using LR_approximate_sound_ciu.
+  intros e e' T H_normal_T H.
+  apply LR_equivalent_sound in H.
+  assert (H' := H).
+  unfold contextually_equivalent in *.
+  unfold contextually_approximate in H.
+  unfold ciu_equivalent.
+  destruct_hypos.
+  repeat split...
+Qed.
