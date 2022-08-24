@@ -242,3 +242,5 @@ Fixpoint remove_eqb {a} a_eqb xs : list a :=
     | x :: xs => if a_eqb x : bool then remove_eqb a_eqb xs else x :: remove_eqb a_eqb xs
   end
   .
+
+Definition is_cons {A} (xs : list A) : Prop := exists y ys, xs = y :: ys.
