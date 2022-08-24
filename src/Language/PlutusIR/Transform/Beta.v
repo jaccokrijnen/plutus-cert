@@ -30,29 +30,39 @@ t_body
 
 *)
 
-Inductive collect_args : Term -> list Term -> list Binding -> Term -> Prop :=
+Inductive collect_args : Term -> list Term -> Term -> Prop :=
 
-  | ca_LamAbs : forall t_body t_arg args binds t_inner_body v ty,
-      collect_args t_body               args            binds                                           t_inner_body ->
-      collect_args (LamAbs v ty t_body) (t_arg :: args) (TermBind Strict (VarDecl v ty) t_arg :: binds) t_inner_body
+  | ca_Apply : forall t_f t_x args t_inner_f,
+      collect_args t_f             (t_x :: args) t_inner_f ->
+      collect_args (Apply t_f t_x) args          t_inner_f
 
-  | ca_Apply : forall t_f t_x args binds t_body,
-      collect_args t_f             (t_x :: args) binds t_body ->
-      collect_args (Apply t_f t_x) args          binds t_body
-
+  | ca_Other : forall t,
+  (* ~ (exists t_f t_x, t = Apply t_f t_x) -> *) (* enforces the longest sequence of arguments *)
+      collect_args t [] t
 .
 
+Inductive collect_binders : Term -> list VDecl -> Term -> Prop :=
+
+  | cv_LamAbs : forall t_body vdecls v ty t_inner,
+      collect_binders t_body               vdecls t_inner ->
+      collect_binders (LamAbs v ty t_body) (VarDecl v ty :: vdecls) t_inner
+
+  | cv_Other : forall t,
+  (* ~ (exists v ty t', t = LamAbs v ty t') -> *) (* enforces the longest sequence of lambda binders *)
+      collect_binders t [] t
+.
 
 Reserved Notation "t₁ ▷-β t₂" (at level 30).
 Inductive extract_bindings : Term -> Term -> Prop :=
 
-  | eb_collect_Apply : forall t₁ t₂ binds t_inner,
-
-      collect_args t₁ [] binds t_inner ->
-      is_cons binds ->
+  | eb_collect_Apply : forall t₁ t₂ args vdecls t_inner_f t_inner,
+      collect_args t₁ args t_inner_f ->
+      is_cons args ->
+      collect_binders t_inner_f vdecls t_inner ->
+      is_cons vdecls ->
       t_inner ▷-β t₂ ->
     (* -------------------------------- *)
-      t₁ ▷-β Let NonRec (rev binds) t₂
+      t₁ ▷-β Let NonRec (zip_with (TermBind Strict) (rev vdecls) args) t₂
 
   | eb_TyInst_TyAbs : forall ty v k t_body,
 
@@ -70,8 +80,14 @@ where "t1 ▷-β t2" := (extract_bindings t1 t2)
 .
 
 
-(*
+Definition is_extract_bindings : Term -> Term -> bool.
+Admitted.
 
+Lemma is_extract_bindings_sound : forall t₁ t₂,
+  is_extract_bindings t₁ t₂ = true -> extract_bindings t₁ t₂.
+Admitted.
+
+(*
 Possible alternative formulation (small step)
 ---
 

@@ -244,3 +244,11 @@ Fixpoint remove_eqb {a} a_eqb xs : list a :=
   .
 
 Definition is_cons {A} (xs : list A) : Prop := exists y ys, xs = y :: ys.
+
+Definition zip := combine.
+Arguments zip {A B}%type_scope (_ _)%list_scope.
+Definition unzip := split.
+Arguments unzip {A B}%type_scope (_)%list_scope.
+
+Definition zip_with {A B C} (f : A -> B -> C) : list A -> list B -> list C :=
+  fun xs ys => map (uncurry f) (zip xs ys).
