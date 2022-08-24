@@ -10,9 +10,6 @@ From Coq Require Import
   Strings.String.
 Import ListNotations.
 
-
-
-
 (*
 
 Transforms (repeated) β-redexes into let nonrec
@@ -49,14 +46,24 @@ Inductive collect_args : Term -> list Term -> list Binding -> Term -> Prop :=
 Reserved Notation "t₁ ▷-β t₂" (at level 30).
 Inductive extract_bindings : Term -> Term -> Prop :=
 
-  | ca_collect : forall t₁ t₂ binds t_inner,
+  | eb_collect_Apply : forall t₁ t₂ binds t_inner,
+
       collect_args t₁ [] binds t_inner ->
       is_cons binds ->
       t_inner ▷-β t₂ ->
+    (* -------------------------------- *)
       t₁ ▷-β Let NonRec (rev binds) t₂
 
-  | ca_cong : forall t1 t2,
+  | eb_TyInst_TyAbs : forall ty v k t_body,
+
+    (* ------------------------------ *)
+      TyInst (TyAbs v k t_body) ty
+        ▷-β
+      Let NonRec [TypeBind (TyVarDecl v k) ty] t_body
+
+  | eb_Cong : forall t1 t2,
       Cong extract_bindings t1 t2 ->
+    (* ------------------------------ *)
       t1 ▷-β t2
 
 where "t1 ▷-β t2" := (extract_bindings t1 t2)
