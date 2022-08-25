@@ -10,6 +10,7 @@ src/Language/PlutusIR/Folds.v
 
 src/Language/PlutusIR/Analysis/Equality.v
 src/Language/PlutusIR/Analysis/FreeVars.v
+src/Language/PlutusIR/Analysis/UniqueBinders.v
 src/Language/PlutusIR/Analysis/Size.v
 src/Language/PlutusIR/Analysis/BoundVars.v
 
@@ -114,8 +115,6 @@ src/Language/PlutusIR/Semantics/SemanticEquivalence/LogicalRelation/Validity.v
 src/Language/PlutusIR/Semantics/SemanticEquivalence/Soundness.v
 
 src/Language/PlutusIR/Semantics/Misc/Axiom.v
-src/Language/PlutusIR/Semantics/Misc/BoundVars.v
-src/Language/PlutusIR/Semantics/Misc/UniqueBinders.v
 
 src/Util/List.v
 src/Util/Map.v
