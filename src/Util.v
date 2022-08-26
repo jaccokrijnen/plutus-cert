@@ -72,6 +72,18 @@ Definition ForallP_tl {A P} {x : A} {xs} : ForallP P (x :: xs) -> ForallP P xs :
   end.
 
 
+(* Todo, remove ForallP *)
+Lemma ForallP_Forall : forall A P (xs : list A), ForallP P xs <-> Forall P xs.
+Proof with eauto using Forall.
+  intros.
+  split; intros.
+  - induction xs...
+    inversion H...
+  - induction xs...
+    inversion H...
+Qed.
+
+
 (* Prove P or Q depending on x *)
 Definition sumboolOut (P Q : Prop) (x : {P} + {Q}) :=
   match x return (if x then P else Q) with
