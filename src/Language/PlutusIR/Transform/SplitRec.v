@@ -23,6 +23,10 @@ Definition binding_group := (Recursivity * list Binding)%type.
 Assuming globally unique variables, the new binding groups much satisfy:
   - Well-scoped: each free variable in a binding RHS is bound
   - All bindings equals those in the let-rec before transformaton
+
+Note that strictness of bindings does not matter: if one of the (strict)
+bindings diverges, the whole let-block diverges. This behaviour remains when
+regrouping/reordering all bindings.
 *)
 
 Definition list_eq_elems {A} xs ys : Prop :=
