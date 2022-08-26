@@ -1,6 +1,7 @@
 Require Import String.
 Require Import List.
 Require Import PeanoNat.
+Require Import Program.Basics.
 Set Implicit Arguments.
 Import ListNotations.
 
@@ -264,3 +265,6 @@ Arguments unzip {A B}%type_scope (_)%list_scope.
 
 Definition zip_with {A B C} (f : A -> B -> C) : list A -> list B -> list C :=
   fun xs ys => map (uncurry f) (zip xs ys).
+
+Notation " g ∘ f " := (compose g f)
+  (at level 40, left associativity).

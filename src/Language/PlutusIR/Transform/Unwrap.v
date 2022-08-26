@@ -11,7 +11,7 @@ Inductive unwrap_cancel : Term -> Term -> Prop :=
 
   | uc_cancel : forall ty1 ty2 t t',
       t ▷-unwrap t' ->
-      (Unwrap (IWrap ty1 ty2 t)) ▷-unwrap t'
+      Unwrap (IWrap ty1 ty2 t) ▷-unwrap t'
 
   | uc_cong : forall t t',
       Cong unwrap_cancel t t' ->

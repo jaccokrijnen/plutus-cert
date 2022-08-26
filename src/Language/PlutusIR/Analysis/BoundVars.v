@@ -2,7 +2,9 @@ From Coq Require Import
   Strings.String
   Lists.List
   Arith.PeanoNat
-  Strings.Ascii.
+  Strings.Ascii
+  Program.Basics
+  .
 
 Import ListNotations.
 Local Open Scope string_scope.
@@ -11,7 +13,7 @@ From PlutusCert Require Import
   Util
   Language.PlutusIR
   Language.PlutusIR.Folds
-  FreeVars.
+  .
 
 Import NamedTerm.
 
@@ -173,45 +175,53 @@ End Annotation.
   : core.
 
 
-(** Retrieve bound term variable bindings *)
-
-Definition bvc (c : NamedTerm.constructor) : string :=
-  match c with
-  | Constructor (VarDecl x _) _ => x
-  end.
-
-Definition bvb (b : NamedTerm.Binding) : list string :=
-  match b with
-  | TermBind _ (VarDecl x _) _ => cons x nil
-  | TypeBind (TyVarDecl X _) _ => nil
-  | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => matchFunc :: (rev (map bvc cs))
-  end.
-
-Definition bvbs (bs : list NamedTerm.Binding) : list string := List.concat (map bvb bs).
-  
-(** Retrieve bound type variable bindings *)
-
-Definition btvb (b : NamedTerm.Binding) : list tyname :=
-  match b with
-  | TermBind _ (VarDecl x _) _ => nil
-  | TypeBind (TyVarDecl X _) _ => cons X nil
-  | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => cons X nil
-  end.
-
-Definition btvbs (bs : list NamedTerm.Binding) : list tyname := List.concat (map btvb bs).
-
 Section BoundVars.
   Context
     {var tyvar : Set}
     (var_eqb : var -> var -> bool)
     .
 
-Notation term'    := (term var tyvar var tyvar).
-Notation binding' := (binding var tyvar var tyvar).
+Definition term' := term var tyvar var tyvar.
+Definition binding' := binding var tyvar var tyvar.
+Definition constructor' := constr tyvar var tyvar.
+
+(** Retrieve bound term variable bindings *)
+
+Definition bvc (c : constructor') : var :=
+  match c with
+  | Constructor (VarDecl x _) _ => x
+  end.
+
+Definition bvb (b : binding') : list var :=
+  match b with
+  | TermBind _ (VarDecl x _) _ => cons x nil
+  | TypeBind (TyVarDecl X _) _ => nil
+  | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => matchFunc :: (rev (map bvc cs))
+  end.
+
+Definition bvbs (bs : list binding') : list var := List.concat (map bvb bs).
+
+
+Fixpoint boundTerms_bindings (bs : list binding') : list (var * term var tyvar var tyvar) := match bs with
+    | ((TermBind _ (VarDecl v _) t) :: bs) => (v, t) :: boundTerms_bindings bs
+    | (b                :: bs) =>           boundTerms_bindings bs
+    | nil               => nil
+    end.
+
+(** Retrieve bound type variable bindings *)
+
+Definition btvb (b : binding') : list tyvar :=
+  match b with
+  | TermBind _ (VarDecl x _) _ => nil
+  | TypeBind (TyVarDecl X _) _ => cons X nil
+  | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => cons X nil
+  end.
+
+Definition btvbs (bs : list binding') : list tyvar := List.concat (map btvb bs).
 
 Fixpoint bound_vars (t : term') : list var :=
  match t with
-   | Let rec bs t => bound_vars_bindings bs ++ bound_vars t
+   | Let rec bs t => concat (map bound_vars_binding bs) ++ bound_vars t
    | (LamAbs n ty t)   => n :: (bound_vars t)
    | (Var n)           => []
    | (TyAbs n k t)     => bound_vars t
@@ -222,44 +232,120 @@ Fixpoint bound_vars (t : term') : list var :=
    | (Error ty)        => []
    | (Constant v)      => []
    | (Builtin f)       => []
-   end.
+   end
+with bound_vars_binding (b : binding') : list var := match b with
+  | TermBind _ (VarDecl v _) t => [v] ++ bound_vars t
+  | DatatypeBind (Datatype _ _ matchf constructors ) => [matchf] ++ map constructorName constructors
+  | _                          => []
+  end.
+
+Definition bound_vars_bindings := @concat _ ∘ map bound_vars_binding.
 
 End BoundVars.
 
-Section UniqueVars.
-  Context (name tyname : Set).
+Import BoundVars.Term.
 
-  Inductive UniqueVars : term name tyname name tyname -> Type :=
-    | UV_Let : forall {r bs t}, ForallT (UniqueVars_binding) bs -> UniqueVars t -> UniqueVars (Let r bs t)
-    | UV_Var : forall v, UniqueVars (Var v)
-    | UV_TyAbs : forall v k t, UniqueVars t -> UniqueVars (TyAbs v k t)
-    | UV_LamAbs : forall v ty t, ~(In v (bound_vars t)) -> UniqueVars t -> UniqueVars (LamAbs v ty t)
-    | UV_Apply : forall s t, UniqueVars s -> UniqueVars t -> UniqueVars (Apply s t)
-    | UV_Constant : forall c, UniqueVars (Constant c)
-    | UV_Builtin : forall f, UniqueVars (Builtin f)
-    | UV_TyInst : forall t ty, UniqueVars t -> UniqueVars (TyInst t ty)
-    | UV_Error : forall ty, UniqueVars (Error ty)
-    | UV_IWrap : forall ty1 ty2 t, UniqueVars t -> UniqueVars (IWrap ty1 ty2 t)
-    | UV_Unwrap : forall t, UniqueVars t -> UniqueVars (Unwrap t)
+Definition P_Term (t : Term) : Prop := Forall (fun v => appears_bound_in v t) (bound_vars t).
+Definition P_Binding (b : Binding) := Forall (fun v => forall t bs recty, appears_bound_in v (Let recty (b :: bs) t)) (bound_vars_binding b).
 
-    with UniqueVars_binding : binding name tyname name tyname -> Type :=
-    | UV_TermBind : forall s v t ty, ~(In v (bound_vars t)) -> UniqueVars t -> UniqueVars_binding (TermBind s (VarDecl v ty) t)
-    | UV_TypeBind : forall tvd ty, UniqueVars_binding (TypeBind tvd ty)
-    | UV_DatatypeBind : forall dtd, UniqueVars_binding (DatatypeBind dtd)
-    .
+Lemma bound_vars_appears_bound_in : (forall t, P_Term t) /\ (forall b, P_Binding b).
+Proof with eauto using appears_bound_in.
+  apply Term__multind with (P := P_Term) (Q := P_Binding).
+  all: unfold P_Term...
+  - intros.
+    unfold P_Term.
+    apply Forall_app.
+    split.
+    + unfold P_Binding in H.
+      induction bs.
+      * constructor.
+      * simpl. 
+        apply Forall_app.
+        split.
+          ** apply ForallP_Forall in H.
+             apply Forall_inv in H.
+             eapply Forall_impl.
+               2: { apply H. }
+               auto.
+          ** apply ForallP_Forall in H.
+             apply Forall_inv_tail in H.
+             apply ForallP_Forall in H.
+             apply IHbs in H.
+             eapply Forall_impl.
+             intros b. apply ABI_Let_Cons.
+             auto.
 
-End UniqueVars.
+    + unfold P_Term in *.
+      eapply Forall_impl with (P := fun v => appears_bound_in v t)...
+      eauto using appears_bound_in.
+      intros.
+      induction bs...
+      apply ForallP_Forall in H.
+      apply Forall_inv_tail in H.
+      apply ForallP_Forall in H...
+  - intros.
+    cbv.
+    auto.
+  - intros.
+    eapply Forall_impl. 2: exact H.
+    eauto.
+  - intros.
+    eapply Forall_cons...
+    eapply Forall_impl with (P := fun a => appears_bound_in a t0)...
+    intros. 
+      destruct (string_dec a s).
+      * subst. apply ABI_LamAbs1.
+      * apply ABI_LamAbs2...
+
+  (* Common pattern: only need to prove an implication using a ABI rule *)
+  Ltac tac rule :=
+    intros; eapply Forall_impl; [intros a; apply rule | auto].
+
+  - intros.
+    apply Forall_app. split.
+      + tac ABI_Apply1.
+      + tac ABI_Apply2.
+  - intros. cbv. auto.
+  - intros. cbv. auto.
+  - tac ABI_TyInst.
+  - intros. cbv. auto.
+  - tac ABI_IWrap.
+  - tac ABI_Unwrap.
+  - intros.
+    unfold P_Binding.
+    intros.
+    cbv.
+    destruct v.
+    eapply Forall_cons.
+      + intros...
+      + intros. eapply Forall_impl with (P := fun v => appears_bound_in v t).
+        1: { intros. apply ABI_Let_TermBind2... }
+        auto.
+  - unfold P_Binding.
+    intros.
+    cbv...
+  - unfold P_Binding.
+    cbv.
+    destruct dtd.
+    apply Forall_cons.
+    + intros.
+      apply ABI_Let_DatatypeBind.
+      constructor...
+    + apply Forall_forall.
+      intros.
+      apply ABI_Let_DatatypeBind.
+      apply in_cons.
+      assumption.
+Qed.
 
 Inductive decide {a : Type} (P : a -> Type) (x : a) :=
   | dec_False : notT (P x) -> decide P x
   | dec_True  : P x        -> decide P x
   .
+
+#[local]
 Hint Constructors decide : core.
 
 Definition dec_all a P (xs : list a) : ForallT (decide P) xs -> decide (ForallT P) xs.
-Proof.
-Admitted.
-
-Definition check_unique : forall v v' t, decide (UniqueVars v v') t.
 Proof.
 Admitted.

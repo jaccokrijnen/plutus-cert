@@ -2,7 +2,7 @@ Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.TypeSubstitution.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Misc.BoundVars.
+Require Import PlutusCert.Language.PlutusIR.Analysis.BoundVars.
 
 Import Coq.Lists.List.
 Import Coq.Strings.String.

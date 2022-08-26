@@ -2,7 +2,7 @@ Require Import PlutusCert.Language.PlutusIR.Transform.LetNonRec.
 Require Import PlutusCert.Language.PlutusIR.Transform.LetNonRec.SSP.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Misc.Axiom.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Misc.BoundVars.
+Require Import PlutusCert.Language.PlutusIR.Analysis.BoundVars.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.

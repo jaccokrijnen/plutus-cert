@@ -3,7 +3,7 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Misc.Axiom.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Misc.BoundVars.
+Require Import PlutusCert.Language.PlutusIR.Analysis.BoundVars.
 
 
 (*

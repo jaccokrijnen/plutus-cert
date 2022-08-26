@@ -1,7 +1,7 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 
-Require Import PlutusCert.Language.PlutusIR.Semantics.Misc.BoundVars.
+Require Import PlutusCert.Language.PlutusIR.Analysis.BoundVars.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Util.
 

@@ -1,7 +1,7 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 
-Require Export PlutusCert.Language.PlutusIR.Semantics.Misc.BoundVars.
+Require Export PlutusCert.Language.PlutusIR.Analysis.BoundVars.
 
 Import Coq.Lists.List.
 Import Coq.Strings.String.
