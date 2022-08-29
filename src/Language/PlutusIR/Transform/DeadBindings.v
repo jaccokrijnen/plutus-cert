@@ -9,11 +9,13 @@ From PlutusCert Require Import
   Language.PlutusIR
   Language.PlutusIR.Analysis.FreeVars
   Language.PlutusIR.Analysis.Equality
+  Language.PlutusIR.Analysis.UniqueBinders
   Language.PlutusIR.Transform.Congruence
   Language.PlutusIR.Semantics.Dynamic.Values
   Static.Typing.
 
 Import NamedTerm.
+Import UniqueBinders.Term.
 
 Set Implicit Arguments.
 Set Equations Transparent.
@@ -80,7 +82,12 @@ with dead_syn_binding : Binding -> Binding -> Prop :=
   .
 
 (* TODO: define and use well_scoped instead of well_typed *)
-Definition dead_code t t' := dead_syn t t' /\ well_typed t'.
+Definition dead_code t t' := dead_syn t t' /\ well_typed t' /\ unique t'.
+
+
+Lemma dead_syn_sym : forall t, dead_syn t t.
+Admitted.
+
 
 (* DBE_Term relates terms t and t' such that t' is the result of eliminating dead bindings in t *)
 Inductive DBE_Term : Term -> Term -> Type :=

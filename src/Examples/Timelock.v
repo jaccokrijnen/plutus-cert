@@ -23,6 +23,7 @@ From PlutusCert Require Import Language.PlutusIR.Transform.Compose.
 From PlutusCert Require Import Language.PlutusIR.Transform.FloatLet.
 From PlutusCert Require Import Language.PlutusIR.Transform.LetNonRec.
 From PlutusCert Require Import Language.PlutusIR.Transform.LetNonRec.DecideBool.
+From PlutusCert Require Import Semantics.Dynamic.
 (* From PlutusCert Require Import Language.PlutusIR.Transform.ScottEnc. *)
 From PlutusCert Require Import Language.PlutusIR.Transform.DeadBindings.
 From PlutusCert Require Import Examples.TimelockDumps.
@@ -40,12 +41,57 @@ Proof. reflexivity. Qed.
 Lemma pir1_2 : pir_1_renamed = pir_2_typechecked.
 Proof. reflexivity. Qed.
 
+
+Create HintDb hint_dead_code.
+
+(* safe_binding constraints *)
+#[global]
+Hint Constructors
+  Forall
+  safe_binding
+  value
+  neutral_value
+  .
+
+#[global]
+Hint Resolve
+  -> Nat.leb_le 0 : hint_dead_code
+.
+
+(* congruence *)
+#[global]
+Hint Constructors
+  (* cong *)
+  Cong
+  Cong_Binding
+  Cong_Bindings
+  : hint_dead_code.
+
+#[global]
+Hint Resolve
+  dead_syn_sym : hint_dead_code
+.
+
+
 (* Axiom pir2_3 : DBE_Term pir_2_typechecked pir_3_deadcode.*)
-Lemma pir2_3 : DBE_Term pir_2_typechecked pir_3_deadcode.
-Proof.
-  unfold pir_2_typechecked, pir_3_deadcode.
-  repeat (first [cong_tac | elim_let | term_cong]).
-  all: admit. (* TODO: fix this with new definition of DBE*)
+Lemma pir2_3 : dead_code pir_2_typechecked pir_3_deadcode.
+Proof with auto 10 with hint_dead_code.
+  split.
+  2: admit. (* typing and unique *)
+  apply dc_delete_let...
+
+  unfold pir_3_deadcode.
+  apply dc_cong, C_Let...
+  do 2 (apply dc_delete_let; auto 10 with hint_dead_code).
+  apply dc_cong, C_Let...
+  do 11 (apply dc_delete_let; auto 10 with hint_dead_code).
+  apply dc_cong, C_Let...
+  do 16 (apply dc_delete_let; auto 10 with hint_dead_code).
+  apply dc_cong, C_Let...
+  apply dc_cong, Congruence.C_LamAbs...
+  apply dc_cong, Congruence.C_LamAbs...
+  apply dc_cong, C_Let...
+  apply dc_delete_let...
 Admitted.
 
 Ltac skipLet :=
