@@ -202,6 +202,8 @@ Combined Scheme has_type__multind from
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
 
+Definition well_typed t := exists T, empty ,, empty |-+ t : T.
+
 Lemma has_type__normal : forall Delta Gamma t T,
     Delta ,, Gamma |-+ t : T ->
     normal_Ty T.

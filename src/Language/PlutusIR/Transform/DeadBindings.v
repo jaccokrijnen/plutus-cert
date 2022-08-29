@@ -10,7 +10,8 @@ From PlutusCert Require Import
   Language.PlutusIR.Analysis.FreeVars
   Language.PlutusIR.Analysis.Equality
   Language.PlutusIR.Transform.Congruence
-  Language.PlutusIR.Semantics.Dynamic.Values.
+  Language.PlutusIR.Semantics.Dynamic.Values
+  Static.Typing.
 
 Import NamedTerm.
 
@@ -21,6 +22,65 @@ Set Equations Transparent.
 Notation fv := (free_vars String.eqb).
 Notation fv_binding := (free_vars_binding String.eqb).
 Notation fv_bindings := (free_vars_bindings String.eqb fv_binding).
+
+
+
+(* Bindings that are safe: removing them will not change termination behaviour *)
+Inductive safe_binding : Binding -> Prop :=
+
+  | sb_term_non_strict : forall vd t,
+      safe_binding (TermBind NonStrict vd t)
+
+  | sb_term_strict_val : forall vd t,
+      value t ->
+      safe_binding (TermBind Strict vd t)
+
+  | sb_data : forall dtd,
+      safe_binding (DatatypeBind dtd)
+
+  | sb_type : forall tvd ty,
+      safe_binding (TypeBind tvd ty)
+.
+
+
+
+Inductive dead_syn : Term -> Term -> Prop :=
+  | dc_cong : forall t t',
+      Cong dead_syn t t' ->
+      dead_syn t t'
+
+  | dc_delete_let : forall rec bs t t',
+      dead_syn t t' ->
+      Forall safe_binding bs ->
+      dead_syn (Let rec bs t) t'
+
+  | dc_delete_bindings : forall rec bs bs' t t',
+      dead_syn t t' ->
+      dead_syn_bindings bs bs' ->
+      dead_syn (Let rec bs t) (Let rec bs' t')
+
+
+with dead_syn_bindings : list Binding -> list Binding -> Prop :=
+  | dc_bindings : forall bs bs',
+
+      (* Any resulting binding has a (related) binding in the original group *)
+      forall b, (In b bs' -> exists b', dead_syn_binding b' b /\ In b' bs) ->
+      (* any removed binding is a safe_binding *)
+      ((In b bs /\ ~In b bs') -> safe_binding b) ->
+      dead_syn_bindings bs bs'
+
+with dead_syn_binding : Binding -> Binding -> Prop :=
+
+  | dc_term_bind_cong : forall s vd t t',
+      dead_syn t t' ->
+      dead_syn_binding (TermBind s vd t) (TermBind s vd t')
+
+  | dc_binding : forall b b',
+      dead_syn_binding b b'
+  .
+
+(* TODO: define and use well_scoped instead of well_typed *)
+Definition dead_code t t' := dead_syn t t' /\ well_typed t'.
 
 (* DBE_Term relates terms t and t' such that t' is the result of eliminating dead bindings in t *)
 Inductive DBE_Term : Term -> Term -> Type :=

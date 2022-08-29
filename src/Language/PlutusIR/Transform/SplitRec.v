@@ -57,10 +57,10 @@ where
   "t1 ▷-split_syn t2" := (split_syn t1 t2)
 .
 
-
+(* TODO: define and use well_scoped instead of well_typed *)
 Definition split_rec t t' :=
   t ▷-split_syn t' /\
-  exists ty, (empty ,, empty |-+ t' : ty) /\
+  well_typed t' /\
   unique t'.
 
 
