@@ -83,7 +83,7 @@ with dead_syn_binding : Binding -> Binding -> Prop :=
   .
 
 (* TODO: define and use well_scoped instead of well_typed *)
-Definition dead_code t t' := dead_syn t t' /\ well_typed t' /\ unique t'.
+Definition dead_code t t' := dead_syn t t' /\ well_typed t' /\ unique t.
 
 Definition is_safe_binding (b : Binding) : bool :=
     match b with
