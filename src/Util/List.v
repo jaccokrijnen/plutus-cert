@@ -1,5 +1,6 @@
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
+Import ListNotations.
 
 Local Open Scope list_scope.
 Local Open Scope string_scope.
@@ -24,6 +25,12 @@ Fixpoint mdrop {X:Type} (ns : list string) (nxs: list (string * X)) : list (stri
       mdrop ns' (drop n nxs) 
   end.
 
+Definition forall2b {A} (p : A -> A -> bool) := fix f xs ys :=
+  match xs, ys with
+    | []       , []        => true
+    | (x :: xs), (y :: ys) => (p x y && f xs ys)%bool
+    | _        , _         => false
+  end.
 
 
 

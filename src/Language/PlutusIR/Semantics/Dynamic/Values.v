@@ -1,6 +1,8 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
+From Coq Require Import Bool.Bool Arith.PeanoNat.
+Import PeanoNat.Nat.
 
 Inductive is_error : Term -> Prop :=
   | IsError : forall T,
@@ -120,3 +122,51 @@ Proof with (eauto || (try lia)).
   - econstructor...
     eapply IHfully_applied_neutral...
 Qed.
+
+
+Definition is_error_b (t : Term) :=
+  match t with
+    | Error T => true
+    | _       => false
+  end.
+
+Lemma is_error_is_error_b : forall t, is_error_b t = true -> is_error t.
+Proof.
+  intros t H.
+  destruct t; inversion H.
+  constructor.
+Qed.
+
+Fixpoint
+  is_value' (n : nat) (t : Term) {struct t} :=
+  match t with
+    | LamAbs x T t0 => true
+    | TyAbs X K t   => true
+    | IWrap F T v   => is_value' n v && negb (is_error_b v)
+    | Constant u    => true
+    | Error T       => true
+
+
+    (* Duplication for the termination checker *)
+    | Builtin f   => ltb n (arity f)
+    | Apply nv v  => is_value' n v && negb (is_error_b v) && is_value' (S n) nv
+    | TyInst nv T => is_value' (S n) nv
+    | _ => false
+  end
+  .
+
+Definition is_value := is_value' 0.
+
+Fixpoint is_neutral_value (n : nat) (t : Term) :=
+  match t with
+    | Builtin f   => is_value' n t
+    | Apply nv v  => is_value' n t
+    | TyInst nv T => is_value' n t
+    | _           => false
+  end.
+
+Lemma is_value_value : forall t, is_value t = true -> value t.
+Admitted.
+
+Lemma is_neutral_value_neutral_value : forall n t, is_neutral_value n t = true -> neutral_value n t.
+Admitted.

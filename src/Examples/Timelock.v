@@ -72,8 +72,15 @@ Hint Resolve
   dead_syn_sym : hint_dead_code
 .
 
+(* Using reflection *)
+Lemma pir2_3' : dead_code pir_2_typechecked pir_3_deadcode.
+Proof.
+  split.
+  2: admit. (* typing and unique *)
+  apply is_dead_syn_dead_syn.
+  reflexivity.
+Admitted.
 
-(* Axiom pir2_3 : DBE_Term pir_2_typechecked pir_3_deadcode.*)
 Lemma pir2_3 : dead_code pir_2_typechecked pir_3_deadcode.
 Proof with auto 10 with hint_dead_code.
   split.

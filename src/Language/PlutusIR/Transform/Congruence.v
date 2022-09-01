@@ -3,6 +3,8 @@ From PlutusCert Require Import Language.PlutusIR.
 From PlutusCert Require Import Language.PlutusIR.Analysis.Equality.
 From Equations Require Import Equations.
 Require Import Coq.Strings.String.
+Require Import Coq.Lists.List.
+From PlutusCert Require Import Util.List.
 
 Generalizable All Variables.
 
@@ -47,6 +49,32 @@ Section Congruence.
     | C_Unwrap   : `{ R t t'                -> Cong (Unwrap t)
                                                     (Unwrap t')}
   .
+
+    Definition is_cong_binding (is_R : Term -> Term -> bool) (b b' : Binding) : bool :=
+      match b, b' with
+        | (TermBind s v t), (TermBind s' v' t') => Strictness_eqb s s' && VDecl_eqb v v' && is_R t t'
+        | (TypeBind v T), (TypeBind v' T') => TVDecl_eqb v v'  && Ty_eqb T T'
+        | (DatatypeBind d), (DatatypeBind d') => DTDecl_eqb d d'
+        | _, _                               => false
+      end
+    .
+
+    Definition is_cong (is_R : Term -> Term -> bool) (t t' : Term) : bool :=
+      match t, t' with
+        | (Let r bs t), (Let r' bs' t')      => Recursivity_eqb r r' && forall2b (is_cong_binding is_R) bs bs' && is_R t t'
+        | (Var n), (Var n')                  => String.eqb n n'
+        | (TyAbs n k t), (TyAbs n' k' t')    => String.eqb n n' && Kind_eqb k k' && is_R t t'
+        | (LamAbs n T t), (LamAbs n' T' t')  => String.eqb n n'&& Ty_eqb T T' && is_R t t'
+        | (Apply s t), (Apply s' t')         => is_R s s' && is_R t t'
+        | (Constant v), (Constant v')        => some_valueOf_eqb v v'
+        | (Builtin f), (Builtin f')          => func_eqb f f'
+        | (TyInst t T), (TyInst t' T')       => Ty_eqb T T' && is_R t t'
+        | (Error T), (Error T')              => Ty_eqb T T'
+        | (IWrap T1 T2 t), (IWrap T1' T2' t') => Ty_eqb T1 T1' && Ty_eqb T2 T2' && is_R t t'
+        | (Unwrap t), (Unwrap t')            => is_R t t'
+        | _, _                               => false
+      end
+      .
 
 
     Definition C_TermBind'     : forall t t' s s' v v' , s = s' -> v = v' -> R t t' -> Cong_Binding

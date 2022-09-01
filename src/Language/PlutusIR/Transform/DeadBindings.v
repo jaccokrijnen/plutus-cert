@@ -6,6 +6,7 @@ From Equations Require Import Equations.
 
 From PlutusCert Require Import
   Util
+  Util.List
   Language.PlutusIR
   Language.PlutusIR.Analysis.FreeVars
   Language.PlutusIR.Analysis.Equality
@@ -66,9 +67,9 @@ with dead_syn_bindings : list Binding -> list Binding -> Prop :=
   | dc_bindings : forall bs bs',
 
       (* Any resulting binding has a (related) binding in the original group *)
-      forall b, (In b bs' -> exists b', dead_syn_binding b' b /\ In b' bs) ->
+      forall b', (In b' bs' -> exists b, dead_syn_binding b b' /\ In b bs) ->
       (* any removed binding is a safe_binding *)
-      ((In b bs /\ ~In b bs') -> safe_binding b) ->
+      forall b, ((In b bs /\ ~In b bs') -> safe_binding b) ->
       dead_syn_bindings bs bs'
 
 with dead_syn_binding : Binding -> Binding -> Prop :=
@@ -77,15 +78,62 @@ with dead_syn_binding : Binding -> Binding -> Prop :=
       dead_syn t t' ->
       dead_syn_binding (TermBind s vd t) (TermBind s vd t')
 
-  | dc_binding : forall b b',
-      dead_syn_binding b b'
+  | dc_binding : forall b,
+      dead_syn_binding b b
   .
 
 (* TODO: define and use well_scoped instead of well_typed *)
 Definition dead_code t t' := dead_syn t t' /\ well_typed t' /\ unique t'.
 
+Definition is_safe_binding (b : Binding) : bool :=
+    match b with
+      | TermBind NonStrict vd t => true
+      | TermBind Strict vd t    => is_value t
+      | DatatypeBind dtd        => true
+      | TypeBind tvd ty         => true
+    end
+.
+
+Lemma is_safe_binding_safe_binding : forall b, is_safe_binding b = true -> safe_binding b.
+Admitted.
+
+Fixpoint is_dead_syn (t t' : Term) {struct t} : bool :=
+  is_cong is_dead_syn t t'
+  || match t, t' with
+    (* delete let *)
+    | Let _ bs t, t' => is_dead_syn t t' && forallb is_safe_binding bs
+    | _, _           => false
+  end
+  || match t, t' with
+    (* TODO *)
+    (* delete bindings *)
+    (* | (Let rec bs t), (Let rec' bs' t') => Recursivity_eqb rec rec' && forall2b is_dead_syn_binding bs bs' && is_dead_syn t t' *)
+    | _, _ => false
+  end
+
+
+(*
+with is_dead_syn_bindings (bs bs' : list Binding) {struct bs} : bool :=
+  forall2b is_dead_syn_binding bs bs' (* TODO *)
+  | dc_bindings : forall bs bs',
+
+      (* Any resulting binding has a (related) binding in the original group *)
+      forall b, (In b bs' -> exists b', dead_syn_binding b' b /\ In b' bs) ->
+      (* any removed binding is a safe_binding *)
+      ((In b bs /\ ~In b bs') -> safe_binding b) ->
+      dead_syn_bindings bs bs'
+*)
+with is_dead_syn_binding (b b' : Binding) : bool :=
+  match b, b' with
+  | (TermBind s vd t), (TermBind s' vd' t') => Strictness_eqb s s' && VDecl_eqb vd vd' && is_dead_syn t t'
+  | b, b' => Binding_eqb b b'
+  end
+.
 
 Lemma dead_syn_sym : forall t, dead_syn t t.
+Admitted.
+
+Lemma is_dead_syn_dead_syn : forall t t', is_dead_syn t t' = true -> dead_syn t t'.
 Admitted.
 
 
