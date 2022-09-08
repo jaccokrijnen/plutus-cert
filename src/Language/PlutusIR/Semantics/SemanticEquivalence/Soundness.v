@@ -8,12 +8,9 @@ From PlutusCert Require Import
   Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation
   Language.PlutusIR.Semantics.SemanticEquivalence.Contextual
   Language.PlutusIR.Semantics.SemanticEquivalence.FundamentalProperty
+  Util.Tactics
   .
 
-Ltac destruct_hypos := repeat (match goal with
-  | H : exists a, _ |- _ => destruct H
-  | H : ?x /\ ?y |- _ => destruct H
-  end).
 
 
 Theorem LR_sound : forall Δ Γ e e' T,

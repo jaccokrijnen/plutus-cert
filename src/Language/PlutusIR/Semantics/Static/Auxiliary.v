@@ -1,10 +1,10 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 
+Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Program.Basics.
-Require Import Coq.Strings.String.
 Local Open Scope string_scope.
 
 (** Getters *)
@@ -111,3 +111,10 @@ Definition binds_Gamma (b : Binding) : list (name * Ty) :=
       let matchB := matchBind d in
       matchB :: constrBs
   end.
+
+Definition binds_bindings (bs : list Binding) : list (name * Ty) :=
+  concat (map binds_Gamma bs).
+
+Definition ty_binds_bindings (bs : list Binding) : list (name * Kind) :=
+  concat (map binds_Delta bs).
+
