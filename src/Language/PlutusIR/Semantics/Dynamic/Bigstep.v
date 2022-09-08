@@ -206,5 +206,8 @@ Create HintDb hintdb__eval_with_error.
   : hintdb__eval_with_error.
 
 
+Definition evaluates_to t v := exists j, t =[ j ]=> v.
+Notation "t '==>' v" := (evaluates_to t v) (at level 40).
+
 Definition terminates t := exists v j, t =[ j ]=> v.
 Notation "t '⇓'" := (terminates t) (at level 101).

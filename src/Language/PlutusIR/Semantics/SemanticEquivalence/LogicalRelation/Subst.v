@@ -41,6 +41,17 @@ Lemma substA_not_afi : forall t X U,
     ~(Annotation.appears_free_in X <{ [[U / X] t }> ).
 Proof. Admitted.
 
+Lemma not_afi_subst : forall t x v,
+  ~(Term.appears_free_in x t) ->
+  <{ [v / x] t}> = t.
+Proof.
+Admitted.
+
+Lemma not_afi_substA : forall t X U,
+  ~Annotation.appears_free_in X t ->
+  <{ [[U / X] t}> = t.
+Proof. Admitted.
+
 Lemma duplicate_subst : forall x t v v',
     closed v ->
     <{ [v' / x] ([v / x] t) }> = <{ [v / x] t }>.
@@ -169,6 +180,19 @@ Lemma substA_msubst : forall X U env t,
     Ty.closed U ->
     <{ [[U / X] (/[ env /] t ) }> =  <{ /[ env /] ([[U / X] t) }> .
 Proof. Admitted.
+
+Lemma not_afi_msubst : forall xs t,
+  Forall (fun '(x, _) => ~ (Term.appears_free_in x t)) xs ->
+  msubst_term xs t = t.
+Proof.
+  induction xs; simpl; intros.
+  - auto.
+  - inversion H.
+    destruct a.
+    apply not_afi_subst with (v := t0) in H2.
+    rewrite -> H2.
+    auto.
+Qed.
 
 (** ** Properties of multi-extensions *)
 
