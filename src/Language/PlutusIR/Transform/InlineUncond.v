@@ -97,6 +97,7 @@ Inductive Inline (env : Env) : Term -> Term -> Type :=
       Inline env scope t t' ->
       Inline env scope (Var v) t'
 
+(* TODO: Add congruence rules for missing term constructors *)
 
 (* let nonrec has linear scoping: every binder comes in scope
    for the next binders
@@ -122,3 +123,9 @@ with Inline_Binding (env : Env) (scope : Scope) : Binding -> Binding -> Type :=
 
   | Inl_OtherBind : forall b, Inline_Binding env scope b b.
 
+(* TODO: decision procedure
+
+Use set of unconditionally inlined vars to:
+  - Produce intermediate tree OR
+  - search procedure for all transformations at once
+*)

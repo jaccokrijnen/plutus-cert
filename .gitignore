@@ -15,3 +15,5 @@ Makefile.coq
 
 # vscode
 .vscode/
+
+examples/plutus-use-cases

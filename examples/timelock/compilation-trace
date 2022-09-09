@@ -1,0 +1,497 @@
+\subsection{Original PIR Term}
+
+\begin{appendixcode}
+let nonrec type ByteString@$_{0}$@ = ... in
+let nonrec data Bool@$_{11}$@  = True@$_{13}$@ : ... | False@$_{14}$@ : ... with Bool_match@$_{12}$@ in
+let nonrec strict verifySignature@$_{57}$@ = ... in
+let nonrec type String@$_{2}$@ = ... in
+let nonrec data Unit@$_{60}$@  = Unit@$_{62}$@ : ... with Unit_match@$_{61}$@ in
+let nonrec strict trace@$_{70}$@ = ... in
+let nonrec type Integer@$_{1}$@ = ... in
+let nonrec strict takeByteString@$_{5}$@ = ... in
+let nonrec strict subtractInteger@$_{27}$@ = ... in
+let nonrec strict sha3_@$_{8}$@ = ... in
+let nonrec strict sha2_@$_{7}$@ = ... in
+let nonrec strict remainderInteger@$_{32}$@ = ... in
+let nonrec strict quotientInteger@$_{31}$@ = ... in
+let nonrec strict multiplyInteger@$_{28}$@ = ... in
+let nonrec strict modInteger@$_{30}$@ = ... in
+let nonrec strict lessThanInteger@$_{44}$@ = ... in
+let nonrec strict lessThanEqInteger@$_{48}$@ = ... in
+let nonrec strict lessThanByteString@$_{20}$@ = ... in
+let nonrec strict greaterThanInteger@$_{36}$@ = ... in
+let nonrec strict greaterThanEqInteger@$_{40}$@ = ... in
+let nonrec strict greaterThanByteString@$_{24}$@ = ... in
+let nonrec strict error@$_{64}$@ = ... in
+let nonrec strict equalsInteger@$_{52}$@ = ... in
+let nonrec strict equalsByteString@$_{16}$@ = ... in
+let nonrec strict emptyString@$_{66}$@ = ... in
+let nonrec strict emptyByteString@$_{25}$@ = ... in
+let nonrec strict dropByteString@$_{6}$@ = ... in
+let nonrec strict divideInteger@$_{29}$@ = ... in
+let nonrec strict concatenate@$_{4}$@ = ... in
+let nonrec type Char@$_{3}$@ = ... in
+let nonrec strict charToString@$_{67}$@ = ... in
+let nonrec strict appendString@$_{65}$@ = ... in
+let nonrec strict addInteger@$_{26}$@ = ... in
+let nonrec data EndDate@$_{71}$@  = Fixed@$_{73}$@ : ... | Never@$_{74}$@ : ... with EndDate_match@$_{72}$@ in
+λds@$_{75}$@ : EndDate@$_{71}$@ .
+λds@$_{76}$@ : Integer .
+let nonrec nonstrict keep@$_{77}$@ = ... in
+let nonrec nonstrict wild@$_{78}$@ = ... in
+(((EndDate_match@$_{72}$@ ds@$_{75}$@ { Unit@$_{60}$@ -> Bool@$_{11}$@ }) (λn@$_{79}$@ : Integer .
+λthunk@$_{84}$@ : Unit@$_{60}$@ .
+(lessThanEqInteger@$_{48}$@ (let nonrec nonstrict floatme@$_{83}$@ = let nonrec nonstrict wild@$_{80}$@ = ... in
+(((Bool_match@$_{12}$@ ((greaterThanEqInteger@$_{40}$@ ds@$_{76}$@) 0) { Unit@$_{60}$@ -> Integer }) (λthunk@$_{81}$@ : Unit@$_{60}$@ .
+n@$_{79}$@)) (λthunk@$_{82}$@ : Unit@$_{60}$@ .
+0)) Unit@$_{62}$@ in
+floatme@$_{83}$@)) ds@$_{76}$@)) (λthunk@$_{85}$@ : Unit@$_{60}$@ .
+keep@$_{77}$@)) Unit@$_{62}$@
+\end{appendixcode}
+
+\subsection{PassRename}
+
+\begin{appendixcode}
+let nonrec type ByteString@$_{86}$@ = ... in
+let nonrec data Bool@$_{87}$@  = True@$_{88}$@ : ... | False@$_{89}$@ : ... with Bool_match@$_{90}$@ in
+let nonrec strict verifySignature@$_{91}$@ = ... in
+let nonrec type String@$_{96}$@ = ... in
+let nonrec data Unit@$_{97}$@  = Unit@$_{98}$@ : ... with Unit_match@$_{99}$@ in
+let nonrec strict trace@$_{100}$@ = ... in
+let nonrec type Integer@$_{103}$@ = ... in
+let nonrec strict takeByteString@$_{104}$@ = ... in
+let nonrec strict subtractInteger@$_{105}$@ = ... in
+let nonrec strict sha3_@$_{106}$@ = ... in
+let nonrec strict sha2_@$_{107}$@ = ... in
+let nonrec strict remainderInteger@$_{108}$@ = ... in
+let nonrec strict quotientInteger@$_{109}$@ = ... in
+let nonrec strict multiplyInteger@$_{110}$@ = ... in
+let nonrec strict modInteger@$_{111}$@ = ... in
+let nonrec strict lessThanInteger@$_{112}$@ = ... in
+let nonrec strict lessThanEqInteger@$_{116}$@ = ... in
+let nonrec strict lessThanByteString@$_{120}$@ = ... in
+let nonrec strict greaterThanInteger@$_{124}$@ = ... in
+let nonrec strict greaterThanEqInteger@$_{128}$@ = ... in
+let nonrec strict greaterThanByteString@$_{132}$@ = ... in
+let nonrec strict error@$_{136}$@ = ... in
+let nonrec strict equalsInteger@$_{140}$@ = ... in
+let nonrec strict equalsByteString@$_{144}$@ = ... in
+let nonrec strict emptyString@$_{148}$@ = ... in
+let nonrec strict emptyByteString@$_{149}$@ = ... in
+let nonrec strict dropByteString@$_{150}$@ = ... in
+let nonrec strict divideInteger@$_{151}$@ = ... in
+let nonrec strict concatenate@$_{152}$@ = ... in
+let nonrec type Char@$_{153}$@ = ... in
+let nonrec strict charToString@$_{154}$@ = ... in
+let nonrec strict appendString@$_{155}$@ = ... in
+let nonrec strict addInteger@$_{156}$@ = ... in
+let nonrec data EndDate@$_{157}$@  = Fixed@$_{158}$@ : ... | Never@$_{159}$@ : ... with EndDate_match@$_{160}$@ in
+λds@$_{161}$@ : EndDate@$_{157}$@ .
+λds@$_{162}$@ : Integer .
+let nonrec nonstrict keep@$_{163}$@ = ... in
+let nonrec nonstrict wild@$_{164}$@ = ... in
+(((EndDate_match@$_{160}$@ ds@$_{161}$@ { Unit@$_{97}$@ -> Bool@$_{87}$@ }) (λn@$_{165}$@ : Integer .
+λthunk@$_{166}$@ : Unit@$_{97}$@ .
+(lessThanEqInteger@$_{116}$@ (let nonrec nonstrict floatme@$_{167}$@ = let nonrec nonstrict wild@$_{168}$@ = ... in
+(((Bool_match@$_{90}$@ ((greaterThanEqInteger@$_{128}$@ ds@$_{162}$@) 0) { Unit@$_{97}$@ -> Integer }) (λthunk@$_{169}$@ : Unit@$_{97}$@ .
+n@$_{165}$@)) (λthunk@$_{170}$@ : Unit@$_{97}$@ .
+0)) Unit@$_{98}$@ in
+floatme@$_{167}$@)) ds@$_{162}$@)) (λthunk@$_{171}$@ : Unit@$_{97}$@ .
+keep@$_{163}$@)) Unit@$_{98}$@
+\end{appendixcode}
+
+\subsection{PassTypeCheck}
+
+\begin{appendixcode}
+let nonrec type ByteString@$_{86}$@ = ... in
+let nonrec data Bool@$_{87}$@  = True@$_{88}$@ : ... | False@$_{89}$@ : ... with Bool_match@$_{90}$@ in
+let nonrec strict verifySignature@$_{91}$@ = ... in
+let nonrec type String@$_{96}$@ = ... in
+let nonrec data Unit@$_{97}$@  = Unit@$_{98}$@ : ... with Unit_match@$_{99}$@ in
+let nonrec strict trace@$_{100}$@ = ... in
+let nonrec type Integer@$_{103}$@ = ... in
+let nonrec strict takeByteString@$_{104}$@ = ... in
+let nonrec strict subtractInteger@$_{105}$@ = ... in
+let nonrec strict sha3_@$_{106}$@ = ... in
+let nonrec strict sha2_@$_{107}$@ = ... in
+let nonrec strict remainderInteger@$_{108}$@ = ... in
+let nonrec strict quotientInteger@$_{109}$@ = ... in
+let nonrec strict multiplyInteger@$_{110}$@ = ... in
+let nonrec strict modInteger@$_{111}$@ = ... in
+let nonrec strict lessThanInteger@$_{112}$@ = ... in
+let nonrec strict lessThanEqInteger@$_{116}$@ = ... in
+let nonrec strict lessThanByteString@$_{120}$@ = ... in
+let nonrec strict greaterThanInteger@$_{124}$@ = ... in
+let nonrec strict greaterThanEqInteger@$_{128}$@ = ... in
+let nonrec strict greaterThanByteString@$_{132}$@ = ... in
+let nonrec strict error@$_{136}$@ = ... in
+let nonrec strict equalsInteger@$_{140}$@ = ... in
+let nonrec strict equalsByteString@$_{144}$@ = ... in
+let nonrec strict emptyString@$_{148}$@ = ... in
+let nonrec strict emptyByteString@$_{149}$@ = ... in
+let nonrec strict dropByteString@$_{150}$@ = ... in
+let nonrec strict divideInteger@$_{151}$@ = ... in
+let nonrec strict concatenate@$_{152}$@ = ... in
+let nonrec type Char@$_{153}$@ = ... in
+let nonrec strict charToString@$_{154}$@ = ... in
+let nonrec strict appendString@$_{155}$@ = ... in
+let nonrec strict addInteger@$_{156}$@ = ... in
+let nonrec data EndDate@$_{157}$@  = Fixed@$_{158}$@ : ... | Never@$_{159}$@ : ... with EndDate_match@$_{160}$@ in
+λds@$_{161}$@ : EndDate@$_{157}$@ .
+λds@$_{162}$@ : Integer .
+let nonrec nonstrict keep@$_{163}$@ = ... in
+let nonrec nonstrict wild@$_{164}$@ = ... in
+(((EndDate_match@$_{160}$@ ds@$_{161}$@ { Unit@$_{97}$@ -> Bool@$_{87}$@ }) (λn@$_{165}$@ : Integer .
+λthunk@$_{166}$@ : Unit@$_{97}$@ .
+(lessThanEqInteger@$_{116}$@ (let nonrec nonstrict floatme@$_{167}$@ = let nonrec nonstrict wild@$_{168}$@ = ... in
+(((Bool_match@$_{90}$@ ((greaterThanEqInteger@$_{128}$@ ds@$_{162}$@) 0) { Unit@$_{97}$@ -> Integer }) (λthunk@$_{169}$@ : Unit@$_{97}$@ .
+n@$_{165}$@)) (λthunk@$_{170}$@ : Unit@$_{97}$@ .
+0)) Unit@$_{98}$@ in
+floatme@$_{167}$@)) ds@$_{162}$@)) (λthunk@$_{171}$@ : Unit@$_{97}$@ .
+keep@$_{163}$@)) Unit@$_{98}$@
+\end{appendixcode}
+
+\subsection{PassDeadCode}
+
+\begin{appendixcode}
+let nonrec data Bool@$_{1}$@  = True@$_{2}$@ : ... | False@$_{3}$@ : ... with Bool_match@$_{4}$@ in
+let nonrec data Unit@$_{11}$@  = Unit@$_{12}$@ : ... with Unit_match@$_{13}$@ in
+let nonrec strict lessThanEqInteger@$_{30}$@ = ... in
+let nonrec strict greaterThanEqInteger@$_{42}$@ = ... in
+let nonrec data EndDate@$_{71}$@  = Fixed@$_{72}$@ : ... | Never@$_{73}$@ : ... with EndDate_match@$_{74}$@ in
+λds@$_{75}$@ : EndDate@$_{71}$@ .
+λds@$_{76}$@ : Integer .
+let nonrec nonstrict keep@$_{77}$@ = ... in
+(((EndDate_match@$_{74}$@ ds@$_{75}$@ { Unit@$_{11}$@ -> Bool@$_{1}$@ }) (λn@$_{79}$@ : Integer .
+λthunk@$_{80}$@ : Unit@$_{11}$@ .
+(lessThanEqInteger@$_{30}$@ (let nonrec nonstrict floatme@$_{81}$@ = (((Bool_match@$_{4}$@ ((greaterThanEqInteger@$_{42}$@ ds@$_{76}$@) 0) { Unit@$_{11}$@ -> Integer }) (λthunk@$_{83}$@ : Unit@$_{11}$@ .
+n@$_{79}$@)) (λthunk@$_{84}$@ : Unit@$_{11}$@ .
+0)) Unit@$_{12}$@ in
+floatme@$_{81}$@)) ds@$_{76}$@)) (λthunk@$_{85}$@ : Unit@$_{11}$@ .
+keep@$_{77}$@)) Unit@$_{12}$@
+\end{appendixcode}
+
+\subsection{PassInline (cons (keep@$_{77}$@) (nil))}
+
+\begin{appendixcode}
+let nonrec data Bool@$_{1}$@  = True@$_{2}$@ : ... | False@$_{3}$@ : ... with Bool_match@$_{4}$@ in
+let nonrec data Unit@$_{11}$@  = Unit@$_{12}$@ : ... with Unit_match@$_{13}$@ in
+let nonrec strict lessThanEqInteger@$_{30}$@ = ... in
+let nonrec strict greaterThanEqInteger@$_{42}$@ = ... in
+let nonrec data EndDate@$_{71}$@  = Fixed@$_{72}$@ : ... | Never@$_{73}$@ : ... with EndDate_match@$_{74}$@ in
+λds@$_{75}$@ : EndDate@$_{71}$@ .
+λds@$_{76}$@ : Integer .
+(((EndDate_match@$_{74}$@ ds@$_{75}$@ { Unit@$_{11}$@ -> Bool@$_{1}$@ }) (λn@$_{79}$@ : Integer .
+λthunk@$_{80}$@ : Unit@$_{11}$@ .
+(lessThanEqInteger@$_{30}$@ (let nonrec nonstrict floatme@$_{81}$@ = (((Bool_match@$_{4}$@ ((greaterThanEqInteger@$_{42}$@ ds@$_{76}$@) 0) { Unit@$_{11}$@ -> Integer }) (λthunk@$_{83}$@ : Unit@$_{11}$@ .
+n@$_{79}$@)) (λthunk@$_{84}$@ : Unit@$_{11}$@ .
+0)) Unit@$_{12}$@ in
+floatme@$_{81}$@)) ds@$_{76}$@)) (λthunk@$_{85}$@ : Unit@$_{11}$@ .
+False@$_{3}$@)) Unit@$_{12}$@
+\end{appendixcode}
+
+\subsection{PassThunkRec}
+
+\begin{appendixcode}
+let nonrec data Bool@$_{1}$@  = True@$_{2}$@ : ... | False@$_{3}$@ : ... with Bool_match@$_{4}$@ in
+let nonrec data Unit@$_{11}$@  = Unit@$_{12}$@ : ... with Unit_match@$_{13}$@ in
+let nonrec strict lessThanEqInteger@$_{30}$@ = ... in
+let nonrec strict greaterThanEqInteger@$_{42}$@ = ... in
+let nonrec data EndDate@$_{71}$@  = Fixed@$_{72}$@ : ... | Never@$_{73}$@ : ... with EndDate_match@$_{74}$@ in
+λds@$_{75}$@ : EndDate@$_{71}$@ .
+λds@$_{76}$@ : Integer .
+(((EndDate_match@$_{74}$@ ds@$_{75}$@ { Unit@$_{11}$@ -> Bool@$_{1}$@ }) (λn@$_{79}$@ : Integer .
+λthunk@$_{80}$@ : Unit@$_{11}$@ .
+(lessThanEqInteger@$_{30}$@ (let nonrec nonstrict floatme@$_{81}$@ = (((Bool_match@$_{4}$@ ((greaterThanEqInteger@$_{42}$@ ds@$_{76}$@) 0) { Unit@$_{11}$@ -> Integer }) (λthunk@$_{83}$@ : Unit@$_{11}$@ .
+n@$_{79}$@)) (λthunk@$_{84}$@ : Unit@$_{11}$@ .
+0)) Unit@$_{12}$@ in
+floatme@$_{81}$@)) ds@$_{76}$@)) (λthunk@$_{85}$@ : Unit@$_{11}$@ .
+False@$_{3}$@)) Unit@$_{12}$@
+\end{appendixcode}
+
+\subsection{PassFloatTerm}
+
+\begin{appendixcode}
+let nonrec data Bool@$_{1}$@  = True@$_{2}$@ : ... | False@$_{3}$@ : ... with Bool_match@$_{4}$@;
+    strict greaterThanEqInteger@$_{42}$@ = ...;
+    data Unit@$_{11}$@  = Unit@$_{12}$@ : ... with Unit_match@$_{13}$@;
+    data EndDate@$_{71}$@  = Fixed@$_{72}$@ : ... | Never@$_{73}$@ : ... with EndDate_match@$_{74}$@;
+    strict lessThanEqInteger@$_{30}$@ = ... in
+λds@$_{75}$@ : EndDate@$_{71}$@ .
+λds@$_{76}$@ : Integer .
+(((EndDate_match@$_{74}$@ ds@$_{75}$@ { Unit@$_{11}$@ -> Bool@$_{1}$@ }) (λn@$_{79}$@ : Integer .
+λthunk@$_{80}$@ : Unit@$_{11}$@ .
+let nonrec nonstrict floatme@$_{81}$@ = (((Bool_match@$_{4}$@ ((greaterThanEqInteger@$_{42}$@ ds@$_{76}$@) 0) { Unit@$_{11}$@ -> Integer }) (λthunk@$_{83}$@ : Unit@$_{11}$@ .
+n@$_{79}$@)) (λthunk@$_{84}$@ : Unit@$_{11}$@ .
+0)) Unit@$_{12}$@ in
+(lessThanEqInteger@$_{30}$@ floatme@$_{81}$@) ds@$_{76}$@)) (λthunk@$_{85}$@ : Unit@$_{11}$@ .
+False@$_{3}$@)) Unit@$_{12}$@
+\end{appendixcode}
+
+\subsection{PassLetNonStrict}
+
+\begin{appendixcode}
+let nonrec data Bool@$_{1}$@  = True@$_{2}$@ : ... | False@$_{3}$@ : ... with Bool_match@$_{4}$@;
+    strict greaterThanEqInteger@$_{42}$@ = ...;
+    data Unit@$_{11}$@  = Unit@$_{12}$@ : ... with Unit_match@$_{13}$@;
+    data EndDate@$_{71}$@  = Fixed@$_{72}$@ : ... | Never@$_{73}$@ : ... with EndDate_match@$_{74}$@;
+    strict lessThanEqInteger@$_{30}$@ = ... in
+λds@$_{75}$@ : EndDate@$_{71}$@ .
+λds@$_{76}$@ : Integer .
+(((EndDate_match@$_{74}$@ ds@$_{75}$@ { Unit@$_{11}$@ -> Bool@$_{1}$@ }) (λn@$_{79}$@ : Integer .
+λthunk@$_{80}$@ : Unit@$_{11}$@ .
+let nonrec strict floatme@$_{81}$@ = λarg@$_{207}$@ : ∀a@$_{0}$@ : *.a@$_{0}$@ -> a@$_{0}$@ .
+(((Bool_match@$_{4}$@ ((greaterThanEqInteger@$_{42}$@ ds@$_{76}$@) 0) { Unit@$_{11}$@ -> Integer }) (λthunk@$_{83}$@ : Unit@$_{11}$@ .
+n@$_{79}$@)) (λthunk@$_{84}$@ : Unit@$_{11}$@ .
+0)) Unit@$_{12}$@ in
+(lessThanEqInteger@$_{30}$@ (floatme@$_{81}$@ (Λa@$_{0}$@ : *.
+λx@$_{1}$@ : a@$_{0}$@ .
+x@$_{1}$@))) ds@$_{76}$@)) (λthunk@$_{85}$@ : Unit@$_{11}$@ .
+False@$_{3}$@)) Unit@$_{12}$@
+\end{appendixcode}
+
+\subsection{PassLetTypes}
+
+\begin{appendixcode}
+(((ΛBool@$_{1}$@ : *.
+λTrue@$_{2}$@ : Bool@$_{1}$@ .
+λFalse@$_{3}$@ : Bool@$_{1}$@ .
+λBool_match@$_{4}$@ : Bool@$_{1}$@ -> (∀out_Bool@$_{221}$@ : *.out_Bool@$_{221}$@ -> (out_Bool@$_{221}$@ -> out_Bool@$_{221}$@)) .
+let nonrec strict greaterThanEqInteger@$_{42}$@ = ... in
+((ΛUnit@$_{11}$@ : *.
+λUnit@$_{12}$@ : Unit@$_{11}$@ .
+λUnit_match@$_{13}$@ : Unit@$_{11}$@ -> (∀out_Unit@$_{217}$@ : *.out_Unit@$_{217}$@ -> out_Unit@$_{217}$@) .
+(((ΛEndDate@$_{71}$@ : *.
+λFixed@$_{72}$@ : Integer -> EndDate@$_{71}$@ .
+λNever@$_{73}$@ : EndDate@$_{71}$@ .
+λEndDate_match@$_{74}$@ : EndDate@$_{71}$@ -> (∀out_EndDate@$_{208}$@ : *.(Integer -> out_EndDate@$_{208}$@) -> (out_EndDate@$_{208}$@ -> out_EndDate@$_{208}$@)) .
+let nonrec strict lessThanEqInteger@$_{30}$@ = ... in
+λds@$_{75}$@ : EndDate@$_{71}$@ .
+λds@$_{76}$@ : Integer .
+(((EndDate_match@$_{74}$@ ds@$_{75}$@ { Unit@$_{11}$@ -> Bool@$_{1}$@ }) (λn@$_{79}$@ : Integer .
+λthunk@$_{80}$@ : Unit@$_{11}$@ .
+let nonrec strict floatme@$_{81}$@ = λarg@$_{207}$@ : ∀a@$_{0}$@ : *.a@$_{0}$@ -> a@$_{0}$@ .
+(((Bool_match@$_{4}$@ ((greaterThanEqInteger@$_{42}$@ ds@$_{76}$@) 0) { Unit@$_{11}$@ -> Integer }) (λthunk@$_{83}$@ : Unit@$_{11}$@ .
+n@$_{79}$@)) (λthunk@$_{84}$@ : Unit@$_{11}$@ .
+0)) Unit@$_{12}$@ in
+(lessThanEqInteger@$_{30}$@ (floatme@$_{81}$@ (Λa@$_{0}$@ : *.
+λx@$_{1}$@ : a@$_{0}$@ .
+x@$_{1}$@))) ds@$_{76}$@)) (λthunk@$_{85}$@ : Unit@$_{11}$@ .
+False@$_{3}$@)) Unit@$_{12}$@ { ∀out_EndDate@$_{208}$@ : *.(Integer -> out_EndDate@$_{208}$@) -> (out_EndDate@$_{208}$@ -> out_EndDate@$_{208}$@) }) (λarg_0@$_{212}$@ : Integer .
+Λout_EndDate@$_{209}$@ : *.
+λcase_Fixed@$_{210}$@ : Integer -> out_EndDate@$_{209}$@ .
+λcase_Never@$_{211}$@ : out_EndDate@$_{209}$@ .
+case_Fixed@$_{210}$@ arg_0@$_{212}$@)) (Λout_EndDate@$_{213}$@ : *.
+λcase_Fixed@$_{214}$@ : Integer -> out_EndDate@$_{213}$@ .
+λcase_Never@$_{215}$@ : out_EndDate@$_{213}$@ .
+case_Never@$_{215}$@)) (λx@$_{216}$@ : ∀out_EndDate@$_{208}$@ : *.(Integer -> out_EndDate@$_{208}$@) -> (out_EndDate@$_{208}$@ -> out_EndDate@$_{208}$@) .
+x@$_{216}$@) { ∀out_Unit@$_{217}$@ : *.out_Unit@$_{217}$@ -> out_Unit@$_{217}$@ }) (Λout_Unit@$_{218}$@ : *.
+λcase_Unit@$_{219}$@ : out_Unit@$_{218}$@ .
+case_Unit@$_{219}$@)) (λx@$_{220}$@ : ∀out_Unit@$_{217}$@ : *.out_Unit@$_{217}$@ -> out_Unit@$_{217}$@ .
+x@$_{220}$@) { ∀out_Bool@$_{221}$@ : *.out_Bool@$_{221}$@ -> (out_Bool@$_{221}$@ -> out_Bool@$_{221}$@) }) (Λout_Bool@$_{222}$@ : *.
+λcase_True@$_{223}$@ : out_Bool@$_{222}$@ .
+λcase_False@$_{224}$@ : out_Bool@$_{222}$@ .
+case_True@$_{223}$@)) (Λout_Bool@$_{225}$@ : *.
+λcase_True@$_{226}$@ : out_Bool@$_{225}$@ .
+λcase_False@$_{227}$@ : out_Bool@$_{225}$@ .
+case_False@$_{227}$@)) (λx@$_{228}$@ : ∀out_Bool@$_{221}$@ : *.out_Bool@$_{221}$@ -> (out_Bool@$_{221}$@ -> out_Bool@$_{221}$@) .
+x@$_{228}$@)
+\end{appendixcode}
+
+\subsection{PassLetRec}
+
+\begin{appendixcode}
+(((ΛBool@$_{1}$@ : *.
+λTrue@$_{2}$@ : Bool@$_{1}$@ .
+λFalse@$_{3}$@ : Bool@$_{1}$@ .
+λBool_match@$_{4}$@ : Bool@$_{1}$@ -> (∀out_Bool@$_{221}$@ : *.out_Bool@$_{221}$@ -> (out_Bool@$_{221}$@ -> out_Bool@$_{221}$@)) .
+let nonrec strict greaterThanEqInteger@$_{42}$@ = ... in
+((ΛUnit@$_{11}$@ : *.
+λUnit@$_{12}$@ : Unit@$_{11}$@ .
+λUnit_match@$_{13}$@ : Unit@$_{11}$@ -> (∀out_Unit@$_{217}$@ : *.out_Unit@$_{217}$@ -> out_Unit@$_{217}$@) .
+(((ΛEndDate@$_{71}$@ : *.
+λFixed@$_{72}$@ : Integer -> EndDate@$_{71}$@ .
+λNever@$_{73}$@ : EndDate@$_{71}$@ .
+λEndDate_match@$_{74}$@ : EndDate@$_{71}$@ -> (∀out_EndDate@$_{208}$@ : *.(Integer -> out_EndDate@$_{208}$@) -> (out_EndDate@$_{208}$@ -> out_EndDate@$_{208}$@)) .
+let nonrec strict lessThanEqInteger@$_{30}$@ = ... in
+λds@$_{75}$@ : EndDate@$_{71}$@ .
+λds@$_{76}$@ : Integer .
+(((EndDate_match@$_{74}$@ ds@$_{75}$@ { Unit@$_{11}$@ -> Bool@$_{1}$@ }) (λn@$_{79}$@ : Integer .
+λthunk@$_{80}$@ : Unit@$_{11}$@ .
+let nonrec strict floatme@$_{81}$@ = λarg@$_{207}$@ : ∀a@$_{0}$@ : *.a@$_{0}$@ -> a@$_{0}$@ .
+(((Bool_match@$_{4}$@ ((greaterThanEqInteger@$_{42}$@ ds@$_{76}$@) 0) { Unit@$_{11}$@ -> Integer }) (λthunk@$_{83}$@ : Unit@$_{11}$@ .
+n@$_{79}$@)) (λthunk@$_{84}$@ : Unit@$_{11}$@ .
+0)) Unit@$_{12}$@ in
+(lessThanEqInteger@$_{30}$@ (floatme@$_{81}$@ (Λa@$_{0}$@ : *.
+λx@$_{1}$@ : a@$_{0}$@ .
+x@$_{1}$@))) ds@$_{76}$@)) (λthunk@$_{85}$@ : Unit@$_{11}$@ .
+False@$_{3}$@)) Unit@$_{12}$@ { ∀out_EndDate@$_{208}$@ : *.(Integer -> out_EndDate@$_{208}$@) -> (out_EndDate@$_{208}$@ -> out_EndDate@$_{208}$@) }) (λarg_0@$_{212}$@ : Integer .
+Λout_EndDate@$_{209}$@ : *.
+λcase_Fixed@$_{210}$@ : Integer -> out_EndDate@$_{209}$@ .
+λcase_Never@$_{211}$@ : out_EndDate@$_{209}$@ .
+case_Fixed@$_{210}$@ arg_0@$_{212}$@)) (Λout_EndDate@$_{213}$@ : *.
+λcase_Fixed@$_{214}$@ : Integer -> out_EndDate@$_{213}$@ .
+λcase_Never@$_{215}$@ : out_EndDate@$_{213}$@ .
+case_Never@$_{215}$@)) (λx@$_{216}$@ : ∀out_EndDate@$_{208}$@ : *.(Integer -> out_EndDate@$_{208}$@) -> (out_EndDate@$_{208}$@ -> out_EndDate@$_{208}$@) .
+x@$_{216}$@) { ∀out_Unit@$_{217}$@ : *.out_Unit@$_{217}$@ -> out_Unit@$_{217}$@ }) (Λout_Unit@$_{218}$@ : *.
+λcase_Unit@$_{219}$@ : out_Unit@$_{218}$@ .
+case_Unit@$_{219}$@)) (λx@$_{220}$@ : ∀out_Unit@$_{217}$@ : *.out_Unit@$_{217}$@ -> out_Unit@$_{217}$@ .
+x@$_{220}$@) { ∀out_Bool@$_{221}$@ : *.out_Bool@$_{221}$@ -> (out_Bool@$_{221}$@ -> out_Bool@$_{221}$@) }) (Λout_Bool@$_{222}$@ : *.
+λcase_True@$_{223}$@ : out_Bool@$_{222}$@ .
+λcase_False@$_{224}$@ : out_Bool@$_{222}$@ .
+case_True@$_{223}$@)) (Λout_Bool@$_{225}$@ : *.
+λcase_True@$_{226}$@ : out_Bool@$_{225}$@ .
+λcase_False@$_{227}$@ : out_Bool@$_{225}$@ .
+case_False@$_{227}$@)) (λx@$_{228}$@ : ∀out_Bool@$_{221}$@ : *.out_Bool@$_{221}$@ -> (out_Bool@$_{221}$@ -> out_Bool@$_{221}$@) .
+x@$_{228}$@)
+\end{appendixcode}
+
+\subsection{PassDeadCode}
+
+\begin{appendixcode}
+(((ΛBool@$_{0}$@ : *.
+λTrue@$_{1}$@ : Bool@$_{0}$@ .
+λFalse@$_{2}$@ : Bool@$_{0}$@ .
+λBool_match@$_{3}$@ : Bool@$_{0}$@ -> (∀out_Bool@$_{4}$@ : *.out_Bool@$_{4}$@ -> (out_Bool@$_{4}$@ -> out_Bool@$_{4}$@)) .
+let nonrec strict greaterThanEqInteger@$_{5}$@ = ... in
+((ΛUnit@$_{9}$@ : *.
+λUnit@$_{10}$@ : Unit@$_{9}$@ .
+λUnit_match@$_{11}$@ : Unit@$_{9}$@ -> (∀out_Unit@$_{12}$@ : *.out_Unit@$_{12}$@ -> out_Unit@$_{12}$@) .
+(((ΛEndDate@$_{13}$@ : *.
+λFixed@$_{14}$@ : Integer -> EndDate@$_{13}$@ .
+λNever@$_{15}$@ : EndDate@$_{13}$@ .
+λEndDate_match@$_{16}$@ : EndDate@$_{13}$@ -> (∀out_EndDate@$_{17}$@ : *.(Integer -> out_EndDate@$_{17}$@) -> (out_EndDate@$_{17}$@ -> out_EndDate@$_{17}$@)) .
+let nonrec strict lessThanEqInteger@$_{18}$@ = ... in
+λds@$_{22}$@ : EndDate@$_{13}$@ .
+λds@$_{23}$@ : Integer .
+(((EndDate_match@$_{16}$@ ds@$_{22}$@ { Unit@$_{9}$@ -> Bool@$_{0}$@ }) (λn@$_{24}$@ : Integer .
+λthunk@$_{25}$@ : Unit@$_{9}$@ .
+let nonrec strict floatme@$_{26}$@ = λarg@$_{28}$@ : ∀a@$_{29}$@ : *.a@$_{29}$@ -> a@$_{29}$@ .
+(((Bool_match@$_{3}$@ ((greaterThanEqInteger@$_{5}$@ ds@$_{23}$@) 0) { Unit@$_{9}$@ -> Integer }) (λthunk@$_{30}$@ : Unit@$_{9}$@ .
+n@$_{24}$@)) (λthunk@$_{31}$@ : Unit@$_{9}$@ .
+0)) Unit@$_{10}$@ in
+(lessThanEqInteger@$_{18}$@ (floatme@$_{26}$@ (Λa@$_{32}$@ : *.
+λx@$_{33}$@ : a@$_{32}$@ .
+x@$_{33}$@))) ds@$_{23}$@)) (λthunk@$_{34}$@ : Unit@$_{9}$@ .
+False@$_{2}$@)) Unit@$_{10}$@ { ∀out_EndDate@$_{35}$@ : *.(Integer -> out_EndDate@$_{35}$@) -> (out_EndDate@$_{35}$@ -> out_EndDate@$_{35}$@) }) (λarg_0@$_{36}$@ : Integer .
+Λout_EndDate@$_{37}$@ : *.
+λcase_Fixed@$_{38}$@ : Integer -> out_EndDate@$_{37}$@ .
+λcase_Never@$_{39}$@ : out_EndDate@$_{37}$@ .
+case_Fixed@$_{38}$@ arg_0@$_{36}$@)) (Λout_EndDate@$_{40}$@ : *.
+λcase_Fixed@$_{41}$@ : Integer -> out_EndDate@$_{40}$@ .
+λcase_Never@$_{42}$@ : out_EndDate@$_{40}$@ .
+case_Never@$_{42}$@)) (λx@$_{43}$@ : ∀out_EndDate@$_{44}$@ : *.(Integer -> out_EndDate@$_{44}$@) -> (out_EndDate@$_{44}$@ -> out_EndDate@$_{44}$@) .
+x@$_{43}$@) { ∀out_Unit@$_{45}$@ : *.out_Unit@$_{45}$@ -> out_Unit@$_{45}$@ }) (Λout_Unit@$_{46}$@ : *.
+λcase_Unit@$_{47}$@ : out_Unit@$_{46}$@ .
+case_Unit@$_{47}$@)) (λx@$_{48}$@ : ∀out_Unit@$_{49}$@ : *.out_Unit@$_{49}$@ -> out_Unit@$_{49}$@ .
+x@$_{48}$@) { ∀out_Bool@$_{50}$@ : *.out_Bool@$_{50}$@ -> (out_Bool@$_{50}$@ -> out_Bool@$_{50}$@) }) (Λout_Bool@$_{51}$@ : *.
+λcase_True@$_{52}$@ : out_Bool@$_{51}$@ .
+λcase_False@$_{53}$@ : out_Bool@$_{51}$@ .
+case_True@$_{52}$@)) (Λout_Bool@$_{54}$@ : *.
+λcase_True@$_{55}$@ : out_Bool@$_{54}$@ .
+λcase_False@$_{56}$@ : out_Bool@$_{54}$@ .
+case_False@$_{56}$@)) (λx@$_{57}$@ : ∀out_Bool@$_{58}$@ : *.out_Bool@$_{58}$@ -> (out_Bool@$_{58}$@ -> out_Bool@$_{58}$@) .
+x@$_{57}$@)
+\end{appendixcode}
+
+\subsection{PassInline (nil)}
+
+\begin{appendixcode}
+(((ΛBool@$_{0}$@ : *.
+λTrue@$_{1}$@ : Bool@$_{0}$@ .
+λFalse@$_{2}$@ : Bool@$_{0}$@ .
+λBool_match@$_{3}$@ : Bool@$_{0}$@ -> (∀out_Bool@$_{4}$@ : *.out_Bool@$_{4}$@ -> (out_Bool@$_{4}$@ -> out_Bool@$_{4}$@)) .
+let nonrec strict greaterThanEqInteger@$_{5}$@ = ... in
+((ΛUnit@$_{9}$@ : *.
+λUnit@$_{10}$@ : Unit@$_{9}$@ .
+λUnit_match@$_{11}$@ : Unit@$_{9}$@ -> (∀out_Unit@$_{12}$@ : *.out_Unit@$_{12}$@ -> out_Unit@$_{12}$@) .
+(((ΛEndDate@$_{13}$@ : *.
+λFixed@$_{14}$@ : Integer -> EndDate@$_{13}$@ .
+λNever@$_{15}$@ : EndDate@$_{13}$@ .
+λEndDate_match@$_{16}$@ : EndDate@$_{13}$@ -> (∀out_EndDate@$_{17}$@ : *.(Integer -> out_EndDate@$_{17}$@) -> (out_EndDate@$_{17}$@ -> out_EndDate@$_{17}$@)) .
+let nonrec strict lessThanEqInteger@$_{18}$@ = ... in
+λds@$_{22}$@ : EndDate@$_{13}$@ .
+λds@$_{23}$@ : Integer .
+(((EndDate_match@$_{16}$@ ds@$_{22}$@ { Unit@$_{9}$@ -> Bool@$_{0}$@ }) (λn@$_{24}$@ : Integer .
+λthunk@$_{25}$@ : Unit@$_{9}$@ .
+let nonrec strict floatme@$_{26}$@ = λarg@$_{28}$@ : ∀a@$_{29}$@ : *.a@$_{29}$@ -> a@$_{29}$@ .
+(((Bool_match@$_{3}$@ ((greaterThanEqInteger@$_{5}$@ ds@$_{23}$@) 0) { Unit@$_{9}$@ -> Integer }) (λthunk@$_{30}$@ : Unit@$_{9}$@ .
+n@$_{24}$@)) (λthunk@$_{31}$@ : Unit@$_{9}$@ .
+0)) Unit@$_{10}$@ in
+(lessThanEqInteger@$_{18}$@ (floatme@$_{26}$@ (Λa@$_{32}$@ : *.
+λx@$_{33}$@ : a@$_{32}$@ .
+x@$_{33}$@))) ds@$_{23}$@)) (λthunk@$_{34}$@ : Unit@$_{9}$@ .
+False@$_{2}$@)) Unit@$_{10}$@ { ∀out_EndDate@$_{35}$@ : *.(Integer -> out_EndDate@$_{35}$@) -> (out_EndDate@$_{35}$@ -> out_EndDate@$_{35}$@) }) (λarg_0@$_{36}$@ : Integer .
+Λout_EndDate@$_{37}$@ : *.
+λcase_Fixed@$_{38}$@ : Integer -> out_EndDate@$_{37}$@ .
+λcase_Never@$_{39}$@ : out_EndDate@$_{37}$@ .
+case_Fixed@$_{38}$@ arg_0@$_{36}$@)) (Λout_EndDate@$_{40}$@ : *.
+λcase_Fixed@$_{41}$@ : Integer -> out_EndDate@$_{40}$@ .
+λcase_Never@$_{42}$@ : out_EndDate@$_{40}$@ .
+case_Never@$_{42}$@)) (λx@$_{43}$@ : ∀out_EndDate@$_{44}$@ : *.(Integer -> out_EndDate@$_{44}$@) -> (out_EndDate@$_{44}$@ -> out_EndDate@$_{44}$@) .
+x@$_{43}$@) { ∀out_Unit@$_{45}$@ : *.out_Unit@$_{45}$@ -> out_Unit@$_{45}$@ }) (Λout_Unit@$_{46}$@ : *.
+λcase_Unit@$_{47}$@ : out_Unit@$_{46}$@ .
+case_Unit@$_{47}$@)) (λx@$_{48}$@ : ∀out_Unit@$_{49}$@ : *.out_Unit@$_{49}$@ -> out_Unit@$_{49}$@ .
+x@$_{48}$@) { ∀out_Bool@$_{50}$@ : *.out_Bool@$_{50}$@ -> (out_Bool@$_{50}$@ -> out_Bool@$_{50}$@) }) (Λout_Bool@$_{51}$@ : *.
+λcase_True@$_{52}$@ : out_Bool@$_{51}$@ .
+λcase_False@$_{53}$@ : out_Bool@$_{51}$@ .
+case_True@$_{52}$@)) (Λout_Bool@$_{54}$@ : *.
+λcase_True@$_{55}$@ : out_Bool@$_{54}$@ .
+λcase_False@$_{56}$@ : out_Bool@$_{54}$@ .
+case_False@$_{56}$@)) (λx@$_{57}$@ : ∀out_Bool@$_{58}$@ : *.out_Bool@$_{58}$@ -> (out_Bool@$_{58}$@ -> out_Bool@$_{58}$@) .
+x@$_{57}$@)
+\end{appendixcode}
+
+\subsection{PassLetNonRec}
+
+\begin{appendixcode}
+(((ΛBool@$_{0}$@ : *.
+λTrue@$_{1}$@ : Bool@$_{0}$@ .
+λFalse@$_{2}$@ : Bool@$_{0}$@ .
+λBool_match@$_{3}$@ : Bool@$_{0}$@ -> (∀out_Bool@$_{4}$@ : *.out_Bool@$_{4}$@ -> (out_Bool@$_{4}$@ -> out_Bool@$_{4}$@)) .
+(λgreaterThanEqInteger@$_{5}$@ : Integer -> (Integer -> Bool@$_{0}$@) .
+((ΛUnit@$_{9}$@ : *.
+λUnit@$_{10}$@ : Unit@$_{9}$@ .
+λUnit_match@$_{11}$@ : Unit@$_{9}$@ -> (∀out_Unit@$_{12}$@ : *.out_Unit@$_{12}$@ -> out_Unit@$_{12}$@) .
+(((ΛEndDate@$_{13}$@ : *.
+λFixed@$_{14}$@ : Integer -> EndDate@$_{13}$@ .
+λNever@$_{15}$@ : EndDate@$_{13}$@ .
+λEndDate_match@$_{16}$@ : EndDate@$_{13}$@ -> (∀out_EndDate@$_{17}$@ : *.(Integer -> out_EndDate@$_{17}$@) -> (out_EndDate@$_{17}$@ -> out_EndDate@$_{17}$@)) .
+(λlessThanEqInteger@$_{18}$@ : Integer -> (Integer -> Bool@$_{0}$@) .
+λds@$_{22}$@ : EndDate@$_{13}$@ .
+λds@$_{23}$@ : Integer .
+(((EndDate_match@$_{16}$@ ds@$_{22}$@ { Unit@$_{9}$@ -> Bool@$_{0}$@ }) (λn@$_{24}$@ : Integer .
+λthunk@$_{25}$@ : Unit@$_{9}$@ .
+(λfloatme@$_{26}$@ : (∀a@$_{27}$@ : *.a@$_{27}$@ -> a@$_{27}$@) -> Integer .
+(lessThanEqInteger@$_{18}$@ (floatme@$_{26}$@ (Λa@$_{32}$@ : *.
+λx@$_{33}$@ : a@$_{32}$@ .
+x@$_{33}$@))) ds@$_{23}$@) (λarg@$_{28}$@ : ∀a@$_{29}$@ : *.a@$_{29}$@ -> a@$_{29}$@ .
+(((Bool_match@$_{3}$@ ((greaterThanEqInteger@$_{5}$@ ds@$_{23}$@) 0) { Unit@$_{9}$@ -> Integer }) (λthunk@$_{30}$@ : Unit@$_{9}$@ .
+n@$_{24}$@)) (λthunk@$_{31}$@ : Unit@$_{9}$@ .
+0)) Unit@$_{10}$@))) (λthunk@$_{34}$@ : Unit@$_{9}$@ .
+False@$_{2}$@)) Unit@$_{10}$@) (λarg@$_{19}$@ : Integer .
+λarg@$_{20}$@ : Integer .
+(λb@$_{21}$@ : Bool .
+(((ifThenElse { Bool@$_{0}$@ }) b@$_{21}$@) True@$_{1}$@) False@$_{2}$@) ((lessThanEqInteger arg@$_{19}$@) arg@$_{20}$@)) { ∀out_EndDate@$_{35}$@ : *.(Integer -> out_EndDate@$_{35}$@) -> (out_EndDate@$_{35}$@ -> out_EndDate@$_{35}$@) }) (λarg_0@$_{36}$@ : Integer .
+Λout_EndDate@$_{37}$@ : *.
+λcase_Fixed@$_{38}$@ : Integer -> out_EndDate@$_{37}$@ .
+λcase_Never@$_{39}$@ : out_EndDate@$_{37}$@ .
+case_Fixed@$_{38}$@ arg_0@$_{36}$@)) (Λout_EndDate@$_{40}$@ : *.
+λcase_Fixed@$_{41}$@ : Integer -> out_EndDate@$_{40}$@ .
+λcase_Never@$_{42}$@ : out_EndDate@$_{40}$@ .
+case_Never@$_{42}$@)) (λx@$_{43}$@ : ∀out_EndDate@$_{44}$@ : *.(Integer -> out_EndDate@$_{44}$@) -> (out_EndDate@$_{44}$@ -> out_EndDate@$_{44}$@) .
+x@$_{43}$@) { ∀out_Unit@$_{45}$@ : *.out_Unit@$_{45}$@ -> out_Unit@$_{45}$@ }) (Λout_Unit@$_{46}$@ : *.
+λcase_Unit@$_{47}$@ : out_Unit@$_{46}$@ .
+case_Unit@$_{47}$@)) (λx@$_{48}$@ : ∀out_Unit@$_{49}$@ : *.out_Unit@$_{49}$@ -> out_Unit@$_{49}$@ .
+x@$_{48}$@)) (λarg@$_{6}$@ : Integer .
+λarg@$_{7}$@ : Integer .
+(λb@$_{8}$@ : Bool .
+(((ifThenElse { Bool@$_{0}$@ }) b@$_{8}$@) True@$_{1}$@) False@$_{2}$@) ((greaterThanEqInteger arg@$_{6}$@) arg@$_{7}$@)) { ∀out_Bool@$_{50}$@ : *.out_Bool@$_{50}$@ -> (out_Bool@$_{50}$@ -> out_Bool@$_{50}$@) }) (Λout_Bool@$_{51}$@ : *.
+λcase_True@$_{52}$@ : out_Bool@$_{51}$@ .
+λcase_False@$_{53}$@ : out_Bool@$_{51}$@ .
+case_True@$_{52}$@)) (Λout_Bool@$_{54}$@ : *.
+λcase_True@$_{55}$@ : out_Bool@$_{54}$@ .
+λcase_False@$_{56}$@ : out_Bool@$_{54}$@ .
+case_False@$_{56}$@)) (λx@$_{57}$@ : ∀out_Bool@$_{58}$@ : *.out_Bool@$_{58}$@ -> (out_Bool@$_{58}$@ -> out_Bool@$_{58}$@) .
+x@$_{57}$@)
+\end{appendixcode}

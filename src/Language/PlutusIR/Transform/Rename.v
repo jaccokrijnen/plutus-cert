@@ -10,6 +10,8 @@ From PlutusCert Require Import
   .
 
 
+(* TODO: Add renaming of type-variables *)
+
 Section Rename.
 Context
   {var tyvar : Set}

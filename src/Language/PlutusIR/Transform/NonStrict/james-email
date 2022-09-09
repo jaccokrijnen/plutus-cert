@@ -1,0 +1,23 @@
+Lazy -> Strict: I asked Nikolaos Bezirgiannis (former student I believe Wouter?)
+
+I think the short answer is that the handling of laziness happens In the ghc-core  -> PIR phase:
+
+There’s a relevant note here:
+https://github.com/input-output-hk/plutus/blob/master/plutus-tx-plugin/src/Language/PlutusTx/Compiler/Type.hs#L167-L186
+
+^ this is probably the best place to start
+
+v more detail
+
+https://github.com/input-output-hk/plutus/blob/master/plutus-tx-plugin/src/Language/PlutusTx/Compiler/Expr.hs#L537-L556
+
+In the Language/PlutusTx/Compiler/Expr.hs when we find a GHC-Core case
+alternative, we check if it should be lazy. We translate the Core->PIR as
+usual, but if it is lazy we use these two functions in
+Language/PlutusTx/Compiler/Laziness , maybeDelay and maybeDelayType
+
+https://github.com/input-output-hk/plutus/blob/f6dc4c98da7b6304969eb09b646b5b7b452985da/plutus-tx-plugin/src/Language/PlutusTx/Compiler/Laziness.hs#L30-L31
+
+Regards,
+
+James
