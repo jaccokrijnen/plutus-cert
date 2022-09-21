@@ -175,7 +175,7 @@ Proof with eauto_LR.
     eapply normalisation__deterministic in Hnorm__T0n...
     subst.
 
-    eapply RV_to_RC.
+    eapply RV_to_RC_trivial.
 
     eapply RV_monotone...
   - (* E_Error_Iwrap *)

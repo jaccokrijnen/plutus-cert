@@ -292,10 +292,10 @@ Module DeBruijnTerm.
 
 From Equations Require Import Equations.
 
-Notation name := nat.
-Notation tyname := nat.
-Notation binderName := unit.
-Notation binderTyname := unit.
+Definition name := nat.
+Definition tyname := nat.
+Definition binderName := unit.
+Definition binderTyname := unit.
 
 Arguments Ty_Var [tyname]%type_scope [binderTyname]%type_scope.
 Arguments Ty_Fun [tyname]%type_scope [binderTyname]%type_scope.
