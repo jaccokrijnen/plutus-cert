@@ -118,6 +118,45 @@ Definition RV (k : nat) (T : Ty) (rho : tymapping) (v v' : Term) : Prop :=
 
 (** Converting from RC to RV and vice versa *)
 
+Lemma RV_to_RC k T rho e e' :
+  (forall j (Hlt_j : j < k) e_f,
+      e =[j]=> e_f ->
+      exists e'_f j', e' =[j']=> e'_f /\
+        RV (k - j) T rho e_f e'_f) ->
+        RC k T rho e e'
+        .
+Proof with auto.
+  intros H.
+  autorewrite with RC.
+  intros.
+
+  assert (
+    exists (e'_f : Term) (j' : nat),
+      e' =[ j' ]=> e'_f /\ RV (k - j) T rho e_f e'_f
+      )...
+  destruct H1 as [e'_f [j' [H_e'_runs H_RV_e_f_e'_f]]].
+  exists e'_f, j'.
+  split.
+    - assumption.
+    - unfold RV in H_RV_e_f_e'_f.
+      destruct H_RV_e_f_e'_f as [H_val_e_f [H_val_e'_f H_RC]].
+      autorewrite with RC in H_RC.
+      assert (H_lt : 0 < k - j).
+        { lia. }
+      assert (H_eval := eval_value__value _ H_val_e_f).
+      assert (H__ := H_RC 0 H_lt e_f H_eval); clear H_RC.
+      destruct H__ as [e'f0 [j'' [H_eval_e'_f HH]]].
+
+      (* Since j is e'_f is a value, we should know that e'f0 = e'_f*)
+      assert (H_eval_e'_f_val := eval_value__value _ H_val_e'_f).
+      assert (H_eqs := eval__deterministic _ _ _ H_eval_e'_f _ _ H_eval_e'_f_val).
+      destruct H_eqs; subst.
+
+      assert (H_kj0 : forall k j, k - j - 0 = k - j). lia.
+      rewrite H_kj0 in HH.
+      assumption.
+Qed.
+
 Lemma RC_to_RV : forall k T rho e e',
     RC k T rho e e' ->
     forall j (Hlt_j : j < k) e_f,
@@ -154,7 +193,7 @@ Corollary RV_unfolded_to_RV : forall k T rho v v',
     RV k T rho v v'.
 Proof. intros. auto. Qed.
 
-Lemma RV_to_RC : forall k T rho v v',
+Lemma RV_to_RC_trivial : forall k T rho v v',
   RV k T rho v v' ->
   RC k T rho v v'.
 Proof. intros. apply H. Qed.
