@@ -1,245 +1,205 @@
 From Coq Require Import
   String
-  List
+  Lists.List
   .
 From PlutusCert Require Import
   Util
-  Language.PlutusIR
+  Util.List
   Transform.Congruence
   Analysis.FreeVars
+  AFI
+  .
+From PlutusCert Require
+  Language.PlutusIR
   .
 
-
-(* TODO: Add renaming of type-variables *)
-
-Section Rename.
-Context
-  {var tyvar : Set}
-  (var_eqb : var -> var -> bool).
-
-Inductive rename_result :=
-  | RenamedTo : var -> rename_result
-  | Unchanged : rename_result
-  .
-
-Notation dtdecl' := (dtdecl tyvar var tyvar).
-Notation constr' := (constr tyvar var tyvar).
-Notation environment := (list (var * rename_result)).
-
+Import PlutusIR (term(..), tvdecl(..), vdecl(..), ty(..), dtdecl(..), binding(..), constr(..), Recursivity(..)).
+Import PlutusIR.NamedTerm.
 Import ListNotations.
+Import AFI.
+
+(* Rename context*)
+Definition ctx := list (string * string).
 
 
-Fixpoint lookupRR (env : environment) (x : var) : option rename_result :=
-  match env with
-  | nil => None
-  | (y, rr) :: env' => if var_eqb y x then Datatypes.Some rr else lookupRR env' x
-  end.
+(* Binding variable x does not capture free variables in t if they were renamed
+   according to Γ or Δ *)
+Definition no_capture (Γ : ctx) x t :=
+  forall y, In (y, x) Γ -> ~ AFI.Term.appears_free_in y t.
 
-Definition rename_result_eqb (rr1 rr2 : rename_result) :=
-  match rr1, rr2 with
-  | RenamedTo y1, RenamedTo y2 => var_eqb y1 y2
-  | _, _ => true
-  end.
+Definition no_captureA (Δ : ctx) α t :=
+  forall β, In (β, α) Δ -> ~ AFI.Annotation.appears_free_in β t.
 
-Fixpoint lookupV (env : environment) (rr : rename_result) : option var :=
-  match env with
-  | nil => None
-  | (y, rr') :: env' => if rename_result_eqb rr rr' then Datatypes.Some y else lookupV env' rr
-  end.
+Definition no_ty_capture (Δ : ctx) α τ :=
+  forall β, In (β, α) Δ -> ~ AFI.Ty.appears_free_in β τ.
 
-(* Alpha renaming of term variables *)
-Polymorphic Inductive Rename : environment -> term var tyvar var tyvar -> term var tyvar var tyvar -> Type :=
-  | RenameVar       : forall env v w,
-      lookupRR env v = Datatypes.Some (RenamedTo w) ->
-      Rename env (Var v) (Var w)
+Inductive rename_tvs (Δ_b : ctx) : list TVDecl -> list TVDecl -> Type := .
+Inductive rename_ty (Δ : ctx) : Ty -> Ty -> Type :=
 
-  | RenameVarEq     : forall env v,
-      lookupRR env v = Datatypes.Some Unchanged ->
-      Rename env (Var v) (Var v)
+   | rn_Ty_Var : forall α α',
+      lookup α Δ = Some α' ->
+      rename_ty Δ (Ty_Var α) (Ty_Var α')
 
-  | RenameLetNonRec : forall env bs bs' env' t t',
-      RenameBindingsNonRec env env' bs bs' ->
-      Rename env' t t' ->
-      Rename env (Let NonRec bs t) (Let NonRec bs' t')
+   | rn_Ty_Fun : forall σ τ σ' τ',
+      rename_ty Δ σ σ' ->
+      rename_ty Δ τ τ' ->
+      rename_ty Δ (Ty_Fun σ τ) (Ty_Fun σ' τ')
 
-  | RenameLetRec    : forall env bs bs' env' t t',
-      RenameBindingsRec env env' bs bs' ->
-      Rename env' t t' ->
-      Rename env (Let Rec bs t) (Let Rec bs' t')
+   | rn_Ty_IFix : forall σ τ σ' τ',
+      rename_ty Δ σ σ' ->
+      rename_ty Δ τ τ' ->
+      rename_ty Δ (Ty_IFix σ τ) (Ty_IFix σ' τ')
 
-  | RenameLamAbsRename : forall env v w ty t t',
-      v <> w ->
-      ~ (In w (free_vars var_eqb t)) ->
-      ~ (In (RenamedTo w) (map snd env)) ->
-      lookupV env (RenamedTo w) = None ->
-      Rename ((v, RenamedTo w) :: env) t t' ->
-      Rename env (LamAbs v ty t) (LamAbs w ty t')
-  (*
-     | RenameCong      : forall env t t', Cong (Rename env) t t' -> Rename env t t'
+   | rn_Ty_Forall : forall α α' k τ τ',
+      rename_ty ((α, α') :: Δ) τ τ' ->
+      no_ty_capture Δ α τ ->
+      rename_ty Δ (Ty_Forall α k τ) (Ty_Forall α' k τ')
 
-     Using Cong is not sound when shadowing can occur: using Cong includes
-     Lets that don't extend the rename env. That means that if a shadowing
-     binding is not included, its occurences may be renamed to the original
-     binder's renaming. This should not be a problem when all variables are
-     globally unique.
+   | rn_Ty_Builtin : forall t,
+      rename_ty Δ (Ty_Builtin t) (Ty_Builtin t)
 
-     Using Cong is also not nice, it should only capture the Term constructors
-     that were not used in the "interesting" rules above. A search should never
-     use the Cong case for Let, for example.
+   | rn_Ty_Lam : forall α α' k τ τ',
+      rename_ty ((α, α') :: Δ) τ τ' ->
+      no_ty_capture Δ α τ ->
+      rename_ty Δ (Ty_Lam α k τ) (Ty_Lam α' k τ')
 
-     So we write out all other cases by hand...
-  *)
+   | Ty_App : forall σ τ σ' τ',
+      rename_ty Δ σ σ' ->
+      rename_ty Δ τ τ' ->
+      rename_ty Δ (Ty_App σ τ) (Ty_App σ' τ')
+.
 
-  | RenameTyAbs : forall env ty k t t',
-      Rename env t t' ->
-      Rename env (TyAbs ty k t) (TyAbs ty k t')
-  | RenameLamAbsEq : forall env v ty t t',
-      Rename ((v, Unchanged) :: env) t t' ->
-      Rename env (LamAbs v ty t) (LamAbs v ty t')
-  | RenameApply : forall env t1 t2 t1' t2',
-      Rename env t1 t1' ->
-      Rename env t2 t2' ->
-      Rename env (Apply t1 t2) (Apply t1' t2')
-  | RenameConstant : forall env c,
-      Rename env (Constant c) (Constant c)
-  | RenameBuiltin : forall env f,
-      Rename env (Builtin f) (Builtin f)
-  | RenameTyInst : forall env t t' ty,
-      Rename env t t' ->
-      Rename env (TyInst t ty) (TyInst t' ty)
-  | RenameError : forall env ty,
-      Rename env (Error ty) (Error ty)
-  | RenameIWrap : forall env ty1 ty2 t t',
-      Rename env t t' ->
-      Rename env (IWrap ty1 ty2 t) (IWrap ty1 ty2 t')
-  | RenameUnwrap : forall env t t',
-      Rename env t t' ->
-      Rename env (Unwrap t) (Unwrap t')
+Inductive rename (Γ Δ : ctx) : Term -> Term -> Type :=
+  | rn_Var : forall x y,
+      lookup x Γ = Some y ->
+      rename Γ Δ  (Var x) (Var y)
+
+  | rn_Let_Rec : forall r bs bs' t t',
+      forall Γ_bs Δ_bs,
+      rename_Bindings_Rec (Γ_bs ++ Γ) (Δ_bs ++ Δ) Γ_bs Δ_bs bs bs' ->
+
+      (* All bound (type) variables in the bindings should not capture _in the body_.
+
+         Alternatively, add `Let NonRec bs t` as index in rename_binding 
+         and put a simple no_capture at the actual binding *)
+      Forall (fun '(_, x) => no_capture Γ x t) Γ_bs ->
+      Forall (fun '(_, α) => no_captureA Δ α t) Δ_bs ->
+
+      (* All bound (type) variables have to be unique in the binding group *)
+      NoDup (bvbs bs') ->
+      NoDup (btvbs bs') ->
+
+      rename Γ Δ (Let r bs t) (Let r bs' t')
+
+  (* If the decision procedure becomes problematic because of not structurally smaller terms,
+     these two rules should be refactored into a relation similar to rename_Bindings_Rec *)
+  | rn_Let_NonRec_nil : forall t t',
+      rename Γ Δ t t' ->
+      rename Γ Δ (Let NonRec [] t) (Let NonRec [] t')
+
+  | rn_Let_NonRec_cons : forall Γ_b Δ_b b b' bs bs' t t',
+      rename_binding Γ Δ Γ_b Δ_b b b' ->
+      rename (Γ_b ++ Γ) (Δ_b ++ Δ) (Let NonRec bs t) (Let NonRec bs' t') ->
+
+      (* All bound (type) variables in the bounding should not capture.
+
+         Alternatively, add `Let NonRec bs t` as index in rename_binding 
+         and put a simple no_capture at the actual binding *)
+      Forall (fun '(_, x) => no_capture Γ x (Let NonRec bs t)) Γ_b ->
+      Forall (fun '(_, α) => no_captureA Δ α (Let NonRec bs t)) Δ_b ->
+
+      rename Γ Δ (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t')
+
+  | rn_TyAbs : forall α α' k t t',
+      rename ((α, α') :: Γ) Δ t t' ->
+      no_captureA Δ α t ->
+      rename Γ Δ (TyAbs α k t) (TyAbs α' k t')
+
+  | rn_LamAbs : forall x x' τ τ' t t',
+      rename_ty Δ τ τ' ->
+      rename ((x, x') :: Γ) Δ t t' ->
+      no_capture Δ x t ->
+      rename Γ Δ (LamAbs x τ t) (LamAbs x' τ' t')
+
+  | rn_Apply : forall s t s' t',
+      rename Γ Δ s s' ->
+      rename Γ Δ t t' ->
+      rename Γ Δ (Apply s t) (Apply s' t')
+
+  | rn_Constant : forall c,
+      rename Γ Δ (Constant c) (Constant c)
+
+  | rn_Builtin : forall b,
+      rename Γ Δ (Builtin b) (Builtin b)
+
+  | rn_TyInst : forall t t' τ τ',
+      rename Γ Δ t t' ->
+      rename_ty Δ τ τ' ->
+      rename Γ Δ (TyInst t τ) (TyInst t' τ')
+
+  | rn_Error : forall τ τ',
+      rename_ty Δ τ τ' ->
+      rename Γ Δ (Error τ) (Error τ')
+
+  | rn_IWrap σ τ σ' τ' t t':
+      rename_ty Δ σ σ' ->
+      rename_ty Δ τ τ' ->
+      rename Γ Δ t t' ->
+      rename Γ Δ (IWrap σ τ t) (IWrap σ' τ' t')
+
+  | rn_Unwrap : forall t t',
+      rename Γ Δ t t' ->
+      rename Γ Δ (Unwrap t) (Unwrap t')
+
+with rename_binding (Γ Δ : ctx) : ctx -> ctx -> Binding -> Binding -> Type :=
+
+  | rn_TermBind : forall s x x' τ τ' t t',
+      rename_ty Δ τ τ' ->
+      rename Γ Δ t t' ->
+      rename_binding Γ Δ [(x, x')] [] (TermBind s (VarDecl x τ) t) (TermBind s (VarDecl x' τ') t')
+
+  | rn_TypeBind : forall α α' k τ τ',
+      rename_ty Δ τ τ' ->
+      rename_binding Γ Δ [] [(α, α')] (TypeBind (TyVarDecl α k) τ) (TypeBind (TyVarDecl α' k) τ')
+
+  | rn_DatatypeBind : forall α α' k tvs tvs' elim elim' cs cs',
+      forall Δ_tvs Γ_cs Γ_b Δ_b,
+      rename_tvs Δ_tvs tvs tvs' ->
+      rename_constrs Γ Δ Γ_cs cs cs' ->
+      Γ_b = (elim, elim') :: Γ_cs ->
+      Δ_b = (α, α') :: Δ_tvs ->
+      rename_binding Γ Δ Γ_b Δ_b
+        (DatatypeBind (Datatype (TyVarDecl α k) tvs elim cs))
+        (DatatypeBind (Datatype (TyVarDecl α' k) tvs' elim' cs'))
 
 (*
-Non-recursive: the environment can be extended and passed down
+  rename_Bindings_Rec is also indexed over contexts Γ_bs, Δ_bs, which are respectively
+  the bound term and type variables of the recursive bindings.
 *)
-with RenameBindingsNonRec :
-  environment -> (* environment passed down (accumulating param) *)
-  environment ->         (* resulting environment, used for the let-body *)
-  list (binding var tyvar var tyvar) -> (* bindings before translation *)
-  list (binding var tyvar var tyvar) -> (* bindings after translation*)
-  Type :=
-  | NonRecCons : forall env env' env_up b b' bs bs',
-      RenameBinding env  env_up b b' ->
-      RenameBindingsNonRec (env_up ++ env) env'       bs         bs' ->
-      RenameBindingsNonRec            env  env' (b :: bs) (b' :: bs')
-  | NonRecNil  : forall env,
-      RenameBindingsNonRec env env nil nil
+with rename_Bindings_Rec (Γ Δ : ctx) : ctx -> ctx -> list Binding -> list Binding -> Type :=
+
+  | rn_Bindings_Rec_nil :
+      rename_Bindings_Rec Γ Δ [] [] [] []
+
+  | rn_Bindings_Rec_cons : forall b b' bs bs',
+      forall Γ_b Γ_bs Δ_b Δ_bs,
+      rename_binding Γ Δ Γ_b Δ_b b b' ->
+      rename_Bindings_Rec Γ Δ Γ_bs Δ_bs bs bs' ->
+      rename_Bindings_Rec Γ Δ (Γ_b ++ Γ_bs) (Δ_b ++ Δ_bs) (b :: bs) (b' :: bs')
 
 (*
-Recursive: the inherited environment already contains the bindings in this group,
-so it does not have to be extended
+  rename_constrs is also indexed over context Γ_cs, which are
+  the renamings of the constructors
 *)
-with RenameBindingsRec :
-  environment -> (* parametrized by the environment*)
-  environment ->         (* resulting environment, used for the let-body AND env parameter (see Rename_LetRec)*)
-  list (binding var tyvar var tyvar) -> (* bindings before translation *)
-  list (binding var tyvar var tyvar) -> (* bindings after translation*)
-  Type :=
-  | RecCons : forall env env_b env_bs b b' bs bs',
-      RenameBinding     env  env_b            b         b'         ->
-      RenameBindingsRec env           env_bs        bs         bs' ->
-      RenameBindingsRec env (env_b ++ env_bs) (b :: bs) (b' :: bs')
-  | RecNil  : forall env,
-      RenameBindingsRec env nil nil nil
+with rename_constrs (Γ Δ : ctx) : ctx -> list constructor -> list constructor -> Type :=
 
-with RenameBinding :
-  environment ->
-  environment -> (* rename results for this binding *)
-  binding var tyvar var tyvar ->
-  binding var tyvar var tyvar -> Type :=
+  | rn_constrs_nil :
+      rename_constrs Γ Δ [] [] []
 
-  | BindEq     : forall env s v t t' ty,
-      Rename env t t' ->
-      RenameBinding env [(v, Unchanged)]
-        (TermBind s (VarDecl v ty) t)
-        (TermBind s (VarDecl v ty) t')
-
-  (* Todo: include the right Terms over which this binding
-     is scoped, and add the ~( In free_vars ...) conditions
-  *)
-  (*
-  | BindRename : forall env s v w t t' ty,
-      v <> w ->
-      ~ (In w (free_vars var_eqb t)) ->
-      Rename env t t' ->
-      RenameBinding env [(v, RenamedTo w)]
-        (TermBind s (VarDecl v ty) t )
-        (TermBind s (VarDecl w ty) t')
-        *)
-
-  | DataEq : forall env d d' env_up,
-      Rename_dtdecl env env_up d d' ->
-      RenameBinding env env_up
-        (DatatypeBind d)
-        (DatatypeBind d')
-
-  | TypeEq : forall env t ty,
-      RenameBinding env nil
-        (TypeBind t ty)
-        (TypeBind t ty)
-
-with Rename_dtdecl :
-  environment ->
-  environment ->
-  dtdecl' -> dtdecl' -> Type :=
-    | Rename_Datatype : forall env var_res matchf matchf' cs_res cs cs' tv tvs ,
-        Rename_var_bind env var_res matchf matchf' ->
-        Rename_constrs env cs_res cs cs' ->
-        Rename_dtdecl env (var_res :: cs_res)
-          (Datatype tv tvs matchf  cs)
-          (Datatype tv tvs matchf' cs')
-
-(* Either a variable binder is renamed or it is equal *)
-with Rename_var_bind :
-  environment -> (var * rename_result) -> var -> var -> Type :=
-  | VarEq  : forall env v,
-      Rename_var_bind env (v, Unchanged) v v
-
-  (* Todo: include the right Terms over which this binding
-     is scoped, and add the ~( In free_vars ...) conditions
-  *)
-  (*
-  | VarNeq : forall env v v',
-      v <> v' ->
-      Rename_var_bind env (v, RenamedTo v') v v'
-      *)
-
-with Rename_constrs :
-  environment ->
-  environment ->
-  list constr' ->
-  list constr' ->
-  Type :=
-  | Rename_constrs_cons : forall env c cs c' cs' c_res env',
-      Rename_constr env c_res c c' ->
-      Rename_constrs env env' cs cs' ->
-      Rename_constrs env (c_res :: env') (c :: cs) (c' :: cs')
-
-  | Rename_constrs_nil  : forall env,
-      Rename_constrs env nil nil nil
-
-with Rename_constr :
-  environment ->
-  (var * rename_result) ->
-  constr' ->
-  constr' ->
-  Type :=
-  | Rename_Constructor_Eq : forall env res v v' ty arity,
-      Rename_var_bind env res v v' ->
-      Rename_constr
-        env
-        res
-        (Constructor (VarDecl v  ty) arity)
-        (Constructor (VarDecl v' ty) arity)
+  | rn_constrs_cons : forall x x' τ τ' n cs cs' Γ_cs,
+      rename_ty Δ τ τ' ->
+      rename_constrs Γ Δ Γ_cs cs cs' ->
+      rename_constrs Γ Δ ((x, x') :: Γ_cs)
+        (Constructor (VarDecl x τ) n :: cs)
+        (Constructor (VarDecl x' τ') n :: cs')
   .
-
-End Rename.
-Definition Rename_string := Rename (var := string) (tyvar := string) String.eqb nil.
-

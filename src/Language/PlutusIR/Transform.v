@@ -29,7 +29,7 @@ Definition simplifier : list (Term -> Term -> Type) :=
 
 (* The sequence of transformations from PIR to Plutus Core*)
 Definition pirToCore: list (Term -> Term -> Type) :=
-  [ Rename_string
+  [ rename [] []
   ; eqT (* typechecking *)
   ]
 
