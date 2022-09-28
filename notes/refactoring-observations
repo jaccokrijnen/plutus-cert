@@ -12,10 +12,10 @@ This did not apply in the rename transformation, where we need to check that
 new names of (type) binders do not capture free (type) variables. We could do
 something like
 
-  rename_syn ∧ unique_binders t
+  rename_syn ∧ no_shadowing t
 
-or no_shadowing instead of unique_binders, but both are stronger, but may again
-be cleaner. I should check if this is a valid assumption in the plutus compiler
+but I don't think no_shadowing (or unique_binders) actually holds: we want this relation
+to be as general as possible, because it is used by plutus to rename _to_ unique binders.
 
 
 Boiler-plate definitions
