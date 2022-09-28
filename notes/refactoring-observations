@@ -1,0 +1,35 @@
+Simpler translation relations
+---
+Some relations can be split to be conceptually simpler, e.g. dead_code
+  - dead_syn t t' ∧ well_scoped t' ∧ unique_binders t
+the trade-off for the simplicity is two-fold:
+  - we now require unique_binders t, which is a stronger assumption 
+    (but valid in the case of the plutus implementation).
+  - In the proof of semantic preservation we need to prove a lemma that would be
+    for free in the original translation relation
+
+This did not apply in the rename transformation, where we need to check that
+new names of (type) binders do not capture free (type) variables. We could do
+something like
+
+  rename_syn ∧ unique_binders t
+
+or no_shadowing instead of unique_binders, but both are stronger, but may again
+be cleaner. I should check if this is a valid assumption in the plutus compiler
+
+
+Boiler-plate definitions
+---
+
+Many inductive translation relations follow a common pattern:
+  - They maintain some environment Γ to track information about all bound
+    variables
+    + each binder extends Γ for their scope (with special care for scoping in let-recs [*])
+  - There are only a few interesting rules which transform the term
+  - All other AST constructs are trivial boiler plate (fold-like)
+
+Consider ornaments, folds.
+
+[*] each binder individually collects its binder info in a separate index, which
+    goes "up", all of these are then combined and pushed "down" as parameter to all
+    bindings.
