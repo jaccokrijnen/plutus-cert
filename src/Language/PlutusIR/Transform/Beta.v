@@ -30,15 +30,16 @@ t_body
 
 *)
 
-Inductive collect_args : Term -> list Term -> Term -> Prop :=
+(* accumulating param *)
+Inductive collect_args (args : list Term) : Term -> Term -> list Term -> Prop :=
 
-  | ca_Apply : forall t_f t_x args t_inner_f,
-      collect_args t_f             (t_x :: args) t_inner_f ->
-      collect_args (Apply t_f t_x) args          t_inner_f
+  | ca_Apply : forall t_f t_x t_inner_f,
+      collect_args (t_x :: args) t_f t_inner_f args ->
+      collect_args args (Apply t_f t_x) t_inner_f args
 
   | ca_Other : forall t,
   (* ~ (exists t_f t_x, t = Apply t_f t_x) -> *) (* enforces the longest sequence of arguments *)
-      collect_args t [] t
+      collect_args args t t args
 .
 
 Inductive collect_binders : Term -> list VDecl -> Term -> Prop :=
@@ -55,8 +56,10 @@ Inductive collect_binders : Term -> list VDecl -> Term -> Prop :=
 Reserved Notation "t₁ ▷-β t₂" (at level 30).
 Inductive extract_bindings : Term -> Term -> Prop :=
 
+
+  (* decision procedure can know by the size of the resulting binders *)
   | eb_collect_Apply : forall t₁ t₂ args vdecls t_inner_f t_inner,
-      collect_args t₁ args t_inner_f ->
+      collect_args [] t₁ t_inner_f args ->
       is_cons args ->
       collect_binders t_inner_f vdecls t_inner ->
       is_cons vdecls ->
