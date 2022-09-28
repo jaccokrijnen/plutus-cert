@@ -33,3 +33,19 @@ Consider ornaments, folds.
 [*] each binder individually collects its binder info in a separate index, which
     goes "up", all of these are then combined and pushed "down" as parameter to all
     bindings.
+
+
+Passes that are re-implemented
+---
+
+The scott-encoding is implemented as a function, since it is a very specific transformation
+that has no obvious generalisation where relations are useful. So we have
+
+  Fixpoint encode (t : Term) : Term
+
+which does the same thing the compiler does. However, since doing the same naming strategy is annoying,
+we define the relation as:
+
+  Definition scott_enc t t' := rename [] [] (encode t) t'
+
+i.e. our encoded term should be α-equivalent with the compiler's term
