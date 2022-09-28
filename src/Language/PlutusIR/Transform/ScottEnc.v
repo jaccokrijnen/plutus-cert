@@ -1,8 +1,12 @@
-From PlutusCert Require Import Language.PlutusIR.
-From PlutusCert Require Import Language.PlutusIR.Transform.Congruence.
-From PlutusCert Require Import Language.PlutusIR.Analysis.FreeVars.
-From PlutusCert Require Import Language.PlutusIR.Analysis.Equality.
-From PlutusCert Require Import Folds.
+From PlutusCert Require Import
+  Language.PlutusIR
+  Language.PlutusIR.Transform.Congruence
+  Language.PlutusIR.Analysis.FreeVars
+  Language.PlutusIR.Analysis.Equality
+  Folds
+  Transform.Rename
+
+.
 Require Import Coq.Strings.String.
 Require Import Coq.Numbers.DecimalString.
 Require Import Coq.Arith.PeanoNat.
@@ -11,6 +15,13 @@ Require Import Coq.Program.Basics.
 Import Coq.Lists.List.ListNotations.
 
 Open Scope string_scope.
+
+Import NamedTerm.
+
+Fixpoint encode (t : Term) : Term.
+Admitted.
+
+Definition scott_enc t t' := rename [] [] (encode t) t'.
 
 (*
 Fixpoint scottEncode (t : Term) : Term :=
