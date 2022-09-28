@@ -8,6 +8,7 @@ From PlutusCert Require Import
   Transform.Congruence
   Analysis.FreeVars
   AFI
+  Latex
   .
 From PlutusCert Require
   Language.PlutusIR
@@ -33,7 +34,18 @@ Definition no_captureA (Δ : ctx) α t :=
 Definition no_ty_capture (Δ : ctx) α τ :=
   forall β, In (β, α) Δ -> ~ AFI.Ty.appears_free_in β τ.
 
-Inductive rename_tvs (Δ_b : ctx) : list TVDecl -> list TVDecl -> Type := .
+
+Inductive rename_tvs (Δ : ctx) : list TVDecl -> list TVDecl -> ctx -> Type :=
+
+  | rn_tvs_nil :
+      rename_tvs Δ [] [] []
+
+  | rn_tvs_cons : forall α tvs k β tvs' Δ_tvs,
+      lookup α Δ = Some β ->
+      rename_tvs Δ tvs tvs' Δ_tvs ->
+      rename_tvs Δ (TyVarDecl α k :: tvs) (TyVarDecl β k :: tvs') ((α, β) :: Δ_tvs)
+.
+
 Inductive rename_ty (Δ : ctx) : Ty -> Ty -> Type :=
 
    | rn_Ty_Var : forall α α',
@@ -164,7 +176,7 @@ with rename_binding (Γ Δ : ctx) : ctx -> ctx -> Binding -> Binding -> Type :=
 
   | rn_DatatypeBind : forall α α' k tvs tvs' elim elim' cs cs',
       forall Δ_tvs Γ_cs Γ_b Δ_b,
-      rename_tvs Δ_tvs tvs tvs' ->
+      rename_tvs Δ tvs tvs' Δ_tvs ->
       rename_constrs Γ Δ Γ_cs cs cs' ->
       Γ_b = (elim, elim') :: Γ_cs ->
       Δ_b = (α, α') :: Δ_tvs ->
@@ -203,3 +215,6 @@ with rename_constrs (Γ Δ : ctx) : ctx -> list constructor -> list constructor 
         (Constructor (VarDecl x τ) n :: cs)
         (Constructor (VarDecl x' τ') n :: cs')
   .
+
+
+(* MetaCoq Run (run_print_rules rename). *)
