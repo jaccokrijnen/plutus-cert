@@ -39,13 +39,39 @@ Passes that are re-implemented
 ---
 
 The scott-encoding is implemented as a function, since it is a very specific transformation
-that has no obvious generalisation where relations are useful. So we have
+that has no obvious generalisation where relations are useful. So we define
 
-  Fixpoint encode (t : Term) : Term
+  Definition encode : Term -> Term
 
-which does the same thing the compiler does. However, since doing the same naming strategy is annoying,
-we define the relation as:
+which does the same thing the compiler does, but perhaps we only generate α-equivalent code,
+then we can define the relation as:
 
   Definition scott_enc t t' := rename [] [] (encode t) t'
 
 i.e. our encoded term should be α-equivalent with the compiler's term
+
+An additional benefit of re-implementing the pass, is that the search procedure is (mostly, see above)
+for free, by calling the function.
+
+
+Composite passes
+---
+
+Similar to the inline pass, the ThunkRecursions pass may change the order of
+bindings in a let-rec (in addition to thunking recursive bindings). Consider
+the thunk_rec relation, only does the thunking. Then the complete pass can
+be defined as a composition:
+
+  thunk_rec_pass t t' := ∃s, thunk_rec t s ∧ let_reorder s t'
+
+but how do we construct s, which is not dumped by the compiler? Instead of
+outputting extra info to construct s, an alternative is to consider normal
+forms. In this case by sorting all bindings in a let-rec.
+
+  sort_let_recs : Term -> Term
+  let_equiv : ∀t, sort_let_recs t ≡-ctx t
+
+and then define
+
+  thunk_rec_pass := thunk_rec (sort_let_recs t) (sort_let_rects t')
+
