@@ -89,6 +89,7 @@ Inductive rename (Γ Δ : ctx) : Term -> Term -> Type :=
   | rn_Let_Rec : forall r bs bs' t t',
       forall Γ_bs Δ_bs,
       rename_Bindings_Rec (Γ_bs ++ Γ) (Δ_bs ++ Δ) Γ_bs Δ_bs bs bs' ->
+      rename (Γ_bs ++ Γ) (Δ_bs ++ Δ) t t' ->
 
       (* All bound (type) variables in the bindings should not capture _in the body_.
 

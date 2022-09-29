@@ -9,7 +9,10 @@ Import PlutusIR (term(..), tvdecl(..), vdecl(..), ty(..),
   dtdecl(..), binding(..), constr(..), Recursivity(..), DefaultUni(..),
   kind(..), Strictness(..)).
 
-From PlutusCert Require Import Util.List.
+From PlutusCert Require Import
+  Util.List
+  Analysis.BoundVars
+.
 Import ListNotations.
 Import PlutusIR.NamedTerm.
 
@@ -51,6 +54,7 @@ Inductive let_non_strict (Γ : ctx) : Term -> Term -> Type :=
 
   | lns_Let_Rec : forall bs bs' t t' Γ_bs,
       let_non_strict_Bindings_Rec (Γ_bs ++ Γ) bs bs' Γ_bs ->
+      let_non_strict (Γ_bs ++ Γ) t t' ->
       let_non_strict Γ (Let Rec bs t) (Let Rec bs' t')
 
   | lns_Var_Unit : forall x t,
@@ -128,7 +132,8 @@ with let_non_strict_binding (Γ : ctx) : Binding -> Binding -> ctx -> Type :=
       let_non_strict_binding Γ (TypeBind tvd ty) (TypeBind tvd ty) []
 
   | lns_DatatypeBind : forall d,
-      let_non_strict_binding Γ (DatatypeBind d) (DatatypeBind d) []
+      let_non_strict_binding Γ (DatatypeBind d) (DatatypeBind d)
+        (map (fun v => (v, None)) (bvb (DatatypeBind d)))
 
 with let_non_strict_Bindings_Rec (Γ : ctx) : list Binding -> list Binding -> ctx -> Type :=
 
