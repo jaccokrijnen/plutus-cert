@@ -12,6 +12,23 @@ Fixpoint lookup {X:Type} (k : string) (l : list (string * X)) : option X :=
   | (j,x) :: l' => if j =? k then Datatypes.Some x else lookup k l'
   end.
 
+Inductive Lookup {A B :Type} (k : A) (v : B) : list (A * B) -> Prop :=
+  | Here    : forall {kvs}, Lookup k v ((k, v) :: kvs)
+  | There   : forall {k' v' kvs}, ~ (k = k') -> Lookup k v kvs -> Lookup k v ((k', v') :: kvs)
+.
+
+Lemma Lookup_lookup : forall A k (v : A) kvs, Lookup k v kvs <-> lookup k kvs = Some v.
+Admitted.
+
+Lemma Lookup_functional : forall A B (k : A) (v v' : B) kvs,  Lookup k v kvs -> Lookup k v' kvs -> v = v'.
+Admitted.
+
+Lemma Lookup_unique : forall A B (k : A) (v : B) kvs (P P' : Lookup k v kvs), P = P'.
+Admitted.
+
+Lemma Lookup_In : forall A B (k : A) (v : B) kvs, NoDup kvs -> In (k, v) kvs <-> Lookup k v kvs.
+Admitted.
+
 Fixpoint drop {X:Type} (n:string) (nxs:list (string * X)) : list (string * X) :=
   match nxs with
   | nil => nil
