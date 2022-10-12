@@ -15,7 +15,6 @@ src/Language/PlutusIR/Analysis/Size.v
 src/Language/PlutusIR/Analysis/BoundVars.v
 
 src/Language/PlutusIR/Transform/Universal.v
-src/Language/PlutusIR/Transform/NonStrict.v
 src/Language/PlutusIR/Transform/Equal.v
 src/Language/PlutusIR/Transform/ThunkRecursions.v
 src/Language/PlutusIR/Transform/Inline.v
