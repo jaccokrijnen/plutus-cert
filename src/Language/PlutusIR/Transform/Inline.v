@@ -81,7 +81,17 @@ Inductive inline (Γ : ctx) : Term -> Term -> Prop :=
       inline (Γ_bs ++ Γ) t t' ->
       inline Γ (Let NonRec bs t) (Let NonRec bs' t')
 
+  | inl_TyInst_beta   : forall t t' α k τ τ',
+      inline ((α, bound_ty τ) :: Γ) t t' ->
+      inline_Ty Γ τ τ' ->
+      inline Γ (TyInst (TyAbs α k t) τ) (TyInst (TyAbs α k t') τ')
+
   (* Congruence cases *)
+  | inl_TyInst_cong   : forall t t' τ τ',
+      inline Γ t t' ->
+      inline_Ty Γ τ τ' ->
+      ~(exists α k t'', t = TyAbs α k t'') -> (* See inl_TyInst_beta *)
+      inline Γ (TyInst t τ) (TyInst t' τ')
   | inl_TyAbs    : forall α k t t',
       inline Γ t t' ->
       inline Γ (TyAbs α k t) (TyAbs α k t')
@@ -97,10 +107,6 @@ Inductive inline (Γ : ctx) : Term -> Term -> Prop :=
       inline Γ (Constant c) (Constant c)
   | inl_Builtin  : forall f,
       inline Γ (Builtin f) (Builtin f)
-  | inl_TyInst   : forall t t' τ τ',
-      inline Γ t t' ->
-      inline_Ty Γ τ τ' ->
-      inline Γ (TyInst t τ) (TyInst t' τ')
   | inl_Error    : forall τ τ',
       inline Γ (Error τ) (Error τ')
   | inl_IWrap    : forall σ σ' τ τ' t t',
@@ -145,10 +151,15 @@ Inductive inline (Γ : ctx) : Term -> Term -> Prop :=
 
   with inline_Ty (Γ : ctx) : Ty -> Ty -> Prop :=
 
-   | inl_Ty_Var : forall α τ τ',
+   | inl_Ty_Var_1 : forall α τ τ',
       Lookup α (bound_ty τ) Γ ->
       inline_Ty Γ τ τ' ->
       inline_Ty Γ (Ty_Var α) τ
+
+   | inl_Ty_Var_2 : forall α τ τ',
+      Lookup α (bound_ty τ) Γ ->
+      inline_Ty Γ τ τ' ->
+      inline_Ty Γ (Ty_Var α) (Ty_Var α)
 
    | inl_Ty_Fun : forall σ τ σ' τ',
       inline_Ty Γ σ σ' ->
