@@ -7,80 +7,173 @@ From Equations Require Import Equations.
 Require Import Program.
 Require Import Lia.
 
-Set Implicit Arguments.
-Set Equations Transparent.
+From PlutusCert Require Import
+  Util
+  Util.List
+  Language.PlutusIR
+  .
 
-From PlutusCert Require Import Util.
-From PlutusCert Require Import Language.PlutusIR.
 Import NamedTerm.
-From PlutusCert Require Import Language.PlutusIR.Analysis.FreeVars.
-From PlutusCert Require Import Language.PlutusIR.Transform.Congruence.
-From PlutusCert Require Import Language.PlutusIR.Transform.DeadBindings.
 
+(*
+Inlining considers:
 
+  let nonrec Term bindings
+  let Type bindings
+  type β-redexes of the form (/\α. t) τ
 
+β-redexes on term-level are handled by the Beta pass.
 
+The plutus compiler will _unconditionally_ inline, meaning that it will inline all occurences
+and then remove the remaining dead binding.
 
-Generalizable All Variables.
-Definition Env := list (prod string Term).
+We consider the more general case where some occurences may be inlined, but not others. As a consequence,
+this pass does not consider binder elimination.
 
-(* list of term bindings *)
-Fixpoint bindingsToEnv (bs : list Binding) : Env :=
-  match bs with
-    | nil                              =>  nil
-    | TermBind _ (VarDecl v _) t :: bs => (v, t) :: bindingsToEnv bs
-    | _                          :: bs =>           bindingsToEnv bs
-  end.
+*)
+
+(* Context of all let-bound term variables in scope *)
+Inductive binder_info :=
+  | bound_term : Term -> binder_info
+
+  (* bound_ty is used for both type lets and type β-redex *)
+  | bound_ty : Ty -> binder_info
+  .
+
+Definition ctx := list (string * binder_info).
+
+Definition Binding_to_ctx (b : Binding) : ctx :=
+  match b with
+    | TermBind _ (VarDecl v _) t => [(v, bound_term t)]
+    | TypeBind (TyVarDecl α _) τ => [(α, bound_ty τ)]
+    | _ => []
+  end
+.
+
+Definition Bindings_to_ctx (bs : list Binding) : ctx :=
+  rev (concat (map Binding_to_ctx bs)).
 
 Local Open Scope list_scope.
 
 (*
 This relation relates terms where inlining of let-bound variables may
 have taken place. Note that the PIR inliner may also remove the let binding
-when all of its occurrences have been inlined. This is not taken into account here.
-
-When relating the subsequent ASTs dumped by the compiler we tehrefore have to search
-for a composition of `Inline` and `DBE_Term`.
+when all of its occurrences have been inlined (dead code). This is not taken into account here.
 *)
-Inductive Inline : Env -> Term -> Term -> Type :=
+Inductive inline (Γ : ctx) : Term -> Term -> Prop :=
+  | inl_Var_1 : forall v t t',
+      Lookup v (bound_term t) Γ ->
+      inline Γ t t' ->
+      inline Γ (Var v) t'
 
-  (* Extend env and recurse in bound terms, possibly remove
-     dead bindings *)
-  | Inl_Let    : `{    env' = bindingsToEnv bs ++ env        (* extend env with bindings in group *)
-                    (* Todo: take care of non-recursive binding groups, those binders
-                             refer to eachother *)
+  | inl_Var_2 : forall v,
+      inline Γ (Var v) (Var v)
 
-                    -> Inline_Bindings env' bs bs'           (* Bound terms may have inlined variables*)
-                    -> Inline env' t t'
-                    -> Inline env (Let r bs  t )
-                                  (Let r bs' t') }
+  | inl_Let_Rec : forall Γ_bs bs bs' t t',
+      Γ_bs = Bindings_to_ctx bs ->
+      inline_Bindings_Rec (Γ_bs ++ Γ) bs bs' ->
+      inline (Γ_bs ++ Γ) t t' ->
+      inline Γ (Let Rec bs t) (Let Rec bs' t')
 
-  (* Term did not change, note that a search should be biased for Inl_Let as
-     it will extend the environment (exclude Let from Cong somehow?) *)
-  | Inl_Cong   : `{ Cong (Inline env) t t' -> Inline env t t'}
+  | inl_Let_NonRec : forall Γ_bs bs bs' t t',
+      Γ_bs = Bindings_to_ctx bs ->
+      inline_Bindings_NonRec Γ bs bs' ->
+      inline (Γ_bs ++ Γ) t t' ->
+      inline Γ (Let NonRec bs t) (Let NonRec bs' t')
 
-  | Inl_Var    : `{ In (v, t) env -> Inline env t t' -> Inline env (Var v) t'}
+  (* Congruence cases *)
+  | inl_TyAbs    : forall α k t t',
+      inline Γ t t' ->
+      inline Γ (TyAbs α k t) (TyAbs α k t')
+  | inl_LamAbs   : forall x τ τ' t t',
+      inline Γ t t' ->
+      inline_Ty Γ τ τ' ->
+      inline Γ (LamAbs x τ t) (LamAbs x τ' t')
+  | inl_Apply    : forall s s' t t',
+      inline Γ s s' ->
+      inline Γ t t' ->
+      inline Γ (Apply s t) (Apply s' t')
+  | inl_Constant : forall c,
+      inline Γ (Constant c) (Constant c)
+  | inl_Builtin  : forall f,
+      inline Γ (Builtin f) (Builtin f)
+  | inl_TyInst   : forall t t' τ τ',
+      inline Γ t t' ->
+      inline_Ty Γ τ τ' ->
+      inline Γ (TyInst t τ) (TyInst t' τ')
+  | inl_Error    : forall τ τ',
+      inline Γ (Error τ) (Error τ')
+  | inl_IWrap    : forall σ σ' τ τ' t t',
+      inline_Ty Γ τ τ' ->
+      inline_Ty Γ σ σ' ->
+      inline Γ (IWrap σ τ t) (IWrap σ' τ' t')
+  | inl_Unwrap   : forall t t',
+      inline Γ (Unwrap t) (Unwrap t')
+
+  with inline_Bindings_Rec (Γ : ctx) : list Binding -> list Binding -> Prop :=
+
+    | inl_Binding_Rec_cons : forall b b' bs bs',
+        inline_Binding Γ b b' ->
+        inline_Bindings_Rec Γ bs bs' ->
+        inline_Bindings_Rec Γ (b :: bs) (b' :: bs')
+
+    | inl_Binding_Rec_nil  :  inline_Bindings_Rec Γ [] []
+
+  with inline_Bindings_NonRec (Γ : ctx) : list Binding -> list Binding -> Prop :=
+
+    | inl_Binding_NonRec_cons : forall b b' bs bs',
+        inline_Binding Γ b b' ->
+        inline_Bindings_NonRec (Binding_to_ctx b ++ Γ) bs bs' ->
+        inline_Bindings_NonRec Γ (b :: bs) (b' :: bs')
+
+    | inl_Binding_NonRec_nil  : inline_Bindings_NonRec Γ [] []
 
 
-  (* Recognize inlinings in a group of bindings *)
-  (* TODO: this is map-ish boilerplate*)
-  with Inline_Bindings : Env -> list Binding -> list Binding -> Type :=
-  | Inl_Binding_cons : `{  Inline_Binding env b b'
-                        -> Inline_Bindings env bs bs'
-                        -> Inline_Bindings env (b :: bs) (b' :: bs')  }
-  | Inl_Binding_nil  : `{ Inline_Bindings env nil nil}
+  with inline_Binding (Γ : ctx) : Binding -> Binding -> Prop :=
 
+  | inl_TermBind  : forall s x τ τ' t t',
+      inline Γ t t' ->
+      inline_Ty Γ τ τ' ->
+      inline_Binding Γ (TermBind s (VarDecl x τ) t) (TermBind s (VarDecl x τ') t')
 
-  (* Recognize inlining in a single binding*)
-  (* TODO: this is boilerplate, in that we're only traversing
-     Terms within the binding *)
-  with Inline_Binding : Env -> Binding -> Binding -> Type :=
-  | Inl_TermBind  : `{ Inline env t t' (* This does not allow inlinings of a recursive definition, perhaps allow?*)
-                     -> Inline_Binding env (TermBind r v t)
-                                           (TermBind r v t')}
-  | Inl_OtherBind : `{ Inline_Binding env b b}.
+  | inl_DatatypeBind_NonRec : forall d,
+      inline_Binding Γ (DatatypeBind d) (DatatypeBind d)
 
-(* PIR inlining step is composition of inline with dbe *)
-Inductive PIR_Inline t t'' :=
-  Comp_Inl_DBE: forall t', Inline nil t t' -> DBE_Term t' t'' -> PIR_Inline t t''.
+  | inl_TypeBind_NonRec : forall tvd τ τ',
+      inline_Ty Γ τ τ' ->
+      inline_Binding Γ (TypeBind tvd τ) (TypeBind tvd τ')
 
+  with inline_Ty (Γ : ctx) : Ty -> Ty -> Prop :=
+
+   | inl_Ty_Var : forall α τ τ',
+      Lookup α (bound_ty τ) Γ ->
+      inline_Ty Γ τ τ' ->
+      inline_Ty Γ (Ty_Var α) τ
+
+   | inl_Ty_Fun : forall σ τ σ' τ',
+      inline_Ty Γ σ σ' ->
+      inline_Ty Γ τ τ' ->
+      inline_Ty Γ (Ty_Fun σ τ) (Ty_Fun σ' τ')
+
+   | inl_Ty_IFix : forall σ τ σ' τ',
+      inline_Ty Γ σ σ' ->
+      inline_Ty Γ τ τ' ->
+      inline_Ty Γ (Ty_IFix σ τ) (Ty_IFix σ' τ')
+
+   | inl_Ty_Forall : forall α k τ τ',
+      inline_Ty Γ τ τ' ->
+      inline_Ty Γ (Ty_Forall α k τ) (Ty_Forall α k τ')
+
+   | inl_Ty_Builtin : forall t,
+      inline_Ty Γ (Ty_Builtin t) (Ty_Builtin t)
+
+   | inl_Ty_Lam : forall α k τ τ',
+      inline_Ty Γ τ τ' ->
+      inline_Ty Γ (Ty_Lam α k τ) (Ty_Lam α k τ')
+
+   | Ty_App : forall σ τ σ' τ',
+      inline_Ty Γ σ σ' ->
+      inline_Ty Γ τ τ' ->
+      inline_Ty Γ (Ty_App σ τ) (Ty_App σ' τ')
+
+   .

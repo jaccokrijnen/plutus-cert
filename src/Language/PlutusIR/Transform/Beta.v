@@ -12,6 +12,9 @@ Import ListNotations.
 
 (*
 
+This pass transforms beta redexes into let non-recs, so that the later inlining
+pass has more opportunities for inlining.
+
 Transforms (repeated) β-redexes into let nonrec
 
          $₃
