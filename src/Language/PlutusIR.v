@@ -11,6 +11,8 @@ Set Implicit Arguments.
 
 Require Import Coq.Program.Basics.
 
+Import ListNotations.
+
 
 
 (*
@@ -169,6 +171,15 @@ Inductive context :=
   | C_Apply_L    : context -> term -> context
   | C_Apply_R    : term -> context -> context
   .
+
+(* Similar to mkLet in Plutus: for an empty list of bindings it is the identity, otherwise
+   it constructs a let with a non-empty list of bindings *)
+Definition mk_let (r : Recursivity) (bs : list binding) (t : term) : term :=
+  match bs with
+    | [] => t
+    | _  => Let r bs t
+  end
+.
 
 Fixpoint context_apply (C : context) (t : term) :=
   match C with

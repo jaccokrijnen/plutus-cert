@@ -70,16 +70,6 @@ Definition Binding_to_ctx (b : Binding) : ctx :=
   end
 .
 
-
-(* Similar to mkLet in Plutus: for an empty list of bindings it is the identity, otherwise
-   it constructs a let with a non-empty list of bindings *)
-Definition mk_let (r : Recursivity) (bs : list Binding) (t : Term) : Term :=
-  match bs with
-    | [] => t
-    | _  => Let r bs t
-  end
-.
-
 (* Pure values do not need to be strictified after non-strictification *)
 Inductive is_pure (Γ : ctx) : Term -> Type :=
 

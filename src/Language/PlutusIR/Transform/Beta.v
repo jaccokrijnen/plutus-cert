@@ -15,7 +15,7 @@ Import ListNotations.
 This pass transforms beta redexes into let non-recs, so that the later inlining
 pass has more opportunities for inlining.
 
-Transforms (repeated) β-redexes into let nonrec
+Transforms repeated applications (not just repeated β-redexes), e.g.
 
          $₃
        /  \
@@ -33,87 +33,64 @@ t_body
 
 *)
 
-(* accumulating param *)
-Inductive collect_args (args : list Term) : Term -> Term -> list Term -> Prop :=
+Inductive collect_lambdas : Term -> list Term -> list Binding -> Term -> Prop :=
 
-  | ca_Apply : forall t_f t_x t_inner_f,
-      collect_args (t_x :: args) t_f t_inner_f args ->
-      collect_args args (Apply t_f t_x) t_inner_f args
+  | cv_LamAbs : forall t vdecls v ty t_inner arg args,
+      collect_lambdas              t          args                                         vdecls  t_inner ->
+      collect_lambdas (LamAbs v ty t) (arg :: args) (TermBind Strict (VarDecl v ty) arg :: vdecls) t_inner
 
-  | ca_Other : forall t,
-  (* ~ (exists t_f t_x, t = Apply t_f t_x) -> *) (* enforces the longest sequence of arguments *)
-      collect_args args t t args
-.
-
-Inductive collect_binders : Term -> list VDecl -> Term -> Prop :=
-
-  | cv_LamAbs : forall t_body vdecls v ty t_inner,
-      collect_binders t_body               vdecls t_inner ->
-      collect_binders (LamAbs v ty t_body) (VarDecl v ty :: vdecls) t_inner
-
-  | cv_Other : forall t,
+  | cv_Other : forall t args,
   (* ~ (exists v ty t', t = LamAbs v ty t') -> *) (* enforces the longest sequence of lambda binders *)
-      collect_binders t [] t
+      collect_lambdas t args [] t
 .
 
-Reserved Notation "t₁ ▷-β t₂" (at level 30).
-Inductive extract_bindings : Term -> Term -> Prop :=
+(* accumulating param *)
+Inductive collect_binders  : Term -> list Term -> list Binding -> Term -> Prop :=
 
+  | ca_Apply : forall s t args bs t_inner,
+      collect_binders        s    (t :: args) bs t_inner ->
+      collect_binders (Apply s t)       args  bs t_inner
 
-  (* decision procedure can know by the size of the resulting binders *)
-  | eb_collect_Apply : forall t₁ t₂ args vdecls t_inner_f t_inner,
-      collect_args [] t₁ t_inner_f args ->
-      is_cons args ->
-      collect_binders t_inner_f vdecls t_inner ->
-      is_cons vdecls ->
-      t_inner ▷-β t₂ ->
-    (* -------------------------------- *)
-      t₁ ▷-β Let NonRec (zip_with (TermBind Strict) (rev vdecls) args) t₂
-
-  | eb_TyInst_TyAbs : forall ty v k t_body,
-
-    (* ------------------------------ *)
-      TyInst (TyAbs v k t_body) ty
-        ▷-β
-      Let NonRec [TypeBind (TyVarDecl v k) ty] t_body
-
-  | eb_Cong : forall t1 t2,
-      Cong extract_bindings t1 t2 ->
-    (* ------------------------------ *)
-      t1 ▷-β t2
-
-where "t1 ▷-β t2" := (extract_bindings t1 t2)
+  | ca_Lambdas : forall t args bs t_inner,
+  (* ~ (exists t_f t_x, t = Apply t_f t_x) -> *) (* enforces the longest sequence of arguments *)
+      collect_lambdas t args bs t_inner ->
+      collect_binders t args bs t_inner
 .
 
 
-Definition is_extract_bindings : Term -> Term -> bool.
+Goal forall v1 v2 τ1 τ2 t t1 t2,
+  collect_binders []
+    (Apply (Apply (LamAbs v1 τ1 (LamAbs v2 τ2 t)) t1) t2)
+    [TermBind Strict (VarDecl v1 τ1) t1; TermBind Strict (VarDecl v2 τ2) t2] t.
+intros.
+repeat apply ca_Apply.
+apply ca_Lambdas.
+repeat apply cv_LamAbs.
+apply cv_Other.
+Qed.
+
+Inductive beta : Term -> Term -> Prop :=
+
+  | beta_multi : forall t bs bs' t_inner t_inner',
+      collect_binders [] t bs t_inner ->
+      Cong_Bindings beta bs bs' ->
+      beta t_inner t_inner' ->
+      beta t (mk_let NonRec bs t_inner')
+
+  | beta_TyInst_TyAbs : forall ty v k t_body,
+      beta
+        (TyInst (TyAbs v k t_body) ty)
+        (Let NonRec [TypeBind (TyVarDecl v k) ty] t_body)
+
+  | beta_Cong : forall t1 t2,
+      Cong beta t1 t2 ->
+      beta t1 t2
+.
+
+
+Definition is_beta : Term -> Term -> bool.
 Admitted.
 
-Lemma is_extract_bindings_sound : forall t₁ t₂,
-  is_extract_bindings t₁ t₂ = true -> extract_bindings t₁ t₂.
+Lemma is_beta_sound : forall t₁ t₂,
+  is_beta t₁ t₂ = true -> beta t₁ t₂.
 Admitted.
-
-(*
-Possible alternative formulation (small step)
----
-
-Extract one binding at a time:
-
-  Inductive extract_binding : Term -> Term -> Prop :=
-
-    | eb_Apply_LamAbs : forall v ty t_body t_arg,
-        extract_binding
-        (Apply (LamAbs v ty t_body) t_arg)
-        (Let NonRec [TermBind Strict (VarDecl v ty) t_arg] t_body)
-
-
-    | extract_binding_cong : forall
-        Cong extract_binding t₁ t₂ ->
-        extract_binding t₁ t₂
-  .
-
-Then take the transitive closure of extract_binding.
-
-Then relate through LetMerge (all steps produce a binding group with single binding)
-
-*)
