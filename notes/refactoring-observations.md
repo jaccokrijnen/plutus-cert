@@ -117,3 +117,21 @@ environment with strictness information of all binders (`list (string * Strictne
 to determine if certain terms are pure. These environments could be combined
 in a single one, which then requires tracking all variables in scope. That was probably
 worth the trade-off, since it doesn't require the unique pre-condition anymore.
+
+Establishing post-conditions
+---
+
+Some passes will produce a post-term which has certain properties. For example,
+the renaming pass of the compiler produces globally unique binder names. Our
+translation relation is more general though, and will allow any valid renaming,
+including ones with (safe) shadowing or duplicate names at different binding
+sites.
+
+We can still establish such a post-condition by simply running its
+corresponding decision procedure on the post-term. The specification of the
+pass then becomes:
+
+    plutus_inline t t' := inline [] t t' /\ unique t'
+
+Its decision procedure will run both decision procedures for inline and unique.
+
