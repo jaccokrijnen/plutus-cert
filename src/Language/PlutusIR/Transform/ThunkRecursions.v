@@ -9,6 +9,7 @@ From PlutusCert Require Import
   Transform.Congruence
   Semantics.Dynamic.Values
   Util.List
+  Analysis.Purity
   .
 
 Import NamedTerm.
@@ -57,9 +58,6 @@ equivalent term (there will be no new binder names).
 
 (* Records each binder in the Let Rec that was unstrictified *)
 
-Inductive binder_info := let_bound : Strictness -> binder_info | lambda_bound.
-
-Definition ctx := list (string * binder_info).
 
 Definition ctx_unstrictified := list (string * (Term * ctx)).
 
@@ -69,25 +67,6 @@ Definition Binding_to_ctx (b : Binding) : ctx :=
     | _ => []
   end
 .
-
-(* Pure values do not need to be strictified after non-strictification *)
-Inductive is_pure (Γ : ctx) : Term -> Type :=
-
-  | is_pure_value : forall t,
-      value t ->
-      ~(is_error t) ->
-      is_pure Γ t
-
-  | is_pure_var_let : forall x,
-      Lookup x (let_bound Strict) Γ ->
-      is_pure Γ (Var x)
-
-  | is_pure_var_lambda : forall x,
-      Lookup x lambda_bound Γ ->
-      is_pure Γ (Var x)
-.
-
-
 
 Inductive thunk_rec (Γ : ctx) : Term -> Term -> Type :=
 

@@ -135,3 +135,8 @@ pass then becomes:
 
 Its decision procedure will run both decision procedures for inline and unique.
 
+Assuming global uniqueness
+---
+Makes some transl rels simpler. E.g. LetFloat, needs not worry about shadowing anymore, when
+swapping binders.
+

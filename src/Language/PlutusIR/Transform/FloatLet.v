@@ -1,12 +1,15 @@
-From PlutusCert Require Import
-  Language.PlutusIR
-  Language.PlutusIR.Transform.Congruence
-  Language.PlutusIR.Analysis.Equality
-  Language.PlutusIR.Analysis.FreeVars.
-Import NamedTerm.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
 Import Coq.Lists.List.ListNotations.
+From PlutusCert Require Import
+  Language.PlutusIR
+  Transform.Congruence
+  Analysis.Equality
+  Analysis.FreeVars
+  Analysis.UniqueBinders
+  Analysis.Purity
+  Static.Typing.
+Import NamedTerm.
 
 
 Notation fv := (free_vars String.eqb).
@@ -24,7 +27,7 @@ Fixpoint adjacentBindings r (t : Term) : list Binding * Term :=
 
 
 (* Adjacent let-binding groups (with same recursivity) can be merged *)
-Inductive LetMerge : Term -> Term -> Type :=
+Inductive LetMerge : Term -> Term -> Prop :=
   | LM_Merge : forall bs bs' bs'' r t t' t'',
                    (bs', t') = adjacentBindings r t
                 -> ZipWith (BindingBy LetMerge) (bs ++ bs') bs''
@@ -71,6 +74,7 @@ Inductive SwapsIn {a : Type} (R : a -> a -> Type) : list a -> list a -> Type :=
       SwapsIn R ys zs ->
       SwapsIn R xs zs
   | SwapsIn_nil  : forall xs, SwapsIn R xs xs.
+
 
 
 (*
@@ -151,5 +155,118 @@ with LetReorder_Binding : Binding -> Binding -> Type :=
      *)
 
 
-Polymorphic Inductive FloatLet : Term -> Term -> Type := .
-(* TODO: Allow lets to float up to nearest enclosing binder *)
+(* This definition assumes global uniqueness *)
+Inductive let_reorder : Term -> Term -> Prop :=
+
+  | lr_Let : forall r bs bs' t t',
+      let_reorder_Bindings bs bs' ->
+      let_reorder t t' ->
+      let_reorder (Let r bs t) (Let r bs' t')
+
+  | lr_cong : forall t t',
+      ~(exists r bs tb, t = Let r bs tb) ->
+      Cong let_reorder t t' ->
+      let_reorder t t'
+
+with let_reorder_Bindings : list Binding -> list Binding -> Prop :=
+
+  (* Relate pre- and post-bindings one-to-one,
+     i.e. there exists a bijection between the pre and post bindings *)
+  | lr_cons : forall b bs bs' bs'',
+      let_reorder_Binding b bs' bs'' ->
+      let_reorder_Bindings bs bs'' ->
+      let_reorder_Bindings (b :: bs) bs'
+
+  | lr_nil :
+      let_reorder_Bindings [] []
+
+
+(* Finds a related binding in the list, and returns the other bindings of that list *)
+with let_reorder_Binding : Binding -> list Binding -> list Binding -> Prop :=
+
+  | lr_There : forall b b' bs bs',
+      let_reorder_Binding b        bs  bs' ->
+      let_reorder_Binding b (b' :: bs) (b' :: bs')
+
+  | lr_Here : forall b b' bs,
+      Cong_Binding let_reorder b b' ->
+      let_reorder_Binding b (b' :: bs) bs
+  .
+
+
+Inductive let_float_step : Term -> Term -> Prop :=
+
+  (* Binding constructs *)
+  | lfs_LamAbs : forall x τ r bs t,
+      (* TODO: can improve pure_binding with an actual Γ, but the compiler
+         doesn't do this either (see `hasNoEffects`) *)
+      Forall (pure_binding []) bs ->
+      let_float_step (LamAbs x τ (Let r bs t)) (Let r bs (LamAbs x τ t))
+
+  | lfs_TyAbs : forall α k r bs t,
+      (* TODO: can improve pure_binding with an actual Γ, but the compiler
+         doesn't do this either (see `hasNoEffects`) *)
+      Forall (pure_binding []) bs ->
+      let_float_step (TyAbs α k (Let r bs t)) (Let r bs (TyAbs α k t))
+
+  | lfs_Let_Binding : forall r1 r2 bs1 bs1' bs2 t,
+      let_float_step_Binding bs1 r2 bs2 bs1' ->
+      let_float_step (Let r1 bs1 t) (Let r2 bs2 (Let r1 bs1' t))
+
+  | lfs_Let_body : forall r1 r2 bs1 bs1' bs2 bs2' t t',
+      let_float_step (Let r1 bs1 (Let r2 bs2 t)) (Let r2 bs2' (Let r1 bs1' t'))
+
+  (* Other constructs *)
+  | lfs_Apply_1 : forall s t r bs,
+      let_float_step (Apply (Let r bs s) t) (Let r bs (Apply s t))
+
+  | lfs_Apply_2 : forall s t r bs ,
+      let_float_step (Apply s (Let r bs t)) (Let r bs (Apply s t))
+
+  | lfs_TyInst : forall r bs t τ,
+      let_float_step (TyInst (Let r bs t) τ) (Let r bs (TyInst t τ))
+
+  | lfs_IWrap : forall σ τ r bs t,
+      let_float_step (IWrap σ τ (Let r bs t)) (Let r bs (IWrap σ τ t))
+
+  | lfs_Unwrap : forall r bs t ,
+      let_float_step (Unwrap (Let r bs t)) (Let r bs (Unwrap t))
+
+  (* Congruence *)
+
+  | lfs_Cong : forall t t',
+      Cong let_float_step t t' ->
+      let_float_step t t'
+
+with let_float_step_Binding : list Binding -> Recursivity -> list Binding -> list Binding -> Prop :=
+
+  | lfs_Here : forall s vd bs r bs_rhs t,
+      (s = NonStrict -> Forall (pure_binding []) bs_rhs) ->
+      let_float_step_Binding (TermBind s vd (Let r bs_rhs t) :: bs) r bs_rhs (TermBind s vd t :: bs)
+
+  | lfs_There : forall b bs r bs_rhs,
+      let_float_step_Binding bs r bs_rhs bs ->
+      let_float_step_Binding (b :: bs) r bs_rhs (b :: bs)
+.
+
+Inductive transitive_closure (R : Term -> Term -> Prop) : Term -> Term -> Prop :=
+  | tc_id : forall t t',
+      R t t' ->
+      transitive_closure R t t'
+
+  | tc_trans : forall t t' t'',
+      R t t' ->
+      R t' t'' ->
+      transitive_closure R t t''
+.
+
+
+Definition let_float t_pre t_post
+  := Term.unique t_pre
+  /\ well_typed t_post
+  /\ exists t' t'',
+    (  transitive_closure let_float_step t_pre t'
+    /\ let_reorder t' t''
+    /\ LetMerge t'' t_post
+    )
+  .

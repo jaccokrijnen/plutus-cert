@@ -10,6 +10,7 @@ From PlutusCert Require Import
   Language.PlutusIR
   Language.PlutusIR.Analysis.FreeVars
   Language.PlutusIR.Analysis.Equality
+  Language.PlutusIR.Analysis.Purity
   Language.PlutusIR.Analysis.UniqueBinders
   Language.PlutusIR.Transform.Congruence
   Language.PlutusIR.Semantics.Dynamic.Values
@@ -26,27 +27,6 @@ Notation fv := (free_vars String.eqb).
 Notation fv_binding := (free_vars_binding String.eqb).
 Notation fv_bindings := (free_vars_bindings String.eqb fv_binding).
 
-
-
-(* Bindings that are safe: removing them will not change termination behaviour *)
-Inductive safe_binding : Binding -> Prop :=
-
-  | sb_term_non_strict : forall vd t,
-      safe_binding (TermBind NonStrict vd t)
-
-  | sb_term_strict_val : forall vd t,
-      value t ->
-      safe_binding (TermBind Strict vd t)
-
-  | sb_data : forall dtd,
-      safe_binding (DatatypeBind dtd)
-
-  | sb_type : forall tvd ty,
-      safe_binding (TypeBind tvd ty)
-.
-
-
-
 Inductive dead_syn : Term -> Term -> Prop :=
   | dc_cong : forall t t',
       Cong dead_syn t t' ->
@@ -54,7 +34,7 @@ Inductive dead_syn : Term -> Term -> Prop :=
 
   | dc_delete_let : forall rec bs t t',
       dead_syn t t' ->
-      Forall safe_binding bs ->
+      Forall pure_binding bs ->
       dead_syn (Let rec bs t) t'
 
   | dc_delete_bindings : forall rec bs bs' t t',
@@ -68,8 +48,8 @@ with dead_syn_bindings : list Binding -> list Binding -> Prop :=
 
       (* Any resulting binding has a (related) binding in the original group *)
       forall b', (In b' bs' -> exists b, dead_syn_binding b b' /\ In b bs) ->
-      (* any removed binding is a safe_binding *)
-      forall b, ((In b bs /\ ~In b bs') -> safe_binding b) ->
+      (* any removed binding is a pure binding *)
+      forall b, ((In b bs /\ ~In b bs') -> pure_binding b) ->
       dead_syn_bindings bs bs'
 
 with dead_syn_binding : Binding -> Binding -> Prop :=
@@ -85,17 +65,6 @@ with dead_syn_binding : Binding -> Binding -> Prop :=
 (* TODO: define and use well_scoped instead of well_typed *)
 Definition dead_code t t' := dead_syn t t' /\ well_typed t' /\ unique t.
 
-Definition is_safe_binding (b : Binding) : bool :=
-    match b with
-      | TermBind NonStrict vd t => true
-      | TermBind Strict vd t    => is_value t
-      | DatatypeBind dtd        => true
-      | TypeBind tvd ty         => true
-    end
-.
-
-Lemma is_safe_binding_safe_binding : forall b, is_safe_binding b = true -> safe_binding b.
-Admitted.
 
 Fixpoint is_dead_syn (t t' : Term) {struct t} : bool :=
   is_cong is_dead_syn t t'
