@@ -44,10 +44,6 @@ with AlgBindings : Type := mkBindingsAlg
 
 End Algebras.
 
-Print Visibility.
-
-
-
 (* Composition of algebras: products *)
 
 (* Shorthand for type signature of a product *)

@@ -6,6 +6,8 @@ Require Import Coq.Bool.BoolEq.
 Require Import Ascii.
 Require Import Eqdep.
 
+From Equations Require Import Equations.
+
 From PlutusCert Require Import Util.
 Set Implicit Arguments.
 
@@ -13,7 +15,7 @@ Require Import Coq.Program.Basics.
 
 Import ListNotations.
 
-
+From QuickChick Require Import QuickChick.
 
 (*
   Simplification of the names in the AST
@@ -301,7 +303,6 @@ End NamedTerm.
 (** * De Bruijn terms *)
 Module DeBruijnTerm.
 
-From Equations Require Import Equations.
 
 Notation name := nat.
 Notation tyname := nat.
