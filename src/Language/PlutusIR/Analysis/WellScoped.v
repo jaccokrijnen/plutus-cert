@@ -8,6 +8,8 @@ Require Import
   Lists.List
 .
 
+From QuickChick Require Import QuickChick.
+
 
 Definition ctx := list string.
 
@@ -42,6 +44,8 @@ Inductive well_scoped_Ty (Δ : ctx) : Ty -> Prop :=
       Δ |-* T2 ->
       Δ |-* (Ty_App T1 T2) 
 where "Δ '|-*' T " := (well_scoped_Ty Δ T).
+
+Derive DecOpt for (well_scoped_Ty ctx ty).
 
 Reserved Notation "Δ ',,' Γ '|-+' t " (at level 101, t at level 0, no associativity).
 Reserved Notation "Δ '|-ok_c' c " (at level 101, c at level 0).
