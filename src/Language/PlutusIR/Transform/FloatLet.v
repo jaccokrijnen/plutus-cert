@@ -200,6 +200,9 @@ Inductive let_float_step : Term -> Term -> Prop :=
   | lfs_LamAbs : forall x τ r bs t,
       (* TODO: can improve pure_binding with an actual Γ, but the compiler
          doesn't do this either (see `hasNoEffects`) *)
+      (* Note, we don't inductively go in to the bindings,
+         this is fine, because we eventually transitively close the relation and
+         it is possible via lfs_Cong *)
       Forall (pure_binding []) bs ->
       let_float_step (LamAbs x τ (Let r bs t)) (Let r bs (LamAbs x τ t))
 

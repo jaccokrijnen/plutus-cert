@@ -1,3 +1,5 @@
+From Coq Require Import Lists.List.
+Import ListNotations.
 Set Printing Universes.
 Set Polymorphic Universes.
 
@@ -8,6 +10,15 @@ Polymorphic Inductive compose {a} : list (a -> a -> Type) -> a -> a -> Type :=
 
 Arguments ComposeCons {_ _ _ _ _ _}.
 Arguments ComposeNil {_ _}.
+
+
+(* TODO: resolve this duplication with compose above *)
+Fixpoint compose_prop {a} (rs : list (a -> a -> Prop)) (x y : a) : Prop :=
+  match rs with
+    | r :: rs => exists x', r x x' /\ compose_prop rs x' y
+    | []       => x = y
+  end
+.
 
 Polymorphic Inductive hcompose {a} : forall {b : Type}, a -> b -> Type :=
   | HComposeCons : forall b c (x : a) (y : b) (z : c) (R : a -> b -> Type),

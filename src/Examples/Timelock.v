@@ -15,6 +15,7 @@ Import NamedTerm.
 From PlutusCert Require Import Language.PlutusIR.Folds.
 From PlutusCert Require Import Language.PlutusIR.Analysis.FreeVars.
 From PlutusCert Require Import Language.PlutusIR.Analysis.Size.
+From PlutusCert Require Import Language.PlutusIR.Analysis.Purity.
 From PlutusCert Require Import Language.PlutusIR.Transform.Inline.
 From PlutusCert Require Import Language.PlutusIR.Transform.Inline.DecideStepBool.
 From PlutusCert Require Import Language.PlutusIR.Transform.Congruence.
@@ -48,9 +49,16 @@ Create HintDb hint_dead_code.
 #[global]
 Hint Constructors
   Forall
-  safe_binding
+  (* safe_binding *)
+  is_pure
+  pure_binding
   value
   neutral_value
+.
+#[global]
+Hint Resolve
+  (* use decision procedure*)
+  is_errorb_not_is_error
   .
 
 #[global]
@@ -101,6 +109,8 @@ Proof with auto 10 with hint_dead_code.
   apply dc_delete_let...
 Admitted.
 
+(* TODO: Update with new definition of inline and dead_code *)
+(*
 Ltac skipLet :=
   eapply Inl_Let;
     [ reflexivity
@@ -110,13 +120,16 @@ Ltac skipLet :=
       ]
     | simpl
     ].
+    *)
 
 (* Recognize inliner *)
 
 
+(* TODO: Update with new definition of inline and dead_code *)
 (* Lemma pir_3_inlined : Term. *)
-Lemma pir3_4 : compose [Inline nil; DBE_Term] pir_3_deadcode pir_4_inlined.
+Lemma pir3_4 : compose_prop [inline nil; dead_code] pir_3_deadcode pir_4_inlined.
 Proof.
+(*
   eapply ComposeCons.
   - unfold pir_3_deadcode.
     unfold Name, TyName.
@@ -143,6 +156,7 @@ Proof.
   repeat (first [cong_tac | elim_let | term_cong]).
   admit. (* TODO: fix this with new definition of DBE*)
   Unshelve. (* Not sure why these were left-over*)
+*)
 Admitted.
 
 (* eats memory and doesn't terminate
@@ -173,6 +187,8 @@ Eval compute in is_inline (term_size pir_3_inlined_keep) pir_3_inlined_keep pir_
 *)
 
 (* it should recognize the identity transformation *)
+
+(*
 Eval cbv in is_inline (term_size pir_4_inlined) pir_4_inlined pir_4_inlined.
 Definition slow_subterm : Term := (Let NonRec
                     [TermBind NonStrict
@@ -181,6 +197,7 @@ Definition slow_subterm : Term := (Let NonRec
                     (Builtin SHA3)).
 Eval lazy in (term_size slow_subterm).
 Eval lazy in is_inline (term_size slow_subterm) slow_subterm slow_subterm.
+*)
 (*Eval lazy in is_inline (term_size pir_3_inlined_keep)
   pir_3_deadcode
   pir_3_inlined_keep.*)
@@ -189,9 +206,12 @@ Lemma pir4_5 : pir_4_inlined = pir_5_thunkrec.
 Proof. reflexivity. Qed.
 
 
-Lemma pir5_6 : compose [LetMerge; LetReorder] pir_5_thunkrec pir_6_floatTerm.
+(* TODO: Update proof with new definitions of FloatLet *)
+Lemma pir5_6 : let_float pir_5_thunkrec pir_6_floatTerm.
 Proof.
   unfold pir_5_thunkrec, pir_6_floatTerm.
+Admitted.
+  (*
   eapply ComposeCons.
 
   (* Prove merging of lets, i.e.
@@ -241,6 +261,7 @@ Proof.
       repeat (apply Forall_cons; [notIn2|]). apply Forall_nil.
     apply SwapsIn_nil.
 Qed.
+*)
 
 
 
@@ -248,7 +269,7 @@ Definition pir6_plc0 : pir_6_floatTerm = plc_0_compileNS.
 Proof. reflexivity. Qed.
 
 
-(* TODO: get actual Scott rel working again*)
+(* TODO: get Scott rel working again*)
 Definition Scott (s : Term) t := Universal s t.
 
 

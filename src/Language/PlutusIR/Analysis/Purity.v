@@ -44,6 +44,15 @@ Definition is_errorb (t : Term) : bool :=
     | _       => false
   end.
 
+Lemma is_errorb_not_is_error : forall t,
+  is_errorb t = false -> ~ is_error t.
+Proof.
+  intros t H.
+  destruct t; intros H1; inversion H1.
+  inversion H.
+Qed.
+
+
 Definition is_pureb (Γ : ctx) (t : Term) : bool :=
   match t with
   | Var x =>

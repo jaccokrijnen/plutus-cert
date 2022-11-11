@@ -27,6 +27,9 @@ Tactic Notation "step" hyp(n) :=
   ].
 
 
+(*
+TODO: update decision procedure with new inline definition
+
 
 Definition is_inline' : forall (n : nat) (t t' : Term) (env : Env),
   bool.
@@ -347,3 +350,4 @@ Defined.
 
 
 Definition is_inline n t t' := is_inline' n t t' nil.
+*)

@@ -55,6 +55,10 @@ Definition Bindings_to_ctx (bs : list Binding) : ctx :=
 
 Local Open Scope list_scope.
 
+
+(*
+TODO: split context in two: type scope and term scope
+*)
 (*
 This relation relates terms where inlining of let-bound variables may
 have taken place. Note that the PIR inliner may also remove the let binding

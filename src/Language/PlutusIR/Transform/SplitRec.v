@@ -33,11 +33,11 @@ Definition list_eq_elems {A} xs ys : Prop :=
   forall (x : A), In x xs <-> In x ys.
 
 (* Collect subsequent binding groups, together with the "inner" term *)
-Inductive collect_binding_groups : Term -> list binding_group -> Term -> Prop :=
+Inductive collect_binding_groups : Term -> list Binding -> Term -> Prop :=
 
   | cv_Let : forall t_body lets t_inner r bs,
       collect_binding_groups t_body lets t_inner ->
-      collect_binding_groups (Let r bs t_body) ((r, bs) :: lets) t_inner
+      collect_binding_groups (Let r bs t_body) (bs ++ lets) t_inner
 
   | cv_Other : forall t_inner,
       collect_binding_groups t_inner [] t_inner
@@ -50,7 +50,7 @@ Inductive split_syn : Term -> Term -> Prop :=
       (* a decision-procedure would need to find the list bgs of binding groups that
          satisfies the second premise (needs to do backtracking) *)
       collect_binding_groups t bgs t_inner ->
-      list_eq_elems bs (concat (map snd bgs)) ->
+      list_eq_elems bs bgs ->
       split_syn t_body t_inner ->
       split_syn (Let Rec bs t_body) t
 

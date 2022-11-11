@@ -33,46 +33,46 @@ t_body
 
 *)
 
-Inductive collect_lambdas : Term -> list Term -> list Binding -> Term -> Prop :=
+Inductive lams : Term -> list Term -> list Binding -> Term -> Prop :=
 
-  | cv_LamAbs : forall t vdecls v ty t_inner arg args,
-      collect_lambdas              t          args                                         vdecls  t_inner ->
-      collect_lambdas (LamAbs v ty t) (arg :: args) (TermBind Strict (VarDecl v ty) arg :: vdecls) t_inner
+  | Lams_1 : forall t vdecls v ty t_inner arg args,
+      lams              t          args                                         vdecls  t_inner ->
+      lams (LamAbs v ty t) (arg :: args) (TermBind Strict (VarDecl v ty) arg :: vdecls) t_inner
 
-  | cv_Other : forall t args,
+  | Lams_2 : forall t args,
   (* ~ (exists v ty t', t = LamAbs v ty t') -> *) (* enforces the longest sequence of lambda binders *)
-      collect_lambdas t args [] t
+      lams t args [] t
 .
 
 (* accumulating param *)
-Inductive collect_binders  : Term -> list Term -> list Binding -> Term -> Prop :=
+Inductive apps  : Term -> list Term -> list Binding -> Term -> Prop :=
 
-  | ca_Apply : forall s t args bs t_inner,
-      collect_binders        s    (t :: args) bs t_inner ->
-      collect_binders (Apply s t)       args  bs t_inner
+  | Apps_1 : forall s t args bs t_inner,
+      apps        s    (t :: args) bs t_inner ->
+      apps (Apply s t)       args  bs t_inner
 
-  | ca_Lambdas : forall t args bs t_inner,
+  | Apps_2 : forall t args bs t_inner,
   (* ~ (exists t_f t_x, t = Apply t_f t_x) -> *) (* enforces the longest sequence of arguments *)
-      collect_lambdas t args bs t_inner ->
-      collect_binders t args bs t_inner
+      lams t args bs t_inner ->
+      apps t args bs t_inner
 .
 
 
 Goal forall v1 v2 τ1 τ2 t t1 t2,
-  collect_binders []
-    (Apply (Apply (LamAbs v1 τ1 (LamAbs v2 τ2 t)) t1) t2)
+  apps
+    (Apply (Apply (LamAbs v1 τ1 (LamAbs v2 τ2 t)) t1) t2) []
     [TermBind Strict (VarDecl v1 τ1) t1; TermBind Strict (VarDecl v2 τ2) t2] t.
 intros.
-repeat apply ca_Apply.
-apply ca_Lambdas.
-repeat apply cv_LamAbs.
-apply cv_Other.
+repeat apply Apps_1.
+apply Apps_2.
+repeat apply Lams_1.
+apply Lams_2.
 Qed.
 
 Inductive beta : Term -> Term -> Prop :=
 
   | beta_multi : forall t bs bs' t_inner t_inner',
-      collect_binders [] t bs t_inner ->
+      apps t [] bs t_inner ->
       Cong_Bindings beta bs bs' ->
       beta t_inner t_inner' ->
       beta t (mk_let NonRec bs t_inner')

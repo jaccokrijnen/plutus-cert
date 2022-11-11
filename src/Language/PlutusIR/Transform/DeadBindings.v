@@ -18,6 +18,7 @@ From PlutusCert Require Import
 
 Import NamedTerm.
 Import UniqueBinders.Term.
+Import ListNotations.
 
 Set Implicit Arguments.
 Set Equations Transparent.
@@ -34,7 +35,7 @@ Inductive dead_syn : Term -> Term -> Prop :=
 
   | dc_delete_let : forall rec bs t t',
       dead_syn t t' ->
-      Forall pure_binding bs ->
+      Forall (pure_binding []) bs ->
       dead_syn (Let rec bs t) t'
 
   | dc_delete_bindings : forall rec bs bs' t t',
@@ -49,7 +50,7 @@ with dead_syn_bindings : list Binding -> list Binding -> Prop :=
       (* Any resulting binding has a (related) binding in the original group *)
       forall b', (In b' bs' -> exists b, dead_syn_binding b b' /\ In b bs) ->
       (* any removed binding is a pure binding *)
-      forall b, ((In b bs /\ ~In b bs') -> pure_binding b) ->
+      forall b, ((In b bs /\ ~In b bs') -> pure_binding [] b) ->
       dead_syn_bindings bs bs'
 
 with dead_syn_binding : Binding -> Binding -> Prop :=
@@ -70,7 +71,7 @@ Fixpoint is_dead_syn (t t' : Term) {struct t} : bool :=
   is_cong is_dead_syn t t'
   || match t, t' with
     (* delete let *)
-    | Let _ bs t, t' => is_dead_syn t t' && forallb is_safe_binding bs
+    | Let _ bs t, t' => is_dead_syn t t' && forallb (is_pure_binding []) bs
     | _, _           => false
   end
   || match t, t' with
