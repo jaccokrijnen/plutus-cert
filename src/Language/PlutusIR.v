@@ -54,7 +54,7 @@ Inductive DefaultUni : Type :=
     
 (** Existentials as a datype *)
 Inductive some {f : DefaultUni -> Type} :=
-  Some : forall {u : DefaultUni}, f u -> some.
+  Some' : forall {u : DefaultUni}, f u -> some.
 Arguments some _ : clear implicits.
 
 (** Builtin types *)
@@ -656,7 +656,7 @@ with Binding termR bindingR :=
 *)
 Definition Mu (f : Type -> Type) (g : Type -> Type) := forall a, (f a -> a) -> (g a -> a) -> a.
 
-Definition unitVal : NamedTerm.Term := Constant (Some (ValueOf DefaultUniUnit tt)).
+Definition unitVal : NamedTerm.Term := Constant (Some' (ValueOf DefaultUniUnit tt)).
 
 
 Inductive ZipWith {a} (P : a -> a -> Type) : list a -> list a -> Type :=
