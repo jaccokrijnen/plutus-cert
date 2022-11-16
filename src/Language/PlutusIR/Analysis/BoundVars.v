@@ -11,11 +11,13 @@ Local Open Scope string_scope.
 
 From PlutusCert Require Import
   Util
+  Util.List
   Language.PlutusIR
-  Language.PlutusIR.Folds
-  .
+  Language.PlutusIR.Folds.
 
 Import NamedTerm.
+
+From QuickChick Require Import QuickChick.
 
 Module Ty.
 
@@ -51,6 +53,11 @@ Module Ty.
         appears_bound_in X T2 ->
         appears_bound_in X (Ty_App T1 T2).
 
+  Derive DecOpt for (appears_bound_in x ty).
+  
+  Instance appears_bound_in_decopt_sound x ty: DecOptSoundPos (appears_bound_in x ty).
+  Proof. derive_sound. Qed.
+
 End Ty.
 
 Module Term.
@@ -59,6 +66,8 @@ Module Term.
     match c with
     | Constructor (VarDecl x _) _ => x
     end.
+
+  Definition map_bv_constructor := map bv_constructor.
 
   Inductive appears_bound_in (x : name) : Term -> Prop :=
     | ABI_LamAbs1 : forall T t,
@@ -97,11 +106,14 @@ Module Term.
         appears_bound_in x t ->
         appears_bound_in x (Let recty (TermBind stricty (VarDecl y T) t :: bs) t0)
     | ABI_Let_DatatypeBind : forall recty XK YKs mfunc cs t0 bs,
-        In x (mfunc :: map bv_constructor cs) ->
+        In x (mfunc :: map_bv_constructor cs) ->
         appears_bound_in x (Let recty (DatatypeBind (Datatype XK YKs mfunc cs) :: bs) t0) 
     .
 
+  Derive DecOpt for (appears_bound_in x tm).
+
 End Term.
+
 
 Module Annotation.
 
