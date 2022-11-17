@@ -6,7 +6,6 @@ Set Implicit Arguments.
 Import ListNotations.
 
 
-
 Section list_rect'.
   Variable (a : Type).
   Variable (res_a : a -> Type).
@@ -175,7 +174,7 @@ Definition lookup {a b} (dec : forall x1 x2 : a, {x1 = x2} + {x1 <> x2}) :
   }
 Defined.
 
-Eval cbv in lookup Nat.eq_dec 3 [(1, 2); (3, 4)].
+(* Eval cbv in lookup Nat.eq_dec 3 [(1, 2); (3, 4)].*)
 
 (* decision functions that return option instead of sumbool *)
 
