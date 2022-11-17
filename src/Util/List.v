@@ -1,6 +1,6 @@
 From Coq Require Import 
-  Lists.List
-  Strings.String.
+  Strings.String
+  Lists.List.
 
 Import ListNotations.
 Local Open Scope string_scope.
@@ -74,8 +74,8 @@ Proof. induction ns; auto. Qed.
 
 
 Inductive In {A : Type} (x : A) : list A -> Prop :=
-  | In_Here  : forall {xs}, In  x (x :: xs)
-  | In_There : forall {x' xs}, In  x xs -> In x (x' :: xs).
+  | In_Here  : forall {xs}, In x (x :: xs)
+  | In_There : forall {x' xs}, In x xs -> In x (x' :: xs).
 
 Lemma In_Coq_In_equal : forall A (x : A) xs, In x xs <-> Coq.Lists.List.In x xs.
 Proof.
@@ -86,7 +86,10 @@ Proof.
     - apply In_There. apply IHxs. apply H0.
 Qed.
 
-Derive DecOpt for (In x xs).
+QCDerive DecOpt for (In x xs). 
+
+Instance In_DecOpt_sound x xs : DecOptCompletePos (In x xs).
+Proof. derive_complete. Qed.
 
 (** TODO: doesnt work?
 Instance In_DecOpt_sound x xs : DecOptSoundPos (In x xs).

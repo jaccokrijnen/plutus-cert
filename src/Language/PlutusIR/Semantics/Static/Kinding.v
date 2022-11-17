@@ -33,7 +33,7 @@ Inductive has_kind : Delta -> Ty -> Kind -> Prop :=
       Delta |-* (Ty_Forall X K T) : Kind_Base
   | K_Builtin : forall Delta u K,
       K = lookupBuiltinKind u ->
-      Delta |-* (Ty_Builtin (Some (TypeIn u))) : K
+      Delta |-* (Ty_Builtin (Some' (TypeIn u))) : K
   | K_Lam : forall Delta X K1 T K2,
       (X |-> K1; Delta) |-* T : K2 ->
       Delta |-* (Ty_Lam X K1 T) : (Kind_Arrow K1 K2)
