@@ -54,7 +54,7 @@ Inductive appears_bound_in_ty (X: tyname) : Ty -> Prop :=
 
 QCDerive DecOpt for (appears_bound_in_ty x ty).  
 
-Instance appears_bound_in_tm_decopt_sound x ty: DecOptSoundPos (appears_bound_in_ty x ty).
+Instance appears_bound_in_ty_decopt_sound x ty: DecOptSoundPos (appears_bound_in_ty x ty).
 Proof. derive_sound. Qed.
 
 (* TODO: works, but slows down compilation when using make
@@ -124,10 +124,10 @@ QCDerive EnumSized for string.
 
 QCDerive DecOpt for (appears_bound_in_tm x tm).
 
-(* TODO: finishes, but does not finalize a proof :(
-   Instance appears_bound_in_tm_decopt_sound x tm: DecOptSoundPos (appears_bound_in_tm x tm).
-   Proof. derive_sound. Qed.
-*)
+(* TODO: finishes, but does not finalize a proof :( *)
+Instance appears_bound_in_tm_decopt_sound x tm: DecOptSoundPos (appears_bound_in_tm x tm).
+Proof. derive_sound.
+Admitted.
 
 (* TODO: Does not terminate
    Instance appears_bound_in_tm_decopt_complete x tm: DecOptCompletePos (appears_bound_in_tm x tm).

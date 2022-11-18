@@ -88,12 +88,10 @@ Qed.
 
 QCDerive DecOpt for (In x xs). 
 
-Instance In_DecOpt_sound x xs : DecOptCompletePos (In x xs).
+Instance In_DecOpt_complete x xs : DecOptCompletePos (In x xs).
 Proof. derive_complete. Qed.
 
 (** TODO: doesnt work?
 Instance In_DecOpt_sound x xs : DecOptSoundPos (In x xs).
 Proof. derive_sound. Qed.
  *)
-
-
