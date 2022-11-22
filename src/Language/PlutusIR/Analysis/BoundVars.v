@@ -114,8 +114,7 @@ Inductive appears_bound_in_tm (x : name) : Term -> Prop :=
       appears_bound_in_tm x (Let recty (TermBind stricty (VarDecl y T) t :: bs) t0)
   | ABITM_Let_DatatypeBind : forall recty XK YKs mfunc cs t0 bs,
       In x (mfunc :: map_bv_constructor cs) ->
-      appears_bound_in_tm x (Let recty (DatatypeBind (Datatype XK YKs mfunc cs) :: bs) t0) 
-      .
+      appears_bound_in_tm x (Let recty (DatatypeBind (Datatype XK YKs mfunc cs) :: bs) t0).
 
 (* Necessary since 'In' has strings as arguments *)
 (* TODO: move these elsewhere? In favour of deriving these once in a central place?*)
@@ -124,10 +123,55 @@ QCDerive EnumSized for string.
 
 QCDerive DecOpt for (appears_bound_in_tm x tm).
 
+Ltac simpl_dec_opt_0 H :=
+  simpl in H;
+  destruct (string_dec _ _);
+    subst; auto using appears_bound_in_tm;
+    try discriminate H.
+
+
+Instance appears_bound_in_tm_decopt_sound_manual x tm: DecOptSoundPos (appears_bound_in_tm x tm).
+Proof.
+  unfold DecOptSoundPos.
+  unfold decOpt.
+  unfold DecOptappears_bound_in_tm.
+  intros s.
+  revert tm x.
+  induction s; intros.
+
+  (* s = 0*)
+  - apply checker_backtrack_spec in H as [F [F_In F_True]].
+    induction F_In; subst; destruct tm eqn:E; try discriminate F_True;
+    try (repeat (induction H; subst; try discriminate F_True); reflexivity).
+
+    (* LamAbs s t tm*)
+    + simpl_dec_opt_0 F_True.
+
+    (* Let r l t *)
+    + induction H; subst; destruct l eqn:E; try discriminate F_True.
+      * destruct b eqn:Eb; try discriminate F_True.
+        destruct v eqn:Ev.
+        simpl_dec_opt_0 F_True.
+      * destruct H; subst.
+        -- discriminate F_True.
+        -- destruct H; subst. 
+           ** discriminate F_True.
+           ** inversion H.
+      * destruct H; subst.
+        -- destruct b; try discriminate F_True.
+           destruct d; try discriminate F_True.
+           simpl_dec_opt_0 F_True.
+           apply ABITM_Let_DatatypeBind.
+           constructor.
+        -- induction H; subst; try discriminate F_True.
+           inversion H.
+  (* s = S n *)
+  - admit. 
+Admitted.
+
 (* TODO: finishes, but does not finalize a proof :( *)
 Instance appears_bound_in_tm_decopt_sound x tm: DecOptSoundPos (appears_bound_in_tm x tm).
-Proof. derive_sound.
-Admitted.
+Proof. derive_sound. Admitted.
 
 (* TODO: Does not terminate
    Instance appears_bound_in_tm_decopt_complete x tm: DecOptCompletePos (appears_bound_in_tm x tm).
