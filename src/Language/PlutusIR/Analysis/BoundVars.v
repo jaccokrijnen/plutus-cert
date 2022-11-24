@@ -54,18 +54,36 @@ Inductive appears_bound_in_ty (X: tyname) : Ty -> Prop :=
 
 QCDerive DecOpt for (appears_bound_in_ty x ty).  
 
-Instance appears_bound_in_ty_decopt_sound x ty: DecOptSoundPos (appears_bound_in_ty x ty).
+Instance appears_bound_in_ty_DecOpt_sound x ty: DecOptSoundPos (appears_bound_in_ty x ty).
 Proof. derive_sound. Qed.
 
-(* TODO: works, but slows down compilation when using make
-   Instance appears_bound_in_tm_decopt_complte x ty: DecOptCompletePos (appears_bound_in_ty x ty).
-   Proof. derive_complete. Qed.
- *)
+Instance appears_bound_in_ty_DecOpt_complete x ty: DecOptCompletePos (appears_bound_in_ty x ty).
+Proof. derive_complete. Qed.
 
-Definition bv_constructor (c : constructor) : string :=
-  match c with
-  | Constructor (VarDecl x _) _ => x
-  end.
+Instance appears_bound_in_ty_DecOpt_monotonicity x ty: DecOptSizeMonotonic (appears_bound_in_ty x ty).
+Proof. derive_mon. Qed.
+
+
+
+Inductive appears_bound_in_constrs (x : name) : list constructor -> Prop :=
+  | ABIC_Here  : forall t n cs,
+      appears_bound_in_constrs x ((Constructor (VarDecl x t) n) :: cs)
+  | ABIC_There : forall c' cs,
+      appears_bound_in_constrs x cs ->
+      appears_bound_in_constrs x (c' :: cs).
+
+QCDerive DecOpt for (appears_bound_in_constrs x ls).
+
+Instance appears_bound_in_constrs_DecOpt_sound x ty: DecOptSoundPos (appears_bound_in_constrs x ty).
+Proof. derive_sound. Qed.
+
+Instance appears_bound_in_constrs_DecOpt_complete x ty: DecOptCompletePos (appears_bound_in_constrs x ty).
+Proof. derive_complete. Qed.
+
+Instance appears_bound_in_constrs_DecOpt_monotonicity x ty: DecOptSizeMonotonic (appears_bound_in_constrs x ty).
+Proof. derive_mon. Qed.
+
+
 
 (* QuickChick will fail to derive a checker for appears_bound_in if this application
  * occurs directly in the constructor. This is because QuickChick will try and match
@@ -74,13 +92,11 @@ Definition bv_constructor (c : constructor) : string :=
  * In short, only the function is allowed to be defined outside the constructor, and
  * any variables applied to the function should be bound as quantified variables.
  *)
-Definition map_bv_constructor := map bv_constructor.
 
 Inductive appears_bound_in_tm (x : name) : Term -> Prop :=
   | ABITM_LamAbs1 : forall T t,
       appears_bound_in_tm x (LamAbs x T t)
   | ABITM_LamAbs2 : forall y T t,
-      x <> y ->
       appears_bound_in_tm x t ->
       appears_bound_in_tm x (LamAbs y T t)
   | ABITM_Apply1 : forall t1 t2,
@@ -106,15 +122,18 @@ Inductive appears_bound_in_tm (x : name) : Term -> Prop :=
       appears_bound_in_tm x (Let recty nil t0)
   | ABITM_Let_Cons : forall recty b bs t0,
       appears_bound_in_tm x (Let recty bs t0) ->
-        appears_bound_in_tm x (Let recty (b :: bs) t0)
+      appears_bound_in_tm x (Let recty (b :: bs) t0)
   | ABITM_Let_TermBind1 : forall recty stricty T t bs t0,
       appears_bound_in_tm x (Let recty (TermBind stricty (VarDecl x T) t :: bs) t0)
   | ABITM_Let_TermBind2 : forall recty stricty y T t bs t0,
       appears_bound_in_tm x t ->
       appears_bound_in_tm x (Let recty (TermBind stricty (VarDecl y T) t :: bs) t0)
-  | ABITM_Let_DatatypeBind : forall recty XK YKs mfunc cs t0 bs,
-      In x (mfunc :: map_bv_constructor cs) ->
+  | ABITM_Let_DatatypeBindHere : forall recty XK YKs cs t0 bs,
+      appears_bound_in_tm x (Let recty (DatatypeBind (Datatype XK YKs x cs) :: bs) t0)
+  | ABITM_Let_DatatypeBindThere : forall recty XK YKs mfunc cs t0 bs,
+      appears_bound_in_constrs x cs ->
       appears_bound_in_tm x (Let recty (DatatypeBind (Datatype XK YKs mfunc cs) :: bs) t0).
+  
 
 (* Necessary since 'In' has strings as arguments *)
 (* TODO: move these elsewhere? In favour of deriving these once in a central place?*)
@@ -123,60 +142,16 @@ QCDerive EnumSized for string.
 
 QCDerive DecOpt for (appears_bound_in_tm x tm).
 
-Ltac simpl_dec_opt_0 H :=
-  simpl in H;
-  destruct (string_dec _ _);
-    subst; auto using appears_bound_in_tm;
-    try discriminate H.
-
-
-Instance appears_bound_in_tm_decopt_sound_manual x tm: DecOptSoundPos (appears_bound_in_tm x tm).
-Proof.
-  unfold DecOptSoundPos.
-  unfold decOpt.
-  unfold DecOptappears_bound_in_tm.
-  intros s.
-  revert tm x.
-  induction s; intros.
-
-  (* s = 0*)
-  - apply checker_backtrack_spec in H as [F [F_In F_True]].
-    induction F_In; subst; destruct tm eqn:E; try discriminate F_True;
-    try (repeat (induction H; subst; try discriminate F_True); reflexivity).
-
-    (* LamAbs s t tm*)
-    + simpl_dec_opt_0 F_True.
-
-    (* Let r l t *)
-    + induction H; subst; destruct l eqn:E; try discriminate F_True.
-      * destruct b eqn:Eb; try discriminate F_True.
-        destruct v eqn:Ev.
-        simpl_dec_opt_0 F_True.
-      * destruct H; subst.
-        -- discriminate F_True.
-        -- destruct H; subst. 
-           ** discriminate F_True.
-           ** inversion H.
-      * destruct H; subst.
-        -- destruct b; try discriminate F_True.
-           destruct d; try discriminate F_True.
-           simpl_dec_opt_0 F_True.
-           apply ABITM_Let_DatatypeBind.
-           constructor.
-        -- induction H; subst; try discriminate F_True.
-           inversion H.
-  (* s = S n *)
-  - admit. 
-Admitted.
-
 (* TODO: finishes, but does not finalize a proof :( *)
-Instance appears_bound_in_tm_decopt_sound x tm: DecOptSoundPos (appears_bound_in_tm x tm).
-Proof. derive_sound. Admitted.
+Instance appears_bound_in_tm_DecOpt_sound x tm: DecOptSoundPos (appears_bound_in_tm x tm).
+Proof. derive_sound. Qed.
 
-(* TODO: Does not terminate
-   Instance appears_bound_in_tm_decopt_complete x tm: DecOptCompletePos (appears_bound_in_tm x tm).
-   Proof. derive_complete. Qed.
- *)
+Instance appears_bound_in_tm_DecOpt_complete x ty: DecOptCompletePos (appears_bound_in_tm x ty).
+Proof. derive_complete. Qed.
+
+Instance appears_bound_in_tm_DecOpt_monotonicity x ty: DecOptSizeMonotonic (appears_bound_in_tm x ty).
+Proof. derive_mon. Qed.
+
 
 
 Inductive appears_bound_in_ann (X : tyname) : Term -> Prop :=
@@ -244,6 +219,12 @@ QCDerive DecOpt for (appears_bound_in_ann x tm).
 
 Instance appears_bound_in_ann_decopt_sound x tm: DecOptSoundPos (appears_bound_in_ann x tm).
 Proof. derive_sound. Qed.
+
+Instance appears_bound_in_ann_DecOpt_complete x ty: DecOptCompletePos (appears_bound_in_ann x ty).
+Proof. derive_complete. Qed.
+
+Instance appears_bound_in_ann_DecOpt_monotonic x ty: DecOptSizeMonotonic (appears_bound_in_ann x ty).
+Proof. derive_mon. Qed.
 
 (* TODO: Does not terminate
 Instance appears_bound_in_ann_decopt_complete x tm: DecOptCompletePos (appears_bound_in_ann x tm).
@@ -373,15 +354,16 @@ Proof with eauto using appears_bound_in_tm.
   - intros.
     eapply Forall_cons...
     eapply Forall_impl with (P := fun a => appears_bound_in_tm a t0)...
+    (*
     intros. 
       destruct (string_dec a s).
       * subst. apply ABITM_LamAbs1.
       * apply ABITM_LamAbs2...
-
+     *)
   (* Common pattern: only need to prove an implication using a ABI rule *)
   Ltac tac rule :=
     intros; eapply Forall_impl; [intros a; apply rule | auto].
-
+     
   - intros.
     apply Forall_app. split.
       + tac ABITM_Apply1.
@@ -410,14 +392,18 @@ Proof with eauto using appears_bound_in_tm.
     destruct dtd.
     apply Forall_cons.
     + intros.
-      apply ABITM_Let_DatatypeBind.
-      constructor...
+      apply ABITM_Let_DatatypeBindHere.
     + apply Forall_forall.
       intros.
-      apply ABITM_Let_DatatypeBind.
-      apply In_Coq_In_equal.
-      apply in_cons.
-      assumption.
+      apply ABITM_Let_DatatypeBindThere.
+      induction l0; inversion H; induction a; induction v.
+      * subst.
+        apply ABIC_Here.
+      * destruct H.
+        -- subst. apply ABIC_Here.
+        -- apply ABIC_There.
+           apply IHl0.
+           auto.
 Qed.
 
 Inductive decide {a : Type} (P : a -> Type) (x : a) :=
