@@ -12,6 +12,7 @@ From PlutusCert Require Import
   Language.PlutusIR.Transform.Equal
   Language.PlutusIR.Transform.ThunkRecursions
   Language.PlutusIR.Transform.FloatLet
+  Language.PlutusIR.Transform.NonStrict
   Language.PlutusIR.Transform.LetNonRec
   Language.PlutusIR.Transform.LetNonStrict
   Language.PlutusIR.Transform.LetRec
@@ -20,31 +21,31 @@ From PlutusCert Require Import
 Import NamedTerm.
 
 
-Definition simplifier : list (Term -> Term -> Prop) :=
-  [ dead_code
-  ; inline []
+Definition simplifier : list (Term -> Term -> Type) :=
+  [ DBE_Term
+  ; Inline []
   ].
 
 
 (* The sequence of transformations from PIR to Plutus Core*)
-Definition pirToCore: list (Term -> Term -> Prop) :=
+Definition pirToCore: list (Term -> Term -> Type) :=
   [ rename [] []
-  ; eq (* typechecking *)
+  ; eqT (* typechecking *)
   ]
 
   ++ simplifier ++
 
-  [ thunk_rec []
-  ; let_float
-  ; let_non_strict []
-  ; ty_let
-  (* ; LetTermsRec *)
+  [ ThunkRecursions
+  ; FloatLet
+  ; LetNonStrict
+  ; LetTypes
+  ; LetTermsRec
   ]
 
   ++ simplifier ++
 
   [ CNR_Term
-  ; eq (* "lowers" term, changes AST type *)
+  ; eqT (* "lowers" term, changes AST type *)
   ]
 .
 

@@ -68,7 +68,7 @@ Definition Binding_to_ctx (b : Binding) : ctx :=
   end
 .
 
-Inductive thunk_rec (Γ : ctx) : Term -> Term -> Prop :=
+Inductive thunk_rec (Γ : ctx) : Term -> Term -> Type :=
 
   | tr_Let_Rec : forall bs bs' t t' Γ_bs bs_new Ω,
       thunk_rec_Bindings_Rec (Γ_bs ++ Γ) bs bs' Ω ->
@@ -109,7 +109,7 @@ Inductive thunk_rec (Γ : ctx) : Term -> Term -> Prop :=
   | tr_Unwrap   : forall t t',
       thunk_rec Γ (Unwrap t) (Unwrap t')
 
-with thunk_rec_Bindings_NonRec (Γ : ctx) : list Binding -> list Binding -> ctx -> Prop :=
+with thunk_rec_Bindings_NonRec (Γ : ctx) : list Binding -> list Binding -> ctx -> Type :=
 
   | tr_Bindings_NonRec_nil :
       thunk_rec_Bindings_NonRec Γ [] [] Γ
@@ -121,7 +121,7 @@ with thunk_rec_Bindings_NonRec (Γ : ctx) : list Binding -> list Binding -> ctx 
         thunk_rec_Bindings_NonRec Γ (b :: bs) (b' :: bs') (Γ_bs ++ Γ_b)
 
 
-with thunk_rec_Bindings_Rec (Γ : ctx) : list Binding -> list Binding -> ctx_unstrictified -> Prop :=
+with thunk_rec_Bindings_Rec (Γ : ctx) : list Binding -> list Binding -> ctx_unstrictified -> Type :=
 
   | tr_Bindings_Rec_nil :
       thunk_rec_Bindings_Rec Γ [] [] []
@@ -132,7 +132,7 @@ with thunk_rec_Bindings_Rec (Γ : ctx) : list Binding -> list Binding -> ctx_uns
       thunk_rec_Bindings_Rec Γ (b :: bs) (b' :: bs') (Ω_bs ++ Ω_b)
 
 (* Also indexed by the unstrictified bindings *)
-with thunk_rec_Binding_NonRec (Γ : ctx) : Binding -> Binding -> Prop :=
+with thunk_rec_Binding_NonRec (Γ : ctx) : Binding -> Binding -> Type :=
 
   | tr_TermBind_NonRec : forall s vd t t',
       thunk_rec Γ t t' ->
@@ -145,7 +145,7 @@ with thunk_rec_Binding_NonRec (Γ : ctx) : Binding -> Binding -> Prop :=
       thunk_rec_Binding_NonRec Γ (TypeBind tvd τ) (TypeBind tvd τ)
 
 (* Also indexed by the unstrictified bindings *)
-with thunk_rec_Binding_Rec (Γ : ctx) : Binding -> Binding -> ctx_unstrictified -> Prop :=
+with thunk_rec_Binding_Rec (Γ : ctx) : Binding -> Binding -> ctx_unstrictified -> Type :=
 
   (* The actual implementation only unstrictifies non-function type bindings, but
      it is a sound transformation for any strict recursive binding *)
