@@ -88,8 +88,11 @@ Qed.
 
 QCDerive DecOpt for (In x xs). 
 
+Instance In_DecOpt_sound x xs : DecOptSoundPos (In x xs).
+Proof. derive_sound. Qed.
+
 Instance In_DecOpt_complete x xs : DecOptCompletePos (In x xs).
 Proof. derive_complete. Qed.
 
-Instance In_DecOpt_sound x xs : DecOptSoundPos (In x xs).
-Proof. derive_sound. Qed.
+Instance In_DecOpt_monotonic x xs : DecOptSizeMonotonic (In x xs).
+Proof. derive_mon. Qed.
