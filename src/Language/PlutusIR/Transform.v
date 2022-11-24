@@ -12,7 +12,6 @@ From PlutusCert Require Import
   Language.PlutusIR.Transform.Equal
   Language.PlutusIR.Transform.ThunkRecursions
   Language.PlutusIR.Transform.FloatLet
-  Language.PlutusIR.Transform.NonStrict
   Language.PlutusIR.Transform.LetNonRec
   Language.PlutusIR.Transform.LetNonStrict
   Language.PlutusIR.Transform.LetRec
@@ -20,6 +19,8 @@ From PlutusCert Require Import
   .
 Import NamedTerm.
 
+
+(*
 
 Definition simplifier : list (Term -> Term -> Type) :=
   [ DBE_Term
@@ -71,4 +72,5 @@ pir_0_6
 
           pir_2_typechecked
           plc_5_compileNonRecTerms
+*)
 *)

@@ -23,8 +23,8 @@ Import AFI.
 Definition ctx := list (string * string).
 
 
-(* Binding variable x does not capture free variables in t if they were renamed
-   according to Γ or Δ *)
+(* Binding variable x does not capture free variables in (the pre-term) t if they were renamed
+   according to Γ *)
 Definition no_capture x (Γ : ctx) t :=
   forall y, In (y, x) Γ -> ~ AFI.Term.appears_free_in y t.
 
@@ -41,7 +41,8 @@ Inductive rename_tvs (Δ : ctx) (cs : list constructor) : list TVDecl -> list TV
       rename_tvs Δ cs [] [] []
 
   | rn_tvs_cons : forall α tvs k β tvs' Δ_tvs,
-      (* no_capture in any of the constructor types *)
+      (* check that the bound tyvar does not capture other renamed vars in the
+         type signatures of the constructors *)
       Forall (fun '(Constructor (VarDecl _ cty) _) => no_ty_capture β Δ cty) cs ->
       rename_tvs ((α, β) :: Δ) cs tvs tvs' Δ_tvs ->
       rename_tvs Δ cs (TyVarDecl α k :: tvs) (TyVarDecl β k :: tvs') ((α, β) :: Δ_tvs)
@@ -92,10 +93,10 @@ Inductive rename (Γ Δ : ctx) : Term -> Term -> Type :=
       rename_Bindings_Rec (Γ_bs ++ Γ) (Δ_bs ++ Δ) Γ_bs Δ_bs bs bs' ->
       rename (Γ_bs ++ Γ) (Δ_bs ++ Δ) t t' ->
 
-      (* All bound (type) variables in the bindings should not capture _in the body_.
+      (* All bound type- and term variables in the bindings should not capture _in the body_.
 
-         Alternatively, add `Let NonRec bs t` as index in rename_binding 
-         and put a simple no_capture at the actual binding *)
+         Alternatively, this could have been implemented by adding `Let NonRec bs t` as 
+         an index in rename_binding and putting a simple no_capture at the actual binding *)
       Forall (fun '(_, x') => no_capture x' Γ t) Γ_bs ->
       Forall (fun '(_, α') => no_captureA α' Δ t) Δ_bs ->
 
@@ -179,10 +180,10 @@ with rename_binding (Γ Δ : ctx) : ctx -> ctx -> Binding -> Binding -> Type :=
   | rn_DatatypeBind : forall α α' k tvs tvs' elim elim' cs cs',
       forall Δ_tvs Γ_cs Γ_b Δ_b,
 
-      (* Renamings of ty-vars, used in constructor types *)
-      rename_tvs Δ tvs tvs' Δ_tvs ->
+      (* Renamings of bound ty-vars, which may be used in constructor types *)
+      rename_tvs Δ cs' tvs tvs' Δ_tvs ->
       (* Constructor types are renamed and return any renamed constructor names *)
-      rename_constrs Γ ((α, α') :: Γ_tvs ++ Δ) Γ_cs cs cs' ->
+      rename_constrs ((α, α') :: Δ_tvs ++ Δ) Γ cs cs' Γ_cs ->
 
       (* Renamings for the rest of the program *)
       Γ_b = (elim, elim') :: Γ_cs ->
@@ -212,17 +213,18 @@ with rename_Bindings_Rec (Γ Δ : ctx) : ctx -> ctx -> list Binding -> list Bind
   rename_constrs is also indexed over context Γ_cs, which are
   the renamings of the constructors
 *)
-with rename_constrs (Γ Δ : ctx) : ctx -> list constructor -> list constructor -> Type :=
+with rename_constrs (Γ Δ : ctx) : list constructor -> list constructor -> ctx -> Type :=
 
   | rn_constrs_nil :
       rename_constrs Γ Δ [] [] []
 
   | rn_constrs_cons : forall x x' τ τ' n cs cs' Γ_cs,
       rename_ty Δ τ τ' ->
-      rename_constrs Γ Δ Γ_cs cs cs' ->
-      rename_constrs Γ Δ ((x, x') :: Γ_cs)
+      rename_constrs Γ Δ cs cs' Γ_cs ->
+      rename_constrs Γ Δ
         (Constructor (VarDecl x τ) n :: cs)
         (Constructor (VarDecl x' τ') n :: cs')
+        ((x, x') :: Γ_cs)
   .
 
 
