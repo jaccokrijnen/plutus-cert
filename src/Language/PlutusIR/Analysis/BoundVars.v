@@ -217,7 +217,7 @@ Inductive appears_bound_in_ann (X : tyname) : Term -> Prop :=
 
 QCDerive DecOpt for (appears_bound_in_ann x tm).
 
-Instance appears_bound_in_ann_decopt_sound x tm: DecOptSoundPos (appears_bound_in_ann x tm).
+Instance appears_bound_in_ann_DecOpt_sound x tm: DecOptSoundPos (appears_bound_in_ann x tm).
 Proof. derive_sound. Qed.
 
 Instance appears_bound_in_ann_DecOpt_complete x ty: DecOptCompletePos (appears_bound_in_ann x ty).
@@ -225,11 +225,6 @@ Proof. derive_complete. Qed.
 
 Instance appears_bound_in_ann_DecOpt_monotonic x ty: DecOptSizeMonotonic (appears_bound_in_ann x ty).
 Proof. derive_mon. Qed.
-
-(* TODO: Does not terminate
-Instance appears_bound_in_ann_decopt_complete x tm: DecOptCompletePos (appears_bound_in_ann x tm).
-Proof. derive_complete. Qed.
-*)
 
 
 #[export] Hint Constructors 
