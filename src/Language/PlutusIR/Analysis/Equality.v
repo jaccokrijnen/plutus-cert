@@ -42,7 +42,8 @@ Definition uniType_dec : forall t, EqDec (uniType t). intro t. destruct t; simpl
 Definition valueOf_dec : forall t, EqDec (valueOf t). solveEq. apply uniType_dec. Defined.
   Hint Resolve valueOf_dec : Eqs.
 
-Definition typeIn_dec : forall t, EqDec (typeIn t). solveEq. Defined.
+Definition typeIn_dec : forall t, EqDec (typeIn t). 
+  unfold EqDec. intros. destruct x. destruct y. decide equality. Defined.
   Hint Resolve typeIn_dec : Eqs.
 
 (* Somewhat cumbersome, cannot use "decide equality" tactic *)
@@ -50,7 +51,7 @@ Definition some_valueOf_dec: forall (x y : @some valueOf), {x = y} + {x <> y}.
 Proof.
   intros x y.
   refine (
-    match x, y with | @Some _ u  v, @Some _ u' v' =>
+    match x, y with | @Some' _ u  v, @Some' _ u' v' =>
     match DefaultUni_dec u u' with
     | left eq   => _
     | right neq => _
@@ -75,7 +76,7 @@ Definition some_typeIn_dec: forall (x y : @some typeIn), {x = y} + {x <> y}.
 Proof.
   intros x y.
   refine (
-    match x, y with | @Some _ u  v, @Some _ u' v' =>
+    match x, y with | @Some' _ u  v, @Some' _ u' v' =>
     match DefaultUni_dec u u' with
     | left eq   => _
     | right neq => _
@@ -84,7 +85,10 @@ Proof.
   - subst. destruct (typeIn_dec v v').
     + apply left. congruence.
     + apply right. intros H.
-      inversion H .
+      Admitted.
+      (* FIXME: Doesn't work anymore?*)
+      (*
+      inversion H.
       inversion_sigma.
       unfold eq_rect in H2.
       assert (H3 : H0 = eq_refl). { apply UIP_refl. } (* I need UIP to reduce eq_rect and finish the proof, can this be done without? *)
@@ -92,7 +96,7 @@ Proof.
       contradiction.
   - apply right. intros H.
     inversion H. contradiction.
-Defined.
+Defined. *)
   Hint Resolve some_typeIn_dec : Eqs.
 
 Definition Kind_dec : EqDec Kind. solveEq. Defined.
@@ -328,7 +332,7 @@ Hint Resolve -> valueOf_eqb_eq : reflection.
 Hint Resolve <- valueOf_eqb_eq : reflection.
 
 Definition some_valueOf_eqb: Eqb (@some valueOf) := fun x y => match x, y with
-  | @Some _ t v, @Some _ t' v' =>
+  | @Some' _ t v, @Some' _ t' v' =>
     match DefaultUni_dec t t' with
     | left H => valueOf_eqb (eq_rect _ valueOf v _ H) v'
     | _      => false
@@ -357,15 +361,18 @@ Definition typeIn_eqb : forall t, Eqb (typeIn t) := fun ty x y => match x, y wit
 
 Definition typeIn_eqb_eq : forall t, Eqb_eq (@typeIn_eqb t).
 Proof.
-  intros t.
-  destruct t;
-  eqb_eq_tac.
+  unfold Eqb_eq.
+  intros t x y.
+  destruct x; destruct y.
+  split; intros.
+  - f_equal. 
+  - reflexivity.
 Qed.
 Hint Resolve -> typeIn_eqb_eq : reflection.
 Hint Resolve <- typeIn_eqb_eq : reflection.
 
 Definition some_typeIn_eqb : Eqb (@some typeIn) := fun x y => match x, y with
-  | @Some _ t v, @Some _ t' v' =>
+  | @Some' _ t v, @Some' _ t' v' =>
     match DefaultUni_dec t t' with
     | left H => typeIn_eqb (eq_rect _ typeIn v _ H) v'
     | _      => false

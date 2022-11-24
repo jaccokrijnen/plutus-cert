@@ -35,7 +35,7 @@ Inductive well_scoped_Ty (Δ : ctx) : Ty -> Prop :=
       (X :: Δ) |-* T ->
       Δ |-* (Ty_Forall X K T)
   | WST_Builtin : forall u,
-      Δ |-* (Ty_Builtin (Some (TypeIn u)))
+      Δ |-* (Ty_Builtin (Some' (TypeIn u)))
   | WST_Lam : forall X K1 T,
       (X :: Δ) |-* T ->
       Δ |-* (Ty_Lam X K1 T)
@@ -90,7 +90,7 @@ Inductive well_scoped (Δ Γ: ctx) : Term -> Prop :=
       Δ ,, Γ |-+ M ->
       Δ ,, Γ |-+ (Unwrap M)
   | WS_Constant : forall u a,
-      Δ ,, Γ |-+ (Constant (Some (ValueOf u a)))
+      Δ ,, Γ |-+ (Constant (Some' (ValueOf u a)))
   | WS_Builtin : forall f,
       Δ ,, Γ |-+ (Builtin f)
   | WS_Error : forall S,
