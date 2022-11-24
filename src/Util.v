@@ -5,7 +5,6 @@ Require Import Program.Basics.
 Set Implicit Arguments.
 Import ListNotations.
 
-
 Section list_rect'.
   Variable (a : Type).
   Variable (res_a : a -> Type).
