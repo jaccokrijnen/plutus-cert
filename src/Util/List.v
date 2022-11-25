@@ -5,7 +5,10 @@ From Coq Require Import
 Import ListNotations.
 Local Open Scope string_scope.
 
+From PlutusCert Require Import LazyDerive.
+
 From QuickChick Require Import QuickChick.
+
 
 Fixpoint lookup {X:Type} (k : string) (l : list (string * X)) : option X :=
   match l with
@@ -73,11 +76,12 @@ Lemma mdrop_nil : forall X ns,
 Proof. induction ns; auto. Qed.
 
 
-Inductive In {A : Type} (x : A) : list A -> Prop :=
-  | In_Here  : forall {xs}, In x (x :: xs)
-  | In_There : forall {x' xs}, In x xs -> In x (x' :: xs).
+(* A specialized version of In for names/strings *)
+Inductive NameIn (x : string) : list string -> Prop :=
+  | In_Here  : forall {xs}, NameIn x (x :: xs)
+  | In_There : forall {x' xs}, NameIn x xs -> NameIn x (x' :: xs).
 
-Lemma In_Coq_In_equal : forall A (x : A) xs, In x xs <-> Coq.Lists.List.In x xs.
+Lemma NameIn_In_string_equal : forall x xs, NameIn x xs <-> @Coq.Lists.List.In string x xs.
 Proof.
   intros. generalize dependent x. induction xs; split; intros; simpl; inversion H.
     - left. reflexivity.
@@ -86,13 +90,13 @@ Proof.
     - apply In_There. apply IHxs. apply H0.
 Qed.
 
-QCDerive DecOpt for (In x xs). 
+QCDerive DecOpt for (NameIn x xs). 
 
-Instance In_DecOpt_sound x xs : DecOptSoundPos (In x xs).
+Instance NameIn_DecOpt_sound x xs : DecOptSoundPos (NameIn x xs).
 Proof. derive_sound. Qed.
 
-Instance In_DecOpt_complete x xs : DecOptCompletePos (In x xs).
+Instance NameIn_DecOpt_complete x xs : DecOptCompletePos (NameIn x xs).
 Proof. derive_complete. Qed.
 
-Instance In_DecOpt_monotonic x xs : DecOptSizeMonotonic (In x xs).
+Instance NameIn_DecOpt_monotonic x xs : DecOptSizeMonotonic (NameIn x xs).
 Proof. derive_mon. Qed.
