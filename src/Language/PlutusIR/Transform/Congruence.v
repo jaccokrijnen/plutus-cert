@@ -105,6 +105,7 @@ Section Congruence.
   Set Equations Transparent.
 
   Variables r_dec : forall t1 t2, option (R t1 t2).
+  (*
   Equations cong_dec : forall t1 t2, option (Cong t1 t2) :=
     cong_dec (Let _ _ _) (Let _ _ _) := Nothing;
 
@@ -160,5 +161,5 @@ Section Congruence.
        | _  := Nothing};
 
     cong_dec _           _           := Nothing.
-
+   *)
 End Congruence.

@@ -8,7 +8,6 @@ From PlutusCert Require Import
   Transform.Congruence
   Analysis.FreeVars
   AFI
-  Latex
   .
 From PlutusCert Require
   Language.PlutusIR
