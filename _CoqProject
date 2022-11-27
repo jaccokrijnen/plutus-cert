@@ -1,4 +1,7 @@
+-Q cache Cache
 -Q src PlutusCert
+
+cache/BoundVars.v
 
 src/Util.v
 src/Util/List.v
@@ -17,6 +20,7 @@ src/Language/PlutusIR/Analysis/FreeVars.v
 src/Language/PlutusIR/Analysis/UniqueBinders.v
 src/Language/PlutusIR/Analysis/Size.v
 src/Language/PlutusIR/Analysis/BoundVars.v
+src/Language/PlutusIR/Analysis/BoundVarsFast.v
 src/Language/PlutusIR/Analysis/Purity.v
 
 src/Language/PlutusIR/Transform/Universal.v

@@ -5,8 +5,6 @@ From Coq Require Import
 Import ListNotations.
 Local Open Scope string_scope.
 
-From PlutusCert Require Import LazyDerive.
-
 From QuickChick Require Import QuickChick.
 
 
@@ -78,16 +76,20 @@ Proof. induction ns; auto. Qed.
 
 (* A specialized version of In for names/strings *)
 Inductive NameIn (x : string) : list string -> Prop :=
-  | In_Here  : forall {xs}, NameIn x (x :: xs)
-  | In_There : forall {x' xs}, NameIn x xs -> NameIn x (x' :: xs).
+  | NI_Here  : forall {xs}, NameIn x (x :: xs)
+  | NI_There : forall {x' xs}, x <> x' -> NameIn x xs -> NameIn x (x' :: xs).
 
-Lemma NameIn_In_string_equal : forall x xs, NameIn x xs <-> @Coq.Lists.List.In string x xs.
+Lemma NameIn_In_string_equal : forall xs x, NameIn x xs <-> @Coq.Lists.List.In string x xs.
 Proof.
-  intros. generalize dependent x. induction xs; split; intros; simpl; inversion H.
+  induction xs; split; intros; simpl; inversion H.
     - left. reflexivity.
-    - right. apply IHxs. apply H1.
-    - subst. apply In_Here.
-    - apply In_There. apply IHxs. apply H0.
+    - right. apply IHxs. apply H3.
+    - subst. apply NI_Here.
+    - destruct (string_dec x a).
+      + subst. apply NI_Here.
+      + apply NI_There. apply n. destruct H as [H | H].
+        * exfalso. apply n. subst. reflexivity.
+        * apply IHxs. apply H.
 Qed.
 
 QCDerive DecOpt for (NameIn x xs). 
@@ -100,3 +102,25 @@ Proof. derive_complete. Qed.
 
 Instance NameIn_DecOpt_monotonic x xs : DecOptSizeMonotonic (NameIn x xs).
 Proof. derive_mon. Qed.
+
+Lemma NameIn_app : forall x xs ys,
+  NameIn x xs \/ NameIn x ys <-> NameIn x (xs ++ ys).
+Proof.
+  induction xs; intros ys; split.
+  - intros [HL | HR]; try inversion HL; apply HR.
+  - intros. right. apply H.
+  - intros [HL | HR].
+    + inversion HL.
+      * apply NI_Here.
+      * apply NI_There. 
+        -- apply H1.
+        -- subst. apply IHxs. left. apply H2.
+    + destruct (string_dec x a); subst.
+      * apply NI_Here.
+      * apply NI_There. apply n. apply IHxs. right. apply HR.
+  - intros H; inversion H.
+    + left. apply NI_Here.
+    + subst. apply IHxs in H3 as [H4 | H4].
+      * left. apply NI_There. apply H2. apply H4.
+      * right. apply H4.
+Qed.
