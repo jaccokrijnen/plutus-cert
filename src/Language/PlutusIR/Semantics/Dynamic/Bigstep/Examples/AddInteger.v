@@ -11,7 +11,7 @@ Local Open Scope string_scope.
 
 
 
-Definition Ty_int : Ty := Ty_Builtin (Some (TypeIn DefaultUniInteger)).
+Definition Ty_int : Ty := Ty_Builtin (Some' (TypeIn DefaultUniInteger)).
 Definition int_to_int : Ty := Ty_Fun Ty_int Ty_int.
 
 Example test_addInteger : forall x, exists k,

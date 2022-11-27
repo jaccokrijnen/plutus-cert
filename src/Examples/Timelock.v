@@ -303,12 +303,17 @@ Definition plc_3_4 :
   plc_3_dbe = plc_4_inlined.
 Proof. reflexivity. Qed.
 
+(*
 Compute Term_desugar plc_4_inlined plc_5_compileNonRecTerms.
+ *)
 
 Definition plc_4_5_true : Term_desugar plc_4_inlined plc_5_compileNonRecTerms = true.
 Proof. reflexivity. Qed.
 
+(*
 Compute (Term_desugar_sound _ _ (plc_4_5_true)).
+ *)
+
 Definition plc_4_5 :
   CNR_Term plc_4_inlined plc_5_compileNonRecTerms.
 Proof.

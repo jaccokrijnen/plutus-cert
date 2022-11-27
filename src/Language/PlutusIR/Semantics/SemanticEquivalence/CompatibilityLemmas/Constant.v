@@ -25,7 +25,7 @@ Proof.
 Qed.
 
 Lemma msubstT_TyBuiltin : forall ss u,
-    msubstT ss (Ty_Builtin (Some (TypeIn u))) = Ty_Builtin (Some (TypeIn u)).
+    msubstT ss (Ty_Builtin (Some' (TypeIn u))) = Ty_Builtin (Some' (TypeIn u)).
 Proof.
   induction ss; intros.
   - reflexivity.
@@ -33,7 +33,7 @@ Proof.
 Qed.
 
 Lemma compatibility_Constant : forall Delta Gamma u a,
-    LR_logically_approximate Delta Gamma (Constant (Some (ValueOf u a))) (Constant (Some (ValueOf u a))) (Ty_Builtin (Some (TypeIn u))).
+    LR_logically_approximate Delta Gamma (Constant (Some' (ValueOf u a))) (Constant (Some' (ValueOf u a))) (Ty_Builtin (Some' (TypeIn u))).
 Proof with eauto_LR.
   intros Delta Gamma u a.
   unfold LR_logically_approximate.
@@ -53,7 +53,7 @@ Proof with eauto_LR.
   intros j Hlt__j e_f Hev__e_f.
   inversion Hev__e_f. subst.
 
-  exists (Constant (Some (ValueOf u a))), 0.
+  exists (Constant (Some' (ValueOf u a))), 0.
   split...
 
   split...

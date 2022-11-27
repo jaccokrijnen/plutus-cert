@@ -17,7 +17,6 @@ From PlutusCert Require Import
   Static.Typing.
 
 Import NamedTerm.
-Import UniqueBinders.Term.
 Import ListNotations.
 
 Set Implicit Arguments.
@@ -64,7 +63,7 @@ with dead_syn_binding : Binding -> Binding -> Prop :=
   .
 
 (* TODO: define and use well_scoped instead of well_typed *)
-Definition dead_code t t' := dead_syn t t' /\ well_typed t' /\ unique t.
+Definition dead_code t t' := dead_syn t t' /\ well_typed t' /\ unique_tm t.
 
 
 Fixpoint is_dead_syn (t t' : Term) {struct t} : bool :=
@@ -163,7 +162,7 @@ Inductive DBE_Term : Term -> Term -> Type :=
 
 Local Open Scope string_scope.
 (* TODO: Does not consider types, tt is mapped to built-in strings *)
-Definition tt := @Ty_Builtin tyname binderTyname (Some (@TypeIn DefaultUniString)).
+Definition tt := @Ty_Builtin tyname binderTyname (Some' (@TypeIn DefaultUniString)).
 Definition subTerm : Term :=
        (LamAbs (Name "ds" (Unique 75)) tt
           (LamAbs (Name "ds" (Unique 76)) tt

@@ -17,29 +17,29 @@ Definition fact_term (n : Z) : Term :=
         (VarDecl 
           "fact" 
           (Ty_Fun 
-            (Ty_Builtin (Some (TypeIn DefaultUniInteger))) 
-            (Ty_Builtin (Some (TypeIn DefaultUniInteger)))
+            (Ty_Builtin (Some' (TypeIn DefaultUniInteger))) 
+            (Ty_Builtin (Some' (TypeIn DefaultUniInteger)))
           )
         ) 
         (LamAbs 
           "x" 
-          (Ty_Builtin (Some (TypeIn DefaultUniInteger)))
+          (Ty_Builtin (Some' (TypeIn DefaultUniInteger)))
           (Apply
             (Apply
               (Apply
                 (TyInst
                   (Builtin IfThenElse)
-                  (Ty_Builtin (Some (TypeIn DefaultUniInteger)))  
+                  (Ty_Builtin (Some' (TypeIn DefaultUniInteger)))  
                 )
                 (Apply
                   (Apply
                     (Builtin EqInteger)
                     (Var "x")
                   )
-                  (Constant (Some (ValueOf DefaultUniInteger 0)))
+                  (Constant (Some' (ValueOf DefaultUniInteger 0)))
                 )
               )
-              (Constant (Some (ValueOf DefaultUniInteger 1)))
+              (Constant (Some' (ValueOf DefaultUniInteger 1)))
             )
             (Apply
               (Apply
@@ -53,7 +53,7 @@ Definition fact_term (n : Z) : Term :=
                     (Builtin SubtractInteger)
                     (Var "x")
                   )
-                  (Constant (Some (ValueOf DefaultUniInteger 1)))
+                  (Constant (Some' (ValueOf DefaultUniInteger 1)))
                 )
               )
             )
@@ -62,7 +62,7 @@ Definition fact_term (n : Z) : Term :=
     ] 
     (Apply
       (Var "fact")
-      (Constant (Some (ValueOf DefaultUniInteger n)))  
+      (Constant (Some' (ValueOf DefaultUniInteger n)))  
     ).
 
 Ltac invert_contra := let Hcon := fresh "Hcon" in intros Hcon; inversion Hcon.
@@ -88,7 +88,7 @@ Ltac decide_neutral :=
   end.
 
 Example fact_term_evaluates : exists k,
-  fact_term 2 =[k]=> Constant (Some (ValueOf DefaultUniInteger 2)).
+  fact_term 2 =[k]=> Constant (Some' (ValueOf DefaultUniInteger 2)).
 Proof with (autounfold; simpl; eauto || (try reflexivity) || (try solve [intros Hcon; inversion Hcon])).
 (* ADMIT: Factorial should use non-strict term bindings, but we do not model them yet. *)
 Admitted.
