@@ -21,34 +21,34 @@ From QuickChick Require Import QuickChick.
 
 
 Inductive appears_bound_in_ty (X: tyname) : Ty -> Prop :=
-  | ABIT_TyFun1 : forall T1 T2,
+  | ABITY_TyFun1 : forall T1 T2,
       appears_bound_in_ty X T1 ->
       appears_bound_in_ty X (Ty_Fun T1 T2)
-  | ABIT_TyFun2 : forall T1 T2,
+  | ABITY_TyFun2 : forall T1 T2,
       appears_bound_in_ty X T2 ->
       appears_bound_in_ty X (Ty_Fun T1 T2)
-  | ABIT_TyIFix1 : forall F T,
+  | ABITY_TyIFix1 : forall F T,
       appears_bound_in_ty X F ->
       appears_bound_in_ty X (Ty_IFix F T)
-  | ABIT_TyIFix2 : forall F T,
+  | ABITY_TyIFix2 : forall F T,
       appears_bound_in_ty X T ->
       appears_bound_in_ty X (Ty_IFix F T)
-  | ABIT_TyForall1 : forall K T,
+  | ABITY_TyForall1 : forall K T,
       appears_bound_in_ty X (Ty_Forall X K T)
-  | ABIT_TyForall2 : forall Y K T,
+  | ABITY_TyForall2 : forall Y K T,
       X <> Y ->
-      appears_bound_in_ty Y T ->
+      appears_bound_in_ty X T ->
       appears_bound_in_ty X (Ty_Forall Y K T)
-  | ABIT_TyLam1 : forall K T,
+  | ABITY_TyLam1 : forall K T,
       appears_bound_in_ty X (Ty_Lam X K T)
-  | ABIT_TyLam2 : forall Y K T,
+  | ABITY_TyLam2 : forall Y K T,
       X <> Y ->
-      appears_bound_in_ty Y T ->
+      appears_bound_in_ty X T ->
       appears_bound_in_ty X (Ty_Lam Y K T)
-  | ABIT_TyApp1 : forall T1 T2,
+  | ABITY_TyApp1 : forall T1 T2,
       appears_bound_in_ty X T1 ->
       appears_bound_in_ty X (Ty_App T1 T2)
-  | ABIT_TyApp2 : forall T1 T2,  
+  | ABITY_TyApp2 : forall T1 T2,  
       appears_bound_in_ty X T2 ->
       appears_bound_in_ty X (Ty_App T1 T2).
 
@@ -81,6 +81,7 @@ Inductive appears_bound_in_tm (x : name) : Term -> Prop :=
   | ABITM_LamAbs1 : forall T t,
       appears_bound_in_tm x (LamAbs x T t)
   | ABITM_LamAbs2 : forall y T t,
+      x <> y ->
       appears_bound_in_tm x t ->
       appears_bound_in_tm x (LamAbs y T t)
   | ABITM_Apply1 : forall t1 t2,
@@ -110,6 +111,7 @@ Inductive appears_bound_in_tm (x : name) : Term -> Prop :=
   | ABITM_Let_TermBind1 : forall recty stricty T t bs t0,
       appears_bound_in_tm x (Let recty (TermBind stricty (VarDecl x T) t :: bs) t0)
   | ABITM_Let_TermBind2 : forall recty stricty y T t bs t0,
+      x <> y ->
       appears_bound_in_tm x t ->
       appears_bound_in_tm x (Let recty (TermBind stricty (VarDecl y T) t :: bs) t0)
   | ABITM_Let_DatatypeBind : forall recty XK YKs mfunc cs t0 bs,
@@ -189,6 +191,7 @@ Inductive appears_bound_in_ann (X : tyname) : Term -> Prop :=
   | ABIA_Let_TypeBind1 : forall recty K T bs t0,
       appears_bound_in_ann X (Let recty (TypeBind (TyVarDecl X K) T :: bs) t0)
   | ABIA_Let_TypeBind2 : forall recty Y K T bs t0,
+      X <> Y ->
       appears_bound_in_ty X T ->
       appears_bound_in_ann X (Let recty (TypeBind (TyVarDecl Y K) T :: bs) t0)
   | ABIA_Let_DatatypeBind : forall recty K YKs mfunc cs t0 bs,
@@ -328,16 +331,13 @@ Proof with eauto using appears_bound_in_tm.
   - intros.
     eapply Forall_cons...
     eapply Forall_impl with (P := fun a => appears_bound_in_tm a t0)...
-    (*
     intros. 
       destruct (string_dec a s).
       * subst. apply ABITM_LamAbs1.
       * apply ABITM_LamAbs2...
-     *)
   (* Common pattern: only need to prove an implication using a ABI rule *)
   Ltac tac rule :=
-    intros; eapply Forall_impl; [intros a; apply rule | auto].
-     
+    intros; eapply Forall_impl; [intros a; apply rule | auto].     
   - intros.
     apply Forall_app. split.
       + tac ABITM_Apply1.
@@ -355,9 +355,11 @@ Proof with eauto using appears_bound_in_tm.
     destruct v.
     eapply Forall_cons.
       + intros...
-      + intros. eapply Forall_impl with (P := fun v => appears_bound_in_tm v t).
-        1: { intros. apply ABITM_Let_TermBind2... }
-        auto.
+      + eapply Forall_impl with (P := fun v => appears_bound_in_tm v t).
+        -- intros. destruct (string_dec a s0).
+           ++ subst. apply ABITM_Let_TermBind1.
+           ++ apply ABITM_Let_TermBind2. apply n. apply H0.
+        -- auto.
   - unfold P_Binding.
     intros.
     cbv...
