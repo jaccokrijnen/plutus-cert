@@ -90,6 +90,9 @@ Proof. derive_complete. Qed.
 Instance appears_bound_in_ty'_DecOpt_monotonicity x ty: DecOptSizeMonotonic (appears_bound_in_ty' x ty).
 Proof. derive_mon. Qed.
 
+Ltac app_tac H IHL IHR L R := 
+  apply NameIn_app in H as [H | H]; [ apply L; apply IHL | apply R; apply IHR]; apply H.
+
 Lemma appears_bound_in_ty_in_to_name_ty : forall ty x,
   appears_bound_in_ty x ty <-> NameIn x (to_names_ty ty).
 Proof.
@@ -100,17 +103,17 @@ Proof.
     try (inversion H; try constructor; [try apply H2 | apply IHty; apply H4 ]).
   - induction ty; intros x H; simpl in H;
     try (inversion H; reflexivity);
-    try (apply NameIn_app in H as [H | H];
-      [ try apply ABITY_TyFun1; try apply ABITY_TyIFix1; try apply ABITY_TyApp1; apply IHty1
-      | try apply ABITY_TyFun2; try apply ABITY_TyIFix2; try apply ABITY_TyApp2; apply IHty2 ];
-      apply H
-    );
     try (inversion H; constructor; [ apply H2 | apply IHty; apply H3]).
+    + app_tac H IHty1 IHty2 ABITY_TyFun1 ABITY_TyFun2.
+    + app_tac H IHty1 IHty2 ABITY_TyIFix1 ABITY_TyIFix2.
+    + app_tac H IHty1 IHty2 ABITY_TyApp1 ABITY_TyApp2.
 Qed.
 
 Lemma appears_bound_in_ty_equal : forall ty x, 
   appears_bound_in_ty x ty <-> appears_bound_in_ty' x ty.
 Proof. split; intros; try constructor; apply appears_bound_in_ty_in_to_name_ty; apply H. Qed.
+
+
 
 
 
@@ -167,7 +170,26 @@ Proof with auto using appears_bound_in_tm, NameIn.
            try rewrite <- app_assoc; 
            try apply NameIn_app; 
            try apply NameIn_app with (xs := _ :: _))...
-    - admit. 
+    - intros x H. induction tm; simpl in H;
+      try (inversion H; reflexivity);
+      try (constructor; apply IHtm; apply H).
+      2: inversion H; subst; constructor; [apply H2 | apply IHtm; apply H3].  
+      2: app_tac H IHtm1 IHtm2 ABITM_Apply1 ABITM_Apply2.
+      apply NameIn_app in H as [H | H].
+      2: induction l; auto.
+      induction l. inversion H.
+      apply NameIn_app in H as [H | H].
+      2: apply ABITM_Let_Cons; apply IHl; apply H.
+      induction a.
+      2: inversion H.
+      + destruct v as [v']; inversion H; subst.
+        * apply ABITM_Let_TermBind1.
+        * apply ABITM_Let_TermBind2. apply H2. 
+          (* Missing: forall r, NameIn x (to_names_tm t) -> appears_bound_in_tm x t *)
+          admit.
+      + destruct d as [d'].
+        apply ABITM_Let_DatatypeBind.
+        apply H.
 Admitted.
 
 
@@ -212,4 +234,20 @@ Proof. derive_mon. Qed.
 
 Lemma appears_bound_in_ann_in_to_name_ann : forall tm X,
   appears_bound_in_ann X tm <-> NameIn X (to_names_ann tm).
-Proof. Admitted.
+Proof with auto using 
+  appears_bound_in_ann,
+  NameIn.
+  intros tm x; split; revert x.
+  - induction tm; intros x H;
+    try (inversion H; try apply NameIn_app; try constructor; auto; reflexivity).
+    + admit.
+    + inversion H; apply NameIn_app.
+      * left. apply appears_bound_in_ty_equal. apply H1.
+      * right. apply IHtm. apply H1.
+    + inversion H; apply NameIn_app.
+      * left. apply IHtm. apply H1.
+      * right. apply appears_bound_in_ty_equal. apply H1.
+    + inversion H. simpl. apply appears_bound_in_ty_equal. apply H1.
+    + admit.
+  - admit.
+Admitted.
