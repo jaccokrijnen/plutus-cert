@@ -1,4 +1,5 @@
 From PlutusCert Require Import
+  Util.List
   Language.PlutusIR
   Analysis.BoundVars.
 Import NamedTerm.
@@ -21,7 +22,7 @@ Definition tvd_name (tvd : tvdecl tyname) : tyname :=
 Reserved Notation "Δ '|-*' T" (at level 40, T at level 0).
 Inductive well_scoped_Ty (Δ : ctx) : Ty -> Prop :=
   | WST_Var : forall X,
-      In X Δ ->
+      NameIn X Δ ->
       Δ |-* (Ty_Var X)
   | WST_Fun : forall T1 T2,
       Δ |-* T1 ->
@@ -34,18 +35,32 @@ Inductive well_scoped_Ty (Δ : ctx) : Ty -> Prop :=
   | WST_Forall : forall X K T,
       (X :: Δ) |-* T ->
       Δ |-* (Ty_Forall X K T)
-  | WST_Builtin : forall u,
-      Δ |-* (Ty_Builtin (Some' (TypeIn u)))
   | WST_Lam : forall X K1 T,
       (X :: Δ) |-* T ->
       Δ |-* (Ty_Lam X K1 T)
   | WST_App : forall T1 T2,
       Δ |-* T1 ->
       Δ |-* T2 ->
-      Δ |-* (Ty_App T1 T2) 
+      Δ |-* (Ty_App T1 T2)
+  (* TODO: I rewrote this constructor to be able to derive a checker
+   *  is this rewrite fine? *)
+  | WST_Builtin : forall u (x : typeIn u),
+      Δ |-* (Ty_Builtin (@Some' typeIn u x))
 where "Δ '|-*' T " := (well_scoped_Ty Δ T).
 
-Derive DecOpt for (well_scoped_Ty ctx ty).
+QCDerive DecOpt for (well_scoped_Ty Δ T).
+
+Instance well_scoped_Ty_DecOpt_sound Δ T : DecOptSoundPos (well_scoped_Ty Δ T).
+Proof. Admitted. (* derive_sound. Qed. *)
+
+Instance unique_ty_DecOpt_complete Δ T : DecOptCompletePos (well_scoped_Ty Δ T).
+Proof. Admitted. (* derive_complete. Qed. *)
+
+Instance unique_ty_DecOpt_monotonic Δ T: DecOptSizeMonotonic (well_scoped_Ty Δ T).
+Proof. Admitted. (* derive_mon. Qed. *)
+
+
+
 
 Reserved Notation "Δ ',,' Γ '|-+' t " (at level 101, t at level 0, no associativity).
 Reserved Notation "Δ '|-ok_c' c " (at level 101, c at level 0).
@@ -58,8 +73,22 @@ Inductive constructor_well_formed (Δ : ctx) : constructor -> Prop :=
       Δ |-* T ->
       Δ |-ok_c (Constructor (VarDecl x T) ar)
   where 
-    "Δ '|-ok_c' c" := (constructor_well_formed Δ c)
-.
+    "Δ '|-ok_c' c" := (constructor_well_formed Δ c).
+
+QCDerive DecOpt for (constructor_well_formed Δ c).
+
+Instance constructor_well_formed_Ty_DecOpt_sound Δ T : DecOptSoundPos (constructor_well_formed Δ T).
+Proof. Admitted. (* derive_sound. Qed. *)
+
+Instance constructor_well_formed_DecOpt_complete Δ T : DecOptCompletePos (constructor_well_formed Δ T).
+Proof. Admitted. (* derive_complete. Qed. *)
+
+Instance constructor_well_formed_DecOpt_monotonic Δ T: DecOptSizeMonotonic (constructor_well_formed Δ T).
+Proof. Admitted. (* derive_mon. Qed. *)
+
+
+
+
 
 Inductive well_scoped (Δ Γ: ctx) : Term -> Prop :=
   | WS_Var : forall x,

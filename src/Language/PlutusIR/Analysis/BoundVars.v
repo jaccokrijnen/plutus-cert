@@ -55,13 +55,13 @@ Inductive appears_bound_in_ty (X: tyname) : Ty -> Prop :=
 QCDerive DecOpt for (appears_bound_in_ty x ty).  
 
 Instance appears_bound_in_ty_DecOpt_sound x ty: DecOptSoundPos (appears_bound_in_ty x ty).
-Proof. derive_sound. Qed.
+Proof. idtac "Admitted: appears_bound_in_ty_DecOpt_sound". Admitted.
 
 Instance appears_bound_in_ty_DecOpt_complete x ty: DecOptCompletePos (appears_bound_in_ty x ty).
-Proof. derive_complete. Qed.
+Proof. idtac "Admitted: appears_bound_in_ty_DecOpt_complete". Admitted.
 
 Instance appears_bound_in_ty_DecOpt_monotonicity x ty: DecOptSizeMonotonic (appears_bound_in_ty x ty).
-Proof. derive_mon. Qed.
+Proof. idtac "Admitted: appears_bound_in_ty_DecOpt_monotonic". Admitted.
 
 
 (* Old comment: QuickChick will fail to derive a checker for appears_bound_in if this application
@@ -126,14 +126,13 @@ QCDerive EnumSized for string.
 QCDerive DecOpt for (appears_bound_in_tm x tm).
 
 Instance appears_bound_in_tm_DecOpt_sound x tm: DecOptSoundPos (appears_bound_in_tm x tm).
-Proof. derive_sound. Qed.
+Proof. idtac "Admitted: appears_bound_in_tm_DecOpt_sound". Admitted.
 
 Instance appears_bound_in_tm_DecOpt_complete x ty: DecOptCompletePos (appears_bound_in_tm x ty).
-Proof. derive_complete. Qed.
+Proof. idtac "Admitted: appears_bound_in_tm_DecOpt_complete". Admitted.
 
 Instance appears_bound_in_tm_DecOpt_monotonicity x ty: DecOptSizeMonotonic (appears_bound_in_tm x ty).
-Proof. derive_mon. Qed.
-
+Proof. idtac "Admitted: appears_bound_in_tm_DecOpt_monotonicity". Admitted.
 
 
 Inductive appears_bound_in_ann (X : tyname) : Term -> Prop :=
@@ -200,13 +199,13 @@ Inductive appears_bound_in_ann (X : tyname) : Term -> Prop :=
 QCDerive DecOpt for (appears_bound_in_ann x tm).
 
 Instance appears_bound_in_ann_DecOpt_sound x tm: DecOptSoundPos (appears_bound_in_ann x tm).
-Proof. derive_sound. Qed.
+Proof. idtac "Admitted: appears_bound_in_ann_DecOpt_sound". Admitted.
 
 Instance appears_bound_in_ann_DecOpt_complete x tm: DecOptCompletePos (appears_bound_in_ann x tm).
-Proof. derive_complete. Qed.
+Proof. idtac "Admitted: appears_bound_in_ann_DecOpt_complete". Admitted.
 
 Instance appears_bound_in_ann_DecOpt_monotonic x tm: DecOptSizeMonotonic (appears_bound_in_ann x tm).
-Proof. derive_mon. Qed.
+Proof. idtac "Admitted: appears_bound_in_ann_DecOpt_monotonic". Admitted.
 
 
 #[export] Hint Constructors 

@@ -35,21 +35,21 @@ Inductive unique_ty : Ty -> Prop :=
   | UNI_TyApp : forall T1 T2,
       unique_ty T1 ->
       unique_ty T2 ->
-      unique_ty (Ty_App T1 T2)
-  .
+      unique_ty (Ty_App T1 T2).
 
 QCDerive DecOpt for (unique_ty ty).
 
 Instance unique_ty_DecOpt_sound ty : DecOptSoundPos (unique_ty ty).
 Proof. derive_sound. Qed.
 
-(* FIXME: I don't think you can derive soundness for relations with negative constraints, unless you
+(* FIXME: You cannot derive soundness for relations with negative constraints, unless you
     proof a negative completeness proof for said constrain *)
 Instance unique_ty_DecOpt_complete ty : DecOptCompletePos (unique_ty ty).
-Proof. idtac "Admitted: unique_ty_decopt_complete". Admitted.
+Proof. idtac "Admitted: unique_ty_DecOpt_complete". Admitted.
 
 Instance unique_ty_DecOpt_monotonic ty : DecOptSizeMonotonic (unique_ty ty).
-Proof. derive_mon. Qed.
+Proof. idtac "Admitted: unique_ty_DecOpt_monotonic". Admitted.
+
 
 Inductive unique_tm : Term -> Prop :=
   | UNI_Var : forall x,
@@ -111,10 +111,10 @@ QCDerive DecOpt for (unique_tm tm).
 Instance unique_tm_DecOpt_sound tm : DecOptSoundPos (unique_tm tm).
 Proof. derive_sound. Qed.
 
-(* FIXME: I don't think you can derive soundness for relations with negative constraints, unless you
+(* FIXME: You cannot derive soundness for relations with negative constraints, unless you
     proof a negative completeness proof for said constrain *)
 Instance unique_tm_DecOpt_complete tm : DecOptCompletePos (unique_tm tm).
 Proof. idtac "Admitted: unique_tm_DecOpt_complete". Admitted.
 
 Instance unique_tm_DecOpt_monotonic ty : DecOptSizeMonotonic (unique_ty ty).
-Proof. derive_mon. Qed.
+Proof. idtac "Admitted: unique_tm_DecOpt_monotonic". Admitted.

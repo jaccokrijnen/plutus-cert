@@ -51,7 +51,9 @@ Inductive DefaultUni : Type :=
     | DefaultUniUnit       (* : DefaultUni unit (* () *)*)
     | DefaultUniBool       (* : DefaultUni bool (* Bool *)*)
     .
-    
+
+QCDerive EnumSized for DefaultUni.
+
 (** Existentials as a datype *)
 Inductive some {f : DefaultUni -> Type} :=
   Some' : forall {u : DefaultUni}, f u -> some.
@@ -104,8 +106,6 @@ Inductive DefaultFun :=
     | CharToString
     | Append
     | Trace.
-
-
 
 Section AST_term.
 Context (name tyname : Set).
