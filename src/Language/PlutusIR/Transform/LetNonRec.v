@@ -18,12 +18,7 @@ Inductive CNR_Term : Term -> Term -> Type :=
       CNR_Term (Let NonRec bs t_body) (fold_right apply t_body' f_bs )
   | CNR_Cong : forall {t t'},
       Cong CNR_Term t t' ->
-      CNR_Term t t' (* this actually allows non-desugared non-rec lets
-                       which is wrong. Spelling out every allowed
-                       constructor is annoying, let's see if
-                       using rewrite rules instead makes things
-                       better *)
-
+      CNR_Term t t'
 
 (*
   `CNR_Bindings bs fs` states that each binding
@@ -53,6 +48,36 @@ with CNR_Binding : Binding -> (Term -> Term) -> Type :=
         (fun t_bs => Apply (LamAbs v ty t_bs) t_bound')
   .
 
+
+(* Functional specification of the pass *)
+Fixpoint compile_term (t : Term) : Term := match t with
+  | Let NonRec bs t => fold_right apply t (map compile_NonRec_Binding bs)
+  | Let Rec bs t    => Let Rec (map compile_Rec_Binding bs) (compile_term t)
+
+  | TyAbs α k t     => TyAbs α k (compile_term t)
+  | LamAbs x τ t    => LamAbs x τ (compile_term t)
+  | Apply t1 t2     => Apply (compile_term t1) (compile_term t2)
+  | IWrap σ τ t     => IWrap σ τ (compile_term t)
+  | Unwrap t        => Unwrap (compile_term t)
+  | TyInst t τ      => TyInst (compile_term t) τ
+
+  | Var x           => Var x
+  | Constant c      => Constant c
+  | Builtin f       => Builtin f
+  | Error τ         => Error τ
+  end
+
+with compile_NonRec_Binding (b : Binding) : Term -> Term :=
+  match b with
+  | TermBind Strict (VarDecl v ty) t_bound => fun t_bs => Apply (LamAbs v ty t_bs) (compile_term t_bound)
+  | b => id
+  end
+
+with compile_Rec_Binding (b : Binding) : Binding := match b with
+  | TermBind Strict vd t_bound => TermBind Strict vd (compile_term t_bound)
+  | b => b
+  end
+  .
 
 (* Constructors where equalities in indices are made
    explicit *)
