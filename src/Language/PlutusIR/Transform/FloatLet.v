@@ -8,39 +8,22 @@ From PlutusCert Require Import
   Analysis.FreeVars
   Analysis.UniqueBinders
   Analysis.Purity
+  Analysis.WellScoped
+  Transform.SplitRec
   Static.Typing.
 Import NamedTerm.
 
 
 Notation fv := (free_vars String.eqb).
 
-(* Find adjacent lets of given recursivity at the top of the AST *)
-Fixpoint adjacentBindings r (t : Term) : list Binding * Term :=
-    match t with
-      | Let r' bs t => if Recursivity_eqb r' r
-          then
-            let (bs', t') := adjacentBindings r t
-            in (bs ++ bs', t')
-          else (nil, t)
-      | _            => (nil, t)
-    end.
-
-
-(* Adjacent let-binding groups (with same recursivity) can be merged *)
-Inductive LetMerge : Term -> Term -> Prop :=
-  | LM_Merge : forall bs bs' bs'' r t t' t'',
-                   (bs', t') = adjacentBindings r t
-                -> ZipWith (BindingBy LetMerge) (bs ++ bs') bs''
-                -> LetMerge t' t''
-                -> LetMerge (Let r bs   t )
-                            (Let r bs'' t'')
-
-  (* Todo: if we want to generalize it so that not all adjacent let-groups are merged (more
-     general), we probably need some relation instead of the function adjacentBindings
-  *)
-  | LM_Cong : forall t t', Cong LetMerge t t' -> LetMerge t t'.
-
-
+Inductive let_merge : Term -> Term -> Prop :=
+  | LM_lets : forall t_inner t_inner' t bs bs' min_rec,
+      let_merge t_inner t_inner' ->
+      Cong_Bindings let_merge bs bs' ->
+      outer_binds t bs t_inner min_rec ->
+      let_merge t (Let min_rec bs' t_inner')
+  | LM_Cong : forall t t', Cong let_merge t t' -> let_merge t t'
+.
 
 Section SubList.
 
@@ -146,13 +129,6 @@ Inductive LetReorder : Term -> Term -> Type :=
                    (Let NonRec bs'' t')
 
   | LR_Cong : forall t t', Cong LetReorder t t' -> LetReorder t t'.
-(*
-with LetReorder_Binding : Binding -> Binding -> Type :=
-  | LR_TermBind  : forall t t' s v,
-     LetReorder t t' -> LetReorder_Binding (TermBind s v t) (TermBind s v t')
-  | LR_OtherBind : forall b,
-     LetReorder_Binding b b.
-     *)
 
 
 (* This definition assumes global uniqueness *)
@@ -266,10 +242,10 @@ Inductive transitive_closure (R : Term -> Term -> Prop) : Term -> Term -> Prop :
 
 Definition let_float t_pre t_post
   := Term.unique t_pre
-  /\ well_typed t_post
+  /\ closed t_post
   /\ exists t' t'',
     (  transitive_closure let_float_step t_pre t'
     /\ let_reorder t' t''
-    /\ LetMerge t'' t_post
+    /\ let_merge t'' t_post
     )
   .

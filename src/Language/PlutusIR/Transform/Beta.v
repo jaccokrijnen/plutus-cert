@@ -45,26 +45,26 @@ Inductive lams : Term -> list Term -> list Binding -> Term -> Prop :=
 .
 
 (* accumulating param *)
-Inductive apps  : Term -> list Term -> list Binding -> Term -> Prop :=
+Inductive betas  : Term -> list Term -> list Binding -> Term -> Prop :=
 
-  | Apps_1 : forall s t args bs t_inner,
-      apps        s    (t :: args) bs t_inner ->
-      apps (Apply s t)       args  bs t_inner
+  | Betas_1 : forall s t args bs t_inner,
+      betas        s    (t :: args) bs t_inner ->
+      betas (Apply s t)       args  bs t_inner
 
-  | Apps_2 : forall t args bs t_inner,
+  | Betas_2 : forall t args bs t_inner,
   (* ~ (exists t_f t_x, t = Apply t_f t_x) -> *) (* enforces the longest sequence of arguments *)
       lams t args bs t_inner ->
-      apps t args bs t_inner
+      betas t args bs t_inner
 .
 
 
 Goal forall v1 v2 τ1 τ2 t t1 t2,
-  apps
+  betas
     (Apply (Apply (LamAbs v1 τ1 (LamAbs v2 τ2 t)) t1) t2) []
     [TermBind Strict (VarDecl v1 τ1) t1; TermBind Strict (VarDecl v2 τ2) t2] t.
 intros.
-repeat apply Apps_1.
-apply Apps_2.
+repeat apply Betas_1.
+apply Betas_2.
 repeat apply Lams_1.
 apply Lams_2.
 Qed.
@@ -72,7 +72,7 @@ Qed.
 Inductive beta : Term -> Term -> Prop :=
 
   | beta_multi : forall t bs bs' t_inner t_inner',
-      apps t [] bs t_inner ->
+      betas t [] bs t_inner ->
       Cong_Bindings beta bs bs' ->
       beta t_inner t_inner' ->
       beta t (mk_let NonRec bs t_inner')

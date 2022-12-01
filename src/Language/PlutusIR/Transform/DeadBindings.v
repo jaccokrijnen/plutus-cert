@@ -11,6 +11,7 @@ From PlutusCert Require Import
   Language.PlutusIR.Analysis.FreeVars
   Language.PlutusIR.Analysis.Equality
   Language.PlutusIR.Analysis.Purity
+  Language.PlutusIR.Analysis.WellScoped
   Language.PlutusIR.Analysis.UniqueBinders
   Language.PlutusIR.Transform.Congruence
   Language.PlutusIR.Semantics.Dynamic.Values
@@ -27,6 +28,13 @@ Set Equations Transparent.
 Notation fv := (free_vars String.eqb).
 Notation fv_binding := (free_vars_binding String.eqb).
 Notation fv_bindings := (free_vars_bindings String.eqb fv_binding).
+
+Definition name_Binding (b : Binding) :=
+  match b with
+    | TermBind s (VarDecl x _) t => x
+    | TypeBind (TyVarDecl x _) ty => x
+    | DatatypeBind (Datatype (TyVarDecl x _) _ _ _) => x
+  end.
 
 Inductive dead_syn : Term -> Term -> Prop :=
   | dc_cong : forall t t',
@@ -45,12 +53,17 @@ Inductive dead_syn : Term -> Term -> Prop :=
 
 
 with dead_syn_bindings : list Binding -> list Binding -> Prop :=
-  | dc_bindings : forall bs bs',
+  | dc_bindings : forall bs bs' bsn bs'n,
+      bsn = map name_Binding bs ->
+      bs'n = map name_Binding bs' ->
 
-      (* Any resulting binding has a (related) binding in the original group *)
-      forall b', (In b' bs' -> exists b, dead_syn_binding b b' /\ In b bs) ->
       (* any removed binding is a pure binding *)
-      forall b, ((In b bs /\ ~In b bs') -> pure_binding [] b) ->
+      forall b bn, bn = name_Binding b -> 
+        ((In bn bsn /\ ~In bn bs'n) -> pure_binding [] b) ->
+      (* Any resulting binding has a (related) binding in the original group *)
+      forall b' b'n, b'n = name_Binding b' ->
+        (In b'n bs'n -> exists b, forall bn, bn = name_Binding b ->
+           dead_syn_binding b b' /\ In bn bsn) ->
       dead_syn_bindings bs bs'
 
 with dead_syn_binding : Binding -> Binding -> Prop :=
@@ -63,8 +76,7 @@ with dead_syn_binding : Binding -> Binding -> Prop :=
       dead_syn_binding b b
   .
 
-(* TODO: define and use well_scoped instead of well_typed *)
-Definition dead_code t t' := dead_syn t t' /\ well_typed t' /\ unique t.
+Definition dead_code t t' := dead_syn t t' /\ unique t /\ closed t'.
 
 
 Fixpoint is_dead_syn (t t' : Term) {struct t} : bool :=

@@ -8,6 +8,8 @@ Require Import
   Lists.List
 .
 
+Import ListNotations.
+
 
 Definition ctx := list string.
 
@@ -143,3 +145,5 @@ with binding_well_formed (Δ Γ : ctx) : Binding -> Prop :=
   and "Δ ',,' Γ '|-oks_r' bs" := (bindings_well_formed_rec Δ Γ bs)
   and "Δ ',,' Γ '|-ok_b' b" := (binding_well_formed Δ Γ b)
 .
+
+Definition closed := well_scoped [] [].
