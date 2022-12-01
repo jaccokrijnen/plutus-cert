@@ -46,13 +46,13 @@ where "Δ '|-*' T " := (well_scoped_ty Δ T).
 QCDerive DecOpt for (well_scoped_ty Δ T).
 
 Instance well_scoped_ty_DecOpt_sound Δ T : DecOptSoundPos (well_scoped_ty Δ T).
-Proof. Admitted. (* derive_sound. Qed. *)
+Proof. idtac "Admitted: well_scoped_ty_DecOpt_sound". Admitted. (* derive_sound. Qed. *)
 
 Instance well_scoped_ty_DecOpt_complete Δ T : DecOptCompletePos (well_scoped_ty Δ T).
-Proof. Admitted. (* derive_complete. Qed. *)
+Proof. idtac "Admitted: well_scoped_ty_DecOpt_complete". Admitted. (* derive_complete. Qed. *)
 
 Instance well_scoped_ty_DecOpt_monotonic Δ T: DecOptSizeMonotonic (well_scoped_ty Δ T).
-Proof. Admitted. (* derive_mon. Qed. *)
+Proof. idtac "Admitted: well_scoped_ty_DecOpt_monotonic". Admitted. (* derive_mon. Qed. *)
 
 
 
@@ -70,14 +70,14 @@ Inductive constructor_well_formed (Δ : ctx) : constructor -> Prop :=
 
 QCDerive DecOpt for (constructor_well_formed Δ c).
 
-Instance constructor_well_formed_Ty_DecOpt_sound Δ c : DecOptSoundPos (constructor_well_formed Δ c).
-Proof. Admitted. (* derive_sound. Qed. *)
+Instance constructor_well_formed_DecOpt_sound Δ c : DecOptSoundPos (constructor_well_formed Δ c).
+Proof. idtac "Admitted: constructor_well_formed_DecOpt_sound". Admitted. (* derive_sound. Qed. *)
 
 Instance constructor_well_formed_DecOpt_complete Δ c : DecOptCompletePos (constructor_well_formed Δ c).
-Proof. Admitted. (* derive_complete. Qed. *)
+Proof. idtac "Admitted: constructor_well_formed_DecOpt_complete". Admitted. (* derive_complete. Qed. *)
 
 Instance constructor_well_formed_DecOpt_monotonic Δ c : DecOptSizeMonotonic (constructor_well_formed Δ c).
-Proof. Admitted. (* derive_mon. Qed. *)
+Proof. idtac "Admitted: constructor_well_formed_DecOpt_monotonic". Admitted. (* derive_mon. Qed. *)
 
 
 
@@ -95,14 +95,14 @@ Inductive constructors_well_formed (Δ : ctx) : list constructor -> Prop :=
 
 QCDerive DecOpt for (constructors_well_formed Δ c).
 
-Instance constructors_well_formed_Ty_DecOpt_sound Δ cs : DecOptSoundPos (constructors_well_formed Δ cs).
-Proof. Admitted. (* derive_sound. Qed. *)
+Instance constructors_well_formed_DecOpt_sound Δ cs : DecOptSoundPos (constructors_well_formed Δ cs).
+Proof. idtac "Admitted: constructors_well_formed_DecOpt_sound". Admitted. (* derive_sound. Qed. *)
 
 Instance constructors_well_formed_DecOpt_complete Δ cs : DecOptCompletePos (constructors_well_formed Δ cs).
-Proof. Admitted. (* derive_complete. Qed. *)
+Proof. idtac "Admitted: constructors_well_formed_DecOpt_complete". Admitted. (* derive_complete. Qed. *)
 
 Instance constructors_well_formed_DecOpt_monotonic Δ cs : DecOptSizeMonotonic (constructors_well_formed Δ cs).
-Proof. Admitted. (* derive_mon. Qed. *)
+Proof. idtac "Admitted: constructors_well_formed_DecOpt_monotonic". Admitted. (* derive_mon. Qed. *)
 
 
 
@@ -218,13 +218,13 @@ Inductive well_scoped_tm (Δ Γ: ctx) : Term -> Prop :=
 QCDerive DecOpt for (well_scoped_tm Δ Γ tm).
 
 Instance well_scoped_tm_DecOpt_sound Δ Γ tm : DecOptSoundPos (well_scoped_tm Δ Γ tm).
-Proof. Admitted. (* derive_sound. Qed. *)
+Proof. idtac "Admitted: well_scoped_tm_DecOpt_sound". Admitted. (* derive_sound. Qed. *)
 
 Instance well_scoped_tm_DecOpt_complete Δ Γ tm : DecOptCompletePos (well_scoped_tm Δ Γ tm).
-Proof. Admitted. (* derive_complete. Qed. *)
+Proof. idtac "Admitted: well_scoped_tm_DecOpt_complete". Admitted. (* derive_complete. Qed. *)
 
 Instance well_scoped_tm_DecOpt_monotonic Δ Γ tm: DecOptSizeMonotonic (well_scoped_tm Δ Γ tm).
-Proof. Admitted. (* derive_mon. Qed. *)
+Proof. idtac "Admitted: well_scoped_tm_DecOpt_monotonic". Admitted. (* derive_mon. Qed. *)
 
 (* Original well_scoped definition, including mutual recursion *)
 
