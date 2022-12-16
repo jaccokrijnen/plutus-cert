@@ -73,7 +73,7 @@ Definition ForallP_tl {A P} {x : A} {xs} : ForallP P (x :: xs) -> ForallP P xs :
   end.
 
 
-(* Todo, remove ForallP *)
+(* TODO: remove ForallP in favour of Forall *)
 Lemma ForallP_Forall : forall A P (xs : list A), ForallP P xs <-> Forall P xs.
 Proof with eauto using Forall.
   intros.

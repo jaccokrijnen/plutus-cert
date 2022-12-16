@@ -14,7 +14,7 @@ Section Congruence.
 
   Inductive Cong_Binding : Binding -> Binding -> Type :=
     | C_TermBind     : `{ R t t' -> Cong_Binding (TermBind s v t)
-                                                 (TermBind s v t') (*TODO: handle uniques properly*)}
+                                                 (TermBind s v t')}
 
     | C_TypeBind     : `{           Cong_Binding (TypeBind d T)
                                                  (TypeBind d T) }

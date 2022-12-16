@@ -122,7 +122,7 @@ Inductive Bindings_NonRec_Commute : Binding -> Binding -> Type :=
 (* Reorder bindings within a non-recursive binding group*)
 Inductive LetReorder : Term -> Term -> Type :=
   | LR_Let  : forall t t' bs bs' bs'', LetReorder t t' ->
-                 ZipWith (BindingBy LetReorder) bs bs' ->
+                 Cong_Bindings LetReorder bs bs' ->
                  SwapsIn Bindings_NonRec_Commute bs' bs'' ->
                  LetReorder
                    (Let NonRec bs   t )
@@ -174,16 +174,16 @@ Inductive let_float_step : Term -> Term -> Prop :=
 
   (* Binding constructs *)
   | lfs_LamAbs : forall x τ r bs t,
-      (* TODO: can improve pure_binding with an actual Γ, but the compiler
-         doesn't do this either (see `hasNoEffects`) *)
       (* Note, we don't inductively go in to the bindings,
          this is fine, because we eventually transitively close the relation and
          it is possible via lfs_Cong *)
+      (* We don't provide an actual Γ in pure_binding, but the compiler
+         doesn't do this either (see `hasNoEffects`) *)
       Forall (pure_binding []) bs ->
       let_float_step (LamAbs x τ (Let r bs t)) (Let r bs (LamAbs x τ t))
 
   | lfs_TyAbs : forall α k r bs t,
-      (* TODO: can improve pure_binding with an actual Γ, but the compiler
+      (* We don't provide an actual Γ in pure_binding, but the compiler
          doesn't do this either (see `hasNoEffects`) *)
       Forall (pure_binding []) bs ->
       let_float_step (TyAbs α k (Let r bs t)) (Let r bs (TyAbs α k t))

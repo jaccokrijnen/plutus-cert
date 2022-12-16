@@ -594,15 +594,6 @@ Section term_rect.
   Context
     (H_cons         : forall b bs, Q b -> R bs -> R (b :: bs))
     (H_nil          : R nil).
-    
-  (*
-  Definition bindings_rect' (Binding_rect' : forall (b : binding v), Q b) :=
-    fix Bindings_rect' bs :=
-    match bs as p return ForallT Q p with
-      | nil       => ForallT_nil
-      | cons b bs => ForallT_cons (Binding_rect' b) (Bindings_rect' bs)
-    end.
-    *)
 
   Definition bindings_rect' (binding_rect' : forall (b : binding v v' b b'), Q b) :=
     fix bindings_rect' bs :=
@@ -652,27 +643,10 @@ with Binding termR bindingR :=
   | TypeBind     : TVDecl -> Ty -> Binding
   | DatatypeBind : DTDecl -> Binding
 .
-*)
 Definition Mu (f : Type -> Type) (g : Type -> Type) := forall a, (f a -> a) -> (g a -> a) -> a.
+*)
 
 Definition unitVal : NamedTerm.Term := Constant (Some (ValueOf DefaultUniUnit tt)).
-
-
-Inductive ZipWith {a} (P : a -> a -> Type) : list a -> list a -> Type :=
-  | ZipWithCons : forall x y xs ys, P x y -> ZipWith P xs ys -> ZipWith P (x :: xs) (y :: ys)
-  | ZipWithNil  : ZipWith P nil nil.
-
-(* Helper for optionally relating term-bindings, by relating the bound terms *)
-Inductive BindingBy (R : NamedTerm.Term -> NamedTerm.Term -> Type) : NamedTerm.Binding -> NamedTerm.Binding -> Type :=
-  | BB_TermBind: forall t t' s v,
-      R t t' ->
-      BindingBy R
-        (TermBind s v t )
-        (TermBind s v t')
-
-  | BB_OtherBind: forall b, BindingBy R b b. (* Todo, enforce no overlap with other constructor? *)
-
-
 
 
 
