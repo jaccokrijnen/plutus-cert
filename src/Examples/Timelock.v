@@ -1,4 +1,3 @@
-Require Coq.Strings.String.
 Require Import Coq.Strings.String.
 Require Import Coq.Arith.PeanoNat.
 Require Import Coq.Lists.List.
@@ -11,12 +10,11 @@ From PlutusCert Require Import
   Util
   Language.PlutusIR
   Language.PlutusIR.Transform
-Language.PlutusIR.Analysis.FreeVars
-Language.PlutusIR.Analysis.Size
-Language.PlutusIR.Analysis.Purity
-Language.PlutusIR.Transform.LetNonRec.DecideBool
-Semantics.Dynamic
-Examples.TimelockDumps.
+  Language.PlutusIR.Analysis.Purity
+  Language.PlutusIR.Transform.LetNonRec.DecideBool
+  Semantics.Dynamic
+  Examples.TimelockDumps
+.
 
 Import NamedTerm.
 
