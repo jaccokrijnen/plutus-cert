@@ -14,29 +14,28 @@ Import ListNotations.
 
 Open Scope bool_scope.
 
+From QuickChick Require Import QuickChick.
+
 Inductive binder_info :=
   | let_bound : Strictness -> binder_info
-  | lambda_bound
-.
+  | lambda_bound.
 
 Definition ctx := list (string * binder_info).
 
 (* Pure terms include values or variables that are known to be bound to values *)
 Inductive is_pure (Γ : ctx) : Term -> Type :=
-
   | is_pure_value : forall t,
       value t ->
       ~(is_error t) ->
       is_pure Γ t
-
   | is_pure_var_let : forall x,
       Lookup x (let_bound Strict) Γ ->
       is_pure Γ (Var x)
-
   | is_pure_var_lambda : forall x,
       Lookup x lambda_bound Γ ->
-      is_pure Γ (Var x)
-.
+      is_pure Γ (Var x).
+
+Locate is_error.
 
 Definition is_errorb (t : Term) : bool :=
   match t with

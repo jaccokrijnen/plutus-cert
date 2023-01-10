@@ -160,40 +160,58 @@ Proof. derive_complete. Qed.
 Instance appears_bound_in_tm'_DecOpt_monotonicity x ty: DecOptSizeMonotonic (appears_bound_in_tm' x ty).
 Proof. derive_mon. Qed.
 
-Lemma appears_bound_in_tm_equal : forall tm x,
-  appears_bound_in_tm x tm <-> NameIn x (to_names_tm tm).
-Proof with auto using appears_bound_in_tm, NameIn.
-  intros tm x; split; revert x.
-    - induction tm; intros x H; 
-      try (inversion H; reflexivity);
-      try (induction H; simpl;
-           try rewrite <- app_assoc; 
-           try apply NameIn_app; 
-           try apply NameIn_app with (xs := _ :: _))...
-    - intros x H. induction tm; simpl in H;
-      try (inversion H; reflexivity);
-      try (constructor; apply IHtm; apply H).
-      2: inversion H; subst; constructor; [apply H2 | apply IHtm; apply H3].  
-      2: app_tac H IHtm1 IHtm2 ABITM_Apply1 ABITM_Apply2.
-      apply NameIn_app in H as [H | H].
-      2: induction l; auto.
-      induction l. inversion H.
-      apply NameIn_app in H as [H | H].
-      2: apply ABITM_Let_Cons; apply IHl; apply H.
-      induction a.
-      2: inversion H.
-      + destruct v as [v']; inversion H; subst.
-        * apply ABITM_Let_TermBind1.
-        * apply ABITM_Let_TermBind2. apply H2. 
-          (* Missing: forall r, NameIn x (to_names_tm t) -> appears_bound_in_tm x t *)
-          admit.
-      + destruct d as [d'].
-        apply ABITM_Let_DatatypeBind.
-        apply H.
-Admitted.
+
+Definition ABITM_P_Term (t : Term) := forall v,
+  appears_bound_in_tm v t <-> appears_bound_in_tm' v t.
+
+Definition ABITM_P_Binding (b : Binding) := forall v t bs recty,
+  appears_bound_in_tm v (Let recty (b :: bs) t) <-> appears_bound_in_tm' v (Let recty (b :: bs) t).
+
+Ltac inv_abitm :=
+  match goal with
+    H: appears_bound_in_tm ?v ?t
+    |- _ => inversion H
+  end.
+
+Ltac find_abi :=
+  match goal with
+    H: appears_bound_in_tm ?v ?t,
+    Himpl: forall v, appears_bound_in_tm v ?t -> appears_bound_in_tm' v ?t
+    |- _ => apply Himpl in H; inversion H
+  end.
+
+
+Definition P_Term_abitm_abitm' (t : Term) := forall v,
+  appears_bound_in_tm v t -> appears_bound_in_tm' v t.
+
+Lemma abi_tm_abi_tm' : forall t, P_Term_abitm_abitm' t. 
+Proof with eauto using appears_bound_in_tm, appears_bound_in_tm', NameIn.
+  apply term_ind with (P := P_Term_abitm_abitm');
+  unfold P_Term_abitm_abitm'; intros; try inv_abitm;
+  try (constructor; find_abi; assumption); subst...
+  - induction H2.
+    * apply H in H3. inversion H3. constructor. simpl. apply NameIn_app...
+    * subst.
+  1, 2, 3, 4: subst; inversion H as [| x l Hx Hl Heq]; unfold P_Binding_abitm_abitm' in Hx; apply Hx; assumption.
+  1, 2, 3, 4: constructor; try find_abi.
+    - constructor. assumption. assumption.
+    - apply NameIn_app...
+    - apply NameIn_app...
+    - induction H0; simpl; try (constructor; inversion IHappears_bound_in_tm)...
+      5: rewrite H2.
+      3, 4, 5: rewrite <- app_assoc.
+      1, 2, 3, 4, 5: apply NameIn_app...
+      destruct (string_dec v0 mfunc); subst; constructor. assumption.
+      rewrite <- app_assoc. apply NameIn_app. left.
+      inversion H0; [exfalso; apply n| simpl]; assumption.
+    - unfold P_Binding_abitm_abitm'. intros.
 
 
 
+      destruct v. destruct (string_dec v0 s0); 
+      constructor; subst; simpl; constructor. assumption.
+      inversion H0.
+Admitted.      
 
 
 Fixpoint to_names_ann (tm : Term) : list string :=
