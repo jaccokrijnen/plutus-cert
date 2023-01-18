@@ -108,8 +108,8 @@ Definition option_app (a b : Type): option (a -> b) -> option a -> option b :=
     | _, _ => None
     end.
 
-Notation "'Nothing'" := None.
-Notation "'Just'"    := Datatypes.Some.
+(* Notation "'Nothing'" := None. *)
+Notation "'Just'"    := Datatypes.Some. (* Avoid overlap with Some in AST *)
 
 Definition pure {a : Type} : a -> option a := @Datatypes.Some a.
 Definition option_alt a : option a-> option a-> option a :=
@@ -159,7 +159,7 @@ Definition lookup {a b} (dec : forall x1 x2 : a, {x1 = x2} + {x1 <> x2}) :
   option ({y & In (x, y) xs}).
   Proof.
   induction xs as [ | p ps ].
-  - exact Nothing.
+  - exact None.
   - refine (match p as x return x = p -> _ with
       | (x', y) => fun H =>
         match dec x x' with
