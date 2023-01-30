@@ -150,19 +150,21 @@ Section Bindings.
     apply H_dec in H_In as H_dec_andb.
     clear H_dec H_In.
 
-    (* jacco: fix proof, after change in safely_removed *)
     destruct (negb
       (existsb (String.eqb (name_Binding b))
          (map name_Binding bs')))
-    eqn: H_dec_removed.
-    + 
-      (*
-    apply andb_true_iff in H_dec_andb.
-    destruct H_dec_andb as [_ H_dec_pure_binding].
-    apply is_pure_binding_pure_binding.
-    assumption.
-       *)
-  Admitted.
+         eqn:H_1.
+    + apply is_pure_binding_pure_binding...
+
+    (* contradiction *)
+    + apply negb_false_iff in H_1.
+      unfold name_removed in *.
+      apply existsb_exists in H_1.
+      destruct H_1 as [x [H_in H_name_b_eq_x]].
+      apply String.eqb_eq in H_name_b_eq_x.
+      subst.
+      contradiction.
+  Qed.
 
   Lemma H_find_binding bs bs' :
       forallb (fun b' => find_Binding b' bs) bs' = true ->
