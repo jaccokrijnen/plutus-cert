@@ -21,6 +21,40 @@ Import Congruence.
 Import NamedTerm.
 Import ListNotations.
 
+Axiom (String_eqb_eq       : ∀ x y, String.eqb x y = true -> x = y).
+Axiom (Recursivity_eqb_eq  : ∀ x y, Recursivity_eqb x y = true -> x = y).
+Axiom (Strictness_eqb_eq   : ∀ x y, Strictness_eqb x y = true -> x = y).
+Axiom (Kind_eqb_eq         : ∀ x y, Kind_eqb x y = true -> x = y).
+Axiom (Ty_eqb_eq           : ∀ x y, Ty_eqb x y = true -> x = y).
+Axiom (some_valueOf_eqb_eq : ∀ x y, some_valueOf_eqb x y = true -> x = y).
+Axiom (func_eqb_eq         : ∀ x y, func_eqb x y = true -> x = y).
+Axiom (VDecl_eqb_eq        : ∀ x y, VDecl_eqb x y = true -> x = y).
+Axiom (TVDecl_eqb_eq       : ∀ x y, TVDecl_eqb x y = true -> x = y).
+Axiom (DTDecl_eqb_eq       : ∀ x y, DTDecl_eqb x y = true -> x = y).
+
+Create HintDb Hints_soundness.
+Hint Resolve
+  String_eqb_eq
+  Recursivity_eqb_eq
+  Strictness_eqb_eq
+  Kind_eqb_eq
+  Ty_eqb_eq
+  some_valueOf_eqb_eq
+  func_eqb_eq
+  VDecl_eqb_eq
+  TVDecl_eqb_eq
+  DTDecl_eqb_eq
+: Hints_soundness.
+
+Hint Constructors
+  and
+: Hints_soundness.
+
+Ltac split_hypos :=
+  match goal with
+  | H : (?x && ?y)%bool = true |- _ => apply andb_true_iff in H; destruct H; split_hypos
+  | _ => idtac
+  end.
 
 Section Bindings.
 
@@ -35,45 +69,33 @@ Section Bindings.
     | b, b' => Binding_eqb b b'
     end.
 
-  Axiom (String_eqb_eq       : ∀ x y, String.eqb x y = true -> x = y).
-  Axiom (Recursivity_eqb_eq  : ∀ x y, Recursivity_eqb x y = true -> x = y).
-  Axiom (Strictness_eqb_eq   : ∀ x y, Strictness_eqb x y = true -> x = y).
-  Axiom (Kind_eqb_eq         : ∀ x y, Kind_eqb x y = true -> x = y).
-  Axiom (Ty_eqb_eq           : ∀ x y, Ty_eqb x y = true -> x = y).
-  Axiom (some_valueOf_eqb_eq : ∀ x y, some_valueOf_eqb x y = true -> x = y).
-  Axiom (func_eqb_eq         : ∀ x y, func_eqb x y = true -> x = y).
-  Axiom (VDecl_eqb_eq        : ∀ x y, VDecl_eqb x y = true -> x = y).
-  Axiom (TVDecl_eqb_eq       : ∀ x y, TVDecl_eqb x y = true -> x = y).
-  Axiom (DTDecl_eqb_eq       : ∀ x y, DTDecl_eqb x y = true -> x = y).
+  Lemma dec_Binding_sound : ∀ b b', dec_Binding b b' = true -> dead_syn_binding b b'.
+  Proof with eauto with Hints_soundness.
+    intros b b' H_dec.
+    destruct b, b'.
+    all: try discriminate H_dec.
+    all: simpl in H_dec.
+    all: split_hypos.
+    -
+      assert (s = s0)... subst.
+      assert (v = v0)... subst.
+      constructor...
+    - assert (t = t1)... subst.
+      assert (t0 = t2)... subst.
+      constructor.
+    - assert (d = d0)... subst.
+      constructor.
+  Qed.
 
-  Create HintDb Hints_soundness.
-  Hint Resolve
-    String_eqb_eq
-    Recursivity_eqb_eq
-    Strictness_eqb_eq
-    Kind_eqb_eq
-    Ty_eqb_eq
-    some_valueOf_eqb_eq
-    func_eqb_eq
-    VDecl_eqb_eq
-    TVDecl_eqb_eq
-    DTDecl_eqb_eq
-  : Hints_soundness.
-
-  Hint Constructors
-    and
-  : Hints_soundness.
-
-
-  Axiom dec_Binding_sound : ∀ b b', dec_Binding b b' = true -> dead_syn_binding b b'.
 
   Hint Resolve
     dec_Binding_sound
   : Hints_soundness.
 
-  Definition safely_removed b bsn :=
-    negb (existsb (String.eqb (name_Binding b)) bsn) &&
-    is_pure_binding [] b.
+  Definition safely_removed b bs' :=
+    if negb (existsb (String.eqb (name_Binding b)) bs')
+      then is_pure_binding [] b
+      else true.
 
   Definition binding_was_there b' bs : bool :=
     match find (λ b, String.eqb (name_Binding b) (name_Binding b')) bs with
@@ -105,9 +127,7 @@ Section Bindings.
     let bsn := map name_Binding bs in
     let bs'n := map name_Binding bs' in
     forallb (fun b => safely_removed b bs'n) bs &&
-    forallb (fun b' =>
-    find_Binding b' bs
-    ) bs'.
+    forallb (fun b' => find_Binding b' bs) bs'.
 
   (* this did not pass termination checking *)
   (*
@@ -129,11 +149,20 @@ Section Bindings.
     rewrite forallb_forall in H_dec. (* why did rewrite accept a <-> ? was also possible with eapply -> ..., but generated an existential for x *)
     apply H_dec in H_In as H_dec_andb.
     clear H_dec H_In.
+
+    (* jacco: fix proof, after change in safely_removed *)
+    destruct (negb
+      (existsb (String.eqb (name_Binding b))
+         (map name_Binding bs')))
+    eqn: H_dec_removed.
+    + 
+      (*
     apply andb_true_iff in H_dec_andb.
     destruct H_dec_andb as [_ H_dec_pure_binding].
     apply is_pure_binding_pure_binding.
     assumption.
-  Qed.
+       *)
+  Admitted.
 
   Lemma H_find_binding bs bs' :
       forallb (fun b' => find_Binding b' bs) bs' = true ->
@@ -171,11 +200,6 @@ Section Bindings.
   Hint Constructors
     dead_syn_bindings.
 
-  Ltac split_hypos :=
-    match goal with
-    | H : (?x && ?y)%bool = true |- _ => apply andb_true_iff in H; destruct H; split_hypos
-    | _ => idtac
-    end.
 
   Lemma dec_Bindings_sound : ∀ bs bs',
     dec_Bindings bs bs' = true -> dead_syn_bindings bs bs'.
@@ -192,28 +216,55 @@ End Bindings.
 
 Fixpoint dec_Term (x y : Term) {struct x} : bool := match x, y with
 
-  | Let r bs t   , Let r' bs' t' => if dec_Bindings dec_Term bs bs'
-        then Recursivity_eqb r r' && dec_Term t t'
-        else forallb (is_pure_binding []) bs && dec_Term t t' (* Check whether the whole let was removed *)
-
-  | _, _ => is_cong dec_Term x y
+  | Let r bs t   , Let r' bs' t' => 
+      if dec_Bindings dec_Term bs bs'
+      then (* same let block, but bindings were removed *)
+        Recursivity_eqb r r' && dec_Term t t'
+      else (* t' is another let block, the whole block in the pre-term was removed *)
+        forallb (is_pure_binding []) bs && dec_Term t y (* Check whether the whole let was removed *)
+  | Let r bs t   , _ => 
+     forallb (is_pure_binding []) bs && dec_Term t y (* Check whether the whole let was removed *)
+  | _ , _ => is_cong dec_Term x y
 
   end
 .
 
-Lemma dec_Term_sound t t' :
+Axiom cheat : ∀ a , a.
+
+Fixpoint dec_Term_sound t t' :
   dec_Term t t' = true -> dead_syn t t'.
-Proof.
-  intros H_dec.
-  induction t.
-  2: {
-    unfold dec_Term in H_dec.
-    simpl in H_dec.
+Proof with eauto with Hints_soundness.
+  (* induction t. *) (* instead use fixpoint *)
+  destruct t.
+  all: intros H_dec.
+  all: destruct t'; simpl in H_dec.
+  all: try discriminate H_dec.
+  destruct (dec_Bindings dec_Term l l0) eqn:H_dec_bs.
+  - split_hypos.
+    assert (r = r0)... subst. 
+    apply dc_delete_bindings...
+    + eapply (dec_Bindings_sound dec_Term dec_Term_sound l l0)...
+  - apply cheat.
+  - apply cheat.
+  - apply cheat.
+  - apply cheat.
+  - apply cheat.
+  - apply cheat.
+  - apply cheat.
+  - apply cheat.
+  - apply cheat.
+  - apply cheat.
+  - apply cheat.
+Admitted.
+
+
   
 
 From Coq Require Import Extraction.
-Extraction Language Haskell.
-Recursive Extraction dec_Term.
 Require Import Strings.Ascii.
+Extraction Language Haskell.
+Recursive Extraction dec_Term ascii_of_nat.
+(*
 Recursive Extraction nat_of_ascii.
 Recursive Extraction ascii_of_nat.
+*)

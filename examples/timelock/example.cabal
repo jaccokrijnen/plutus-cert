@@ -38,6 +38,7 @@ library
     -fobject-code
     -fplugin-opt Language.PlutusTx.Plugin:dump-pir
     -fplugin-opt Language.PlutusTx.Plugin:dump-plc
+    -fplugin-opt Language.PlutusTx.Plugin:dump-trace
     -ddump-ds-preopt
     -ddump-ds
     -dverbose-core2core
