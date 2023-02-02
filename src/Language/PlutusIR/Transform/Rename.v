@@ -87,7 +87,7 @@ Inductive rename (Γ Δ : ctx) : Term -> Term -> Type :=
       lookup x Γ = Some y ->
       rename Γ Δ  (Var x) (Var y)
 
-  | rn_Let_Rec : forall r bs bs' t t',
+  | rn_Let_Rec : forall bs bs' t t',
       forall Γ_bs Δ_bs,
       rename_Bindings_Rec (Γ_bs ++ Γ) (Δ_bs ++ Δ) Γ_bs Δ_bs bs bs' ->
       rename (Γ_bs ++ Γ) (Δ_bs ++ Δ) t t' ->
@@ -103,7 +103,7 @@ Inductive rename (Γ Δ : ctx) : Term -> Term -> Type :=
       NoDup (bvbs bs') ->
       NoDup (btvbs bs') ->
 
-      rename Γ Δ (Let r bs t) (Let r bs' t')
+      rename Γ Δ (Let Rec bs t) (Let Rec bs' t')
 
   (* If the decision procedure becomes problematic because of not structurally smaller terms,
      these two rules should be refactored into a relation similar to rename_Bindings_Rec *)

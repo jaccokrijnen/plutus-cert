@@ -36,13 +36,15 @@ library
   ghc-options:
     -O0
     -fobject-code
-    -fplugin-opt Language.PlutusTx.Plugin:dump-pir
-    -fplugin-opt Language.PlutusTx.Plugin:dump-plc
-    -ddump-ds-preopt
-    -ddump-ds
-    -dverbose-core2core
-    -ddump-simpl
-    -ddump-simpl-stats
+    -- -fplugin-opt Language.PlutusTx.Plugin:dump-pir
+    -- -fplugin-opt Language.PlutusTx.Plugin:dump-plc
+    -- -fplugin-opt Language.PlutusTx.Plugin:dump-trace
+    -fplugin-opt Language.PlutusTx.Plugin:certifier
+    -- -ddump-ds-preopt
+    -- -ddump-ds
+    -- -dverbose-core2core
+    -- -ddump-simpl
+    -- -ddump-simpl-stats
     -- -ddump-to-file
     -- -ddump-file-prefix=example
     -- -dsuppress-all

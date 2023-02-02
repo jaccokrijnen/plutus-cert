@@ -1,6 +1,8 @@
 From Coq Require Import
   Strings.String
-  Lists.List.
+  Lists.List
+  Utf8_core
+.
 
 From Equations Require Import Equations.
 
@@ -11,6 +13,7 @@ From PlutusCert Require Import
   Language.PlutusIR.Analysis.FreeVars
   Language.PlutusIR.Analysis.Equality
   Language.PlutusIR.Analysis.Purity
+  Language.PlutusIR.Analysis.WellScoped
   Language.PlutusIR.Analysis.UniqueBinders
   Language.PlutusIR.Transform.Congruence
   Language.PlutusIR.Semantics.Dynamic.Values
@@ -26,6 +29,17 @@ Set Equations Transparent.
 Notation fv := (free_vars String.eqb).
 Notation fv_binding := (free_vars_binding String.eqb).
 Notation fv_bindings := (free_vars_bindings String.eqb fv_binding).
+
+Definition name_Binding (b : Binding) :=
+  match b with
+    | TermBind s (VarDecl x _) t => x
+    | TypeBind (TyVarDecl x _) ty => x
+    | DatatypeBind (Datatype (TyVarDecl x _) _ _ _) => x
+  end.
+
+(* Whether *)
+Definition name_removed b bs : Prop :=
+  ¬ (In (name_Binding b) (map name_Binding bs)).
 
 Inductive dead_syn : Term -> Term -> Prop :=
   | dc_cong : forall t t',
@@ -46,10 +60,17 @@ Inductive dead_syn : Term -> Term -> Prop :=
 with dead_syn_bindings : list Binding -> list Binding -> Prop :=
   | dc_bindings : forall bs bs',
 
-      (* Any resulting binding has a (related) binding in the original group *)
-      forall b', (In b' bs' -> exists b, dead_syn_binding b b' /\ In b bs) ->
       (* any removed binding is a pure binding *)
-      forall b, ((In b bs /\ ~In b bs') -> pure_binding [] b) ->
+      (∀ b, In b bs ->
+        name_removed b bs' -> pure_binding [] b
+      ) ->
+
+      (* Any resulting binding has a (related) binding in the original group *)
+      (∀ b', In b' bs' ->
+         ∃ b, In b bs /\
+           name_Binding b = name_Binding b' /\
+           dead_syn_binding b b'
+      ) ->
       dead_syn_bindings bs bs'
 
 with dead_syn_binding : Binding -> Binding -> Prop :=
@@ -62,8 +83,7 @@ with dead_syn_binding : Binding -> Binding -> Prop :=
       dead_syn_binding b b
   .
 
-(* TODO: define and use well_scoped instead of well_typed *)
-Definition dead_code t t' := dead_syn t t' /\ well_typed t' /\ unique_tm t.
+Definition dead_code t t' := dead_syn t t' /\ unique t /\ closed t'.
 
 
 Fixpoint is_dead_syn (t t' : Term) {struct t} : bool :=
@@ -288,7 +308,7 @@ Equations dbe_dec_Term (t1 t2 : Term) : option (DBE_Term t1 t2) :=
     dbe_dec_rmlet (t1 t2 : Term) : option (DBE_Term t1 t2) :=
     {
     dbe_dec_rmlet (Let rec bs t) t2 := DBE_RemoveLet <$> dbe_dec_Term t t2 <*> dbe_dec_Bindings bs nil t2;
-    dbe_dec_rmlet _ _ := Nothing
+    dbe_dec_rmlet _ _ := None
     }
 
   where
@@ -310,7 +330,7 @@ Equations dbe_dec_Term (t1 t2 : Term) : option (DBE_Term t1 t2) :=
           with
           | eq_refl => DBE_RemoveBindings <$> dbe_dec_Term t t' <*> dbe_dec_Bindings bs bs' (Let rec bs' t')
           end
-        | _            => Nothing
+        | _            => None
 
         end;
     (*
@@ -320,10 +340,10 @@ Equations dbe_dec_Term (t1 t2 : Term) : option (DBE_Term t1 t2) :=
     dbe_dec_rmbnd (Let rec bs t) (Let rec' bs' t')
       with Recursivity_dec rec rec' =>
       { | left eq_refl := DBE_RemoveBindings <$> dbe_dec_Term t t' <*> dbe_dec_Bindings bs bs' (Let rec bs' t'); (*Todo @ pattern for t2?*)
-        | _            := Nothing};
+        | _            := None};
 
     *)
-    dbe_dec_rmbnd _ _ := Nothing
+    dbe_dec_rmbnd _ _ := None
     }.
 
 *)
@@ -352,7 +372,7 @@ Ltac term_cong_let := apply DBE_Congruence; apply C_Let;
 
 Tactic Notation "step" hyp(n) :=
   destruct n;
-  [ exact Nothing
+  [ exact None
   | refine (_ )
   ].
 
@@ -404,7 +424,7 @@ step n.
 refine(
   match t with
     | Let r bs t => _
-    | _          => Nothing
+    | _          => None
     end
   ).
 Abort.
@@ -423,11 +443,11 @@ refine (
   | Let r bs b  => fun H1 => match t' as p' return t' = p' -> _ with
     | Let r' bs' b' => fun H2 => match Recursivity_dec r r' with
       | left rH => _
-      | _ => Nothing
+      | _ => None
       end
-    | _             => fun _  => Nothing
+    | _             => fun _  => None
     end eq_refl
-  | _ => fun _ => Nothing
+  | _ => fun _ => None
   end eq_refl
 ); subst.
 refine (
@@ -455,7 +475,7 @@ refine (
     match bs, bs' with
     | (b :: bs), (b' :: bs') => ?[cons]
     | nil      , nil         => ?[nil]
-    | _        , _           => Nothing
+    | _        , _           => None
     end
   ).
 
@@ -481,21 +501,21 @@ refine (
       | TermBind s v t, TermBind s' v' t' => match Strictness_dec s s' with
         | left Hs => match VDecl_dec v v' with
           | left Hv => ?[termbinds]
-          | right _ => Nothing
+          | right _ => None
           end
-        | right _ => Nothing
+        | right _ => None
         end
 
       | TypeBind v ty, TypeBind v' ty' => match TVDecl_dec v v', Ty_dec ty ty' with
         | left Hv, left Hty => ?[tyty]
-        | _, _ => Nothing
+        | _, _ => None
         end
 
       | DatatypeBind d, DatatypeBind d' => match DTDecl_dec d d' with
         | left Hd => ?[dtdt]
-        | _ => Nothing
+        | _ => None
         end
-      | _, _ => Nothing
+      | _, _ => None
       end
   ).
 
@@ -533,25 +553,25 @@ refine (
   | TyAbs v k t
   , TyAbs v' k' t' => match string_dec v v', Kind_dec k k' with
     | left Hs, left Hk => ?[tyabs]
-    | _, _ => Nothing
+    | _, _ => None
     end
 
   | LamAbs v ty t
   , LamAbs v' ty' t' => match string_dec v v', Ty_dec ty ty' with
     | left Hs, left Ht => ?[lamabs]
-    | _, _ => Nothing
+    | _, _ => None
     end
 
   | TyInst t ty
   , TyInst t' ty' => match Ty_dec ty ty' with
     | left Hty => ?[tyinst]
-    | _ => Nothing
+    | _ => None
     end
 
   | IWrap ty1 ty2 t
   , IWrap ty1' ty2' t' => match Ty_dec ty1 ty1', Ty_dec ty2 ty2' with
     | left Hty1, left Hty2 => ?[iwrap]
-    | _, _ => Nothing
+    | _, _ => None
     end
   | Unwrap t,
     Unwrap t' => ?[unwrap]
@@ -559,22 +579,22 @@ refine (
   | Constant c,
     Constant c' => match some_dec c c' with
       | left Hs => ?[constant]
-      | _ => Nothing
+      | _ => None
       end
 
   | Builtin f,
     Builtin f' => match func_dec f f' with
       | left Hb => ?[builtin]
-      | _ => Nothing
+      | _ => None
       end
 
   | Error ty
   , Error ty' => match Ty_dec ty ty' with
       | left Hty => ?[error]
-      | _ => Nothing
+      | _ => None
       end
 
-  | _, _ => Nothing
+  | _, _ => None
   end
   ).
 
@@ -646,22 +666,22 @@ refine (
     | TermBind s  v  t
     , TermBind s' v' t' => match Strictness_dec s s', string_dec v v' with
       | left Hs, left Hv => ?[termbind]
-      | _, _ => Nothing
+      | _, _ => None
       end
 
     | TypeBind v ty
     , TypeBind v' ty' => match TVDecl_dec v v', Ty_dec ty ty' with
       | left Hv, left Hty => ?[typebind]
-      | _, _ => Nothing
+      | _, _ => None
       end
 
     | DatatypeBind d
     , DatatypeBind d' => match DTDecl_dec d d' with
       | left Hd => ?[datatypebind]
-      | _ => Nothing
+      | _ => None
       end
 
-    | _, _ => Nothing
+    | _, _ => None
     end
   ).
 
@@ -685,7 +705,7 @@ refine (
     match bs, bs' with
     | (b :: bs), (b' :: bs') => ?[cons]
     | nil      , nil         => ?[nil]
-    | _        , _           => Nothing
+    | _        , _           => None
     end
   ).
 

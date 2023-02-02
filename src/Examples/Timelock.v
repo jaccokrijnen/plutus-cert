@@ -1,4 +1,3 @@
-Require Coq.Strings.String.
 Require Import Coq.Strings.String.
 Require Import Coq.Arith.PeanoNat.
 Require Import Coq.Lists.List.
@@ -6,28 +5,21 @@ Import Coq.Lists.List.ListNotations.
 Require Import Ascii.
 Require Import Omega.
 From Equations Require Import Equations.
+
+From PlutusCert Require Import
+  Util
+  Language.PlutusIR
+  Language.PlutusIR.Transform
+  Language.PlutusIR.Analysis.Purity
+  Language.PlutusIR.Transform.LetNonRec.DecideBool
+  Semantics.Dynamic
+  Examples.TimelockDumps
+.
+
+Import NamedTerm.
+
 Set Implicit Arguments.
 Set Printing Universes.
-
-From PlutusCert Require Import Util.
-From PlutusCert Require Import Language.PlutusIR.
-Import NamedTerm.
-From PlutusCert Require Import Language.PlutusIR.Folds.
-From PlutusCert Require Import Language.PlutusIR.Analysis.FreeVars.
-From PlutusCert Require Import Language.PlutusIR.Analysis.Size.
-From PlutusCert Require Import Language.PlutusIR.Analysis.Purity.
-From PlutusCert Require Import Language.PlutusIR.Transform.Inline.
-From PlutusCert Require Import Language.PlutusIR.Transform.Inline.DecideStepBool.
-From PlutusCert Require Import Language.PlutusIR.Transform.Congruence.
-From PlutusCert Require Import Language.PlutusIR.Transform.Universal.
-From PlutusCert Require Import Language.PlutusIR.Transform.Compose.
-From PlutusCert Require Import Language.PlutusIR.Transform.FloatLet.
-From PlutusCert Require Import Language.PlutusIR.Transform.LetNonRec.
-From PlutusCert Require Import Language.PlutusIR.Transform.LetNonRec.DecideBool.
-From PlutusCert Require Import Semantics.Dynamic.
-(* From PlutusCert Require Import Language.PlutusIR.Transform.ScottEnc. *)
-From PlutusCert Require Import Language.PlutusIR.Transform.DeadBindings.
-From PlutusCert Require Import Examples.TimelockDumps.
 
 Local Open Scope string_scope.
 
@@ -269,25 +261,13 @@ Definition pir6_plc0 : pir_6_floatTerm = plc_0_compileNS.
 Proof. reflexivity. Qed.
 
 
-(* TODO: get Scott rel working again*)
-Definition Scott (s : Term) t := Universal s t.
+Definition Scott (s t : Term) := True.
 
 
 Definition plc_0_1 : Scott plc_0_compileNS plc_1_compileTys.
 Proof.
   constructor.
 Qed.
-(* Eval cbv in scottEncode' plc_0_compileNS.*)
-(* Definition plc_0_1 : ScottEncode' plc_0_compileNS plc_1_compileTys := Uni.*)
-
-(*
-Definition plc_0_1 : ScottEncode' plc_0_compileNS plc_1_compileTys .
-Proof. unfold ScottEncode'.
-  apply folds_equal.
-  cbv.
-  reflexivity.
-Qed.
-*)
 
 Definition plc_1_2 : plc_1_compileTys = plc_2_compileRecTerms.
 Proof. reflexivity. Qed.
@@ -303,31 +283,17 @@ Definition plc_3_4 :
   plc_3_dbe = plc_4_inlined.
 Proof. reflexivity. Qed.
 
-(*
-Compute Term_desugar plc_4_inlined plc_5_compileNonRecTerms.
- *)
+(* Compute Term_desugar plc_4_inlined plc_5_compileNonRecTerms. *)
 
 Definition plc_4_5_true : Term_desugar plc_4_inlined plc_5_compileNonRecTerms = true.
 Proof. reflexivity. Qed.
 
-(*
 Compute (Term_desugar_sound _ _ (plc_4_5_true)).
- *)
-
 Definition plc_4_5 :
   CNR_Term plc_4_inlined plc_5_compileNonRecTerms.
 Proof.
   exact (Term_desugar_sound _ _ (plc_4_5_true)).
 Qed.
-
-(* doesn't run anymore after refactoring rules:
-Definition plc_4_5 :
-  CNR_Term plc_4_inlined plc_5_compileNonRecTerms.
-  unfold plc_4_inlined, plc_5_compileNonRecTerms.
-  repeat (first [eapply CNR_Let; repeat econstructor | constructor]).
-Qed.
-*)
-
 
 Definition pir_0_6 : compose _ pir_2_typechecked plc_5_compileNonRecTerms:=
   ComposeCons pir0_1
@@ -344,8 +310,3 @@ Definition pir_0_6 : compose _ pir_2_typechecked plc_5_compileNonRecTerms:=
     (ComposeCons plc_4_5
      ComposeNil
     ))))))))))).
-
-(*
-Hangs
-Eval cbv in dbe_dec_Term pir2 pir3.
-*)

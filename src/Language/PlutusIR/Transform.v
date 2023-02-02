@@ -1,9 +1,4 @@
-Require Import Coq.Strings.String.
-Require Import Coq.Lists.List.
-Import Coq.Lists.List.ListNotations.
-
-
-From PlutusCert Require Import
+From PlutusCert Require Export
   Language.PlutusIR
   Language.PlutusIR.Transform.Compose
   Language.PlutusIR.Transform.Rename
@@ -16,11 +11,16 @@ From PlutusCert Require Import
   Language.PlutusIR.Transform.LetNonStrict
   Language.PlutusIR.Transform.LetRec
   Language.PlutusIR.Transform.LetTypes
-  .
+  Language.PlutusIR.Transform.Congruence
+.
+
+(*
+Require Import Coq.Strings.String.
+Require Import Coq.Lists.List.
+Import Coq.Lists.List.ListNotations.
 Import NamedTerm.
 
 
-(*
 
 Definition simplifier : list (Term -> Term -> Type) :=
   [ DBE_Term

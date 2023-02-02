@@ -24,7 +24,6 @@ src/Language/PlutusIR/Analysis/BoundVarsFast.v
 src/Language/PlutusIR/Analysis/Purity.v
 src/Language/PlutusIR/Analysis/WellScoped.v
 
-src/Language/PlutusIR/Transform/Universal.v
 src/Language/PlutusIR/Transform/Equal.v
 src/Language/PlutusIR/Transform/ThunkRecursions.v
 src/Language/PlutusIR/Transform/Inline.v
@@ -45,6 +44,7 @@ src/Language/PlutusIR/Transform/DeadBindings.v
 src/Language/PlutusIR/Transform/Beta.v
 src/Language/PlutusIR/Transform/Unwrap.v
 #src/Language/PlutusIR/Transform/ScottEnc.v
+src/Language/PlutusIR/Transform/SplitRec.v
 src/Language/PlutusIR/Transform.v
 
 src/Language/PlutusIR/Semantics/Dynamic.v
