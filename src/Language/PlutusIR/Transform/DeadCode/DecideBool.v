@@ -16,10 +16,87 @@ From PlutusCert Require Import
   DeadBindings
   Congruence
 .
-Import Congruence.
 
 Import NamedTerm.
 Import ListNotations.
+
+Section Bindings.
+
+  Context (dec_Term : Term -> Term -> bool).
+
+  Fixpoint dec_Binding (b b' : Binding) : bool := match b, b' with
+    | TermBind s vd t, TermBind s' vd' t' => Strictness_eqb s s' && VDecl_eqb vd vd' && dec_Term t t'
+    | b, b' => Binding_eqb b b'
+    end.
+
+  Definition safely_removed b bs' :=
+    if negb (existsb (String.eqb (name_Binding b)) bs')
+      then is_pure_binding [] b
+      else true.
+
+  Definition binding_was_there b' bs : bool :=
+    match find (λ b, String.eqb (name_Binding b) (name_Binding b')) bs with
+      | Datatypes.Some b => dec_Binding b b'
+      | None => false
+    end
+  .
+
+  (* inlined and specialized `find` for termination checking *)
+  Definition find_Binding b' :=
+  fix find (bs : list Binding) : bool :=
+    match bs with
+    | []      => false
+    | b :: bs => if String.eqb (name_Binding b) (name_Binding b') then dec_Binding b b' else find bs
+    end.
+
+  (* This does not work in the termination checker, it doesn't see that b returned by find 
+     is a structural subterm.
+     It would have to fuse the result of find (an option string) with the resulting, which is
+     what I did in the above definition*)
+  Definition find_Binding' b' bs :=
+    match find (λ b, String.eqb (name_Binding b) (name_Binding b')) bs with
+      | Datatypes.Some b => dec_Binding b b'
+      | None => false
+    end.
+
+
+  Definition dec_Bindings (bs bs' : list Binding) : bool :=
+    let bsn := map name_Binding bs in
+    let bs'n := map name_Binding bs' in
+    forallb (fun b => safely_removed b bs'n) bs &&
+    forallb (fun b' => find_Binding b' bs) bs'.
+
+  (* this did not pass termination checking *)
+  (*
+    forallb (fun b' =>
+    match find (λ b, String.eqb (name_Binding b) (name_Binding b')) bs with
+      | Datatypes.Some b => dec_Binding b b'
+      | None => false
+    end
+    ) bs'
+   *)
+End Bindings.
+
+Fixpoint dec_Term (x y : Term) {struct x} : bool := match x, y with
+
+  | Let r bs t   , Let r' bs' t' => 
+      if dec_Bindings dec_Term bs bs'
+      then (* same let block, but bindings were removed *)
+        Recursivity_eqb r r' && dec_Term t t'
+      else (* t' is another let block, the whole block in the pre-term was removed *)
+        forallb (is_pure_binding []) bs && dec_Term t y (* Check whether the whole let was removed *)
+  | Let r bs t   , _ => 
+     forallb (is_pure_binding []) bs && dec_Term t y (* Check whether the whole let was removed *)
+  | _ , _ => is_cong dec_Term x y
+
+  end
+.
+
+
+Set Diffs "on".
+
+Definition P_Term t := forall t', dec_Term t t' = true -> dead_syn t t'.
+Definition P_Binding b := forall b', dec_Binding dec_Term b b' = true -> dead_syn_binding b b'.
 
 Axiom (String_eqb_eq       : ∀ x y, String.eqb x y = true -> x = y).
 Axiom (Recursivity_eqb_eq  : ∀ x y, Recursivity_eqb x y = true -> x = y).
@@ -56,211 +133,239 @@ Ltac split_hypos :=
   | _ => idtac
   end.
 
-Section Bindings.
 
-  Context (dec_Term : Term -> Term -> bool).
-  Context (dec_Term_sound : ∀ s t, dec_Term s t = true -> dead_syn s t).
+Lemma H_safely_removed bs bs':
+    forallb (fun b => safely_removed b (map name_Binding bs')) bs = true ->
+    ∀ b : Binding, In b bs → name_removed b bs' → pure_binding [] b.
+Proof with eauto with Hints_soundness.
+  intros H_dec.
+  intros b H_In H_removed.
+  unfold safely_removed in H_dec.
+  rewrite forallb_forall in H_dec. (* why did rewrite accept a <-> ? was also possible with eapply -> ..., but generated an existential for x *)
+  apply H_dec in H_In as H_dec_andb.
+  clear H_dec H_In.
 
-  Set Diffs "on".
+  destruct (negb
+    (existsb (String.eqb (name_Binding b))
+       (map name_Binding bs')))
+       eqn:H_1.
+  + apply is_pure_binding_pure_binding...
 
+  (* contradiction *)
+  + apply negb_false_iff in H_1.
+    unfold name_removed in *.
+    apply existsb_exists in H_1.
+    destruct H_1 as [x [H_in H_name_b_eq_x]].
+    apply String.eqb_eq in H_name_b_eq_x.
+    subst.
+    contradiction.
+Qed.
 
-  Fixpoint dec_Binding (b b' : Binding) : bool := match b, b' with
-    | TermBind s vd t, TermBind s' vd' t' => Strictness_eqb s s' && VDecl_eqb vd vd' && dec_Term t t'
-    | b, b' => Binding_eqb b b'
-    end.
-
-  Lemma dec_Binding_sound : ∀ b b', dec_Binding b b' = true -> dead_syn_binding b b'.
-  Proof with eauto with Hints_soundness.
-    intros b b' H_dec.
-    destruct b, b'.
-    all: try discriminate H_dec.
-    all: simpl in H_dec.
-    all: split_hypos.
-    -
-      assert (s = s0)... subst.
-      assert (v = v0)... subst.
-      constructor...
-    - assert (t = t1)... subst.
-      assert (t0 = t2)... subst.
-      constructor.
-    - assert (d = d0)... subst.
-      constructor.
-  Qed.
-
-
-  Hint Resolve
-    dec_Binding_sound
-  : Hints_soundness.
-
-  Definition safely_removed b bs' :=
-    if negb (existsb (String.eqb (name_Binding b)) bs')
-      then is_pure_binding [] b
-      else true.
-
-  Definition binding_was_there b' bs : bool :=
-    match find (λ b, String.eqb (name_Binding b) (name_Binding b')) bs with
-      | Datatypes.Some b => dec_Binding b b'
-      | None => false
-    end
+Lemma H_find_binding' bs bs' :
+  (∀ b, In b bs -> P_Binding b) ->
+    forallb (fun b' => find_Binding dec_Term b' bs) bs' = true ->
+    ∀ b', In b' bs' ->
+       ∃ x, In x bs /\
+         name_Binding x = name_Binding b' /\
+         dead_syn_binding x b'
     .
+Proof with eauto with Hints_soundness.
+  intro H_P_Binding.
+  rewrite forallb_forall.
+  intros H_dec b' H_In.
+  apply H_dec in H_In as H_find_b'.
+  clear H_dec.
+  induction bs as [ | b ].
+  - discriminate H_find_b'.
+  - simpl in H_find_b'.
+    destruct (name_Binding b =? name_Binding b')%string
+      eqn:H_name_eq.
 
-  (* inlined and specialized `find` for termination checking *)
-  Definition find_Binding b' :=
-  fix find (bs : list Binding) : bool :=
-    match bs with
-    | []      => false
-    | b :: bs => if String.eqb (name_Binding b) (name_Binding b') then dec_Binding b b' else find bs
-    end.
-
-  (* This does not work in the termination checker, it doesn't see that b returned by find 
-     is a structural subterm.
-     It would have to fuse the result of find (an option string) with the resulting, which is
-     what I did in the above definition*)
-  Definition find_Binding' b' bs :=
-    match find (λ b, String.eqb (name_Binding b) (name_Binding b')) bs with
-      | Datatypes.Some b => dec_Binding b b'
-      | None => false
-    end.
+    (* b related to b' *)
+    + exists b.
+      repeat split...
+      * constructor...
+      * assert (H : P_Binding b).
+        ++ apply H_P_Binding.
+           constructor...
+        ++ unfold P_Binding in H...
 
 
-  Definition dec_Bindings (bs bs' : list Binding) : bool :=
-    let bsn := map name_Binding bs in
-    let bs'n := map name_Binding bs' in
-    forallb (fun b => safely_removed b bs'n) bs &&
-    forallb (fun b' => find_Binding b' bs) bs'.
-
-  (* this did not pass termination checking *)
-  (*
-    forallb (fun b' =>
-    match find (λ b, String.eqb (name_Binding b) (name_Binding b')) bs with
-      | Datatypes.Some b => dec_Binding b b'
-      | None => false
-    end
-    ) bs'
-   *)
-
-  Lemma H_safely_removed bs bs':
-      forallb (fun b => safely_removed b (map name_Binding bs')) bs = true ->
-      ∀ b : Binding, In b bs → name_removed b bs' → pure_binding [] b.
-  Proof with eauto with Hints_soundness.
-    intros H_dec.
-    intros b H_In H_removed.
-    unfold safely_removed in H_dec.
-    rewrite forallb_forall in H_dec. (* why did rewrite accept a <-> ? was also possible with eapply -> ..., but generated an existential for x *)
-    apply H_dec in H_In as H_dec_andb.
-    clear H_dec H_In.
-
-    destruct (negb
-      (existsb (String.eqb (name_Binding b))
-         (map name_Binding bs')))
-         eqn:H_1.
-    + apply is_pure_binding_pure_binding...
-
-    (* contradiction *)
-    + apply negb_false_iff in H_1.
-      unfold name_removed in *.
-      apply existsb_exists in H_1.
-      destruct H_1 as [x [H_in H_name_b_eq_x]].
-      apply String.eqb_eq in H_name_b_eq_x.
-      subst.
-      contradiction.
-  Qed.
-
-  Lemma H_find_binding bs bs' :
-      forallb (fun b' => find_Binding b' bs) bs' = true ->
-      ∀ b', In b' bs' ->
-         ∃ x, In x bs /\
-           name_Binding x = name_Binding b' /\
-           dead_syn_binding x b'
-      .
-  Proof with eauto with Hints_soundness.
-    rewrite forallb_forall.
-    intros H_dec b' H_In.
-    apply H_dec in H_In.
-    clear H_dec.
-    induction bs as [ | b ].
-    - discriminate H_In.
-    - simpl in H_In.
-      destruct (String.eqb (name_Binding b) (name_Binding b')) eqn:H_name_eq.
-
-      (* b related to b' *)
-      + exists b.
-        repeat split...
-        * constructor...
-
-      (* a not related to b' *)
-      + apply IHbs in H_In. clear IHbs.
-        destruct H_In as [x [H_x_In [H_eq_name H_dead_syn]]].
+    (* a not related to b' *)
+    + apply IHbs in H_find_b' as H_ex. clear IHbs.
+      * destruct H_ex as [x [H_x_In [H_eq_name H_dead_syn]]].
         assert (In x (b :: bs)). { apply in_cons... }
         exists x...
-  Qed.
+      * intros b0 H_b0_in.
+        apply H_P_Binding.
+        apply in_cons...
+Qed.
 
-  Create HintDb Hints_bindings.
-  Hint Resolve
-    H_safely_removed
-    H_find_binding.
-  Hint Constructors
-    dead_syn_bindings.
+Create HintDb Hints_bindings.
+Hint Resolve
+  H_safely_removed.
+Hint Constructors
+  dead_syn_bindings.
+Hint Resolve
+  H_safely_removed
+  H_find_binding'.
+Hint Constructors
+  dead_syn
+  dead_syn_binding
+  dead_syn_bindings
+  : Hints_soundness.
+
+Lemma dec_Bindings_sound' : ∀ bs bs',
+  (∀ b, In b bs -> P_Binding b) ->
+  dec_Bindings dec_Term bs bs' = true -> dead_syn_bindings bs bs'.
+Proof with eauto with Hints_bindings.
+  intros H_P_bs bs bs' H.
+  simpl in H.
+  unfold dec_Bindings in H.
+  split_hypos.
+  eapply dc_bindings...
+Qed.
 
 
-  Lemma dec_Bindings_sound : ∀ bs bs',
-    dec_Bindings bs bs' = true -> dead_syn_bindings bs bs'.
-  Proof with eauto with Hints_bindings.
-    intros bs bs' H.
-    simpl in H.
-    unfold dec_Bindings in H.
-    split_hypos.
-    eapply dc_bindings...
-  Qed.
-
-
-End Bindings.
-
-Fixpoint dec_Term (x y : Term) {struct x} : bool := match x, y with
-
-  | Let r bs t   , Let r' bs' t' => 
-      if dec_Bindings dec_Term bs bs'
-      then (* same let block, but bindings were removed *)
-        Recursivity_eqb r r' && dec_Term t t'
-      else (* t' is another let block, the whole block in the pre-term was removed *)
-        forallb (is_pure_binding []) bs && dec_Term t y (* Check whether the whole let was removed *)
-  | Let r bs t   , _ => 
-     forallb (is_pure_binding []) bs && dec_Term t y (* Check whether the whole let was removed *)
-  | _ , _ => is_cong dec_Term x y
-
-  end
-.
-
-Axiom cheat : ∀ a , a.
-
-Fixpoint dec_Term_sound t t' :
-  dec_Term t t' = true -> dead_syn t t'.
+Lemma dec_TermBind_sound : ∀ s v t b b',
+  b = TermBind s v t ->
+  P_Term t -> 
+  dec_Binding dec_Term b b' = true ->
+  dead_syn_binding b b'.
 Proof with eauto with Hints_soundness.
-  (* induction t. *) (* instead use fixpoint *)
-  destruct t.
-  all: intros H_dec.
-  all: destruct t'; simpl in H_dec.
-  all: try discriminate H_dec.
-  destruct (dec_Bindings dec_Term l l0) eqn:H_dec_bs.
-  - split_hypos.
-    assert (r = r0)... subst. 
-    apply dc_delete_bindings...
-    + eapply (dec_Bindings_sound dec_Term dec_Term_sound l l0)...
-  - apply cheat.
-  - apply cheat.
-  - apply cheat.
-  - apply cheat.
-  - apply cheat.
-  - apply cheat.
-  - apply cheat.
-  - apply cheat.
-  - apply cheat.
-  - apply cheat.
-  - apply cheat.
-Admitted.
+  intros s v t b b' H_eq H_P_Term H_dec.
+  unfold P_Term in *.
+  subst.
+  simpl in H_dec.
+  destruct b'.
+  all: try discriminate.
+  split_hypos.
+  assert (s = s0)...
+  assert (v = v0)...
+  subst...
+Qed.
 
+Lemma dec_TypeBind_sound : ∀ v ty b b',
+  b = TypeBind v ty ->
+  dec_Binding dec_Term b b' = true ->
+  dead_syn_binding b b'.
+Proof with eauto with Hints_soundness.
+  intros v ty b b' H_eq H_dec.
+  subst.
+  destruct b'.
+  all: try discriminate.
+  simpl in H_dec.
+  split_hypos.
+  assert (v = t)... subst.
+  assert (ty = t0)... subst...
+Qed.
 
-  
+Lemma dec_DatatypeBind_sound : ∀ dtd b b',
+  b = DatatypeBind dtd ->
+  dec_Binding dec_Term b b' = true ->
+  dead_syn_binding b b'.
+Proof with eauto with Hints_soundness.
+  intros dtd b b' H_eq H_dec.
+  subst.
+  destruct b'.
+  all: try discriminate.
+  simpl in H_dec.
+  split_hypos.
+  assert (dtd = d)... subst...
+Qed.
+
+Lemma all_pure : ∀ bs,
+  forallb (is_pure_binding []) bs = true ->
+  Forall (pure_binding []) bs.
+Proof.
+  intros bs H_dec.
+  apply Forall_forall.
+  intros b H_In.
+  rewrite forallb_forall in H_dec.
+  auto using is_pure_binding_pure_binding.
+Qed.
+
+Hint Resolve all_pure : Hints_soundness.
+Hint Resolve dec_Bindings_sound' : Hints_soundness.
+Hint Resolve
+  dec_TermBind_sound 
+  dec_TypeBind_sound 
+  dec_DatatypeBind_sound 
+  : Hints_soundness.
+Hint Constructors Cong : Hints_soundness.
+
+Theorem dec_Term_sound :
+  (∀ t, P_Term t) /\ (∀ b, P_Binding b).
+Proof with eauto with Hints_soundness.
+  apply Term__multind with (P := P_Term) (Q := P_Binding).
+  all: intros.
+
+  (* P_Term (Let rec bs t) *)
+  - unfold P_Term in *.
+    intros t' H_dec_Term.
+    simpl in H_dec_Term.
+    destruct t'; simpl in H_dec_Term.
+    all: split_hypos.
+    {
+      destruct (dec_Bindings dec_Term bs l) eqn:H_dec_bs.
+      all: split_hypos.
+      (* H_dec_Term: then branch *)
+      * split_hypos.
+
+        assert (H_bindings : dead_syn_bindings bs l).
+        {
+          apply ForallP_Forall in H.
+          rewrite -> Forall_forall in H...
+        }
+        assert (H_eq_rec : rec = r)... subst.
+        eapply dc_delete_bindings...
+
+      (* H_dec_Term: else branch *)
+      * eapply dc_delete_let...
+    }
+    all: try eapply dc_delete_let...
+
+  - unfold P_Term.
+    destruct t'.
+    all: intro H_dec; try discriminate H_dec.
+    assert (s = s0)... subst...
+  - unfold P_Term.
+    destruct t'.
+    all: intro H_dec; try discriminate H_dec.
+    simpl in H_dec. split_hypos.
+    assert (s = s0)... subst.
+    assert (k = k0)... subst...
+
+  - unfold P_Term; destruct t'; intro H_dec; try discriminate H_dec; simpl in H_dec; split_hypos.
+    assert (s = s0)...
+    assert (t = t1)... subst...
+  - unfold P_Term; destruct t'; intro H_dec; try discriminate H_dec; simpl in H_dec; split_hypos.
+    idtac...
+
+  - unfold P_Term; destruct t'; intro H_dec; try discriminate H_dec; simpl in H_dec; split_hypos.
+    assert (s = s0)... subst...
+
+  - unfold P_Term; destruct t'; intro H_dec; try discriminate H_dec; simpl in H_dec; split_hypos.
+    assert (d = d0)... subst...
+
+  - unfold P_Term; destruct t'; intro H_dec; try discriminate H_dec; simpl in H_dec; split_hypos.
+    assert (t0 = t1)... subst...
+
+  - unfold P_Term; destruct t'; intro H_dec; try discriminate H_dec; simpl in H_dec; split_hypos.
+    assert (t = t0)... subst...
+
+  - unfold P_Term; destruct t'; intro H_dec; try discriminate H_dec; simpl in H_dec; split_hypos.
+    assert (t = t2)... subst.
+    assert (t0 = t3)... subst...
+
+  - unfold P_Term; destruct t'; intro H_dec; try discriminate H_dec; simpl in H_dec; split_hypos.
+    idtac...
+
+  - unfold P_Binding...
+  - unfold P_Binding...
+  - unfold P_Binding...
+Qed.
+
 
 From Coq Require Import Extraction.
 Require Import Strings.Ascii.
