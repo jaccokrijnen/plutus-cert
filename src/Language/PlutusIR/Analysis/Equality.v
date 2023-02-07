@@ -14,7 +14,7 @@ Definition EqDec := fun A : Type => forall x y : A, {x = y} + {x <> y}.
 
 
 Create HintDb Eqs.
-Hint Resolve Nat.eq_dec Z.eq_dec ascii_dec bool_dec string_dec list_eq_dec : Eqs.
+#[export] Hint Resolve Nat.eq_dec Z.eq_dec ascii_dec bool_dec string_dec list_eq_dec : Eqs.
 
 Ltac solveEq :=
   intros;
@@ -22,53 +22,71 @@ Ltac solveEq :=
   decide equality; auto with Eqs. (* debug auto with Eqs.*)
 
 Definition unit_dec: EqDec unit. Proof. solveEq. Defined.
-  Hint Resolve unit_dec : Eqs.
+  #[export] Hint Resolve unit_dec : Eqs.
 
 Definition Strictness_dec: EqDec Strictness. solveEq. Defined.
-  Hint Resolve Strictness_dec : Eqs.
+  #[export] Hint Resolve Strictness_dec : Eqs.
 
   Definition Recursivity_dec : EqDec Recursivity. Proof. solveEq. Defined.
-  Hint Resolve Recursivity_dec : Eqs.
+  #[export] Hint Resolve Recursivity_dec : Eqs.
 
 Definition func_dec : EqDec DefaultFun. Proof. solveEq. Defined.
-  Hint Resolve func_dec: Eqs.
+  #[export] Hint Resolve func_dec: Eqs.
 
 Definition DefaultUni_dec : EqDec DefaultUni. solveEq. Defined.
-  Hint Resolve DefaultUni_dec : Eqs.
+  #[export] Hint Resolve DefaultUni_dec : Eqs.
 
 Definition uniType_dec : forall t, EqDec (uniType t). intro t. destruct t; simpl; solveEq; solveEq. Defined.
-  Hint Resolve uniType_dec : Eqs.
+  #[export] Hint Resolve uniType_dec : Eqs.
 
 Definition valueOf_dec : forall t, EqDec (valueOf t). solveEq. apply uniType_dec. Defined.
-  Hint Resolve valueOf_dec : Eqs.
+  #[export] Hint Resolve valueOf_dec : Eqs.
 
 Definition typeIn_dec : forall t, EqDec (typeIn t). solveEq. Defined.
-  Hint Resolve typeIn_dec : Eqs.
+  #[export] Hint Resolve typeIn_dec : Eqs.
+
+
+Lemma Some_injective f ty x y :
+  x <> y -> @Some f ty x <> @Some f ty y.
+Proof.
+  intros H_neq H_Some_eq.
+  inversion H_Some_eq.
+  (* this is inversion_sigma, but explicit so I can name hypotheses 
+     https://coq.inria.fr/distrib/V8.13.2/refman/proof-engine/tactics.html#coq:tacv.inversion_sigma
+  *)
+  induction H0 as [H1 H2] using eq_sigT_rect.
+  simpl in *.
+  unfold eq_rect in H2.
+  assert (H3 : H1 = eq_refl). { apply UIP_refl. }
+  (* I need UIP to reduce eq_rect and finish the proof, can this be done without? *)
+  subst.
+  contradiction.
+Qed.
 
 (* Somewhat cumbersome, cannot use "decide equality" tactic *)
 Definition some_valueOf_dec: forall (x y : @some valueOf), {x = y} + {x <> y}.
 Proof.
   intros x y.
   refine (
-    match x, y with | @Some _ u  v, @Some _ u' v' =>
-    match DefaultUni_dec u u' with
-    | left eq   => _
-    | right neq => _
-    end end
+    match x, y with
+      | @Some _ ty  v, @Some _ ty' v' =>
+        match DefaultUni_dec ty ty' with
+        | left H_eq   => _
+        | right H_neq => _
+        end
+    end
   ).
-  - subst. destruct (valueOf_dec v v').
-    + apply left. congruence.
-    + apply right. intros H.
-      inversion H .
-      inversion_sigma.
-      unfold eq_rect in H2.
-      assert (H3 : H0 = eq_refl). { apply UIP_refl. } (* I need UIP to reduce eq_rect and finish the proof, can this be done without? *)
-      rewrite H3 in H2.
-      contradiction.
+  - subst.
+    destruct (valueOf_dec v v').
+    + apply left.
+      congruence.
+    + apply right.
+      apply Some_injective.
+      assumption.
   - apply right. intros H.
     inversion H. contradiction.
 Defined.
-  Hint Resolve some_valueOf_dec : Eqs.
+  #[export] Hint Resolve some_valueOf_dec : Eqs.
 
 (* Somewhat cumbersome, cannot use "decide equality" tactic *)
 Definition some_typeIn_dec: forall (x y : @some typeIn), {x = y} + {x <> y}.
@@ -83,35 +101,31 @@ Proof.
   ).
   - subst. destruct (typeIn_dec v v').
     + apply left. congruence.
-    + apply right. intros H.
-      inversion H .
-      inversion_sigma.
-      unfold eq_rect in H2.
-      assert (H3 : H0 = eq_refl). { apply UIP_refl. } (* I need UIP to reduce eq_rect and finish the proof, can this be done without? *)
-      rewrite H3 in H2.
-      contradiction.
+    + apply right.
+      apply Some_injective.
+      assumption.
   - apply right. intros H.
     inversion H. contradiction.
 Defined.
-  Hint Resolve some_typeIn_dec : Eqs.
+  #[export] Hint Resolve some_typeIn_dec : Eqs.
 
 Definition Kind_dec : EqDec Kind. solveEq. Defined.
-  Hint Resolve Kind_dec : Eqs.
+  #[export] Hint Resolve Kind_dec : Eqs.
 
 Definition Ty_dec: EqDec Ty. solveEq. Defined.
-  Hint Resolve Ty_dec : Eqs.
+  #[export] Hint Resolve Ty_dec : Eqs.
 
 Definition VDecl_dec: EqDec VDecl. Proof. solveEq. Defined.
-  Hint Resolve VDecl_dec : Eqs.
+  #[export] Hint Resolve VDecl_dec : Eqs.
 
 Definition TVDecl_dec : EqDec TVDecl. Proof. solveEq. Defined.
-  Hint Resolve TVDecl_dec : Eqs.
+  #[export] Hint Resolve TVDecl_dec : Eqs.
 
 Definition constructor_dec : EqDec constructor. Proof. solveEq. Defined.
-  Hint Resolve constructor_dec : Eqs.
+  #[export] Hint Resolve constructor_dec : Eqs.
 
 Definition DTDecl_dec: EqDec DTDecl. Proof. solveEq. Defined.
-  Hint Resolve DTDecl_dec : Eqs.
+  #[export] Hint Resolve DTDecl_dec : Eqs.
 
 Lemma Term_dec : forall (x y : Term), {x = y} + {x <> y}
   with binding_dec: forall (x y : Binding), {x = y} + {x <> y}.
@@ -139,20 +153,20 @@ proof terms at run-time.
 Create HintDb reflection.
 
 (*
-  Note [Hints and name-collision]
+  Note [#[export] Hints and name-collision]
   ~~~~~~~~~~~~~~~~
 
-  When adding Nat.eqb_eq to a hint database using "Hint Resolve ->", Coq
+  When adding Nat.eqb_eq to a hint database using "#[export] Hint Resolve ->", Coq
   generates a definition eqb_eq_l2r (note: not qualified by module name
   anymore). The same happens when adding String.eqb_eq, thus causing a naming
   conflict.
   Current work-around is to alias the imported functions.
 *)
-(* Note [Hints and name-collision] *)
+(* Note [#[export] Hints and name-collision] *)
 Definition Z_eqb_eq := Z.eqb_eq.
 Definition nat_eqb_eq := Nat.eqb_eq.
 Definition string_eqb_eq := String.eqb_eq.
-Hint Resolve ->
+#[export] Hint Resolve ->
   andb_true_iff
   nat_eqb_eq
   Z_eqb_eq
@@ -161,7 +175,7 @@ Hint Resolve ->
   Bool.eqb_true_iff
 : reflection.
 
-Hint Resolve <-
+#[export] Hint Resolve <-
   andb_true_iff
   nat_eqb_eq
   Z_eqb_eq
@@ -217,8 +231,8 @@ Definition unit_eqb: Eqb unit := fun x y => match x, y with
 Definition unit_eqb_eq : Eqb_eq unit_eqb.
    Proof. eqb_eq_tac. Defined.
 
-Hint Resolve -> unit_eqb_eq : reflection.
-Hint Resolve <- unit_eqb_eq : reflection.
+#[export] Hint Resolve -> unit_eqb_eq : reflection.
+#[export] Hint Resolve <- unit_eqb_eq : reflection.
 
 
 Definition Strictness_eqb: Eqb Strictness := fun x y =>
@@ -230,8 +244,8 @@ Definition Strictness_eqb: Eqb Strictness := fun x y =>
 
 Definition Strictness_eqb_eq : Eqb_eq Strictness_eqb.
 Proof. eqb_eq_tac. Defined.
-Hint Resolve -> Strictness_eqb_eq : reflection.
-Hint Resolve <- Strictness_eqb_eq : reflection.
+#[export] Hint Resolve -> Strictness_eqb_eq : reflection.
+#[export] Hint Resolve <- Strictness_eqb_eq : reflection.
 
 Definition Recursivity_eqb : Eqb Recursivity := fun x y => match x, y with
   | NonRec, NonRec => true
@@ -241,8 +255,8 @@ Definition Recursivity_eqb : Eqb Recursivity := fun x y => match x, y with
 
 Definition Recursivity_eqb_eq : Eqb_eq Recursivity_eqb.
 Proof. eqb_eq_tac. Qed.
-Hint Resolve -> Recursivity_eqb_eq : reflection.
-Hint Resolve <- Recursivity_eqb_eq : reflection.
+#[export] Hint Resolve -> Recursivity_eqb_eq : reflection.
+#[export] Hint Resolve <- Recursivity_eqb_eq : reflection.
 
 Definition func_eqb : Eqb DefaultFun := fun x y => match x, y with
   | AddInteger , AddInteger => true
@@ -275,8 +289,8 @@ Definition func_eqb : Eqb DefaultFun := fun x y => match x, y with
 
 Definition func_eqb_eq : Eqb_eq func_eqb.
 Proof. eqb_eq_tac. Qed.
-Hint Resolve -> func_eqb_eq : reflection.
-Hint Resolve <- func_eqb_eq : reflection.
+#[export] Hint Resolve -> func_eqb_eq : reflection.
+#[export] Hint Resolve <- func_eqb_eq : reflection.
 
 Definition DefaultUni_eqb : Eqb DefaultUni := fun x y => match x, y with
   | DefaultUniInteger , DefaultUniInteger => true
@@ -290,8 +304,8 @@ Definition DefaultUni_eqb : Eqb DefaultUni := fun x y => match x, y with
 
 Definition DefaultUni_eqb_eq : Eqb_eq DefaultUni_eqb.
 Proof. eqb_eq_tac. Qed.
-Hint Resolve -> DefaultUni_eqb_eq : reflection.
-Hint Resolve <- DefaultUni_eqb_eq : reflection.
+#[export] Hint Resolve -> DefaultUni_eqb_eq : reflection.
+#[export] Hint Resolve <- DefaultUni_eqb_eq : reflection.
 
 Definition uniType_eqb : forall t, Eqb (uniType t) := fun ty =>
   match ty return Eqb (uniType ty) with
@@ -311,8 +325,8 @@ Proof.
   auto using Z.eqb_eq, string_eqb_eq, unit_eqb_eq, Ascii.eqb_eq, Nat.eqb_eq, Bool.eqb_true_iff.
 Qed.
 
-Hint Resolve -> uniType_eqb_eq : reflection.
-Hint Resolve <- uniType_eqb_eq : reflection.
+#[export] Hint Resolve -> uniType_eqb_eq : reflection.
+#[export] Hint Resolve <- uniType_eqb_eq : reflection.
 
 Definition valueOf_eqb : forall t, Eqb (valueOf t) := fun ty x y => match x, y with
   | ValueOf _ x, ValueOf _ y => uniType_eqb ty x y
@@ -324,8 +338,8 @@ Proof.
   destruct t;
   eqb_eq_tac.
 Qed.
-Hint Resolve -> valueOf_eqb_eq : reflection.
-Hint Resolve <- valueOf_eqb_eq : reflection.
+#[export] Hint Resolve -> valueOf_eqb_eq : reflection.
+#[export] Hint Resolve <- valueOf_eqb_eq : reflection.
 
 Definition some_valueOf_eqb: Eqb (@some valueOf) := fun x y => match x, y with
   | @Some _ t v, @Some _ t' v' =>
@@ -348,8 +362,8 @@ Proof.
     destruct f; simpl;
     auto with reflection.
 Qed.
-Hint Resolve -> some_valueOf_eqb_eq : reflection.
-Hint Resolve <- some_valueOf_eqb_eq : reflection.
+#[export] Hint Resolve -> some_valueOf_eqb_eq : reflection.
+#[export] Hint Resolve <- some_valueOf_eqb_eq : reflection.
 
 Definition typeIn_eqb : forall t, Eqb (typeIn t) := fun ty x y => match x, y with
   | @TypeIn _, TypeIn _ => true
@@ -361,8 +375,8 @@ Proof.
   destruct t;
   eqb_eq_tac.
 Qed.
-Hint Resolve -> typeIn_eqb_eq : reflection.
-Hint Resolve <- typeIn_eqb_eq : reflection.
+#[export] Hint Resolve -> typeIn_eqb_eq : reflection.
+#[export] Hint Resolve <- typeIn_eqb_eq : reflection.
 
 Definition some_typeIn_eqb : Eqb (@some typeIn) := fun x y => match x, y with
   | @Some _ t v, @Some _ t' v' =>
@@ -385,8 +399,8 @@ Proof.
     destruct f; simpl;
     auto with reflection.
 Qed.
-Hint Resolve -> some_typeIn_eqb_eq : reflection.
-Hint Resolve <- some_typeIn_eqb_eq : reflection.
+#[export] Hint Resolve -> some_typeIn_eqb_eq : reflection.
+#[export] Hint Resolve <- some_typeIn_eqb_eq : reflection.
 
 Fixpoint Kind_eqb (x y : Kind) : bool := match x, y with
   | Kind_Base, Kind_Base => true
@@ -397,8 +411,8 @@ Fixpoint Kind_eqb (x y : Kind) : bool := match x, y with
 Definition Kind_eqb_eq : Eqb_eq Kind_eqb.
 Proof. eqb_eq_tac. Defined.
 
-Hint Resolve -> Kind_eqb_eq : reflection.
-Hint Resolve <- Kind_eqb_eq : reflection.
+#[export] Hint Resolve -> Kind_eqb_eq : reflection.
+#[export] Hint Resolve <- Kind_eqb_eq : reflection.
 
 (* TODO: This is not correct yet. Because we have computation in types, we can not merely rely
   on syntactic equality checking. *)
@@ -422,8 +436,8 @@ Proof. Local Open Scope string_scope. eqb_eq_tac; try (inversion H).
     assert (Kind_eqb k k = true) by eauto with reflection.
     rewrite H. rewrite H0. rewrite IHy. auto.
 Defined.
-Hint Resolve -> Ty_eqb_eq : reflection.
-Hint Resolve <- Ty_eqb_eq : reflection.
+#[export] Hint Resolve -> Ty_eqb_eq : reflection.
+#[export] Hint Resolve <- Ty_eqb_eq : reflection.
 
 
 Definition TVDecl_eqb : Eqb TVDecl := fun x y => match x, y with
@@ -432,8 +446,8 @@ Definition TVDecl_eqb : Eqb TVDecl := fun x y => match x, y with
 
 Definition TVDecl_eqb_eq : Eqb_eq TVDecl_eqb.
 Proof. eqb_eq_tac. Defined.
-Hint Resolve -> TVDecl_eqb_eq : reflection.
-Hint Resolve <- TVDecl_eqb_eq : reflection.
+#[export] Hint Resolve -> TVDecl_eqb_eq : reflection.
+#[export] Hint Resolve <- TVDecl_eqb_eq : reflection.
 
 
 Definition VDecl_eqb: Eqb VDecl := fun x y => match x, y with
@@ -442,8 +456,8 @@ Definition VDecl_eqb: Eqb VDecl := fun x y => match x, y with
 Definition VDecl_eqb_eq : Eqb_eq VDecl_eqb.
 Proof. eqb_eq_tac. Defined.
 
-Hint Resolve -> VDecl_eqb_eq : reflection.
-Hint Resolve <- VDecl_eqb_eq : reflection.
+#[export] Hint Resolve -> VDecl_eqb_eq : reflection.
+#[export] Hint Resolve <- VDecl_eqb_eq : reflection.
 (* reminder: String.eqb_eq is opaque, perhaps this will be an
 issue later on*)
 
@@ -455,8 +469,8 @@ Definition constructor_eqb : Eqb constructor := fun x y => match x, y with
 
 Definition constructor_eqb_eq : Eqb_eq constructor_eqb.
 Proof. eqb_eq_tac. Qed.
-Hint Resolve -> constructor_eqb_eq : reflection.
-Hint Resolve <- constructor_eqb_eq : reflection.
+#[export] Hint Resolve -> constructor_eqb_eq : reflection.
+#[export] Hint Resolve <- constructor_eqb_eq : reflection.
 
 Definition list_eqb a (eqb : Eqb a) : Eqb (list a) := fix f xs ys :=
   match xs, ys with
@@ -479,8 +493,8 @@ Proof.
     + assumption.
 Qed.
 
-Hint Resolve -> list_eqb_eq : reflection.
-Hint Resolve <- list_eqb_eq : reflection.
+#[export] Hint Resolve -> list_eqb_eq : reflection.
+#[export] Hint Resolve <- list_eqb_eq : reflection.
 
 Definition DTDecl_eqb: Eqb DTDecl := fun x y => match x, y with
   | Datatype tvd tvds n cs, Datatype tvd' tvds' n' cs' =>
@@ -502,8 +516,8 @@ Proof.
     + apply (list_eqb_eq constructor_eqb_eq).
       reflexivity.
 Qed.
-Hint Resolve -> DTDecl_eqb_eq : reflection.
-Hint Resolve <- DTDecl_eqb_eq : reflection.
+#[export] Hint Resolve -> DTDecl_eqb_eq : reflection.
+#[export] Hint Resolve <- DTDecl_eqb_eq : reflection.
 
 
 

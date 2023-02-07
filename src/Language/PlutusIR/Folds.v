@@ -29,15 +29,15 @@ Record AlgTerm: Type := mkTermAlg
   ; a_Error    : Ty -> rTerm
   ; a_IWrap    : Ty -> Ty -> rTerm -> rTerm
   ; a_Unwrap   : rTerm -> rTerm
-  }
+  }.
 
-with AlgBinding : Type := mkBindingAlg
+Record AlgBinding : Type := mkBindingAlg
   { a_TermBind     : Strictness -> VDecl -> rTerm -> rBinding
   ; a_TypeBind     : TVDecl -> Ty -> rBinding
   ; a_DatatypeBind : DTDecl -> rBinding
-  }
+  }.
 
-with AlgBindings : Type := mkBindingsAlg
+Record AlgBindings : Type := mkBindingsAlg
   { a_cons : rBinding -> rBindings -> rBindings
   ; a_nil  : rBindings
   }.
@@ -54,7 +54,7 @@ Print Visibility.
 Definition algProd (alg : Type -> Type) :=
   forall {a b},  alg a -> alg b -> alg (a * b)%type. (* type scope is not inferred because alg is not yet typed *)
 
-Definition algBindingProd {rTerm rBindings} : algProd (fun x => AlgBinding rTerm x rBindings) :=
+Definition algBindingProd {rTerm} : algProd (fun x => AlgBinding rTerm x) :=
   fun _ _ a1 a2 =>
     {| a_TermBind     := fun s v t => (a_TermBind a1 s v t , a_TermBind a2 s v t)
     ;  a_TypeBind     := fun tv ty => (a_TypeBind a1 tv ty , a_TypeBind a2 tv ty)
@@ -65,9 +65,9 @@ Definition algBindingProd {rTerm rBindings} : algProd (fun x => AlgBinding rTerm
 Section Folds.
 
   Context {rt rb rbs : Type}. (* Algebra return types *)
-  Context (algTerm     : AlgTerm     rt rb rbs).
-  Context (algBinding  : AlgBinding  rt rb rbs).
-  Context (algBindings : AlgBindings rt rb rbs).
+  Context (algTerm     : AlgTerm     rt rbs).
+  Context (algBinding  : AlgBinding  rt rb).
+  Context (algBindings : AlgBindings rb rbs).
 
 
   (* See note [Structural Recursion Checker] *)
@@ -256,7 +256,7 @@ Axiom folds_equal : forall rT rB (aTerm : AlgTerm rT rB) (aBind : algBinding rT 
 
 End Folds.
 
-
+(*
 Section Use. (* name comes from "use" rules in attribute grammars *)
 
   (*
@@ -417,4 +417,5 @@ Proof.
 
 
 
+*)
 *)
