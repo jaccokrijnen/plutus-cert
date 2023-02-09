@@ -16,15 +16,17 @@ From Coq Require Import
 Generalizable All Variables.
 Set Implicit Arguments.
 
+From QuickChick Require Import QuickChick.
+
 Section Congruence.
   Import NamedTerm.
 
   Context
-    (R : Term -> Term -> Type)
+    (R : Term -> Term -> Prop)
     (dec_R : Term -> Term -> bool)
   .
 
-  Inductive Cong_Binding : Binding -> Binding -> Type :=
+  Inductive Cong_Binding : Binding -> Binding -> Prop :=
     | C_TermBind     : `{ R t t' -> Cong_Binding (TermBind s v t)
                                                  (TermBind s v t')}
 
@@ -33,11 +35,11 @@ Section Congruence.
     | C_DatatypeBind : `{           Cong_Binding (DatatypeBind d)
                                                    (DatatypeBind d) }
     .
-  Inductive Cong_Bindings : list Binding -> list Binding -> Type :=
+  Inductive Cong_Bindings : list Binding -> list Binding -> Prop :=
     | Cong_Bindings_Cons : forall {b b' bs bs'}, Cong_Binding b b' -> Cong_Bindings bs bs' -> Cong_Bindings (b :: bs) (b' :: bs')
     | Cong_Bindings_Nil  : Cong_Bindings nil nil.
 
-  Inductive Cong : Term -> Term -> Type :=
+  Inductive Cong : Term -> Term -> Prop :=
     | C_Let      : `{ Cong_Bindings bs bs' -> R t t'    -> Cong (Let r bs t)
                                                                 (Let r bs' t')}
     | C_Var      : `{                          Cong (Var n)

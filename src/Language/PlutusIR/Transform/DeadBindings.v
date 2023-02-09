@@ -41,47 +41,65 @@ Definition name_Binding (b : Binding) :=
 Definition name_removed b bs : Prop :=
   ¬ (In (name_Binding b) (map name_Binding bs)).
 
+From Sandbox Require Import CTProxy.
+
+
 Inductive dead_syn : Term -> Term -> Prop :=
   | dc_cong : forall t t',
       Cong dead_syn t t' ->
-      dead_syn t t'
+      dead_syn t t'.
 
+Inductive dead_syn_proxy_tag : Type :=
+  | dead_syn_tag : Term -> Term -> dead_syn_proxy_tag.
+
+dead_syn_proxy
+
+Inductive dead_syn_proxy : dead_syn_proxy_tag -> Prop :=
+  | dc_cong_proxy : forall t t',
+      Cong (fun x => fun y => dead_syn_proxy (dead_syn_tag x y)) t t' ->
+      dead_syn_proxy (dead_syn_tag t t').
+
+      (*
   | dc_delete_let : forall rec bs t t',
       dead_syn t t' ->
       Forall (pure_binding []) bs ->
       dead_syn (Let rec bs t) t'
-
+   
   | dc_delete_bindings : forall rec bs bs' t t',
       dead_syn t t' ->
       dead_syn_bindings bs bs' ->
       dead_syn (Let rec bs t) (Let rec bs' t')
-
+   
 
 with dead_syn_bindings : list Binding -> list Binding -> Prop :=
   | dc_bindings : forall bs bs',
-
       (* any removed binding is a pure binding *)
       (∀ b, In b bs ->
         name_removed b bs' -> pure_binding [] b
       ) ->
-
+      
       (* Any resulting binding has a (related) binding in the original group *)
       (∀ b', In b' bs' ->
          ∃ b, In b bs /\
            name_Binding b = name_Binding b' /\
            dead_syn_binding b b'
       ) ->
-      dead_syn_bindings bs bs'
-
+       
+      dead_syn_bindings bs bs 
 with dead_syn_binding : Binding -> Binding -> Prop :=
-
   | dc_term_bind_cong : forall s vd t t',
       dead_syn t t' ->
       dead_syn_binding (TermBind s vd t) (TermBind s vd t')
 
   | dc_binding : forall b,
       dead_syn_binding b b
+       *)
   .
+
+MetaCoq Quote Recursively Definition T := dead_syn.
+Print T.
+
+MetaCoq Run (deriveCTProxy dead_syn).
 
 Definition dead_code t t' := dead_syn t t' /\ unique t /\ closed t'.
 

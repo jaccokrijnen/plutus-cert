@@ -18,6 +18,8 @@ Import PlutusIR.NamedTerm.
 Import ListNotations.
 Import AFI.
 
+From Sandbox Require Import CTProxy.
+
 (* Rename context*)
 Definition ctx := list (string * string).
 
@@ -225,6 +227,11 @@ with rename_constrs (Γ Δ : ctx) : list constructor -> list constructor -> ctx 
         (Constructor (VarDecl x' τ') n :: cs')
         ((x, x') :: Γ_cs)
   .
+      (*
+MetaCoq Run (deriveCTProxy rename).
 
+From QuickChick Require Import QuickChick.
 
+QCDerive DecOpt for (rename_proxy c1 c2 tm1 tm2). 
+ *)
 (* MetaCoq Run (run_print_rules rename). *)
