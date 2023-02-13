@@ -5,7 +5,7 @@ Require Import Program.Basics.
 Set Implicit Arguments.
 Import ListNotations.
 
-
+From QuickChick Require Import QuickChick.
 
 Section list_rect'.
   Variable (a : Type).
@@ -266,3 +266,22 @@ Definition zip_with {A B C} (f : A -> B -> C) : list A -> list B -> list C :=
 
 Notation " g ∘ f " := (compose g f)
   (at level 40, left associativity).
+
+
+
+Inductive lt_nat : nat -> nat -> Prop :=
+  | LtN_N : forall n,
+      lt_nat n (S n)
+  | LtN_S : forall n m,
+      lt_nat n m -> lt_nat n (S m).
+
+QCDerive DecOpt for (lt_nat n m).
+
+Instance lt_nat_DecOpt_sound n m: DecOptSoundPos (lt_nat n m).
+Proof. derive_sound. Qed.
+
+Instance lt_nat_DecOpt_complete n m: DecOptCompletePos (lt_nat n m).
+Proof. derive_complete. Qed.
+
+Instance lt_nat_DecOpt_monotonic n m: DecOptSizeMonotonic (lt_nat n m).
+Proof. derive_mon. Qed.
