@@ -50,7 +50,7 @@ Definition some_valueOf_dec: forall (x y : @some valueOf), {x = y} + {x <> y}.
 Proof.
   intros x y.
   refine (
-    match x, y with | @Some _ u  v, @Some _ u' v' =>
+    match x, y with | @Some' _ u  v, @Some' _ u' v' =>
     match DefaultUni_dec u u' with
     | left eq   => _
     | right neq => _
@@ -75,7 +75,7 @@ Definition some_typeIn_dec: forall (x y : @some typeIn), {x = y} + {x <> y}.
 Proof.
   intros x y.
   refine (
-    match x, y with | @Some _ u  v, @Some _ u' v' =>
+    match x, y with | @Some' _ u  v, @Some' _ u' v' =>
     match DefaultUni_dec u u' with
     | left eq   => _
     | right neq => _
@@ -328,7 +328,7 @@ Qed.
 #[export] Hint Resolve <- valueOf_eqb_eq : reflection.
 
 Definition some_valueOf_eqb: Eqb (@some valueOf) := fun x y => match x, y with
-  | @Some _ t v, @Some _ t' v' =>
+  | @Some' _ t v, @Some' _ t' v' =>
     match DefaultUni_dec t t' with
     | left H => valueOf_eqb (eq_rect _ valueOf v _ H) v'
     | _      => false
@@ -365,7 +365,7 @@ Qed.
 #[export] Hint Resolve <- typeIn_eqb_eq : reflection.
 
 Definition some_typeIn_eqb : Eqb (@some typeIn) := fun x y => match x, y with
-  | @Some _ t v, @Some _ t' v' =>
+  | @Some' _ t v, @Some' _ t' v' =>
     match DefaultUni_dec t t' with
     | left H => typeIn_eqb (eq_rect _ typeIn v _ H) v'
     | _      => false

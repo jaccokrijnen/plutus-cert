@@ -13,16 +13,16 @@ Local Open Scope string_scope.
 
 (** Types of builtin functions *)
 Definition lookupBuiltinTy (f : DefaultFun) : Ty :=
-  let Ty_Int := Ty_Builtin (Some (TypeIn DefaultUniInteger)) in
-  let Ty_Bool := Ty_Builtin (Some (TypeIn DefaultUniBool)) in
-  let Ty_BS := Ty_Builtin (Some (TypeIn DefaultUniByteString)) in
+  let Ty_Int := Ty_Builtin (Some' (TypeIn DefaultUniInteger)) in
+  let Ty_Bool := Ty_Builtin (Some' (TypeIn DefaultUniBool)) in
+  let Ty_BS := Ty_Builtin (Some' (TypeIn DefaultUniByteString)) in
   let T_Int_Bin := Ty_Fun Ty_Int (Ty_Fun Ty_Int Ty_Int) in
   let T_Int_BinPredicate := Ty_Fun Ty_Int (Ty_Fun Ty_Int Ty_Bool) in
   let T_BS_Bin := Ty_Fun Ty_BS (Ty_Fun Ty_BS Ty_BS) in
   let T_BS_BinPredicate := Ty_Fun Ty_BS (Ty_Fun Ty_BS Ty_Bool) in
-  let Ty_Char := Ty_Builtin (Some (TypeIn DefaultUniChar)) in
-  let Ty_String := Ty_Builtin (Some (TypeIn DefaultUniString)) in
-  let Ty_Unit := Ty_Builtin (Some (TypeIn DefaultUniUnit)) in
+  let Ty_Char := Ty_Builtin (Some' (TypeIn DefaultUniChar)) in
+  let Ty_String := Ty_Builtin (Some' (TypeIn DefaultUniString)) in
+  let Ty_Unit := Ty_Builtin (Some' (TypeIn DefaultUniUnit)) in
   match f with
   | AddInteger => T_Int_Bin
   | SubtractInteger => T_Int_Bin
@@ -115,7 +115,7 @@ Inductive has_type : Delta -> Gamma -> Term -> Ty -> Prop :=
       Delta ,, Gamma |-+ (Unwrap M) : T0n
   (* Additional constructs *)
   | T_Constant : forall Delta Gamma u a,
-      Delta ,, Gamma |-+ (Constant (Some (ValueOf u a))) : (Ty_Builtin (Some (TypeIn u)))
+      Delta ,, Gamma |-+ (Constant (Some' (ValueOf u a))) : (Ty_Builtin (Some' (TypeIn u)))
   | T_Builtin : forall Delta Gamma f T Tn,
       T = lookupBuiltinTy f ->
       normalise T Tn ->

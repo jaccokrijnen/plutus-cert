@@ -14,7 +14,7 @@ Require Import Coq.Program.Basics.
 Import ListNotations.
 
 
-
+From QuickChick Require Import QuickChick.
 (*
   Simplification of the names in the AST
 
@@ -49,10 +49,12 @@ Inductive DefaultUni : Type :=
     | DefaultUniUnit       (* : DefaultUni unit (* () *)*)
     | DefaultUniBool       (* : DefaultUni bool (* Bool *)*)
     .
-    
+
+QCDerive EnumSized for DefaultUni.
+
 (** Existentials as a datype *)
 Inductive some {f : DefaultUni -> Type} :=
-  Some : forall {u : DefaultUni}, f u -> some.
+  Some' : forall {u : DefaultUni}, f u -> some.
 Arguments some _ : clear implicits.
 
 (** Builtin types *)
@@ -102,8 +104,6 @@ Inductive DefaultFun :=
     | CharToString
     | Append
     | Trace.
-
-
 
 Section AST_term.
 Context (name tyname : Set).
@@ -644,7 +644,7 @@ with Binding termR bindingR :=
 Definition Mu (f : Type -> Type) (g : Type -> Type) := forall a, (f a -> a) -> (g a -> a) -> a.
 *)
 
-Definition unitVal : NamedTerm.Term := Constant (Some (ValueOf DefaultUniUnit tt)).
+Definition unitVal : NamedTerm.Term := Constant (Some' (ValueOf DefaultUniUnit tt)).
 
 
 
