@@ -9,6 +9,9 @@ CoqMakefile.conf
 *.lia.cache
 *.CoqMakefile.d
 Makefile.coq
+Makefile.coq.conf
+.Makefile.coq.d
+*.crashcoqide
 
 # vim
 *.swp
@@ -18,5 +21,8 @@ Makefile.coq
 
 # haskell
 dist-newstyle/
+
+#intellij
+.idea/
 
 examples/plutus-use-cases
