@@ -33,8 +33,8 @@ Notation "xs \ ys" := (remove_many string_dec ys xs) (at level 10).
 (* Uniqueness of binders for open terms *)
 Definition unique_open Δ Γ t :=
   unique t /\
-  Forall (fun X => ~ Annotation.appears_bound_in X t) Δ /\
-  Forall (fun v => ~ Term.appears_bound_in v t) Γ.
+  Forall (fun X => ~ appears_bound_in_ann X t) Δ /\
+  Forall (fun v => ~ appears_bound_in_tm v t) Γ.
 
 
 Section TypingHelpers.

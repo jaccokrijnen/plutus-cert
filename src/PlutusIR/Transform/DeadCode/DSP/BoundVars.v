@@ -3,6 +3,7 @@ From PlutusCert Require Import Analysis.UniqueBinders.
 From PlutusCert Require Import Semantics.Dynamic.Substitution.
 From PlutusCert Require Import Semantics.Dynamic.AnnotationSubstitution.
 From PlutusCert Require Import Multisubstitution.Congruence.
+From PlutusCert Require Import Util.List.
 
 Import NamedTerm.
 
@@ -80,7 +81,6 @@ End Bvbs.
 
 Section ExistsBvbs.
 
-  Import BoundVars.Term.
   Import ListNotations.
 
   Lemma In_singleton {A} (x y : A) :
@@ -92,9 +92,35 @@ Section ExistsBvbs.
     - contradiction.
   Qed.
 
+  Lemma In_NameIn x xs :
+    In x xs <-> NameIn x xs.
+  Proof with eauto using NameIn.
+    split.
+    {
+      intros H_In.
+      induction xs.
+      - inversion H_In.
+      - destruct H_In.
+        + subst. auto using NameIn.
+        + destruct (string_dec a x); subst...
+    }
+
+    {
+      intros H_NameIn.
+      induction H_NameIn.
+      - apply or_introl...
+      - apply or_intror...
+    }
+
+  Qed.
+
+  Lemma map_bvc__bv_constructors cs :
+    map bvc cs = bv_constructors cs.
+  Admitted.
+
   Lemma existsb_appears_bound_in x bs r t :
     existsb (eqb x) (bvbs bs) = true ->
-    appears_bound_in x (Let r bs t).
+    appears_bound_in_tm x (Let r bs t).
   Proof.
     intros H_ex.
     simpl in H_ex.
@@ -114,7 +140,7 @@ Section ExistsBvbs.
           destruct v.
           apply In_singleton in H.
           subst.
-          apply ABI_Let_TermBind1.
+          apply ABI_Tm_Let_TermBind1.
         * simpl in H.
           destruct t0.
           contradiction H.
@@ -122,8 +148,14 @@ Section ExistsBvbs.
           destruct d as [ [X K] YKs mfunc cs].
           apply in_inv in H.
           rewrite <- in_rev in H.
-          apply ABI_Let_DatatypeBind.
-          assumption.
+          apply ABI_Tm_Let_DatatypeBind.
+          rewrite In_NameIn in *.
+          destruct H.
+          ** subst. eauto using NameIn.
+          ** destruct (string_dec x mfunc). 
+            *** subst. eauto using NameIn.
+            *** rewrite map_bvc__bv_constructors in H.
+                eauto using NameIn.
       + auto.
   Qed.
 

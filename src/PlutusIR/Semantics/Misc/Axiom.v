@@ -9,5 +9,5 @@ Axiom uniqueness : forall t, Term.unique t.
 
 Axiom uniqueness' : forall (Delta : Delta) e,
   forall X,
-    Annotation.appears_bound_in X e ->
+    appears_bound_in_ann X e ->
     Delta X = None.
