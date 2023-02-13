@@ -12,7 +12,7 @@ Require Import
 
 Import ListNotations.
 From QuickChick Require Import QuickChick.
-From Sandbox Require Import CTProxy.
+From CTProxy Require Import CTProxy.
 Require Import Coq.Program.Equality.
 
 
