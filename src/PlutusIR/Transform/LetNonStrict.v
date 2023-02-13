@@ -33,10 +33,10 @@ Inductive thunk_style :=
 Definition ctx := list (string * option thunk_style).
 
 Definition Ty_Unit : Ty :=
-  Ty_Builtin (PlutusIR.Some (@PlutusIR.TypeIn DefaultUniUnit)).
+  Ty_Builtin (PlutusIR.Some' (@PlutusIR.TypeIn DefaultUniUnit)).
 
 Definition t_unit : Term :=
-  Constant (PlutusIR.Some (PlutusIR.ValueOf DefaultUniUnit tt)).
+  Constant (PlutusIR.Some' (PlutusIR.ValueOf DefaultUniUnit tt)).
 
 Inductive let_non_strict (Γ : ctx) : Term -> Term -> Type :=
 

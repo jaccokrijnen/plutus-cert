@@ -19,7 +19,7 @@ Definition lookupBuiltinKind (u : DefaultUni) : Kind :=
 Reserved Notation "Δ '|-*' T ':' K" (at level 40, T at level 0, K at level 0).
 Inductive has_kind : list (string * Kind) -> Ty -> Kind -> Prop :=
   | K_Var : forall Δ X K,
-      lookup X Δ = Coq.Init.Datatypes.Some K ->
+      lookup X Δ = Some K ->
       Δ |-* (Ty_Var X) : K
   | K_Fun : forall Δ T1 T2,
       Δ |-* T1 : Kind_Base ->
@@ -34,7 +34,7 @@ Inductive has_kind : list (string * Kind) -> Ty -> Kind -> Prop :=
       Δ |-* (Ty_Forall X K T) : Kind_Base
   | K_Builtin : forall Δ u K,
       K = lookupBuiltinKind u ->
-      Δ |-* (Ty_Builtin (Some (TypeIn u))) : K
+      Δ |-* (Ty_Builtin (Some' (TypeIn u))) : K
   | K_Lam : forall Δ X K1 T K2,
       ((X, K1) :: Δ) |-* T : K2 ->
       Δ |-* (Ty_Lam X K1 T) : (Kind_Arrow K1 K2)

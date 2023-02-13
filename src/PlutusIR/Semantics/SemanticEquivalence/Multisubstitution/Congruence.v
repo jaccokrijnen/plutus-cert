@@ -398,7 +398,7 @@ Proof.
 Qed.
 
 Lemma msubstT_TyBuiltin : forall ss u,
-    msubstT ss (Ty_Builtin (Some (TypeIn u))) = Ty_Builtin (Some (TypeIn u)).
+    msubstT ss (Ty_Builtin (Some' (TypeIn u))) = Ty_Builtin (Some' (TypeIn u)).
 Proof.
   induction ss; intros.
   - reflexivity.
@@ -498,7 +498,7 @@ Lemma msubst_Var : forall ss x,
     closed_env ss ->
     msubst ss (Var x) =
       match lookup x ss with
-      | Datatypes.Some t => t
+      | Some t => t
       | None => Var x
       end.
 Proof.
