@@ -5,7 +5,7 @@ Require Import Program.Basics.
 Set Implicit Arguments.
 Import ListNotations.
 
-
+From QuickChick Require Import QuickChick.
 
 Section list_rect'.
   Variable (a : Type).
@@ -287,3 +287,20 @@ Fixpoint string_of_nat_aux (time n : nat) (acc : string) : string :=
 Definition string_of_nat (n : nat) : string :=
   string_of_nat_aux n n "".
 Close Scope string_scope.
+
+Inductive lt_nat : nat -> nat -> Prop :=
+  | LtN_N : forall n,
+      lt_nat n (S n)
+  | LtN_S : forall n m,
+      lt_nat n m -> lt_nat n (S m).
+
+QCDerive DecOpt for (lt_nat n m).
+
+Instance lt_nat_DecOpt_sound n m: DecOptSoundPos (lt_nat n m).
+Proof. derive_sound. Qed.
+
+Instance lt_nat_DecOpt_complete n m: DecOptCompletePos (lt_nat n m).
+Proof. derive_complete. Qed.
+
+Instance lt_nat_DecOpt_monotonic n m: DecOptSizeMonotonic (lt_nat n m).
+Proof. derive_mon. Qed.

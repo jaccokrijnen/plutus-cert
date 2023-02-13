@@ -1,13 +1,17 @@
-Require Import Coq.Lists.List.
-Require Import Coq.Strings.String.
+From Coq Require Import
+  Strings.String
+  Lists.List.
+
 Import ListNotations.
 
 Local Open Scope string_scope.
 Local Open Scope list_scope.
 Import ListNotations.
+From QuickChick Require Import QuickChick.
 
 Notation "x ∈ xs" := (In x xs) (at level 40).
 Notation "x ∉ xs" := (~ (In x xs)) (at level 40).
+
 
 Fixpoint lookup {X:Type} (k : string) (l : list (string * X)) : option X :=
   match l with
@@ -223,7 +227,17 @@ Inductive Lookup {A B :Type} (k : A) (v : B) : list (A * B) -> Prop :=
 .
 
 Lemma Lookup_lookup : forall A k (v : A) kvs, Lookup k v kvs <-> lookup k kvs = Some v.
-Admitted.
+Proof.
+  intros. generalize dependent k. generalize dependent v.
+  induction kvs; split; intros; simpl; inversion H.
+    - rewrite eqb_refl. reflexivity.
+    - rewrite eqb_sym. apply (eqb_neq k k') in H2. rewrite H2. apply IHkvs. apply H3.
+    - destruct a as [k' v']. destruct (k' =? k) eqn:E.
+      + apply eqb_eq in E. inversion H1. subst. apply Here.
+      + apply There.
+        * rewrite eqb_sym in E. apply eqb_neq in E. apply E.
+        * apply IHkvs in H1. apply H1.
+Qed.
 
 
 Definition inclusion_empty (A : Type) (m : list (string * A)) : inclusion [] m.
@@ -234,7 +248,15 @@ Qed.
 
 
 Lemma Lookup_functional : forall A B (k : A) (v v' : B) kvs,  Lookup k v kvs -> Lookup k v' kvs -> v = v'.
-Admitted.
+Proof.
+  induction kvs; intros; inversion H.
+    - subst. inversion H0.
+      + reflexivity.
+      + exfalso. apply H3. reflexivity.
+    - subst. inversion H0.
+      + apply H3 in H2. inversion H2.
+      + apply IHkvs. apply H4. apply H7.
+Qed.
 
 Lemma Lookup_unique : forall A B (k : A) (v : B) kvs (P P' : Lookup k v kvs), P = P'.
 Admitted.
@@ -261,9 +283,6 @@ Definition forall2b {A} (p : A -> A -> bool) := fix f xs ys :=
     | (x :: xs), (y :: ys) => (p x y && f xs ys)%bool
     | _        , _         => false
   end.
-
-
-
 
 Lemma mdrop_nil : forall X ns,
     @mdrop X ns nil = nil.
@@ -296,3 +315,31 @@ Definition elem {A} (A_eqb : A -> A -> bool) (x : A) (xs : list A) :=
     | None   => false
     | Some _ => true
   end.
+
+
+(* A specialized version of In for names/strings *)
+Inductive NameIn (x : string) : list string -> Prop :=
+  | NI_Here  : forall {xs}, NameIn x (x :: xs)
+  | NI_There : forall {x' xs}, x <> x' -> NameIn x xs -> NameIn x (x' :: xs).
+
+QCDerive DecOpt for (NameIn x xs).
+
+Instance NameIn_DecOpt_sound x xs : DecOptSoundPos (NameIn x xs).
+Proof. derive_sound. Qed.
+
+Instance NameIn_DecOpt_complete x xs : DecOptCompletePos (NameIn x xs).
+Proof. derive_complete. Qed.
+
+Instance NameIn_DecOpt_monotonic x xs : DecOptSizeMonotonic (NameIn x xs).
+Proof. derive_mon. Qed.
+
+
+
+Lemma NameIn_In_string_equal : forall xs x, NameIn x xs <-> @In string x xs.
+Proof with auto using NameIn.
+  induction xs; split; intros; simpl; inversion H; subst...
+    - apply IHxs in H3...
+    - destruct (string_dec x a); subst...
+      apply NI_There... 
+      apply IHxs...
+Qed.
