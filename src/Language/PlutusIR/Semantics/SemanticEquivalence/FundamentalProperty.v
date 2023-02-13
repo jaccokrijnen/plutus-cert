@@ -77,7 +77,7 @@ Proof.
         destruct (s =? x)%string eqn:Heqb.
         -- eapply eqb_eq in Heqb as Heq.
            subst.
-           assert (Annotation.appears_bound_in x (Let NonRec (TypeBind (TyVarDecl x k) t1 :: bs) t)) by eauto.
+           assert (appears_bound_in_ann x (Let NonRec (TypeBind (TyVarDecl x k) t1 :: bs) t)) by eauto.
            eapply uniqueness' in H4.
            rewrite H4 in H1.
            inversion H1.
@@ -91,7 +91,7 @@ Proof.
         destruct (s0 =? x)%string eqn:Heqb.
         -- eapply eqb_eq in Heqb as Heq.
            subst.
-           assert (Annotation.appears_bound_in x (Let NonRec (DatatypeBind (Datatype (TyVarDecl x k) l s l0) :: bs) t)) by eauto.
+           assert (appears_bound_in_ann x (Let NonRec (DatatypeBind (Datatype (TyVarDecl x k) l s l0) :: bs) t)) by eauto.
            eapply uniqueness' in H4.
            rewrite H4 in H1.
            inversion H1.

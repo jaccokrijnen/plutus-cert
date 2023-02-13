@@ -19,7 +19,7 @@ Module Ty.
     | UNI_TyVar : forall X,
         unique (Ty_Var X)
     | UNI_TyForall : forall X K T,
-        ~ Ty.appears_bound_in X T ->
+        ~ appears_bound_in_ty X T ->
         unique T ->
         unique (Ty_Forall X K T)
     | UNI_TyIFix : forall F T,
@@ -27,7 +27,7 @@ Module Ty.
         unique T ->
         unique (Ty_IFix F T)
     | UNI_TyLam : forall X K T,
-        ~ Ty.appears_bound_in X T ->
+        ~ appears_bound_in_ty X T ->
         unique T ->
         unique (Ty_Lam X K T)
     | UNI_TyApp : forall T1 T2,
@@ -44,7 +44,7 @@ Module Term.
     | UNI_Var : forall x,
         unique (Var x)
     | UNI_LamAbs : forall x T t,
-        ~ Term.appears_bound_in x t ->
+        ~ appears_bound_in_tm x t ->
         unique t ->
         Ty.unique T ->
         unique (LamAbs x T t)
@@ -53,7 +53,7 @@ Module Term.
         unique t2 ->
         unique (Apply t1 t2)
     | UNI_TyAbs : forall X K t,
-        ~ Annotation.appears_bound_in X t ->
+        ~ appears_bound_in_ann X t ->
         unique t ->   
         unique (TyAbs X K t)
     | UNI_TyInst : forall t T,
@@ -79,19 +79,19 @@ Module Term.
         unique t0 ->
         unique (Let recty nil t0)
     | UNI_Let_TermBind : forall recty stricty x T t bs t0,
-        ~ Term.appears_bound_in x t ->
-        ~ Term.appears_bound_in x (Let recty bs t0) ->
+        ~ appears_bound_in_tm x t ->
+        ~ appears_bound_in_tm x (Let recty bs t0) ->
         unique t ->
         unique (Let recty bs t0) ->
         unique (Let recty (TermBind stricty (VarDecl x T) t :: bs) t0)
     | UNI_Let_TypeBind : forall recty X K T bs t0,
-        ~ Ty.appears_bound_in X T ->
-        ~ Annotation.appears_bound_in X (Let recty bs t0) ->
+        ~ appears_bound_in_ty X T ->
+        ~ appears_bound_in_ann X (Let recty bs t0) ->
         Ty.unique T ->
         unique (Let recty bs t0) ->
         unique (Let recty (TypeBind (TyVarDecl X K) T :: bs) t0)
     | UNI_Let_DatatypeBind : forall recty X K YKs mfunc cs t0 bs,
-        ~ Annotation.appears_bound_in X (Let recty bs t0) ->
+        ~ appears_bound_in_ann X (Let recty bs t0) ->
         unique (Let recty bs t0) ->
         unique (Let recty (DatatypeBind (Datatype (TyVarDecl X K) YKs mfunc cs) :: bs) t0) 
     .
