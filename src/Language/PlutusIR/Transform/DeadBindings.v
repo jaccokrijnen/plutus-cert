@@ -20,7 +20,6 @@ From PlutusCert Require Import
 .
 
 Import NamedTerm.
-Import UniqueBinders.Term.
 Import ListNotations.
 
 Set Implicit Arguments.
@@ -84,7 +83,7 @@ with dead_syn_binding : Binding -> Binding -> Prop :=
       dead_syn_binding b b
   .
 
-Definition dead_code t t' := dead_syn t t' /\ unique t /\ closed t'.
+Definition dead_code t t' := dead_syn t t' /\ unique_tm t /\ closed t'.
 
 Lemma dead_syn_sym : forall t, dead_syn t t.
 Admitted.
