@@ -7,7 +7,6 @@ From PlutusCert Require Import
   Transform.Compat
   .
 Import NamedTerm.
-Import Term.
 
 From Coq Require Import
   Strings.String
@@ -20,7 +19,7 @@ Import ListNotations.
 Definition binding_group := (Recursivity * list Binding)%type.
 
 (*
-Assuming globally unique variables, the new binding groups much satisfy:
+Assuming globally unique_tm variables, the new binding groups much satisfy:
   - Well-scoped: each free variable in a binding RHS is bound
   - All bindings equals those in the let-rec before transformaton
 
@@ -69,7 +68,7 @@ Inductive split_syn : Term -> Term -> Prop :=
 
 Definition split_rec t t' :=
   split_syn t t' /\
-  unique t /\
+  unique_tm t /\
   closed t'
 .
 

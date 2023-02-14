@@ -14,7 +14,7 @@ From PlutusCert Require Import
 .
 
 Import NamedTerm.
-Import UniqueBinders.Term.
+Import UniqueBinders.
 Import ListNotations.
 
 Definition fv : Term -> list string := Term.fv string_dec.
@@ -69,7 +69,7 @@ Inductive dc : Term -> Term -> Type :=
 
 Open Scope type_scope.
 
-Definition dead_code t t' := unique t * dc t t'.
+Definition dead_code t t' := unique_tm t * dc t t'.
 
 Lemma dc_sym : ∀ t, dc t t.
 Admitted.

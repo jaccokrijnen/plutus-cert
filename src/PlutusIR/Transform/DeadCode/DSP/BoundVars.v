@@ -7,7 +7,7 @@ From PlutusCert Require Import Util.List.
 
 Import NamedTerm.
 
-Import UniqueBinders.Term.
+Import UniqueBinders.
 
 Require Import Utf8_core.
 Require Import Lists.List.

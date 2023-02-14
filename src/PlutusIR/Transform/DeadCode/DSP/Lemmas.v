@@ -15,7 +15,7 @@ From PlutusCert Require Import Purity.
 From PlutusCert Require Import SubstitutionNonFree.
 
 Import ListNotations.
-Import UniqueBinders.Term.
+Import UniqueBinders.
 Import Utf8_core.
 
 Set Diffs "on".
@@ -32,7 +32,7 @@ Notation "xs \ ys" := (remove_many string_dec ys xs) (at level 10).
 
 (* Uniqueness of binders for open terms *)
 Definition unique_open Δ Γ t :=
-  unique t /\
+  unique_tm t /\
   Forall (fun X => ~ appears_bound_in_ann X t) Δ /\
   Forall (fun v => ~ appears_bound_in_tm v t) Γ.
 

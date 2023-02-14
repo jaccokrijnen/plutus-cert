@@ -17,7 +17,7 @@ Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Auto.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation.
 
-Import UniqueBinders.Term.
+Import UniqueBinders.
 
 Import PlutusNotations.
 
@@ -145,7 +145,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
         eauto.
       }
 
-      assert (H_unique : unique (Let NonRec (b :: bs0) t)).
+      assert (H_unique : unique_tm (Let NonRec (b :: bs0) t)).
         admit. (* Precondition of translation relation, add to P_... *)
 
       destruct b as [ [] [x Tb] tb | | ].

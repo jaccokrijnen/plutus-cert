@@ -15,7 +15,7 @@ From PlutusCert Require Import FreeVars.
 From PlutusCert Require Import Purity.
 
 Import ListNotations.
-Import UniqueBinders.Term.
+Import UniqueBinders.
 Import Utf8_core.
 
 Set Diffs "on".

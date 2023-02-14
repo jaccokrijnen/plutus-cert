@@ -13,7 +13,6 @@ From PlutusCert Require Import SemanticEquivalence.LogicalRelation.
 From PlutusCert Require Import SemanticEquivalence.CompatibilityLemmas.
 From PlutusCert Require Import SemanticEquivalence.Auto.
 From PlutusCert Require Import SemanticEquivalence.FundamentalProperty.
-From PlutusCert Require Import Analysis.UniqueBinders.
 From PlutusCert Require Import Substitution.
 From PlutusCert Require Import Util.Tactics.
 
@@ -28,7 +27,6 @@ From PlutusCert Require Import DeadCode.DSP.SubstitutionNonFree.
 
 Import NamedTerm.
 Import ListNotations.
-Import UniqueBinders.Term.
 
 Import Utf8_core.
 

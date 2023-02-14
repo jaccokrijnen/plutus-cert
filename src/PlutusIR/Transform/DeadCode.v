@@ -20,7 +20,7 @@ From PlutusCert Require Import
 .
 
 Import NamedTerm.
-Import UniqueBinders.Term.
+Import UniqueBinders.
 Import ListNotations.
 
 Set Implicit Arguments.
@@ -87,7 +87,7 @@ with elim_binding : Binding -> Binding -> Prop :=
       elim_binding b b
   .
 
-Definition dead_code t t' := elim t t' /\ unique t /\ closed t'.
+Definition dead_code t t' := elim t t' /\ unique_tm t /\ closed t'.
 
 Lemma elim_sym : forall t, elim t t.
 Admitted.

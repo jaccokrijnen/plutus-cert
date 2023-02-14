@@ -2,6 +2,7 @@ From PlutusCert Require Import
   Util.List
   PlutusIR
   PlutusIR.Analysis.BoundVars.
+
 From QuickChick Require Import QuickChick.
 
 

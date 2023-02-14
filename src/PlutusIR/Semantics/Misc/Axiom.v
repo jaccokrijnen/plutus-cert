@@ -5,7 +5,7 @@ Require Export PlutusCert.PlutusIR.Analysis.BoundVars.
 Require Export PlutusCert.PlutusIR.Analysis.UniqueBinders.
 Require Import PlutusCert.PlutusIR.Semantics.Static.
 
-Axiom uniqueness : forall t, Term.unique t.
+Axiom uniqueness : forall t, unique_tm t.
 
 Axiom uniqueness' : forall (Delta : Delta) e,
   forall X,
