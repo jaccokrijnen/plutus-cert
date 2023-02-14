@@ -1,4 +1,6 @@
 From PlutusCert Require Import
+  Util
+  Util.List
   Language.PlutusIR
   Analysis.BoundVars.
 Import NamedTerm.
@@ -9,7 +11,7 @@ Require Import
 .
 
 Import ListNotations.
-
+From QuickChick Require Import QuickChick.
 
 Definition ctx := list string.
 
@@ -21,7 +23,7 @@ Definition tvd_name (tvd : tvdecl tyname) : tyname :=
 Reserved Notation "Δ '|-*' T" (at level 40, T at level 0).
 Inductive well_scoped_Ty (Δ : ctx) : Ty -> Prop :=
   | WST_Var : forall X,
-      In X Δ ->
+      NameIn X Δ ->
       Δ |-* (Ty_Var X)
   | WST_Fun : forall T1 T2,
       Δ |-* T1 ->
@@ -46,22 +48,33 @@ Inductive well_scoped_Ty (Δ : ctx) : Ty -> Prop :=
 where "Δ '|-*' T " := (well_scoped_Ty Δ T).
 
 Reserved Notation "Δ ',,' Γ '|-+' t " (at level 101, t at level 0, no associativity).
-Reserved Notation "Δ '|-ok_c' c " (at level 101, c at level 0).
+Reserved Notation "Δ '|-ok_cs' c " (at level 101, c at level 0).
 Reserved Notation "Δ ',,' Γ  '|-oks_nr' bs" (at level 101, bs at level 0, no associativity).
 Reserved Notation "Δ ',,' Γ '|-oks_r' bs" (at level 101, bs at level 0, no associativity).
 Reserved Notation "Δ ',,' Γ '|-ok_b' b" (at level 101, b at level 0, no associativity).
 
-Inductive constructor_well_formed (Δ : ctx) : constructor -> Prop :=
-  | W_Con : forall x T ar,
+
+
+Inductive constructors_well_formed (Δ : ctx) : list constructor -> Prop :=
+  | W_Con : forall x T ar cs,
       Δ |-* T ->
-      Δ |-ok_c (Constructor (VarDecl x T) ar)
+      Δ |-ok_cs cs ->
+      Δ |-ok_cs ((Constructor (VarDecl x T) ar) :: cs)
   where 
-    "Δ '|-ok_c' c" := (constructor_well_formed Δ c)
+    "Δ '|-ok_cs' cs" := (constructors_well_formed Δ cs)
 .
+
+
+
+Definition btvb_app (b : Binding) Δ := btvb b ++ Δ.
+Definition bvb_app (b : Binding) Δ := bvb b ++ Δ.
+Definition map_tvd_name_rev_app x c := rev (map tvd_name x) ++ c.
+Definition rev_btvbs_app (x : list Binding) c := rev (btvbs x) ++ c.
+Definition rev_bvbs_app (x : list Binding) c := rev (bvbs x) ++ c.
 
 Inductive well_scoped (Δ Γ: ctx) : Term -> Prop :=
   | WS_Var : forall x,
-      In x Γ ->
+      NameIn x Γ ->
       Δ ,, Γ |-+ (Var x)
   | WS_LamAbs : forall x T t,
       Δ |-* T ->
@@ -91,18 +104,18 @@ Inductive well_scoped (Δ Γ: ctx) : Term -> Prop :=
       Δ ,, Γ |-+ (Constant (Some' x))
   | WS_Builtin : forall f,
       Δ ,, Γ |-+ (Builtin f)
-  | WS_Error : forall S,
-      Δ |-* S ->
-      Δ ,, Γ |-+ (Error S)
+  | WS_Error : forall s,
+      Δ |-* s ->
+      Δ ,, Γ |-+ (Error s)
   | WS_Let : forall bs t Δ' Γ',
-      Δ' = rev (btvbs bs) ++ Δ ->
-      Γ' = rev (bvbs bs) ++ Γ ->
+      Δ' = rev_btvbs_app bs Δ ->
+      Γ' = rev_bvbs_app bs Γ ->
       Δ ,, Γ |-oks_nr bs ->
       Δ' ,, Γ' |-+ t ->
       Δ ,, Γ |-+ (Let NonRec bs t)
   | WS_LetRec : forall bs t Δ' Γ',
-      Δ' = rev (btvbs bs) ++ Δ ->
-      Γ' = rev (bvbs bs) ++ Γ ->
+      Δ' = rev_btvbs_app bs Δ ->
+      Γ' = rev_bvbs_app bs Γ ->
       Δ' ,, Γ' |-oks_r bs ->
       Δ' ,, Γ' |-+ t ->
       Δ ,, Γ |-+ (Let Rec bs t)
@@ -111,11 +124,10 @@ Inductive well_scoped (Δ Γ: ctx) : Term -> Prop :=
 with bindings_well_formed_nonrec (Δ Γ : ctx) : list Binding -> Prop :=
 
   | W_NilB_NonRec :
-    Δ ,, Γ |-oks_nr nil
-
+      Δ ,, Γ |-oks_nr nil
   | W_ConsB_NonRec : forall b bs,
       Δ ,, Γ |-ok_b b ->
-      (btvb b ++ Δ) ,, (bvb b ++ Γ) |-oks_nr bs ->
+      (btvb_app b Δ) ,, (bvb_app b Γ) |-oks_nr bs ->
       Δ ,, Γ |-oks_nr (b :: bs)
 
 with bindings_well_formed_rec (Δ Γ : ctx) : list Binding -> Prop :=
@@ -136,8 +148,8 @@ with binding_well_formed (Δ Γ : ctx) : Binding -> Prop :=
       Δ |-* T ->
       Δ ,, Γ |-ok_b (TypeBind (TyVarDecl X K) T)
   | W_Data : forall X YKs cs matchFunc Δ',
-      Δ' = rev (map tvd_name YKs) ++ Δ  ->
-      (forall c, In c cs -> Δ' |-ok_c c) ->
+      Δ' = map_tvd_name_rev_app YKs Δ  ->
+      Δ' |-ok_cs cs ->
       Δ ,, Γ |-ok_b (DatatypeBind (Datatype X YKs matchFunc cs))
 
   where "Δ ',,' Γ '|-+' t" := (well_scoped Δ Γ t)
@@ -145,5 +157,7 @@ with binding_well_formed (Δ Γ : ctx) : Binding -> Prop :=
   and "Δ ',,' Γ '|-oks_r' bs" := (bindings_well_formed_rec Δ Γ bs)
   and "Δ ',,' Γ '|-ok_b' b" := (binding_well_formed Δ Γ b)
 .
+
+Global Hint Constructors well_scoped bindings_well_formed_nonrec bindings_well_formed_rec binding_well_formed : well_scoped_hints.
 
 Definition closed := well_scoped [] [].

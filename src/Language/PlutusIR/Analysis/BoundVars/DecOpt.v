@@ -22,7 +22,6 @@ Proof. (* derive_mon. Qed. *) idtac "Admitted: appears_bound_in_ty_DecOpt_mon". 
 
 
 
-
 (* appears_bound_in_tm *)
 
 QCDerive DecOpt for (appears_bound_in_tm x tm).
@@ -35,7 +34,6 @@ Proof. (* derive_complete. Qed. *) idtac "Admitted: appears_bound_in_tm_DecOpt_c
 
 Instance appears_bound_in_tm_DecOpt_mon x tm: DecOptSizeMonotonic (appears_bound_in_tm x tm).
 Proof. (* derive_mon. Qed. *) idtac "Admitted: appears_bound_in_tm_DecOpt_mon". Admitted.
-
 
 
 (* appears_bound_in_ann *)

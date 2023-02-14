@@ -11,12 +11,14 @@ src/Language/PlutusIR/Folds.v
 src/Language/PlutusIR/Analysis/Equality.v
 src/Language/PlutusIR/Analysis/FreeVars.v
 src/Language/PlutusIR/Analysis/UniqueBinders.v
-src/Language/PlutusIR/Analysis/UniqueBinders/DecOpt.v
 src/Language/PlutusIR/Analysis/Size.v
 src/Language/PlutusIR/Analysis/BoundVars.v
-src/Language/PlutusIR/Analysis/BoundVars/DecOpt.v
 src/Language/PlutusIR/Analysis/Purity.v
 src/Language/PlutusIR/Analysis/WellScoped.v
+
+src/Language/PlutusIR/Analysis/BoundVars/DecOpt.v
+src/Language/PlutusIR/Analysis/UniqueBinders/DecOpt.v
+src/Language/PlutusIR/Analysis/WellScoped/DecOpt.v
 
 src/Language/PlutusIR/Transform/Equal.v
 src/Language/PlutusIR/Transform/ThunkRecursions.v

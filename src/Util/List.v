@@ -82,6 +82,8 @@ Inductive NameIn (x : string) : list string -> Prop :=
   | NI_Here  : forall {xs}, NameIn x (x :: xs)
   | NI_There : forall {x' xs}, x <> x' -> NameIn x xs -> NameIn x (x' :: xs).
 
+QCDerive EnumSized for ascii.
+QCDerive EnumSized for string.
 QCDerive DecOpt for (NameIn x xs).
 
 Instance NameIn_DecOpt_sound x xs : DecOptSoundPos (NameIn x xs).

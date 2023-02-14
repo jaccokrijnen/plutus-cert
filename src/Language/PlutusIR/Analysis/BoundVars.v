@@ -18,7 +18,6 @@ From PlutusCert Require Import
 
 Import NamedTerm.
 
-
 Inductive appears_bound_in_ty (X: tyname) : Ty -> Prop :=
   | ABI_Ty_TyFun1 : forall T1 T2,
       appears_bound_in_ty X T1 ->
@@ -97,8 +96,7 @@ Inductive appears_bound_in_tm (x : name) : Term -> Prop :=
       appears_bound_in_tm x (Let recty (TermBind stricty (VarDecl y T) t :: bs) t0)
   | ABI_Tm_Let_DatatypeBind : forall recty XK YKs mfunc cs t0 bs,
       NameIn x (mfunc :: bv_constructors cs) ->
-      appears_bound_in_tm x (Let recty (DatatypeBind (Datatype XK YKs mfunc cs) :: bs) t0) 
-      .
+      appears_bound_in_tm x (Let recty (DatatypeBind (Datatype XK YKs mfunc cs) :: bs) t0).
 
 
 Inductive appears_bound_in_ann (X : tyname) : Term -> Prop :=
