@@ -1,6 +1,9 @@
-Require Import PlutusCert.Language.PlutusIR.
+From PlutusCert Require Import 
+  Util
+  Language.PlutusIR
+  Language.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
+
 Import NamedTerm.
-Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
 From Coq Require Import Bool.Bool Arith.PeanoNat.
 Import PeanoNat.Nat.
 
@@ -42,7 +45,7 @@ with neutral_value : nat -> Term -> Prop :=
   | NV_Builtin : forall n f,
       (* NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity. *)
       (* f <> IfThenElse -> *)
-      n < arity f ->
+      lt_nat n (arity f) ->
       neutral_value n (Builtin f)
   | NV_Apply : forall n nv v,
       value v ->
@@ -86,6 +89,8 @@ Inductive fully_applied_neutral : nat -> Term -> Prop :=
 
 #[export] Hint Constructors fully_applied_neutral : core.
 
+
+
 Definition fully_applied (t : Term) := fully_applied_neutral 0 t.
 
 #[export] Hint Unfold fully_applied : core.
@@ -99,9 +104,11 @@ Lemma neutral_value__monotone : forall n m nv,
 Proof with (eauto || (try lia)).
   intros.
   generalize dependent m.
-  induction H; intros...
-  - destruct f...
-    all: econstructor...
+  induction H; intros.
+  - apply lt_nat_lt in H.
+    constructor.
+    apply lt_nat_lt.
+    inversion H0; subst...
   - econstructor...
     eapply IHneutral_value...
   - econstructor...
@@ -116,7 +123,8 @@ Proof with (eauto || (try lia)).
   intros.
   generalize dependent m.
   induction H; intros...
-  - subst...
+    constructor.
+    apply lt_nat_lt...
   - econstructor...
     eapply IHfully_applied_neutral...
   - econstructor...

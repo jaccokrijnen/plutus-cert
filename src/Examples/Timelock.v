@@ -57,6 +57,12 @@ Hint Resolve
   -> Nat.leb_le 0 : hint_dead_code
 .
 
+#[global]
+Hint Resolve
+  -> lt_nat_lt : hint_dead_code
+.
+
+
 (* congruence *)
 #[global]
 Hint Constructors
@@ -86,6 +92,8 @@ Proof with auto 10 with hint_dead_code.
   apply dc_cong, C_Let...
   do 2 (apply dc_delete_let; auto 10 with hint_dead_code).
   apply dc_cong, C_Let...
+Admitted.
+(*
   do 11 (apply dc_delete_let; auto 10 with hint_dead_code).
   apply dc_cong, C_Let...
   do 16 (apply dc_delete_let; auto 10 with hint_dead_code).
@@ -95,6 +103,7 @@ Proof with auto 10 with hint_dead_code.
   apply dc_cong, C_Let...
   apply dc_delete_let...
 Admitted.
+ *)
 
 (* TODO: Update with new definition of inline and dead_code *)
 (*
