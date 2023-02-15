@@ -7,9 +7,6 @@ Import ListNotations.
 Local Open Scope list_scope.
 Local Open Scope string_scope.
 
-From QuickChick Require Import QuickChick.
-
-
 Fixpoint lookup {X:Type} (k : string) (l : list (string * X)) : option X :=
   match l with
   | nil => None
@@ -82,21 +79,6 @@ Inductive NameIn (x : string) : list string -> Prop :=
   | NI_Here  : forall {xs}, NameIn x (x :: xs)
   | NI_There : forall {x' xs}, x <> x' -> NameIn x xs -> NameIn x (x' :: xs).
 
-QCDerive EnumSized for ascii.
-QCDerive EnumSized for string.
-QCDerive DecOpt for (NameIn x xs).
-
-Instance NameIn_DecOpt_sound x xs : DecOptSoundPos (NameIn x xs).
-Proof. derive_sound. Qed.
-
-Instance NameIn_DecOpt_complete x xs : DecOptCompletePos (NameIn x xs).
-Proof. derive_complete. Qed.
-
-Instance NameIn_DecOpt_monotonic x xs : DecOptSizeMonotonic (NameIn x xs).
-Proof. derive_mon. Qed.
-
-
-
 Lemma NameIn_In_string_equal : forall xs x, NameIn x xs <-> @In string x xs.
 Proof with auto using NameIn.
   induction xs; split; intros; simpl; inversion H; subst...
@@ -105,4 +87,3 @@ Proof with auto using NameIn.
       apply NI_There... 
       apply IHxs...
 Qed.
-

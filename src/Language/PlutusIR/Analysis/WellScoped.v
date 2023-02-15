@@ -11,7 +11,6 @@ Require Import
 .
 
 Import ListNotations.
-From QuickChick Require Import QuickChick.
 
 Definition ctx := list string.
 
@@ -158,6 +157,9 @@ with binding_well_formed (Δ Γ : ctx) : Binding -> Prop :=
   and "Δ ',,' Γ '|-ok_b' b" := (binding_well_formed Δ Γ b)
 .
 
-Global Hint Constructors well_scoped bindings_well_formed_nonrec bindings_well_formed_rec binding_well_formed : well_scoped_hints.
+#[export] Hint Constructors well_scoped : core.
+#[export] Hint Constructors bindings_well_formed_nonrec : core.
+#[export] Hint Constructors bindings_well_formed_rec : core.
+#[export] Hint Constructors binding_well_formed : core.
 
 Definition closed := well_scoped [] [].

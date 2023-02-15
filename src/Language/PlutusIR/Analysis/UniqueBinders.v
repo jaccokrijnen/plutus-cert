@@ -78,17 +78,17 @@ Inductive unique_tm : Term -> Prop :=
   | UNI_Let_TermBind : forall recty stricty x T t bs t0,
       ~ appears_bound_in_tm x t ->
       ~ appears_bound_in_tm x (Let recty bs t0) ->
-        unique_tm t ->
-        unique_tm (Let recty bs t0) ->
-          unique_tm (Let recty (TermBind stricty (VarDecl x T) t :: bs) t0)
+      unique_tm t ->
+      unique_tm (Let recty bs t0) ->
+      unique_tm (Let recty (TermBind stricty (VarDecl x T) t :: bs) t0)
   | UNI_Let_TypeBind : forall recty X K T bs t0,
       ~ appears_bound_in_ty X T ->
       ~ appears_bound_in_ann X (Let recty bs t0) ->
-        unique_ty T ->
-        unique_tm (Let recty bs t0) ->
-          unique_tm (Let recty (TypeBind (TyVarDecl X K) T :: bs) t0)
+      unique_ty T ->
+      unique_tm (Let recty bs t0) ->
+      unique_tm (Let recty (TypeBind (TyVarDecl X K) T :: bs) t0)
   | UNI_Let_DatatypeBind : forall recty X K YKs mfunc cs t0 bs,
       ~ appears_bound_in_ann X (Let recty bs t0) ->
-        unique_tm (Let recty bs t0) ->
-          unique_tm (Let recty (DatatypeBind (Datatype (TyVarDecl X K) YKs mfunc cs) :: bs) t0) 
+      unique_tm (Let recty bs t0) ->
+      unique_tm (Let recty (DatatypeBind (Datatype (TyVarDecl X K) YKs mfunc cs) :: bs) t0) 
 .

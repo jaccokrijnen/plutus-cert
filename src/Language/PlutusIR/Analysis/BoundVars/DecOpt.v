@@ -1,5 +1,6 @@
 From PlutusCert Require Import 
   Util.List
+  Util.DecOpt
   Language.PlutusIR
   Language.PlutusIR.Analysis.BoundVars.
 

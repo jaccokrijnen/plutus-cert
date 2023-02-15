@@ -1,11 +1,10 @@
-Require Import String.
 Require Import List.
 Require Import PeanoNat.
 Require Import Program.Basics.
 Set Implicit Arguments.
+Require Import Coq.Strings.String.
 Import ListNotations.
 
-From QuickChick Require Import QuickChick.
 
 Section list_rect'.
   Variable (a : Type).
@@ -268,20 +267,16 @@ Notation " g ∘ f " := (compose g f)
   (at level 40, left associativity).
 
 
-
 Inductive lt_nat : nat -> nat -> Prop :=
   | LtN_N : forall n,
       lt_nat n (S n)
   | LtN_S : forall n m,
       lt_nat n m -> lt_nat n (S m).
 
-QCDerive DecOpt for (lt_nat n m).
-
-Instance lt_nat_DecOpt_sound n m: DecOptSoundPos (lt_nat n m).
-Proof. derive_sound. Qed.
-
-Instance lt_nat_DecOpt_complete n m: DecOptCompletePos (lt_nat n m).
-Proof. derive_complete. Qed.
-
-Instance lt_nat_DecOpt_monotonic n m: DecOptSizeMonotonic (lt_nat n m).
-Proof. derive_mon. Qed.
+Lemma lt_nat_lt : forall n m,
+  lt_nat n m <-> lt n m.
+Proof with eauto using le, lt_nat.
+  unfold lt; induction n; induction m; split; intros; inversion H; subst...
+  1, 3: apply IHm in H2...
+  all: apply IHm in H1...
+Qed.

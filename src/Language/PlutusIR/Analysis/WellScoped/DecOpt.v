@@ -1,5 +1,6 @@
 From PlutusCert Require Import
   Util.List
+  Util.DecOpt
   Language.PlutusIR
   Language.PlutusIR.Analysis.WellScoped.
 
@@ -26,8 +27,10 @@ Proof. derive_sound. Qed.
 (* derivation of proxy type and soundness proof *)
 MetaCoq Run (deriveCTProxy well_scoped).
 
+(* TODO: if the core database is always used, the hint database argument could technically be removed
+ *  from the ltac in coq-ctproxy *)
 Theorem well_scoped_proxy_sound : well_scoped_proxy_sound_type.
-Proof. deriveCTProxy_sound well_scoped_hints. Qed.
+Proof. deriveCTProxy_sound core. Qed.
 
 
 
@@ -36,16 +39,6 @@ QCDerive DecOpt for (well_scoped_proxy tag).
 Instance DecOptwell_scoped_proxy_sound tag : DecOptSoundPos (well_scoped_proxy tag).
 Proof. derive_sound. Qed.
 
-
-
-(* helper Ltac (is generic, still needs to be given a place) *)
-Ltac derive__sound HSound :=
-  unfold DecOptSoundPos;
-  unfold decOpt;
-  intros s H;
-  apply HSound;
-  apply sound in H;
-  assumption.
 
 
 
