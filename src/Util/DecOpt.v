@@ -29,34 +29,69 @@ QCDerive EnumSized for string.
 
 QCDerive DecOpt for (NameIn x xs).
 
-Instance NameIn_DecOpt_sound x xs : DecOptSoundPos (NameIn x xs).
+Instance DecOptNameIn_sound x xs : DecOptSoundPos (NameIn x xs).
 Proof. derive_sound. Qed.
 
-Instance NameIn_DecOpt_complete x xs : DecOptCompletePos (NameIn x xs).
+Instance DecOptNameIn_complete x xs : DecOptCompletePos (NameIn x xs).
 Proof. derive_complete. Qed.
 
-Instance NameIn_DecOpt_monotonic x xs : DecOptSizeMonotonic (NameIn x xs).
+Instance DecOptNameIn_mon x xs : DecOptSizeMonotonic (NameIn x xs).
 Proof. derive_mon. Qed.
+
+
+
+QCDerive DecOpt for (Lookup k v kvs).
+
+(* NOTE: if the type arguments, and its requirements are not added in this definition, 
+    QuickChick will still be able to derive a soundness proof, but specifically for
+    an instance of Lookup with the type string for the type arguments A and B *)
+Instance DecOptLookup_sound 
+  (* Type arguments *)
+  {A B : Type} 
+
+  (* Requirements for ploymorphic DecOptLookup instance *)
+  {Dec_Eq_A : Dec_Eq A} {Dec_Eq_B : Dec_Eq B}
+  {Enum_A : Enum A}  {Enum_B : Enum B} 
+
+  (* Actual arguments *)
+  (k : A) (v : B) (kvs : list (A * B)) : DecOptSoundPos (Lookup k v kvs).
+Proof. derive_sound. Qed.
+
+Instance DecOptLookup_complete
+  {A B : Type} 
+  {Dec_Eq_A : Dec_Eq A} {Dec_Eq_B : Dec_Eq B}
+  {Enum_A : Enum A}  {Enum_B : Enum B} 
+  (k : A) (v : B) (kvs : list (A * B)) : DecOptCompletePos (Lookup k v kvs).
+Proof. derive_complete. Qed.
+
+Instance DecOptLookup_monotonic
+  {A B : Type} 
+  {Dec_Eq_A : Dec_Eq A} {Dec_Eq_B : Dec_Eq B}
+  {Enum_A : Enum A}  {Enum_B : Enum B} 
+  (k : A) (v : B) (kvs : list (A * B)) : DecOptSizeMonotonic (Lookup k v kvs).
+Proof. derive_mon. Qed.
+
 
 
 
 QCDerive DecOpt for (lt_nat n m).
 
-Instance lt_nat_DecOpt_sound n m: DecOptSoundPos (lt_nat n m).
+Instance DecOptlt_nat_sound n m: DecOptSoundPos (lt_nat n m).
 Proof. derive_sound. Qed.
 
-Instance lt_nat_DecOpt_complete n m: DecOptCompletePos (lt_nat n m).
+Instance DecOptlt_nat_complete n m: DecOptCompletePos (lt_nat n m).
 Proof. derive_complete. Qed.
 
-Instance lt_nat_DecOpt_monotonic n m: DecOptSizeMonotonic (lt_nat n m).
+Instance DecOptlt_nat_monotonic n m: DecOptSizeMonotonic (lt_nat n m).
 Proof. derive_mon. Qed.
 
 
 
-Instance DecOptlt n m : DecOpt (le n m) :=
+
+Instance DecOptle n m : DecOpt (le n m) :=
   {| decOpt _ := Some (Nat.leb n m) |}.
 
-Instance DecOptlt_sound n m : DecOptSoundPos (lt n m).
+Instance DecOptle_sound n m : DecOptSoundPos (le n m).
 Proof.
   unfold DecOptSoundPos.
   intros.

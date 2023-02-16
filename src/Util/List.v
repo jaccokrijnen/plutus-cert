@@ -18,6 +18,8 @@ Inductive Lookup {A B :Type} (k : A) (v : B) : list (A * B) -> Prop :=
   | There   : forall {k' v' kvs}, ~ (k = k') -> Lookup k v kvs -> Lookup k v ((k', v') :: kvs)
 .
 
+#[export] Hint Constructors Lookup : core.
+
 Lemma Lookup_lookup : forall A k (v : A) kvs, Lookup k v kvs <-> lookup k kvs = Some v.
 Proof.
   intros. generalize dependent k. generalize dependent v.

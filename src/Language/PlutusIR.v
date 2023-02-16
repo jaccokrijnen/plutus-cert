@@ -13,8 +13,6 @@ Require Import Coq.Program.Basics.
 
 Import ListNotations.
 
-
-From QuickChick Require Import QuickChick.
 (*
   Simplification of the names in the AST
 
@@ -49,8 +47,6 @@ Inductive DefaultUni : Type :=
     | DefaultUniUnit       (* : DefaultUni unit (* () *)*)
     | DefaultUniBool       (* : DefaultUni bool (* Bool *)*)
     .
-
-QCDerive EnumSized for DefaultUni.
 
 (** Existentials as a datype *)
 Inductive some {f : DefaultUni -> Type} :=
