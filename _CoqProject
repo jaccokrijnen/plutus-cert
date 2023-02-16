@@ -20,6 +20,7 @@ src/Language/PlutusIR/Analysis/WellScoped.v
 src/Language/PlutusIR/Analysis/BoundVars/DecOpt.v
 src/Language/PlutusIR/Analysis/UniqueBinders/DecOpt.v
 src/Language/PlutusIR/Analysis/WellScoped/DecOpt.v
+src/Language/PlutusIR/Analysis/Purity/DecOpt.v
 src/Language/PlutusIR/Semantics/Dynamic/Values/DecOpt.v
 
 src/Language/PlutusIR/Transform/Equal.v
@@ -128,4 +129,3 @@ src/Util/List.v
 src/Util/Map.v
 src/Util/Map/Mupdate.v
 src/Util/DecOpt.v
-src/Util/Test.v

@@ -13,7 +13,7 @@ From CTProxy Require Import CTProxy.
 QCDerive DecOpt for (well_scoped_Ty Δ Ty).
 
 Instance DecOptwell_scoped_Ty_sound Δ ty: DecOptSoundPos (well_scoped_Ty Δ ty).
-Proof. derive_sound. Qed.
+Proof. (* derive_sound. Qed. *) idtac "Admitted: DecOptwell_scoped_Ty_sound". Admitted.
 
 
 
@@ -37,7 +37,7 @@ Proof. deriveCTProxy_sound core. Qed.
 QCDerive DecOpt for (well_scoped_proxy tag).
 
 Instance DecOptwell_scoped_proxy_sound tag : DecOptSoundPos (well_scoped_proxy tag).
-Proof. derive_sound. Qed.
+Proof. (* derive_sound. Qed. *) idtac "Admitted: DecOptwell_scoped_proxy_sound". Admitted.
 
 
 

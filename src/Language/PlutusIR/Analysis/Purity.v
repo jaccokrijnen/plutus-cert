@@ -19,11 +19,11 @@ Inductive binder_info :=
   | lambda_bound
 .
 
+
 Definition ctx := list (string * binder_info).
 
 (* Pure terms include values or variables that are known to be bound to values *)
-Inductive is_pure (Γ : ctx) : Term -> Type :=
-
+Inductive is_pure (Γ : ctx) : Term -> Prop :=
   | is_pure_value : forall t,
       value t ->
       ~(is_error t) ->
