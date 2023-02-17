@@ -27,14 +27,15 @@ Proof. derive_sound. Qed.
 
 
 
-
 (* derivation of proxy type and soundness proof *)
 MetaCoq Run (deriveCTProxy well_scoped).
+
+Local Hint Constructors well_scoped bindings_well_formed_nonrec bindings_well_formed_rec binding_well_formed : well_scoped_hints.
 
 (* TODO: if the core database is always used, the hint database argument could technically be removed
  *  from the ltac in coq-ctproxy *)
 Theorem well_scoped_proxy_sound : well_scoped_proxy_sound_type.
-Proof. deriveCTProxy_sound core. Qed.
+Proof. deriveCTProxy_sound well_scoped_hints. Qed.
 
 
 
