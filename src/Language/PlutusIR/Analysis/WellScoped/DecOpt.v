@@ -17,10 +17,14 @@ Proof. (* derive_sound. Qed. *) idtac "Admitted: DecOptwell_scoped_Ty_sound". Ad
 
 
 
+
+
 QCDerive DecOpt for (constructors_well_formed Δ c).
 
 Instance DecOptconstructors_well_formed_sound Δ c : DecOptSoundPos (constructors_well_formed Δ c).
 Proof. derive_sound. Qed.
+
+
 
 
 
@@ -34,10 +38,13 @@ Proof. deriveCTProxy_sound core. Qed.
 
 
 
+
+
 QCDerive DecOpt for (well_scoped_proxy tag).
 
 Instance DecOptwell_scoped_proxy_sound tag : DecOptSoundPos (well_scoped_proxy tag).
 Proof. (* derive_sound. Qed. *) idtac "Admitted: DecOptwell_scoped_proxy_sound". Admitted.
+
 
 
 

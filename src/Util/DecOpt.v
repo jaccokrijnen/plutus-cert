@@ -73,7 +73,6 @@ Proof. derive_mon. Qed.
 
 
 
-
 QCDerive DecOpt for (lt_nat n m).
 
 Instance DecOptlt_nat_sound n m: DecOptSoundPos (lt_nat n m).
@@ -99,4 +98,3 @@ Proof.
   apply Nat.leb_le.
   apply H.
 Qed.
-
