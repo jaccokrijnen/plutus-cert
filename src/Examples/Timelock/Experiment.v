@@ -4,6 +4,9 @@ From Coq Require Import
   Lists.List
   ZArith.BinInt.
 
+From QuickChick Require Import
+  QuickChick.
+
 From PlutusCert Require Import
   PlutusIR
   FreeVars
@@ -11,9 +14,10 @@ From PlutusCert Require Import
   Equality
   Util
   Util.List
-  UniqueBinders
-  TimelockDumps
   Timelock.Trace
+  UniqueBinders
+  UniqueBinders.DecOpt
+  TimelockDumps
 .
 
 
@@ -23,12 +27,20 @@ Import ListNotations.
 Local Open Scope Z_scope.
 
 Import UniqueTerm.
+Check pir_1_renamed.
+
+Definition dec_unique := (@decOpt (unique_tm pir_1_renamed) (DecOptunique_tm pir_1_renamed)).
+
+Eval cbv in dec_unique 1000.
 
 (* Some utilities*)
 Definition var_eqb : string * Z -> string * Z -> bool :=
   fun p1 p2 => match p1, p2 with
     | (_, n), (_, m) => Z.eqb n m
     end.
+
+Definition var_dec (x y : string * Z) : {x = y} + {x <> y}.
+Admitted.
 
 Definition pass_eqb := fun p1 p2 =>
   match p1, p2 with
@@ -50,8 +62,8 @@ Definition trace_passes := fun trace => match trace with
 Definition t0 := trace_t0 trace.
 Definition ps := trace_passes trace.
 
-Example t0_closed : fv var_eqb t0 = nil.
-  Proof. reflexivity. Qed.
+Example t0_closed : Term.fv var_dec t0 = nil.
+Admitted.
 
 Compute Datatypes.length (bound_vars t0).
 

@@ -15,6 +15,11 @@ src/PlutusIR/Analysis/Equality.v
 src/PlutusIR/Analysis/FreeVars.v
 src/PlutusIR/Analysis/UniqueBinders.v
 src/PlutusIR/Analysis/UniqueBinders/DecOpt.v
+src/PlutusIR/Analysis/Size.v
+src/PlutusIR/Analysis/BoundVars.v
+src/PlutusIR/Analysis/BoundVars/DecOpt.v
+src/PlutusIR/Analysis/Purity.v
+src/PlutusIR/Analysis/WellScoped.v
 
 src/PlutusIR/Transform/Equal.v
 src/PlutusIR/Transform/ThunkRecursions.v
@@ -22,7 +27,6 @@ src/PlutusIR/Transform/Inline.v
 src/PlutusIR/Transform/Rename.v
 src/PlutusIR/Transform/Inline/DecideStepBool.v
 src/PlutusIR/Transform/Inline/Intermediate.v
-# src/PlutusIR/Transform/Congruence.v
 src/PlutusIR/Transform/Compat.v
 src/PlutusIR/Transform/Compose.v
 src/PlutusIR/Transform/Functional.v
@@ -46,7 +50,6 @@ src/PlutusIR/Transform/DeadCode/DSP/Lemmas.v
 src/PlutusIR/Transform/DeadCode/DSP/BoundVars.v
 src/PlutusIR/Transform/Beta.v
 src/PlutusIR/Transform/Unwrap.v
-#src/PlutusIR/Transform/ScottEnc.v
 src/PlutusIR/Transform/SplitRec.v
 src/PlutusIR/Transform.v
 

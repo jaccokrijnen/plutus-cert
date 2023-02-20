@@ -33,3 +33,6 @@ Proof. (* derive_complete. Qed. *) idtac "Admitted: unique_tm_DecOpt_complete". 
 Instance unique_tm_DecOpt_mono ty: DecOptSizeMonotonic (unique_ty ty).
 Proof. (* derive_mon. Qed. *) idtac "Admitted: unique_tm_DecOpt_mon". Admitted.
 
+
+Definition dec_unique (t : NamedTerm.Term) : nat -> option bool :=
+  @decOpt (unique_tm t) (DecOptunique_tm t).
