@@ -294,7 +294,7 @@ Hint Resolve
   : Hints_soundness.
 Hint Constructors Cong : Hints_soundness.
 
-Theorem dec_Term_sound :
+Theorem dec_Term_Binding_sound :
   (∀ t, P_Term t) /\ (∀ b, P_Binding b).
 Proof with eauto with Hints_soundness.
   apply Term__multind with (P := P_Term) (Q := P_Binding).
@@ -366,6 +366,15 @@ Proof with eauto with Hints_soundness.
   - unfold P_Binding...
 Qed.
 
+Corollary dec_Term_sound : ∀ t t', dec_Term t t' = true -> dead_syn t t'.
+Proof.
+  apply dec_Term_Binding_sound.
+Qed.
+
+Corollary dec_Binding_sound : ∀ t t', dec_Term t t' = true -> dead_syn t t'.
+Proof.
+  apply dec_Term_Binding_sound.
+Qed.
 
 From Coq Require Import Extraction.
 Require Import Strings.Ascii.
