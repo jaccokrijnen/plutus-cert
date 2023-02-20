@@ -10,7 +10,7 @@ From PlutusCert Require Import
   Analysis.Purity
   Analysis.WellScoped
   Transform.SplitRec
-  Static.Typing.
+  .
 Import NamedTerm.
 
 

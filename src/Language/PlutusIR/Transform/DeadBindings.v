@@ -17,7 +17,7 @@ From PlutusCert Require Import
   Language.PlutusIR.Analysis.UniqueBinders
   Language.PlutusIR.Transform.Congruence
   Language.PlutusIR.Semantics.Dynamic.Values
-  Static.Typing.
+.
 
 Import NamedTerm.
 Import UniqueBinders.Term.

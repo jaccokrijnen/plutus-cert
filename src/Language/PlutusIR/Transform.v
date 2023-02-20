@@ -1,5 +1,4 @@
 From PlutusCert Require Export
-  Language.PlutusIR
   Language.PlutusIR.Transform.Compose
   Language.PlutusIR.Transform.Rename
   Language.PlutusIR.Transform.DeadBindings

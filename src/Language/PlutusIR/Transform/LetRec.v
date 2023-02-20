@@ -9,7 +9,7 @@ Import ListNotations.
 Open Scope string_scope.
 
 
-Fixpoint lams (binds : list VDecl) (body : Term) : Term :=
+Definition lams (binds : list VDecl) (body : Term) : Term :=
   fold_right (fun '(VarDecl x τ) t => LamAbs x τ t) body binds.
 
 Definition FuncTy : Type := Ty * Ty.

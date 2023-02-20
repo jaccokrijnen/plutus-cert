@@ -70,7 +70,7 @@ Fixpoint compile_term (t : Term) : Term := match t with
 with compile_NonRec_Binding (b : Binding) : Term -> Term :=
   match b with
   | TermBind Strict (VarDecl v ty) t_bound => fun t_bs => Apply (LamAbs v ty t_bs) (compile_term t_bound)
-  | b => id
+  | _ => id
   end
 
 with compile_Rec_Binding (b : Binding) : Binding := match b with
@@ -126,6 +126,7 @@ Definition C_Unwrap' : forall R (t t' : Term), R t t' -> Cong R (Unwrap t) (Unwr
 Proof. eq_principle. Qed.
 
 Create HintDb eq_principles.
+#[global]
 Hint Resolve C_Let' C_Var' C_LamAbs' C_TyAbs' C_Apply' C_Constant' C_Builtin' C_TyInst' C_Error' C_IWrap' C_Unwrap : eq_principles.
 
 (*

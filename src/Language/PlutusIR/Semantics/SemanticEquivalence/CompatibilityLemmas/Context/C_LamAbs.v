@@ -1,5 +1,4 @@
 From PlutusCert Require Import
-  Language.PlutusIR
   Language.PlutusIR.Semantics.Dynamic
   Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation
   Normalisation

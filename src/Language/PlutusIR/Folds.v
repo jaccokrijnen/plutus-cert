@@ -44,15 +44,11 @@ with AlgBindings : Type := mkBindingsAlg
 
 End Algebras.
 
-Print Visibility.
-
-
-
 (* Composition of algebras: products *)
 
 (* Shorthand for type signature of a product *)
 Definition algProd (alg : Type -> Type) :=
-  forall {a b},  alg a -> alg b -> alg (a * b)%type. (* type scope is not inferred because alg is not yet typed *)
+  forall a b,  alg a -> alg b -> alg (a * b)%type. (* type scope is not inferred because alg is not yet typed *)
 
 Definition algBindingProd {rTerm rBindings} : algProd (fun x => AlgBinding rTerm x rBindings) :=
   fun _ _ a1 a2 =>

@@ -3,7 +3,7 @@ Require Import Coq.Arith.PeanoNat.
 Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Ascii.
-Require Import Omega.
+Require Import Lia.
 From Equations Require Import Equations.
 
 Set Implicit Arguments.
@@ -26,8 +26,8 @@ Section list_size.
   Proof.
     intros. funelim (list_size xs); simpl in x. destruct H.
     destruct H0.
-    - subst; omega.
-    - specialize (H _ H0). intuition.
+    - subst; lia.
+    - specialize (H _ H0). lia.
   Qed.
 End list_size.
 Transparent list_size.
@@ -110,7 +110,7 @@ Lemma app_struct_l : forall s t, term_size s < term_size (Apply s t).
 Qed.
 
 Lemma app_struct_r : forall s t, term_size t < term_size (Apply s t).
-Proof. intros s t. rewrite fold_reduce_apply. simpl. intuition. Qed.
+Proof. intros s t. rewrite fold_reduce_apply. simpl. lia. Qed.
 
 Lemma tyabs_struct : forall n k t, term_size t < term_size (TyAbs n k t).
 Proof. intros n k t. rewrite fold_reduce_tyabs. simpl. intuition. Qed.

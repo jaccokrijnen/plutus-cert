@@ -8,7 +8,6 @@ From Equations Require Import Equations.
 
 From PlutusCert Require Import
   Util
-  Language.PlutusIR
   Language.PlutusIR.Transform
   Language.PlutusIR.Analysis.Purity
   Language.PlutusIR.Transform.LetNonRec.DecideBool
@@ -46,12 +45,12 @@ Hint Constructors
   pure_binding
   value
   neutral_value
-.
+: hint_dead_code.
 #[global]
 Hint Resolve
   (* use decision procedure*)
   is_errorb_not_is_error
-  .
+: hint_dead_code.
 
 #[global]
 Hint Resolve
@@ -285,7 +284,6 @@ Proof. reflexivity. Qed.
 Definition plc_4_5_true : Term_desugar plc_4_inlined plc_5_compileNonRecTerms = true.
 Proof. reflexivity. Qed.
 
-Compute (Term_desugar_sound _ _ (plc_4_5_true)).
 Definition plc_4_5 :
   CNR_Term plc_4_inlined plc_5_compileNonRecTerms.
 Proof.

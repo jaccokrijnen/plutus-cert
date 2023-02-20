@@ -157,7 +157,7 @@ Fixpoint
 
 Definition is_value := is_value' 0.
 
-Fixpoint is_neutral_value (n : nat) (t : Term) :=
+Definition is_neutral_value (n : nat) (t : Term) :=
   match t with
     | Builtin f   => is_value' n t
     | Apply nv v  => is_value' n t

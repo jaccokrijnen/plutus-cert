@@ -1,7 +1,6 @@
 From Coq Require Import Lists.List.
 Import ListNotations.
 Set Printing Universes.
-Set Polymorphic Universes.
 
 (* Composition of multiple binary relations on the same type*)
 Polymorphic Inductive compose {a} : list (a -> a -> Type) -> a -> a -> Type :=

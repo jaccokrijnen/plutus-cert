@@ -122,6 +122,7 @@ Hint Resolve
   LR_reflexivity
   : hintdb_compat_context.
 
+#[global]
 Hint Unfold P_has_type : hintdb_compat_context.
 
 Lemma LR_reflexivity_context : forall C Δ₁ Γ₁ Δ Γ T T₁,

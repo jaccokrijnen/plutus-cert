@@ -1,4 +1,5 @@
-Require Import PlutusCert.Language.PlutusIR. 
+From Equations Require Import Equations.
+Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 
 Require Import Coq.Lists.List.
