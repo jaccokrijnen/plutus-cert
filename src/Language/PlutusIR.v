@@ -254,10 +254,10 @@ Inductive tyname := TyName : name -> tyname.
 
 (* TODO: Coq prints wrong notation for LamAbs type, perhaps just use string
     everywhere? *)
-Notation name := string.
-Notation tyname := string.
-Notation binderName := string.
-Notation binderTyname := string.
+Notation name := string (only parsing).
+Notation tyname := string (only parsing).
+Notation binderName := string (only parsing).
+Notation binderTyname := string (only parsing).
 
 (* These constructors should treat the type parameter
    as implicit too (this is already correctly generated for the recursive
@@ -301,12 +301,10 @@ End NamedTerm.
 (** * De Bruijn terms *)
 Module DeBruijnTerm.
 
-From Equations Require Import Equations.
-
-Notation name := nat.
-Notation tyname := nat.
-Notation binderName := unit.
-Notation binderTyname := unit.
+Notation name := nat (only parsing).
+Notation tyname := nat (only parsing).
+Notation binderName := unit (only parsing).
+Notation binderTyname := unit (only parsing).
 
 Arguments Ty_Var [tyname]%type_scope [binderTyname]%type_scope.
 Arguments Ty_Fun [tyname]%type_scope [binderTyname]%type_scope.
