@@ -3,18 +3,30 @@ From Coq Require Import
   Lists.List
   ZArith.BinInt.
 
+From QuickChick Require Import
+  QuickChick.
+
 From PlutusCert Require Import
   Language.PlutusIR
   FreeVars
   BoundVars
   Equality
-  Examples.Game.Trace
-  Util.
+  Util
+  UniqueBinders
+  UniqueBinders.DecOpt
+  TimelockDumps
+.
 
 Import UniqueTerm.
 Import ListNotations.
 
 Local Open Scope Z_scope.
+
+Check pir_1_renamed.
+
+Definition dec_unique := (@decOpt (unique_tm pir_1_renamed) (DecOptunique_tm pir_1_renamed)).
+
+Eval cbv in dec_unique 1000.
 
 (* Some utilities*)
 Definition var_eqb : string * Z -> string * Z -> bool :=
