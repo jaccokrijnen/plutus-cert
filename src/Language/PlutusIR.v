@@ -49,7 +49,7 @@ Inductive DefaultUni : Type :=
     | DefaultUniUnit       (* : DefaultUni unit (* () *)*)
     | DefaultUniBool       (* : DefaultUni bool (* Bool *)*)
     .
-    
+
 (** Existentials as a datype *)
 Inductive some {f : DefaultUni -> Type} :=
   Some : forall {u : DefaultUni}, f u -> some.
@@ -232,14 +232,14 @@ Module NamedTerm.
 (* Context {func : Type} {uni : Type -> Type} {name : Type} {tyname : Type}. *)
 
 
-Definition Unique (n : nat) := tt.
+Definition Unique (n : nat) := n.
 (*
 Inductive unique := Unique : nat -> unique.
   Definition unique_dec : forall u u' : unique, {u = u'} + {u <> u'}.
   Proof. decide equality. apply Nat.eq_dec. Defined.
 *)
 
-Definition Name (s : string) (n : unit) := s.
+Definition Name (s : string) (n : nat) := string_of_nat n.
 (*
 Inductive name := Name : string -> unique -> name.
 

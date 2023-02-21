@@ -99,8 +99,15 @@ Ltac solve__typing :=
   repeat (simpl; (solve__Let || solve__BindingsNonRec || solve__DatatypeBind || solve__TermBind)).
 
 
+
+(* 
+   For readability purpose. These reduce to 11 and 71 respectively *m
+*)
+Definition ty_Bool := (TyName (Name ("Bool") (Unique (11)))).
+Definition ty_EndDate := (TyName (Name ("EndDate") (Unique (71)))).
+
 Example pir_0_original_shadowfix__typable :
-  ("EndDate" |-> Kind_Base ; "Bool" |-> Kind_Base ; empty) ,, empty |-+ pir_0_original_shadowfix : (Ty_Fun (Ty_Var "EndDate") (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniInteger))) (Ty_Var "Bool"))).
+  (ty_EndDate |-> Kind_Base ; ty_Bool |-> Kind_Base ; empty) ,, empty |-+ pir_0_original_shadowfix : (Ty_Fun (Ty_Var ty_EndDate) (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniInteger))) (Ty_Var ty_Bool))).
 Proof with (eauto with typing || (try solve [solve__map_normalise || solve__TVar])).
   unfold pir_0_original_shadowfix.
   unfold Name, TyName. simpl.
