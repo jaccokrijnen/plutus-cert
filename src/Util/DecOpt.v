@@ -1,6 +1,9 @@
 From PlutusCert Require Import
   Util
-  Util.List.
+  Util.List
+  Util.In
+  Language.PlutusIR.Analysis.Equality.DecOpt
+  Language.PlutusIR.
 
 From Coq Require Import Arith.PeanoNat.
 
@@ -40,6 +43,34 @@ Proof. derive_mon. Qed.
 
 
 
+QCDerive DecOpt for (TyIn x xs).
+
+Instance DecOptTyIn_sound x xs : DecOptSoundPos (TyIn x xs).
+Proof. derive_sound. Qed.
+
+Instance DecOptTyIn_complete x xs : DecOptCompletePos (TyIn x xs).
+Proof. derive_complete. Qed.
+
+Instance DecOptTyIn_mon x xs : DecOptSizeMonotonic (TyIn x xs).
+Proof. derive_mon. Qed.
+
+
+
+QCDerive DecOpt for (ConstrIn x xs).
+
+Instance DecOptConstrIn_sound x xs : DecOptSoundPos (ConstrIn x xs).
+Proof. derive_sound. Qed.
+
+Instance DecOptConstrIn_complete x xs : DecOptCompletePos (ConstrIn x xs).
+Proof. derive_complete. Qed.
+
+Instance DecOptConstrIn_mon x xs : DecOptSizeMonotonic (ConstrIn x xs).
+Proof. derive_mon. Qed.
+
+
+
+(* NOTE: Derives an instance that requires an Enum instance over its 2 type arguments,
+    even though the instance are not used in the computation *)
 QCDerive DecOpt for (Lookup k v kvs).
 
 (* NOTE: if the type arguments, and its requirements are not added in this definition, 

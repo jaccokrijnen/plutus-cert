@@ -11,7 +11,7 @@ Local Open Scope string_scope.
 
 From PlutusCert Require Import
   Util
-  Util.List
+  Util.In
   Language.PlutusIR
   Language.PlutusIR.Folds
   .
@@ -195,7 +195,6 @@ Definition bvb (b : binding') : list var :=
 
 Definition bvbs (bs : list binding') : list var := List.concat (map bvb bs).
 
-
 Fixpoint boundTerms_bindings (bs : list binding') : list (var * term var tyvar var tyvar) := match bs with
     | ((TermBind _ (VarDecl v _) t) :: bs) => (v, t) :: boundTerms_bindings bs
     | (_ :: bs) => boundTerms_bindings bs
@@ -325,7 +324,7 @@ Proof with eauto using appears_bound_in_tm.
     + apply Forall_forall.
       intros.
       apply ABI_Tm_Let_DatatypeBind.
-      apply NameIn_In_string_equal.
+      apply NameIn_In_eq.
       apply in_cons.
       induction l0...
       destruct a.

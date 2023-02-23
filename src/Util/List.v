@@ -73,19 +73,3 @@ Definition forall2b {A} (p : A -> A -> bool) := fix f xs ys :=
 Lemma mdrop_nil : forall X ns,
     @mdrop X ns nil = nil.
 Proof. induction ns; auto. Qed.
-
-
-
-(* A specialized version of In for names/strings *)
-Inductive NameIn (x : string) : list string -> Prop :=
-  | NI_Here  : forall {xs}, NameIn x (x :: xs)
-  | NI_There : forall {x' xs}, x <> x' -> NameIn x xs -> NameIn x (x' :: xs).
-
-Lemma NameIn_In_string_equal : forall xs x, NameIn x xs <-> @In string x xs.
-Proof with auto using NameIn.
-  induction xs; split; intros; simpl; inversion H; subst...
-    - apply IHxs in H3...
-    - destruct (string_dec x a); subst...
-      apply NI_There... 
-      apply IHxs...
-Qed.

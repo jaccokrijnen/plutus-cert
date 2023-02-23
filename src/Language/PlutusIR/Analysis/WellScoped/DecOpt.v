@@ -1,5 +1,5 @@
 From PlutusCert Require Import
-  Util.List
+  Util.In
   Util.DecOpt
   Language.PlutusIR
   Language.PlutusIR.Analysis.WellScoped.

@@ -1,6 +1,6 @@
 From PlutusCert Require Import
   Util
-  Util.List
+  Util.In
   Language.PlutusIR
   Analysis.BoundVars.
 Import NamedTerm.
@@ -64,7 +64,6 @@ Inductive constructors_well_formed (Δ : ctx) : list constructor -> Prop :=
 .
 
 
-
 Definition btvb_app (b : Binding) Δ := btvb b ++ Δ.
 Definition bvb_app (b : Binding) Δ := bvb b ++ Δ.
 Definition map_tvd_name_rev_app x c := rev (map tvd_name x) ++ c.
@@ -106,17 +105,13 @@ Inductive well_scoped (Δ Γ: ctx) : Term -> Prop :=
   | WS_Error : forall s,
       Δ |-* s ->
       Δ ,, Γ |-+ (Error s)
-  | WS_Let : forall bs t Δ' Γ',
-      Δ' = rev_btvbs_app bs Δ ->
-      Γ' = rev_bvbs_app bs Γ ->
+  | WS_Let : forall bs t,
       Δ ,, Γ |-oks_nr bs ->
-      Δ' ,, Γ' |-+ t ->
+      rev_btvbs_app bs Δ ,, rev_bvbs_app bs Γ |-+ t ->
       Δ ,, Γ |-+ (Let NonRec bs t)
-  | WS_LetRec : forall bs t Δ' Γ',
-      Δ' = rev_btvbs_app bs Δ ->
-      Γ' = rev_bvbs_app bs Γ ->
-      Δ' ,, Γ' |-oks_r bs ->
-      Δ' ,, Γ' |-+ t ->
+  | WS_LetRec : forall bs t,
+      rev_btvbs_app bs Δ  ,,  rev_bvbs_app bs Γ |-oks_r bs ->
+      rev_btvbs_app bs Δ  ,,  rev_bvbs_app bs Γ |-+ t ->
       Δ ,, Γ |-+ (Let Rec bs t)
 
 
@@ -146,9 +141,8 @@ with binding_well_formed (Δ Γ : ctx) : Binding -> Prop :=
   | W_Type : forall X K T,
       Δ |-* T ->
       Δ ,, Γ |-ok_b (TypeBind (TyVarDecl X K) T)
-  | W_Data : forall X YKs cs matchFunc Δ',
-      Δ' = map_tvd_name_rev_app YKs Δ  ->
-      Δ' |-ok_cs cs ->
+  | W_Data : forall X YKs cs matchFunc,
+      map_tvd_name_rev_app YKs Δ |-ok_cs cs ->
       Δ ,, Γ |-ok_b (DatatypeBind (Datatype X YKs matchFunc cs))
 
   where "Δ ',,' Γ '|-+' t" := (well_scoped Δ Γ t)
