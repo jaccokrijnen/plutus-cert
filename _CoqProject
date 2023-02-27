@@ -1,3 +1,6 @@
+-R lib/coq-ctproxy/src CTProxy
+-R lib/QuickChick/src QuickChick
+
 -Q src PlutusCert
 
 src/Util.v
