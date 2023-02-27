@@ -84,6 +84,8 @@ Admitted.
 
 
 Lemma pir2_3 : dead_code pir_2_typechecked pir_3_deadcode.
+Proof.
+Admitted.
 
 (* TODO: there was an intermediate rename term, this built before because we were comparing
         string names, instead of uniques *)

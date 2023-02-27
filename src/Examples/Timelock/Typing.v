@@ -107,7 +107,7 @@ Definition ty_Bool := (TyName (Name ("Bool") (Unique (11)))).
 Definition ty_EndDate := (TyName (Name ("EndDate") (Unique (71)))).
 
 Example pir_0_original_shadowfix__typable :
-  (ty_EndDate |-> Kind_Base ; ty_Bool |-> Kind_Base ; empty) ,, empty |-+ pir_0_original_shadowfix : (Ty_Fun (Ty_Var ty_EndDate) (Ty_Fun (Ty_Builtin (Some (TypeIn DefaultUniInteger))) (Ty_Var ty_Bool))).
+  (ty_EndDate |-> Kind_Base ; ty_Bool |-> Kind_Base ; empty) ,, empty |-+ pir_0_original_shadowfix : (Ty_Fun (Ty_Var ty_EndDate) (Ty_Fun (Ty_Builtin (Some' (TypeIn DefaultUniInteger))) (Ty_Var ty_Bool))).
 Proof with (eauto with typing || (try solve [solve__map_normalise || solve__TVar])).
   unfold pir_0_original_shadowfix.
   unfold Name, TyName. simpl.
