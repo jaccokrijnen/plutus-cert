@@ -33,12 +33,12 @@ Proof. Admitted.
 
 Lemma subst_not_afi : forall t x v,
     closed v ->
-    ~(Term.appears_free_in x <{ [v / x] t }> ).
+    ~(appears_free_in_tm x <{ [v / x] t }> ).
 Proof. Admitted.
 
 Lemma substA_not_afi : forall t X U,
-    Ty.closed U ->
-    ~(Annotation.appears_free_in X <{ [[U / X] t }> ).
+    closed_ty U ->
+    ~(appears_free_in_ann X <{ [[U / X] t }> ).
 Proof. Admitted.
 
 Lemma duplicate_subst : forall x t v v',
@@ -47,7 +47,7 @@ Lemma duplicate_subst : forall x t v v',
 Proof. Admitted.
 
 Lemma duplicate_substA : forall X t U U',
-    Ty.closed U ->
+    closed_ty U ->
     <{ [[U' / X] ([[U / X] t) }> = <{ [[U / X] t }>.
 Proof. Admitted.
 
@@ -161,12 +161,12 @@ Lemma subst_bnr__msubst_bnr' : forall env x v bs,
 Proof. Admitted.
 
 Lemma substA_msubstA : forall envA X U t,
-    Ty.closed U ->
+    closed_ty U ->
     msubstA_term envA <{ [[U/X]t }> = <{ [[U/X] {msubstA_term (drop X envA) t} }>.
 Proof. Admitted.
 
 Lemma substA_msubst : forall X U env t,
-    Ty.closed U ->
+    closed_ty U ->
     <{ [[U / X] (/[ env /] t ) }> =  <{ /[ env /] ([[U / X] t) }> .
 Proof. Admitted.
 

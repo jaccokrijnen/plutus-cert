@@ -57,7 +57,7 @@ Lemma RD_syn_closed : forall ck rho,
       forall X T1 T2,
         syn1 rho X = Datatypes.Some T1 ->
         syn2 rho X = Datatypes.Some T2 ->
-        Ty.closed T1 /\ Ty.closed T2.
+        closed_ty T1 /\ closed_ty T2.
 Proof with eauto.
   induction 1; intros...
   - discriminate.

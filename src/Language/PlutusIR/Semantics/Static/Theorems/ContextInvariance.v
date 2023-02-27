@@ -4,6 +4,7 @@ Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.ContextInvariance.AFI.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.In_Auxiliary.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Typing.
+Require Import PlutusCert.Util.In.
 
 Require Import Coq.Lists.List.
 
@@ -15,7 +16,7 @@ Module Kinding.
 
   Lemma context_invariance : forall Delta Delta' T K,
       Delta |-* T : K ->
-      (forall X, Ty.appears_free_in X T -> Delta X = Delta' X) ->
+      (forall X, appears_free_in_ty X T -> Delta X = Delta' X) ->
       Delta' |-* T : K.
   Proof with auto.
     intros Delta Delta' T K HK.
@@ -57,7 +58,7 @@ Module Typing.
 
   Definition P_has_type (Delta : Delta) (Gamma : Gamma) (t : Term) (T : Ty) :=
     forall Gamma',
-      (forall x, Term.appears_free_in x t -> Gamma x = Gamma' x) ->
+      (forall x, appears_free_in_tm x t -> Gamma x = Gamma' x) ->
       Delta ,, Gamma' |-+ t : T.
 
   Definition P_constructor_well_formed (Delta : Delta) (c : constructor) (T : Ty) :=
@@ -65,17 +66,17 @@ Module Typing.
 
   Definition P_bindings_well_formed_nonrec (Delta : Delta) (Gamma : Gamma) (bs : list Binding) :=
     forall Gamma',
-      (forall x, Term.appears_free_in__bindings_nonrec x bs -> Gamma x = Gamma' x) ->
+      (forall x, appears_free_in_tm__bindings_nonrec x bs -> Gamma x = Gamma' x) ->
       Delta ,, Gamma' |-oks_nr bs.  
 
   Definition P_bindings_well_formed_rec (Delta : Delta) (Gamma : Gamma) (bs : list Binding) :=
     forall Gamma',
-      (forall x, Term.appears_free_in__bindings_rec x bs -> Gamma x = Gamma' x) ->
+      (forall x, appears_free_in_tm__bindings_rec x bs -> Gamma x = Gamma' x) ->
       Delta ,, Gamma' |-oks_r bs.  
 
   Definition P_binding_well_formed (Delta : Delta) (Gamma : Gamma) (b : Binding) :=
     forall Gamma',
-      (forall x, Term.appears_free_in__binding x b -> Gamma x = Gamma' x) ->
+      (forall x, appears_free_in_tm__binding x b -> Gamma x = Gamma' x) ->
       Delta ,, Gamma' |-ok_b b.
 
   #[export] Hint Unfold 
@@ -122,41 +123,45 @@ Module Typing.
       eapply T_Let...
       apply H5.
       intros.
-      assert ({In x (bvbs bs)} + {~ In x (bvbs bs)}) by eauto using in_dec, string_dec.
+      assert ({In x (BoundVars.bvbs bs)} + {~ In x (BoundVars.bvbs bs)}) by eauto using in_dec, string_dec.
       destruct H1.
       + apply In_bvbs_bindsG in i.
         eapply In__map_normalise in i...
         apply In__lookup_mupdate...
-      + apply mupdate_eq_cong...
+      + apply NameIn_In_neq in n.
+        apply mupdate_eq_cong...
     - (* T_LetRec *)
       subst.
       eapply T_LetRec...
       + apply H3.
         intros.
-        assert ({In x (bvbs bs)} + {~ In x (bvbs bs)}) by eauto using in_dec, string_dec.
+        assert ({In x (BoundVars.bvbs bs)} + {~ In x (BoundVars.bvbs bs)}) by eauto using in_dec, string_dec.
         destruct H1.
         * apply In_bvbs_bindsG in i.
           eapply In__map_normalise in i...
           apply In__lookup_mupdate...
-        * apply mupdate_eq_cong...
+        * apply NameIn_In_neq in n.
+          apply mupdate_eq_cong...
       + apply H5.
         intros.
-        assert ({In x (bvbs bs)} + {~ In x (bvbs bs)}) by eauto using in_dec, string_dec.
+        assert ({In x (BoundVars.bvbs bs)} + {~ In x (BoundVars.bvbs bs)}) by eauto using in_dec, string_dec.
         destruct H1.
         * apply In_bvbs_bindsG in i.
           eapply In__map_normalise in i...
           apply In__lookup_mupdate...
-        * apply mupdate_eq_cong...
+        * apply NameIn_In_neq in n.
+          apply mupdate_eq_cong...
     - (* W_ConsB_NonRec *)
       eapply W_ConsB_NonRec...
       eapply H3.
       intros.
-      assert ({In x (bvb b)} + {~ In x (bvb b)}) by eauto using in_dec, string_dec.
+      assert ({In x (BoundVars.bvb b)} + {~ In x (BoundVars.bvb b)}) by eauto using in_dec, string_dec.
       destruct H6.
       + apply In_bvb_bindsG in i.
         eapply In__map_normalise in i...
         apply In__lookup_mupdate...
-      + apply mupdate_eq_cong...
+      + apply NameIn_In_neq in n.
+        apply mupdate_eq_cong...
   Qed.
 
 End Typing.

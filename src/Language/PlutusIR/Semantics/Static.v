@@ -22,9 +22,9 @@ Create HintDb typing.
 #[export] Hint Constructors bindings_well_formed_nonrec : typing.
 #[export] Hint Constructors bindings_well_formed_rec : typing.
 #[export] Hint Constructors binding_well_formed : typing.
-#[export] Hint Constructors Ty.appears_free_in : typing.
-#[export] Hint Constructors Term.appears_free_in : typing.
-#[export] Hint Constructors Annotation.appears_free_in : typing.
+#[export] Hint Constructors appears_free_in_ty : typing.
+#[export] Hint Constructors appears_free_in_tm : typing.
+#[export] Hint Constructors appears_free_in_ann : typing.
 #[export] Hint Resolve 
   normalise_to_normal
   normalisation__deterministic
