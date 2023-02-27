@@ -10,7 +10,6 @@ From Coq Require Import Arith.PeanoNat.
 From QuickChick Require Import QuickChick.
 
 
-
 (* Ltac for deriving the several DecOpt soundness proofs for some proxy 
     in terms of the mutual inductive relations it was derived over*)
 Ltac derive__sound HSound :=
@@ -22,6 +21,55 @@ Ltac derive__sound HSound :=
   assumption.
 
 
+
+(* Ltac and helper lemmas for deriving negated soundness proofs for In istances *)
+
+Lemma match_contr : forall x,
+  match x with
+  | Just true => Just true
+  | _ => None
+  end = Just false -> False.
+Proof. intro. destruct x; intro H; try destruct b; inversion H. Qed.
+
+Lemma match_destruct_false : forall b,
+  match b with
+  | Some true => Some true
+  | Some false => Some false
+  | None => None
+  end = Just false -> b = Some false.
+Proof. destruct b; intros; try destruct b; inversion H. reflexivity. Qed.
+
+
+
+Ltac derive_in_complete_neg :=
+  intros x xs;
+  unfold DecOptSoundNeg;
+  intros s;
+  unfold decOpt;
+  (* This definition is defined in QuickChick, if it cannot be found verify whether it is
+      exposed correctly *)
+  simpl_minus_methods;
+  generalize &s at 1 as s';
+  revert x xs;
+  induction s as [| s IHs]; intros x xs s' H;
+  [ unfold checker_backtrack in H; 
+    now apply match_contr in H
+  | unfold checker_backtrack in H;
+    destruct xs as [| x' xs'];
+    [ intros H'; inversion H'
+    | unfold decOpt in *; unfold dec_decOpt in *; unfold dec in *; unfold Eq__Dec in *;
+      destruct (dec_eq x x') as [Heq | Hneq]; destruct (dec_eq x' x) as [Heq' | Hneq']; subst;
+      try (inversion H; reflexivity);
+      [ exfalso; apply Hneq'; reflexivity
+      | repeat apply match_destruct_false in H;
+        apply IHs in H; intro Hin; apply H;
+        inversion Hin as [Hxs Hxeq | Hx Hxs Hneqx Hin']; subst;
+        [ exfalso; apply Hneq; reflexivity
+        | apply Hin'
+        ]
+      ]
+    ]
+  ].
 
 
 
@@ -41,6 +89,9 @@ Proof. derive_complete. Qed.
 Instance DecOptNameIn_mon x xs : DecOptSizeMonotonic (NameIn x xs).
 Proof. derive_mon. Qed.
 
+Instance DecOptNameIn_sound_neg x xs : DecOptSoundNeg (NameIn x xs).
+Proof. revert x xs. derive_in_complete_neg. Qed.
+
 
 
 QCDerive DecOpt for (TyIn x xs).
@@ -53,6 +104,9 @@ Proof. derive_complete. Qed.
 
 Instance DecOptTyIn_mon x xs : DecOptSizeMonotonic (TyIn x xs).
 Proof. derive_mon. Qed.
+
+Instance DecOptTyIn_sound_neg x xs : DecOptSoundNeg (TyIn x xs).
+Proof. revert x xs. derive_in_complete_neg. Qed.
 
 
 
@@ -67,6 +121,8 @@ Proof. derive_complete. Qed.
 Instance DecOptConstrIn_mon x xs : DecOptSizeMonotonic (ConstrIn x xs).
 Proof. derive_mon. Qed.
 
+Instance DecOptConstrIn_sound_neg x xs : DecOptSoundNeg (ConstrIn x xs).
+Proof. revert x xs. derive_in_complete_neg. Qed.
 
 
 (* NOTE: Derives an instance that requires an Enum instance over its 2 type arguments,
