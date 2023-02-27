@@ -6,6 +6,9 @@
 all: Makefile.coq
 	+make -f Makefile.coq all
 
+lib:
+	+make -C lib
+
 clean: Makefile.coq
 	+make -f Makefile.coq clean
 	rm -f Makefile.coq
@@ -19,5 +22,5 @@ Makefile: ;
 
 phony: ;
 
-.PHONY: all clean phony
+.PHONY: all lib clean phony
 
