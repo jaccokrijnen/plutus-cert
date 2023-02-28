@@ -5,7 +5,9 @@ From PlutusCert Require Import
   Language.PlutusIR.Analysis.Equality.DecOpt
   Language.PlutusIR.
 
-From Coq Require Import Arith.PeanoNat.
+From Coq Require Import
+  Lists.List
+  Arith.PeanoNat.
 
 From QuickChick Require Import QuickChick.
 
@@ -36,42 +38,37 @@ Lemma match_destruct_false : forall b,
   | Some true => Some true
   | Some false => Some false
   | None => None
-  end = Just false -> b = Some false.
-Proof. destruct b; intros; try destruct b; inversion H. reflexivity. Qed.
-
+  end = Just false <-> b = Some false.
+Proof. destruct b; split; intros; try destruct b; inversion H; reflexivity. Qed.
 
 
 Ltac derive_in_complete_neg :=
   intros x xs;
-  unfold DecOptSoundNeg;
-  intros s;
+  unfold DecOptCompleteNeg;
+  intros HNin;
   unfold decOpt;
-  (* This definition is defined in QuickChick, if it cannot be found verify whether it is
-      exposed correctly *)
+  remember (List.length xs + 1) as s eqn:Hs;
+  exists s;
   simpl_minus_methods;
   generalize &s at 1 as s';
-  revert x xs;
-  induction s as [| s IHs]; intros x xs s' H;
-  [ unfold checker_backtrack in H; 
-    now apply match_contr in H
-  | unfold checker_backtrack in H;
-    destruct xs as [| x' xs'];
-    [ intros H'; inversion H'
+  revert x xs HNin Hs;
+  induction s as [| s IHs]; intros x xs HNin Hs s'; unfold checker_backtrack; 
+  [ destruct xs; inversion Hs
+  | destruct xs as [| x' xs'];
+    [ reflexivity
     | unfold decOpt in *; unfold dec_decOpt in *; unfold dec in *; unfold Eq__Dec in *;
-      destruct (dec_eq x x') as [Heq | Hneq]; destruct (dec_eq x' x) as [Heq' | Hneq']; subst;
-      try (inversion H; reflexivity);
-      [ exfalso; apply Hneq'; reflexivity
-      | repeat apply match_destruct_false in H;
-        apply IHs in H; intro Hin; apply H;
-        inversion Hin as [Hxs Hxeq | Hx Hxs Hneqx Hin']; subst;
-        [ exfalso; apply Hneq; reflexivity
-        | apply Hin'
+      destruct (dec_eq x x') as [Heq | HNeq]; destruct (dec_eq x' x) as [Heq' | HNeq']; subst;
+      [ exfalso; apply HNin; constructor
+      | reflexivity
+      | exfalso; apply HNeq; reflexivity
+      | repeat apply <- match_destruct_false;
+        apply IHs;
+        [ intro HNin'; apply HNin; constructor; assumption
+        | simpl in Hs; apply eq_add_S in Hs; assumption
         ]
       ]
     ]
   ].
-
-
 
 QCDerive EnumSized for ascii.
 QCDerive EnumSized for string.
@@ -89,9 +86,9 @@ Proof. derive_complete. Qed.
 Instance DecOptNameIn_mon x xs : DecOptSizeMonotonic (NameIn x xs).
 Proof. derive_mon. Qed.
 
-Instance DecOptNameIn_sound_neg x xs : DecOptSoundNeg (NameIn x xs).
+Instance DecOptNameIn_complete_neg x xs : DecOptCompleteNeg (NameIn x xs).
 Proof. revert x xs. derive_in_complete_neg. Qed.
-
+  
 
 
 QCDerive DecOpt for (TyIn x xs).
@@ -105,7 +102,7 @@ Proof. derive_complete. Qed.
 Instance DecOptTyIn_mon x xs : DecOptSizeMonotonic (TyIn x xs).
 Proof. derive_mon. Qed.
 
-Instance DecOptTyIn_sound_neg x xs : DecOptSoundNeg (TyIn x xs).
+Instance DecOptTyIn_complete_neg x xs : DecOptCompleteNeg (TyIn x xs).
 Proof. revert x xs. derive_in_complete_neg. Qed.
 
 
@@ -121,8 +118,10 @@ Proof. derive_complete. Qed.
 Instance DecOptConstrIn_mon x xs : DecOptSizeMonotonic (ConstrIn x xs).
 Proof. derive_mon. Qed.
 
-Instance DecOptConstrIn_sound_neg x xs : DecOptSoundNeg (ConstrIn x xs).
+Instance DecOptConstrIn_complete_neg x xs : DecOptCompleteNeg (ConstrIn x xs).
 Proof. revert x xs. derive_in_complete_neg. Qed.
+
+
 
 
 (* NOTE: Derives an instance that requires an Enum instance over its 2 type arguments,
