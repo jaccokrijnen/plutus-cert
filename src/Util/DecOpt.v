@@ -22,6 +22,13 @@ Ltac derive__sound HSound :=
   apply sound in H;
   assumption.
 
+Ltac derive__complete HComplete :=
+  unfold DecOptCompletePos;
+  unfold decOpt;
+  intros H;
+  apply complete;
+  apply HComplete;
+  assumption.
 
 
 (* Ltac and helper lemmas for deriving negated soundness proofs for In istances *)
