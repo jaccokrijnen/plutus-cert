@@ -51,7 +51,7 @@ Definition bvbs' (bs : list Binding) := bvbs bs.
 
 Inductive appears_free_in_tm : name -> Term -> Prop :=
   | AFIT_Let : forall x r bs t,
-      ~ (NameIn x (bvbs' bs)) ->
+      ~ NameIn x (bvbs' bs) ->
       appears_free_in_tm x t ->
       appears_free_in_tm x (Let r bs t)
   | AFIT_LetNonRec : forall x bs t,

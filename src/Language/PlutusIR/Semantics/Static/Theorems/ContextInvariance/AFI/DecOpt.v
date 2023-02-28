@@ -21,6 +21,16 @@ QCDerive DecOpt for (appears_free_in_ty name ty).
 Instance DecOptappears_free_in_ty_sound name ty: DecOptSoundPos (appears_free_in_ty name ty).
 Proof. (* derive_sound. Qed. *) idtac "Admitted: DecOptappears_free_in_ty_sound". Admitted.
 
+Instance DecOptappears_free_in_ty_complete name ty: DecOptCompletePos (appears_free_in_ty name ty).
+Proof. (* derive_complete. Qed. *) idtac "Admitted: DecOptappears_free_in_ty_sound". Admitted.
+
+Instance DecOptappears_free_in_ty_mon name ty: DecOptSizeMonotonic (appears_free_in_ty name ty).
+Proof. (* derive_mon. Qed. *) idtac "Admitted: DecOptappears_free_in_ty_mon". Admitted.
+
+
+
+
+
 
 MetaCoq Run (deriveCTProxy appears_free_in_tm).
 
