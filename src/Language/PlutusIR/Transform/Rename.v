@@ -24,17 +24,49 @@ Definition ctx := list (string * string).
 
 (* Binding variable x does not capture free variables in (the pre-term) t if they were renamed
    according to Γ *)
-Definition no_capture x (Γ : ctx) t :=
-  forall y, In (y, x) Γ -> ~ AFI.Term.appears_free_in y t.
+Inductive no_capture (x : string) (t : Term) : ctx -> Prop :=
+  | NC_Here : forall y Γ,
+      ~ AFI.appears_free_in_tm y t -> 
+      no_capture x t Γ -> 
+      no_capture x t ((y, x) :: Γ)
+  | NC_There : forall x' y Γ,
+      x <> x' ->
+      no_capture x t Γ ->
+      no_capture x t ((y, x') :: Γ)
+  .
 
-Definition no_captureA α (Δ : ctx) t :=
-  forall β, In (β, α) Δ -> ~ AFI.Annotation.appears_free_in β t.
+Inductive no_captureA (α : string) (t : Term) : ctx -> Prop :=
+  | NCA_Here : forall β Δ,
+      ~ AFI.appears_free_in_ann β t -> 
+      no_captureA α t Δ -> 
+      no_captureA α t ((β, α) :: Δ)
+  | NCA_There : forall α' β Δ,
+      α <> α' ->
+      no_captureA α t Δ ->
+      no_captureA α t ((β, α') :: Δ)
+  .
 
-Definition no_ty_capture α (Δ : ctx) τ :=
-  forall β, In (β, α) Δ -> ~ AFI.Ty.appears_free_in β τ.
+Inductive no_ty_capture (α : string) (τ : Ty) : ctx -> Prop :=
+  | NTC_Here : forall β Δ,
+      ~ AFI.appears_free_in_ty β τ -> 
+      no_ty_capture α τ Δ -> 
+      no_ty_capture α τ ((β, α) :: Δ)
+  | NTC_There : forall α' β Δ,
+      α <> α' ->
+      no_ty_capture α τ Δ ->
+      no_ty_capture α τ ((β, α') :: Δ)
+  .
+
+Inductive no_ty_capture_constructors (α : string) : list constructor -> ctx -> Prop :=
+  | NTSC_Cons : forall s s' τ cs Δ,
+      no_ty_capture α τ Δ ->
+      no_ty_capture_constructors α cs Δ ->
+      no_ty_capture_constructors α ((Constructor (VarDecl s τ) s') :: cs) Δ
+  | NTSX_Nil : forall Δ,
+      no_ty_capture_constructors α nil Δ.
 
 
-Inductive rename_tvs (Δ : ctx) (cs : list constructor) : list TVDecl -> list TVDecl -> ctx -> Type :=
+Inductive rename_tvs (Δ : ctx) (cs : list constructor) : list TVDecl -> list TVDecl -> ctx -> Prop :=
 
   | rn_tvs_nil :
       rename_tvs Δ cs [] [] []
@@ -42,15 +74,16 @@ Inductive rename_tvs (Δ : ctx) (cs : list constructor) : list TVDecl -> list TV
   | rn_tvs_cons : forall α tvs k β tvs' Δ_tvs,
       (* check that the bound tyvar does not capture other renamed vars in the
          type signatures of the constructors *)
-      Forall (fun '(Constructor (VarDecl _ cty) _) => no_ty_capture β Δ cty) cs ->
+      (* NOTE: previously used 'Forall', moved to its own relation above to accomodate QuickChick derivations *)
+      no_ty_capture_constructors β cs Δ ->
       rename_tvs ((α, β) :: Δ) cs tvs tvs' Δ_tvs ->
       rename_tvs Δ cs (TyVarDecl α k :: tvs) (TyVarDecl β k :: tvs') ((α, β) :: Δ_tvs)
 .
 
-Inductive rename_ty (Δ : ctx) : Ty -> Ty -> Type :=
+Inductive rename_ty (Δ : ctx) : Ty -> Ty -> Prop :=
 
    | rn_Ty_Var : forall α α',
-      lookup α Δ = Some α' ->
+      Lookup α α' Δ ->
       rename_ty Δ (Ty_Var α) (Ty_Var α')
 
    | rn_Ty_Fun : forall σ τ σ' τ',
@@ -65,7 +98,7 @@ Inductive rename_ty (Δ : ctx) : Ty -> Ty -> Type :=
 
    | rn_Ty_Forall : forall α α' k τ τ',
       rename_ty ((α, α') :: Δ) τ τ' ->
-      no_ty_capture α Δ τ ->
+      no_ty_capture α τ Δ ->
       rename_ty Δ (Ty_Forall α k τ) (Ty_Forall α' k τ')
 
    | rn_Ty_Builtin : forall t,
@@ -73,7 +106,7 @@ Inductive rename_ty (Δ : ctx) : Ty -> Ty -> Type :=
 
    | rn_Ty_Lam : forall α α' k τ τ',
       rename_ty ((α, α') :: Δ) τ τ' ->
-      no_ty_capture α Δ τ ->
+      no_ty_capture α τ Δ ->
       rename_ty Δ (Ty_Lam α k τ) (Ty_Lam α' k τ')
 
    | Ty_App : forall σ τ σ' τ',
@@ -82,9 +115,9 @@ Inductive rename_ty (Δ : ctx) : Ty -> Ty -> Type :=
       rename_ty Δ (Ty_App σ τ) (Ty_App σ' τ')
 .
 
-Inductive rename (Γ Δ : ctx) : Term -> Term -> Type :=
+Inductive rename (Γ Δ : ctx) : Term -> Term -> Prop :=
   | rn_Var : forall x y,
-      lookup x Γ = Some y ->
+      Lookup x y Γ ->
       rename Γ Δ  (Var x) (Var y)
 
   | rn_Let_Rec : forall bs bs' t t',
@@ -96,12 +129,12 @@ Inductive rename (Γ Δ : ctx) : Term -> Term -> Type :=
 
          Alternatively, this could have been implemented by adding `Let NonRec bs t` as 
          an index in rename_binding and putting a simple no_capture at the actual binding *)
-      Forall (fun '(_, x') => no_capture x' Γ t) Γ_bs ->
-      Forall (fun '(_, α') => no_captureA α' Δ t) Δ_bs ->
+      Forall (fun '(_, x') => no_capture x' t Γ) Γ_bs ->
+      Forall (fun '(_, α') => no_captureA α' t Δ) Δ_bs ->
 
       (* All bound (type) variables have to be unique in the binding group *)
-      NoDup (bvbs bs') ->
-      NoDup (btvbs bs') ->
+      NoDup (BoundVars.bvbs bs') ->
+      NoDup (BoundVars.btvbs bs') ->
 
       rename Γ Δ (Let Rec bs t) (Let Rec bs' t')
 
@@ -119,20 +152,20 @@ Inductive rename (Γ Δ : ctx) : Term -> Term -> Type :=
 
          Alternatively, add `Let NonRec bs t` as index in rename_binding 
          and put a simple no_capture at the actual binding *)
-      Forall (fun '(_, x') => no_capture x' Γ (Let NonRec bs t)) Γ_b ->
-      Forall (fun '(_, α') => no_captureA α' Δ (Let NonRec bs t)) Δ_b ->
+      Forall (fun '(_, x') => no_capture x' (Let NonRec bs t) Γ) Γ_b ->
+      Forall (fun '(_, α') => no_captureA α' (Let NonRec bs t) Δ) Δ_b ->
 
       rename Γ Δ (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t')
 
   | rn_TyAbs : forall α α' k t t',
       rename ((α, α') :: Γ) Δ t t' ->
-      no_captureA α' Δ t ->
+      no_captureA α' t Δ ->
       rename Γ Δ (TyAbs α k t) (TyAbs α' k t')
 
   | rn_LamAbs : forall x x' τ τ' t t',
       rename_ty Δ τ τ' ->
       rename ((x, x') :: Γ) Δ t t' ->
-      no_capture x' Δ t ->
+      no_capture x' t Δ ->
       rename Γ Δ (LamAbs x τ t) (LamAbs x' τ' t')
 
   | rn_Apply : forall s t s' t',
@@ -165,7 +198,7 @@ Inductive rename (Γ Δ : ctx) : Term -> Term -> Type :=
       rename Γ Δ t t' ->
       rename Γ Δ (Unwrap t) (Unwrap t')
 
-with rename_binding (Γ Δ : ctx) : ctx -> ctx -> Binding -> Binding -> Type :=
+with rename_binding (Γ Δ : ctx) : ctx -> ctx -> Binding -> Binding -> Prop :=
 
   | rn_TermBind : forall s x x' τ τ' t t',
       rename_ty Δ τ τ' ->
@@ -197,7 +230,7 @@ with rename_binding (Γ Δ : ctx) : ctx -> ctx -> Binding -> Binding -> Type :=
   rename_Bindings_Rec is also indexed over contexts Γ_bs, Δ_bs, which are respectively
   the bound term and type variables of the recursive bindings.
 *)
-with rename_Bindings_Rec (Γ Δ : ctx) : ctx -> ctx -> list Binding -> list Binding -> Type :=
+with rename_Bindings_Rec (Γ Δ : ctx) : ctx -> ctx -> list Binding -> list Binding -> Prop :=
 
   | rn_Bindings_Rec_nil :
       rename_Bindings_Rec Γ Δ [] [] [] []
@@ -212,7 +245,7 @@ with rename_Bindings_Rec (Γ Δ : ctx) : ctx -> ctx -> list Binding -> list Bind
   rename_constrs is also indexed over context Γ_cs, which are
   the renamings of the constructors
 *)
-with rename_constrs (Γ Δ : ctx) : list constructor -> list constructor -> ctx -> Type :=
+with rename_constrs (Γ Δ : ctx) : list constructor -> list constructor -> ctx -> Prop :=
 
   | rn_constrs_nil :
       rename_constrs Γ Δ [] [] []
