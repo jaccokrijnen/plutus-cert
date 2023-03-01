@@ -85,14 +85,12 @@ Inductive inline_nonrec (Γ : ctx) : Term -> Term -> Prop :=
       inline_nonrec ((α, bound_ty τ) :: Γ) t t' ->
       inline_nonrec_Ty Γ τ τ' ->
       inline_nonrec Γ (TyInst (TyAbs α k t) τ) (TyInst (TyAbs α k t') τ')
-  (*
   (* Congruence cases *)
   | inl_TyInst_cong   : forall t t' τ τ',
       inline_nonrec Γ t t' ->
       inline_nonrec_Ty Γ τ τ' ->
-      ~(exists α k t'', t = TyAbs α k t'') -> (* See inl_TyInst_beta *)
+      (*      ~(exists α k t'', t = TyAbs α k t'') -> (* See inl_TyInst_beta *) *)
       inline_nonrec Γ (TyInst t τ) (TyInst t' τ')
-   *)
   | inl_TyAbs    : forall α k t t',
       inline_nonrec Γ t t' ->
       inline_nonrec Γ (TyAbs α k t) (TyAbs α k t')

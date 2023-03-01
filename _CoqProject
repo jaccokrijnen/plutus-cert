@@ -28,6 +28,7 @@ src/Language/PlutusIR/Analysis/WellScoped/DecOpt.v
 src/Language/PlutusIR/Transform/Equal.v
 src/Language/PlutusIR/Transform/ThunkRecursions.v
 src/Language/PlutusIR/Transform/Inline.v
+src/Language/PlutusIR/Transform/Inline/DecOpt.v
 src/Language/PlutusIR/Transform/InlineNonRec.v
 src/Language/PlutusIR/Transform/InlineNonRec/DecOpt.v
 src/Language/PlutusIR/Transform/Rename.v

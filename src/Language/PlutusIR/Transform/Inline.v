@@ -40,6 +40,37 @@ Inductive binder_info :=
   | bound_ty : Ty -> binder_info
   .
 
+(*
+Inductive Tape (A : Type) : Type :=
+  | nil
+  | cons (h : list A) (a : A) (t : list A).
+
+Arguments nil {A}.
+Arguments cons {A}.
+
+Definition list_to_tape {A : Type} (l : list A) : Tape A :=
+  match l with
+  | (x :: l') => cons [] x l'
+  | _ => nil
+  end.
+
+Definition tape_to_list {A : Set} (tp : Tape A) : list A :=
+  match tp with
+  | nil => []
+  | cons h a t => rev_append h (a :: t)
+  end.
+
+Definition reset_tape {A : Set} (tp : Tape A) : Tape A :=
+  match tp with
+  | nil => nil
+  | cons h a t =>
+      match rev_append h (a :: t) with
+      | [] => nil
+      | x :: l => cons [] a l
+      end
+  end.
+ *)
+
 Definition ctx := list (string * binder_info).
 
 Definition Binding_to_ctx (b : Binding) : ctx :=
@@ -56,6 +87,9 @@ Definition Bindings_to_ctx (bs : list Binding) : ctx :=
 Local Open Scope list_scope.
 
 
+Definition Binding_to_ctx_app b Γ := Binding_to_ctx b ++ Γ.
+Definition Bindings_to_ctx_app bs Γ := Bindings_to_ctx bs ++ Γ.
+
 (*
 TODO: split context in two: type scope and term scope
 *)
@@ -65,24 +99,21 @@ have taken place. Note that the PIR inliner may also remove the let binding
 when all of its occurrences have been inlined (dead code). This is not taken into account here.
 *)
 Inductive inline (Γ : ctx) : Term -> Term -> Prop :=
-  | inl_Var_1 : forall v t t',
-      Lookup v (bound_term t) Γ ->
-      inline Γ t t' ->
+  | inl_Var1 : forall v t',
+      inline_Var Γ Γ v t' ->
       inline Γ (Var v) t'
 
-  | inl_Var_2 : forall v,
+  | inl_Var2 : forall v,
       inline Γ (Var v) (Var v)
 
-  | inl_Let_Rec : forall Γ_bs bs bs' t t',
-      Γ_bs = Bindings_to_ctx bs ->
-      inline_Bindings_Rec (Γ_bs ++ Γ) bs bs' ->
-      inline (Γ_bs ++ Γ) t t' ->
+  | inl_Let_Rec : forall bs bs' t t',
+      inline_Bindings_Rec (Bindings_to_ctx_app bs Γ) bs bs' -> 
+      inline (Bindings_to_ctx_app bs Γ) t t' ->
       inline Γ (Let Rec bs t) (Let Rec bs' t')
 
-  | inl_Let_NonRec : forall Γ_bs bs bs' t t',
-      Γ_bs = Bindings_to_ctx bs ->
+  | inl_Let_NonRec : forall bs bs' t t',
       inline_Bindings_NonRec Γ bs bs' ->
-      inline (Γ_bs ++ Γ) t t' ->
+      inline (Bindings_to_ctx_app bs Γ) t t' ->
       inline Γ (Let NonRec bs t) (Let NonRec bs' t')
 
   | inl_TyInst_beta   : forall t t' α k τ τ',
@@ -94,31 +125,49 @@ Inductive inline (Γ : ctx) : Term -> Term -> Prop :=
   | inl_TyInst_cong   : forall t t' τ τ',
       inline Γ t t' ->
       inline_Ty Γ τ τ' ->
-      ~(exists α k t'', t = TyAbs α k t'') -> (* See inl_TyInst_beta *)
+      (*      ~(exists α k t'', t = TyAbs α k t'') -> (* See inl_TyInst_beta *) *)
       inline Γ (TyInst t τ) (TyInst t' τ')
+
   | inl_TyAbs    : forall α k t t',
       inline Γ t t' ->
       inline Γ (TyAbs α k t) (TyAbs α k t')
+
   | inl_LamAbs   : forall x τ τ' t t',
       inline Γ t t' ->
       inline_Ty Γ τ τ' ->
       inline Γ (LamAbs x τ t) (LamAbs x τ' t')
+
   | inl_Apply    : forall s s' t t',
       inline Γ s s' ->
       inline Γ t t' ->
       inline Γ (Apply s t) (Apply s' t')
+
   | inl_Constant : forall c,
       inline Γ (Constant c) (Constant c)
+
   | inl_Builtin  : forall f,
-      inline Γ (Builtin f) (Builtin f)
+      inline Γ (Builtin f) (Builtin f)       
+
   | inl_Error    : forall τ τ',
       inline Γ (Error τ) (Error τ')
+
   | inl_IWrap    : forall σ σ' τ τ' t t',
       inline_Ty Γ τ τ' ->
       inline_Ty Γ σ σ' ->
       inline Γ (IWrap σ τ t) (IWrap σ' τ' t')
+
   | inl_Unwrap   : forall t t',
       inline Γ (Unwrap t) (Unwrap t')
+
+  with inline_Var (Γ : ctx) : ctx -> string -> Term -> Prop :=
+  | inl_Var_Here : forall Γ' v t t',
+      inline Γ t t' ->
+      inline_Var Γ ((v, bound_term t) :: Γ') v t'
+
+  | inl_Var_There : forall Γ' b v v' t',
+      v <> v' ->
+      inline_Var Γ Γ' v t' ->
+      inline_Var Γ ((v', b) :: Γ') v t'
 
   with inline_Bindings_Rec (Γ : ctx) : list Binding -> list Binding -> Prop :=
 
@@ -133,7 +182,7 @@ Inductive inline (Γ : ctx) : Term -> Term -> Prop :=
 
     | inl_Binding_NonRec_cons : forall b b' bs bs',
         inline_Binding Γ b b' ->
-        inline_Bindings_NonRec (Binding_to_ctx b ++ Γ) bs bs' ->
+        inline_Bindings_NonRec (Binding_to_ctx_app b Γ) bs bs' ->
         inline_Bindings_NonRec Γ (b :: bs) (b' :: bs')
 
     | inl_Binding_NonRec_nil  : inline_Bindings_NonRec Γ [] []
