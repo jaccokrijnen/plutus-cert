@@ -72,6 +72,7 @@ src/Language/PlutusIR/Semantics/Static/Typing.v
 src/Language/PlutusIR/Semantics/Static/Normalisation.v
 src/Language/PlutusIR/Semantics/Static/Theorems/ContextInvariance.v
 src/Language/PlutusIR/Semantics/Static/Theorems/ContextInvariance/AFI.v
+src/Language/PlutusIR/Semantics/Static/Theorems/ContextInvariance/AFI/DecOpt.v
 src/Language/PlutusIR/Semantics/Static/Theorems/FreeInContext.v
 src/Language/PlutusIR/Semantics/Static/Theorems/In_Auxiliary.v
 src/Language/PlutusIR/Semantics/Static/Theorems/UniqueTypes.v

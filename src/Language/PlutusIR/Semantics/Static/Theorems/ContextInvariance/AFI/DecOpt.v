@@ -16,6 +16,12 @@ Import NamedTerm.
 
 
 
+
+
+(* appears_free_in_ty *)
+
+
+
 QCDerive DecOpt for (appears_free_in_ty name ty).
 
 Instance DecOptappears_free_in_ty_sound name ty: DecOptSoundPos (appears_free_in_ty name ty).
@@ -26,6 +32,12 @@ Proof. (* derive_complete. Qed. *) idtac "Admitted: DecOptappears_free_in_ty_sou
 
 Instance DecOptappears_free_in_ty_mon name ty: DecOptSizeMonotonic (appears_free_in_ty name ty).
 Proof. (* derive_mon. Qed. *) idtac "Admitted: DecOptappears_free_in_ty_mon". Admitted.
+
+
+
+
+
+(* appears_free_in_tm *)
 
 
 
@@ -160,17 +172,85 @@ Proof. apply DecOptappears_free_in_tm_proxy_mon. Qed.
 
 
 
+
+
+(* appears_free_in_ann *)
+
+
+
 MetaCoq Run (deriveCTProxy appears_free_in_ann).
 
 Lemma appears_free_in_ann_proxy_sound : appears_free_in_ann_proxy_sound_type.
 Proof. deriveCTProxy_sound core. Qed.
 
-(*
+
 
 QCDerive DecOpt for (appears_free_in_ann_proxy tag).
 
 Instance DecOptappears_free_in_ann_proxy_sound tag : DecOptSoundPos (appears_free_in_ann_proxy tag).
 Proof. (* derive_sound. Qed. *) idtac "Admitted: DecOptappears_free_in_ann_proxy_sound". Admitted.
+
+Instance DecOptappears_free_in_ann_proxy_complete tag : DecOptCompletePos (appears_free_in_ann_proxy tag).
+Proof. (* derive_complete. Qed. *) idtac "Admitted: DecOptappears_free_in_ann_proxy_complete". Admitted.
+
+Instance DecOptappears_free_in_ann_proxy_mon tag : DecOptSizeMonotonic (appears_free_in_ann_proxy tag).
+Proof. (* derive_mon. Qed. *) idtac "Admitted: DecOptappears_free_in_ann_proxy_mon". Admitted.
+
+
+Fixpoint appears_free_in_ann_ann_proxy_complete x x' (H: appears_free_in_ann x x') {struct H} : 
+  appears_free_in_ann_proxy (appears_free_in_ann_tag x x')
+with appears_free_in_ann_constructor_proxy_complete x x' (H : appears_free_in_ann__constructor x x') {struct H} :
+  appears_free_in_ann_proxy (appears_free_in_ann__constructor_tag x x')
+with appears_free_in_ann_bindings_nonrec_proxy_complete x x' (H : appears_free_in_ann__bindings_nonrec x x') {struct H} :
+  appears_free_in_ann_proxy (appears_free_in_ann__bindings_nonrec_tag x x')
+with appears_free_in_ann_bindings_rec_proxy_complete x x' (H: appears_free_in_ann__bindings_rec x x') {struct H} :
+  appears_free_in_ann_proxy (appears_free_in_ann__bindings_rec_tag x x')
+with appears_free_in_ann_binding_proxy_complete x x' (H: appears_free_in_ann__binding x x') {struct H} :
+  appears_free_in_ann_proxy (appears_free_in_ann__binding_tag x x').
+Proof with auto.
+  - inversion H; subst.
+    1: constructor; auto.
+    1: apply AFIA_LetNonRec_proxy; auto.
+    1: apply AFIA_LetRec_proxy; auto.
+    3: apply AFIA_LamAbs2_proxy; auto.
+    4: apply AFIA_Apply2_proxy; auto.
+    5: apply AFIA_TyInst2_proxy; auto.
+    6: apply AFIA_IWrap2_proxy; auto.
+    6: apply AFIA_IWrap3_proxy; auto.
+    all: constructor; auto.
+  - inversion H; subst.
+    + constructor; auto.
+    + apply AFIA_Constructor_There_proxy; auto.
+  - inversion H; subst.
+    + constructor; auto.
+    + apply AFIA_ConsB2_NonRec_proxy; auto.
+  - inversion H; subst.
+    + constructor; auto.
+    + apply AFIA_ConsB2_Rec_proxy; auto.
+  - inversion H; subst. 
+    + constructor. auto.
+    + apply AFIA_TermBind2_proxy; auto.
+    + apply AFIA_TypeBind_proxy; auto.
+    + apply AFIA_DatatypeBind1_proxy; auto.
+Qed.
+
+Lemma appears_free_in_ann_proxy_complete : forall tag,
+    match tag with
+    | appears_free_in_ann__binding_tag x x0 => appears_free_in_ann__binding x x0
+    | appears_free_in_ann__constructor_tag x x0 => appears_free_in_ann__constructor x x0
+    | appears_free_in_ann__bindings_rec_tag x x0 => appears_free_in_ann__bindings_rec x x0
+    | appears_free_in_ann__bindings_nonrec_tag x x0 => appears_free_in_ann__bindings_nonrec x x0
+    | appears_free_in_ann_tag x x0 => appears_free_in_ann x x0
+    end -> 
+    appears_free_in_ann_proxy tag.
+Proof with auto.
+  intros tag H. destruct tag.
+  - apply appears_free_in_ann_binding_proxy_complete...
+  - apply appears_free_in_ann_bindings_rec_proxy_complete...
+  - apply appears_free_in_ann_bindings_nonrec_proxy_complete...
+  - apply appears_free_in_ann_constructor_proxy_complete...
+  - apply appears_free_in_ann_ann_proxy_complete...
+Qed.
 
 
 
@@ -182,6 +262,28 @@ Instance DecOptappears_free_in_ann name ann : DecOpt (appears_free_in_ann name a
 Instance DecOptappears_free_in_ann_sound name ann : DecOptSoundPos (appears_free_in_ann name ann).
 Proof. derive__sound (appears_free_in_ann_proxy_sound (appears_free_in_ann_tag name ann)). Qed.
 
+Instance DecOptappears_free_in_ann_complete name tm : DecOptCompletePos (appears_free_in_ann name tm).
+Proof. derive__complete (appears_free_in_ann_proxy_complete). Qed.
+
+Instance DecOptappears_free_in_ann_mon name tm: DecOptSizeMonotonic (appears_free_in_ann name tm).
+Proof. apply DecOptappears_free_in_ann_proxy_mon. Qed.
+
+
+
+(* appears_free_in_ann__constructor *)
+
+Instance DecOptappears_free_in_ann__constructor bs ann : DecOpt (appears_free_in_ann__constructor bs ann) :=
+{| decOpt s := @decOpt (appears_free_in_ann_proxy (appears_free_in_ann__constructor_tag bs ann)) (DecOptappears_free_in_ann_proxy (appears_free_in_ann__constructor_tag bs ann)) s |}.
+
+Instance DecOptappears_free_in_ann__constructor_sound bs ann : DecOptSoundPos (appears_free_in_ann__constructor bs ann).
+Proof. derive__sound (appears_free_in_ann_proxy_sound (appears_free_in_ann__constructor_tag bs ann)). Qed.
+
+Instance DecOptappears_free_in_ann__constructor_complete name tm : DecOptCompletePos (appears_free_in_ann__constructor name tm).
+Proof. derive__complete (appears_free_in_ann_proxy_complete). Qed.
+
+Instance DecOptappears_free_in_ann__constructor_mon name tm: DecOptSizeMonotonic (appears_free_in_ann__constructor name tm).
+Proof. apply DecOptappears_free_in_ann_proxy_mon. Qed.
+
 
 
 (* appears_free_in_ann__bindings_nonrec *)
@@ -191,6 +293,12 @@ Instance DecOptappears_free_in_ann__bindings_nonrec bs ann : DecOpt (appears_fre
 
 Instance DecOptappears_free_in_ann__bindings_nonrec_sound bs ann : DecOptSoundPos (appears_free_in_ann__bindings_nonrec bs ann).
 Proof. derive__sound (appears_free_in_ann_proxy_sound (appears_free_in_ann__bindings_nonrec_tag bs ann)). Qed.
+
+Instance DecOptappears_free_in_ann__bindings_nonrec_complete name tm : DecOptCompletePos (appears_free_in_ann__bindings_nonrec name tm).
+Proof. derive__complete (appears_free_in_ann_proxy_complete). Qed.
+
+Instance DecOptappears_free_in_ann__bindings_nonrec_mon name tm: DecOptSizeMonotonic (appears_free_in_ann__bindings_nonrec name tm).
+Proof. apply DecOptappears_free_in_ann_proxy_mon. Qed.
 
 
 
@@ -202,6 +310,14 @@ Instance DecOptappears_free_in_ann__bindings_rec bs ann : DecOpt (appears_free_i
 Instance DecOptappears_free_in_ann__bindings_rec_sound bs ann : DecOptSoundPos (appears_free_in_ann__bindings_rec bs ann).
 Proof. derive__sound (appears_free_in_ann_proxy_sound (appears_free_in_ann__bindings_rec_tag bs ann)). Qed.
 
+Instance DecOptappears_free_in_ann__bindings_rec_complete name tm : DecOptCompletePos (appears_free_in_ann__bindings_rec name tm).
+Proof. derive__complete (appears_free_in_ann_proxy_complete). Qed.
+
+Instance DecOptappears_free_in_ann__bindings_rec_mon name tm: DecOptSizeMonotonic (appears_free_in_ann__bindings_rec name tm).
+Proof. apply DecOptappears_free_in_ann_proxy_mon. Qed.
+
+
+
 
 (* appears_free_in_ann__binding *)
 
@@ -211,4 +327,8 @@ Instance DecOptappears_free_in_ann__binding bs ann : DecOpt (appears_free_in_ann
 Instance DecOptappears_free_in_ann__binding_sound bs ann : DecOptSoundPos (appears_free_in_ann__binding bs ann).
 Proof. derive__sound (appears_free_in_ann_proxy_sound (appears_free_in_ann__binding_tag bs ann)). Qed.
 
- *)
+Instance DecOptappears_free_in_ann__binding_complete name tm : DecOptCompletePos (appears_free_in_ann__binding name tm).
+Proof. derive__complete (appears_free_in_ann_proxy_complete). Qed.
+
+Instance DecOptappears_free_in_ann__binding_mon name tm: DecOptSizeMonotonic (appears_free_in_ann__binding name tm).
+Proof. apply DecOptappears_free_in_ann_proxy_mon. Qed.

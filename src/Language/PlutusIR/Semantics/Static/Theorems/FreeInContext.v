@@ -165,6 +165,28 @@ Module Annotation.
     P_binding_well_formed
     : core.
 
+  Lemma AFIA_constructor_exists_free_in_ty : forall X x T ar Targs Tr,
+    appears_free_in_ann__constructor X (Constructor (VarDecl x T) ar) ->
+    ((Targs, Tr) = splitTy T -> (exists U, List.In U Targs /\ appears_free_in_ty X U)).
+  Proof.
+    intros. (* split; *) revert X x T ar Tr H H0.
+  - induction Targs; intros; inversion H; subst; try inversion H0; subst.
+    + exists Targ. split.
+      * constructor. reflexivity.
+      * assumption.
+    + simpl.
+      assert (H': 
+        (exists U, List.In U (fst (splitTy T0)) /\ appears_free_in_ty X U) -> 
+          exists U, (Targ = U \/ List.In U (fst (splitTy T0))) /\ appears_free_in_ty X U
+      ). {intros [U H1]. exists U. split. right. apply H1. apply H1. }
+      apply H'.
+      apply (IHTargs X x T0 ar (snd (splitTy T0))).
+      * assumption.
+      * simpl in H0.
+        induction T0; reflexivity.
+  Qed.
+
+
   Lemma free_in_context : 
       (forall Delta Gamma t T, Delta ,, Gamma |-+ t : T -> P_has_type Delta Gamma t T) /\
       (forall Delta Gamma bs, Delta ,, Gamma |-oks_nr bs -> P_bindings_well_formed_nonrec Delta Gamma bs) /\
@@ -207,11 +229,8 @@ Module Annotation.
         apply notIn_btvbs_bindsD in H9.
         rewrite notIn__lookup_mupdate in H10...
     - (* W_Con *)
-      inversion Hafi. subst.
-      rewrite <- H3 in H.
-      inversion H. subst.
-      destruct H5 as [U [HIn__U Hafi__U]].
-      eapply Ty.free_in_context...
+      destruct (AFIA_constructor_exists_free_in_ty x0 x T ar Targs Tr Hafi H) as [U [Hin Hafity]].
+      inversion Hafi; subst; eapply Ty.free_in_context...
     - (* W_ConsB_NonRec *)
       inversion Hafi.
       + subst.

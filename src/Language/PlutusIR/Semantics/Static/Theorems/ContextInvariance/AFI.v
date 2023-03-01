@@ -168,10 +168,18 @@ Inductive appears_free_in_ann (X : tyname) : Term -> Prop :=
       appears_free_in_ann X (Unwrap t0)
 
 with appears_free_in_ann__constructor (X : tyname) : constructor -> Prop :=
-  | AFIA_Constructor : forall x T ar Targs Tr,
+(* | AFIA_Constructor : forall x T ar Targs Tr,
       (Targs, Tr) = splitTy T ->
       (exists U, In U Targs /\ appears_free_in_ty X U) ->
-      appears_free_in_ann__constructor X (Constructor (VarDecl x T) ar)
+   appears_free_in_ann__constructor X (Constructor (VarDecl x T) ar) *)
+  | AFIA_Constructor_Here : forall x T ar Targ,
+      appears_free_in_ty X Targ ->
+      appears_free_in_ann__constructor X (Constructor (VarDecl x (Ty_Fun Targ T)) ar)
+  | AFIA_Constructor_There : forall x T ar Targ,
+      appears_free_in_ann__constructor X (Constructor (VarDecl x T) ar) ->
+      appears_free_in_ann__constructor X (Constructor (VarDecl x (Ty_Fun Targ T)) ar)
+
+
 
 with appears_free_in_ann__bindings_nonrec (X : tyname) : list Binding -> Prop :=
   | AFIA_ConsB1_NonRec : forall b bs,
@@ -197,15 +205,14 @@ with appears_free_in_ann__binding (X: tyname) : Binding -> Prop :=
   | AFIA_TermBind2 : forall s x T t0,
       appears_free_in_ann X t0 ->
       appears_free_in_ann__binding X (TermBind s (VarDecl x T) t0)
-  | AFI_TypeBind : forall Y K T,
+  | AFIA_TypeBind : forall Y K T,
       appears_free_in_ty X T ->
       appears_free_in_ann__binding X (TypeBind (TyVarDecl Y K) T)
-  | AFI_DatatypeBind1 : forall Y K ZKs matchFunc c cs,
+  | AFIA_DatatypeBind1 : forall Y K ZKs matchFunc c cs,
       ~ NameIn X (map_fst_rev_map_fromDecl ZKs) ->
       appears_free_in_ann__constructor X c ->
       appears_free_in_ann__binding X (DatatypeBind (Datatype (TyVarDecl Y K) ZKs matchFunc (c :: cs)))
   .
-
 
 Definition closed_ann (t : Term) :=
   forall x, ~(appears_free_in_ann x t).
