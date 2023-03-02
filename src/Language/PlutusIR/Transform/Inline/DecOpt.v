@@ -32,9 +32,10 @@ Proof.
 Qed.
 
 
+QCDerive DecOpt for (inline_ty ctx ty1 ty2).
 
-
-
+Instance DecOptinline_ty_sound ctx ty1 ty2 : DecOptSoundPos (inline_ty ctx ty1 ty2).
+Proof. derive_sound. Qed.
 
 
 MetaCoq Run (deriveCTProxy inline).
@@ -44,7 +45,6 @@ Local Hint Constructors
   inline_Bindings_Rec 
   inline_Bindings_NonRec 
   inline_Binding 
-  inline_Ty 
   inline_Var
     : inline_hints. 
 
@@ -99,13 +99,3 @@ Instance DecOptinline_Binding c1 c2 tm : DecOpt (inline_Binding c1 c2 tm) :=
 
 Instance DecOptinline_Binding_sound c1 c2 tm : DecOptSoundPos (inline_Binding c1 c2 tm).
 Proof. derive__sound (inline_proxy_sound (inline_Binding_tag c1 c2 tm)). Qed.
-
-
-
-(* inline_Ty *)
-
-Instance DecOptinline_Ty c1 c2 tm : DecOpt (inline_Ty c1 c2 tm) :=
-{| decOpt s := @decOpt (inline_proxy (inline_Ty_tag c1 c2 tm)) (DecOptinline_proxy (inline_Ty_tag c1 c2 tm)) s |}.
-
-Instance DecOptinline_Ty_sound c1 c2 tm : DecOptSoundPos (inline_Ty c1 c2 tm).
-Proof. derive__sound (inline_proxy_sound (inline_Ty_tag c1 c2 tm)). Qed.
