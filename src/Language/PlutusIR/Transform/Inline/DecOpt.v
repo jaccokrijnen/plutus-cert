@@ -10,9 +10,8 @@ From QuickChick Require Import QuickChick.
 From CTProxy Require Import CTProxy.
 
 
-
-
-QCDerive EnumSized for binder_info.
+Instance EnumSizedbinder_info : EnumSized binder_info :=
+  {| enumSized _ := ret (bound_ty (Ty_Var EmptyString)) |}.
 
 Instance Dec_eq_binder_info : Dec_Eq binder_info.
 Proof.
@@ -21,7 +20,7 @@ Proof.
   decide equality.
   - apply Dec_eq_Term.
   - apply Dec_eq_Ty.
-Qed.
+Defined.
 
 Instance Dec_eq_ctx : Dec_Eq ctx.
 Proof.
@@ -29,12 +28,12 @@ Proof.
   apply Dec_eq_prod.
   - apply Dec_eq_string.
   - apply Dec_eq_binder_info.
-Qed.
+Defined.
 
 
-QCDerive DecOpt for (inline_ty ctx ty1 ty2).
+QCDerive DecOpt for (inline_ty c1 c2 ty1 ty2).
 
-Instance DecOptinline_ty_sound ctx ty1 ty2 : DecOptSoundPos (inline_ty ctx ty1 ty2).
+Instance DecOptinline_ty_sound c1 c2 ty1 ty2 : DecOptSoundPos (inline_ty c1 c2 ty1 ty2).
 Proof. derive_sound. Qed.
 
 

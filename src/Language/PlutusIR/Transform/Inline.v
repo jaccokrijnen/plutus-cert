@@ -88,44 +88,45 @@ Local Open Scope list_scope.
 
 
 
-Inductive inline_ty (Γ : ctx) : Ty -> Ty -> Prop :=
+Inductive inline_ty (Γ : ctx) : ctx -> Ty -> Ty -> Prop :=
+  | inl_Ty_Var : forall v,
+      inline_ty Γ Γ (Ty_Var v) (Ty_Var v)
 
-   | inl_Ty_Var_1 : forall α τ τ',
-      Lookup α (bound_ty τ) Γ ->
-      inline_ty Γ τ τ' ->
-      inline_ty Γ (Ty_Var α) τ
+  | inl_Ty_Var_Here : forall Γ' v t t',
+      inline_ty Γ Γ t t' ->
+      inline_ty Γ ((v, bound_ty t) :: Γ') (Ty_Var v) t'
 
-   | inl_Ty_Var_2 : forall α τ τ',
-      Lookup α (bound_ty τ) Γ ->
-      inline_ty Γ τ τ' ->
-      inline_ty Γ (Ty_Var α) (Ty_Var α)
+  | inl_Ty_Var_There : forall Γ' b v v' t',
+      v <> v' ->
+      inline_ty Γ Γ' (Ty_Var v) t' ->
+      inline_ty Γ ((v', b) :: Γ') (Ty_Var v) t'
 
    | inl_Ty_Fun : forall σ τ σ' τ',
-      inline_ty Γ σ σ' ->
-      inline_ty Γ τ τ' ->
-      inline_ty Γ (Ty_Fun σ τ) (Ty_Fun σ' τ')
+      inline_ty Γ Γ σ σ' ->
+      inline_ty Γ Γ τ τ' ->
+      inline_ty Γ Γ (Ty_Fun σ τ) (Ty_Fun σ' τ')
 
    | inl_Ty_IFix : forall σ τ σ' τ',
-      inline_ty Γ σ σ' ->
-      inline_ty Γ τ τ' ->
-      inline_ty Γ (Ty_IFix σ τ) (Ty_IFix σ' τ')
+      inline_ty Γ Γ σ σ' ->
+      inline_ty Γ Γ τ τ' ->
+      inline_ty Γ Γ (Ty_IFix σ τ) (Ty_IFix σ' τ')
 
    | inl_Ty_Forall : forall α k τ τ',
-      inline_ty Γ τ τ' ->
-      inline_ty Γ (Ty_Forall α k τ) (Ty_Forall α k τ')
+      inline_ty Γ Γ τ τ' ->
+      inline_ty Γ Γ (Ty_Forall α k τ) (Ty_Forall α k τ')
 
    | inl_Ty_Builtin : forall t,
-      inline_ty Γ (Ty_Builtin t) (Ty_Builtin t)
+      inline_ty Γ Γ (Ty_Builtin t) (Ty_Builtin t)
 
    | inl_Ty_Lam : forall α k τ τ',
-      inline_ty Γ τ τ' ->
-      inline_ty Γ (Ty_Lam α k τ) (Ty_Lam α k τ')
+      inline_ty Γ Γ τ τ' ->
+      inline_ty Γ Γ (Ty_Lam α k τ) (Ty_Lam α k τ')
 
    | Ty_App : forall σ τ σ' τ',
-      inline_ty Γ σ σ' ->
-      inline_ty Γ τ τ' ->
-      inline_ty Γ (Ty_App σ τ) (Ty_App σ' τ')
-   .
+      inline_ty Γ Γ σ σ' ->
+      inline_ty Γ Γ τ τ' ->
+      inline_ty Γ Γ (Ty_App σ τ) (Ty_App σ' τ')
+.
 
 
 Definition Binding_to_ctx_app b Γ := Binding_to_ctx b ++ Γ.
@@ -159,24 +160,24 @@ Inductive inline (Γ : ctx) : Term -> Term -> Prop :=
       inline Γ (Let NonRec bs t) (Let NonRec bs' t')
 
   | inl_TyInst_beta   : forall t t' α k τ τ',
-      inline_ty Γ τ τ' ->
+      inline_ty Γ Γ τ τ' ->
       inline ((α, bound_ty τ) :: Γ) t t' ->
       inline Γ (TyInst (TyAbs α k t) τ) (TyInst (TyAbs α k t') τ')
 
   (* Congruence cases *)
   | inl_TyInst_cong   : forall t t' τ τ',
       isTyAbs t = false ->
-      inline_ty Γ τ τ' ->
+      inline_ty Γ Γ τ τ' ->
       inline Γ t t' ->
       (* See inl_TyInst_beta *)
       inline Γ (TyInst t τ) (TyInst t' τ')
-
+      
   | inl_TyAbs    : forall α k t t',
       inline Γ t t' ->
       inline Γ (TyAbs α k t) (TyAbs α k t')
 
   | inl_LamAbs   : forall x τ τ' t t',
-      inline_ty Γ τ τ' ->
+      inline_ty Γ Γ τ τ' ->
       inline Γ t t' ->
       inline Γ (LamAbs x τ t) (LamAbs x τ' t')
 
@@ -195,13 +196,12 @@ Inductive inline (Γ : ctx) : Term -> Term -> Prop :=
       inline Γ (Error τ) (Error τ')
 
   | inl_IWrap    : forall σ σ' τ τ' t t',
-      inline_ty Γ τ τ' ->
-      inline_ty Γ σ σ' ->
+      inline_ty Γ Γ τ τ' ->
+      inline_ty Γ Γ σ σ' ->
       inline Γ (IWrap σ τ t) (IWrap σ' τ' t')
-
   | inl_Unwrap   : forall t t',
       inline Γ (Unwrap t) (Unwrap t')
-
+       
   with inline_Var (Γ : ctx) : ctx -> string -> Term -> Prop :=
   | inl_Var_Here : forall Γ' v t t',
       inline Γ t t' ->
@@ -213,7 +213,6 @@ Inductive inline (Γ : ctx) : Term -> Term -> Prop :=
       inline_Var Γ ((v', b) :: Γ') v t'
 
   with inline_Bindings_Rec (Γ : ctx) : list Binding -> list Binding -> Prop :=
-
     | inl_Binding_Rec_cons : forall b b' bs bs',
         inline_Binding Γ b b' ->
         inline_Bindings_Rec Γ bs bs' ->
@@ -222,7 +221,6 @@ Inductive inline (Γ : ctx) : Term -> Term -> Prop :=
     | inl_Binding_Rec_nil  :  inline_Bindings_Rec Γ [] []
 
   with inline_Bindings_NonRec (Γ : ctx) : list Binding -> list Binding -> Prop :=
-
     | inl_Binding_NonRec_cons : forall b b' bs bs',
         inline_Binding Γ b b' ->
         inline_Bindings_NonRec (Binding_to_ctx_app b Γ) bs bs' ->
@@ -230,11 +228,9 @@ Inductive inline (Γ : ctx) : Term -> Term -> Prop :=
 
     | inl_Binding_NonRec_nil  : inline_Bindings_NonRec Γ [] []
 
-
   with inline_Binding (Γ : ctx) : Binding -> Binding -> Prop :=
-
   | inl_TermBind  : forall s x τ τ' t t',
-      inline_ty Γ τ τ' ->
+      inline_ty Γ Γ τ τ' ->
       inline Γ t t' ->
       inline_Binding Γ (TermBind s (VarDecl x τ) t) (TermBind s (VarDecl x τ') t')
 
@@ -242,6 +238,6 @@ Inductive inline (Γ : ctx) : Term -> Term -> Prop :=
       inline_Binding Γ (DatatypeBind d) (DatatypeBind d)
 
   | inl_TypeBind_NonRec : forall tvd τ τ',
-      inline_ty Γ τ τ' ->
+      inline_ty Γ Γ τ τ' ->
       inline_Binding Γ (TypeBind tvd τ) (TypeBind tvd τ')
   .

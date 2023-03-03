@@ -165,6 +165,7 @@ Module Annotation.
     P_binding_well_formed
     : core.
 
+  (* NOTE: necessary after rewriting AFI relations to accomodate QuickChick derivations *)
   Lemma AFIA_constructor_exists_free_in_ty : forall X x T ar Targs Tr,
     appears_free_in_ann__constructor X (Constructor (VarDecl x T) ar) ->
     ((Targs, Tr) = splitTy T -> (exists U, List.In U Targs /\ appears_free_in_ty X U)).
