@@ -10,9 +10,11 @@ From PlutusCert Require Import
   Util
   Util.List
   UniqueBinders
+  UniqueBinders.DecOpt
 .
 
 Require Import Init.Datatypes.
+
 
 (* Import UniqueTerm. *)
 Import ListNotations.
@@ -56,7 +58,7 @@ Section InlineOnly.
    *)
 
   Definition inline_uncond_ty (Δ : list (A * Ty)) : Ty -> Ty :=
-    ty_transform
+    ty_endo
       (fun τ => match τ with
         | Ty_Var _ => Some (fun v => match lookup' A_eqb v Δ with | Some t => t | None => Ty_Var v end)
         | _        => None
@@ -140,7 +142,7 @@ Section InlineOnly.
   .
 
 
-  (* Constructs the final term, but without dead-code performed
+  (* Constructs the final term, but without dead-code performed 
      Note: this does result in inlined terms that are α-renamed compared to their
      binding site *)
   Fixpoint inlined_intermediate (elims : list A) (t : Term) (t' : Term) : option Term

@@ -92,8 +92,6 @@ Fixpoint dec_Term (x y : Term) {struct x} : bool := match x, y with
      Kind_eqb k k' &&
      Ty_eqb τ τ' &&
      dec_Term t t'
-  | TyInst (TyAbs _ _ t) _ , t' =>
-     dec_Term t t'
   | _ , _ => dec_compat dec_Term x y
 
   end

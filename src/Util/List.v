@@ -316,7 +316,6 @@ Definition elem {A} (A_eqb : A -> A -> bool) (x : A) (xs : list A) :=
     | Some _ => true
   end.
 
-
 (* A specialized version of In for names/strings *)
 Inductive NameIn (x : string) : list string -> Prop :=
   | NI_Here  : forall {xs}, NameIn x (x :: xs)

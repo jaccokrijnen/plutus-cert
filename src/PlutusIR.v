@@ -618,9 +618,9 @@ Section ty_fold.
 
 End ty_fold.
 
-Definition ty_transform {V B} (custom : forall τ, option (@ty_alg V B (ty V B) τ)) := fix f τ :=
-  match custom τ with
-    | Datatypes.Some f_custom => match τ return ty_alg τ -> ty V B with
+Definition ty_endo {V B} (m_custom : forall τ, option (@ty_alg V B (ty V B) τ)) := fix f τ :=
+  match m_custom τ with
+    | Some f_custom => match τ return ty_alg τ -> ty V B with
       | Ty_Var v        => fun f_custom => f_custom v
       | Ty_Fun t1 t2    => fun f_custom => f_custom (f t1) (f t2)
       | Ty_IFix t1 t2   => fun f_custom => f_custom (f t1) (f t2)

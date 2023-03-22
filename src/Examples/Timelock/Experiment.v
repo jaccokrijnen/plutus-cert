@@ -4,9 +4,6 @@ From Coq Require Import
   Lists.List
   ZArith.BinInt.
 
-From QuickChick Require Import
-  QuickChick.
-
 From PlutusCert Require Import
   PlutusIR
   FreeVars
@@ -18,6 +15,7 @@ From PlutusCert Require Import
   UniqueBinders
   UniqueBinders.DecOpt
   TimelockDumps
+  Timelock.Trace
 .
 
 
@@ -32,6 +30,8 @@ Check pir_1_renamed.
 Definition dec_unique := (@decOpt (unique_tm pir_1_renamed) (DecOptunique_tm pir_1_renamed)).
 
 Eval cbv in dec_unique 1000.
+
+Import UniqueTerm.
 
 (* Some utilities*)
 Definition var_eqb : string * Z -> string * Z -> bool :=
