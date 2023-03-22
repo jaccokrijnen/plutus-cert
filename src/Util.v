@@ -154,7 +154,7 @@ Definition sumbool_to_optionr {a b} (x : sumbool a b) : option b :=
 Definition string_dec_option := fun x y => sumbool_to_optionl (string_dec x y).
 
 (* lookup with evidence *)
-Definition lookup {a b} (dec : forall x1 x2 : a, {x1 = x2} + {x1 <> x2}) :
+Definition lookup_dec {a b} (dec : forall x1 x2 : a, {x1 = x2} + {x1 <> x2}) :
   forall (x : a) (xs : list (a * b)),
   option ({y & In (x, y) xs}).
   Proof.

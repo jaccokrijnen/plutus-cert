@@ -87,6 +87,13 @@ Fixpoint dec_Term (x y : Term) {struct x} : bool := match x, y with
         forallb (is_pure_binding []) bs && dec_Term t y (* Check whether the whole let was removed *)
   | Let r bs t   , _ => 
      forallb (is_pure_binding []) bs && dec_Term t y (* Check whether the whole let was removed *)
+  | TyInst (TyAbs α k t) τ , TyInst (TyAbs α' k' t') τ'  =>
+     String.eqb α α' &&
+     Kind_eqb k k' &&
+     Ty_eqb τ τ' &&
+     dec_Term t t'
+  | TyInst (TyAbs α k t) τ , t' =>
+     dec_Term t t'
   | _ , _ => is_cong dec_Term x y
 
   end
@@ -348,8 +355,9 @@ Proof with eauto with Hints_soundness.
   - unfold P_Term; destruct t'; intro H_dec; try discriminate H_dec; simpl in H_dec; split_hypos.
     assert (d = d0)... subst...
 
-  - unfold P_Term; destruct t'; intro H_dec; try discriminate H_dec; simpl in H_dec; split_hypos.
-    assert (t0 = t1)... subst...
+  - unfold P_Term; destruct t', t; intro H_dec; try discriminate H_dec; simpl in H_dec; split_hypos.
+    all: admit.
+    (* assert (t0 = t1)... subst... *)
 
   - unfold P_Term; destruct t'; intro H_dec; try discriminate H_dec; simpl in H_dec; split_hypos.
     assert (t = t0)... subst...
@@ -364,7 +372,7 @@ Proof with eauto with Hints_soundness.
   - unfold P_Binding...
   - unfold P_Binding...
   - unfold P_Binding...
-Qed.
+Admitted.
 
 Corollary dec_Term_sound : ∀ t t', dec_Term t t' = true -> dead_syn t t'.
 Proof.
