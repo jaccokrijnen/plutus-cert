@@ -12,6 +12,12 @@ Fixpoint lookup {X:Type} (k : string) (l : list (string * X)) : option X :=
   | (j,x) :: l' => if j =? k then Datatypes.Some x else lookup k l'
   end.
 
+Fixpoint lookup' {A X : Type} (A_eqb : A -> A -> bool) (k : A) (l : list (A * X)) : option X :=
+  match l with
+  | nil => None
+  | (j,x) :: l' => if A_eqb j k then Datatypes.Some x else lookup' A_eqb k l'
+  end.
+
 Inductive Lookup {A B :Type} (k : A) (v : B) : list (A * B) -> Prop :=
   | Here    : forall {kvs}, Lookup k v ((k, v) :: kvs)
   | There   : forall {k' v' kvs}, ~ (k = k') -> Lookup k v kvs -> Lookup k v ((k', v') :: kvs)
@@ -55,3 +61,9 @@ Definition forall2b {A} (p : A -> A -> bool) := fix f xs ys :=
 Lemma mdrop_nil : forall X ns,
     @mdrop X ns nil = nil.
 Proof. induction ns; auto. Qed.
+
+Definition elem {A} (A_eqb : A -> A -> bool) (x : A) (xs : list A) :=
+  match find (A_eqb x) xs with
+    | None   => false
+    | Some _ => true
+  end.

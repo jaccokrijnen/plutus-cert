@@ -190,17 +190,6 @@ Fixpoint context_apply (C : context) (t : term) :=
   end
 .
 
-(*
-  | Let      : Recursivity -> list binding -> term -> term
-  | TyAbs    : binderTyname -> kind -> term -> term
-  | Constant : @some valueOf -> term
-  | Builtin  : DefaultFun -> term
-  | TyInst   : term -> ty -> term
-  | Error    : ty -> term
-  | IWrap    : ty -> ty -> term -> term
-  | Unwrap   : term -> term
-*)
-
 (** ** Trace of compilation *)
 Inductive pass :=
   | PassRename
@@ -217,7 +206,55 @@ Inductive pass :=
 Inductive compilation_trace :=
   | CompilationTrace : term -> list (pass * term) -> compilation_trace.
 
+(* These constructors should treat the type parameter
+   as implicit too
+
+   Using maximally inserted implicits for ease of use with
+   partial application *)
+
 End AST_term.
+
+Arguments Ty_Var {_ _}.
+Arguments Ty_Fun {_ _}.
+Arguments Ty_IFix {_ _}.
+Arguments Ty_Forall {_ _}.
+Arguments Ty_Builtin {_ _}.
+Arguments Ty_Lam {_ _}.
+Arguments Ty_App {_ _}.
+
+Arguments Let {_ _ _ _}.
+Arguments Var {_ _ _ _}.
+Arguments TyAbs {_ _ _ _}.
+Arguments LamAbs {_ _ _ _}.
+Arguments Apply {_ _ _ _}.
+Arguments Constant {_ _ _ _}.
+Arguments Builtin {_ _ _ _}.
+Arguments TyInst {_ _ _ _}.
+Arguments Error {_ _ _ _}.
+Arguments IWrap {_ _ _ _}.
+Arguments Unwrap {_ _ _ _}.
+
+Arguments TermBind {_ _ _ _}.
+Arguments TypeBind {_ _ _ _}.
+Arguments DatatypeBind {_ _ _ _}.
+
+Arguments VarDecl {_ _ _}.
+Arguments TyVarDecl {_}.
+Arguments Datatype {_ _ _}.
+
+Arguments PassRename {_}%type_scope.
+Arguments PassTypeCheck {_}%type_scope.
+Arguments PassInline {_}%type_scope.
+Arguments PassDeadCode {_}%type_scope.
+Arguments PassThunkRec {_}%type_scope.
+Arguments PassFloatTerm {_}%type_scope.
+Arguments PassLetNonStrict {_}%type_scope.
+Arguments PassLetTypes {_}%type_scope.
+Arguments PassLetRec {_}%type_scope.
+Arguments PassLetNonRec {_}%type_scope.
+
+Arguments CompilationTrace {name tyname binderName binderTyname}.
+
 
 Definition constructorName {tyname binderName binderTyname} : constr tyname binderName binderTyname -> binderName :=
   fun c => match c with
@@ -259,27 +296,6 @@ Notation tyname := string (only parsing).
 Notation binderName := string (only parsing).
 Notation binderTyname := string (only parsing).
 
-(* These constructors should treat the type parameter
-   as implicit too (this is already correctly generated for the recursive
-   constructors. *)
-
-Arguments Ty_Var [tyname]%type_scope [binderTyname]%type_scope.
-Arguments Ty_Fun [tyname]%type_scope [binderTyname]%type_scope.
-Arguments Ty_Forall [tyname]%type_scope [binderTyname]%type_scope.
-Arguments Ty_Builtin [tyname]%type_scope [binderTyname]%type_scope.
-Arguments Ty_Lam [tyname]%type_scope [binderTyname]%type_scope.
-Arguments Var [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments Constant [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments Builtin [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments TyInst [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments Error [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments TypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments DatatypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-
-Arguments VarDecl [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments TyVarDecl [binderTyname]%type_scope.
-Arguments Datatype [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-
 Notation Kind := (kind).
 Notation Ty := (ty tyname binderTyname).
 Notation VDecl := (vdecl name tyname binderName).
@@ -305,24 +321,6 @@ Notation name := nat (only parsing).
 Notation tyname := nat (only parsing).
 Notation binderName := unit (only parsing).
 Notation binderTyname := unit (only parsing).
-
-Arguments Ty_Var [tyname]%type_scope [binderTyname]%type_scope.
-Arguments Ty_Fun [tyname]%type_scope [binderTyname]%type_scope.
-Arguments Ty_Forall [tyname]%type_scope [binderTyname]%type_scope.
-Arguments Ty_Builtin [tyname]%type_scope [binderTyname]%type_scope.
-Arguments Ty_Lam [tyname]%type_scope [binderTyname]%type_scope.
-Arguments Var [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments Constant [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments Builtin [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments TyInst [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments Error [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments TypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments DatatypeBind [name]%type_scope [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-
-Arguments VarDecl [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-Arguments TyVarDecl [binderTyname]%type_scope.
-Arguments Datatype [tyname]%type_scope [binderName]%type_scope [binderTyname]%type_scope.
-
 
 Notation Kind := (kind).
 Notation Ty := (ty tyname binderTyname).
@@ -387,51 +385,6 @@ Definition tyname       := string * Z.
 Definition binderName   := string * Z.
 Definition binderTyname := string * Z.
 
-(* These constructors should treat the type parameter
-   as implicit too
-
-   Using maximally inserted implicits for ease of use with
-   partial application *)
-
-Arguments Ty_Var {_ _}.
-Arguments Ty_Fun {_ _}.
-Arguments Ty_IFix {_ _}.
-Arguments Ty_Forall {_ _}.
-Arguments Ty_Builtin {_ _}.
-Arguments Ty_Lam {_ _}.
-
-Arguments Let {_ _ _ _}.
-Arguments Var {_ _ _ _}.
-Arguments TyAbs {_ _ _ _}.
-Arguments LamAbs {_ _ _ _}.
-Arguments Apply {_ _ _ _}.
-Arguments Constant {_ _ _ _}.
-Arguments Builtin {_ _ _ _}.
-Arguments TyInst {_ _ _ _}.
-Arguments Error {_ _ _ _}.
-Arguments IWrap {_ _ _ _}.
-Arguments Unwrap {_ _ _ _}.
-
-Arguments TermBind {_ _ _ _}.
-Arguments TypeBind {_ _ _ _}.
-Arguments DatatypeBind {_ _ _ _}.
-
-Arguments VarDecl {_ _ _}.
-Arguments TyVarDecl {_}.
-Arguments Datatype {_ _ _}.
-
-Arguments PassRename {_}%type_scope.
-Arguments PassTypeCheck {_}%type_scope.
-Arguments PassInline {_}%type_scope.
-Arguments PassDeadCode {_}%type_scope.
-Arguments PassThunkRec {_}%type_scope.
-Arguments PassFloatTerm {_}%type_scope.
-Arguments PassLetNonStrict {_}%type_scope.
-Arguments PassLetTypes {_}%type_scope.
-Arguments PassLetRec {_}%type_scope.
-Arguments PassLetNonRec {_}%type_scope.
-
-Arguments CompilationTrace {name tyname binderName binderTyname}.
 
 Notation Kind := (kind).
 Notation Ty := (ty tyname binderTyname).
@@ -621,6 +574,70 @@ Section term_rect.
       | DatatypeBind dtd => @H_DatatypeBind dtd
     end.
 End term_rect.
+
+Section ty_fold.
+
+  Context
+    {V : Set}
+    {B : Set}.
+  Context
+    {R : Set}.
+
+  Context
+    (f_Var : V -> R)
+    (f_Fun : R -> R -> R)
+    (f_IFix : R -> R -> R)
+    (f_Forall : B -> kind -> R -> R)
+    (f_Builtin : @some typeIn -> R)
+    (f_Lam : B -> kind -> R -> R)
+    (f_App : R -> R -> R).
+
+  Definition ty_fold := fix f ty :=
+    match ty with
+    | Ty_Var v        => f_Var v
+    | Ty_Fun t1 t2    => f_Fun (f t1) (f t2)
+    | Ty_IFix t1 t2   => f_IFix (f t1) (f t2)
+    | Ty_Forall v k t => f_Forall v k (f t)
+    | Ty_Builtin b    => f_Builtin b
+    | Ty_Lam v k t    => f_Lam v k (f t)
+    | Ty_App t1 t2    => f_App (f t1) (f t2)
+    end.
+
+  Definition ty_alg (ty : ty V B) : Set := match ty with
+    | Ty_Var v        => V -> R
+    | Ty_Fun t1 t2    => R -> R -> R
+    | Ty_IFix t1 t2   => R -> R -> R
+    | Ty_Forall v k t => B -> kind -> R -> R
+    | Ty_Builtin b    => @some typeIn -> R
+    | Ty_Lam v k t    => B -> kind -> R -> R
+    | Ty_App t1 t2    => R -> R -> R
+    end.
+
+End ty_fold.
+
+Definition ty_transform {V B} (custom : forall τ, option (@ty_alg V B (ty V B) τ)) := fix f τ :=
+  match custom τ with
+    | Datatypes.Some f_custom => match τ return ty_alg τ -> ty V B with
+      | Ty_Var v        => fun f_custom => f_custom v
+      | Ty_Fun t1 t2    => fun f_custom => f_custom (f t1) (f t2)
+      | Ty_IFix t1 t2   => fun f_custom => f_custom (f t1) (f t2)
+      | Ty_Forall v k t => fun f_custom => f_custom v k (f t)
+      | Ty_Builtin b    => fun f_custom => f_custom b
+      | Ty_Lam v k t    => fun f_custom => f_custom v k (f t)
+      | Ty_App t1 t2    => fun f_custom => f_custom (f t1) (f t2)
+    end f_custom
+    | None =>
+      match τ with
+      | Ty_Var v        => Ty_Var v
+      | Ty_Fun t1 t2    => Ty_Fun (f t1) (f t2)
+      | Ty_IFix t1 t2   => Ty_IFix (f t1) (f t2)
+      | Ty_Forall v k t => Ty_Forall v k (f t)
+      | Ty_Builtin b    => Ty_Builtin b
+      | Ty_Lam v k t    => Ty_Lam v k (f t)
+      | Ty_App t1 t2    => Ty_App (f t1) (f t2)
+      end
+  end.
+
 
 (*
 Inductive TermF termR bindingR :=
