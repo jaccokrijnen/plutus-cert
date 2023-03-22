@@ -56,6 +56,10 @@ Inductive dead_syn : Term -> Term -> Prop :=
       dead_syn_bindings bs bs' ->
       dead_syn (Let rec bs t) (Let rec bs' t')
 
+  | dc_delete_ty_beta : forall t t' α k τ,
+      dead_syn t t' ->
+      dead_syn (TyInst (TyAbs α k t) τ) t'
+
 
 with dead_syn_bindings : list Binding -> list Binding -> Prop :=
   | dc_bindings : forall bs bs',

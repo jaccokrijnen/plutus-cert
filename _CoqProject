@@ -31,6 +31,7 @@ src/Language/PlutusIR/Transform/Inline.v
 src/Language/PlutusIR/Transform/Inline/DecOpt.v
 src/Language/PlutusIR/Transform/Rename.v
 src/Language/PlutusIR/Transform/Inline/DecideStepBool.v
+src/Language/PlutusIR/Transform/Inline/Intermediate.v
 src/Language/PlutusIR/Transform/Congruence.v
 src/Language/PlutusIR/Transform/Compose.v
 src/Language/PlutusIR/Transform/Functional.v
