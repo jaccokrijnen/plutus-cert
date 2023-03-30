@@ -75,6 +75,10 @@ Fixpoint substitute (x : name) (s : Term) (t : Term) {struct t} : Term :=
       IWrap F T (substitute x s t0)
   | Unwrap t0 =>
       Unwrap (substitute x s t0)
+  | Constr i ts =>
+      Constr i (map (substitute x s) ts)
+  | Match t ts =>
+      Match (substitute x s t) (map (substitute x s) ts)
   end
 
 with substitute_binding (x : name) (s : Term) (b : Binding) {struct b} : Binding :=

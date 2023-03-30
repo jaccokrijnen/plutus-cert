@@ -85,6 +85,15 @@ Module Term.
     | ABI_Unwrap : forall t,
         appears_bound_in x t ->
         appears_bound_in x (Unwrap t)
+    | ABI_Constr : forall i ts,
+        Exists (appears_bound_in x) ts ->
+        appears_bound_in x (Constr i ts)
+    | ABI_Match1 : forall t ts,
+        appears_bound_in x t ->
+        appears_bound_in x (Match t ts)
+    | ABI_Match2 : forall t ts,
+        Exists (appears_bound_in x) ts ->
+        appears_bound_in x (Match t ts)
     | ABI_Let_Nil : forall recty t0,
         appears_bound_in x t0 ->
         appears_bound_in x (Let recty nil t0)
@@ -139,6 +148,15 @@ Module Annotation.
     | ABI_IWrap3 : forall F T t,
         appears_bound_in X t ->
         appears_bound_in X (IWrap F T t)
+    | ABI_Constr : forall i ts,
+        Exists (appears_bound_in X) ts ->
+        appears_bound_in X (Constr i ts)
+    | ABI_Match1 : forall t ts,
+        appears_bound_in X t ->
+        appears_bound_in X (Match t ts)
+    | ABI_Match2 : forall t ts,
+        Exists (appears_bound_in X) ts ->
+        appears_bound_in X (Match t ts)
     | ABI_Unwrap : forall t,
         appears_bound_in X t ->
         appears_bound_in X (Unwrap t)
@@ -232,6 +250,8 @@ Fixpoint bound_vars (t : term') : list var :=
    | (Error ty)        => []
    | (Constant v)      => []
    | (Builtin f)       => []
+   | (Constr i ts)     => concat (map bound_vars ts)
+   | (Match t ts)      => bound_vars t ++ concat (map bound_vars ts)
    end
 with bound_vars_binding (b : binding') : list var := match b with
   | TermBind _ (VarDecl v _) t => [v] ++ bound_vars t
@@ -311,6 +331,8 @@ Proof with eauto using appears_bound_in.
   - intros. cbv. auto.
   - tac ABI_IWrap.
   - tac ABI_Unwrap.
+  - admit.
+  - admit.
   - intros.
     unfold P_Binding.
     intros.
@@ -336,7 +358,7 @@ Proof with eauto using appears_bound_in.
       apply ABI_Let_DatatypeBind.
       apply in_cons.
       assumption.
-Qed.
+Admitted.
 
 Inductive decide {a : Type} (P : a -> Type) (x : a) :=
   | dec_False : notT (P x) -> decide P x

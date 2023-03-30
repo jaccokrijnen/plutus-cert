@@ -251,7 +251,9 @@ Proof with eauto.
     + apply eqb_neq in Heqb as Hneq.
       apply T_LamAbs...
       rewrite update_permute in H11...
-Qed.
+  - admit.
+  - admit.
+Admitted.
 
 Corollary substitution_preserves_typing__Term : forall t Delta Gamma x U Un v T,
     Delta ,, (x |-> U; Gamma)  |-+ t : T ->

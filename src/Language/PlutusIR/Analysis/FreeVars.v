@@ -75,6 +75,8 @@ Fixpoint free_vars (t : term var tyvar var tyvar) : list var :=
    | (Error ty)        => []
    | (Constant v)      => []
    | (Builtin f)       => []
+   | (Constr i ts)     => concat (map free_vars ts)
+   | (Match t ts)      => free_vars t ++ concat (map free_vars ts)
    end
 
 with free_vars_binding rec (b : binding') : list var :=

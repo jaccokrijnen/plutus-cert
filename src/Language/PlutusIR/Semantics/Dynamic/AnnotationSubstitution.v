@@ -88,6 +88,10 @@ Fixpoint substituteA (X : tyname) (U : Ty) (t : Term) {struct t} : Term :=
       IWrap (substituteT X U F) (substituteT X U T) (substituteA X U t0)
   | Unwrap t0 =>
       Unwrap (substituteA X U t0)
+  | Constr i ts =>
+      Constr i (map (substituteA X U) ts)
+  | Match t ts =>
+      Match (substituteA X U t)  (map (substituteA X U) ts)
   end
 
 with substituteA_binding (X : tyname) (U : Ty) (b : Binding) {struct b} : Binding :=

@@ -95,6 +95,8 @@ Section InlineOnly.
         | Error τ           => Error (inline_uncond_ty Δ τ)
         | IWrap τ1 τ2 t     => IWrap (inline_uncond_ty Δ τ1) (inline_uncond_ty Δ τ2) (inline_uncond Γ Δ t)
         | Unwrap t          => Unwrap (inline_uncond Γ Δ t)
+        | Constr i ts       => Constr i (map (inline_uncond Γ Δ) ts)
+        | Match t ts        => Match (inline_uncond Γ Δ t) (map (inline_uncond Γ Δ) ts)
       end
 
    with inline_uncond_binding (Γ : list (A * Term)) (Δ : list (A * Ty)) (b : Binding) : Binding
@@ -120,6 +122,8 @@ Section InlineOnly.
       | Error ty          => Error ty
       | IWrap ty1 ty2 t   => IWrap ty1 ty2 (inline_deadcode t)
       | Unwrap t          => Unwrap (inline_deadcode t)
+      | Constr i ts       => Constr i (map inline_deadcode ts)
+      | Match t ts        => Match (inline_deadcode t) (map (inline_deadcode) ts)
     end
 
    with inline_deadcode_binding (b : Binding) : list Binding

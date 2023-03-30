@@ -29,6 +29,8 @@ Record AlgTerm: Type := mkTermAlg
   ; a_Error    : Ty -> rTerm
   ; a_IWrap    : Ty -> Ty -> rTerm -> rTerm
   ; a_Unwrap   : rTerm -> rTerm
+  ; a_Constr   : nat -> list rTerm -> rTerm
+  ; a_Match    : rTerm -> list rTerm -> rTerm
   }
 
 with AlgBinding : Type := mkBindingAlg
@@ -83,6 +85,8 @@ Section Folds.
     | (Error ty)        => a_Error algTerm ty
     | (IWrap ty1 ty2 t) => a_IWrap algTerm ty1 ty2 (foldTerm t)
     | (Unwrap t)        => a_Unwrap algTerm (foldTerm t)
+    | (Constr i ts)     => a_Constr algTerm i (map foldTerm ts)
+    | (Match t ts)      => a_Match algTerm (foldTerm t) (map foldTerm ts)
   end
 
   with foldBinding (b : Binding) : rb := match b with
@@ -276,7 +280,9 @@ Section Use. (* name comes from "use" rules in attribute grammars *)
     a_TyInst := fun (X : a) (_ : Ty) => f [X];
     a_Error := fun _ : Ty => f [];
     a_IWrap := fun (_ _ : Ty) (X : a) => f [X];
-    a_Unwrap := fun X : a => f [X]
+    a_Unwrap := fun X : a => f [X];
+    a_Constr := fun i XS => f XS;
+    a_Match := fun X XS => f (X :: XS)
     |}
     ).
   Defined.

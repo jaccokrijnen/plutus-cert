@@ -157,6 +157,8 @@ Inductive term :=
   | Error    : ty -> term
   | IWrap    : ty -> ty -> term -> term
   | Unwrap   : term -> term
+  | Constr   : nat -> list term -> term
+  | Match    : term -> list term -> term
 
 with binding :=
   | TermBind : Strictness -> vdecl -> term -> binding
@@ -233,6 +235,8 @@ Arguments TyInst {_ _ _ _}.
 Arguments Error {_ _ _ _}.
 Arguments IWrap {_ _ _ _}.
 Arguments Unwrap {_ _ _ _}.
+Arguments Constr {_ _ _ _ }.
+Arguments Match {_ _ _ _}.
 
 Arguments TermBind {_ _ _ _}.
 Arguments TypeBind {_ _ _ _}.
@@ -423,8 +427,10 @@ Section Term_rect.
     (H_TyInst   : forall t : Term, P t -> forall t0 : Ty, P (TyInst t t0))
     (H_Error    : forall t : Ty, P (Error t))
     (H_IWrap    : forall (t t0 : Ty) (t1 : Term), P t1 -> P (IWrap t t0 t1))
-    (H_Unwrap   : forall t : Term, P t -> P (Unwrap t)).
-    
+    (H_Unwrap   : forall t : Term, P t -> P (Unwrap t))
+    (H_Constr   : forall (i : nat) (ts : list Term), ForallT P ts -> P (Constr i ts))
+    (H_Match    : forall (t : Term), P t -> forall ts, ForallT P ts -> P (Match t ts)).
+
   Context
     (H_TermBind : forall s v t, P t -> Q (TermBind s v t))
     (H_TypeBind : forall v ty, Q (TypeBind v ty))
@@ -435,6 +441,13 @@ Section Term_rect.
     match bs as p return ForallT Q p with
       | nil       => ForallT_nil
       | cons b bs => ForallT_cons (Binding_rect' b) (Bindings_rect' bs)
+    end.
+
+  Definition Terms_rect' (Term_rect : forall (t : Term), P t) :=
+    fix Terms_rect' ts :=
+    match ts as p return ForallT P p with
+      | nil       => ForallT_nil
+      | cons t ts => ForallT_cons (Term_rect t) (Terms_rect' ts)
     end.
 
   Fixpoint Term_rect' (t : Term) : P t :=
@@ -450,6 +463,8 @@ Section Term_rect.
       | Error ty        => H_Error ty
       | Constant v      => H_Constant v
       | Builtin f       => H_Builtin f
+      | Constr i ts     => H_Constr i ts (Terms_rect' Term_rect' ts)
+      | Match t ts      => H_Match t (Term_rect' t) ts (Terms_rect' Term_rect' ts)
     end
   with Binding_rect' (b : Binding) : Q b :=
     match b with
@@ -478,8 +493,10 @@ Section Term__ind.
     (H_TyInst   : forall t : Term, P t -> forall t0 : Ty, P (TyInst t t0))
     (H_Error    : forall t : Ty, P (Error t))
     (H_IWrap    : forall (t t0 : Ty) (t1 : Term), P t1 -> P (IWrap t t0 t1))
-    (H_Unwrap   : forall t : Term, P t -> P (Unwrap t)).
-    
+    (H_Unwrap   : forall t : Term, P t -> P (Unwrap t))
+    (H_Constr   : forall (i : nat) (ts : list Term), ForallP P ts -> P (Constr i ts))
+    (H_Match    : forall (t : Term), P t -> forall ts, ForallP P ts -> P (Match t ts)).
+
   Context
     (H_TermBind : forall s v t, P t -> Q (TermBind s v t))
     (H_TypeBind : forall v ty, Q (TypeBind v ty))
@@ -490,6 +507,13 @@ Section Term__ind.
     match bs as p return ForallP Q p with
       | nil       => ForallP_nil
       | cons b bs => ForallP_cons (Binding__ind b) (Bindings__ind bs)
+    end.
+
+  Definition Terms__ind (Term_rect : forall (t : Term), P t) :=
+    fix Terms_rect' ts :=
+    match ts as p return ForallP P p with
+      | nil       => ForallP_nil
+      | cons t ts => ForallP_cons (Term_rect t) (Terms_rect' ts)
     end.
 
   Fixpoint Term__ind (t : Term) : P t :=
@@ -505,6 +529,8 @@ Section Term__ind.
       | Error ty        => H_Error ty
       | Constant v      => H_Constant v
       | Builtin f       => H_Builtin f
+      | Constr i ts     => H_Constr i ts (Terms__ind Term__ind ts)
+      | Match t ts      => H_Match t (Term__ind t) ts (Terms__ind Term__ind ts)
     end
   with Binding__ind (b : Binding) : Q b :=
     match b with
@@ -535,7 +561,9 @@ Section term_rect.
     (H_TyInst   : forall t : term v v' b b', P t -> forall t0 : ty v' b', P (TyInst t t0))
     (H_Error    : forall t : ty v' b', P (Error t))
     (H_IWrap    : forall (t t0 : ty v' b') (t1 : term v v' b b'), P t1 -> P (IWrap t t0 t1))
-    (H_Unwrap   : forall t : term v v' b b', P t -> P (Unwrap t)).
+    (H_Unwrap   : forall t : term v v' b b', P t -> P (Unwrap t))
+    (H_Constr   : forall (i : nat) (ts : list (term v v' b b')), ForallT P ts -> P (Constr i ts))
+    (H_Match    : forall t, P t -> forall ts, ForallT P ts -> P (Match t ts)).
 
   Context
     (H_TermBind     : forall s v t, P t -> Q (TermBind s v t))
@@ -553,6 +581,13 @@ Section term_rect.
       | cons b bs => @H_cons _ bs (binding_rect' b) (bindings_rect' bs)
     end.
 
+  Definition terms_rect' (term_rect : forall (t : term v v' b b'), P t) :=
+    fix terms_rect' ts :=
+    match ts as p return ForallT P p with
+      | nil       => ForallT_nil
+      | cons t ts => ForallT_cons (term_rect t) (terms_rect' ts)
+    end.
+
   Fixpoint term_rect' (t : term v v' b b') : P t :=
     match t with
       | Let rec bs t    => @H_Let rec bs t (bindings_rect' binding_rect' bs) (term_rect' t)
@@ -566,6 +601,8 @@ Section term_rect.
       | Error ty        => @H_Error ty
       | Constant v      => @H_Constant v
       | Builtin f       => @H_Builtin f
+      | Constr i ts     => @H_Constr i ts (terms_rect' term_rect' ts)
+      | Match t ts      => @H_Match t (term_rect' t) ts (terms_rect' term_rect' ts)
     end
   with binding_rect' (b : binding v v' b b') : Q b :=
     match b with
