@@ -54,3 +54,43 @@ Proof with eauto with typing.
       apply K_Lam.
       rewrite update_permute in H4...
 Qed.
+
+
+Require Import Lists.List.
+
+(** WKS = Well-Kinded Substitution *)
+Inductive WKS : list (name * Kind) -> list (name * Ty) -> Prop :=
+  | WKS_nil :
+      WKS nil nil
+  | WKS_cons : forall Δ rho T X K,
+      empty |-* T : K ->
+      WKS Δ rho ->
+      WKS ((X, K) :: Δ) ((X, T) :: rho).
+
+
+Require Import Coq.Program.Equality.
+
+Theorem msubstT_preserves_kinding T pm_Δ Δ δ K :
+  WKS Δ δ ->
+  pm_Δ = mupdate empty Δ ->
+  pm_Δ |-* T : K ->
+  empty |-* (msubstT δ T) : K.
+Proof.
+  intros H_WKS H_eq_Δ H_ty_T.
+  generalize dependent T.
+  generalize dependent pm_Δ.
+  dependent induction H_WKS.
+  + intros pm_Δ H_Δ T H_ty.
+    subst.
+    assumption.
+  + intros pm_Δ H_Δ T0 H_ty_T0.
+    subst.
+    simpl.
+    assert (H_preserve_step : (mupdate empty Δ |-* (substituteT X T T0) : K)).
+    { eapply substituteT_preserves_kinding with (L := K0). 
+      all: assumption.
+    }
+    specialize IHH_WKS with (pm_Δ := mupdate empty Δ).
+    specialize (IHH_WKS eq_refl _ H_preserve_step).
+    assumption.
+Qed.

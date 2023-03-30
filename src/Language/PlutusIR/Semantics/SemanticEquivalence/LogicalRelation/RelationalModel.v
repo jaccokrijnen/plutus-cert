@@ -120,11 +120,10 @@ Definition RV (k : nat) (T : Ty) (rho : tymapping) (v v' : Term) : Prop :=
 
 Lemma RV_to_RC k T rho e e' :
   (forall j (Hlt_j : j < k) e_f,
-      e =[j]=> e_f ->
-      exists e'_f j', e' =[j']=> e'_f /\
-        RV (k - j) T rho e_f e'_f) ->
-        RC k T rho e e'
-        .
+    e =[j]=> e_f ->
+    exists e'_f j', e' =[j']=> e'_f /\ RV (k - j) T rho e_f e'_f
+  ) ->
+  RC k T rho e e'.
 Proof with auto.
   intros H.
   autorewrite with RC.
@@ -187,6 +186,19 @@ Proof.
   rewrite <- minus_n_O.
   eauto.
 Qed.
+
+Lemma RV_RC k T rho e e' :
+  RC k T rho e e' <->
+  (forall j (Hlt_j : j < k) e_f,
+    e =[j]=> e_f ->
+    exists e'_f j', e' =[j']=> e'_f /\ RV (k - j) T rho e_f e'_f
+  ).
+Proof.
+constructor;
+eauto using RV_to_RC, RC_to_RV.
+Qed.
+
+
 
 Corollary RV_unfolded_to_RV : forall k T rho v v',
     value v /\ value v' /\ RC k T rho v v' ->

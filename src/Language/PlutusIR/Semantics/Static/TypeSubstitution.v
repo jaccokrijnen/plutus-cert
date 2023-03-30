@@ -156,3 +156,12 @@ Proof.
     || replace T' with (rename Y Y' T); eauto; rewrite <- rename_preserves_size; eauto
     ].
 Qed.
+
+
+Fixpoint msubstituteTCA (Δ : list (tyname * Ty)) (T : Ty) : Ty :=
+  match Δ with
+  | nil => T
+  | (x, U) :: Δ' => msubstituteTCA Δ' (substituteTCA x U T)
+  end
+.
+
