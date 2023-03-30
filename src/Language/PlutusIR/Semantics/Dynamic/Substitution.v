@@ -12,6 +12,10 @@ Local Open Scope string_scope.
 
 (** Substitution of terms *)
 
+(** Term substitution is not capture-avoiding, but that is not a problem, since 
+    we only substitute closed terms in the dynamic semantics.
+*)
+
 Section SubstBindings.
   Context {substb : name -> Term -> Binding -> Binding}.
 
