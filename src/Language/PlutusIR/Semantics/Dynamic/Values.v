@@ -1,7 +1,7 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
-From Coq Require Import Bool.Bool Arith.PeanoNat.
+From Coq Require Import Bool.Bool Arith.PeanoNat Lists.List.
 Import PeanoNat.Nat.
 
 Inductive is_error : Term -> Prop :=
@@ -21,6 +21,9 @@ Inductive value : Term -> Prop :=
       value (Constant u)
   | V_Error : forall T,
       value (Error T)
+  | V_Constr : forall i vs,
+      Forall value vs ->
+      value (Constr i vs)
   (** Builtins *) 
   | V_Neutral : forall nv,
       neutral_value 0 nv ->

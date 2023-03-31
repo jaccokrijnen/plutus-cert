@@ -11,8 +11,11 @@ Lemma eval_value :
 Proof with (autounfold; (eauto || (try lia))).
   apply value__multind.
   all: intros.
+  3: {
   all: try solve [constructor; eauto].
-  - inversion H; subst...
+  - inversion H; subst.
+    + econstructor.
+    + eapply E_Constr_cons.
   - inversion H2; subst.
     all: econstructor...
     all: econstructor...
