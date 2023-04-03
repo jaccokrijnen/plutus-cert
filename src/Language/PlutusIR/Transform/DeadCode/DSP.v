@@ -107,6 +107,22 @@ Admitted.
 End SubstitutionLemmas.
 
 
+Lemma compat_TermBind_typing Δ Γ b x Tb tb Tbn bs t Tn :
+  b = TermBind Strict (VarDecl x Tb) tb ->
+  normalise Tb Tbn ->
+  (Δ ,, Γ |-+ tb : Tbn) ->
+  (Δ ,, (x |-> Tbn; Γ) |-+ (Let NonRec       bs  t) : Tn) ->
+  (Δ ,,             Γ  |-+ (Let NonRec (b :: bs) t) : Tn).
+Proof.
+Admitted.
+
+Lemma strengthen_Γ Δ Γ x t Tx T :
+  ~ In x (fv t) ->
+  Δ,, (x |-> Tx; Γ) |-+ t : T ->
+  Δ,, Γ |-+ t : T
+.
+Admitted.
+
 Lemma compat_TermBind pm_Δ pm_Γ t t' Tn b bs x Tb tb Tbn :
   pm_Δ |-* Tb : Kind_Base ->
   normalise Tb Tbn ->
@@ -138,9 +154,21 @@ Proof.
   unfold LR_logically_approximate.
   repeat split.
 
-  (* typing *)
-  1, 2: admit.
+  (** Typing of complete let *)
+  - eapply compat_TermBind_typing with
+      (x := x) (Tbn := Tbn).
+    all: subst; auto.
 
+  (** Typing of post-term in smaller Γ *)
+  - apply strengthen_Γ with (x := x) (Tx := Tbn).   (* need strengthening lemma for removing vars from context that do not occur free *)
+    + simpl in H_disjoint_b.
+      unfold disjoint in H_disjoint_b.
+      inversion H_disjoint_b; subst.
+      assumption.
+    + subst; assumption.
+
+  (** Related computations*)
+  -
   intros k ρ γ γ' Γ Δ.
   intros H_pm_Δ_Δ H_pm_Γ_Γ.
   intros H_Δ_ρ H_Γ_γ_γ'.
@@ -165,10 +193,9 @@ Proof.
   inversion H_b_bs_terminate. subst s x0 T t1 bs0 t0 v2.
 
   (* Error case*)
-  2: {
+  2:
     (** Contradiction: tb ⇓ Error, but tb is a safe binding so it should terminate *)
     admit.
-    }
 
   rename H9 into H_bs_terminate.
 
@@ -176,8 +203,8 @@ Proof.
   destruct
     (* binder x should not occur as let-bound variable in bs *)
     (existsb (eqb x) (bvbs <{ /[ γ /][bnr] (/[[ msyn1 ρ /][bnr] bs) }>)).
-    - admit. (* should be impossible by uniqueness *)
-    -
+    + admit. (* should be impossible by uniqueness *)
+    +
       (* combine single substitution with multi-substitution *)
       rewrite compose_subst_msubst
             , compose_subst_msubst_bindings_nonrec in H_bs_terminate.
@@ -250,7 +277,7 @@ Proof.
       eexists.
       split.
 
-      + simpl in H_disjoint_b. 
+      * simpl in H_disjoint_b. 
         unfold disjoint in H_disjoint_b. 
         apply Forall_inv in H_disjoint_b.
         rewrite Heqγ'ₓ in H_t'_terminates.
@@ -259,10 +286,10 @@ Proof.
         apply H_t'_terminates.
         rewrite fv_msubstA_fv.
         assumption.
-      + eapply RV_monotone.
-        * eassumption.
-        * eassumption.
-        * lia.
+      * eapply RV_monotone.
+        -- eassumption.
+        -- eassumption.
+        -- lia.
 Admitted.
 
 
