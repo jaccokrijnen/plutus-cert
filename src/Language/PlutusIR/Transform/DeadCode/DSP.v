@@ -10,6 +10,7 @@ From PlutusCert Require Import
 
   Transform.DeadBindings
   Analysis.FreeVars
+  Analysis.Purity
   Analysis.UniqueBinders
 
   Substitution
@@ -130,7 +131,7 @@ Lemma compat_TermBind pm_Δ pm_Γ t t' Tn b bs x Tb tb Tbn :
 
   disjoint (bvb b) (fv t') ->
   unique t ->
-  safe_binding b ->
+  pure_binding [] b ->
 
   forall pm_Δbs pm_Γbs,
     b = TermBind Strict (VarDecl x Tb) tb ->
@@ -312,7 +313,7 @@ Lemma compatibility_dc_delete_let Δ Γ t t' T Tn r bs Δ' Γ' bsn :
 
   unique (Let r bs t) ->
   disjoint (fv t') (bound_vars_bindings bs) ->
-  Forall safe_binding bs ->
+  Forall (pure_binding []) bs ->
 
   (* Extended environments *)
   Δ' = mupdate Δ (ty_binds_bindings bs) ->
