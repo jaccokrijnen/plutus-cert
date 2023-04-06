@@ -10,6 +10,7 @@ From PlutusCert Require Import
 
   Transform.DeadBindings
   Analysis.FreeVars
+  Analysis.WellScoped
   Analysis.Purity
   Analysis.UniqueBinders
 
@@ -51,15 +52,130 @@ Proof.
   apply compatibility_LetNonRec_Nil__desugar.
 Qed.
 
-(*
-Lemma unique_typed_disjoint r bs t t' Δ Γ τ:
+
+
+Lemma well_scoped_fv {Δ Γ t}:
+  well_scoped Δ Γ t ->
+  forall v, In v (fv t) ->
+  In v Γ.
+Admitted.
+
+Definition subset {A} (xs ys : list A) := forall x, In x xs -> In x ys.
+Notation "xs ⊆  ys" := (subset xs ys) (at level 0).
+
+Lemma dead_code_strengthen {Δ Δ' Γ Γ' t t'}:
   dead_syn t t' ->
-  unique (Let r bs t) ->
-  Forall (fun '(x, _) => ~ Term.appears_bound_in x t) Γ ->
-  Forall (fun '(α, _) => ~ Annotation.appears_bound_in α t) Δ ->
-  Δ ,, Γ |-+ t' : τ -> (* TODO: replace with well-scoped *)
-  disjoint (fv t') (bound_vars_bindings bs) .
+  well_scoped Δ  Γ  t ->
+  well_scoped Δ' Γ' t' ->
+  Γ' ⊆  Γ.
+Admitted.
+
+Definition unique_local Δ Γ t :=
+  unique t /\
+  Forall (fun X => ~ Annotation.appears_bound_in X t) Δ /\
+  Forall (fun v => ~ Term.appears_bound_in v t) Γ.
+
+(** For the case of removing a subset of bindings
+    TODO: generalize return type to disjoint
+      (bvb b) (fv ...) /\ disjoint (btvb b) (Annotation.fv ...)
+    Annotation.fv doesn't exist yet it seems.
+    Move TypeSubstitution.ftv to FreeVars module
 *)
+Lemma unique_well_scoped_disjoint Δ Γ rec bs t Δ' Γ' bs' t' :
+  dead_syn t t' ->
+  dead_syn_bindings bs bs' ->
+  unique_local Δ Γ (Let rec bs t) ->
+  well_scoped Δ  Γ  (Let rec bs  t ) ->
+  well_scoped Δ' Γ' (Let rec bs' t') ->
+  forall b,
+  In b bs ->
+  name_removed b bs' ->
+  ~ In (name_Binding b) (fv (Let rec bs' t')).
+Proof.
+  intros
+    H_t_t' H_bs_bs' H_unique H_ws_pre H_ws_post
+    b H_In_b_bs H_removed_b_bs.
+  intro H_in_fv.
+  destruct b as [ s vd t_b | tvd ty | dtd ]; simpl in *.
+
+  (* TermBind *)
+  - destruct vd as [v ty_v].
+    assert (H_v_in_Γ' : In v Γ').
+      { eapply (well_scoped_fv H_ws_post _ H_in_fv). }
+    assert (H_v_not_in_Γ' : ~ In v Γ').
+      { (** v is not in Γ, otherwise contradiction with unique
+            then by dead_code_strengthen, it is not in Γ'
+        *)
+        assert (H_v_not_in_Γ : ~ In v Γ).
+        {
+          intros H_v_in_Γ.
+          destruct H_unique as [_ [_ H_unique_Γ]].
+          rewrite Forall_forall in H_unique_Γ.
+          specialize (H_unique_Γ v H_v_in_Γ).
+
+          assert (H_v_bi : Term.appears_bound_in v (Let rec bs t)).
+          {
+          clear - H_In_b_bs.
+
+          (* TODO simplify with auto *)
+          induction bs; simpl in H_In_b_bs.
+            - contradiction.
+            - destruct H_In_b_bs.
+              + subst.
+                apply Term.ABI_Let_TermBind1.
+              + apply Term.ABI_Let_Cons.
+                auto.
+          }
+          contradiction.
+      }
+
+      assert (H_dc : dead_syn (Let rec bs t) (Let rec bs' t')).
+      { apply dc_delete_bindings; auto. }
+
+      apply (dead_code_strengthen H_dc H_ws_pre H_ws_post) in H_v_in_Γ'.
+      contradiction.
+      }
+    contradiction.
+ 
+  (* TypeBind *)
+  - destruct tvd as [v k].
+    assert (H_v_in_Δ' : In v Δ').
+      { admit. (* similar to TermBind case *)}
+    assert (H_v_no_in_Δ' : ~In v Δ').
+      { admit. (* similar to TermBind case *)}
+    contradiction.
+
+  (* DatatypeBind *)
+  - destruct dtd as [ [v k] vs vmatch cs].
+    admit.
+
+Admitted.
+
+Definition P_term (t : Term) :=
+  forall t' Δ Γ,
+  dead_syn t t' ->
+  unique t ->
+  well_scoped Δ Γ t' ->
+  True.
+
+Definition P_binding (b : Binding) :=
+  forall Δ Γ rec bs bs' t t',
+  dead_syn_bindings bs bs' ->
+  dead_syn t t' ->
+  In b bs ->
+  name_removed b bs' ->
+  unique (Let rec bs t) ->
+  well_scoped Δ Γ (Let rec bs' t') ->
+
+  disjoint (bvb b) (fv (Let rec bs' t')) .
+
+Lemma unique_well_scoped_disjoin : (forall t, P_term t) /\ (forall b, P_binding b ).
+Proof.
+  apply Term__multind with (P := P_term) (Q := P_binding).
+  - intros rec bs t H_bs H_t.
+    unfold P_term in *.
+    intros t' Δ Γ H_rel_bs H_unique_bs H_well_scoped.
+Admitted.
 
 Section SubstitutionLemmas.
 
