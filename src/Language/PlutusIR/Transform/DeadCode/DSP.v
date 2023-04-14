@@ -35,147 +35,19 @@ Import UniqueBinders.Term.
 
 Set Diffs "on".
 
-Lemma eval_let_subst ss r bs t v :
-  Let r bs t ==> v ->
-  <{ /[ ss /] {Let r bs t} }> ==> t.
-Admitted.
-
-
-Definition disjoint {A} (xs ys : list A) : Prop := 
+Definition disjoint {A} (xs ys : list A) : Prop :=
   Forall (fun v => ~ In v ys) xs.
 
-Lemma compat_nil Δ Γ T t t' :
-  Δ |-* T : Kind_Base -> (* May not be necessary, see #7 *)
-  LR_logically_approximate Δ Γ           t  t' T ->
-  LR_logically_approximate Δ Γ (Let NonRec [] t) t' T.
-Proof.
-  apply compatibility_LetNonRec_Nil__desugar.
-Qed.
-
-
-
-Lemma well_scoped_fv {Δ Γ t}:
-  well_scoped Δ Γ t ->
-  forall v, In v (fv t) ->
-  In v Γ.
-Admitted.
 
 Definition subset {A} (xs ys : list A) := forall x, In x xs -> In x ys.
 Notation "xs ⊆  ys" := (subset xs ys) (at level 0).
 
-Lemma dead_code_strengthen {Δ Δ' Γ Γ' t t'}:
-  dead_syn t t' ->
-  well_scoped Δ  Γ  t ->
-  well_scoped Δ' Γ' t' ->
-  Γ' ⊆  Γ.
-Admitted.
-
-Definition unique_local Δ Γ t :=
+(* Uniqueness of binders for open terms *)
+Definition unique_open Δ Γ t :=
   unique t /\
   Forall (fun X => ~ Annotation.appears_bound_in X t) Δ /\
   Forall (fun v => ~ Term.appears_bound_in v t) Γ.
 
-(** For the case of removing a subset of bindings
-    TODO: generalize return type to disjoint
-      (bvb b) (fv ...) /\ disjoint (btvb b) (Annotation.fv ...)
-    Annotation.fv doesn't exist yet it seems.
-    Move TypeSubstitution.ftv to FreeVars module
-*)
-Lemma unique_well_scoped_disjoint Δ Γ rec bs t Δ' Γ' bs' t' :
-  dead_syn t t' ->
-  dead_syn_bindings bs bs' ->
-  unique_local Δ Γ (Let rec bs t) ->
-  well_scoped Δ  Γ  (Let rec bs  t ) ->
-  well_scoped Δ' Γ' (Let rec bs' t') ->
-  forall b,
-  In b bs ->
-  name_removed b bs' ->
-  ~ In (name_Binding b) (fv (Let rec bs' t')).
-Proof.
-  intros
-    H_t_t' H_bs_bs' H_unique H_ws_pre H_ws_post
-    b H_In_b_bs H_removed_b_bs.
-  intro H_in_fv.
-  destruct b as [ s vd t_b | tvd ty | dtd ]; simpl in *.
-
-  (* TermBind *)
-  - destruct vd as [v ty_v].
-    assert (H_v_in_Γ' : In v Γ').
-      { eapply (well_scoped_fv H_ws_post _ H_in_fv). }
-    assert (H_v_not_in_Γ' : ~ In v Γ').
-      { (** v is not in Γ, otherwise contradiction with unique
-            then by dead_code_strengthen, it is not in Γ'
-        *)
-        assert (H_v_not_in_Γ : ~ In v Γ).
-        {
-          intros H_v_in_Γ.
-          destruct H_unique as [_ [_ H_unique_Γ]].
-          rewrite Forall_forall in H_unique_Γ.
-          specialize (H_unique_Γ v H_v_in_Γ).
-
-          assert (H_v_bi : Term.appears_bound_in v (Let rec bs t)).
-          {
-          clear - H_In_b_bs.
-
-          (* TODO simplify with auto *)
-          induction bs; simpl in H_In_b_bs.
-            - contradiction.
-            - destruct H_In_b_bs.
-              + subst.
-                apply Term.ABI_Let_TermBind1.
-              + apply Term.ABI_Let_Cons.
-                auto.
-          }
-          contradiction.
-      }
-
-      assert (H_dc : dead_syn (Let rec bs t) (Let rec bs' t')).
-      { apply dc_delete_bindings; auto. }
-
-      apply (dead_code_strengthen H_dc H_ws_pre H_ws_post) in H_v_in_Γ'.
-      contradiction.
-      }
-    contradiction.
- 
-  (* TypeBind *)
-  - destruct tvd as [v k].
-    assert (H_v_in_Δ' : In v Δ').
-      { admit. (* similar to TermBind case *)}
-    assert (H_v_no_in_Δ' : ~In v Δ').
-      { admit. (* similar to TermBind case *)}
-    contradiction.
-
-  (* DatatypeBind *)
-  - destruct dtd as [ [v k] vs vmatch cs].
-    admit.
-
-Admitted.
-
-Definition P_term (t : Term) :=
-  forall t' Δ Γ,
-  dead_syn t t' ->
-  unique t ->
-  well_scoped Δ Γ t' ->
-  True.
-
-Definition P_binding (b : Binding) :=
-  forall Δ Γ rec bs bs' t t',
-  dead_syn_bindings bs bs' ->
-  dead_syn t t' ->
-  In b bs ->
-  name_removed b bs' ->
-  unique (Let rec bs t) ->
-  well_scoped Δ Γ (Let rec bs' t') ->
-
-  disjoint (bvb b) (fv (Let rec bs' t')) .
-
-Lemma unique_well_scoped_disjoin : (forall t, P_term t) /\ (forall b, P_binding b ).
-Proof.
-  apply Term__multind with (P := P_term) (Q := P_binding).
-  - intros rec bs t H_bs H_t.
-    unfold P_term in *.
-    intros t' Δ Γ H_rel_bs H_unique_bs H_well_scoped.
-Admitted.
 
 Section SubstitutionLemmas.
 
@@ -221,8 +93,165 @@ Lemma compose_subst_msubst_bindings_nonrec : forall x tx γ bs,
   <{ [ tx / x ][bnr] (/[ γ /][bnr] bs) }> = <{ /[ (x, tx) :: γ /][bnr] bs }>.
 Admitted.
 
+Lemma value_msubstA_value v δ :
+  value v ->
+  value <{/[[ δ /] v}>.
+Proof.
+(** Should hold: only substitutes in types *)
+Admitted.
+
+
+Lemma value_msubst_value v γ :
+  value v ->
+  value <{/[ γ /] v}>.
+Proof.
+(** Should hold: only substitute under lambdas etc *)
+Admitted.
+
+
 End SubstitutionLemmas.
 
+
+Section ScopingLemmas.
+Lemma dead_code_strengthen {Δ Δ' Γ Γ' t t'}:
+  dead_syn t t' ->
+  well_scoped Δ  Γ  t ->
+  well_scoped Δ' Γ' t' ->
+  Γ' ⊆  Γ.
+Admitted.
+
+Lemma well_scoped_fv {Δ Γ t}:
+  well_scoped Δ Γ t ->
+  forall v, In v (fv t) ->
+  In v Γ.
+Admitted.
+
+Lemma strengthen_Γ Δ Γ x t Tx T :
+  ~ In x (fv t) ->
+  Δ,, (x |-> Tx; Γ) |-+ t : T ->
+  Δ,, Γ |-+ t : T
+.
+Admitted.
+
+End ScopingLemmas.
+
+
+Definition close ρ γ t := msubst_term γ (msubstA_term ρ t).
+
+Section Purity.
+
+(* Semantically pure _closed_ term *)
+Definition pure t := exists k v, t =[k]=> v /\ ~ is_error v.
+
+(* Only substitutes pure (closed) terms *)
+Definition pure_substitution (γ : env) := Forall (fun '(x, t) => pure t) γ.
+
+Inductive substitution : tass -> env -> Prop :=
+  | S_nil : substitution [] []
+  | S_cons : forall Γ γ x t T,
+      substitution Γ γ ->
+      normal_Ty T ->
+      (empty ,, empty |-+ t : T) ->
+      substitution ((x, T) :: Γ) ((x, t) :: γ).
+
+(* Semantically pure _open_ term *)
+Definition pure_open pm_Δ pm_Γ t τ :=
+  forall Δ Γ,
+  pm_Δ = mupdate empty Δ ->
+  pm_Γ = mupdate empty Γ ->
+  normal_Ty τ ->
+  pm_Δ ,, pm_Γ |-+ t : τ ->
+  forall ρ γ,
+  substitution Γ γ ->
+  pure_substitution γ ->
+  pure (close ρ γ t).
+
+End Purity.
+
+
+(** For the case of removing a subset of bindings
+
+    TODO: generalize return type to take into account all of
+    its binders (datatypes have multiple)
+
+      disjoint (bvb b) (fv ...) /\ disjoint (btvb b) (Annotation.fv ...)
+
+    Annotation.fv doesn't exist yet it seems.
+    Move TypeSubstitution.ftv to FreeVars module
+*)
+Lemma unique_well_scoped_disjoint Δ Γ rec bs t Δ' Γ' bs' t' :
+  dead_syn (Let rec bs t) (Let rec bs' t') ->
+  unique_open Δ Γ (Let rec bs t) ->
+  well_scoped Δ  Γ  (Let rec bs  t ) ->
+  well_scoped Δ' Γ' (Let rec bs' t') ->
+  forall b,
+  In b bs ->
+  name_removed b bs' ->
+  ~ In (name_Binding b) (fv (Let rec bs' t')).
+Proof.
+  intros
+    H_dc H_unique H_ws_pre H_ws_post
+    b H_In_b_bs H_removed_b_bs.
+  intro H_in_fv.
+  destruct b as [ s [v ty_v] t_b | tvd ty | dtd ]; simpl in *.
+
+  (* TermBind *)
+  - assert (H_v_in_Γ' : In v Γ').
+      { eapply (well_scoped_fv H_ws_post _ H_in_fv). }
+    assert (H_v_not_in_Γ' : ~ In v Γ').
+      {
+        (** v is bound in bs and therefore not in Γ (uniqueness).
+            Then, by dead_code_strengthen, it is not in Γ' either
+        *)
+        assert (H_v_not_in_Γ : ~ In v Γ).
+        {
+          intros H_v_in_Γ.
+          assert (H_v_nbi : ~ Term.appears_bound_in v (Let rec bs t)).
+          {
+            destruct H_unique as [_ [_ H_unique_Γ]].
+            rewrite Forall_forall in H_unique_Γ.
+            specialize (H_unique_Γ v H_v_in_Γ).
+            assumption.
+          }
+
+          assert (H_v_bi : Term.appears_bound_in v (Let rec bs t)).
+          {
+            clear - H_In_b_bs.
+
+            (* TODO simplify with auto *)
+            induction bs; simpl in H_In_b_bs.
+              - contradiction.
+              - destruct H_In_b_bs.
+                + subst.
+                  apply Term.ABI_Let_TermBind1.
+                + apply Term.ABI_Let_Cons.
+                  auto.
+          }
+          contradiction.
+        }
+
+        apply (dead_code_strengthen H_dc H_ws_pre H_ws_post) in H_v_in_Γ'.
+        contradiction.
+      }
+    contradiction.
+
+  (* TypeBind *)
+  - destruct tvd as [v k].
+    assert (H_v_in_Δ' : In v Δ').
+      { admit. (* similar to TermBind case *)}
+    assert (H_v_no_in_Δ' : ~In v Δ').
+      { admit. (* similar to TermBind case *)}
+    contradiction.
+
+  (* DatatypeBind *)
+  - destruct dtd as [ [v k] vs vmatch cs].
+    admit.
+
+Admitted.
+
+
+
+Section CompatibilityLemmas.
 
 Lemma compat_TermBind_typing Δ Γ b x Tb tb Tbn bs t Tn :
   b = TermBind Strict (VarDecl x Tb) tb ->
@@ -233,12 +262,15 @@ Lemma compat_TermBind_typing Δ Γ b x Tb tb Tbn bs t Tn :
 Proof.
 Admitted.
 
-Lemma strengthen_Γ Δ Γ x t Tx T :
-  ~ In x (fv t) ->
-  Δ,, (x |-> Tx; Γ) |-+ t : T ->
-  Δ,, Γ |-+ t : T
-.
-Admitted.
+
+
+Lemma compat_nil Δ Γ T t t' :
+  Δ |-* T : Kind_Base -> (* May not be necessary, see #7 *)
+  LR_logically_approximate Δ Γ           t  t' T ->
+  LR_logically_approximate Δ Γ (Let NonRec [] t) t' T.
+Proof.
+  apply compatibility_LetNonRec_Nil__desugar.
+Qed.
 
 Lemma compat_TermBind pm_Δ pm_Γ t t' Tn b bs x Tb tb Tbn :
   pm_Δ |-* Tb : Kind_Base ->
@@ -247,19 +279,23 @@ Lemma compat_TermBind pm_Δ pm_Γ t t' Tn b bs x Tb tb Tbn :
 
   disjoint (bvb b) (fv t') ->
   unique t ->
-  pure_binding [] b ->
+  (* pure_binding [] b -> *)
+  (* TODO, generalize pure_binding to arbitrary Γ, because this limits b to strictly bound values.
+  This is not a typing environment though: for each var in scope,
+  is it letbound strict/nonstrict or lambdabound *)
 
   forall pm_Δbs pm_Γbs,
     b = TermBind Strict (VarDecl x Tb) tb ->
+    pure_open pm_Δ pm_Γ tb Tbn ->
     pm_Δbs = pm_Δ ->
     pm_Γbs = (x |-> Tbn; pm_Γ) ->
     LR_logically_approximate pm_Δbs pm_Γbs (Let NonRec       bs  t) t' Tn ->
     LR_logically_approximate pm_Δ   pm_Γ   (Let NonRec (b :: bs) t) t' Tn.
 Proof.
   intros H_Tb_kind H_Tbn H_tb_ty.
-  intros H_disjoint_b H_unique H_safe.
+  intros H_disjoint_b H_unique.
   intros pm_Δbs pm_Γbs.
-  intros H_Eqb H_Δb H_Γb.
+  intros H_Eqb H_pure H_Δb H_Γb.
   intros H_IH_let_bs.
 
   subst b.
@@ -310,9 +346,27 @@ Proof.
   inversion H_b_bs_terminate. subst s x0 T t1 bs0 t0 v2.
 
   (* Error case*)
-  2:
-    (** Contradiction: tb ⇓ Error, but tb is a safe binding so it should terminate *)
+  2: {
+    (** Contradiction: tb ⇓ Error, but tb is a safe binding, so
+        it should terminate with a value *)
+    clear - H7 H_pure H_pm_Δ_Δ H_pm_Γ_Γ H_Tbn H_tb_ty.
+    unfold pure_open in *.
+    assert (normal_Ty Tbn). {eauto using normalise_to_normal. }
+    specialize (H_pure _ _ H_pm_Δ_Δ H_pm_Γ_Γ ltac:(assumption) ltac:(assumption) (msyn1 ρ) γ).
+    (** TODO: how do we show that γ is a pure substitution? 
+        none of the evaluation rules allow to substitute in an Error value,
+        because in strict binding, evalation halts
+        and there is no rule yet for non-strict bindings. 
+
+        For now we could probably change RG to require ~(is_error v) and ~(is_error v'), but this
+        would have to change when we add non-strict bindings. Then RG Γ γ γ' -> pure_substitution Γ γ.
+
+        When we have semantics for non-strict bindings, we need proof that Γ can
+        be shrinked to Γ', i.e. Γ' ⊆  Γ, such that Γ' only has strictly bound vars,
+        and therefore all γ for Γ' are pure substitutions.
+    *)
     admit.
+    }
 
   rename H9 into H_bs_terminate.
 
@@ -475,6 +529,9 @@ assert (eval_let_as_substs : forall γ ρ r bs t j e_f,
 
 Admitted.
 
+End CompatibilityLemmas.
+
+(*
 Theorem dead_code_Term_DSP : forall Δ Γ,
 
 
@@ -493,7 +550,7 @@ Definition P_bindings_well_formed_rec Delta Gamma bs1 : Prop := Delta ,, Gamma |
 
 Definition P_binding_well_formed Delta Gamma b : Prop := 
   True.
-
+*)
 
 
 
