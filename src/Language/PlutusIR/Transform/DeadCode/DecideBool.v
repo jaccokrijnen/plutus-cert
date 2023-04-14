@@ -24,7 +24,7 @@ Section Bindings.
 
   Context (dec_Term : Term -> Term -> bool).
 
-  Fixpoint dec_Binding (b b' : Binding) : bool := match b, b' with
+  Definition dec_Binding (b b' : Binding) : bool := match b, b' with
     | TermBind s vd t, TermBind s' vd' t' => Strictness_eqb s s' && VDecl_eqb vd vd' && dec_Term t t'
     | b, b' => Binding_eqb b b'
     end.
@@ -85,14 +85,14 @@ Fixpoint dec_Term (x y : Term) {struct x} : bool := match x, y with
         Recursivity_eqb r r' && dec_Term t t'
       else (* t' is another let block, the whole block in the pre-term was removed *)
         forallb (is_pure_binding []) bs && dec_Term t y (* Check whether the whole let was removed *)
-  | Let r bs t   , _ => 
+  | Let _ bs t   , _ => 
      forallb (is_pure_binding []) bs && dec_Term t y (* Check whether the whole let was removed *)
   | TyInst (TyAbs α k t) τ , TyInst (TyAbs α' k' t') τ'  =>
      String.eqb α α' &&
      Kind_eqb k k' &&
      Ty_eqb τ τ' &&
      dec_Term t t'
-  | TyInst (TyAbs α k t) τ , t' =>
+  | TyInst (TyAbs _ _ t) _ , t' =>
      dec_Term t t'
   | _ , _ => is_cong dec_Term x y
 
@@ -117,6 +117,7 @@ Axiom (TVDecl_eqb_eq       : ∀ x y, TVDecl_eqb x y = true -> x = y).
 Axiom (DTDecl_eqb_eq       : ∀ x y, DTDecl_eqb x y = true -> x = y).
 
 Create HintDb Hints_soundness.
+#[local]
 Hint Resolve
   String_eqb_eq
   Recursivity_eqb_eq
@@ -130,6 +131,7 @@ Hint Resolve
   DTDecl_eqb_eq
 : Hints_soundness.
 
+#[local]
 Hint Constructors
   and
 : Hints_soundness.
@@ -209,13 +211,17 @@ Proof with eauto with Hints_soundness.
 Qed.
 
 Create HintDb Hints_bindings.
+#[local]
 Hint Resolve
-  H_safely_removed.
+  H_safely_removed : Hints_bindings.
+#[local]
 Hint Constructors
-  dead_syn_bindings.
+  dead_syn_bindings : Hints_bindings.
+#[local]
 Hint Resolve
   H_safely_removed
-  H_find_binding'.
+  H_find_binding' : Hints_bindings.
+#[local]
 Hint Constructors
   dead_syn
   dead_syn_binding
@@ -292,13 +298,17 @@ Proof.
   auto using is_pure_binding_pure_binding.
 Qed.
 
+#[local]
 Hint Resolve all_pure : Hints_soundness.
+#[local]
 Hint Resolve dec_Bindings_sound' : Hints_soundness.
+#[local]
 Hint Resolve
   dec_TermBind_sound 
   dec_TypeBind_sound 
   dec_DatatypeBind_sound 
   : Hints_soundness.
+#[local]
 Hint Constructors Cong : Hints_soundness.
 
 Theorem dec_Term_Binding_sound :
@@ -384,11 +394,8 @@ Proof.
   apply dec_Term_Binding_sound.
 Qed.
 
+(* TODO, move this in separate files *)
 From Coq Require Import Extraction.
 Require Import Strings.Ascii.
 Extraction Language Haskell.
-Recursive Extraction dec_Term ascii_of_nat.
-(*
-Recursive Extraction nat_of_ascii.
-Recursive Extraction ascii_of_nat.
-*)
+Extraction "hs-src/Extracted.hs" dec_Term ascii_of_nat.

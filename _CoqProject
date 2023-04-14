@@ -37,6 +37,7 @@ src/Language/PlutusIR/Transform/LetNonRec/DSP.v
 src/Language/PlutusIR/Transform/LetNonRec/SSP.v
 src/Language/PlutusIR/Transform/LetTypes.v
 src/Language/PlutusIR/Transform/DeadBindings.v
+src/Language/PlutusIR/Transform/DeadCode/DecideBool.v
 src/Language/PlutusIR/Transform/Beta.v
 src/Language/PlutusIR/Transform/Unwrap.v
 #src/Language/PlutusIR/Transform/ScottEnc.v
