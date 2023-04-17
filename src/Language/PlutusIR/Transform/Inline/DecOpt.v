@@ -57,7 +57,7 @@ Proof. deriveCTProxy_sound inline_hints. Qed.
 QCDerive DecOpt for (inline_proxy tag).
 
 Instance DecOptinline_proxy_sound tag : DecOptSoundPos (inline_proxy tag).
-Proof. (* derive_sound. Qed. *) idtac "Admitted: DecOptinline_proxy_sound". Admitted.
+Proof. derive_sound. Qed. (* idtac "Admitted: DecOptinline_proxy_sound". Admitted. *)
 
 
 

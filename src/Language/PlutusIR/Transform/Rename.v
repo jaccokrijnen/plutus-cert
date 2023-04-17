@@ -115,6 +115,7 @@ Inductive rename_ty (Δ : ctx) : Ty -> Ty -> Prop :=
       rename_ty Δ (Ty_App σ τ) (Ty_App σ' τ')
 .
 
+
 Inductive rename (Γ Δ : ctx) : Term -> Term -> Prop :=
   | rn_Var : forall x y,
       Lookup x y Γ ->
@@ -122,6 +123,8 @@ Inductive rename (Γ Δ : ctx) : Term -> Term -> Prop :=
 
   | rn_Let_Rec : forall bs bs' t t',
       forall Γ_bs Δ_bs,
+          
+
       rename_Bindings_Rec (Γ_bs ++ Γ) (Δ_bs ++ Δ) Γ_bs Δ_bs bs bs' ->
       rename (Γ_bs ++ Γ) (Δ_bs ++ Δ) t t' ->
 

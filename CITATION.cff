@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Krijnen"
+  given-names: "Jacco"
+- family-names: "Dral"
+  given-names: "Joris"
+- family-names: "Remmers"
+  given-names: "Bart"
+title: "Certifying Compiler for Plutus Tx"
+version: 1.0.0
+date-released: 2023-04-17
+url: "https://github.com/jaccokrijnen/plutus-cert/tree/dec-deriving"

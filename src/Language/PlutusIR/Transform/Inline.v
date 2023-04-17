@@ -35,41 +35,9 @@ this pass does not consider binder elimination.
 (* Context of all let-bound term variables in scope *)
 Inductive binder_info :=
   | bound_term : Term -> binder_info
-
   (* bound_ty is used for both type lets and type β-redex *)
   | bound_ty : Ty -> binder_info
   .
-
-(*
-Inductive Tape (A : Type) : Type :=
-  | nil
-  | cons (h : list A) (a : A) (t : list A).
-
-Arguments nil {A}.
-Arguments cons {A}.
-
-Definition list_to_tape {A : Type} (l : list A) : Tape A :=
-  match l with
-  | (x :: l') => cons [] x l'
-  | _ => nil
-  end.
-
-Definition tape_to_list {A : Set} (tp : Tape A) : list A :=
-  match tp with
-  | nil => []
-  | cons h a t => rev_append h (a :: t)
-  end.
-
-Definition reset_tape {A : Set} (tp : Tape A) : Tape A :=
-  match tp with
-  | nil => nil
-  | cons h a t =>
-      match rev_append h (a :: t) with
-      | [] => nil
-      | x :: l => cons [] a l
-      end
-  end.
- *)
 
 Definition ctx := list (string * binder_info).
 

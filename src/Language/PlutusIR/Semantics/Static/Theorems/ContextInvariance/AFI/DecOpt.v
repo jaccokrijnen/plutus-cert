@@ -25,13 +25,13 @@ Import NamedTerm.
 QCDerive DecOpt for (appears_free_in_ty name ty).
 
 Instance DecOptappears_free_in_ty_sound name ty: DecOptSoundPos (appears_free_in_ty name ty).
-Proof. (* derive_sound. Qed. *) idtac "Admitted: DecOptappears_free_in_ty_sound". Admitted.
+Proof. derive_sound. Qed. (* idtac "Admitted: DecOptappears_free_in_ty_sound". Admitted. *)
 
 Instance DecOptappears_free_in_ty_complete name ty: DecOptCompletePos (appears_free_in_ty name ty).
-Proof. (* derive_complete. Qed. *) idtac "Admitted: DecOptappears_free_in_ty_sound". Admitted.
+Proof. derive_complete. Qed. (* idtac "Admitted: DecOptappears_free_in_ty_sound". Admitted. *)
 
 Instance DecOptappears_free_in_ty_mon name ty: DecOptSizeMonotonic (appears_free_in_ty name ty).
-Proof. (* derive_mon. Qed. *) idtac "Admitted: DecOptappears_free_in_ty_mon". Admitted.
+Proof. derive_mon. Qed. (* idtac "Admitted: DecOptappears_free_in_ty_mon". Admitted. *)
 
 
 
@@ -99,13 +99,13 @@ Qed.
 QCDerive DecOpt for (appears_free_in_tm_proxy tag).
 
 Instance DecOptappears_free_in_tm_proxy_sound tag : DecOptSoundPos (appears_free_in_tm_proxy tag).
-Proof. (* derive_sound. Qed. *) idtac "Admitted: DecOptappears_free_in_tm_proxy_sound". Admitted.
+Proof. derive_sound. Qed. (* idtac "Admitted: DecOptappears_free_in_tm_proxy_sound". Admitted. *)
 
 Instance DecOptappears_free_in_tm_proxy_complete tag : DecOptCompletePos (appears_free_in_tm_proxy tag).
-Proof. (* derive_complete. Qed. *) idtac "Admitted: DecOptappears_free_in_tm_proxy_complete". Admitted.
+Proof. derive_complete. Qed. (* idtac "Admitted: DecOptappears_free_in_tm_proxy_complete". Admitted. *)
 
 Instance DecOptappears_free_in_tm_proxy_mon tag: DecOptSizeMonotonic (appears_free_in_tm_proxy tag).
-Proof. (* derive_mon. Qed. *) idtac "Admitted: DecOptappears_free_in_tm_proxy_mon". Admitted.
+Proof. derive_mon. Qed. (* idtac "Admitted: DecOptappears_free_in_tm_proxy_mon". Admitted. *)
 
 
 (* appears_free_in_tm *)
@@ -188,13 +188,13 @@ Proof. deriveCTProxy_sound core. Qed.
 QCDerive DecOpt for (appears_free_in_ann_proxy tag).
 
 Instance DecOptappears_free_in_ann_proxy_sound tag : DecOptSoundPos (appears_free_in_ann_proxy tag).
-Proof. (* derive_sound. Qed. *) idtac "Admitted: DecOptappears_free_in_ann_proxy_sound". Admitted.
+Proof. derive_sound. Qed. (* idtac "Admitted: DecOptappears_free_in_ann_proxy_sound". Admitted. *)
 
 Instance DecOptappears_free_in_ann_proxy_complete tag : DecOptCompletePos (appears_free_in_ann_proxy tag).
-Proof. (* derive_complete. Qed. *) idtac "Admitted: DecOptappears_free_in_ann_proxy_complete". Admitted.
+Proof. derive_complete. Qed. (* idtac "Admitted: DecOptappears_free_in_ann_proxy_complete". Admitted. *)
 
 Instance DecOptappears_free_in_ann_proxy_mon tag : DecOptSizeMonotonic (appears_free_in_ann_proxy tag).
-Proof. (* derive_mon. Qed. *) idtac "Admitted: DecOptappears_free_in_ann_proxy_mon". Admitted.
+Proof. derive_mon. Qed. (* idtac "Admitted: DecOptappears_free_in_ann_proxy_mon". Admitted. *)
 
 
 Fixpoint appears_free_in_ann_ann_proxy_complete x x' (H: appears_free_in_ann x x') {struct H} : 

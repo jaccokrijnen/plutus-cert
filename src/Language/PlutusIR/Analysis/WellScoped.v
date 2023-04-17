@@ -55,6 +55,8 @@ Reserved Notation "Δ ',,' Γ '|-ok_b' b" (at level 101, b at level 0, no associ
 
 
 Inductive constructors_well_formed (Δ : ctx) : list constructor -> Prop :=
+  | W_Nil :
+      Δ |-ok_cs nil
   | W_Con : forall x T ar cs,
       Δ |-* T ->
       Δ |-ok_cs cs ->

@@ -13,7 +13,7 @@ From CTProxy Require Import CTProxy.
 QCDerive DecOpt for (well_scoped_Ty Δ Ty).
 
 Instance DecOptwell_scoped_Ty_sound Δ ty: DecOptSoundPos (well_scoped_Ty Δ ty).
-Proof. (* derive_sound. Qed. *) idtac "Admitted: DecOptwell_scoped_Ty_sound". Admitted.
+Proof. derive_sound. Qed. (* idtac "Admitted: DecOptwell_scoped_Ty_sound". Admitted. *)
 
 
 
@@ -44,7 +44,7 @@ Proof. deriveCTProxy_sound well_scoped_hints. Qed.
 QCDerive DecOpt for (well_scoped_proxy tag).
 
 Instance DecOptwell_scoped_proxy_sound tag : DecOptSoundPos (well_scoped_proxy tag).
-Proof. (* derive_sound. Qed. *) idtac "Admitted: DecOptwell_scoped_proxy_sound". Admitted.
+Proof. derive_sound. Qed. (* idtac "Admitted: DecOptwell_scoped_proxy_sound". Admitted. *)
 
 
 
@@ -53,7 +53,7 @@ Proof. (* derive_sound. Qed. *) idtac "Admitted: DecOptwell_scoped_proxy_sound".
 (* well_scoped *)
 
 Instance DecOptwell_scoped c1 c2 tm : DecOpt (well_scoped c1 c2 tm) :=
-{| decOpt s := @decOpt (well_scoped_proxy (well_scoped_tag c1 c2 tm)) (DecOptwell_scoped_proxy (well_scoped_tag c1 c2 tm)) s |}.
+{| decOpt s := @decOpt (well_scoped_proxy (well_scoped_tag c1 c2 tm)) _ s |}.
 
 Instance DecOptwell_scoped_sound c1 c2 tm : DecOptSoundPos (well_scoped c1 c2 tm).
 Proof. derive__sound (well_scoped_proxy_sound (well_scoped_tag c1 c2 tm)). Qed.
