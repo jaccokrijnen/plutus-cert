@@ -5,41 +5,9 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.St
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Auto.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
 
 Require Import Arith.
-
-
-Lemma msubst_LamAbs : forall ss x T t0,
-    msubst_term ss (LamAbs x T t0) = LamAbs x T (msubst_term (drop x ss) t0).
-Proof.
-  induction ss; intros.
-  - reflexivity.
-  - destruct a.
-    simpl.
-    destruct (s =? x)%string eqn:Heqb.
-    + eauto using eqb_eq.
-    + eauto using eqb_neq.
-Qed.
-
-Lemma msubstA_LamAbs : forall ss x T t0,
-    msubstA_term ss (LamAbs x T t0) = LamAbs x (msubstT ss T) (msubstA_term ss t0).
-Proof.
-  induction ss; intros.
-  - reflexivity.
-  - destruct a. eauto.
-Qed.
-
-Lemma msubstT_TyFun : forall ss T1 T2,
-    msubstT ss (Ty_Fun T1 T2) = Ty_Fun (msubstT ss T1) (msubstT ss T2).
-Proof.
-  induction ss.
-  - reflexivity.
-  - destruct a. eauto.
-Qed.
-
-Lemma msubst_term__fold : forall ss x v t,
-    msubst_term ss <{ [v / x] t }> = msubst_term ((x, v) :: ss)%list t.
-Proof. induction ss; intros; auto. Qed.
 
 
 Lemma compatibility_LamAbs : forall Delta Gamma x T1 T1n T2n e e',
@@ -121,7 +89,7 @@ Proof with eauto_LR.
   split...
 
   rewrite <- minus_n_O. 
-  intros i Hlt__i v_0 v'_0 HRV.
+  intros i Hlt__i v_0 v'_0 [H_pure_v_0 H_pure_v'_0] HRV.
 
   apply RV_unfolded_to_RV in HRV.
 
@@ -155,5 +123,9 @@ Proof with eauto_LR.
     eapply RG_cons...
     * rewrite msubstA_closed...
       rewrite msubstA_closed...
+    * intros H_err.
+      apply not_is_error_msubstA with (ss := msyn1 rho) in H_pure_v_0.
+      contradiction.
+
     * eapply RG_monotone...
 Qed.

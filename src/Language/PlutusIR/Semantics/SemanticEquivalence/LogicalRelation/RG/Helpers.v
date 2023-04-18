@@ -109,13 +109,11 @@ Proof.
   intros rho k c e1 e2 V.
   induction V; intros x' T' v1' v2' G E1 E2.
   - destruct x'; discriminate.
-  - inversion G. subst.
-    inversion E1. subst.
-    inversion E2. subst.
+  - simpl in G, E1, E2.
     destruct (x =? x').
-    + inversion H2. subst.
-      inversion H3. subst.
-      inversion H4. subst.
+    + inversion G. subst.
+      inversion E1. subst.
+      inversion E2. subst.
       assumption. 
     + apply IHV with x'; assumption.
 Qed.
@@ -133,6 +131,7 @@ Proof.
     + apply IHV.
     + eapply RG_cons.
       * eassumption.
+      * assumption.
       * assumption.
       * apply IHV.
 Qed.

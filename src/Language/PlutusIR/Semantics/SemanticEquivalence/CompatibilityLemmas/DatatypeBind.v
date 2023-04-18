@@ -3,26 +3,10 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Auto.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
 
 Require Import Coq.Lists.List.
 
-
-
-Lemma msubst_DatatypeBind : forall ss X YKs matchFunc cs,
-    msubst_binding ss (DatatypeBind (Datatype X YKs matchFunc cs)) = DatatypeBind (Datatype X YKs matchFunc cs).
-Proof.
-  induction ss; intros.
-  - reflexivity.
-  - destruct a. eauto.
-Qed.
-
-Lemma msubstA_DatatypeBind : forall ss X YKs matchFunc cs,
-    msubstA_binding ss (DatatypeBind (Datatype X YKs matchFunc cs)) = DatatypeBind (Datatype X YKs matchFunc (msubstA_constructors ss cs)).
-Proof.
-  induction ss; intros.
-  - reflexivity.
-  - destruct a. simpl. eauto.
-Qed.
 
 
 Lemma mupdate_flatten : forall {X : Type} (m : partial_map X) x l,

@@ -6,6 +6,7 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Multis
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
+Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
 
 Require Import PlutusCert.Util.
 
@@ -14,22 +15,6 @@ Require Import Coq.Lists.List.
 Local Open Scope list_scope.
 
 
-
-Lemma msubst_TermBind : forall ss stricty x T e,
-    msubst_binding ss (TermBind stricty (VarDecl x T) e) = TermBind stricty (VarDecl x T) (msubst_term ss e).
-Proof.
-  induction ss; intros.
-  - reflexivity.
-  - destruct a. eauto.
-Qed.
-
-Lemma msubstA_TermBind : forall ss stricty x T e,
-    msubstA_binding ss (TermBind stricty (VarDecl x T) e) = TermBind stricty (VarDecl x (msubstT ss T)) (msubstA_term ss e).
-Proof.
-  induction ss; intros.
-  - reflexivity.
-  - destruct a. eauto.
-Qed.
 
 Lemma mupdate_flatten : forall {X : Type} (m : partial_map X) x l,
     mupdate m (flatten (x :: l)) = mupdate (mupdate m x) (flatten l).
@@ -162,6 +147,8 @@ Proof with eauto_LR.
           rewrite msubstA_closed...
           rewrite msubstA_closed...
         + eapply normalise_to_normal...
+        + apply not_is_error_msubstA.
+          assumption.
         + apply RG_monotone with (k := k) (ck := ck)...
           apply RG_drop...
     }

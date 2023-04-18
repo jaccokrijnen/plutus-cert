@@ -75,7 +75,9 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
                   LamAbs x T1' e'_body = e'_f /\
                   (* Extensional equivalence *)
                   forall i (Hlt_i : i < k - j) v_0 v'_0,
-                    value v_0 /\ value v'_0 /\ RC i T1n rho v_0 v'_0 ->
+                    ~ is_error v_0 /\ ~ is_error v'_0 ->
+                    value v_0 /\ value v'_0 /\
+                    RC i T1n rho v_0 v'_0 ->
                     RC i T2n rho <{ [v_0 / x] e_body }> <{ [v'_0 / x] e'_body }>
 
             (* RV for recursive types *)
@@ -236,6 +238,7 @@ Inductive RG (rho : tymapping) (k : nat) : tass -> env -> env -> Prop :=
   | RG_cons : forall x T v1 v2 c e1 e2,
       RV k T rho v1 v2 ->
       normal_Ty T ->
+      ~ (is_error v1) ->
       RG rho k c e1 e2 ->
       RG rho k ((x, T) :: c) ((x, v1) :: e1) ((x, v2) :: e2).
   

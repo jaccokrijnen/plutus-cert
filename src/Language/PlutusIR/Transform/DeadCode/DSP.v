@@ -2,6 +2,7 @@ From Coq Require Import
   List
   Strings.String
   Lia
+  Program.Equality
 .
 From PlutusCert Require Import
   Language.PlutusIR
@@ -146,6 +147,18 @@ Definition pure t := exists k v, t =[k]=> v /\ ~ is_error v.
 (* Only substitutes pure (closed) terms *)
 Definition pure_substitution (γ : env) := Forall (fun '(x, t) => pure t) γ.
 
+Lemma RG_pure_substitution_1 : forall ρ k Γ γ γ', RG ρ k Γ γ γ' -> pure_substitution γ.
+  intros ρ k Γ γ γ' H_RG.
+  dependent induction H_RG.
+  - constructor.
+  - constructor.
+    destruct H.
+    assert (v1 =[0]=> v1). { apply eval_value__value. assumption. }
+    + repeat eexists.
+      all: eassumption.
+    + assumption.
+Qed.
+
 Inductive substitution : tass -> env -> Prop :=
   | S_nil : substitution [] []
   | S_cons : forall Γ γ x t T,
@@ -153,6 +166,10 @@ Inductive substitution : tass -> env -> Prop :=
       normal_Ty T ->
       (empty ,, empty |-+ t : T) ->
       substitution ((x, T) :: Γ) ((x, t) :: γ).
+
+Lemma RG_substitution_1 : forall ρ k Γ γ γ', RG ρ k Γ γ γ' -> substitution Γ γ.
+(* Should hold: substitution contains less information *)
+Admitted.
 
 (* Semantically pure _open_ term *)
 Definition pure_open pm_Δ pm_Γ t τ :=
@@ -349,23 +366,21 @@ Proof.
   2: {
     (** Contradiction: tb ⇓ Error, but tb is a safe binding, so
         it should terminate with a value *)
-    clear - H7 H_pure H_pm_Δ_Δ H_pm_Γ_Γ H_Tbn H_tb_ty.
     unfold pure_open in *.
     assert (normal_Ty Tbn). {eauto using normalise_to_normal. }
     specialize (H_pure _ _ H_pm_Δ_Δ H_pm_Γ_Γ ltac:(assumption) ltac:(assumption) (msyn1 ρ) γ).
-    (** TODO: how do we show that γ is a pure substitution? 
-        none of the evaluation rules allow to substitute in an Error value,
-        because in strict binding, evalation halts
-        and there is no rule yet for non-strict bindings. 
 
-        For now we could probably change RG to require ~(is_error v) and ~(is_error v'), but this
-        would have to change when we add non-strict bindings. Then RG Γ γ γ' -> pure_substitution Γ γ.
+    assert (H_pure_γ : pure_substitution γ). { apply RG_pure_substitution_1 in H_Γ_γ_γ'. assumption. }
+    assert (H_substitution_γ : substitution Γ γ). { apply RG_substitution_1 in H_Γ_γ_γ'. assumption. }
 
-        When we have semantics for non-strict bindings, we need proof that Γ can
-        be shrinked to Γ', i.e. Γ' ⊆  Γ, such that Γ' only has strictly bound vars,
-        and therefore all γ for Γ' are pure substitutions.
-    *)
-    admit.
+    assert (H_pure_closed : pure (close (msyn1 ρ) γ tb)) by auto.
+    destruct H_pure_closed as [l [v [H_eval H_not_err]]].
+    apply eval__deterministic in H_eval.
+    unfold P_eval in H_eval.
+    apply H_eval in H7 as [H_v_Error _].
+    subst v.
+    assert (is_error (Error T')) by constructor.
+    contradiction.
     }
 
   rename H9 into H_bs_terminate.
@@ -417,6 +432,7 @@ Proof.
           + apply H_RV_v1_v'.
           + lia.
         - eapply normalise_to_normal; eauto.
+        - assumption.
         - eapply RG_monotone.
           + apply H_Δ_ρ.
           + apply H_Γ_γ_γ'.
@@ -519,12 +535,6 @@ autorewrite with RC.
 unfold LR_logically_approximate in H_approx_t_t'.
 destruct_hypos.
 intros j H_j_k e_f H_Let_eval.
-
-Check forall r bs, <{ (Let r bs t) }> = t.
-
-assert (eval_let_as_substs : forall γ ρ r bs t j e_f,
-  <{ [γ / ρ] (Let r bs t) }>
-  =[ j ]=> e_f).
 
 
 Admitted.
