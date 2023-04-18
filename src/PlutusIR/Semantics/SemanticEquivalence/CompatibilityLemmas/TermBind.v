@@ -6,6 +6,7 @@ Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstituti
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
+Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
 
 Require Import PlutusCert.Util.
 
@@ -163,6 +164,8 @@ Proof with eauto_LR.
         + apply RV_monotone with (k := k - jb) (ck := Δ)...
           rewrite msubstA_closed...
           rewrite msubstA_closed...
+        + apply not_is_error_msubstA.
+          assumption.
         + apply RG_monotone with (k := k) (ck := Δ)...
           inversion H5. subst.
           simpl...

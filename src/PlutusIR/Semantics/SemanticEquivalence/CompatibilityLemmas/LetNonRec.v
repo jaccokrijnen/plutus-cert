@@ -4,6 +4,7 @@ Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.Monotonicity.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Auto.
+Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
 Require Import PlutusCert.Util.
 Require Import PlutusCert.Util.Map.
 Require Import PlutusCert.Util.Map.Mupdate.

@@ -2,35 +2,11 @@ Require Import PlutusCert.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.PlutusIR.Semantics.Static.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Auto.
+Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
 
 Require Import Arith.
 
 
-
-Lemma msubst_Constant : forall ss sv,
-    msubst_term ss (Constant sv) = Constant sv.
-Proof.
-  induction ss; intros. 
-  - reflexivity.
-  - destruct a.
-    eauto.
-Qed.
-
-Lemma msubstA_Constant : forall ss sv ,
-    msubstA_term ss (Constant sv) = Constant sv.
-Proof.
-  induction ss; intros. 
-  - reflexivity.
-  - destruct a. eauto.
-Qed.
-
-Lemma msubstT_TyBuiltin : forall ss u,
-    msubstT ss (Ty_Builtin (Some (TypeIn u))) = Ty_Builtin (Some (TypeIn u)).
-Proof.
-  induction ss; intros.
-  - reflexivity.
-  - destruct a. eauto.
-Qed.
 
 Lemma compatibility_Constant : forall Delta Gamma u a,
     LR_logically_approximate Delta Gamma (Constant (Some (ValueOf u a))) (Constant (Some (ValueOf u a))) (Ty_Builtin (Some (TypeIn u))).

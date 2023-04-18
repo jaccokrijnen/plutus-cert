@@ -143,6 +143,8 @@ Lemma RV_condition : forall k T rho v v',
               LamAbs x T1' e'_body = v' /\
               (* Extensional equivalence *)
               forall i (Hlt_i : i < k) v_0 v'_0,
+                ~ is_error v_0 /\
+                ~ is_error v'_0 ->
                 RV i T1n rho v_0 v'_0 ->
                 RC i T2n rho <{ [v_0 / x] e_body }> <{ [v'_0 / x] e'_body }>
 
@@ -225,6 +227,7 @@ Corollary RV_functional_extensionality : forall k T1n T2n rho v v',
         LamAbs x T1' e'_body = v' /\
         (* Extensional equivalence *)
         forall i (Hlt_i : i < k) v_0 v'_0,
+          ~ is_error v_0 /\ ~ is_error v'_0 ->
           RV i T1n rho v_0 v'_0 ->
           RC i T2n rho <{ [v_0 / x] e_body }> <{ [v'_0 / x] e'_body }>
     ) \/ (

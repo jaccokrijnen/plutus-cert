@@ -5,26 +5,11 @@ Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNorma
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Auto.
+Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
 
 Require Import Arith.
 
 
-
-Lemma msubst_Error : forall ss T,
-    msubst_term ss (Error T) = Error T.
-Proof. 
-  induction ss; intros.
-  - reflexivity.
-  - destruct a. eauto.
-Qed.
-
-Lemma msubstA_Error : forall ss T,
-    msubstA_term ss (Error T) = Error (msubstT ss T).
-Proof.
-  induction ss; intros.
-  - reflexivity.
-  - destruct a. eauto.
-Qed.
 
 Lemma compatibility_Error: forall Delta Gamma S T Tn,
     Delta |-* T : Kind_Base ->

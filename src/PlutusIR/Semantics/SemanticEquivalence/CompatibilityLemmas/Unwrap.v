@@ -6,16 +6,9 @@ Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Auto.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation.
+Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
 
 Require Import Arith.
-
-Lemma msubst_Unwrap : forall ss M,
-    msubst_term ss (Unwrap M) = Unwrap (msubst_term ss M).
-Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
-
-Lemma msubstA_Unwrap : forall ss M ,
-    msubstA_term ss (Unwrap M) = Unwrap (msubstA_term ss M).
-Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
 Lemma normalise_unwrapIFix_commutes'_1 : forall ck rho Fn K Tn T0n Fn' Tn' T0n',
     RD ck rho ->

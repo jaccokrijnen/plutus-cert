@@ -1,40 +1,17 @@
 Require Import PlutusCert.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.PlutusIR.Semantics.Static.
-Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.BaseKindedness. Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation. Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
+Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.BaseKindedness.
+Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation.
+Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.Monotonicity.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Auto.
+Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
 
 From Coq Require Import Lia.
 From Coq Require Import Arith.
 From Coq Require Import List.
 Import ListNotations.
-
-
-
-Lemma msubst_Apply : forall ss t1 t2,
-    msubst_term ss (Apply t1 t2) = Apply (msubst_term ss t1) (msubst_term ss t2).
-Proof.
-  induction ss; intros.
-  - reflexivity.
-  - destruct a. eauto.
-Qed.
-
-Lemma msubstA_Apply : forall ss t1 t2,
-    msubstA_term ss (Apply t1 t2) = Apply (msubstA_term ss t1) (msubstA_term ss t2).
-Proof.
-  induction ss; intros.
-  - reflexivity.
-  - destruct a. eauto.
-Qed.
-
-Lemma msubstT_TyFun : forall ss T1 T2,
-    msubstT ss (Ty_Fun T1 T2) = Ty_Fun (msubstT ss T1) (msubstT ss T2).
-Proof.
-  induction ss.
-  - reflexivity.
-  - destruct a. eauto.
-Qed.
 
 Lemma compatibility_Apply : forall Delta Gamma e1 e2 e1' e2' T1n T2n,
     LR_logically_approximate Delta Gamma e1 e1' (Ty_Fun T1n T2n) ->
@@ -111,6 +88,15 @@ Proof with eauto_LR.
       split. eapply RV_typable_empty_1...
       split. eapply RV_typable_empty_2...
       eapply RV_condition...
+
+      assert (~ is_error e'_f2). {
+        apply RV_error in HRV2.
+        destruct HRV2.
+          - destruct H. assumption.
+          - destruct H. contradiction.
+          - lia.
+        }
+      auto.
     + destruct temp as [Herr Herr'].
       inversion Herr.
   - (* E_NeutralApply *)

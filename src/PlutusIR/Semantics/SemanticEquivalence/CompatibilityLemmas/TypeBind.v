@@ -2,9 +2,9 @@ Require Import PlutusCert.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.PlutusIR.Semantics.Static.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Auto.
+Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
 
-Import Lists.List.
-Import ListNotations.
+From Coq Require Import Lists.List.
 
 Lemma compatibility_TypeBind : forall Delta Gamma X K Tb b b' bs bs' t t' Tn,
     Delta |-* Tb : K ->
