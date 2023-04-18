@@ -126,6 +126,12 @@ Fixpoint msubstA_bindings_nonrec (ss : list (tyname * Ty)) (bs : list Binding) :
   | (X, U) :: ss' => msubstA_bindings_nonrec ss' <{ [[U / X][bnr] bs }>
   end.
 
+Fixpoint msubstA_bindings_rec (ss : list (tyname * Ty)) (bs : list Binding) : list Binding :=
+  match ss with
+  | nil => bs
+  | (X, U) :: ss' => msubstA_bindings_rec ss' <{ [[U / X][br] bs }>
+  end.
+
 Fixpoint msubstA_constructors (ss : list (tyname * Ty)) (cs : list constructor) : list constructor :=
   match ss with
   | nil => cs

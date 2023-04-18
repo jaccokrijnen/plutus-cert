@@ -327,17 +327,17 @@ Lemma msubst_preserves_typing_1 : forall rho k c e1 e2,
       [] ,, (mgsubst (msyn1 rho) Gamma) |-+ (msubst_term e1 t) : T. 
 Proof.
   intros rho k c e1 e2 V Hlt.
-  induction V.
+  induction V as [ | ? ? ? ? ? ? ? H_RV H_normal H_pure ].
   - intros.
     simpl.
     assumption.
   - intros.
-    eapply RV_typable_empty_1 in H as temp; eauto.
+    eapply RV_typable_empty_1 in H_RV as temp; eauto.
     destruct temp as [Tn'[Hnorm__Tn Htyp__v1]].
     eapply IHV; eauto.
     eapply substitution_preserves_typing.
-    + simpl in H1.
-      rewrite mgsubst_absorbs_msubstT in H1.
+    + simpl in H.
+      rewrite mgsubst_absorbs_msubstT in H.
       eauto.
     + eauto.
     + eauto.
@@ -351,17 +351,17 @@ Lemma msubst_preserves_typing_2 : forall rho k c e1 e2,
       [] ,, (mgsubst (msyn2 rho) Gamma) |-+ (msubst_term e2 t) : T. 
 Proof.
   intros rho k c e1 e2 V Hlt.
-  induction V.
+  induction V as [ | ? ? ? ? ? ? ? H_RV H_normal H_pure ].
   - intros.
     simpl.
     assumption.
   - intros.
-    eapply RV_typable_empty_2 in H as temp; eauto.
+    eapply RV_typable_empty_2 in H_RV as temp; eauto.
     destruct temp as [Tn [Hnorm__Tn Htyp__v2]].
     eapply IHV; eauto.
     eapply substitution_preserves_typing.
-    + simpl in H1.
-      rewrite mgsubst_absorbs_msubstT in H1.
+    + simpl in H.
+      rewrite mgsubst_absorbs_msubstT in H.
       eauto.
     + eauto.
     + eauto.

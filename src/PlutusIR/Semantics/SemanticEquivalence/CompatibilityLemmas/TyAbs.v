@@ -6,23 +6,11 @@ Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Auto.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.BaseKindedness.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
+Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
 
 Require Import Arith.
 
 
-
-Lemma msubst_TyAbs : forall ss bX K t0,
-    msubst_term ss (TyAbs bX K t0) = TyAbs bX K (msubst_term ss t0).
-Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
-
-Lemma msubstA_TyAbs : forall ss bX K t0,
-    msubstA_term ss (TyAbs bX K t0) = TyAbs bX K (msubstA_term (drop bX ss) t0).
-Proof. induction ss; intros. - reflexivity. - intros. destruct a. simpl. destruct (s =? bX)%string; eauto. Qed.
-
-
-Lemma msubstT_TyForall : forall ss bX K T,
-    msubstT ss (Ty_Forall bX K T) = Ty_Forall bX K (msubstT (drop bX ss) T).
-Proof. induction ss; intros. - reflexivity. - intros. destruct a. simpl. destruct (s =? bX)%string; eauto. Qed.
 
 
 Lemma compatibility_TyAbs: forall Delta Gamma bX K T e e',

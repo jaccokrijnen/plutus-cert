@@ -4,32 +4,9 @@ Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Auto.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
+Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
 
 Require Import Arith.
-
-Lemma msubst_IWrap : forall ss F T M,
-    msubst_term ss (IWrap F T M) = IWrap F T (msubst_term ss M).
-Proof. 
-  induction ss; intros.
-  - reflexivity.
-  - destruct a. eauto.
-Qed. 
-
-Lemma msubstA_IWrap : forall ss F T M,
-    msubstA_term ss (IWrap F T M) = IWrap (msubstT ss F) (msubstT ss T) (msubstA_term ss M).
-Proof.
-  induction ss; intros.
-  - reflexivity.
-  - destruct a. eauto.
-Qed. 
-
-Lemma msubstT_IFix : forall ss F T,
-    msubstT ss (Ty_IFix F T) = Ty_IFix (msubstT ss F) (msubstT ss T).
-Proof.
-  induction ss; intros.
-    - reflexivity.
-    - destruct a. eauto.
-Qed. 
 
 Lemma normalise_msubstT_commutes_1 : forall T Tn Tn' ck rho K,
     RD ck rho ->

@@ -4,18 +4,10 @@ Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Auto.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
+Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
 
 Require Import Arith.
 
-
-Lemma msubst_TyInst : forall ss t0 T0,
-    msubst_term ss (TyInst t0 T0) = TyInst (msubst_term ss t0) T0.
-Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
-
-
-Lemma msubstA_TyInst : forall ss t0 T0,
-    msubstA_term ss (TyInst t0 T0) = TyInst (msubstA_term ss t0) (msubstT ss T0).
-Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
 Lemma per_type_substitution : forall ck rho T2 Chi X e e' T0n T1n T2n K k,
     RD ck rho ->

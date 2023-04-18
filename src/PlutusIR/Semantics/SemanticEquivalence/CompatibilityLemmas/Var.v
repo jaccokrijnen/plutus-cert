@@ -2,37 +2,9 @@ Require Import PlutusCert.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.PlutusIR.Semantics.Static.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Auto.
+Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
 
 Require Import Arith.
-
-Lemma msubst_Var : forall ss x,
-    closed_env ss ->
-    msubst_term ss (Var x) =
-      match lookup x ss with
-      | Datatypes.Some t => t
-      | None => Var x
-      end.
-Proof. 
-  induction ss; intros. 
-  - reflexivity. 
-  - intros. 
-    destruct a. 
-    simpl. 
-    destruct (s =? x)%string eqn:Heqb.
-    + apply eqb_eq in Heqb as Heq.
-      subst.
-      destruct H.
-      rewrite msubst_closed.
-      all: auto.
-    + apply eqb_neq in Heqb as Hneq.
-      destruct H.
-      eapply IHss.
-      assumption.
-Qed.
-
-Lemma msubstA_Var : forall ss x,
-    msubstA_term ss (Var x) = Var x.
-Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
 Lemma compatibility_Var : forall Delta Gamma x T Tn,
     lookup x Gamma = Coq.Init.Datatypes.Some T ->
