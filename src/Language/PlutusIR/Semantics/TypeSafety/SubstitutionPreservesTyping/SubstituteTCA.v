@@ -1,11 +1,12 @@
 Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
+Require Import PlutusCert.Util.List.
 
 
 
 Theorem substituteTCA_preserves_kinding : forall T Delta X K U L,
-    (X |-> L; Delta) |-* T : K ->
+    ((X, L) :: Delta) |-* T : K ->
     Delta |-* U : L ->
     Delta |-* (substituteTCA X U T) : K.
 Proof with eauto with typing.
@@ -20,11 +21,10 @@ Proof with eauto with typing.
     + (* X = Y *)
       apply eqb_eq in Heqb as Heq.
       subst.
-      rewrite update_eq in H1.
-      inversion H1.
-      subst...
+      rewrite lookup_eq in H1.
+      congruence.
     + (* X <> Y *)
       apply eqb_neq in Heqb as Hneq.
-      rewrite update_neq in H1...
+      rewrite lookup_neq in H1...
 (* ADMIT: I had no time to finish this. Requires proofs about renamings. *)
 Admitted.

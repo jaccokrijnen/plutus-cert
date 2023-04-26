@@ -1,4 +1,5 @@
 Require Import PlutusCert.Language.PlutusIR.
+Require Import PlutusCert.Util.List.
 Import NamedTerm.
 
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Theorems.ContextInvariance.AFI.
@@ -15,7 +16,7 @@ Module Kinding.
 
   Lemma context_invariance : forall Delta Delta' T K,
       Delta |-* T : K ->
-      (forall X, Ty.appears_free_in X T -> Delta X = Delta' X) ->
+      (forall X, Ty.appears_free_in X T -> lookup X Delta = lookup X Delta') ->
       Delta' |-* T : K.
   Proof with auto.
     intros Delta Delta' T K HK.
@@ -30,12 +31,12 @@ Module Kinding.
       destruct (X =? X0) eqn:Heqb.
       + apply eqb_eq in Heqb.
         subst.
-        rewrite update_eq.
-        rewrite update_eq.
+        rewrite lookup_eq.
+        rewrite lookup_eq.
         reflexivity.
       + apply eqb_neq in Heqb.
-        rewrite update_neq...
-        rewrite update_neq...
+        rewrite lookup_neq...
+        rewrite lookup_neq...
     - (* K_Lam *)
       apply K_Lam.
       apply IHHK.
@@ -43,39 +44,39 @@ Module Kinding.
       destruct (X =? X0) eqn:Heqb.
       + apply eqb_eq in Heqb.
         subst.
-        rewrite update_eq.
-        rewrite update_eq.
+        rewrite lookup_eq.
+        rewrite lookup_eq.
         reflexivity.
       + apply eqb_neq in Heqb.
-        rewrite update_neq...
-        rewrite update_neq...
+        rewrite lookup_neq...
+        rewrite lookup_neq...
   Qed.
 
 End Kinding.
 
 Module Typing.
 
-  Definition P_has_type (Delta : Delta) (Gamma : Gamma) (t : Term) (T : Ty) :=
+  Definition P_has_type (Delta : list (string * Kind)) (Gamma : list (string * Ty)) (t : Term) (T : Ty) :=
     forall Gamma',
-      (forall x, Term.appears_free_in x t -> Gamma x = Gamma' x) ->
+      (forall x, Term.appears_free_in x t -> lookup x Gamma = lookup x Gamma') ->
       Delta ,, Gamma' |-+ t : T.
 
-  Definition P_constructor_well_formed (Delta : Delta) (c : constructor) (T : Ty) :=
+  Definition P_constructor_well_formed (Delta : list (string * Kind)) (c : constructor) (T : Ty) :=
     Delta |-ok_c c : T.
 
-  Definition P_bindings_well_formed_nonrec (Delta : Delta) (Gamma : Gamma) (bs : list Binding) :=
+  Definition P_bindings_well_formed_nonrec (Delta : list (string * Kind)) (Gamma : list (string * Ty)) (bs : list Binding) :=
     forall Gamma',
-      (forall x, Term.appears_free_in__bindings_nonrec x bs -> Gamma x = Gamma' x) ->
+      (forall x, Term.appears_free_in__bindings_nonrec x bs -> lookup x Gamma = lookup x Gamma') ->
       Delta ,, Gamma' |-oks_nr bs.  
 
-  Definition P_bindings_well_formed_rec (Delta : Delta) (Gamma : Gamma) (bs : list Binding) :=
+  Definition P_bindings_well_formed_rec (Delta : list (string * Kind)) (Gamma : list (string * Ty)) (bs : list Binding) :=
     forall Gamma',
-      (forall x, Term.appears_free_in__bindings_rec x bs -> Gamma x = Gamma' x) ->
+      (forall x, Term.appears_free_in__bindings_rec x bs -> lookup x Gamma = lookup x Gamma') ->
       Delta ,, Gamma' |-oks_r bs.  
 
-  Definition P_binding_well_formed (Delta : Delta) (Gamma : Gamma) (b : Binding) :=
+  Definition P_binding_well_formed (Delta : list (string * Kind)) (Gamma : list (string * Ty)) (b : Binding) :=
     forall Gamma',
-      (forall x, Term.appears_free_in__binding x b -> Gamma x = Gamma' x) ->
+      (forall x, Term.appears_free_in__binding x b -> lookup x Gamma = lookup x Gamma') ->
       Delta ,, Gamma' |-ok_b b.
 
   #[export] Hint Unfold 
@@ -111,12 +112,12 @@ Module Typing.
       destruct (x =? x0) eqn:Heqb.
       + apply eqb_eq in Heqb.
         subst.
-        rewrite update_eq.
-        rewrite update_eq.
+        rewrite lookup_eq.
+        rewrite lookup_eq.
         reflexivity.
       + apply eqb_neq in Heqb.
-        rewrite update_neq; auto.
-        rewrite update_neq; auto.
+        rewrite lookup_neq; auto.
+        rewrite lookup_neq; auto.
     - (* T_Let *)
       subst.
       eapply T_Let...
@@ -126,8 +127,8 @@ Module Typing.
       destruct H1.
       + apply In_bvbs_bindsG in i.
         eapply In__map_normalise in i...
-        apply In__lookup_mupdate...
-      + apply mupdate_eq_cong...
+        apply In__lookup_append...
+      + apply lookup_append_cong...
     - (* T_LetRec *)
       subst.
       eapply T_LetRec...
@@ -137,16 +138,16 @@ Module Typing.
         destruct H1.
         * apply In_bvbs_bindsG in i.
           eapply In__map_normalise in i...
-          apply In__lookup_mupdate...
-        * apply mupdate_eq_cong...
+          apply In__lookup_append...
+        * apply lookup_append_cong...
       + apply H5.
         intros.
         assert ({In x (bvbs bs)} + {~ In x (bvbs bs)}) by eauto using in_dec, string_dec.
         destruct H1.
         * apply In_bvbs_bindsG in i.
           eapply In__map_normalise in i...
-          apply In__lookup_mupdate...
-        * apply mupdate_eq_cong...
+          apply In__lookup_append...
+        * apply lookup_append_cong...
     - (* W_ConsB_NonRec *)
       eapply W_ConsB_NonRec...
       eapply H3.
@@ -155,8 +156,8 @@ Module Typing.
       destruct H6.
       + apply In_bvb_bindsG in i.
         eapply In__map_normalise in i...
-        apply In__lookup_mupdate...
-      + apply mupdate_eq_cong...
+        apply In__lookup_append...
+      + apply lookup_append_cong...
   Qed.
 
 End Typing.

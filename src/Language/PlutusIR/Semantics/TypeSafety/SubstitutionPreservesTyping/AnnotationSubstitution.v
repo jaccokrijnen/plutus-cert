@@ -2,19 +2,18 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.TypeSubstitution.
 
-Require Import PlutusCert.Util.Map.Mupdate.
+Require Import PlutusCert.Util.List.
+
+Require Import Lists.List.
+Import ListNotations.
 
 Require Import Coq.Logic.FunctionalExtensionality.
 
-Definition gsubst (a : tyname) (T' : Ty ) (Gamma : partial_map Ty) :=
-  fun x =>
-    match Gamma x with
-    | None => None
-    | Datatypes.Some T => Datatypes.Some (substituteT a T' T)
-    end.
+Definition gsubst (a : tyname) (T' : Ty ) (Gamma : list (string * Ty)) :=
+  map (fun '(x, T) => (x, substituteT a T' T)) Gamma.
 
 Lemma gsubst_empty : forall X U,
-    gsubst X U empty = empty.
+    gsubst X U [] = [].
 Proof.
   intros X U.
   unfold gsubst.
@@ -22,51 +21,45 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma gsubst__substituteT : forall Gamma x X U T,
-    Gamma x = Datatypes.Some T ->
-    (gsubst X U Gamma) x = Datatypes.Some (substituteT X U T).
-Proof.
-  intros.
-  unfold gsubst.
-  rewrite H.
-  reflexivity.
+Lemma gsubst__substituteT Gamma x X U T :
+    lookup x Gamma = Datatypes.Some T ->
+    lookup x (gsubst X U Gamma) = Datatypes.Some (substituteT X U T).
+Proof with auto.
+  induction Gamma.
+  all: intros H; unfold gsubst.
+  - inversion H.
+  - destruct a.
+    destruct (string_dec x s).
+    + subst s.
+      simpl.
+      rewrite eqb_refl.
+      rewrite lookup_eq in H.
+      congruence.
+    + rewrite lookup_neq in H...
+      apply eqb_neq in n.
+      rewrite eqb_sym in n.
+      simpl.
+      rewrite n...
 Qed.
 
 Lemma gsubst_absorbs_substituteT : forall x X U T Gamma,
-    (x |-> (substituteT X U T); gsubst X U Gamma) = gsubst X U (x |-> T; Gamma).
+    ((x, (substituteT X U T)) :: gsubst X U Gamma) = gsubst X U ((x, T) :: Gamma).
 Proof.
-  intros.
-  simpl.
-  f_equal.
-  apply functional_extensionality.
-  intros.
-  destruct (x =? x0)%string eqn:Heqb.
-  - (* x = x0 *)
-    apply eqb_eq in Heqb as Heq.
-    subst.
-    unfold gsubst.
-    rewrite update_eq.
-    rewrite update_eq.
-    reflexivity.
-  - (* x <> x0 *)
-    apply eqb_neq in Heqb as Hneq.
-    unfold gsubst.
-    rewrite update_neq; auto.
-    rewrite update_neq; auto.
+  reflexivity.
 Qed.
 
 (** ** Predicates *)
 Definition P_Term (t : Term) :=
   forall Delta Gamma X K U T Tn,
-    (X |-> K; Delta) ,, Gamma |-+ t : T ->
-    empty |-* U : K ->
+    ((X, K) :: Delta) ,, Gamma |-+ t : T ->
+    [] |-* U : K ->
     normalise (substituteT X U T) Tn ->
     Delta ,, (gsubst X U Gamma) |-+ <{ [[U / X] t }> : Tn.
     
 Definition P_Binding (b : Binding) : Prop :=
   forall Delta Gamma X K U,
-    (X |-> K; Delta) ,, Gamma |-ok_b b ->
-    empty |-* U : K ->
+    ((X, K) :: Delta) ,, Gamma |-ok_b b ->
+    [] |-* U : K ->
     Delta ,, (gsubst X U Gamma) |-ok_b <{ [[U / X][b] b }>.
 
 #[export] Hint Unfold

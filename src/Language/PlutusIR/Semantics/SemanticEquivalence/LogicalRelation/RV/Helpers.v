@@ -5,6 +5,9 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Logica
 
 From Coq Require Import Arith.
 
+Import Lists.List.
+Import ListNotations.
+
 Local Open Scope list_scope.
 
 
@@ -14,8 +17,8 @@ Local Open Scope list_scope.
 Lemma RV_typable_empty : forall k T rho v v',
     RV k T rho v v' ->
     0 < k ->
-    (exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ (empty ,, empty |-+ v : Tn)) /\
-    (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\  (empty ,, empty |-+ v' : Tn')).
+    (exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([],, [] |-+ v : Tn)) /\
+    (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\  ([],, [] |-+ v' : Tn')).
 Proof. 
   intros. 
   unfold RV in H. 
@@ -34,13 +37,13 @@ Qed.
 Lemma RV_typable_empty_1 : forall k T rho v v',
     RV k T rho v v' ->
     0 < k ->
-    (exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ (empty ,, empty |-+ v : Tn)).
+    (exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([],, [] |-+ v : Tn)).
 Proof. intros. destruct (RV_typable_empty _ _ _ _ _ H H0) as [Htyp__v Htyp__v']. eauto. Qed.
 
 Lemma RV_typable_empty_2 : forall k T rho v v',
     RV k T rho v v' ->
     0 < k ->
-    (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\ (empty ,, empty |-+ v' : Tn')).
+    (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\ ([],, [] |-+ v' : Tn')).
 Proof. intros. destruct (RV_typable_empty _ _ _ _ _ H H0) as [Htyp__v Htyp__v']. eauto. Qed.
 
 (** Closedness *)
@@ -151,8 +154,8 @@ Lemma RV_condition : forall k T rho v v',
               v' = IWrap F' T' v'_0 /\
               (* Unwrap *)
               forall i (Hlt_i : i < k) K T0n,
-                empty |-* (msubstT (msyn1 rho) Tn) : K ->
-                empty |-* (msubstT (msyn2 rho) Tn) : K ->
+                [] |-* (msubstT (msyn1 rho) Tn) : K ->
+                [] |-* (msubstT (msyn2 rho) Tn) : K ->
                 normalise (unwrapIFix Fn K Tn) T0n ->
                 RC i T0n rho v_0 v'_0
 
@@ -164,8 +167,8 @@ Lemma RV_condition : forall k T rho v v',
               v' = TyAbs bX K e'_body /\
               (* Instantiational equivalence *)
               forall T1 T2 Chi,
-                empty |-* T1 : K ->
-                empty |-* T2 : K ->
+                [] |-* T1 : K ->
+                [] |-* T2 : K ->
                 Rel T1 T2 Chi ->
                 forall i (Hlt_i : i < k),
                   RC i T ((bX, (Chi, T1, T2)) :: rho) <{ [[T1 / bX ] e_body }> <{ [[T2 / bX ] e'_body }>
@@ -243,8 +246,8 @@ Corollary RV_unwrap : forall k Fn Tn rho v v' ,
         v' = IWrap F' T' v'_0 /\
         (* Unwrap *)
         forall i (Hlt_i : i < k) K T0n,
-          empty |-* (msubstT (msyn1 rho) Tn) : K ->
-          empty |-* (msubstT (msyn2 rho) Tn) : K ->
+          [] |-* (msubstT (msyn1 rho) Tn) : K ->
+          [] |-* (msubstT (msyn2 rho) Tn) : K ->
           normalise (unwrapIFix Fn K Tn) T0n ->
           RC i T0n rho v_0 v'_0
     ) \/ (
@@ -266,8 +269,8 @@ Corollary RV_instantiational_extensionality : forall k bX K T rho v v',
         v' = TyAbs bX K e'_body /\
         (* Instantiational equivalence *)
         forall T1 T2 Chi,
-          empty |-* T1 : K ->
-          empty |-* T2 : K ->
+          [] |-* T1 : K ->
+          [] |-* T2 : K ->
           Rel T1 T2 Chi ->
           forall i (Hlt_i : i < k),
             RC i T ((bX, (Chi, T1, T2)) :: rho) <{ [[T1 / bX ] e_body }> <{ [[T2 / bX ] e'_body }>

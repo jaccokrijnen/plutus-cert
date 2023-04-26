@@ -30,7 +30,7 @@ Definition P_bindings_well_formed_nonrec Delta Gamma bs1 : Prop :=
       Delta ,, Gamma |-oks_nr bs1 -> 
       CNR_Bindings bs1 f_bs2 ->
       map_normalise (flatten (map binds_Gamma bs1)) bs1Gn ->
-      (mupdate Delta (flatten (map binds_Delta bs1))) ,, (mupdate Gamma bs1Gn) |-+ t : T ->
+      (flatten (map binds_Delta bs1) ++ Delta ) ,, (bs1Gn ++ Gamma ) |-+ t : T ->
       Delta ,, Gamma |-+ (fold_right apply t f_bs2) : T
   ).
 
@@ -55,7 +55,7 @@ Definition P_binding_well_formed Delta Gamma b1 : Prop :=
       Delta ,, Gamma |-ok_b b1 ->
       CNR_Binding b1 f_b2 ->
       map_normalise (binds_Gamma b1) bs1Gn ->
-      mupdate Delta (binds_Delta b1) ,, mupdate Gamma bs1Gn |-+ t : T ->
+      binds_Delta b1 ++ Delta ,, bs1Gn ++ Gamma |-+ t : T ->
       Delta ,, Gamma |-+ (f_b2 t) : T  
   ).
 
@@ -148,7 +148,7 @@ Proof with (eauto with typing).
       eapply IH2...
 
       simpl in H6.
-      rewrite mupdate_app in H6.
+      rewrite <- app_assoc in H6.
       unfold flatten in H6.
       simpl in H6.
       rewrite concat_app in H6.
