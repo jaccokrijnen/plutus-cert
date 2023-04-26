@@ -10,6 +10,9 @@ From PlutusCert Require Import
   Language.PlutusIR.Semantics.SemanticEquivalence.FundamentalProperty
   .
 
+Require Import Lists.List.
+Import ListNotations.
+
 Ltac destruct_hypos := repeat (match goal with
   | H : exists a, _ |- _ => destruct H
   | H : ?x /\ ?y |- _ => destruct H
@@ -42,7 +45,7 @@ Proof with eauto.
 
   unfold LR_logically_approximate in H_approx_C_e_C_e'.
   repeat (apply proj2 in H_approx_C_e_C_e').
-  assert (H_RC_C_e_C_e' := H_approx_C_e_C_e' (S j) nil nil nil nil nil eq_refl eq_refl RD_nil (RG_nil _ _)).
+  assert (H_RC_C_e_C_e' := H_approx_C_e_C_e' (S j) nil nil nil RD_nil (RG_nil _ _)).
   clear H_approx_C_e_C_e'.
   simpl in H_RC_C_e_C_e'.
 
@@ -67,7 +70,7 @@ Qed.
 
 Lemma LR_approximate_sound_ciu : forall e e' T,
   normal_Ty T ->
-  empty,, empty |- e ⪯-ctx e' : T ->
+  [],, [] |- e ⪯-ctx e' : T ->
   e  ⇓ ->
   e' ⇓.
 Proof.
@@ -81,7 +84,7 @@ Qed.
 
 Corollary LR_equivalent_sound_ciu : forall e e' T,
   normal_Ty T ->
-  LR_logically_equivalent empty empty e e' T ->
+  LR_logically_equivalent [] [] e e' T ->
   ciu_equivalent e e' T.
 Proof with eauto using LR_approximate_sound_ciu.
   intros e e' T H_normal_T H.

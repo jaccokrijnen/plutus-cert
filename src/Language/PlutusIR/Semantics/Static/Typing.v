@@ -1,4 +1,5 @@
 Require Import PlutusCert.Language.PlutusIR.
+Require Import PlutusCert.Util.List.
 Import NamedTerm.
 
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Auxiliary.
@@ -8,6 +9,7 @@ Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Normalisation.
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.TypeSubstitution.
 
 Import Coq.Lists.List.
+Import ListNotations.
 Import Coq.Strings.String.
 Local Open Scope string_scope.
 
@@ -74,16 +76,18 @@ Reserved Notation "Delta ',,' Gamma  '|-oks_nr' bs" (at level 101, bs at level 0
 Reserved Notation "Delta ',,' Gamma '|-oks_r' bs" (at level 101, bs at level 0, no associativity).
 Reserved Notation "Delta ',,' Gamma '|-ok_b' b" (at level 101, b at level 0, no associativity).
 
-Inductive has_type : Delta -> Gamma -> Term -> Ty -> Prop :=
+Local Open Scope list_scope.
+
+Inductive has_type : list (string * Kind) -> list (string * Ty) -> Term -> Ty -> Prop :=
   (* Simply typed lambda caclulus *)
   | T_Var : forall Gamma Delta x T Tn,
-      Gamma x = Coq.Init.Datatypes.Some T ->
+      lookup x Gamma = Coq.Init.Datatypes.Some T ->
       normalise T Tn ->
       Delta ,, Gamma |-+ (Var x) : Tn
   | T_LamAbs : forall Delta Gamma x T1 t T2n T1n,
       Delta |-* T1 : Kind_Base ->
       normalise T1 T1n ->
-      Delta ,, x |-> T1n; Gamma |-+ t : T2n -> 
+      Delta ,, (x, T1n) :: Gamma |-+ t : T2n -> 
       Delta ,, Gamma |-+ (LamAbs x T1 t) : (Ty_Fun T1n T2n)
   | T_Apply : forall Delta Gamma t1 t2 T1n T2n,
       Delta ,, Gamma |-+ t1 : (Ty_Fun T1n T2n) ->
@@ -91,7 +95,7 @@ Inductive has_type : Delta -> Gamma -> Term -> Ty -> Prop :=
       Delta ,, Gamma |-+ (Apply t1 t2) : T2n
   (* Universal types *)
   | T_TyAbs : forall Delta Gamma X K t Tn,
-      (X |-> K; Delta) ,, Gamma |-+ t : Tn ->
+      ((X, K) :: Delta) ,, Gamma |-+ t : Tn ->
       Delta ,, Gamma |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
   | T_TyInst : forall Delta Gamma t1 T2 T1n X K2 T0n T2n,
       Delta ,, Gamma |-+ t1 : (Ty_Forall X K2 T1n) ->
@@ -131,38 +135,38 @@ Inductive has_type : Delta -> Gamma -> Term -> Ty -> Prop :=
       iohk/plutus/plutus-core/plutus-ir project.
   **)
   | T_Let : forall Delta Gamma bs t Tn Delta' Gamma' bsGn,
-      Delta' = mupdate Delta (flatten (map binds_Delta bs)) ->
+      Delta' = flatten (map binds_Delta bs) ++ Delta ->
       map_normalise (flatten (map binds_Gamma bs)) bsGn -> 
-      Gamma' = mupdate Gamma bsGn ->
+      Gamma' = bsGn ++ Gamma ->
       Delta ,, Gamma |-oks_nr bs ->
       Delta' ,, Gamma' |-+ t : Tn ->
       Delta |-* Tn : Kind_Base ->
       Delta ,, Gamma |-+ (Let NonRec bs t) : Tn
   | T_LetRec : forall Delta Gamma bs t Tn Delta' Gamma' bsGn,
-      Delta' = mupdate Delta (flatten (map binds_Delta bs)) ->
+      Delta' = flatten (map binds_Delta bs) ++ Delta ->
       map_normalise (flatten (map binds_Gamma bs)) bsGn -> 
-      Gamma' = mupdate Gamma bsGn ->
+      Gamma' = bsGn ++ Gamma->
       Delta' ,, Gamma' |-oks_r bs ->
       Delta' ,, Gamma' |-+ t : Tn ->
       Delta |-* Tn : Kind_Base ->
       Delta ,, Gamma |-+ (Let Rec bs t) : Tn
 
-with constructor_well_formed : Delta -> constructor -> Ty -> Prop :=
+with constructor_well_formed : list (string * Kind) -> constructor -> Ty -> Prop :=
   | W_Con : forall Delta x T ar Targs Tr,
       (Targs, Tr) = splitTy T ->
       (forall U, In U Targs -> Delta |-* U : Kind_Base) ->
       Delta |-ok_c (Constructor (VarDecl x T) ar) : Tr
 
-with bindings_well_formed_nonrec : Delta -> Gamma -> list Binding -> Prop :=
+with bindings_well_formed_nonrec : list (string * Kind) -> list (string * Ty) -> list Binding -> Prop :=
   | W_NilB_NonRec : forall Delta Gamma,
     Delta ,, Gamma |-oks_nr nil
   | W_ConsB_NonRec : forall Delta Gamma b bs bsGn,
       Delta ,, Gamma |-ok_b b ->
       map_normalise (binds_Gamma b) bsGn ->
-      (mupdate Delta (binds_Delta b)) ,, (mupdate Gamma bsGn) |-oks_nr bs ->
+      ((binds_Delta b) ++ Delta) ,, (bsGn ++ Gamma) |-oks_nr bs ->
       Delta ,, Gamma |-oks_nr (b :: bs)
 
-with bindings_well_formed_rec : Delta -> Gamma -> list Binding -> Prop :=
+with bindings_well_formed_rec : list (string * Kind) -> list (string * Ty) -> list Binding -> Prop :=
   | W_NilB_Rec : forall Delta Gamma,
       Delta ,, Gamma |-oks_r nil
   | W_ConsB_Rec : forall Delta Gamma b bs,
@@ -170,7 +174,7 @@ with bindings_well_formed_rec : Delta -> Gamma -> list Binding -> Prop :=
       Delta ,, Gamma |-oks_r bs ->
       Delta ,, Gamma |-oks_r (b :: bs)
 
-with binding_well_formed : Delta -> Gamma -> Binding -> Prop :=
+with binding_well_formed : list (string * Kind) -> list (string * Ty) -> Binding -> Prop :=
   | W_Term : forall Delta Gamma s x T t Tn,
       Delta |-* T : Kind_Base ->
       normalise T Tn ->
@@ -180,7 +184,7 @@ with binding_well_formed : Delta -> Gamma -> Binding -> Prop :=
       Delta |-* T : K ->
       Delta ,, Gamma |-ok_b (TypeBind (TyVarDecl X K) T)
   | W_Data : forall Delta Gamma X YKs cs matchFunc Delta',
-      Delta' = mupdate Delta (rev (map fromDecl YKs)) ->
+      Delta' = rev (map fromDecl YKs) ++ Delta ->
       (forall c, In c cs -> Delta' |-ok_c c : (constrLastTy (Datatype X YKs matchFunc cs))) ->
       Delta ,, Gamma |-ok_b (DatatypeBind (Datatype X YKs matchFunc cs))
 
@@ -202,7 +206,7 @@ Combined Scheme has_type__multind from
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
 
-Definition well_typed t := exists T, empty ,, empty |-+ t : T.
+Definition well_typed t := exists T, [] ,, [] |-+ t : T.
 
 Lemma has_type__normal : forall Delta Gamma t T,
     Delta ,, Gamma |-+ t : T ->
@@ -221,7 +225,7 @@ Notation "Δ ',,' Γ '▷' T" := (Δ, Γ, T) (at level 101).
 Reserved Notation "Δ₁ ',,' Γ₁ '|-C' C ':' HTy ↝ T₁" (at level 101, C at level 0, T₁ at level 0, no associativity).
 
 (* Typing rules for one-hole contexts *)
-Inductive context_has_type : Delta -> Gamma -> Context -> (Delta * Gamma * Ty) -> Ty -> Prop :=
+Inductive context_has_type : list (string * Kind) -> list (string * Ty) -> Context -> ((list (string * Kind)) * list (string * Ty) * Ty) -> Ty -> Prop :=
 
   | T_C_Hole : forall Δ Γ Tn,
       normal_Ty Tn ->
@@ -230,8 +234,8 @@ Inductive context_has_type : Delta -> Gamma -> Context -> (Delta * Gamma * Ty) -
   | T_C_LamAbs : forall Δ₁ Γ₁ x T1 C Δ Γ Tn T2n T1n,
       Δ₁ |-* T1 : Kind_Base ->
       normalise T1 T1n ->
-      Δ₁ ,, x |-> T1n; Γ₁ |-C C                 : (Δ ,, Γ ▷ Tn) ↝ T2n -> 
-      Δ₁ ,,            Γ₁ |-C (C_LamAbs x T1 C) : (Δ ,, Γ ▷ Tn) ↝ (Ty_Fun T1n T2n)
+      Δ₁ ,, (x, T1n) :: Γ₁ |-C C                 : (Δ ,, Γ ▷ Tn) ↝ T2n -> 
+      Δ₁ ,,             Γ₁ |-C (C_LamAbs x T1 C) : (Δ ,, Γ ▷ Tn) ↝ (Ty_Fun T1n T2n)
 
   | T_C_Apply_L : forall Δ₁ Γ₁ Δ Γ C t Tn T1n T2n,
       Δ₁ ,, Γ₁ |-C C : (Δ ,, Γ ▷ Tn) ↝ (Ty_Fun T1n T2n) ->

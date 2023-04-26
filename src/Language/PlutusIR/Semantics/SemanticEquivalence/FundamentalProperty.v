@@ -5,6 +5,8 @@ Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Logica
 Require Import PlutusCert.Language.PlutusIR.Semantics.Misc.Axiom.
 Require Import PlutusCert.Language.PlutusIR.Analysis.BoundVars.
 
+Require Import Lists.List.
+Import ListNotations.
 
 (*
 Fundamental property (reflexivity) of LR_logically_approximate
@@ -17,9 +19,9 @@ Definition P_constructor_well_formed Delta c Tr := Delta |-ok_c c : Tr.
 
 Definition P_bindings_well_formed_nonrec Delta Gamma (bs : list Binding) :=
   forall Delta_t Gamma_t bsGn t t' Tn,
-    Delta_t = mupdate Delta (flatten (List.map binds_Delta bs)) ->
+    Delta_t = flatten (List.map binds_Delta bs) ++ Delta ->
     map_normalise (flatten (List.map binds_Gamma bs)) bsGn ->
-    Gamma_t = mupdate Gamma bsGn  ->
+    Gamma_t = bsGn ++ Gamma ->
     Delta |-* Tn : Kind_Base ->
     LR_logically_approximate Delta_t Gamma_t t t' Tn ->
     LR_logically_approximate Delta Gamma (Let NonRec bs t) (Let NonRec bs t') Tn.
@@ -28,9 +30,9 @@ Definition P_bindings_well_formed_rec Delta Gamma bs1 := Delta ,, Gamma |-oks_r 
 
 Definition P_binding_well_formed Delta Gamma b := 
   forall Delta_t Gamma_t bsGn t t' Tn bs bs',
-    Delta_t = mupdate Delta (binds_Delta b) ->
+    Delta_t = binds_Delta b ++ Delta ->
     map_normalise (binds_Gamma b) bsGn ->
-    Gamma_t = mupdate Gamma bsGn ->
+    Gamma_t = bsGn ++ Gamma ->
     Delta |-* Tn : Kind_Base ->
     LR_logically_approximate Delta_t Gamma_t (Let NonRec bs t) (Let NonRec bs' t') Tn ->
     LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (Let NonRec (b :: bs') t') Tn.
@@ -49,7 +51,7 @@ Lemma LR_reflexivity : forall Delta Gamma e T,
     Delta ,, Gamma |-+ e : T ->
     LR_logically_approximate Delta Gamma e e T.
     (* P_has_type Delta Gamma e T. *)
-Proof.
+Proof with eauto.
   apply has_type__ind with 
     (P := P_has_type)
     (P0 := P_constructor_well_formed)
@@ -63,12 +65,12 @@ Proof.
     apply map_normalise__app in H5.
     destruct H5 as [l1n [l2n [Hmn__l1n [Hmn__l2n Heq]]]].
     subst.
-    eapply map_normalise__deterministic in H1; eauto. 
+    eapply map_normalise__deterministic in H1...
     subst.
 
-    eapply H0; eauto.
-    eapply H3; eauto.
-    + eapply Kinding.weakening; eauto.
+    eapply H0...
+    eapply H3...
+    + eapply Kinding.weakening...
       destruct b.
       * simpl. eapply inclusion_refl.
       * simpl. destruct t0. simpl.
@@ -80,9 +82,9 @@ Proof.
            assert (Annotation.appears_bound_in x (Let NonRec (TypeBind (TyVarDecl x k) t1 :: bs) t)) by eauto.
            eapply uniqueness' in H4.
            rewrite H4 in H1.
-           inversion H1.
+           inversion H4.
         -- apply eqb_neq in Heqb as Hneq.
-           rewrite update_neq; eauto.
+           simpl. rewrite Heqb...
       * destruct d.
         simpl. destruct t0.
         simpl.
@@ -94,12 +96,12 @@ Proof.
            assert (Annotation.appears_bound_in x (Let NonRec (DatatypeBind (Datatype (TyVarDecl x k) l s l0) :: bs) t)) by eauto.
            eapply uniqueness' in H4.
            rewrite H4 in H1.
-           inversion H1.
+           inversion H4.
         -- apply eqb_neq in Heqb as Hneq.
-           rewrite update_neq;eauto.
-    + rewrite <- mupdate_app; eauto.
-      rewrite <- mupdate_app; eauto.
-      rewrite <- flatten_app; eauto. 
+           simpl. rewrite Heqb...
+    + rewrite app_assoc...
+      rewrite app_assoc...
+      rewrite <- flatten_app...
 Qed.
 
 

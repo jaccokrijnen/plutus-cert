@@ -1,4 +1,5 @@
 Require Import PlutusCert.Language.PlutusIR.
+Require Import PlutusCert.Util.List.
 Import NamedTerm.
 
 Require Export PlutusCert.Language.PlutusIR.Semantics.Static.Context.
@@ -16,9 +17,9 @@ Definition lookupBuiltinKind (u : DefaultUni) : Kind :=
 
 (** Kinding of types *)
 Reserved Notation "Delta '|-*' T ':' K" (at level 40, T at level 0, K at level 0).
-Inductive has_kind : Delta -> Ty -> Kind -> Prop :=
+Inductive has_kind : list (string * Kind) -> Ty -> Kind -> Prop :=
   | K_Var : forall Delta X K,
-      Delta X = Coq.Init.Datatypes.Some K ->
+      lookup X Delta = Coq.Init.Datatypes.Some K ->
       Delta |-* (Ty_Var X) : K
   | K_Fun : forall Delta T1 T2,
       Delta |-* T1 : Kind_Base ->
@@ -29,13 +30,13 @@ Inductive has_kind : Delta -> Ty -> Kind -> Prop :=
       Delta |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
       Delta |-* (Ty_IFix F T) : Kind_Base
   | K_Forall : forall Delta X K T,
-      (X |-> K; Delta) |-* T : Kind_Base ->
+      ((X, K) :: Delta) |-* T : Kind_Base ->
       Delta |-* (Ty_Forall X K T) : Kind_Base
   | K_Builtin : forall Delta u K,
       K = lookupBuiltinKind u ->
       Delta |-* (Ty_Builtin (Some (TypeIn u))) : K
   | K_Lam : forall Delta X K1 T K2,
-      (X |-> K1; Delta) |-* T : K2 ->
+      ((X, K1) :: Delta) |-* T : K2 ->
       Delta |-* (Ty_Lam X K1 T) : (Kind_Arrow K1 K2)
   | K_App : forall Delta T1 T2 K1 K2,
       Delta |-* T1 : (Kind_Arrow K1 K2) ->

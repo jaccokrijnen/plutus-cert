@@ -41,7 +41,7 @@ Proof with eauto_LR.
   split...
   split...
 
-  intros k rho env env' ct ck HeqDelta HeqGamma H_RD H_RG.
+  intros k rho env env' H_RD H_RG.
   subst.
 
   autorewrite with RC.

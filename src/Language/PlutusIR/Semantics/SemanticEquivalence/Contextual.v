@@ -2,6 +2,9 @@ From PlutusCert Require Import Language.PlutusIR.
 From PlutusCert Require Import Language.PlutusIR.Semantics.Static.Typing.
 From PlutusCert Require Import Language.PlutusIR.Semantics.Dynamic.Bigstep.
 
+Require Import Lists.List.
+Import ListNotations.
+
 Import NamedTerm.
 
 Definition contextually_approximate
@@ -10,7 +13,7 @@ Definition contextually_approximate
   (Δ ,, Γ |-+ e  : T) /\
   (Δ ,, Γ |-+ e' : T) /\
   forall (C : Context) T₁,
-    (empty ,, empty |-C C : (Δ ,, Γ ▷ T) ↝ T₁) ->
+    ([] ,, [] |-C C : (Δ ,, Γ ▷ T) ↝ T₁) ->
     context_apply C e  ⇓ ->
     context_apply C e' ⇓.
 
@@ -37,8 +40,8 @@ Notation "Δ ',,' Γ '|-' e1 ≃-ctx e2 ':' T" := (contextually_equivalent e1 e2
 
 
 Definition ciu_equivalent e e' T :=
-  (empty,, empty |-+ e  : T)  /\
-  (empty,, empty |-+ e' : T) /\
+  ([],, [] |-+ e  : T)  /\
+  ([],, [] |-+ e' : T) /\
   ((e ⇓) <-> (e' ⇓)).
 
 Notation "|- e1 ≃-ciu e2 ':' T" := (ciu_equivalent e1 e2 T)

@@ -15,7 +15,7 @@ Lemma compatibility_LetNonRec_Nil : forall Delta Gamma t t' Tn,
     forall bsGn,
       map_normalise nil bsGn ->
       Delta |-* Tn : Kind_Base ->
-      LR_logically_approximate Delta (mupdate Gamma bsGn) t t' Tn ->
+      LR_logically_approximate Delta (bsGn ++ Gamma) t t' Tn ->
       LR_logically_approximate Delta Gamma (Let NonRec nil t) (Let NonRec nil t') Tn.
 Proof with eauto_LR.
   intros Delta Gamma t t' Tn bsGn Hmapnorm__bsGn Hkind__T IHLR__t.
@@ -29,7 +29,7 @@ Proof with eauto_LR.
   split... 
   split...
 
-  intros k rho env env' ct ck HeqDelta HeqGamma H_RD H_RG.
+  intros k rho env env' H_RD H_RG.
   subst.
 
   autorewrite with RC.

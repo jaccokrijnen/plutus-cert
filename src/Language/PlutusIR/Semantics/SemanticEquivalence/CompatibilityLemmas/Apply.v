@@ -1,14 +1,14 @@
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
-Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.BaseKindedness.
-Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation.
-Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
+Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.BaseKindedness. Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation. Require Import PlutusCert.Language.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.Monotonicity.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.Auto.
 
 From Coq Require Import Lia.
 From Coq Require Import Arith.
+From Coq Require Import List.
+Import ListNotations.
 
 
 
@@ -50,7 +50,7 @@ Proof with eauto_LR.
   split...
   split...
 
-  intros k rho env env' ct ck HeqDelta HeqGamma H_RD H_RG.
+  intros k rho env env' H_RD H_RG.
   subst.
 
   autorewrite with RC.
@@ -94,7 +94,7 @@ Proof with eauto_LR.
       destruct temp as [x0 [e_body [e'_body [T1a [T1'a [Heq [Heq' Hfe]]]]]]].
       inversion Heq. subst. clear Heq.
 
-      apply RV_monotone with (i := k - j_1 - j_2 - 1) (ck := ck)  in HRV2...
+      apply RV_monotone with (i := k - j_1 - j_2 - 1) (ck := Delta)  in HRV2...
 
       apply Hfe with (i := k - j_1 - j_2 - 1) in HRV2 as HRC0...
 
@@ -138,6 +138,7 @@ Proof with eauto_LR.
     destruct temp as [temp | temp].
     + destruct temp. exfalso. apply H. econstructor.
     + destruct temp.
+      Set Diffs "on".
       inversion H0. subst.
 
       eexists. eexists.
@@ -146,7 +147,7 @@ Proof with eauto_LR.
       split. {
         apply has_type__basekinded in Htyp__e1.
         inversion Htyp__e1. subst.
-        eapply msubstT_preserves_kinding_1 in H6...
+        eapply closing_preserves_kinding_1 in H6...
         apply strong_normalisation in H6 as H7.
         destruct H7.
         exists x.
@@ -156,7 +157,7 @@ Proof with eauto_LR.
       split. {
         apply has_type__basekinded in Htyp__e1.
         inversion Htyp__e1. subst.
-        eapply msubstT_preserves_kinding_2 in H6...
+        eapply closing_preserves_kinding_2 in H6...
         apply strong_normalisation in H6 as H7.
         destruct H7.
         exists x.
@@ -189,7 +190,7 @@ Proof with eauto_LR.
       split. {
         apply has_type__basekinded in Htyp__e1.
         inversion Htyp__e1. subst.
-        eapply msubstT_preserves_kinding_1 in H6...
+        eapply closing_preserves_kinding_1 in H6...
         apply strong_normalisation in H6 as H7.
         destruct H7.
         exists x.
@@ -199,7 +200,7 @@ Proof with eauto_LR.
       split. {
         apply has_type__basekinded in Htyp__e1.
         inversion Htyp__e1. subst.
-        eapply msubstT_preserves_kinding_2 in H6...
+        eapply closing_preserves_kinding_2 in H6...
         apply strong_normalisation in H6 as H7.
         destruct H7.
         exists x.

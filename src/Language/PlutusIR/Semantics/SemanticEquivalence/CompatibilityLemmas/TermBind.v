@@ -13,6 +13,7 @@ Require Import Coq.Lists.List.
 
 Local Open Scope list_scope.
 
+Set Diffs "on".
 
 
 Lemma msubst_TermBind : forall ss stricty x T e,
@@ -31,8 +32,8 @@ Proof.
   - destruct a. eauto.
 Qed.
 
-Lemma mupdate_flatten : forall {X : Type} (m : partial_map X) x l,
-    mupdate m (flatten (x :: l)) = mupdate (mupdate m x) (flatten l).
+Lemma append_flatten : forall {X : Type} (m : list (string * X)) x l,
+    (flatten (x :: l)) ++ m = (flatten l) ++ (x ++ m).
 Proof.
   intros.
   unfold flatten.
@@ -40,7 +41,7 @@ Proof.
   rewrite List.concat_app.
   simpl.
   rewrite List.app_nil_r.
-  rewrite <- mupdate_app.
+  rewrite List.app_assoc.
   reflexivity.
 Qed.
 
@@ -55,23 +56,23 @@ Proof.
 Qed.
 
 
-Lemma compatibility_TermBind : forall Delta Gamma stricty x Tb Tbn tb tb' b b' bs bs' t t' Tn,
-    Delta |-* Tb : Kind_Base ->
+Lemma compatibility_TermBind : forall Δ Γ stricty x Tb Tbn tb tb' b b' bs bs' t t' Tn,
+    Δ |-* Tb : Kind_Base ->
     normalise Tb Tbn ->
-    forall Delta_ih Gamma_ih bsGn,
+    forall Δ_ih Γ_ih bsGn,
       b = TermBind stricty (VarDecl x Tb) tb ->
       b' = TermBind stricty (VarDecl x Tb) tb' ->
-      Delta_ih = mupdate Delta (binds_Delta b) ->
+      Δ_ih = (binds_Delta b) ++ Δ ->
       map_normalise (binds_Gamma b) bsGn ->
-      Gamma_ih = mupdate Gamma bsGn ->
-      LR_logically_approximate Delta_ih Gamma_ih (Let NonRec bs t) (Let NonRec bs' t') Tn ->
-      LR_logically_approximate Delta Gamma tb tb' Tbn ->
-      LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t') Tn.
+      Γ_ih = bsGn ++ Γ ->
+      LR_logically_approximate Δ_ih Γ_ih (Let NonRec bs t) (Let NonRec bs' t') Tn ->
+      LR_logically_approximate Δ Γ tb tb' Tbn ->
+      LR_logically_approximate Δ Γ (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t') Tn.
 Proof with eauto_LR.
-  intros Delta Gamma stricty x Tb Tbn tb tb' b b' bs bs' t t' Tn.
+  intros Δ Γ stricty x Tb Tbn tb tb' b b' bs bs' t t' Tn.
   intros Hkind__Tb Hnorm__Tbn.
-  intros Delta_ih Gamma_ih bsGn.
-  intros Heq__b Heq__b' Heq__Delta_ih Hmapnorm__bsGn Heq__Gamma_ih IHLR__ih IHLR__tb.
+  intros Δ_ih Γ_ih bsGn.
+  intros Heq__b Heq__b' Heq__Δ_ih Hmapnorm__bsGn Heq__Γ_ih IHLR__ih IHLR__tb.
 
   subst.
 
@@ -80,7 +81,7 @@ Proof with eauto_LR.
 
   split. {
     inversion Htyp__ih. subst.
-    rewrite <- mupdate_flatten in H7.
+    rewrite <- append_flatten in H7.
 
     eapply T_Let...
     - unfold flatten.
@@ -88,12 +89,12 @@ Proof with eauto_LR.
       simpl in Hmapnorm__bsGn.
       rewrite List.concat_app.
       eapply map_normalise__app'...
-    - rewrite mupdate_app. eapply H7.
+    - rewrite app_assoc in H7. eapply H7.
   }
 
   split. {
     inversion Htyp__ih'. subst.
-    rewrite <- mupdate_flatten in H7.
+    rewrite <- append_flatten in H7.
 
     eapply T_Let...
     - unfold flatten.
@@ -101,18 +102,19 @@ Proof with eauto_LR.
       simpl in Hmapnorm__bsGn.
       rewrite List.concat_app.
       eapply map_normalise__app'...
-    - rewrite mupdate_app. eapply H7.
+    - rewrite app_assoc in H7. eapply H7.
   }
 
-  intros k rho env env' ct ck HeqDelta HeqGamma HRD HRG.
-  subst.
-  
+  intros k rho env env' HRD HRG.
+
   rewrite msubstA_LetNonRec.
   rewrite msubstA_BindingsNonRec_cons.
   rewrite msubstA_TermBind.
   rewrite msubst_LetNonRec.
   rewrite msubst_BindingsNonRec_cons.
   rewrite msubst_TermBind.
+
+  simpl.
 
   autorewrite with RC.
 
@@ -141,29 +143,29 @@ Proof with eauto_LR.
   
     assert (HRC__ih :
       RC (k - jb - 1) Tn rho
-        <{ /[ (x, vb) :: drop x env /] ( /[[ msyn1 rho /] {Let NonRec bs t} ) }>
-        <{ /[ (x, vb') :: drop x env' /] ( /[[ msyn2 rho /] {Let NonRec bs' t'} ) }>
+        <{ /[ (x, vb) :: env /] ( /[[ msyn1 rho /] {Let NonRec bs t} ) }>
+        <{ /[ (x, vb') :: env' /] ( /[[ msyn2 rho /] {Let NonRec bs' t'} ) }>
     ). {
-      apply IH__ih with (ct0 := (x, Tbn) :: drop x ct) (ck0 := ck).
-      - reflexivity.
+      apply IH__ih.
       - inversion Hmapnorm__bsGn. subst.
         inversion H3. subst.
         simpl.
         eapply normalisation__deterministic in Hnorm__Tbn...
-        subst.
-        apply mupdate_drop.
-      - assumption.
       - assert (closed vb). eapply RV_closed_1...
         assert (closed vb'). eapply RV_closed_2...
         replace vb with (msubstA_term (msyn1 rho) vb) by (eapply msubstA_closed; eauto).
         replace vb' with (msubstA_term (msyn2 rho) vb') by (eapply msubstA_closed; eauto).
-        apply RG_cons.
-        + apply RV_monotone with (k := k - jb) (ck := ck)...
+        simpl in Hmapnorm__bsGn.
+        inversion Hmapnorm__bsGn. subst.
+        replace Tn0 with Tbn...
+        simpl.
+        apply RG_cons...
+        + apply RV_monotone with (k := k - jb) (ck := Δ)...
           rewrite msubstA_closed...
           rewrite msubstA_closed...
-        + eapply normalise_to_normal...
-        + apply RG_monotone with (k := k) (ck := ck)...
-          apply RG_drop...
+        + apply RG_monotone with (k := k) (ck := Δ)...
+          inversion H5. subst.
+          simpl...
     }
     clear IH__ih.
 
@@ -196,12 +198,14 @@ Proof with eauto_LR.
         simpl.
         rewrite <- msubst_bnr__bound_vars.
         rewrite <- msubstA_bnr__bvbs.
+
+        (* Either x is shadowed in bs' or not *)
         destruct (existsb (eqb x) (bvbs bs')) eqn:Hexb.
         - assert (closed vb). eapply RV_closed_1...
           assert (closed vb'). eapply RV_closed_2...
           apply RG_env_closed in HRG as Hclss...
           destruct Hclss as [Hcls__env Hcls__env'].
-          rewrite <- subst_bnr__msubst_bnr'...
+          rewrite <- subst_bnr__msubst_bnr...
           replace (concat (map bvb <{ /[[ msyn2 rho /][bnr] bs' }>)) with
             (bvbs  <{ /[[ msyn2 rho /][bnr] bs' }>)...
           rewrite <- msubstA_bnr__bvbs.
@@ -209,8 +213,9 @@ Proof with eauto_LR.
           apply existsb_exists in Hexb.
           destruct Hexb as [y [HIn Heqb]].
           apply eqb_eq in Heqb as Heq.
-          subst.
+          subst y.
           rewrite In__mdrop in H3...
+          rewrite In__mdrop_drop...
         - assert (closed vb). eapply RV_closed_1...
           assert (closed vb'). eapply RV_closed_2...
           apply RG_env_closed in HRG as Hclss...
@@ -221,24 +226,24 @@ Proof with eauto_LR.
           rewrite <- msubstA_bnr__bvbs.
 
           apply existsb_nexists in Hexb.
+          assert (~ (In x (bvbs bs'))).
+          { intros H_x_in. contradiction Hexb.
+            exists x. split... apply eqb_eq...
+          }
           rewrite not_In__mdrop in H3...
           + unfold btvbs. simpl.
             replace (concat (map btvb bs')) with (btvbs bs')...
-
-            rewrite <- subst_msubst''...
+            rewrite subst_bnr__msubst_bnr'...
+            rewrite <- subst_bnr__msubst_bnr...
+            simpl in Hev__e'_f.
+            rewrite not_In__mdrop in Hev__e'_f...
+            simpl in Hev__e'_f...
+            rewrite subst_msubst in Hev__e'_f...
+            rewrite drop_mdrop in Hev__e'_f...
+            inversion Hev__e'_f...
             * eapply RG_env_closed.
-              eapply RG_drop...
+              eapply RG_mdrop...
               eauto_LR.
-            * intros Hcon.
-              apply Hexb.
-              exists x.
-              rewrite eqb_refl.
-              eauto.
-          + intros Hcon.
-            apply Hexb.
-            exists x.
-            rewrite eqb_refl.
-            eauto.
       }
 
       split... eapply RV_typable_empty_1...
@@ -262,7 +267,7 @@ Proof with eauto_LR.
         assert (closed vb'). eapply RV_closed_2...
         apply RG_env_closed in HRG as Hclss...
         destruct Hclss as [Hcls__env Hcls__env'].
-        rewrite <- subst_bnr__msubst_bnr' in Hev__e_f...
+        rewrite <- subst_bnr__msubst_bnr in Hev__e_f...
         replace (concat (map bvb <{ /[[ msyn1 rho /][bnr] bs }>)) with
           (bvbs <{ /[[ msyn1 rho /][bnr] bs }>) in Hev__e_f...
         
@@ -275,13 +280,14 @@ Proof with eauto_LR.
         destruct Hexb as [y [HIn Heqb]].
         apply eqb_eq in Heqb as Heq.
         subst.
+        rewrite In__mdrop_drop in Hev__e_f...
         rewrite In__mdrop...
       } {
         assert (closed vb). eapply RV_closed_1...
         assert (closed vb'). eapply RV_closed_2...
         apply RG_env_closed in HRG as Hclss...
         destruct Hclss as [Hcls__env Hcls__env'].
-        rewrite <- subst_bnr__msubst_bnr' in Hev__e_f...
+        rewrite <- subst_bnr__msubst_bnr in Hev__e_f...
         replace (concat (map bvb <{ /[[ msyn1 rho /][bnr] bs }>)) with
           (bvbs <{ /[[ msyn1 rho /][bnr] bs }>) in Hev__e_f...
         
@@ -293,15 +299,11 @@ Proof with eauto_LR.
         apply Util.existsb_nexists in Hexb.
         rewrite not_In__mdrop.
         - replace (concat (map btvb bs)) with (btvbs bs) in Hev__e_f...
-          rewrite <- subst_msubst'' in Hev__e_f...
+          rewrite <- drop_mdrop in Hev__e_f.
+          rewrite <- subst_msubst in Hev__e_f...
           + eapply RG_env_closed_1.
-            eapply RG_drop...
+            eapply RG_mdrop...
             eauto_LR.
-          + intros Hcon.
-            apply Hexb.
-            exists x.
-            rewrite eqb_refl.
-            eauto.
         - intros Hcon.
           apply Hexb.
           exists x.
@@ -346,7 +348,7 @@ Proof with eauto_LR.
       split. {
         inversion Htyp__ih. subst.
         simpl in H9.
-        eapply msubstT_preserves_kinding_1 in H9 as H10...
+        eapply closing_preserves_kinding_1 in H9 as H10...
         eapply strong_normalisation in H10 as H11...
         destruct H11.
         
@@ -356,7 +358,7 @@ Proof with eauto_LR.
       split. {
         inversion Htyp__ih. subst.
         simpl in H9.
-        eapply msubstT_preserves_kinding_2 in H9 as H10...
+        eapply closing_preserves_kinding_2 in H9 as H10...
         eapply strong_normalisation in H10 as H11...
         destruct H11.
         

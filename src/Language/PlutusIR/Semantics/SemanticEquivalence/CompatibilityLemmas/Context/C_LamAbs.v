@@ -10,7 +10,7 @@ From PlutusCert Require Import
 Lemma compatibility_C_LamAbs : forall Δ₁ Γ₁ v C1 C2 Δ Γ T T₁ T₁n T₂,
   normalise T₁ T₁n ->
   Δ₁ |-* T₁ : Kind_Base ->
-  LR_logically_approximate_context Δ₁ (v |-> T₁n ; Γ₁) C1 C2 Δ Γ T T₂ ->
+  LR_logically_approximate_context Δ₁ ((v, T₁n) :: Γ₁) C1 C2 Δ Γ T T₂ ->
   LR_logically_approximate_context Δ₁ Γ₁ (C_LamAbs v T₁ C1) (C_LamAbs v T₁ C2) Δ Γ T (Ty_Fun T₁n T₂).
 
 Proof.

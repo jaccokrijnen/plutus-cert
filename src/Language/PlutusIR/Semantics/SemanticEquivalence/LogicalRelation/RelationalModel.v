@@ -1,11 +1,13 @@
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Language.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Language.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.Tymapping.
+Require Import PlutusCert.Util.List.
 
 From Coq Require Import Lia.
 
 Require Import Arith.
 Require Import Coq.Lists.List.
+Import ListNotations.
 Require Import Coq.Strings.String.
 
 Local Open Scope list_scope.
@@ -15,8 +17,8 @@ Definition Rel (T T' : Ty) (Chi : nat -> Term -> Term -> Prop) : Prop :=
   forall j v v',
     Chi j v v' -> 0 < j ->
       value v /\ value v' /\
-      (exists Tn, normalise T Tn /\ (empty ,, empty |-+ v : Tn)) /\
-      (exists Tn', normalise T' Tn' /\ (empty ,, empty |-+ v' : Tn')) /\ 
+      (exists Tn, normalise T Tn /\ ([] ,, [] |-+ v : Tn)) /\
+      (exists Tn', normalise T' Tn' /\ ([] ,, [] |-+ v' : Tn')) /\ 
       forall i,
         i <= j ->
         Chi i v v'.
@@ -34,8 +36,8 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
       exists e'_f j', e' =[j']=> e'_f /\
       
       (* RV *)
-      (exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ (empty ,, empty |-+ e_f : Tn)) /\
-      (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\  (empty ,, empty |-+ e'_f : Tn')) /\
+      (exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([] ,, [] |-+ e_f : Tn)) /\
+      (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\  ([] ,, [] |-+ e'_f : Tn')) /\
       
       ( 
         (
@@ -86,8 +88,8 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
                   e'_f = IWrap F' T' v'_0 /\
                   (* Unwrap *)
                   forall i (Hlt_i : i < k - j) K T0n,
-                    empty |-* (msubstT (msyn1 rho) Tn) : K ->
-                    empty |-* (msubstT (msyn2 rho) Tn) : K ->
+                    [] |-* (msubstT (msyn1 rho) Tn) : K ->
+                    [] |-* (msubstT (msyn2 rho) Tn) : K ->
                     normalise (unwrapIFix Fn K Tn) T0n ->
                     RC i T0n rho v_0 v'_0
 
@@ -99,8 +101,8 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
                   e'_f = TyAbs X K e'_body /\
                   (* Instantiational equivalence *)
                   forall T1 T2 Chi,
-                    empty |-* T1 : K ->
-                    empty |-* T2 : K ->
+                    [] |-* T1 : K ->
+                    [] |-* T2 : K ->
                     Rel T1 T2 Chi ->
                     forall i (Hlt_i : i < k - j),
                       RC i Tn ((X, (Chi, T1, T2)) :: rho) <{ [[T1 / X ] e_body }> <{ [[T2 / X ] e'_body }>
@@ -167,8 +169,8 @@ Inductive RD : kass -> tymapping -> Prop :=
   | RD_nil :
       RD nil nil
   | RD_cons : forall ck rho T1 T2 Chi X K,
-      empty |-* T1 : K ->
-      empty |-* T2 : K ->
+      [] |-* T1 : K ->
+      [] |-* T2 : K ->
       Rel T1 T2 Chi ->
       RD ck rho ->
       RD ((X, K) :: ck) ((X, (Chi, T1, T2)) :: rho).
@@ -202,14 +204,12 @@ Fixpoint closed_env (env : env) :=
     values that are lated for $k$ steps at $\Gamma$, then $\gamma(e)$ and
     $\gamma(e')$ are related for $k$ steps as computations of type $\tau$.
 *)
-Definition LR_logically_approximate (Delta : partial_map Kind) (Gamma : partial_map Ty) (e e' : Term) (T : Ty) :=
+Definition LR_logically_approximate (Delta : list (string * Kind)) (Gamma : list (string * Ty)) (e e' : Term) (T : Ty) :=
     (Delta ,, Gamma |-+ e : T) /\
     (Delta ,, Gamma |-+ e' : T) /\
-    forall k rho env env' ct ck,
-      Delta = mupdate empty ck -> 
-      Gamma = mupdate empty ct ->
-      RD ck rho ->
-      RG rho k ct env env' ->
+    forall k rho env env',
+      RD Delta rho ->
+      RG rho k Gamma env env' ->
       RC k T rho (msubst_term env (msubstA_term (msyn1 rho) e)) (msubst_term env' (msubstA_term (msyn2 rho) e')).
       
 (** Logical relation: logical equivalence 
@@ -219,7 +219,7 @@ Definition LR_logically_approximate (Delta : partial_map Kind) (Gamma : partial_
     another.
 *)
 
-Definition LR_logically_equivalent (Delta : partial_map Kind) (Gamma : partial_map Ty) (e e' : Term) (T : Ty) :=
+Definition LR_logically_equivalent (Delta : list (string * Kind)) (Gamma : list (string * Ty)) (e e' : Term) (T : Ty) :=
   LR_logically_approximate Delta Gamma e e' T /\ LR_logically_approximate Delta Gamma e' e T.
 
 

@@ -2,6 +2,9 @@ Require Import PlutusCert.Language.PlutusIR.
 Import NamedTerm.
 
 Require Import PlutusCert.Language.PlutusIR.Semantics.Static.Typing.
+Require Import PlutusCert.Util.List.
+Require Import Lists.List.
+Import ListNotations.
       
 Module Kinding.
 
@@ -14,11 +17,11 @@ Module Kinding.
     generalize dependent Delta'.
     induction HT.
     all: intros Delta' Hincl.
-    all: try solve [econstructor; eauto using inclusion_update].
+    all: try solve [econstructor; eauto using inclusion_cons].
   Qed.
 
   Lemma weakening_empty : forall Delta T K,
-      empty |-* T : K ->
+      [] |-* T : K ->
       Delta |-* T : K.
   Proof.
     intros.
@@ -71,7 +74,7 @@ Module Typing.
     (forall Delta Gamma bs, Delta ,, Gamma |-oks_nr bs -> P_bindings_well_formed_nonrec Delta Gamma bs) /\
     (forall Delta Gamma bs, Delta ,, Gamma |-oks_r bs -> P_bindings_well_formed_rec Delta Gamma bs) /\
     (forall  Delta Gamma b, Delta ,, Gamma |-ok_b b -> P_binding_well_formed Delta Gamma b).
-  Proof with eauto using Kinding.weakening, inclusion_update, inclusion_mupdate.
+  Proof with eauto using Kinding.weakening, inclusion_cons, inclusion_append.
     apply has_type__multind with 
       (P := P_has_type) 
       (P0 := P_constructor_well_formed)
@@ -81,7 +84,7 @@ Module Typing.
     all: intros; autounfold.
     all: try (intros Delta'_0 Gamma'_0 HinclD HinclG).
     all: try (intros Delta'_0 HinclD).
-    all: try solve [econstructor; subst; eauto using Kinding.weakening, inclusion_update, inclusion_mupdate].
+    all: try solve [econstructor; subst; eauto using Kinding.weakening, inclusion_cons, inclusion_append].
     - (* W_Con *)
       econstructor...
       subst.
@@ -90,7 +93,7 @@ Module Typing.
   Qed.
 
   Lemma weakening_empty : forall Delta Gamma t T,
-      empty ,, empty |-+ t : T ->
+      [] ,, [] |-+ t : T ->
       Delta ,, Gamma |-+ t : T.
   Proof.
     intros Delta Gamma t T Ht.
@@ -99,6 +102,17 @@ Module Typing.
     apply Ht.
     - apply inclusion_empty.
     - apply inclusion_empty.
+  Qed.
+
+  Corollary weakening_term Delta Delta' Gamma Gamma' t T
+    (incl_Delta : inclusion Delta Delta')
+    (incl_Gamma : inclusion Gamma Gamma') :
+      Delta ,, Gamma |-+ t : T ->
+      Delta' ,, Gamma' |-+ t : T.
+  Proof.
+    intros.
+    eapply weakening.
+    all: eassumption.
   Qed.
 
 End Typing.

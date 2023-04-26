@@ -19,7 +19,7 @@ Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
 Lemma per_type_substitution : forall ck rho T2 Chi X e e' T0n T1n T2n K k,
     RD ck rho ->
-    mupdate empty ck |-* T2 : K ->
+    ck |-* T2 : K ->
     normalise T2 T2n ->
     Chi = (fun k t t' => RV k T2 rho t t') ->
     RV k T1n ((X, (Chi, msubstT (msyn1 rho) T2, msubstT (msyn2 rho) T2)) :: rho)%list e e' ->
@@ -46,7 +46,7 @@ Proof with eauto_LR.
 
   split... split... 
 
-  intros k rho env env' ct ck HeqDelta HeqGamma HRD HRG.
+  intros k rho env env' HRD HRG.
   subst.
 
   autorewrite with RC.
@@ -75,8 +75,8 @@ Proof with eauto_LR.
 
       inversion Heq. subst. clear Heq.
 
-      eapply msubstT_preserves_kinding_1 in Hkind__T2 as H10...
-      eapply msubstT_preserves_kinding_2 in Hkind__T2 as H11...
+      eapply closing_preserves_kinding_1 in Hkind__T2 as H10...
+      eapply closing_preserves_kinding_2 in Hkind__T2 as H11...
       remember (fun k t t' => RV k T2 rho t t') as Chi.
       assert (Rel (msubstT (msyn1 rho) T2) (msubstT (msyn2 rho) T2) Chi). {
         subst.

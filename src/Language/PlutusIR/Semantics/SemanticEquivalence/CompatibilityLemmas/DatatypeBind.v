@@ -25,8 +25,8 @@ Proof.
 Qed.
 
 
-Lemma mupdate_flatten : forall {X : Type} (m : partial_map X) x l,
-    mupdate m (flatten (x :: l)) = mupdate (mupdate m x) (flatten l).
+Lemma append_flatten : forall {X : Type} (m : list (string * X)) x l,
+    (flatten (x :: l)) ++ m = (flatten l) ++ (x ++ m).
 Proof.
   intros.
   unfold flatten.
@@ -34,7 +34,7 @@ Proof.
   rewrite List.concat_app.
   simpl.
   rewrite List.app_nil_r.
-  rewrite <- mupdate_app.
+  rewrite List.app_assoc.
   reflexivity.
 Qed.
 
@@ -50,14 +50,14 @@ Qed.
 
 
 Lemma compatibility_DatatypeBind : forall Delta Gamma X YKs cs matchFunc Delta' b b' bs bs' t t' Tn,
-    Delta' = mupdate Delta (rev (map fromDecl YKs)) ->
+    Delta' = rev (map fromDecl YKs) ++ Delta  ->
     (forall c, In c cs -> Delta' |-ok_c c : (constrLastTy (Datatype X YKs matchFunc cs))) ->
     forall Delta_ih Gamma_ih bsGn,
       b = DatatypeBind (Datatype X YKs matchFunc cs) ->
       b' = DatatypeBind (Datatype X YKs matchFunc cs) ->
-      Delta_ih = mupdate Delta (binds_Delta b) ->
+      Delta_ih = binds_Delta b ++ Delta ->
       map_normalise (binds_Gamma b) bsGn ->
-      Gamma_ih = mupdate Gamma bsGn ->
+      Gamma_ih = bsGn ++ Gamma ->
       LR_logically_approximate Delta_ih Gamma_ih (Let NonRec bs t) (Let NonRec bs' t') Tn ->
       LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t') Tn.
 Proof with eauto_LR.
@@ -72,7 +72,7 @@ Proof with eauto_LR.
 
   split. {
     inversion Htyp__ih. subst.
-    rewrite <- mupdate_flatten in H7.
+    rewrite <- append_flatten in H7.
 
     eapply T_Let...
     - unfold flatten.
@@ -82,14 +82,14 @@ Proof with eauto_LR.
       eapply map_normalise__app'...
       (* ADMIT: Should hold since map_normalise is total for well-kinded types. *)
       admit.
-    - rewrite mupdate_app. eapply H7.
+    - rewrite List.app_assoc in H7. eapply H7.
     - (* ADMIT: Should follow from uniqueness property. *)
       admit. 
   }
 
   split. {
     inversion Htyp__ih'. subst.
-    rewrite <- mupdate_flatten in H7.
+    rewrite <- append_flatten in H7.
 
     eapply T_Let...
     - unfold flatten.
@@ -99,12 +99,12 @@ Proof with eauto_LR.
       eapply map_normalise__app'...
       (* ADMIT: Should hold since map_normalise is total for well-kinded types. *)
       admit.
-    - rewrite mupdate_app. eapply H7.
+    - rewrite List.app_assoc in H7. eapply H7.
     - (* ADMIT: Should follow from uniqueness property. *)
       admit.
   }
 
-  intros k rho env env' ct ck HeqDelta HeqGamma HRD HRG.
+  intros k rho env env' HRD HRG.
   subst.
 
   rewrite msubstA_LetNonRec.

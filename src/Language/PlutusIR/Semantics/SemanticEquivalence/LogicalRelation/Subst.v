@@ -11,6 +11,7 @@ Require Import PlutusCert.Util.Map.Mupdate.
 Require Import PlutusCert.Util.List.
 
 Require Import Coq.Lists.List.
+Import ListNotations.
 
 Local Open Scope string_scope.
 
@@ -173,45 +174,31 @@ Proof. Admitted.
 (** ** Properties of multi-extensions *)
 
 Lemma mupdate_lookup : forall (c : tass) (x : name),
-    lookup x c = (mupdate empty c) x.
-Proof.
+    lookup x c = lookup x (c ++ []).
+Proof with auto.
   induction c.
-  - intros.
-    simpl.
-    reflexivity.
+  - auto.
   - intros.
     simpl.
     destruct a.
-    destruct (s =? x) eqn:Heqb.
-    + apply eqb_eq in Heqb as Heq.
-      subst.
-      rewrite update_eq.
-      reflexivity.
-    + apply eqb_neq in Heqb as Hneq.
-      rewrite update_neq; auto.
+    destruct (s =? x) eqn:Heqb...
 Qed.
 
+(* TODO: rename to update_drop? *)
+(* TODO: use setoid in the proof? *)
 Lemma mupdate_drop : forall (c : tass) x T,
-    (x |-> T; mupdate empty c) = (x |-> T; mupdate empty (drop x c)).
-Proof. 
-  induction c; intros. 
-  - auto.
-  - destruct a.
-    simpl.
-    destruct (s =? x) eqn:Heqb.
-    + apply eqb_eq in Heqb as Heq.
-      subst.
-      rewrite update_shadow.
-      auto.
-    + apply eqb_neq in Heqb as Hneq.
-      rewrite update_permute; auto.
-      simpl.
-      assert ((x |-> T; s |-> t; mupdate empty (drop x c)) = (s |-> t; x |-> T; mupdate empty (drop x c))). {
-        apply update_permute. auto. 
-      }
-      rewrite H.
-      f_equal.
-      auto.
+    inclusion ((x , T) :: c) ((x , T) :: drop x c).
+Proof with auto using inclusion_refl, cons_permute, cons_shadow, inclusion_cons.
+  induction c; intros...
+  destruct a.
+  simpl.
+  destruct (s =? x) eqn:Heqb.
+  - apply eqb_eq in Heqb as Heq.
+    subst.
+    transitivity ((x, T) :: c)...
+  - apply eqb_neq in Heqb as Hneq.
+    transitivity ((s, t) :: (x, T) :: drop x c)...
+    transitivity ((s, t) :: (x, T) :: c)...
 Qed.
 
 (*
@@ -223,9 +210,11 @@ Lemma mupdate_drop : forall (c : tass) Gamma x x',
 Proof. Admitted.
 *)
 
+
+(* TODO: clean this up *)
 Lemma mupdate_unfold : forall {X : Type} (c : list (string * X)) x (v : X),
-    (x |-> v; mupdate empty c) = mupdate empty ((x, v) :: c).
-Proof. intros. auto. Qed.
+    ((x, v) :: c) = ((x, v) :: c).
+Proof. auto. Qed.
 
 
 (** ** Properties of Instantiations *)
@@ -234,7 +223,7 @@ Proof. intros. auto. Qed.
 
 (** ** Multi-substitutions preserve typing *)
 
-Fixpoint mgsubst (xts : tass) (Gamma : Gamma) : Context.Gamma :=
+Fixpoint mgsubst (xts : tass) (Gamma : list (string * Ty)) : list (string * Ty) :=
   match xts with
   | nil => Gamma
   | ((a, T) :: xts') => mgsubst xts' (gsubst a T Gamma)
@@ -244,22 +233,21 @@ Fixpoint mgsubst (xts : tass) (Gamma : Gamma) : Context.Gamma :=
 
 Lemma mgsubst_nil : forall Gamma,
     mgsubst nil Gamma = Gamma.
-Proof. intros. apply Coq.Logic.FunctionalExtensionality.functional_extensionality. intros. unfold mgsubst. destruct (Gamma x); auto. Qed.
+Proof. reflexivity. Qed.
 
 Lemma mgsubst_absorbs_msubstT : forall xts x T Gamma,
-    mgsubst xts (x |-> T; Gamma) = (x |-> msubstT xts T; mgsubst xts Gamma).
+    mgsubst xts ((x, T) :: Gamma) = ((x, msubstT xts T) :: mgsubst xts Gamma).
 Proof.
   induction xts.
   - auto.
   - intros.
     destruct a. 
     simpl.
-    rewrite <- gsubst_absorbs_substituteT.
     eauto.
 Qed.
 
 Lemma mgsubst_empty : forall xts,
-    mgsubst xts empty = empty.
+    mgsubst xts [] = [].
 Proof. induction xts; auto. simpl. destruct a. auto. Qed.
 
 Lemma normalise_commutes : forall ss X U T Tn,
@@ -272,7 +260,7 @@ Proof. Admitted.
 Lemma msubstA_preserves_typing_1 : forall rho ck,
     RD ck rho ->
     forall Delta Gamma t T Tn,
-      mupdate Delta ck ,, Gamma |-+ t : T ->
+      ck ++ Delta ,, Gamma |-+ t : T ->
       normalise (msubstT (msyn1 rho) T) Tn ->
       Delta ,, mgsubst (msyn1 rho) Gamma |-+ (msubstA_term (msyn1 rho) t) : Tn. 
 Proof.
@@ -303,7 +291,7 @@ Qed.
 Lemma msubstA_preserves_typing_2 : forall rho ck,
     RD ck rho ->
     forall Delta Gamma t T Tn,
-      mupdate Delta ck ,, Gamma |-+ t : T ->
+      ck ++ Delta ,, Gamma |-+ t : T ->
       normalise (msubstT (msyn2 rho) T) Tn ->
       Delta ,, mgsubst (msyn2 rho) Gamma |-+ (msubstA_term (msyn2 rho) t) : Tn. 
 Proof.
@@ -335,8 +323,8 @@ Lemma msubst_preserves_typing_1 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
     0 < k ->
     forall Gamma T t,
-      empty ,, (mgsubst (msyn1 rho) (mupdate Gamma c)) |-+ t : T ->
-      empty ,, (mgsubst (msyn1 rho) Gamma) |-+ (msubst_term e1 t) : T. 
+      [] ,, (mgsubst (msyn1 rho) (c ++ Gamma)) |-+ t : T ->
+      [] ,, (mgsubst (msyn1 rho) Gamma) |-+ (msubst_term e1 t) : T. 
 Proof.
   intros rho k c e1 e2 V Hlt.
   induction V.
@@ -359,8 +347,8 @@ Lemma msubst_preserves_typing_2 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
     0 < k ->
     forall Gamma T t,
-      empty ,, (mgsubst (msyn2 rho) (mupdate Gamma c)) |-+ t : T ->
-      empty ,, (mgsubst (msyn2 rho) Gamma) |-+ (msubst_term e2 t) : T. 
+      [] ,, (mgsubst (msyn2 rho) (c ++ Gamma)) |-+ t : T ->
+      [] ,, (mgsubst (msyn2 rho) Gamma) |-+ (msubst_term e2 t) : T. 
 Proof.
   intros rho k c e1 e2 V Hlt.
   induction V.
@@ -382,7 +370,7 @@ Qed.
 Lemma msubstT_preserves_kinding_1 : forall ck rho,
   RD ck rho ->
   forall Delta T K,
-    (mupdate Delta ck) |-* T : K ->
+    (ck ++ Delta) |-* T : K ->
     Delta |-* (msubstT (msyn1 rho) T) : K.
 Proof.
   intros ck rho V.
@@ -398,7 +386,7 @@ Qed.
 Lemma msubstT_preserves_kinding_2 : forall ck rho,
   RD ck rho ->
   forall Delta T K,
-    (mupdate Delta ck) |-* T : K ->
+    (ck ++ Delta) |-* T : K ->
     Delta |-* (msubstT (msyn2 rho) T) : K.
 Proof.
   intros ck rho V.
@@ -410,3 +398,72 @@ Proof.
     + apply H2.
     + assumption.
 Qed.
+
+Corollary closing_preserves_kinding_1 : forall Delta rho T K,
+  RD Delta rho ->
+  Delta |-* T : K ->
+  []    |-* (msubstT (msyn1 rho) T) : K.
+Proof with eauto.
+  intros.
+  rewrite <- app_nil_r with (l := Delta) in H0.
+  eapply msubstT_preserves_kinding_1...
+Qed.
+
+Corollary closing_preserves_kinding_2 : forall Delta rho T K,
+  RD Delta rho ->
+  Delta |-* T : K ->
+  []    |-* (msubstT (msyn2 rho) T) : K.
+Proof with eauto.
+  intros.
+  rewrite <- app_nil_r with (l := Delta) in H0.
+  eapply msubstT_preserves_kinding_2...
+Qed.
+
+Corollary closingA_preserves_typing_1 : forall Delta Gamma rho t T Tn,
+    RD Delta rho ->
+    Delta ,, Gamma |-+ t : T ->
+    normalise (msubstT (msyn1 rho) T) Tn ->
+    [] ,, mgsubst (msyn1 rho) Gamma |-+ (msubstA_term (msyn1 rho) t) : Tn. 
+Proof with eauto.
+  intros.
+  rewrite <- app_nil_r with (l := Delta) in H0.
+  eapply msubstA_preserves_typing_1...
+Qed.
+
+Corollary closingA_preserves_typing_2 : forall Delta Gamma rho t T Tn,
+    RD Delta rho ->
+    Delta ,, Gamma |-+ t : T ->
+    normalise (msubstT (msyn2 rho) T) Tn ->
+    [] ,, mgsubst (msyn2 rho) Gamma |-+ (msubstA_term (msyn2 rho) t) : Tn. 
+Proof with eauto.
+  intros.
+  rewrite <- app_nil_r with (l := Delta) in H0.
+  eapply msubstA_preserves_typing_2...
+Qed.
+
+Corollary closing_preserves_typing_1 : forall Gamma T t rho k e1 e2,
+    RG rho k Gamma e1 e2 ->
+    0 < k ->
+      [] ,, (mgsubst (msyn1 rho) Gamma) |-+ t : T ->
+      [] ,, [] |-+ (msubst_term e1 t) : T.
+Proof with eauto.
+  intros.
+  rewrite <- app_nil_r with (l := Gamma) in H1.
+  replace [] with (mgsubst (msyn1 rho) []).
+  eapply msubst_preserves_typing_1...
+  rewrite mgsubst_empty...
+Qed.
+
+Corollary closing_preserves_typing_2 : forall Gamma T t rho k e1 e2,
+    RG rho k Gamma e1 e2 ->
+    0 < k ->
+      [] ,, (mgsubst (msyn2 rho) Gamma) |-+ t : T ->
+      [] ,, [] |-+ (msubst_term e2 t) : T.
+Proof with eauto.
+  intros.
+  rewrite <- app_nil_r with (l := Gamma) in H1.
+  replace [] with (mgsubst (msyn2 rho) []).
+  eapply msubst_preserves_typing_2...
+  rewrite mgsubst_empty...
+Qed.
+

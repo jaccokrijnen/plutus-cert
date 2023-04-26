@@ -35,8 +35,7 @@ Proof with eauto_LR.
   split...
   split...
 
-  intros k rho env env' ct ck HeqDelta HeqGamma H_RD H_RG.
-  subst.
+  intros k rho env env' H_RD H_RG.
 
   rewrite msubstA_LetNonRec_nil.
   rewrite msubst_LetNonRec_nil.
@@ -75,9 +74,9 @@ Lemma compatibility_TermBind__desugar : forall Delta Gamma t t' Tn b bs fbs' tb 
   normalise Tb Tbn ->
   forall Delta_ih Gamma_ih bsGn,
     b = TermBind Strict (VarDecl x Tb) tb ->
-    Delta_ih = mupdate Delta (binds_Delta b) ->
+    Delta_ih = binds_Delta b ++ Delta ->
     map_normalise (binds_Gamma b) bsGn ->
-    Gamma_ih = mupdate Gamma bsGn ->
+    Gamma_ih = bsGn ++ Gamma ->
     LR_logically_approximate Delta_ih Gamma_ih (Let NonRec bs t) (fold_right apply t' fbs') Tn ->
     LR_logically_approximate Delta Gamma tb tb' Tbn ->
     LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (Apply (LamAbs x Tb (fold_right apply t' fbs')) tb') Tn.
@@ -93,7 +92,7 @@ Proof with eauto_LR.
 
   split. {
     inversion Htyp__ih. subst.
-    rewrite <- mupdate_flatten in H7.
+    rewrite <- append_flatten in H7.
 
     eapply T_Let...
     - unfold flatten.
@@ -101,7 +100,7 @@ Proof with eauto_LR.
       simpl in Hmapnorm__bsGn.
       rewrite List.concat_app.
       eapply map_normalise__app'...
-    - rewrite mupdate_app...
+    - rewrite <- app_assoc...
   }
 
   split. {
@@ -114,8 +113,7 @@ Proof with eauto_LR.
     subst...
   }
  
-  intros k rho env env' ct ck Heq__Delta Heq__Gamma HRD HRG.
-  subst.
+  intros k rho env env' HRD HRG.
 
   rewrite msubstA_LetNonRec.
   rewrite msubstA_BindingsNonRec_cons.
@@ -156,29 +154,25 @@ Proof with eauto_LR.
 
     assert (HRC__ih :
       RC (k - jb - 1) Tn rho
-        <{ /[ (x, vb) :: drop x env /] ( /[[ msyn1 rho /] {Let NonRec bs t} ) }>
-        <{ /[ (x, vb') :: drop x env' /] ( /[[ msyn2 rho /] {fold_right apply t' fbs'} ) }>
+        <{ /[ (x, vb) :: env /] ( /[[ msyn1 rho /] {Let NonRec bs t} ) }>
+        <{ /[ (x, vb') :: env' /] ( /[[ msyn2 rho /] {fold_right apply t' fbs'} ) }>
     ). {
-      apply IH__ih with (ct0 := (x, Tbn) :: drop x ct) (ck0 := ck).
-      - reflexivity.
-      - inversion Hmapnorm__bsGn. subst.
-        inversion H3. subst.
-        simpl.
-        eapply normalisation__deterministic in Hnorm__Tbn...
-        subst.
-        apply mupdate_drop.
+      apply IH__ih.
       - assumption.
       - assert (closed vb). eapply RV_closed_1...
         assert (closed vb'). eapply RV_closed_2...
         replace vb with (msubstA_term (msyn1 rho) vb) by (eapply msubstA_closed; eauto).
         replace vb' with (msubstA_term (msyn2 rho) vb') by (eapply msubstA_closed; eauto).
+        simpl in Hmapnorm__bsGn.
+        inversion Hmapnorm__bsGn. subst.
+        replace Tn0 with Tbn...
         apply RG_cons.
-        + apply RV_monotone with (k := k - jb) (ck := ck)...
+        + apply RV_monotone with (k := k - jb) (ck := Delta)...
           rewrite msubstA_closed...
           rewrite msubstA_closed...
         + eapply normalise_to_normal...
-        + apply RG_monotone with (k := k) (ck := ck)...
-          apply RG_drop...
+        + apply RG_monotone with (k := k) (ck := Delta)...
+          inversion H5...
     }
     clear IH__ih.
 
@@ -192,7 +186,7 @@ Proof with eauto_LR.
         - eapply E_LamAbs.
         - eapply RV_error in HRV__vb as temp...
           destruct temp as [ [Herr Herr'] | [Hnerr Hnerr']]...
-        - rewrite <- subst_msubst'...
+        - rewrite <- subst_msubst...
           + eapply RV_closed_2...
           + eapply RG_env_closed_2...
       }
@@ -213,6 +207,8 @@ Proof with eauto_LR.
       rewrite <- msubst_bnr__bound_vars in Hev__e_f.
       rewrite <- msubstA_bnr__bvbs in Hev__e_f.
 
+
+      (* TODO: Duplication from compatibility lemma TermBind *)
       destruct (existsb (eqb x) (bvbs bs)) eqn:Hexb. {
         assert (closed vb). eapply RV_closed_1...
         assert (closed vb'). eapply RV_closed_2...
@@ -232,12 +228,16 @@ Proof with eauto_LR.
         apply eqb_eq in Heqb as Heq.
         subst.
         rewrite In__mdrop...
+        rewrite subst_bnr__msubst_bnr' in Hev__e_f...
+        rewrite <- subst_bnr__msubst_bnr in Hev__e_f...
+        rewrite In__mdrop_drop in Hev__e_f...
       } {
+
         assert (closed vb). eapply RV_closed_1...
         assert (closed vb'). eapply RV_closed_2...
         apply RG_env_closed in HRG as Hclss...
         destruct Hclss as [Hcls__env Hcls__env'].
-        rewrite <- subst_bnr__msubst_bnr' in Hev__e_f...
+        rewrite <- subst_bnr__msubst_bnr in Hev__e_f...
         replace (concat (map bvb <{ /[[ msyn1 rho /][bnr] bs }>)) with
           (bvbs <{ /[[ msyn1 rho /][bnr] bs }>) in Hev__e_f...
         
@@ -249,15 +249,11 @@ Proof with eauto_LR.
         apply Util.existsb_nexists in Hexb.
         rewrite not_In__mdrop.
         - replace (concat (map btvb bs)) with (btvbs bs) in Hev__e_f...
-          rewrite <- subst_msubst'' in Hev__e_f...
+          rewrite <- drop_mdrop in Hev__e_f.
+          rewrite <- subst_msubst in Hev__e_f...
           + eapply RG_env_closed_1.
-            eapply RG_drop...
+            eapply RG_mdrop...
             eauto_LR.
-          + intros Hcon.
-            apply Hexb.
-            exists x.
-            rewrite eqb_refl.
-            eauto.
         - intros Hcon.
           apply Hexb.
           exists x.
@@ -290,7 +286,7 @@ Proof with eauto_LR.
       split. {
         inversion Htyp__ih. subst.
         simpl in H9.
-        eapply msubstT_preserves_kinding_1 in H9 as H10...
+        eapply closing_preserves_kinding_1 in H9 as H10...
         eapply strong_normalisation in H10 as H11...
         destruct H11.
         
@@ -300,7 +296,7 @@ Proof with eauto_LR.
       split. {
         inversion Htyp__ih. subst.
         simpl in H9.
-        eapply msubstT_preserves_kinding_2 in H9 as H10...
+        eapply closing_preserves_kinding_2 in H9 as H10...
         eapply strong_normalisation in H10 as H11...
         destruct H11.
         
@@ -323,9 +319,9 @@ Definition P_bindings_well_formed_nonrec Delta Gamma bs : Prop :=
     forall bs',
       Congruence.Cong_Bindings CNR_Term bs bs' ->
       forall Delta_t Gamma_t bsGn t t' Tn,
-        Delta_t = mupdate Delta (flatten (List.map binds_Delta bs)) ->
+        Delta_t = flatten (List.map binds_Delta bs) ++ Delta  ->
         map_normalise (flatten (List.map binds_Gamma bs)) bsGn ->
-        Gamma_t = mupdate Gamma bsGn  ->
+        Gamma_t = bsGn ++ Gamma ->
         Delta |-* Tn : Kind_Base ->
         LR_logically_approximate Delta_t Gamma_t t t' Tn ->
         LR_logically_approximate Delta Gamma (Let NonRec bs t) (Let NonRec bs' t') Tn
@@ -333,9 +329,9 @@ Definition P_bindings_well_formed_nonrec Delta Gamma bs : Prop :=
     forall fbs',
       CNR_Bindings bs fbs' ->
       forall Delta_t Gamma_t bsGn t t' Tn,
-        Delta_t = mupdate Delta (flatten (List.map binds_Delta bs)) ->
+        Delta_t = flatten (List.map binds_Delta bs) ++ Delta  ->
         map_normalise (flatten (List.map binds_Gamma bs)) bsGn ->
-        Gamma_t = mupdate Gamma bsGn ->
+        Gamma_t = bsGn ++ Gamma ->
         Delta |-* Tn : Kind_Base ->
         LR_logically_approximate Delta_t Gamma_t t t' Tn ->
         LR_logically_approximate Delta Gamma (Let NonRec bs t) (fold_right apply t' fbs') Tn
@@ -348,9 +344,9 @@ Definition P_binding_well_formed Delta Gamma b : Prop :=
     forall b',
       Congruence.Cong_Binding CNR_Term b b' ->
       forall Delta_t Gamma_t bsGn t t' Tn bs bs',
-        Delta_t = mupdate Delta (binds_Delta b) ->
+        Delta_t = binds_Delta b ++ Delta ->
         map_normalise (binds_Gamma b) bsGn ->
-        Gamma_t = mupdate Gamma bsGn ->
+        Gamma_t = bsGn ++ Gamma ->
         Delta |-* Tn : Kind_Base ->
         LR_logically_approximate Delta_t Gamma_t (Let NonRec bs t) (Let NonRec bs' t') Tn ->
         LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t') Tn
@@ -358,9 +354,9 @@ Definition P_binding_well_formed Delta Gamma b : Prop :=
     forall fb',
       CNR_Binding b fb' ->
       forall Delta_t Gamma_t bsGn t t' Tn bs fbs',
-        Delta_t = mupdate Delta (binds_Delta b) ->
+        Delta_t = binds_Delta b ++ Delta ->
         map_normalise (binds_Gamma b) bsGn ->
-        Gamma_t = mupdate Gamma bsGn ->
+        Gamma_t = bsGn ++ Gamma ->
         Delta |-* Tn : Kind_Base ->
         LR_logically_approximate Delta_t Gamma_t (Let NonRec bs t) (fold_right apply t' fbs') Tn ->
         LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (fold_right apply t' (fb' :: fbs')) Tn
@@ -439,9 +435,9 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
                 assert (Annotation.appears_bound_in x (Let NonRec (TypeBind (TyVarDecl x k) t1 :: bs) t)) by eauto.
                 eapply uniqueness' in H4.
                 rewrite H4 in H1.
-                inversion H1.
+                inversion H4.
             ++ apply eqb_neq in Heqb as Hneq.
-                rewrite update_neq; eauto.
+              simpl. rewrite Heqb...
         -- destruct d.
             simpl. destruct t0.
             simpl.
@@ -453,11 +449,11 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
                 assert (Annotation.appears_bound_in x (Let NonRec (DatatypeBind (Datatype (TyVarDecl x k) l s l0) :: bs) t)) by eauto.
                 eapply uniqueness' in H4.
                 rewrite H4 in H1.
-                inversion H1.
+                inversion H4.
             ++ apply eqb_neq in Heqb as Hneq.
-                rewrite update_neq;eauto.
-      * rewrite <- mupdate_app.
-        rewrite <- mupdate_app.
+               simpl. rewrite Heqb...
+      * rewrite app_assoc.
+        rewrite app_assoc.
         rewrite <- flatten_app...
     + rewrite flatten_app in H5.
       apply map_normalise__app in H5.
@@ -482,9 +478,9 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
                 assert (Annotation.appears_bound_in x (Let NonRec (TypeBind (TyVarDecl x k) t1 :: bs) t)) by eauto.
                 eapply uniqueness' in H4.
                 rewrite H4 in H1.
-                inversion H1.
+                inversion H4.
             ++ apply eqb_neq in Heqb as Hneq.
-                rewrite update_neq; eauto.
+               simpl. rewrite Heqb...
         -- destruct d.
             simpl. destruct t0.
             simpl.
@@ -496,11 +492,11 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
                 assert (Annotation.appears_bound_in x (Let NonRec (DatatypeBind (Datatype (TyVarDecl x k) l s l0) :: bs) t)) by eauto.
                 eapply uniqueness' in H4.
                 rewrite H4 in H1.
-                inversion H1.
+                inversion H4.
             ++ apply eqb_neq in Heqb as Hneq.
-                rewrite update_neq;eauto.
-      * rewrite <- mupdate_app.
-        rewrite <- mupdate_app.
+               simpl. rewrite Heqb...
+      * rewrite app_assoc.
+        rewrite app_assoc.
         rewrite <- flatten_app...
 
   - (* W_Term *)
