@@ -398,3 +398,23 @@ Proof.
     + apply H2.
     + assumption.
 Qed.
+
+Corollary closing_preserves_kinding_1 : forall Delta rho T K,
+  RD Delta rho ->
+  Delta |-* T : K ->
+  []    |-* (msubstT (msyn1 rho) T) : K.
+Proof with eauto.
+  intros.
+  rewrite <- app_nil_r with (l := Delta) in H0.
+  eapply msubstT_preserves_kinding_1...
+Qed.
+
+Corollary closing_preserves_kinding_2 : forall Delta rho T K,
+  RD Delta rho ->
+  Delta |-* T : K ->
+  []    |-* (msubstT (msyn2 rho) T) : K.
+Proof with eauto.
+  intros.
+  rewrite <- app_nil_r with (l := Delta) in H0.
+  eapply msubstT_preserves_kinding_2...
+Qed.
