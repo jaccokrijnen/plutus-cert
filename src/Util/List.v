@@ -265,6 +265,19 @@ Lemma mdrop_nil : forall X ns,
     @mdrop X ns nil = nil.
 Proof. induction ns; auto. Qed.
 
+Lemma drop_idempotent : forall X x (ns : list (string * X)), drop x (drop x ns) = drop x ns.
+Proof with auto.
+  intros.
+  induction ns...
+  - destruct a as [y v].
+    destruct (y =?x) eqn:Heqb.
+    + simpl; rewrite Heqb...
+    + repeat (simpl; rewrite Heqb).
+      congruence.
+Qed.
+
+      
+
 Definition elem {A} (A_eqb : A -> A -> bool) (x : A) (xs : list A) :=
   match find (A_eqb x) xs with
     | None   => false

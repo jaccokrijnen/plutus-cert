@@ -9,7 +9,7 @@ Require Import Arith.
 Require Import Coq.Lists.List.
 
 Local Open Scope list_scope.
-
+Local Open Scope string_scope.
 
 
 
@@ -31,6 +31,41 @@ Proof.
         destruct H.
       * eapply IHns.
         assumption. 
+Qed.
+
+
+Lemma drop_drop : forall {X} x y (xs : list (string * X)) ,
+  drop x (drop y xs) = drop y (drop x xs).
+Proof with auto.
+  intros.
+  induction xs...
+  simpl.
+  destruct a as [z v].
+  destruct (z =? y) eqn:Heqb;
+  destruct (z =? x) eqn:Heqb'...
+
+  - simpl. rewrite Heqb...
+  - simpl. rewrite Heqb'...
+  - simpl. rewrite Heqb, Heqb'.
+    congruence...
+Qed.
+
+
+Lemma In__mdrop_drop : forall {X} ns ss x,
+    List.In x ns ->
+    @mdrop X ns (drop x ss) = @mdrop X ns ss.
+Proof.
+  intros.
+  revert ss.
+  induction ns.
+  all: intros ss.
+  - inversion H.
+  - simpl.
+    destruct H; subst.
+    + rewrite drop_idempotent.
+      congruence.
+    + rewrite drop_drop.
+      auto.
 Qed.
 
 Lemma not_In__mdrop : forall {X} ns ss x s,
