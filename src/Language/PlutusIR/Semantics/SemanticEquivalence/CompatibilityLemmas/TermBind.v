@@ -55,23 +55,23 @@ Proof.
 Qed.
 
 
-Lemma compatibility_TermBind : forall Delta Gamma stricty x Tb Tbn tb tb' b b' bs bs' t t' Tn,
-    Delta |-* Tb : Kind_Base ->
+Lemma compatibility_TermBind : forall Δ Γ stricty x Tb Tbn tb tb' b b' bs bs' t t' Tn,
+    Δ |-* Tb : Kind_Base ->
     normalise Tb Tbn ->
-    forall Delta_ih Gamma_ih bsGn,
+    forall Δ_ih Γ_ih bsGn,
       b = TermBind stricty (VarDecl x Tb) tb ->
       b' = TermBind stricty (VarDecl x Tb) tb' ->
-      Delta_ih = (binds_Delta b) ++ Delta ->
+      Δ_ih = (binds_Delta b) ++ Δ ->
       map_normalise (binds_Gamma b) bsGn ->
-      Gamma_ih = bsGn ++ Gamma ->
-      LR_logically_approximate Delta_ih Gamma_ih (Let NonRec bs t) (Let NonRec bs' t') Tn ->
-      LR_logically_approximate Delta Gamma tb tb' Tbn ->
-      LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t') Tn.
+      Γ_ih = bsGn ++ Γ ->
+      LR_logically_approximate Δ_ih Γ_ih (Let NonRec bs t) (Let NonRec bs' t') Tn ->
+      LR_logically_approximate Δ Γ tb tb' Tbn ->
+      LR_logically_approximate Δ Γ (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t') Tn.
 Proof with eauto_LR.
-  intros Delta Gamma stricty x Tb Tbn tb tb' b b' bs bs' t t' Tn.
+  intros Δ Γ stricty x Tb Tbn tb tb' b b' bs bs' t t' Tn.
   intros Hkind__Tb Hnorm__Tbn.
-  intros Delta_ih Gamma_ih bsGn.
-  intros Heq__b Heq__b' Heq__Delta_ih Hmapnorm__bsGn Heq__Gamma_ih IHLR__ih IHLR__tb.
+  intros Δ_ih Γ_ih bsGn.
+  intros Heq__b Heq__b' Heq__Δ_ih Hmapnorm__bsGn Heq__Γ_ih IHLR__ih IHLR__tb.
 
   subst.
 
@@ -159,10 +159,10 @@ Proof with eauto_LR.
         replace Tn0 with Tbn...
         simpl.
         apply RG_cons...
-        + apply RV_monotone with (k := k - jb) (ck := Delta)...
+        + apply RV_monotone with (k := k - jb) (ck := Δ)...
           rewrite msubstA_closed...
           rewrite msubstA_closed...
-        + apply RG_monotone with (k := k) (ck := Delta)...
+        + apply RG_monotone with (k := k) (ck := Δ)...
           inversion H5. subst.
           simpl...
     }
@@ -230,6 +230,7 @@ Proof with eauto_LR.
             replace (concat (map btvb bs')) with (btvbs bs')...
 
             rewrite <- subst_msubst''...
+            * admit.
             * eapply RG_env_closed.
               eapply RG_drop...
               eauto_LR.
