@@ -35,7 +35,7 @@ Lemma msubstA_Var : forall ss x,
 Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
 Lemma compatibility_Var : forall Delta Gamma x T Tn,
-    Gamma x = Coq.Init.Datatypes.Some T ->
+    lookup x Gamma = Coq.Init.Datatypes.Some T ->
     normalise T Tn ->
     LR_logically_approximate Delta Gamma (Var x) (Var x) Tn.
 Proof with eauto_LR.
@@ -44,14 +44,8 @@ Proof with eauto_LR.
 
   split... split...
 
-  intros k rho env env' ct ck HeqDelta HeqGamma HRD HRG.
+  intros k rho env env' HRD HRG.
   subst.
-
-  assert (forall x, (mupdate empty ct) x = lookup x ct). {
-      intros. erewrite mupdate_lookup. auto.
-    }
-  subst.
-  rewrite H in Hx.
 
   apply RC_lt_obsolete.
   intros Hlt.

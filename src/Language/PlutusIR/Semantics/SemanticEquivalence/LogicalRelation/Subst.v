@@ -418,3 +418,52 @@ Proof with eauto.
   rewrite <- app_nil_r with (l := Delta) in H0.
   eapply msubstT_preserves_kinding_2...
 Qed.
+
+Corollary closingA_preserves_typing_1 : forall Delta Gamma rho t T Tn,
+    RD Delta rho ->
+    Delta ,, Gamma |-+ t : T ->
+    normalise (msubstT (msyn1 rho) T) Tn ->
+    [] ,, mgsubst (msyn1 rho) Gamma |-+ (msubstA_term (msyn1 rho) t) : Tn. 
+Proof with eauto.
+  intros.
+  rewrite <- app_nil_r with (l := Delta) in H0.
+  eapply msubstA_preserves_typing_1...
+Qed.
+
+Corollary closingA_preserves_typing_2 : forall Delta Gamma rho t T Tn,
+    RD Delta rho ->
+    Delta ,, Gamma |-+ t : T ->
+    normalise (msubstT (msyn2 rho) T) Tn ->
+    [] ,, mgsubst (msyn2 rho) Gamma |-+ (msubstA_term (msyn2 rho) t) : Tn. 
+Proof with eauto.
+  intros.
+  rewrite <- app_nil_r with (l := Delta) in H0.
+  eapply msubstA_preserves_typing_2...
+Qed.
+
+Corollary closing_preserves_typing_1 : forall Gamma T t rho k e1 e2,
+    RG rho k Gamma e1 e2 ->
+    0 < k ->
+      [] ,, (mgsubst (msyn1 rho) Gamma) |-+ t : T ->
+      [] ,, [] |-+ (msubst_term e1 t) : T.
+Proof with eauto.
+  intros.
+  rewrite <- app_nil_r with (l := Gamma) in H1.
+  replace [] with (mgsubst (msyn1 rho) []).
+  eapply msubst_preserves_typing_1...
+  rewrite mgsubst_empty...
+Qed.
+
+Corollary closing_preserves_typing_2 : forall Gamma T t rho k e1 e2,
+    RG rho k Gamma e1 e2 ->
+    0 < k ->
+      [] ,, (mgsubst (msyn2 rho) Gamma) |-+ t : T ->
+      [] ,, [] |-+ (msubst_term e2 t) : T.
+Proof with eauto.
+  intros.
+  rewrite <- app_nil_r with (l := Gamma) in H1.
+  replace [] with (mgsubst (msyn2 rho) []).
+  eapply msubst_preserves_typing_2...
+  rewrite mgsubst_empty...
+Qed.
+

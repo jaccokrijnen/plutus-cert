@@ -26,7 +26,7 @@ Proof. induction ss; intros. - reflexivity. - intros. destruct a. simpl. destruc
 
 
 Lemma compatibility_TyAbs: forall Delta Gamma bX K T e e',
-    LR_logically_approximate (bX |-> K; Delta) Gamma e e' T ->
+    LR_logically_approximate ((bX, K) :: Delta) Gamma e e' T ->
     LR_logically_approximate Delta Gamma (TyAbs bX K e) (TyAbs bX K e') (Ty_Forall bX K T).
 Proof with eauto_LR.
   intros Delta Gamma bX K T e e' IH_LR.
@@ -36,8 +36,7 @@ Proof with eauto_LR.
 
   split... split... 
 
-  intros k rho env env' ct ck HeqDelta HeqGamma HRD HRG.
-  subst.
+  intros k rho env env' HRD HRG.
 
   autorewrite with RC.
 
@@ -57,18 +56,17 @@ Proof with eauto_LR.
   split... {
     apply T_TyAbs in Htyp__e.
     eapply has_type__basekinded in Htyp__e as H...
-    eapply msubstT_preserves_kinding_1 in H as H0...
+    eapply closing_preserves_kinding_1 in H as H0...
     rewrite msubstT_TyForall in H0.
     apply strong_normalisation in H0 as H1.
     destruct H1.
     inversion H1. subst.
     eexists. split...
-    eapply msubstA_preserves_typing_1 in Htyp__e...
+    eapply closingA_preserves_typing_1 in Htyp__e...
     2: {
       rewrite msubstT_TyForall...
     }
-    eapply msubst_preserves_typing_1 in Htyp__e...
-    rewrite mgsubst_empty in Htyp__e.
+    eapply closing_preserves_typing_1 in Htyp__e...
     rewrite msubstA_TyAbs in Htyp__e.
     rewrite msubst_TyAbs in Htyp__e.
     eauto.
@@ -76,18 +74,17 @@ Proof with eauto_LR.
   split... {
     apply T_TyAbs in Htyp__e'.
     eapply has_type__basekinded in Htyp__e' as H...
-    eapply msubstT_preserves_kinding_2 in H as H0...
+    eapply closing_preserves_kinding_2 in H as H0...
     rewrite msubstT_TyForall in H0.
     apply strong_normalisation in H0 as H1.
     destruct H1.
     inversion H1. subst.
     eexists. split...
-    eapply msubstA_preserves_typing_2 in Htyp__e'...
+    eapply closingA_preserves_typing_2 in Htyp__e'...
     2: {
       rewrite msubstT_TyForall...
     }
-    eapply msubst_preserves_typing_2 in Htyp__e'...
-    rewrite mgsubst_empty in Htyp__e'.
+    eapply closing_preserves_typing_2 in Htyp__e'...
     rewrite msubstA_TyAbs in Htyp__e'.
     rewrite msubst_TyAbs in Htyp__e'.
     eauto.
@@ -106,8 +103,6 @@ Proof with eauto_LR.
   rewrite <- substA_msubstA by eauto using Ty.kindable_empty__closed.
   
   eapply IH__e.
-  - rewrite mupdate_unfold. reflexivity.
-  - reflexivity.
   - eapply RD_cons; eauto.
   - apply RG_extend_rho.
     eapply RG_monotone; eauto.
