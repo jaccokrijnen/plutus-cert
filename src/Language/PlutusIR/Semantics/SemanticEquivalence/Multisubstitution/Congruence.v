@@ -34,7 +34,7 @@ Proof.
 Qed.
 
 
-Lemma drop_drop : forall {X} x y (xs : list (string * X)) ,
+Lemma drop_comm : forall {X} x y (xs : list (string * X)) ,
   drop x (drop y xs) = drop y (drop x xs).
 Proof with auto.
   intros.
@@ -50,6 +50,18 @@ Proof with auto.
     congruence...
 Qed.
 
+Lemma drop_mdrop : forall X n ns (xs : list (string * X)),
+  drop n (mdrop ns xs) = mdrop ns (drop n xs).
+Proof. induction ns.
+  - auto.
+  - intros.
+    simpl.
+    rewrite IHns.
+    rewrite drop_comm.
+    reflexivity.
+Qed.
+
+      
 
 Lemma In__mdrop_drop : forall {X} ns ss x,
     List.In x ns ->
@@ -64,7 +76,7 @@ Proof.
     destruct H; subst.
     + rewrite drop_idempotent.
       congruence.
-    + rewrite drop_drop.
+    + rewrite drop_comm.
       auto.
 Qed.
 

@@ -276,7 +276,6 @@ Proof with auto.
       congruence.
 Qed.
 
-      
 
 Definition elem {A} (A_eqb : A -> A -> bool) (x : A) (xs : list A) :=
   match find (A_eqb x) xs with

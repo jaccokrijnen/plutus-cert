@@ -136,3 +136,12 @@ Proof.
       * assumption.
       * apply IHV.
 Qed.
+
+Lemma RG_mdrop : forall xs rho k c e1 e2,
+    RG rho k c e1 e2 ->
+      RG rho k (mdrop xs c) (mdrop xs e1) (mdrop xs e2).
+Proof with auto.
+  induction xs...
+  simpl.
+  auto using RG_drop.
+Qed.
