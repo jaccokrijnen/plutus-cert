@@ -7,8 +7,43 @@ Require Export PlutusCert.Language.PlutusIR.Semantics.Dynamic.Values.
 
 Require Import Arith.
 Local Open Scope nat_scope.
+Require Import Lists.List.
+Import ListNotations.
+Require Import String.
 
 (** * Big-step operational semantics *)
+
+Inductive constrs_enc : list constructor -> Type :=
+  | CE_nil : constrs_enc []
+  | CE_cons : forall {X T ar cs},
+      Term ->
+      constrs_enc cs ->
+      constrs_enc (Constructor (VarDecl X T) ar :: cs)
+  .
+
+Fixpoint constr_subst adt (enc : constrs_enc adt) : list (string * Term) :=
+  match enc with
+    | CE_nil => []
+    | @CE_cons X _ _ _ t enc' => [(X, t)]
+  end.
+
+Inductive adt_enc : DTDecl -> Type :=
+  | mk_adt_enc : forall {tvd vs m cs},
+    Ty ->
+    constrs_enc cs ->
+    Term ->
+    adt_enc (Datatype tvd vs m cs).
+
+Definition adt_subst {adt} (enc : adt_enc adt) : list (string * Term) :=
+  match enc with
+    | @mk_adt_enc _ _ m _ cs cse t_match => (m, t_match) :: constr_subst _ cse 
+  end.
+
+Definition adt_substA {adt} (enc : adt_enc adt) : (string * Ty) :=
+  match enc with
+    | @mk_adt_enc (TyVarDecl X K) _ _ _ T _ _ => (X, T)
+  end.
+
 
 (** ** Implementation of big-step semantics as an inductive datatype *)
 Reserved Notation "t '=[' j ']=>' v"(at level 40).
@@ -145,6 +180,10 @@ with eval_bindings_nonrec : Term -> Term -> nat -> Prop :=
   | E_Let_TypeBind : forall X K T bs t0 j1 v1,
       <{ [[T / X] ({Let NonRec bs t0}) }> =[j1]=> v1 ->
       Let NonRec ((TypeBind (TyVarDecl X K) T) :: bs) t0 =[j1 + 1]=>nr v1
+  | E_Let_DatatypeBind : forall X T dtd bs t0 j1 v1 (enc : adt_enc dtd),
+      (X, T) = adt_substA enc ->
+      <{ [[T / X] (/[ adt_subst enc /] {Let NonRec bs t0}) }> =[j1]=> v1 ->
+      Let NonRec (DatatypeBind dtd :: bs) t0 =[j1 + 1]=>nr v1
   (* Error propagation *)
   | E_Error_Let_TermBind : forall s x T t1 j1 T' bs t0,
       t1 =[j1]=> Error T' ->
@@ -208,3 +247,45 @@ Create HintDb hintdb__eval_with_error.
 
 Definition terminates t := exists v j, t =[ j ]=> v.
 Notation "t '⇓'" := (terminates t) (at level 101).
+
+
+Axiom mk_apps : Term -> list Term -> Term.
+
+Fixpoint with_args (P : list Term -> Prop) (τ : Ty) (ts : list Term) : Prop :=
+  match τ with
+    | Ty_Fun τ1 τ2 => forall t_arg, with_args P τ2 (t_arg :: ts)
+    | τ_r          => P ts
+  end.
+
+Fixpoint with_branches (P : list Term -> Prop) (cs : list constructor) (ts : list Term) : Prop :=
+  match cs with
+    | c :: cs => forall t_branch, with_branches P cs (t_branch :: ts)
+    | [] => P ts
+  end.
+
+    (*
+Definition valid_constrs_enc (c : constructor) (enc_c : Term) (enc_match : Term) :=
+  forall v,
+  with_args
+    (fun args => with_branches
+      (fun bs =>
+        (mk_apps
+          (Apply enc_match (mk_apps enc_c args))
+          bs) ⇓ v
+        <->
+        mk_apps 
+
+      )
+    ) enc_c
+
+  let fully_applied := match constructor with
+    | (Constructor (VarDecl v τ) _) => match τ with
+      | Ty_Fun σ τ => forall t_arg,  
+      | τ_r        => True
+      end
+  end.
+
+Definition valid_enc adt (enc : adt_enc adt) :=
+*)
+
+
