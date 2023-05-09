@@ -204,13 +204,13 @@ Fixpoint closed_env (env : env) :=
     values that are lated for $k$ steps at $\Gamma$, then $\gamma(e)$ and
     $\gamma(e')$ are related for $k$ steps as computations of type $\tau$.
 *)
-Definition LR_logically_approximate (Delta : list (string * Kind)) (Gamma : list (string * Ty)) (e e' : Term) (T : Ty) :=
-    (Delta ,, Gamma |-+ e : T) /\
-    (Delta ,, Gamma |-+ e' : T) /\
-    forall k rho env env',
-      RD Delta rho ->
-      RG rho k Gamma env env' ->
-      RC k T rho (msubst_term env (msubstA_term (msyn1 rho) e)) (msubst_term env' (msubstA_term (msyn2 rho) e')).
+Definition LR_logically_approximate (Δ : list (string * Kind)) (Γ : list (string * Ty)) (e e' : Term) (T : Ty) :=
+    (Δ ,, Γ |-+ e : T) /\
+    (Δ ,, Γ |-+ e' : T) /\
+    forall k ρ γ γ',
+      RD Δ ρ ->
+      RG ρ k Γ γ γ' ->
+      RC k T ρ (msubst_term γ (msubstA_term (msyn1 ρ) e)) (msubst_term γ' (msubstA_term (msyn2 ρ) e')).
 
 (** Logical relation: logical equivalence
 
