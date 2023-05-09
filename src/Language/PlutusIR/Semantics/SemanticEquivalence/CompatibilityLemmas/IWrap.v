@@ -31,60 +31,60 @@ Proof.
     - destruct a. eauto.
 Qed. 
 
-Lemma normalise_msubstT_commutes_1 : forall T Tn Tn' ck rho K,
-    RD ck rho ->
+Lemma normalise_msubstT_commutes_1 : forall T Tn Tn' ck ρ K,
+    RD ck ρ ->
     ck |-* T : K ->
     normalise T Tn ->
-    normalise (msubstT (msyn1 rho) Tn) Tn' ->
-    normalise (msubstT (msyn1 rho) T) Tn'.
+    normalise (msubstT (msyn1 ρ) Tn) Tn' ->
+    normalise (msubstT (msyn1 ρ) T) Tn'.
 Proof. 
 (* ADMIT: Commutativity should hold. *)
 Admitted.
 
-Lemma normalise_msubstT_commutes_2 : forall T Tn Tn' ck rho K,
-    RD ck rho ->
+Lemma normalise_msubstT_commutes_2 : forall T Tn Tn' ck ρ K,
+    RD ck ρ ->
     ck |-* T : K ->
     normalise T Tn ->
-    normalise (msubstT (msyn2 rho) Tn) Tn' ->
-    normalise (msubstT (msyn2 rho) T) Tn'.
+    normalise (msubstT (msyn2 ρ) Tn) Tn' ->
+    normalise (msubstT (msyn2 ρ) T) Tn'.
 Proof. 
 (* ADMIT: Commutativity should hold. *)
 Admitted.
 
-Lemma normalise_unwrapIFix_commutes_1 : forall ck rho Fn K Tn T0n Fn' Tn' T0n',
-    RD ck rho ->
+Lemma normalise_unwrapIFix_commutes_1 : forall ck ρ Fn K Tn T0n Fn' Tn' T0n',
+    RD ck ρ ->
     normalise (unwrapIFix Fn K Tn) T0n ->
-    normalise (msubstT (msyn1 rho) Fn) Fn' ->
-    normalise (msubstT (msyn1 rho) Tn) Tn' ->
-    normalise (msubstT (msyn1 rho) T0n) T0n' ->
+    normalise (msubstT (msyn1 ρ) Fn) Fn' ->
+    normalise (msubstT (msyn1 ρ) Tn) Tn' ->
+    normalise (msubstT (msyn1 ρ) T0n) T0n' ->
     normalise (unwrapIFix Fn' K Tn') T0n'.
 Proof.
 (* ADMIT: Commutativity should hold. Well-typedness of unwrapIFix term
    should follow from uniqueness property. *)
 Admitted.
 
-Lemma normalise_unwrapIFix_commutes_2 : forall ck rho Fn K Tn T0n Fn' Tn' T0n',
-    RD ck rho ->
+Lemma normalise_unwrapIFix_commutes_2 : forall ck ρ Fn K Tn T0n Fn' Tn' T0n',
+    RD ck ρ ->
     normalise (unwrapIFix Fn K Tn) T0n ->
-    normalise (msubstT (msyn2 rho) Fn) Fn' ->
-    normalise (msubstT (msyn2 rho) Tn) Tn' ->
-    normalise (msubstT (msyn2 rho) T0n) T0n' ->
+    normalise (msubstT (msyn2 ρ) Fn) Fn' ->
+    normalise (msubstT (msyn2 ρ) Tn) Tn' ->
+    normalise (msubstT (msyn2 ρ) T0n) T0n' ->
     normalise (unwrapIFix Fn' K Tn') T0n'.
 Proof.
 (* ADMIT: Commutativity should hold. Well-typedness of unwrapIFix term
    should follow from uniqueness property. *)
 Admitted.
 
-Lemma compatibility_IWrap : forall Delta Gamma e e' T K Tn F Fn T0n,
-    Delta |-* T : K ->
+Lemma compatibility_IWrap : forall Δ Γ e e' T K Tn F Fn T0n,
+    Δ |-* T : K ->
     normalise T Tn ->
-    Delta |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
+    Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
     normalise F Fn ->
     normalise (unwrapIFix Fn K Tn) T0n ->
-    LR_logically_approximate Delta Gamma e e' T0n ->
-    LR_logically_approximate Delta Gamma (IWrap F T e) (IWrap F T e') (Ty_IFix Fn Tn).
+    LR_logically_approximate Δ Γ e e' T0n ->
+    LR_logically_approximate Δ Γ (IWrap F T e) (IWrap F T e') (Ty_IFix Fn Tn).
 Proof with eauto_LR.
-  intros Delta Gamma e e' T K Tn F Fn T0n.
+  intros Δ Γ e e' T K Tn F Fn T0n.
   intros Hkind__T Hnorm__Tn Hkind__F Hnorm__F Hnorm__T0n IH_LR.
   unfold LR_logically_approximate.
 
@@ -92,7 +92,7 @@ Proof with eauto_LR.
 
   split... split...
 
-  intros k rho env env' H_RD H_RG.
+  intros k ρ γ γ' H_RD H_RG.
   subst.
 
   autorewrite with RC.
@@ -105,9 +105,9 @@ Proof with eauto_LR.
   - rename v0 into e_f. 
 
     assert (HRC : 
-      RC k T0n rho 
-        (msubst_term env (msubstA_term (msyn1 rho) e)) 
-        (msubst_term env' (msubstA_term (msyn2 rho) e'))
+      RC k T0n ρ 
+        (msubst_term γ (msubstA_term (msyn1 ρ) e)) 
+        (msubst_term γ' (msubstA_term (msyn2 ρ) e'))
     )... 
 
     apply RC_to_RV with (j := j) (e_f := e_f) in HRC as temp...
@@ -180,9 +180,9 @@ Proof with eauto_LR.
     eapply RV_monotone...
   - (* E_Error_Iwrap *)
     assert (HRC : 
-      RC k T0n rho 
-        (msubst_term env (msubstA_term (msyn1 rho) e)) 
-        (msubst_term env' (msubstA_term (msyn2 rho) e'))
+      RC k T0n ρ 
+        (msubst_term γ (msubstA_term (msyn1 ρ) e)) 
+        (msubst_term γ' (msubstA_term (msyn2 ρ) e'))
     )... 
 
     apply RC_to_RV with (j := j0) (e_f := Error T') in HRC as temp...

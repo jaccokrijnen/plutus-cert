@@ -17,35 +17,35 @@ Lemma msubstA_Unwrap : forall ss M ,
     msubstA_term ss (Unwrap M) = Unwrap (msubstA_term ss M).
 Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
-Lemma normalise_unwrapIFix_commutes'_1 : forall ck rho Fn K Tn T0n Fn' Tn' T0n',
-    RD ck rho ->
+Lemma normalise_unwrapIFix_commutes'_1 : forall ck ρ Fn K Tn T0n Fn' Tn' T0n',
+    RD ck ρ ->
     normalise (unwrapIFix Fn K Tn) T0n ->
-    normalise (msubstT (msyn1 rho) Fn) Fn' ->
-    normalise (msubstT (msyn1 rho) Tn) Tn' ->
+    normalise (msubstT (msyn1 ρ) Fn) Fn' ->
+    normalise (msubstT (msyn1 ρ) Tn) Tn' ->
     normalise (unwrapIFix Fn' K Tn') T0n' ->
-    normalise (msubstT (msyn1 rho) T0n) T0n'.
+    normalise (msubstT (msyn1 ρ) T0n) T0n'.
 Proof.
 (* ADMIT: Commutativity should hold. *)
 Admitted.
 
-Lemma normalise_unwrapIFix_commutes'_2 : forall ck rho Fn K Tn T0n Fn' Tn' T0n',
-    RD ck rho ->
+Lemma normalise_unwrapIFix_commutes'_2 : forall ck ρ Fn K Tn T0n Fn' Tn' T0n',
+    RD ck ρ ->
     normalise (unwrapIFix Fn K Tn) T0n ->
-    normalise (msubstT (msyn2 rho) Fn) Fn' ->
-    normalise (msubstT (msyn2 rho) Tn) Tn' ->
+    normalise (msubstT (msyn2 ρ) Fn) Fn' ->
+    normalise (msubstT (msyn2 ρ) Tn) Tn' ->
     normalise (unwrapIFix Fn' K Tn') T0n' ->
-    normalise (msubstT (msyn2 rho) T0n) T0n'.
+    normalise (msubstT (msyn2 ρ) T0n) T0n'.
 Proof.
 (* ADMIT: Commutativity should hold. *)
 Admitted.
 
-Lemma compatibility_Unwrap : forall Delta Gamma e e' Fn Tn K T0n,
-    Delta |-* Tn : K ->
+Lemma compatibility_Unwrap : forall Δ Γ e e' Fn Tn K T0n,
+    Δ |-* Tn : K ->
     normalise (unwrapIFix Fn K Tn) T0n ->
-    LR_logically_approximate Delta Gamma e e' (Ty_IFix Fn Tn)->
-    LR_logically_approximate Delta Gamma (Unwrap e) (Unwrap e') T0n.
+    LR_logically_approximate Δ Γ e e' (Ty_IFix Fn Tn)->
+    LR_logically_approximate Δ Γ (Unwrap e) (Unwrap e') T0n.
 Proof with eauto_LR.
-  intros Delta Gamma e e' Fn Tn K T0n.
+  intros Δ Γ e e' Fn Tn K T0n.
   intros Hkind__Tn Hnorm__T0n IH_LR.
   unfold LR_logically_approximate.
 
@@ -53,7 +53,7 @@ Proof with eauto_LR.
 
   split... split...
 
-  intros k rho env env' HRD HRG.
+  intros k ρ γ γ' HRD HRG.
   subst.
 
   autorewrite with RC.
@@ -68,9 +68,9 @@ Proof with eauto_LR.
     rename H0 into Hev'__e_f.
 
     assert (HRC : 
-      RC k (Ty_IFix Fn Tn) rho
-        (msubst_term env (msubstA_term (msyn1 rho) e))
-        (msubst_term env' (msubstA_term (msyn2 rho) e'))
+      RC k (Ty_IFix Fn Tn) ρ
+        (msubst_term γ (msubstA_term (msyn1 ρ) e))
+        (msubst_term γ' (msubstA_term (msyn2 ρ) e'))
     )...
 
     apply RC_to_RV with (j := j_1) (e_f := IWrap F T e_f) in HRC as temp...
@@ -127,9 +127,9 @@ Proof with eauto_LR.
   - rename j0 into j_0.
     
     assert (HRC :
-      RC k (Ty_IFix Fn Tn) rho
-        (msubst_term env (msubstA_term (msyn1 rho) e))
-        (msubst_term env' (msubstA_term (msyn2 rho) e'))
+      RC k (Ty_IFix Fn Tn) ρ
+        (msubst_term γ (msubstA_term (msyn1 ρ) e))
+        (msubst_term γ' (msubstA_term (msyn2 ρ) e'))
     )...
 
     apply RC_to_RV with (j := j_0) (e_f := Error T) in HRC as temp...

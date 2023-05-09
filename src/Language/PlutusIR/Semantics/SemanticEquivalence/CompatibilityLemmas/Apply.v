@@ -36,12 +36,12 @@ Proof.
   - destruct a. eauto.
 Qed.
 
-Lemma compatibility_Apply : forall Delta Gamma e1 e2 e1' e2' T1n T2n,
-    LR_logically_approximate Delta Gamma e1 e1' (Ty_Fun T1n T2n) ->
-    LR_logically_approximate Delta Gamma e2 e2' T1n ->
-    LR_logically_approximate Delta Gamma (Apply e1 e2) (Apply e1' e2') T2n.
+Lemma compatibility_Apply : forall Δ Γ e1 e2 e1' e2' T1n T2n,
+    LR_logically_approximate Δ Γ e1 e1' (Ty_Fun T1n T2n) ->
+    LR_logically_approximate Δ Γ e2 e2' T1n ->
+    LR_logically_approximate Δ Γ (Apply e1 e2) (Apply e1' e2') T2n.
 Proof with eauto_LR.
-  intros Delta Gamma e1 e2 e1' e2' T1 T2 IH_LR1 IH_LR2.
+  intros Δ Γ e1 e2 e1' e2' T1 T2 IH_LR1 IH_LR2.
   unfold LR_logically_approximate.
 
   destruct IH_LR1 as [Htyp__e1 [Htyp__e1' IH1]].
@@ -50,7 +50,7 @@ Proof with eauto_LR.
   split...
   split...
 
-  intros k rho env env' H_RD H_RG.
+  intros k ρ γ γ' H_RD H_RG.
   subst.
 
   autorewrite with RC.
@@ -68,9 +68,9 @@ Proof with eauto_LR.
     rename j0 into j_3.
 
     assert (HRC1 : 
-      RC k (Ty_Fun T1 T2) rho 
-        (msubst_term env (msubstA_term (msyn1 rho) e1)) 
-        (msubst_term env' (msubstA_term (msyn2 rho) e1'))
+      RC k (Ty_Fun T1 T2) ρ 
+        (msubst_term γ (msubstA_term (msyn1 ρ) e1)) 
+        (msubst_term γ' (msubstA_term (msyn2 ρ) e1'))
     )...
 
     apply RC_to_RV with (j := j_1) (e_f := LamAbs x T t0) in HRC1 as temp...
@@ -78,9 +78,9 @@ Proof with eauto_LR.
 
     assert (k - j_1 <= k)...
     assert (HRC2 : 
-      RC (k - j_1) T1 rho 
-        (msubst_term env (msubstA_term (msyn1 rho) e2)) 
-        (msubst_term env' (msubstA_term (msyn2 rho) e2'))
+      RC (k - j_1) T1 ρ 
+        (msubst_term γ (msubstA_term (msyn1 ρ) e2)) 
+        (msubst_term γ' (msubstA_term (msyn2 ρ) e2'))
     ) by eauto using RG_monotone.
     clear H.
 
@@ -94,7 +94,7 @@ Proof with eauto_LR.
       destruct temp as [x0 [e_body [e'_body [T1a [T1'a [Heq [Heq' Hfe]]]]]]].
       inversion Heq. subst. clear Heq.
 
-      apply RV_monotone with (i := k - j_1 - j_2 - 1) (ck := Delta)  in HRV2...
+      apply RV_monotone with (i := k - j_1 - j_2 - 1) (ck := Δ)  in HRV2...
 
       apply Hfe with (i := k - j_1 - j_2 - 1) in HRV2 as HRC0...
 
@@ -126,9 +126,9 @@ Proof with eauto_LR.
     rename j1 into j_1.
 
     assert (HRC1 : 
-      RC k (Ty_Fun T1 T2) rho 
-        (msubst_term env (msubstA_term (msyn1 rho) e1)) 
-        (msubst_term env' (msubstA_term (msyn2 rho) e1'))
+      RC k (Ty_Fun T1 T2) ρ 
+        (msubst_term γ (msubstA_term (msyn1 ρ) e1)) 
+        (msubst_term γ' (msubstA_term (msyn2 ρ) e1'))
     )...
 
     apply RC_to_RV with (j := j_1) (e_f := Error T) in HRC1 as temp...
@@ -170,9 +170,9 @@ Proof with eauto_LR.
     rename j2 into j_2.
 
     assert (HRC2 : 
-      RC k T1 rho 
-        (msubst_term env (msubstA_term (msyn1 rho) e2)) 
-        (msubst_term env' (msubstA_term (msyn2 rho) e2'))
+      RC k T1 ρ 
+        (msubst_term γ (msubstA_term (msyn1 ρ) e2)) 
+        (msubst_term γ' (msubstA_term (msyn2 ρ) e2'))
     ) by eauto using RG_monotone.
 
     apply RC_to_RV  with (j := j_2) (e_f := Error T) in HRC2 as temp...

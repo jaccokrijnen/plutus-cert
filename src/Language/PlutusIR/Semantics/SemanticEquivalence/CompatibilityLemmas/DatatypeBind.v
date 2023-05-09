@@ -49,22 +49,22 @@ Proof.
 Qed.
 
 
-Lemma compatibility_DatatypeBind : forall Delta Gamma X YKs cs matchFunc Delta' b b' bs bs' t t' Tn,
-    Delta' = rev (map fromDecl YKs) ++ Delta  ->
-    (forall c, In c cs -> Delta' |-ok_c c : (constrLastTy (Datatype X YKs matchFunc cs))) ->
-    forall Delta_ih Gamma_ih bsGn,
+Lemma compatibility_DatatypeBind : forall Δ Γ X YKs cs matchFunc Δ' b b' bs bs' t t' Tn,
+    Δ' = rev (map fromDecl YKs) ++ Δ  ->
+    (forall c, In c cs -> Δ' |-ok_c c : (constrLastTy (Datatype X YKs matchFunc cs))) ->
+    forall Δ_ih Γ_ih bsGn,
       b = DatatypeBind (Datatype X YKs matchFunc cs) ->
       b' = DatatypeBind (Datatype X YKs matchFunc cs) ->
-      Delta_ih = binds_Delta b ++ Delta ->
+      Δ_ih = binds_Delta b ++ Δ ->
       map_normalise (binds_Gamma b) bsGn ->
-      Gamma_ih = bsGn ++ Gamma ->
-      LR_logically_approximate Delta_ih Gamma_ih (Let NonRec bs t) (Let NonRec bs' t') Tn ->
-      LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t') Tn.
+      Γ_ih = bsGn ++ Γ ->
+      LR_logically_approximate Δ_ih Γ_ih (Let NonRec bs t) (Let NonRec bs' t') Tn ->
+      LR_logically_approximate Δ Γ (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t') Tn.
 Proof with eauto_LR.
-  intros Delta Gamma X YKs cs matchFunc Delta' b b' bs bs' t t' Tn.
-  intros Heq__Delta' Hok__cs.
-  intros Delta_ih Gamma_ih bsGn.
-  intros Heq__b Heq__b' Heq__Delta_ih Hmapnorm__bsGn Heq__Gamma_ih IHLR__ih.
+  intros Δ Γ X YKs cs matchFunc Δ' b b' bs bs' t t' Tn.
+  intros Heq__Δ' Hok__cs.
+  intros Δ_ih Γ_ih bsGn.
+  intros Heq__b Heq__b' Heq__Δ_ih Hmapnorm__bsGn Heq__Γ_ih IHLR__ih.
 
   subst.
 
@@ -104,7 +104,7 @@ Proof with eauto_LR.
       admit.
   }
 
-  intros k rho env env' HRD HRG.
+  intros k ρ γ γ' HRD HRG.
   subst.
 
   rewrite msubstA_LetNonRec.

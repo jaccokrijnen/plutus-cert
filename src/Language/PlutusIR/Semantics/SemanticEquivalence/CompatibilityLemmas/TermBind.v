@@ -105,7 +105,7 @@ Proof with eauto_LR.
     - rewrite app_assoc in H7. eapply H7.
   }
 
-  intros k rho env env' HRD HRG.
+  intros k ρ γ γ' HRD HRG.
 
   rewrite msubstA_LetNonRec.
   rewrite msubstA_BindingsNonRec_cons.
@@ -130,9 +130,9 @@ Proof with eauto_LR.
     rename H9 into Hev__e_f.
 
     assert (HRC__tb :
-    RC k Tbn rho
-      (msubst_term env (msubstA_term (msyn1 rho) tb))
-      (msubst_term env' (msubstA_term (msyn2 rho) tb'))  
+    RC k Tbn ρ
+      (msubst_term γ (msubstA_term (msyn1 ρ) tb))
+      (msubst_term γ' (msubstA_term (msyn2 ρ) tb'))  
     )...
     clear IH__tb.
 
@@ -142,9 +142,9 @@ Proof with eauto_LR.
     clear HRC__tb.
   
     assert (HRC__ih :
-      RC (k - jb - 1) Tn rho
-        <{ /[ (x, vb) :: env /] ( /[[ msyn1 rho /] {Let NonRec bs t} ) }>
-        <{ /[ (x, vb') :: env' /] ( /[[ msyn2 rho /] {Let NonRec bs' t'} ) }>
+      RC (k - jb - 1) Tn ρ
+        <{ /[ (x, vb) :: γ /] ( /[[ msyn1 ρ /] {Let NonRec bs t} ) }>
+        <{ /[ (x, vb') :: γ' /] ( /[[ msyn2 ρ /] {Let NonRec bs' t'} ) }>
     ). {
       apply IH__ih.
       - inversion Hmapnorm__bsGn. subst.
@@ -153,8 +153,8 @@ Proof with eauto_LR.
         eapply normalisation__deterministic in Hnorm__Tbn...
       - assert (closed vb). eapply RV_closed_1...
         assert (closed vb'). eapply RV_closed_2...
-        replace vb with (msubstA_term (msyn1 rho) vb) by (eapply msubstA_closed; eauto).
-        replace vb' with (msubstA_term (msyn2 rho) vb') by (eapply msubstA_closed; eauto).
+        replace vb with (msubstA_term (msyn1 ρ) vb) by (eapply msubstA_closed; eauto).
+        replace vb' with (msubstA_term (msyn2 ρ) vb') by (eapply msubstA_closed; eauto).
         simpl in Hmapnorm__bsGn.
         inversion Hmapnorm__bsGn. subst.
         replace Tn0 with Tbn...
@@ -204,10 +204,10 @@ Proof with eauto_LR.
         - assert (closed vb). eapply RV_closed_1...
           assert (closed vb'). eapply RV_closed_2...
           apply RG_env_closed in HRG as Hclss...
-          destruct Hclss as [Hcls__env Hcls__env'].
+          destruct Hclss as [Hcls__γ Hcls__γ'].
           rewrite <- subst_bnr__msubst_bnr...
-          replace (concat (map bvb <{ /[[ msyn2 rho /][bnr] bs' }>)) with
-            (bvbs  <{ /[[ msyn2 rho /][bnr] bs' }>)...
+          replace (concat (map bvb <{ /[[ msyn2 ρ /][bnr] bs' }>)) with
+            (bvbs  <{ /[[ msyn2 ρ /][bnr] bs' }>)...
           rewrite <- msubstA_bnr__bvbs.
 
           apply existsb_exists in Hexb.
@@ -219,10 +219,10 @@ Proof with eauto_LR.
         - assert (closed vb). eapply RV_closed_1...
           assert (closed vb'). eapply RV_closed_2...
           apply RG_env_closed in HRG as Hclss...
-          destruct Hclss as [Hcls__env Hcls__env'].
+          destruct Hclss as [Hcls__γ Hcls__γ'].
           rewrite <- subst_bnr__msubst_bnr'...
-          replace (concat (map bvb <{ /[[ msyn2 rho /][bnr] bs' }>)) with
-            (bvbs  <{ /[[ msyn2 rho /][bnr] bs' }>)...
+          replace (concat (map bvb <{ /[[ msyn2 ρ /][bnr] bs' }>)) with
+            (bvbs  <{ /[[ msyn2 ρ /][bnr] bs' }>)...
           rewrite <- msubstA_bnr__bvbs.
 
           apply existsb_nexists in Hexb.
@@ -266,10 +266,10 @@ Proof with eauto_LR.
         assert (closed vb). eapply RV_closed_1...
         assert (closed vb'). eapply RV_closed_2...
         apply RG_env_closed in HRG as Hclss...
-        destruct Hclss as [Hcls__env Hcls__env'].
+        destruct Hclss as [Hcls__γ Hcls__γ'].
         rewrite <- subst_bnr__msubst_bnr in Hev__e_f...
-        replace (concat (map bvb <{ /[[ msyn1 rho /][bnr] bs }>)) with
-          (bvbs <{ /[[ msyn1 rho /][bnr] bs }>) in Hev__e_f...
+        replace (concat (map bvb <{ /[[ msyn1 ρ /][bnr] bs }>)) with
+          (bvbs <{ /[[ msyn1 ρ /][bnr] bs }>) in Hev__e_f...
         
         unfold btvbs in Hev__e_f.
         simpl in Hev__e_f.
@@ -286,10 +286,10 @@ Proof with eauto_LR.
         assert (closed vb). eapply RV_closed_1...
         assert (closed vb'). eapply RV_closed_2...
         apply RG_env_closed in HRG as Hclss...
-        destruct Hclss as [Hcls__env Hcls__env'].
+        destruct Hclss as [Hcls__γ Hcls__γ'].
         rewrite <- subst_bnr__msubst_bnr in Hev__e_f...
-        replace (concat (map bvb <{ /[[ msyn1 rho /][bnr] bs }>)) with
-          (bvbs <{ /[[ msyn1 rho /][bnr] bs }>) in Hev__e_f...
+        replace (concat (map bvb <{ /[[ msyn1 ρ /][bnr] bs }>)) with
+          (bvbs <{ /[[ msyn1 ρ /][bnr] bs }>) in Hev__e_f...
         
         unfold btvbs in Hev__e_f.
         simpl in Hev__e_f.
@@ -315,9 +315,9 @@ Proof with eauto_LR.
     rename H7 into Hev__Err.
 
     assert (HRC__tb :
-      RC k Tbn rho
-        (msubst_term env (msubstA_term (msyn1 rho) tb))
-        (msubst_term env' (msubstA_term (msyn2 rho) tb'))  
+      RC k Tbn ρ
+        (msubst_term γ (msubstA_term (msyn1 ρ) tb))
+        (msubst_term γ' (msubstA_term (msyn2 ρ) tb'))  
       )...
     clear IH__tb.
 

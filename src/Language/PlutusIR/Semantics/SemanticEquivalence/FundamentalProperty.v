@@ -12,30 +12,30 @@ Import ListNotations.
 Fundamental property (reflexivity) of LR_logically_approximate
 *)
 
-Definition P_has_type Delta Gamma e T := 
-  LR_logically_approximate Delta Gamma e e T.
+Definition P_has_type Δ Γ e T := 
+  LR_logically_approximate Δ Γ e e T.
 
-Definition P_constructor_well_formed Delta c Tr := Delta |-ok_c c : Tr.
+Definition P_constructor_well_formed Δ c Tr := Δ |-ok_c c : Tr.
 
-Definition P_bindings_well_formed_nonrec Delta Gamma (bs : list Binding) :=
-  forall Delta_t Gamma_t bsGn t t' Tn,
-    Delta_t = flatten (List.map binds_Delta bs) ++ Delta ->
+Definition P_bindings_well_formed_nonrec Δ Γ (bs : list Binding) :=
+  forall Δ_t Γ_t bsGn t t' Tn,
+    Δ_t = flatten (List.map binds_Delta bs) ++ Δ ->
     map_normalise (flatten (List.map binds_Gamma bs)) bsGn ->
-    Gamma_t = bsGn ++ Gamma ->
-    Delta |-* Tn : Kind_Base ->
-    LR_logically_approximate Delta_t Gamma_t t t' Tn ->
-    LR_logically_approximate Delta Gamma (Let NonRec bs t) (Let NonRec bs t') Tn.
+    Γ_t = bsGn ++ Γ ->
+    Δ |-* Tn : Kind_Base ->
+    LR_logically_approximate Δ_t Γ_t t t' Tn ->
+    LR_logically_approximate Δ Γ (Let NonRec bs t) (Let NonRec bs t') Tn.
 
-Definition P_bindings_well_formed_rec Delta Gamma bs1 := Delta ,, Gamma |-oks_r bs1.
+Definition P_bindings_well_formed_rec Δ Γ bs1 := Δ ,, Γ |-oks_r bs1.
 
-Definition P_binding_well_formed Delta Gamma b := 
-  forall Delta_t Gamma_t bsGn t t' Tn bs bs',
-    Delta_t = binds_Delta b ++ Delta ->
+Definition P_binding_well_formed Δ Γ b := 
+  forall Δ_t Γ_t bsGn t t' Tn bs bs',
+    Δ_t = binds_Delta b ++ Δ ->
     map_normalise (binds_Gamma b) bsGn ->
-    Gamma_t = bsGn ++ Gamma ->
-    Delta |-* Tn : Kind_Base ->
-    LR_logically_approximate Delta_t Gamma_t (Let NonRec bs t) (Let NonRec bs' t') Tn ->
-    LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (Let NonRec (b :: bs') t') Tn.
+    Γ_t = bsGn ++ Γ ->
+    Δ |-* Tn : Kind_Base ->
+    LR_logically_approximate Δ_t Γ_t (Let NonRec bs t) (Let NonRec bs' t') Tn ->
+    LR_logically_approximate Δ Γ (Let NonRec (b :: bs) t) (Let NonRec (b :: bs') t') Tn.
 
 #[export] Hint Unfold 
   P_has_type
@@ -47,10 +47,10 @@ Definition P_binding_well_formed Delta Gamma b :=
   Local Open Scope list_scope.
   Require Import Coq.Lists.List.
 
-Lemma LR_reflexivity : forall Delta Gamma e T,
-    Delta ,, Gamma |-+ e : T ->
-    LR_logically_approximate Delta Gamma e e T.
-    (* P_has_type Delta Gamma e T. *)
+Lemma LR_reflexivity : forall Δ Γ e T,
+    Δ ,, Γ |-+ e : T ->
+    LR_logically_approximate Δ Γ e e T.
+    (* P_has_type Δ Γ e T. *)
 Proof with eauto.
   apply has_type__ind with 
     (P := P_has_type)

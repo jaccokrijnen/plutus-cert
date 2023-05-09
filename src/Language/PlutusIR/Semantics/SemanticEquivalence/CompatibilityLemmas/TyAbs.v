@@ -25,18 +25,18 @@ Lemma msubstT_TyForall : forall ss bX K T,
 Proof. induction ss; intros. - reflexivity. - intros. destruct a. simpl. destruct (s =? bX)%string; eauto. Qed.
 
 
-Lemma compatibility_TyAbs: forall Delta Gamma bX K T e e',
-    LR_logically_approximate ((bX, K) :: Delta) Gamma e e' T ->
-    LR_logically_approximate Delta Gamma (TyAbs bX K e) (TyAbs bX K e') (Ty_Forall bX K T).
+Lemma compatibility_TyAbs: forall Δ Γ bX K T e e',
+    LR_logically_approximate ((bX, K) :: Δ) Γ e e' T ->
+    LR_logically_approximate Δ Γ (TyAbs bX K e) (TyAbs bX K e') (Ty_Forall bX K T).
 Proof with eauto_LR.
-  intros Delta Gamma bX K T e e' IH_LR.
+  intros Δ Γ bX K T e e' IH_LR.
   unfold LR_logically_approximate.
 
   destruct IH_LR as [Htyp__e [Htyp__e' IH__e]].
 
   split... split... 
 
-  intros k rho env env' HRD HRG.
+  intros k ρ γ γ' HRD HRG.
 
   autorewrite with RC.
 

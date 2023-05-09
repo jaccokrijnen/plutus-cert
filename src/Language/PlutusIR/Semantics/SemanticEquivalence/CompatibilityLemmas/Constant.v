@@ -32,16 +32,16 @@ Proof.
   - destruct a. eauto.
 Qed.
 
-Lemma compatibility_Constant : forall Delta Gamma u a,
-    LR_logically_approximate Delta Gamma (Constant (Some (ValueOf u a))) (Constant (Some (ValueOf u a))) (Ty_Builtin (Some (TypeIn u))).
+Lemma compatibility_Constant : forall Δ Γ u a,
+    LR_logically_approximate Δ Γ (Constant (Some (ValueOf u a))) (Constant (Some (ValueOf u a))) (Ty_Builtin (Some (TypeIn u))).
 Proof with eauto_LR.
-  intros Delta Gamma u a.
+  intros Δ Γ u a.
   unfold LR_logically_approximate.
 
   split...
   split...
 
-  intros k rho env env' H_RD H_RG.
+  intros k ρ γ γ' H_RD H_RG.
   subst.
 
   autorewrite with RC.

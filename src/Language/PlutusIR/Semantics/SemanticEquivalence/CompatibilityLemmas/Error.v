@@ -26,18 +26,18 @@ Proof.
   - destruct a. eauto.
 Qed.
 
-Lemma compatibility_Error: forall Delta Gamma S T Tn,
-    Delta |-* T : Kind_Base ->
+Lemma compatibility_Error: forall Δ Γ S T Tn,
+    Δ |-* T : Kind_Base ->
     normalise T Tn ->
-    LR_logically_approximate Delta Gamma (Error S) (Error S) Tn.
+    LR_logically_approximate Δ Γ (Error S) (Error S) Tn.
 Proof with eauto_LR.
-  intros Delta Gamma S T Tn Hnorm Hkind__T.
+  intros Δ Γ S T Tn Hnorm Hkind__T.
   unfold LR_logically_approximate.
 
   split...
   split...
   
-  intros k rho env env' H_RD H_RG.
+  intros k ρ γ γ' H_RD H_RG.
   subst.
   
   autorewrite with RC.
@@ -48,7 +48,7 @@ Proof with eauto_LR.
   intros j Hlt__j e_f Hev__e_f.
   inversion Hev__e_f. subst.
 
-  exists (Error (msubstT (msyn2 rho) S)).
+  exists (Error (msubstT (msyn2 ρ) S)).
   exists 0.
   
   split. eapply E_Error...

@@ -11,14 +11,14 @@ Require Import PlutusCert.Util.Map.Mupdate.
 Require Import Arith.
 Require Import Coq.Lists.List.
 
-Lemma compatibility_LetNonRec_Nil : forall Delta Gamma t t' Tn,
+Lemma compatibility_LetNonRec_Nil : forall Δ Γ t t' Tn,
     forall bsGn,
       map_normalise nil bsGn ->
-      Delta |-* Tn : Kind_Base ->
-      LR_logically_approximate Delta (bsGn ++ Gamma) t t' Tn ->
-      LR_logically_approximate Delta Gamma (Let NonRec nil t) (Let NonRec nil t') Tn.
+      Δ |-* Tn : Kind_Base ->
+      LR_logically_approximate Δ (bsGn ++ Γ) t t' Tn ->
+      LR_logically_approximate Δ Γ (Let NonRec nil t) (Let NonRec nil t') Tn.
 Proof with eauto_LR.
-  intros Delta Gamma t t' Tn bsGn Hmapnorm__bsGn Hkind__T IHLR__t.
+  intros Δ Γ t t' Tn bsGn Hmapnorm__bsGn Hkind__T IHLR__t.
   unfold LR_logically_approximate.
 
   inversion Hmapnorm__bsGn. subst.
@@ -29,7 +29,7 @@ Proof with eauto_LR.
   split... 
   split...
 
-  intros k rho env env' H_RD H_RG.
+  intros k ρ γ γ' H_RD H_RG.
   subst.
 
   autorewrite with RC.
@@ -46,9 +46,9 @@ Proof with eauto_LR.
   rename H0 into Hev''__e_f.
   
 
-  assert (HRC__t : RC k Tn rho 
-    (msubst_term env (msubstA_term (msyn1 rho) t))
-    (msubst_term env' (msubstA_term (msyn2 rho) t'))
+  assert (HRC__t : RC k Tn ρ 
+    (msubst_term γ (msubstA_term (msyn1 ρ) t))
+    (msubst_term γ' (msubstA_term (msyn2 ρ) t'))
   )...
 
   apply RC_to_RV with (j := j_1) (e_f := e_f) in HRC__t as temp...

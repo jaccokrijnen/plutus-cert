@@ -34,18 +34,18 @@ Proof.
     apply IHss.
 Qed.
 
-Lemma compatibility_Builtin: forall Delta Gamma f T Tn,
+Lemma compatibility_Builtin: forall Δ Γ f T Tn,
     T = lookupBuiltinTy f ->
     normalise T Tn ->
-    LR_logically_approximate Delta Gamma (Builtin f) (Builtin f) Tn.
+    LR_logically_approximate Δ Γ (Builtin f) (Builtin f) Tn.
 Proof with eauto_LR.
-  intros Delta Gamma f Hlu Hnorm__Tn.
+  intros Δ Γ f Hlu Hnorm__Tn.
   unfold LR_logically_approximate.
 
   split...
   split...
 
-  intros k rho env env' H_RD H_RG.
+  intros k ρ γ γ' H_RD H_RG.
   subst.
 
   rewrite msubstA_Builtin. rewrite msubstA_Builtin.
