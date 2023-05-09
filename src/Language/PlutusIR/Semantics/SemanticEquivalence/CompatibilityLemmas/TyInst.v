@@ -25,7 +25,7 @@ Lemma per_type_substitution : forall ck ρ T2 Chi X e e' T0n T1n T2n K k,
     RV k T1n ((X, (Chi, msubstT (msyn1 ρ) T2, msubstT (msyn2 ρ) T2)) :: ρ)%list e e' ->
     normalise (substituteTCA X T2n T1n) T0n ->
     RV k T0n ρ e e'.
-Proof. 
+Proof.
 (* ADMIT: Proof should follow from Lemma C.12 by Ahmed. *)
 Admitted.
 
@@ -44,7 +44,7 @@ Proof with eauto_LR.
 
   destruct IH_LR as [Htyp__e [Htyp__e' IH__e]].
 
-  split... split... 
+  split... split...
 
   intros k ρ γ γ' HRD HRG.
   subst.
@@ -88,7 +88,7 @@ Proof with eauto_LR.
           T1n
           ((X, (Chi, msubstT (msyn1 ρ) T2, msubstT (msyn2 ρ) T2)) :: ρ)%list
           <{ [[{msubstT (msyn1 ρ) T2} / X] e_body }>
-          <{ [[{msubstT (msyn2 ρ) T2} / X] e'_body }>  
+          <{ [[{msubstT (msyn2 ρ) T2} / X] e'_body }>
       ). eapply r...
 
       eapply RC_to_RV with (j := j_0) (e_f := e_f) in HRC2 as temp...
@@ -101,12 +101,12 @@ Proof with eauto_LR.
       split. {
         (* ADMIT: I had no time to finish this. Should follow from the uniqueness property
            and commutativity of substitution and normalisation. *)
-        admit. 
+        admit.
       }
       split. {
         (* ADMIT: I had no time to finish this. Should follow from the uniqueness property
            and commutativity of substitution and normalisation. *)
-        admit. 
+        admit.
       }
 
       eapply RV_condition...

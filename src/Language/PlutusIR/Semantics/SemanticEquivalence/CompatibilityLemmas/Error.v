@@ -12,7 +12,7 @@ Require Import Arith.
 
 Lemma msubst_Error : forall ss T,
     msubst_term ss (Error T) = Error T.
-Proof. 
+Proof.
   induction ss; intros.
   - reflexivity.
   - destruct a. eauto.
@@ -36,21 +36,21 @@ Proof with eauto_LR.
 
   split...
   split...
-  
+
   intros k ρ γ γ' H_RD H_RG.
   subst.
-  
+
   autorewrite with RC.
 
   rewrite msubstA_Error. rewrite msubstA_Error.
   rewrite msubst_Error. rewrite msubst_Error.
-  
+
   intros j Hlt__j e_f Hev__e_f.
   inversion Hev__e_f. subst.
 
   exists (Error (msubstT (msyn2 ρ) S)).
   exists 0.
-  
+
   split. eapply E_Error...
 
   split. {
@@ -60,7 +60,7 @@ Proof with eauto_LR.
     destruct H1 as [Tn0 H1].
     exists Tn0.
     split...
-  } 
+  }
   split. {
     eapply preservation in Hnorm as H...
     eapply closing_preserves_kinding_2 in H as H0...

@@ -10,7 +10,7 @@ Require Import Arith.
 Lemma msubst_Constant : forall ss sv,
     msubst_term ss (Constant sv) = Constant sv.
 Proof.
-  induction ss; intros. 
+  induction ss; intros.
   - reflexivity.
   - destruct a.
     eauto.
@@ -19,7 +19,7 @@ Qed.
 Lemma msubstA_Constant : forall ss sv ,
     msubstA_term ss (Constant sv) = Constant sv.
 Proof.
-  induction ss; intros. 
+  induction ss; intros.
   - reflexivity.
   - destruct a. eauto.
 Qed.
@@ -49,7 +49,7 @@ Proof with eauto_LR.
   rewrite msubstA_Constant. rewrite msubstA_Constant.
   rewrite msubst_Constant. rewrite msubst_Constant.
   rewrite msubstT_TyBuiltin. rewrite msubstT_TyBuiltin.
-  
+
   intros j Hlt__j e_f Hev__e_f.
   inversion Hev__e_f. subst.
 

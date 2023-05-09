@@ -12,7 +12,7 @@ Import ListNotations.
 Fundamental property (reflexivity) of LR_logically_approximate
 *)
 
-Definition P_has_type Δ Γ e T := 
+Definition P_has_type Δ Γ e T :=
   LR_logically_approximate Δ Γ e e T.
 
 Definition P_constructor_well_formed Δ c Tr := Δ |-ok_c c : Tr.
@@ -28,7 +28,7 @@ Definition P_bindings_well_formed_nonrec Δ Γ (bs : list Binding) :=
 
 Definition P_bindings_well_formed_rec Δ Γ bs1 := Δ ,, Γ |-oks_r bs1.
 
-Definition P_binding_well_formed Δ Γ b := 
+Definition P_binding_well_formed Δ Γ b :=
   forall Δ_t Γ_t bsGn t t' Tn bs bs',
     Δ_t = binds_Delta b ++ Δ ->
     map_normalise (binds_Gamma b) bsGn ->
@@ -37,7 +37,7 @@ Definition P_binding_well_formed Δ Γ b :=
     LR_logically_approximate Δ_t Γ_t (Let NonRec bs t) (Let NonRec bs' t') Tn ->
     LR_logically_approximate Δ Γ (Let NonRec (b :: bs) t) (Let NonRec (b :: bs') t') Tn.
 
-#[export] Hint Unfold 
+#[export] Hint Unfold
   P_has_type
   P_constructor_well_formed
   P_bindings_well_formed_nonrec
@@ -52,7 +52,7 @@ Lemma LR_reflexivity : forall Δ Γ e T,
     LR_logically_approximate Δ Γ e e T.
     (* P_has_type Δ Γ e T. *)
 Proof with eauto.
-  apply has_type__ind with 
+  apply has_type__ind with
     (P := P_has_type)
     (P0 := P_constructor_well_formed)
     (P1 := P_bindings_well_formed_nonrec)

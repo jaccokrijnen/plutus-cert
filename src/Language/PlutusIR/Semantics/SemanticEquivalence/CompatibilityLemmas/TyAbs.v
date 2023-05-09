@@ -34,7 +34,7 @@ Proof with eauto_LR.
 
   destruct IH_LR as [Htyp__e [Htyp__e' IH__e]].
 
-  split... split... 
+  split... split...
 
   intros k ρ γ γ' HRD HRG.
 
@@ -46,7 +46,7 @@ Proof with eauto_LR.
 
   intros j Hlt__j e_f Hev__e_f.
   inversion Hev__e_f. subst.
-  
+
   eexists. eexists.
 
   split. {
@@ -93,7 +93,7 @@ Proof with eauto_LR.
   left. split. intros Hcon. inversion Hcon. split. intros Hcon. inversion Hcon.
 
   eexists. eexists.
-  
+
   split... split...
 
   intros.
@@ -101,7 +101,7 @@ Proof with eauto_LR.
   rewrite substA_msubst by eauto using Ty.kindable_empty__closed.
   rewrite <- substA_msubstA by eauto using Ty.kindable_empty__closed.
   rewrite <- substA_msubstA by eauto using Ty.kindable_empty__closed.
-  
+
   eapply IH__e.
   - eapply RD_cons; eauto.
   - apply RG_extend_rho.

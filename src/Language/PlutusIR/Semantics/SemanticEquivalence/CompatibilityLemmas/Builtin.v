@@ -9,7 +9,7 @@ Require Import Arith.
 
 Lemma msubst_Builtin : forall ss f,
     msubst_term ss (Builtin f) = Builtin f.
-Proof. 
+Proof.
   induction ss; intros.
   - reflexivity.
   - destruct a. eauto.
@@ -17,7 +17,7 @@ Qed.
 
 Lemma msubstA_Builtin : forall ss f,
     msubstA_term ss (Builtin f) = Builtin f.
-Proof. 
+Proof.
   induction ss; intros.
   - reflexivity.
   - destruct a. eauto.

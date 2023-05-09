@@ -69,8 +69,8 @@ Proof with eauto_LR.
 
   intros j Hlt__j e_f Hev__e_f.
   inversion Hev__e_f. subst.
-  
-  
+
+
   eexists. eexists.
 
   split... eapply E_LamAbs...
@@ -121,17 +121,17 @@ Proof with eauto_LR.
   split... intros Hcon. inversion Hcon.
 
   eexists. eexists. eexists. eexists. eexists.
-  
+
   split...
   split...
 
-  rewrite <- minus_n_O. 
+  rewrite <- minus_n_O.
   intros i Hlt__i v_0 v'_0 HRV.
 
   apply RV_unfolded_to_RV in HRV.
 
   apply RC_lt_obsolete.
-  
+
   intros Hlt.
 
   assert (Hcls__v_0 : closed v_0). {
@@ -144,7 +144,7 @@ Proof with eauto_LR.
     destruct HRV as [H [H0 H1]].
     eapply typable_empty__closed...
   }
-  
+
   eapply RG_env_closed in H_RG as Hclss...
   destruct Hclss as [Hcls__γ Hcls__γ'].
 
@@ -152,7 +152,7 @@ Proof with eauto_LR.
   rewrite <- subst_msubst...
   rewrite msubst_term__fold.
   rewrite msubst_term__fold.
-  
+
   eapply IH...
   + econstructor...
     eapply RG_monotone...

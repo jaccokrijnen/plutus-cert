@@ -12,12 +12,12 @@ Lemma msubst_Var : forall ss x,
       | Datatypes.Some t => t
       | None => Var x
       end.
-Proof. 
-  induction ss; intros. 
-  - reflexivity. 
-  - intros. 
-    destruct a. 
-    simpl. 
+Proof.
+  induction ss; intros.
+  - reflexivity.
+  - intros.
+    destruct a.
+    simpl.
     destruct (s =? x)%string eqn:Heqb.
     + apply eqb_eq in Heqb as Heq.
       subst.

@@ -18,7 +18,7 @@ Definition Rel (T T' : Ty) (Chi : nat -> Term -> Term -> Prop) : Prop :=
     Chi j v v' -> 0 < j ->
       value v /\ value v' /\
       (exists Tn, normalise T Tn /\ ([] ,, [] |-+ v : Tn)) /\
-      (exists Tn', normalise T' Tn' /\ ([] ,, [] |-+ v' : Tn')) /\ 
+      (exists Tn', normalise T' Tn' /\ ([] ,, [] |-+ v' : Tn')) /\
       forall i,
         i <= j ->
         Chi i v v'.
@@ -34,12 +34,12 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
     forall j (Hlt_j : j < k) e_f,
       e =[j]=> e_f ->
       exists e'_f j', e' =[j']=> e'_f /\
-      
+
       (* RV *)
       (exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([] ,, [] |-+ e_f : Tn)) /\
       (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\  ([] ,, [] |-+ e'_f : Tn')) /\
-      
-      ( 
+
+      (
         (
           ~ is_error e_f /\
           ~ is_error e'_f /\
@@ -49,7 +49,7 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
             (* RV for type variable *)
             | Ty_Var a =>
                 forall Chi,
-                  sem rho a = Datatypes.Some Chi ->  
+                  sem rho a = Datatypes.Some Chi ->
                   Chi (k - j) e_f e'_f
 
             (* RV for type lambda *)
@@ -57,11 +57,11 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
                 False
 
             (* RV for type application *)
-            | Ty_App T1 T2 => 
+            | Ty_App T1 T2 =>
                 False
 
             (* RV for built-in types *)
-            | Ty_Builtin st => 
+            | Ty_Builtin st =>
                 exists sv sv',
                   (* Determine the shape of e_f and e'_f *)
                   e_f = Constant sv /\
@@ -94,7 +94,7 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
                     RC i T0n rho v_0 v'_0
 
             (* RV for universal types *)
-            | Ty_Forall X K Tn => 
+            | Ty_Forall X K Tn =>
                 exists e_body e'_body,
                   (* Determine the shape of e_f and e_f' *)
                   e_f = TyAbs X K e_body /\
@@ -189,7 +189,7 @@ Inductive RG (rho : tymapping) (k : nat) : tass -> env -> env -> Prop :=
       normal_Ty T ->
       RG rho k c e1 e2 ->
       RG rho k ((x, T) :: c) ((x, v1) :: e1) ((x, v2) :: e2).
-  
+
 Fixpoint closed_env (env : env) :=
   match env with
   | nil => True
@@ -200,7 +200,7 @@ Fixpoint closed_env (env : env) :=
 
     If $\Gamma \vdash e : \tau$ and $\Gamma \vdash e' : \tau$, then we write
     $\Gamma \vdash e \leq e' : \tau$ to mean that
-    for all $k \geq 0$, if $env$ and $env'$ are mappings from variables $x$ to closed 
+    for all $k \geq 0$, if $env$ and $env'$ are mappings from variables $x$ to closed
     values that are lated for $k$ steps at $\Gamma$, then $\gamma(e)$ and
     $\gamma(e')$ are related for $k$ steps as computations of type $\tau$.
 *)
@@ -211,10 +211,10 @@ Definition LR_logically_approximate (Delta : list (string * Kind)) (Gamma : list
       RD Delta rho ->
       RG rho k Gamma env env' ->
       RC k T rho (msubst_term env (msubstA_term (msyn1 rho) e)) (msubst_term env' (msubstA_term (msyn2 rho) e')).
-      
-(** Logical relation: logical equivalence 
 
-    We say $e$ and $e'$ are logically equivalent, written 
+(** Logical relation: logical equivalence
+
+    We say $e$ and $e'$ are logically equivalent, written
     $\Gamma \vdash e \tilde e' : \tau$, if they logically approximate one
     another.
 *)
