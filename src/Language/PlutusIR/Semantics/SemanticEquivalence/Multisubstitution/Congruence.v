@@ -8,8 +8,8 @@ Require Import PlutusCert.Util.Map.Mupdate.
 Require Import Arith.
 Require Import Coq.Lists.List.
 
-Local Open Scope list_scope.
 Local Open Scope string_scope.
+Local Open Scope list_scope.
 
 
 
@@ -127,9 +127,17 @@ Qed.
 
 Lemma msubst_bnr__bound_vars : forall bs ss,
     bvbs bs = bvbs <{ /[ ss /][bnr] bs }>.
-Proof. 
-(* ADMIT: I had no time to finish this. Should follow from subst_bnr__bound_vars *)
-Admitted.
+Proof with eauto.
+  intros bs ss.
+  generalize bs.
+  induction ss...
+  clear bs.
+  intros.
+  destruct a.
+  simpl.
+  rewrite <- IHss.
+  apply subst_bnr__bound_vars.
+Qed.
 
 Lemma substA_b__bound_tyvars : forall a T b,
     btvb b = btvb <{ [[T/a][b] b }>.
@@ -154,12 +162,49 @@ Proof.
       * assumption.
 Qed.
 
-Lemma msubstA_bnr__bvbs : forall bs ss,
-    bvbs bs = bvbs <{ /[[ ss /][bnr] bs }>.
-Proof. 
-(* ADMIT: I had no time to finish this. Should follow from substA_bnr__bound_tyvars *)
+Lemma substA_c__bvc : forall c a T,
+  bvc <{ [[T / a][c] c }> = bvc c.
 Admitted.
-    
+
+Lemma substA_cs__bvc : forall cs a T,
+  map bvc <{ [[T / a][cs] cs }> = map bvc cs.
+Admitted.
+
+Lemma substA_b__bvb : forall a T b,
+    bvb b = bvb <{ [[T/a][b] b }>.
+Proof with eauto.
+  destruct b; simpl.
+  - destruct v...
+  - destruct t...
+  - destruct d, t.
+    simpl.
+    rewrite substA_cs__bvc...
+Qed.
+
+Lemma substA_bnr__bvbs : forall a T bs,
+    bvbs bs = bvbs <{ [[T/a ][bnr] bs }>.
+Proof with eauto.
+  induction bs...
+  simpl.
+  destruct (existsb (eqb a) (btvb a0)); simpl.
+  - setoid_rewrite bvbs_cons.
+    rewrite <- substA_b__bvb...
+  - setoid_rewrite bvbs_cons.
+    rewrite <- IHbs.
+    rewrite <- substA_b__bvb...
+Qed.
+
+Lemma msubstA_bnr__bvbs : forall ss bs,
+    bvbs bs = bvbs <{ /[[ ss /][bnr] bs }>.
+Proof with eauto.
+  induction ss...
+  destruct a.
+  simpl.
+  intros.
+  setoid_rewrite <- IHss.
+  rewrite <- substA_bnr__bvbs...
+Qed.
+
 Lemma msubst_LetNonRec_nil : forall ss e,
     msubst_term ss (Let NonRec nil e) = Let NonRec nil (msubst_term ss e).
 Proof.

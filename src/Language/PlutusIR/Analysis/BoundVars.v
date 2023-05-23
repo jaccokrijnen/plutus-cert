@@ -201,6 +201,12 @@ Definition bvb (b : binding') : list var :=
 
 Definition bvbs (bs : list binding') : list var := List.concat (map bvb bs).
 
+Lemma bvbs_cons : forall b bs,
+  bvbs (b :: bs) = bvb b ++ bvbs bs.
+Proof with eauto.
+  intros.
+  unfold bvbs...
+Qed.
 
 Fixpoint boundTerms_bindings (bs : list binding') : list (var * term var tyvar var tyvar) := match bs with
     | ((TermBind _ (VarDecl v _) t) :: bs) => (v, t) :: boundTerms_bindings bs
