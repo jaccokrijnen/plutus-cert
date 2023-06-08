@@ -16,30 +16,30 @@ Definition lookupBuiltinKind (u : DefaultUni) : Kind :=
   end.
 
 (** Kinding of types *)
-Reserved Notation "Delta '|-*' T ':' K" (at level 40, T at level 0, K at level 0).
+Reserved Notation "Δ '|-*' T ':' K" (at level 40, T at level 0, K at level 0).
 Inductive has_kind : list (string * Kind) -> Ty -> Kind -> Prop :=
-  | K_Var : forall Delta X K,
-      lookup X Delta = Coq.Init.Datatypes.Some K ->
-      Delta |-* (Ty_Var X) : K
-  | K_Fun : forall Delta T1 T2,
-      Delta |-* T1 : Kind_Base ->
-      Delta |-* T2 : Kind_Base ->
-      Delta |-* (Ty_Fun T1 T2) : Kind_Base
-  | K_IFix  : forall Delta F T K,
-      Delta |-* T : K ->
-      Delta |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
-      Delta |-* (Ty_IFix F T) : Kind_Base
-  | K_Forall : forall Delta X K T,
-      ((X, K) :: Delta) |-* T : Kind_Base ->
-      Delta |-* (Ty_Forall X K T) : Kind_Base
-  | K_Builtin : forall Delta u K,
+  | K_Var : forall Δ X K,
+      lookup X Δ = Coq.Init.Datatypes.Some K ->
+      Δ |-* (Ty_Var X) : K
+  | K_Fun : forall Δ T1 T2,
+      Δ |-* T1 : Kind_Base ->
+      Δ |-* T2 : Kind_Base ->
+      Δ |-* (Ty_Fun T1 T2) : Kind_Base
+  | K_IFix  : forall Δ F T K,
+      Δ |-* T : K ->
+      Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
+      Δ |-* (Ty_IFix F T) : Kind_Base
+  | K_Forall : forall Δ X K T,
+      ((X, K) :: Δ) |-* T : Kind_Base ->
+      Δ |-* (Ty_Forall X K T) : Kind_Base
+  | K_Builtin : forall Δ u K,
       K = lookupBuiltinKind u ->
-      Delta |-* (Ty_Builtin (Some (TypeIn u))) : K
-  | K_Lam : forall Delta X K1 T K2,
-      ((X, K1) :: Delta) |-* T : K2 ->
-      Delta |-* (Ty_Lam X K1 T) : (Kind_Arrow K1 K2)
-  | K_App : forall Delta T1 T2 K1 K2,
-      Delta |-* T1 : (Kind_Arrow K1 K2) ->
-      Delta |-* T2 : K1 ->
-      Delta |-* (Ty_App T1 T2) : K2
-where "Delta '|-*' T ':' K" := (has_kind Delta T K).
+      Δ |-* (Ty_Builtin (Some (TypeIn u))) : K
+  | K_Lam : forall Δ X K1 T K2,
+      ((X, K1) :: Δ) |-* T : K2 ->
+      Δ |-* (Ty_Lam X K1 T) : (Kind_Arrow K1 K2)
+  | K_App : forall Δ T1 T2 K1 K2,
+      Δ |-* T1 : (Kind_Arrow K1 K2) ->
+      Δ |-* T2 : K1 ->
+      Δ |-* (Ty_App T1 T2) : K2
+where "Δ '|-*' T ':' K" := (has_kind Δ T K).
