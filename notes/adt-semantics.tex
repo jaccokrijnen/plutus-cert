@@ -1,0 +1,104 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{stmaryrd}
+
+\begin{document}
+
+How to handle ADT semantics?
+
+\[
+\textbf{let}\ \text{data}\ T = C_1\ \overline{T_{1}} \ |\ \dots\ \textbf{with}\ \text{match}_T\ \textbf{in}\ t
+\]
+
+Extend term language:
+
+\begin{align*}
+\text{PIR+ term}\ t ::=\ &\ldots \\
+|\ &\text{Constr}\ i\ \overline{t} \\
+|\ &\text{Match}\ t\ \overline{t}
+\end{align*}
+
+
+\subsection*{Sums-of-products}
+Big-step evaluation:
+
+\[
+\frac{t_j \Downarrow v_j \quad (\text{for all}\ j)}{\text{Constr}\ i\ [t_1 \dots t_n] \Downarrow \text{Constr}\ i\ [v_1 \dots v_n]}
+\qquad\text{[Constr-eval]}
+\]
+
+\[
+  \frac{t \Downarrow \text{Constr}\ i\ \overline{v} \quad\quad b_i\ \overline{v} \Downarrow v_r}
+       {\text{Match}\ t\ \overline{b} \Downarrow v_r}
+  \qquad\text{[Match-eval]}
+\]
+
+\[\frac{t [(\lambda \overline{(x : T_{1})}.\text{Constr}\ 1\ \overline{x}) / C_1] \dots [(\lambda e\ \overline{b}. \text{Match}\ e\ \overline{b}) / \text{match}_T]
+       \Downarrow
+       v} 
+       {\textbf{let}\ \text{data}\ T = C_1\ \overline{T_{1}} \ |\ \dots\ \textbf{with}\ \text{match}_T\ \textbf{in}\ t
+       \Downarrow
+       v}
+  \qquad\text{[Data-eval]}
+\]
+
+
+\subsection*{Scott encoding}
+
+Big-step evaluation:
+
+\[\frac{t [\textsc{Scott}(T_1) / C_1] \dots [(\textsc{Scott}(...) / \text{match}_T]
+       \Downarrow
+       v} 
+       {\textbf{let}\ \text{data}\ T = C_1\ \overline{T_{1}} \ |\ \dots\ \textbf{with}\ \text{match}_T\ \textbf{in}\ t
+       \Downarrow
+       v}
+  \qquad\text{[Data-eval]}
+\]
+
+
+\clearpage
+
+\subsection*{Valid encodings}
+
+An encoding of an ADT
+\[
+  \textbf{data}\ T = C_1\ \overline{\tau_{1}} \ |\ \dots\ \textbf{with}\ m
+\]
+is:
+
+\begin{itemize}
+  \item a term $t_{C_i}$ (for each constructor $C_i$)
+  \item a term $t_{match}$
+\end{itemize}
+
+\noindent An encoding is \emph{valid} when:
+\begin{itemize}
+  \item for all constructors $C_i$:
+    \[
+      { t_{match}~ (t_{C_i}~ arg_1 \dots arg_m)~ b_1 \dots b_n \Downarrow v
+    }
+  \]
+    if and only if:
+    \[
+    {b_i~ arg_1 \dots arg_m \Downarrow v
+    }
+  \]
+\end{itemize}
+
+
+\noindent Given any valid encoding of ADTs:
+
+\[\frac{t [t_{C_1} / C_1] \dots [(t_{match} / m] t
+       \Downarrow
+       v}
+       {\textbf{let}\ \text{data}\ T = C_1\ \overline{\tau_{1}} \ |\ \dots\ \textbf{with}\ m\ \textbf{in}\ t
+       \Downarrow
+       v}
+  \qquad\text{[Data-eval]}
+\]
+
+
+\end{document}
+
