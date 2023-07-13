@@ -16,4 +16,7 @@ Makefile.coq
 # vscode
 .vscode/
 
+# haskell
+dist-newstyle/
+
 examples/plutus-use-cases
