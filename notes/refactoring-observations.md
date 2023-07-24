@@ -2,7 +2,7 @@ Simpler translation relations
 ---
 Some relations can be split to be conceptually simpler, e.g.
 
-    dead_code := dead_syn t t' ∧ well_scoped t' ∧ unique_binders t`
+    dead_code := elim t t' ∧ well_scoped t' ∧ unique_binders t`
 
 the trade-off for the simplicity is two-fold:
 

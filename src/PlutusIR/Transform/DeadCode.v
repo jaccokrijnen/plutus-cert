@@ -42,27 +42,27 @@ Definition name_Binding (b : Binding) :=
 Definition name_removed b bs : Prop :=
   ¬ (In (name_Binding b) (map name_Binding bs)).
 
-Inductive dead_syn : Term -> Term -> Prop :=
+Inductive elim : Term -> Term -> Prop :=
   | dc_compat : forall t t',
-      Compat dead_syn t t' ->
-      dead_syn t t'
+      Compat elim t t' ->
+      elim t t'
 
   | dc_delete_let : forall rec bs t t',
-      dead_syn t t' ->
+      elim t t' ->
       Forall (pure_binding []) bs ->
-      dead_syn (Let rec bs t) t'
+      elim (Let rec bs t) t'
 
   | dc_delete_bindings : forall rec bs bs' t t',
-      dead_syn t t' ->
-      dead_syn_bindings bs bs' ->
-      dead_syn (Let rec bs t) (Let rec bs' t')
+      elim t t' ->
+      elim_bindings bs bs' ->
+      elim (Let rec bs t) (Let rec bs' t')
 
   | dc_delete_ty_beta : forall t t' α k τ,
-      dead_syn t t' ->
-      dead_syn (TyInst (TyAbs α k t) τ) t'
+      elim t t' ->
+      elim (TyInst (TyAbs α k t) τ) t'
 
 
-with dead_syn_bindings : list Binding -> list Binding -> Prop :=
+with elim_bindings : list Binding -> list Binding -> Prop :=
   | dc_bindings : forall bs bs',
 
       (* any removed binding is a pure binding *)
@@ -74,21 +74,21 @@ with dead_syn_bindings : list Binding -> list Binding -> Prop :=
       (∀ b', In b' bs' ->
          ∃ b, In b bs /\
            name_Binding b = name_Binding b' /\
-           dead_syn_binding b b'
+           elim_binding b b'
       ) ->
-      dead_syn_bindings bs bs'
+      elim_bindings bs bs'
 
-with dead_syn_binding : Binding -> Binding -> Prop :=
+with elim_binding : Binding -> Binding -> Prop :=
 
   | dc_term_bind_cong : forall s vd t t',
-      dead_syn t t' ->
-      dead_syn_binding (TermBind s vd t) (TermBind s vd t')
+      elim t t' ->
+      elim_binding (TermBind s vd t) (TermBind s vd t')
 
   | dc_binding : forall b,
-      dead_syn_binding b b
+      elim_binding b b
   .
 
-Definition dead_code t t' := dead_syn t t' /\ unique t /\ closed t'.
+Definition dead_code t t' := elim t t' /\ unique t /\ closed t'.
 
-Lemma dead_syn_sym : forall t, dead_syn t t.
+Lemma elim_sym : forall t, elim t t.
 Admitted.

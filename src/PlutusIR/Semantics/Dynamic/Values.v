@@ -157,7 +157,7 @@ Fixpoint
 
 Definition dec_value := dec_value' 0.
 
-Definition is_neutral_value (n : nat) (t : Term) :=
+Definition dec_neutral_value (n : nat) (t : Term) :=
   match t with
     | Builtin f   => dec_value' n t
     | Apply nv v  => dec_value' n t
@@ -168,5 +168,5 @@ Definition is_neutral_value (n : nat) (t : Term) :=
 Lemma dec_value_value : forall t, dec_value t = true -> value t.
 Admitted.
 
-Lemma is_neutral_value_neutral_value : forall n t, is_neutral_value n t = true -> neutral_value n t.
+Lemma dec_neutral_value_neutral_value : forall n t, dec_neutral_value n t = true -> neutral_value n t.
 Admitted.

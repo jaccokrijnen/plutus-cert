@@ -68,7 +68,7 @@ Hint Constructors
 
 #[global]
 Hint Resolve
-  dead_syn_sym : hint_dead_code
+  elim_sym : hint_dead_code
 .
 
 (* Using reflection *)

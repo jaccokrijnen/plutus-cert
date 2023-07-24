@@ -102,8 +102,8 @@ Fixpoint dec_Term (x y : Term) {struct x} : bool := match x, y with
 
 Set Diffs "on".
 
-Definition P_Term t := forall t', dec_Term t t' = true -> dead_syn t t'.
-Definition P_Binding b := forall b', dec_Binding dec_Term b b' = true -> dead_syn_binding b b'.
+Definition P_Term t := forall t', dec_Term t t' = true -> elim t t'.
+Definition P_Binding b := forall b', dec_Binding dec_Term b b' = true -> elim_binding b b'.
 
 Axiom (String_eqb_eq       : ∀ x y, String.eqb x y = true -> x = y).
 Axiom (Recursivity_eqb_eq  : ∀ x y, Recursivity_eqb x y = true -> x = y).
@@ -176,7 +176,7 @@ Lemma H_find_binding' bs bs' :
     ∀ b', In b' bs' ->
        ∃ x, In x bs /\
          name_Binding x = name_Binding b' /\
-         dead_syn_binding x b'
+         elim_binding x b'
     .
 Proof with eauto with Hints_soundness.
   intro H_P_Binding.
@@ -202,7 +202,7 @@ Proof with eauto with Hints_soundness.
 
     (* a not related to b' *)
     + apply IHbs in H_find_b' as H_ex. clear IHbs.
-      * destruct H_ex as [x [H_x_In [H_eq_name H_dead_syn]]].
+      * destruct H_ex as [x [H_x_In [H_eq_name H_elim]]].
         assert (In x (b :: bs)). { apply in_cons... }
         exists x...
       * intros b0 H_b0_in.
@@ -216,21 +216,21 @@ Hint Resolve
   H_safely_removed : Hints_bindings.
 #[local]
 Hint Constructors
-  dead_syn_bindings : Hints_bindings.
+  elim_bindings : Hints_bindings.
 #[local]
 Hint Resolve
   H_safely_removed
   H_find_binding' : Hints_bindings.
 #[local]
 Hint Constructors
-  dead_syn
-  dead_syn_binding
-  dead_syn_bindings
+  elim
+  elim_binding
+  elim_bindings
   : Hints_soundness.
 
 Lemma dec_Bindings_sound' : ∀ bs bs',
   (∀ b, In b bs -> P_Binding b) ->
-  dec_Bindings dec_Term bs bs' = true -> dead_syn_bindings bs bs'.
+  dec_Bindings dec_Term bs bs' = true -> elim_bindings bs bs'.
 Proof with eauto with Hints_bindings.
   intros H_P_bs bs bs' H.
   simpl in H.
@@ -244,7 +244,7 @@ Lemma dec_TermBind_sound : ∀ s v t b b',
   b = TermBind s v t ->
   P_Term t -> 
   dec_Binding dec_Term b b' = true ->
-  dead_syn_binding b b'.
+  elim_binding b b'.
 Proof with eauto with Hints_soundness.
   intros s v t b b' H_eq H_P_Term H_dec.
   unfold P_Term in *.
@@ -261,7 +261,7 @@ Qed.
 Lemma dec_TypeBind_sound : ∀ v ty b b',
   b = TypeBind v ty ->
   dec_Binding dec_Term b b' = true ->
-  dead_syn_binding b b'.
+  elim_binding b b'.
 Proof with eauto with Hints_soundness.
   intros v ty b b' H_eq H_dec.
   subst.
@@ -276,7 +276,7 @@ Qed.
 Lemma dec_DatatypeBind_sound : ∀ dtd b b',
   b = DatatypeBind dtd ->
   dec_Binding dec_Term b b' = true ->
-  dead_syn_binding b b'.
+  elim_binding b b'.
 Proof with eauto with Hints_soundness.
   intros dtd b b' H_eq H_dec.
   subst.
@@ -329,7 +329,7 @@ Proof with eauto with Hints_soundness.
       (* H_dec_Term: then branch *)
       * split_hypos.
 
-        assert (H_bindings : dead_syn_bindings bs l).
+        assert (H_bindings : elim_bindings bs l).
         {
           apply ForallP_Forall in H.
           rewrite -> Forall_forall in H...
@@ -384,12 +384,12 @@ Proof with eauto with Hints_soundness.
   - unfold P_Binding...
 Admitted.
 
-Corollary dec_Term_sound : ∀ t t', dec_Term t t' = true -> dead_syn t t'.
+Corollary dec_Term_sound : ∀ t t', dec_Term t t' = true -> elim t t'.
 Proof.
   apply dec_Term_Binding_sound.
 Qed.
 
-Corollary dec_Binding_sound : ∀ t t', dec_Term t t' = true -> dead_syn t t'.
+Corollary dec_Binding_sound : ∀ t t', dec_Term t t' = true -> elim t t'.
 Proof.
   apply dec_Term_Binding_sound.
 Qed.
