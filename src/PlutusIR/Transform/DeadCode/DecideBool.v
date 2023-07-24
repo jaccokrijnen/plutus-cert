@@ -31,7 +31,7 @@ Section Bindings.
 
   Definition safely_removed b bs' :=
     if negb (existsb (String.eqb (name_Binding b)) bs')
-      then is_pure_binding [] b
+      then dec_pure_binding [] b
       else true.
 
   Definition binding_was_there b' bs : bool :=
@@ -84,9 +84,9 @@ Fixpoint dec_Term (x y : Term) {struct x} : bool := match x, y with
       then (* same let block, but bindings were removed *)
         Recursivity_eqb r r' && dec_Term t t'
       else (* t' is another let block, the whole block in the pre-term was removed *)
-        forallb (is_pure_binding []) bs && dec_Term t y (* Check whether the whole let was removed *)
+        forallb (dec_pure_binding []) bs && dec_Term t y (* Check whether the whole let was removed *)
   | Let _ bs t   , _ => 
-     forallb (is_pure_binding []) bs && dec_Term t y (* Check whether the whole let was removed *)
+     forallb (dec_pure_binding []) bs && dec_Term t y (* Check whether the whole let was removed *)
   | TyInst (TyAbs α k t) τ , TyInst (TyAbs α' k' t') τ'  =>
      String.eqb α α' &&
      Kind_eqb k k' &&
@@ -158,7 +158,7 @@ Proof with eauto with Hints_soundness.
     (existsb (String.eqb (name_Binding b))
        (map name_Binding bs')))
        eqn:H_1.
-  + apply is_pure_binding_pure_binding...
+  + apply sound_dec_pure_binding...
 
   (* contradiction *)
   + apply negb_false_iff in H_1.
@@ -288,14 +288,14 @@ Proof with eauto with Hints_soundness.
 Qed.
 
 Lemma all_pure : ∀ bs,
-  forallb (is_pure_binding []) bs = true ->
+  forallb (dec_pure_binding []) bs = true ->
   Forall (pure_binding []) bs.
 Proof.
   intros bs H_dec.
   apply Forall_forall.
   intros b H_In.
   rewrite forallb_forall in H_dec.
-  auto using is_pure_binding_pure_binding.
+  auto using sound_dec_pure_binding.
 Qed.
 
 #[local]

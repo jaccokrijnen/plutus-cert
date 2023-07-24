@@ -49,7 +49,7 @@ Hint Constructors
 #[global]
 Hint Resolve
   (* use decision procedure*)
-  is_errorb_not_is_error
+  dec_is_error_not_is_error
 : hint_dead_code.
 
 #[global]
