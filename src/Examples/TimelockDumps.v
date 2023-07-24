@@ -2,10 +2,10 @@ Require Import Coq.Strings.String.
 Require Import Coq.ZArith.BinInt.
 Require Import Lists.List.
 Import ListNotations.
-From PlutusCert Require Import Language.PlutusIR.Analysis.FreeVars.
-From PlutusCert Require Import Language.PlutusIR.Analysis.BoundVars.
-From PlutusCert Require Import Language.PlutusIR.
-From PlutusCert Require Import Language.PlutusIR.Transform.Inline.Intermediate.
+From PlutusCert Require Import PlutusIR.Analysis.FreeVars.
+From PlutusCert Require Import PlutusIR.Analysis.BoundVars.
+From PlutusCert Require Import PlutusIR.
+From PlutusCert Require Import PlutusIR.Transform.Inline.Intermediate.
 
 Import NamedTerm.
 

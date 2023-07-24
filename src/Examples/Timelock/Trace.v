@@ -3,7 +3,7 @@ From Coq Require Import
   Lists.List
   ZArith.BinInt.
 From PlutusCert Require Import
-  Language.PlutusIR.
+  PlutusIR.
 
 Import UniqueTerm.
 

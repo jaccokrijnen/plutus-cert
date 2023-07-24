@@ -1,0 +1,100 @@
+
+
+Hi,
+
+It was great to talk to you all yesterday!
+
+A thought about unravelling recursion that I wanted to share in case you hadn’t already thought about it.
+
+I believe that a lot of the complexity of the whole setup involves how to
+encode mutually defined data types. Also having both Omega (higher kinds) and
+mu (recursive types) gives more flexibility than when the mu is added without
+omega and I believe that this combination hasn’t been so well studied.
+
+In particular:
+
+Instead of having
+
+φ , * ⊢ A : *
+————————
+φ ⊢ μ A : *
+
+which does not allow the use of higher kinds, you can have:
+
+
+φ , K ⊢ A : K
+————————
+φ ⊢ μ A : K
+
+Which does.
+
+We tried that but we found we needed evaluation contexts in the typing rules, I implemented which were annoying so Roman settled on the version we have now:
+
+φ ⊢ T : K
+φ ⊢ F : (K => *) => (K => *)
+————————
+φ ⊢ μ F T : *
+
+Personally I like to break things down into small steps. I would suggest maybe
+trying to carry your constructions for Church encodings, then ideally some
+smaller fragment of data types that can be encoded with the simpler mu (as they
+do in the paper I think) and then scale up or some other way of breaking things
+        down.
+
+I think there are some specific properties about data types that you would want
+to check are preserved - something like if it’s an initial algebra before then
+it’s an initial algebra afterwards. I think it would be good to think about
+these types of things.
+
+Strictness/vs lazyness: the only thing that springs to mind here is that we
+have to use the Z combinator rather than the Y combinator (also mentioned in
+the paper). There is probably more to do, I will ask about it. I guess some
+encoding of lazy functions must happen at some point but I am not sure when.
+
+James
+
+P.S. To my great surprise Ulf created a proof of concept version of `agda2hs`
+yesterday afternoon during our code sprint at the Agda meeting.
+
+https://github.com/agda/agda2hs
+
+It works with (polymorphic) functions and (parameterised) datatypes. Converting
+simple instance arguments to type classes is next on the list, and improved
+pretty printing. It is intended to be limited - you work in a fragment where
+Haskell and Agda and overlap (their semantics, and their syntax to an extent),
+you can then write programs do proofs in Agda and produce idiomatic Haskell
+code.  This test file (https://github.com/agda/agda2hs/blob/master/Test.agda)
+produces this output:
+
+% agda2hs Test.agda
+module Test where
+
+import Prelude hiding (map, sum)
+
+data Exp v
+  = Plus (Exp v) (Exp v)
+  | Int Integer
+  | Var v
+
+eval :: (a -> Integer) -> (Exp a) -> Integer
+eval env (Plus a b) = (eval env a) + (eval env b)
+eval env (Int n) = n
+eval env (Var x) = env x
+
+sum :: [Integer] -> Integer
+sum [] = 0
+sum (x : xs) = x + (sum XS)
+
+— comment
+
+append :: [a] -> [a] -> [a]
+append [] ys = ys
+append (x : xs) ys = x : (append xs ys)
+
+map :: (a -> b) -> [a] -> [b]
+map f [] = []
+map f (x : xs) = (f x) : (map f xs)
+
+
+
+

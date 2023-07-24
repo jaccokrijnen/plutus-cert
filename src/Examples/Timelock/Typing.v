@@ -1,6 +1,6 @@
-From PlutusCert Require Import Language.PlutusIR.
+From PlutusCert Require Import PlutusIR.
 Import NamedTerm.
-From PlutusCert Require Import Language.PlutusIR.Semantics.Static.
+From PlutusCert Require Import PlutusIR.Semantics.Static.
 
 Require Import Lists.List.
 Import ListNotations.

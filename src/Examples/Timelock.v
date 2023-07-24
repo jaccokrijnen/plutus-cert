@@ -8,9 +8,9 @@ From Equations Require Import Equations.
 
 From PlutusCert Require Import
   Util
-  Language.PlutusIR.Transform
-  Language.PlutusIR.Analysis.Purity
-  Language.PlutusIR.Transform.LetNonRec.DecideBool
+  PlutusIR.Transform
+  PlutusIR.Analysis.Purity
+  PlutusIR.Transform.LetNonRec.DecideBool
   Semantics.Dynamic
   Examples.TimelockDumps
 .

@@ -5,7 +5,7 @@ From Coq Require Import
   ZArith.BinInt.
 
 From PlutusCert Require Import
-  Language.PlutusIR
+  PlutusIR
   FreeVars
   BoundVars
   Equality
