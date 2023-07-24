@@ -10,7 +10,7 @@ From PlutusCert Require Import
   Util
   PlutusIR
   PlutusIR.Analysis.Equality
-  PlutusIR.Transform.Congruence
+  PlutusIR.Transform.Compat
   PlutusIR.Transform.Inline
 .
 

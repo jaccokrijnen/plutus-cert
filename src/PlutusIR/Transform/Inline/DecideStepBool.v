@@ -17,7 +17,7 @@ From PlutusCert Require Import PlutusIR.
 Import NamedTerm.
 From PlutusCert Require Import PlutusIR.Analysis.FreeVars.
 From PlutusCert Require Import PlutusIR.Analysis.Equality.
-From PlutusCert Require Import PlutusIR.Transform.Congruence.
+From PlutusCert Require Import PlutusIR.Transform.Compat.
 From PlutusCert Require Import PlutusIR.Transform.DeadBindings.
 
 Tactic Notation "step" hyp(n) :=
@@ -39,14 +39,14 @@ Proof.
 refine (
   fix is_inline (n : nat) : forall t t' env, bool :=
 
-    let is_inline_cong (n : nat) : forall t t' env, bool
-      := ?[is_inline_cong] in
+    let is_inline_compat (n : nat) : forall t t' env, bool
+      := ?[is_inline_compat] in
     let is_inline_var (n : nat) : forall t t' env, bool
       := ?[is_inline_var] in
     let is_inline_let (n : nat) : forall t t' env, bool
       := ?[is_inline_let] in
 
-    fun t t' env => is_inline_var n t t' env || is_inline_let n t t' env || is_inline_cong n t t' env
+    fun t t' env => is_inline_var n t t' env || is_inline_let n t t' env || is_inline_compat n t t' env
 
   with is_inline_binding (n : nat) : forall b b' env, bool :=
     ?[is_inline_binding]
@@ -54,14 +54,14 @@ refine (
   with is_inline_bindings (n : nat) : forall bs bs' env, bool :=
     ?[is_inline_bindings]
 
-  with is_cong (n : nat) : forall t t' env, bool :=
-    ?[is_cong]
+  with is_compat (n : nat) : forall t t' env, bool :=
+    ?[is_compat]
 
-  with is_cong_binding (n : nat) : forall b b' env, bool :=
-    ?[is_cong_binding]
+  with is_compat_binding (n : nat) : forall b b' env, bool :=
+    ?[is_compat_binding]
 
-  with is_cong_bindings (n : nat) : forall bs bs' env, bool :=
-    ?[is_cong_bindings]
+  with is_compat_bindings (n : nat) : forall bs bs' env, bool :=
+    ?[is_compat_bindings]
 
   for is_inline
 ).
@@ -100,12 +100,12 @@ refine (
   end
 ).
 
-[is_inline_cong] : {
+[is_inline_compat] : {
   intros t t' env.
   step n.
 
   refine (
-    is_cong n t t' env
+    is_compat n t t' env
   ).
 }
 }
@@ -176,7 +176,7 @@ refine (
   }
 }
 
-[is_cong]: {
+[is_compat]: {
   intros t t' env.
   step n.
 
@@ -184,7 +184,7 @@ refine (
   match t, t' as p with
   | Let r bs t, Let r' bs' t' =>
           (sumbool_to_bool (Recursivity_dec r r'))
-          && is_cong_bindings n bs bs' env
+          && is_compat_bindings n bs bs' env
           && is_inline n t t' env
 
   | Apply s t, Apply s' t' =>
@@ -283,7 +283,7 @@ refine (
   }
 }
 
-[is_cong_binding]: {
+[is_compat_binding]: {
   intros b b' env.
   step n.
 
@@ -322,7 +322,7 @@ refine (
   }
 }
 
-[is_cong_bindings]: {
+[is_compat_bindings]: {
   intros bs bs' env.
   step n.
 
@@ -336,8 +336,8 @@ refine (
 
   [cons]: {
     refine (
-        is_cong_binding n b b' env
-        && is_cong_bindings n bs bs' env
+        is_compat_binding n b b' env
+        && is_compat_bindings n bs bs' env
     ).
   }
 

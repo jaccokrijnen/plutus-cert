@@ -15,7 +15,7 @@ From PlutusCert Require Import Util.
 From PlutusCert Require Import PlutusIR.Transform.Inline.
 From PlutusCert Require Import PlutusIR.
 From PlutusCert Require Import PlutusIR.Analysis.FreeVars.
-From PlutusCert Require Import PlutusIR.Transform.Congruence.
+From PlutusCert Require Import PlutusIR.Transform.Compat.
 From PlutusCert Require Import PlutusIR.Examples.
 From PlutusCert Require Import PlutusIR.Optimizer.DeadBindings.
 
@@ -34,8 +34,8 @@ Proof.
 refine (
   fix is_inline_term (n : nat) : forall t t' env, option (Inline env t t') :=
 
-    let is_inline_cong (n : nat) : forall t t' env, option (Inline env t t')
-      := ?[is_inline_cong] in
+    let is_inline_compat (n : nat) : forall t t' env, option (Inline env t t')
+      := ?[is_inline_compat] in
     let is_inline_var (n : nat) : forall t t' env, option (Inline env t t')
       := ?[is_inline_var] in
     let is_inline_let (n : nat) : forall t t' env, option (Inline env t t')
@@ -44,7 +44,7 @@ refine (
     fun t t' env =>
           is_inline_var n t t' env
       <|> is_inline_let n t t' env
-      <|> is_inline_cong n t t' env
+      <|> is_inline_compat n t t' env
 
   with is_inline_binding (n : nat) : forall b b' env, option (Inline_Binding env b b') :=
     ?[is_inline_binding]
@@ -52,14 +52,14 @@ refine (
   with is_inline_bindings (n : nat) : forall bs bs' env, option (Inline_Bindings env bs bs') :=
     ?[is_inline_bindings]
 
-  with is_cong (n : nat) : forall t t' env, option (Cong (Inline env) t t') :=
-    ?[is_cong]
+  with is_compat (n : nat) : forall t t' env, option (Compat (Inline env) t t') :=
+    ?[is_compat]
 
-  with is_cong_binding (n : nat) : forall b b' env, option (Cong_Binding (Inline env) b b') :=
-    ?[is_cong_binding]
+  with is_compat_binding (n : nat) : forall b b' env, option (Compat_Binding (Inline env) b b') :=
+    ?[is_compat_binding]
 
-  with is_cong_bindings (n : nat) : forall bs bs' env, option (Cong_Bindings (Inline env) bs bs') :=
-    ?[is_cong_bindings]
+  with is_compat_bindings (n : nat) : forall bs bs' env, option (Compat_Bindings (Inline env) bs bs') :=
+    ?[is_compat_bindings]
 
   for is_inline_term
 ).
@@ -104,12 +104,12 @@ refine (
 ).
 }
 Show Proof.
-[is_inline_cong] : {.
+[is_inline_compat] : {.
   intros t t' env.
   step n.
 
   refine (
-    Inl_Cong <$> is_cong n t t' env
+    Inl_Compat <$> is_compat n t t' env
   ).
 }
 
@@ -180,7 +180,7 @@ Show Proof.
   }
 }
 
-[is_cong]: {.
+[is_compat]: {.
   intros t t' env.
   step n.
 
@@ -188,7 +188,7 @@ Show Proof.
   match t, t' as p with
   | Let r bs t, Let r' bs' t' => ?[letlet]
           <$> (sumbool_to_optionl (Recursivity_dec r r'))
-          <*> is_cong_bindings n bs bs' env
+          <*> is_compat_bindings n bs bs' env
           <*> is_inline_term n t t' env
 
   | Apply s t, Apply s' t' => C_Apply _
@@ -304,7 +304,7 @@ Show Proof.
   }
 }
 
-[is_cong_binding]: {.
+[is_compat_binding]: {.
   intros b b' env.
   step n.
 
@@ -344,7 +344,7 @@ Show Proof.
   }
 }
 
-[is_cong_bindings]: {.
+[is_compat_bindings]: {.
   intros bs bs' env.
   step n.
 
@@ -358,14 +358,14 @@ Show Proof.
 
   [cons]: {.
     refine (
-      Cong_Bindings_Cons (R := Inline env)
-        <$> is_cong_binding n b b' env
-        <*> is_cong_bindings n bs bs' env
+      Compat_Bindings_Cons (R := Inline env)
+        <$> is_compat_binding n b b' env
+        <*> is_compat_bindings n bs bs' env
     ).
   }
 
   [nil]: {.
-    refine (Just (Cong_Bindings_Nil _)).
+    refine (Just (Compat_Bindings_Nil _)).
   }
 }
 Defined.

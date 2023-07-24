@@ -22,7 +22,7 @@ Set Printing Universes.
 
 Local Open Scope string_scope.
 
-Ltac cong_tac  := (* apply DBE_Congruence; *) apply C_Let;
+Ltac compat_tac  := (* apply DBE_Congruence; *) apply C_Let;
   [ constructor; [constructor|constructor]
   | ].
 
@@ -57,13 +57,13 @@ Hint Resolve
   -> Nat.leb_le 0 : hint_dead_code
 .
 
-(* congruence *)
+(* Compatibility *)
 #[global]
 Hint Constructors
-  (* cong *)
-  Cong
-  Cong_Binding
-  Cong_Bindings
+  (* Compat *)
+  Compat
+  Compat_Binding
+  Compat_Bindings
   : hint_dead_code.
 
 #[global]

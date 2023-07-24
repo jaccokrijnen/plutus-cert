@@ -10,7 +10,7 @@ From PlutusCert Require Export
   PlutusIR.Transform.LetNonStrict
   PlutusIR.Transform.LetRec
   PlutusIR.Transform.LetTypes
-  PlutusIR.Transform.Congruence
+  PlutusIR.Transform.Compat
 .
 
 (*

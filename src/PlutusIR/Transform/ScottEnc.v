@@ -1,6 +1,6 @@
 From PlutusCert Require Import
   PlutusIR
-  PlutusIR.Transform.Congruence
+  PlutusIR.Transform.Compat
   PlutusIR.Analysis.FreeVars
   PlutusIR.Analysis.Equality
   Folds

@@ -21,7 +21,7 @@ Definition P_bindings_well_formed_nonrec Delta Gamma bs1 : Prop :=
   (
     forall bs2,
       Delta ,, Gamma |-oks_nr bs1 ->
-      Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
+      Compat.Compat_Bindings CNR_Term bs1 bs2 ->
       Delta ,, Gamma |-oks_nr bs2 /\
       map binds_Delta bs2 = map binds_Delta bs1 /\
       map binds_Gamma bs2 = map binds_Gamma bs1
@@ -37,7 +37,7 @@ Definition P_bindings_well_formed_nonrec Delta Gamma bs1 : Prop :=
 Definition P_bindings_well_formed_rec Delta Gamma bs1 : Prop :=
   forall bs2,
     Delta ,, Gamma |-oks_r bs1 ->
-    Congruence.Cong_Bindings CNR_Term bs1 bs2 ->
+    Compat.Compat_Bindings CNR_Term bs1 bs2 ->
     Delta ,, Gamma |-oks_r bs2 /\
     map binds_Delta bs2 = map binds_Delta bs1 /\
     map binds_Gamma bs2 = map binds_Gamma bs1.
@@ -46,7 +46,7 @@ Definition P_binding_well_formed Delta Gamma b1 : Prop :=
   (
     forall b2,
       Delta ,, Gamma |-ok_b b1 ->
-      Congruence.Cong_Binding CNR_Term b1 b2 ->
+      Compat.Compat_Binding CNR_Term b1 b2 ->
       Delta ,, Gamma |-ok_b b2 /\
       binds_Delta b2 = binds_Delta b1 /\
       binds_Gamma b2 = binds_Gamma b1

@@ -15,7 +15,7 @@ From PlutusCert Require Import
   PlutusIR.Analysis.Purity
   PlutusIR.Analysis.WellScoped
   PlutusIR.Analysis.UniqueBinders
-  PlutusIR.Transform.Congruence
+  PlutusIR.Transform.Compat
   PlutusIR.Semantics.Dynamic.Values
 .
 
@@ -43,8 +43,8 @@ Definition name_removed b bs : Prop :=
   ¬ (In (name_Binding b) (map name_Binding bs)).
 
 Inductive dead_syn : Term -> Term -> Prop :=
-  | dc_cong : forall t t',
-      Cong dead_syn t t' ->
+  | dc_compat : forall t t',
+      Compat dead_syn t t' ->
       dead_syn t t'
 
   | dc_delete_let : forall rec bs t t',

@@ -121,7 +121,7 @@ with let_non_strict_binding (Γ : ctx) : Binding -> Binding -> ctx -> Type :=
         (TermBind Strict    (VarDecl x τ') (TyAbs α Kind_Base t'))
         [(x, Some thunk_Forall)]
 
-  | lns_TermBind_cong : forall x τ s t t',
+  | lns_TermBind_compat : forall x τ s t t',
       let_non_strict Γ t t' ->
       let_non_strict_binding Γ
         (TermBind s (VarDecl x τ) t)

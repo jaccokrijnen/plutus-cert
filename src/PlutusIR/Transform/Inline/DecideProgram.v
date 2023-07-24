@@ -14,7 +14,7 @@ From PlutusCert Require Import Util.
 From PlutusCert Require Import PlutusIR.
 From PlutusCert Require Import PlutusIR.Analysis.FreeVars.
 From PlutusCert Require Import PlutusIR.Transform.Inline.
-From PlutusCert Require Import PlutusIR.Transform.Congruence.
+From PlutusCert Require Import PlutusIR.Transform.Compat.
 From PlutusCert Require Import PlutusIR.Examples.
 
 
@@ -111,10 +111,10 @@ Definition TermsLt := fun ts ts' =>
   | (t1, t2), (t1', t2') => term_size t1 + term_size t2 < term_size t1' + term_size t2'
   end.
 
-Definition is_cong_binding (b b' : Binding) R
+Definition is_compat_binding (b b' : Binding) R
 (is_r_term : forall (t t' : Term), term_size t + term_size t' < binding_size b + binding_size b'
   -> option (R t t'))
-: option (Cong_Binding R b b').
+: option (Compat_Binding R b b').
 Proof.
 refine (
 
@@ -160,11 +160,11 @@ refine (
 Qed.
 
 
-Fixpoint is_cong_bindings bs bs' R
+Fixpoint is_compat_bindings bs bs' R
 (is_R_term_bs : forall (t t' : Term), term_size t + term_size t' < bindings_size bs + bindings_size bs'
   -> option (R t t'))
 {struct bs}
-  : option (Cong_Bindings R bs bs').
+  : option (Compat_Bindings R bs bs').
 Proof.
 refine (
   match bs as p return bs = p -> _ with
@@ -189,10 +189,10 @@ Show Existentials.
 [cons]: {
   intros. subst.
   refine (
-    ?[Cong_cons] <$> is_cong_binding b b' R ?[b_smaller]
-                 <*> is_cong_bindings bs bs' R ?[bs_smaller]
+    ?[Compat_cons] <$> is_compat_binding b b' R ?[b_smaller]
+                 <*> is_compat_bindings bs bs' R ?[bs_smaller]
   ).
-  [Cong_cons]: { constructor; assumption. }
+  [Compat_cons]: { constructor; assumption. }
   [b_smaller]: { intros. apply is_R_term_bs.
     assert (L : binding_size b + binding_size b' < bindings_size (b :: bs) + bindings_size (b' :: bs')).
       - unfold bindings_size. simpl. intuition.
@@ -207,9 +207,9 @@ Show Existentials.
 }
 Qed.
 
-Definition is_cong (t t' : Term) R
+Definition is_compat (t t' : Term) R
   (is_R_term : forall (s s' : Term), Smaller s s' t t' -> option (R s s'))
-  : option (Cong R t t').
+  : option (Compat R t t').
 Proof.
 refine (
   match t as p return t = p -> _ with
@@ -276,7 +276,7 @@ refine (
 (* Let*)
 - refine (
   ?[cstr] <$> sumbool_to_optionl (Recursivity_dec r r')
-    <*> is_cong_bindings R ?[is_R_term]
+    <*> is_compat_bindings R ?[is_R_term]
     <*> is_R_term t t' ?[smaller]
 ).
 [cstr] : {
@@ -299,7 +299,7 @@ refine (
 
 (* Var case*)
 - refine (
-  eq_rect m (fun x => Cong R (Var m) (Var x))
+  eq_rect m (fun x => Compat R (Var m) (Var x))
       (@C_Var R m) n
       <$> sumbool_to_optionl (string_dec m n)
 
@@ -383,16 +383,16 @@ Defined.
 (*
 
 (*
-Writing is_cong with Program Fixpoint gives a lot of obligations about impossible
+Writing is_compat with Program Fixpoint gives a lot of obligations about impossible
 patterns, tedious to solve.
 *)
 
-Program Fixpoint is_cong' (t t' : Term) R
+Program Fixpoint is_compat' (t t' : Term) R
   (f : forall (s s' : Term), Smaller s s' t t' -> option (R s s'))
-  : option (Cong R t t') :=
+  : option (Compat R t t') :=
   match t, t' with
   | Apply s t, Apply s' t'    => C_Apply R <$> f s s' _ <*> f t t' _ (* The obligations will show that s s' and t t' are smaller*)
-  | Var m, Var n              => eq_rect m (fun x => Cong R (Var m) (Var x))
+  | Var m, Var n              => eq_rect m (fun x => Compat R (Var m) (Var x))
       (@C_Var R m) n
       <$> sumbool_to_optionl (string_dec m n)
   (* | Let r bs t, Let r' bs' t' => _ *)
@@ -441,7 +441,7 @@ Next Obligation. intuition; congruence. Qed.
 
 (* Why doesn't this work instead?
 
-Solve Obligations of is_cong with (intros; intuition; congruence).*)
+Solve Obligations of is_compat with (intros; intuition; congruence).*)
 
 *)
 
@@ -450,7 +450,7 @@ Solve Obligations of is_cong with (intros; intuition; congruence).*)
 Program Fixpoint is_inline (env : Env) (t t' : Term) {measure (term_size t + term_size t')}
   : option (Inline env t t') :=
   match t, t' with
-  | t, t' => Inl_Cong <$> (@is_cong t t' (Inline env) (fun s s' H => is_inline env s s'))
+  | t, t' => Inl_Compat <$> (@is_compat t t' (Inline env) (fun s s' H => is_inline env s s'))
   end
 .
 

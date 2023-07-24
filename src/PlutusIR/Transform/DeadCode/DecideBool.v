@@ -12,9 +12,9 @@ From PlutusCert Require Import
   Purity
   PlutusIR
   PlutusIR.Analysis.Equality
-  PlutusIR.Transform.Congruence
+  PlutusIR.Transform.Compat
   DeadBindings
-  Congruence
+  Compat
 .
 
 Import NamedTerm.
@@ -94,7 +94,7 @@ Fixpoint dec_Term (x y : Term) {struct x} : bool := match x, y with
      dec_Term t t'
   | TyInst (TyAbs _ _ t) _ , t' =>
      dec_Term t t'
-  | _ , _ => is_cong dec_Term x y
+  | _ , _ => dec_compat dec_Term x y
 
   end
 .
@@ -309,7 +309,7 @@ Hint Resolve
   dec_DatatypeBind_sound 
   : Hints_soundness.
 #[local]
-Hint Constructors Cong : Hints_soundness.
+Hint Constructors Compat : Hints_soundness.
 
 Theorem dec_Term_Binding_sound :
   (∀ t, P_Term t) /\ (∀ b, P_Binding b).

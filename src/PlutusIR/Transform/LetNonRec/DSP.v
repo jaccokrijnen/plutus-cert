@@ -317,7 +317,7 @@ Definition P_constructor_well_formed Delta c Tr : Prop := Delta |-ok_c c : Tr.
 Definition P_bindings_well_formed_nonrec Delta Gamma bs : Prop := 
   (
     forall bs',
-      Congruence.Cong_Bindings CNR_Term bs bs' ->
+      Compat.Compat_Bindings CNR_Term bs bs' ->
       forall Delta_t Gamma_t bsGn t t' Tn,
         Delta_t = flatten (List.map binds_Delta bs) ++ Delta  ->
         map_normalise (flatten (List.map binds_Gamma bs)) bsGn ->
@@ -342,7 +342,7 @@ Definition P_bindings_well_formed_rec Delta Gamma bs1 : Prop := Delta ,, Gamma |
 Definition P_binding_well_formed Delta Gamma b : Prop := 
   (
     forall b',
-      Congruence.Cong_Binding CNR_Term b b' ->
+      Compat.Compat_Binding CNR_Term b b' ->
       forall Delta_t Gamma_t bsGn t t' Tn bs bs',
         Delta_t = binds_Delta b ++ Delta ->
         map_normalise (binds_Gamma b) bsGn ->

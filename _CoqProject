@@ -25,7 +25,8 @@ src/PlutusIR/Transform/Inline.v
 src/PlutusIR/Transform/Rename.v
 src/PlutusIR/Transform/Inline/DecideStepBool.v
 src/PlutusIR/Transform/Inline/Intermediate.v
-src/PlutusIR/Transform/Congruence.v
+# src/PlutusIR/Transform/Congruence.v
+src/PlutusIR/Transform/Compat.v
 src/PlutusIR/Transform/Compose.v
 src/PlutusIR/Transform/Functional.v
 src/PlutusIR/Transform/FloatLet.v

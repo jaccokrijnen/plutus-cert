@@ -8,7 +8,7 @@ From PlutusCert Require Import
   Util
   PlutusIR
   PlutusIR.Analysis.Equality
-  PlutusIR.Transform.Congruence
+  PlutusIR.Transform.Compat
   PlutusIR.Transform.LetNonRec.
 Import NamedTerm.
 
@@ -61,7 +61,7 @@ Fixpoint Term_desugar (x y : Term) {struct x} : bool := match x, y with
         | Nothing    => false
        end
 
-  (* Other cases should be congruent, i.e. identical constructors
+  (* Other cases should be compatible, i.e. identical constructors
      and recursive Terms recursively desugared *)
   | Let Rec bs t, Let Rec bs' t' =>
       list_eqb Binding_desugar bs bs'
@@ -298,7 +298,7 @@ Proof. Admitted. (*
     end
     ).
 
-  (* Handle all congruence cases except Let Rec, Let Rec *)
+  (* Handle all compatibility cases except Let Rec, Let Rec *)
   all:
     constructor;
     bool_assumptions;
@@ -309,7 +309,7 @@ Proof. Admitted. (*
 
 
   (* Let Rec, Let Rec*)
-  { apply CNR_Cong.
+  { apply CNR_Compat.
     destruct r.
       (* Let Rec, Let NonRec (impossible) *)
       {
@@ -328,8 +328,8 @@ Proof. Admitted. (*
 
         apply C_Let.
           {
-            apply Cong_Bindings_Cons.
-              (* Cong_Binding CNR_Term b b0*)
+            apply Compat_Bindings_Cons.
+              (* Compat_Binding CNR_Term b b0*)
               { destruct b, b0.
                 all: try inversion binding_dec_true.
                 all: bool_assumptions.
@@ -356,14 +356,14 @@ Proof. Admitted. (*
                induction bs as [ | b bs IHbs].
                all: intros bs' H_bs_true.
                   { destruct bs'.
-                    { apply Cong_Bindings_Nil. }
+                    { apply Compat_Bindings_Nil. }
                     { inversion H_bs_true. }
                   }
 
                   (* TODO: this is duplication from the head case above*)
                   { destruct bs' as [ | b' bs'].
                     { inversion H_bs_true. }
-                    { apply Cong_Bindings_Cons.
+                    { apply Compat_Bindings_Cons.
                       {
                         { destruct b, b'.
                           all: try inversion H_bs_true.
