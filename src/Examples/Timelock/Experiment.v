@@ -79,7 +79,7 @@ Definition t_interm := inlined_intermediate [77] t_dce t_inl.
 Compute t_interm.
 
 
-From PlutusCert Require Import DeadBindings.
+From PlutusCert Require Import DeadCode.
 Compute bound_vars t_dce.
 Compute map fst (trace_passes trace).
 *)

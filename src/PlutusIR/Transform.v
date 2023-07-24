@@ -1,7 +1,7 @@
 From PlutusCert Require Export
   PlutusIR.Transform.Compose
   PlutusIR.Transform.Rename
-  PlutusIR.Transform.DeadBindings
+  PlutusIR.Transform.DeadCode
   PlutusIR.Transform.Inline
   PlutusIR.Transform.Equal
   PlutusIR.Transform.ThunkRecursions

@@ -138,34 +138,34 @@ Proof.
 Qed.
 
 Fixpoint
-  is_value' (n : nat) (t : Term) {struct t} :=
+  dec_value' (n : nat) (t : Term) {struct t} :=
   match t with
     | LamAbs x T t0 => true
     | TyAbs X K t   => true
-    | IWrap F T v   => is_value' n v && negb (is_error_b v)
+    | IWrap F T v   => dec_value' n v && negb (is_error_b v)
     | Constant u    => true
     | Error T       => true
 
 
     (* Duplication for the termination checker *)
     | Builtin f   => ltb n (arity f)
-    | Apply nv v  => is_value' n v && negb (is_error_b v) && is_value' (S n) nv
-    | TyInst nv T => is_value' (S n) nv
+    | Apply nv v  => dec_value' n v && negb (is_error_b v) && dec_value' (S n) nv
+    | TyInst nv T => dec_value' (S n) nv
     | _ => false
   end
   .
 
-Definition is_value := is_value' 0.
+Definition dec_value := dec_value' 0.
 
 Definition is_neutral_value (n : nat) (t : Term) :=
   match t with
-    | Builtin f   => is_value' n t
-    | Apply nv v  => is_value' n t
-    | TyInst nv T => is_value' n t
+    | Builtin f   => dec_value' n t
+    | Apply nv v  => dec_value' n t
+    | TyInst nv T => dec_value' n t
     | _           => false
   end.
 
-Lemma is_value_value : forall t, is_value t = true -> value t.
+Lemma dec_value_value : forall t, dec_value t = true -> value t.
 Admitted.
 
 Lemma is_neutral_value_neutral_value : forall n t, is_neutral_value n t = true -> neutral_value n t.

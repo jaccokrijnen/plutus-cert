@@ -18,7 +18,7 @@ Import NamedTerm.
 From PlutusCert Require Import PlutusIR.Analysis.FreeVars.
 From PlutusCert Require Import PlutusIR.Analysis.Equality.
 From PlutusCert Require Import PlutusIR.Transform.Compat.
-From PlutusCert Require Import PlutusIR.Transform.DeadBindings.
+From PlutusCert Require Import PlutusIR.Transform.DeadCode.
 
 Tactic Notation "step" hyp(n) :=
   destruct n;

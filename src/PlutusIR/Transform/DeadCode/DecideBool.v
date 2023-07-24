@@ -13,7 +13,7 @@ From PlutusCert Require Import
   PlutusIR
   PlutusIR.Analysis.Equality
   PlutusIR.Transform.Compat
-  DeadBindings
+  DeadCode
   Compat
 .
 
