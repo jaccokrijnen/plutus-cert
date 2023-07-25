@@ -29,12 +29,12 @@ Section Bindings.
     | b, b' => Binding_eqb b b'
     end.
 
-  Definition safely_removed b bs' :=
+  Definition dec_removed b bs' :=
     if negb (existsb (String.eqb (name_Binding b)) bs')
       then dec_pure_binding [] b
       else true.
 
-  Definition binding_was_there b' bs : bool :=
+  Definition dec_was_present b' bs : bool :=
     match find (λ b, String.eqb (name_Binding b) (name_Binding b')) bs with
       | Datatypes.Some b => dec_Binding b b'
       | None => false
@@ -63,7 +63,7 @@ Section Bindings.
   Definition dec_Bindings (bs bs' : list Binding) : bool :=
     let bsn := map name_Binding bs in
     let bs'n := map name_Binding bs' in
-    forallb (fun b => safely_removed b bs'n) bs &&
+    forallb (fun b => dec_removed b bs'n) bs &&
     forallb (fun b' => find_Binding b' bs) bs'.
 
   (* this did not pass termination checking *)
@@ -143,13 +143,13 @@ Ltac split_hypos :=
   end.
 
 
-Lemma H_safely_removed bs bs':
-    forallb (fun b => safely_removed b (map name_Binding bs')) bs = true ->
+Lemma H_dec_removed bs bs':
+    forallb (fun b => dec_removed b (map name_Binding bs')) bs = true ->
     ∀ b : Binding, In b bs → name_removed b bs' → pure_binding [] b.
 Proof with eauto with Hints_soundness.
   intros H_dec.
   intros b H_In H_removed.
-  unfold safely_removed in H_dec.
+  unfold dec_removed in H_dec.
   rewrite forallb_forall in H_dec. (* why did rewrite accept a <-> ? was also possible with eapply -> ..., but generated an existential for x *)
   apply H_dec in H_In as H_dec_andb.
   clear H_dec H_In.
@@ -213,13 +213,13 @@ Qed.
 Create HintDb Hints_bindings.
 #[local]
 Hint Resolve
-  H_safely_removed : Hints_bindings.
+  H_dec_removed : Hints_bindings.
 #[local]
 Hint Constructors
   elim_bindings : Hints_bindings.
 #[local]
 Hint Resolve
-  H_safely_removed
+  H_dec_removed
   H_find_binding' : Hints_bindings.
 #[local]
 Hint Constructors
@@ -236,7 +236,7 @@ Proof with eauto with Hints_bindings.
   simpl in H.
   unfold dec_Bindings in H.
   split_hypos.
-  eapply dc_bindings...
+  eapply elim_bindings_pure...
 Qed.
 
 
@@ -335,12 +335,12 @@ Proof with eauto with Hints_soundness.
           rewrite -> Forall_forall in H...
         }
         assert (H_eq_rec : rec = r)... subst.
-        eapply dc_delete_bindings...
+        eapply elim_delete_bindings...
 
       (* H_dec_Term: else branch *)
-      * eapply dc_delete_let...
+      * eapply elim_delete_let...
     }
-    all: try eapply dc_delete_let...
+    all: try eapply elim_delete_let...
 
   - unfold P_Term.
     destruct t'.
