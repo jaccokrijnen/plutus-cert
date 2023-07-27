@@ -46,17 +46,17 @@ Inductive well_scoped_Ty (Δ : ctx) : Ty -> Prop :=
 where "Δ '|-*' T " := (well_scoped_Ty Δ T).
 
 Reserved Notation "Δ ',,' Γ '|-+' t " (at level 101, t at level 0, no associativity).
-Reserved Notation "Δ '|-ok_c' c " (at level 101, c at level 0).
-Reserved Notation "Δ ',,' Γ  '|-oks_nr' bs" (at level 101, bs at level 0, no associativity).
-Reserved Notation "Δ ',,' Γ '|-oks_r' bs" (at level 101, bs at level 0, no associativity).
-Reserved Notation "Δ ',,' Γ '|-ok_b' b" (at level 101, b at level 0, no associativity).
+Reserved Notation "Δ '|-ws_ok_c' c " (at level 101, c at level 0).
+Reserved Notation "Δ ',,' Γ  '|-ws_oks_nr' bs" (at level 101, bs at level 0, no associativity).
+Reserved Notation "Δ ',,' Γ '|-ws_oks_r' bs" (at level 101, bs at level 0, no associativity).
+Reserved Notation "Δ ',,' Γ '|-ws_ok_b' b" (at level 101, b at level 0, no associativity).
 
 Inductive constructor_well_formed (Δ : ctx) : constructor -> Prop :=
   | W_Con : forall x T ar,
       Δ |-* T ->
-      Δ |-ok_c (Constructor (VarDecl x T) ar)
+      Δ |-ws_ok_c (Constructor (VarDecl x T) ar)
   where 
-    "Δ '|-ok_c' c" := (constructor_well_formed Δ c)
+    "Δ '|-ws_ok_c' c" := (constructor_well_formed Δ c)
 .
 
 Inductive well_scoped (Δ Γ: ctx) : Term -> Prop :=
@@ -97,13 +97,13 @@ Inductive well_scoped (Δ Γ: ctx) : Term -> Prop :=
   | WS_Let : forall bs t Δ' Γ',
       Δ' = rev (btvbs bs) ++ Δ ->
       Γ' = rev (bvbs bs) ++ Γ ->
-      Δ ,, Γ |-oks_nr bs ->
+      Δ ,, Γ |-ws_oks_nr bs ->
       Δ' ,, Γ' |-+ t ->
       Δ ,, Γ |-+ (Let NonRec bs t)
   | WS_LetRec : forall bs t Δ' Γ',
       Δ' = rev (btvbs bs) ++ Δ ->
       Γ' = rev (bvbs bs) ++ Γ ->
-      Δ' ,, Γ' |-oks_r bs ->
+      Δ' ,, Γ' |-ws_oks_r bs ->
       Δ' ,, Γ' |-+ t ->
       Δ ,, Γ |-+ (Let Rec bs t)
 
@@ -111,39 +111,39 @@ Inductive well_scoped (Δ Γ: ctx) : Term -> Prop :=
 with bindings_well_formed_nonrec (Δ Γ : ctx) : list Binding -> Prop :=
 
   | W_NilB_NonRec :
-    Δ ,, Γ |-oks_nr nil
+    Δ ,, Γ |-ws_oks_nr nil
 
   | W_ConsB_NonRec : forall b bs,
-      Δ ,, Γ |-ok_b b ->
-      (btvb b ++ Δ) ,, (bvb b ++ Γ) |-oks_nr bs ->
-      Δ ,, Γ |-oks_nr (b :: bs)
+      Δ ,, Γ |-ws_ok_b b ->
+      (btvb b ++ Δ) ,, (bvb b ++ Γ) |-ws_oks_nr bs ->
+      Δ ,, Γ |-ws_oks_nr (b :: bs)
 
 with bindings_well_formed_rec (Δ Γ : ctx) : list Binding -> Prop :=
 
   | W_NilB_Rec :
-      Δ ,, Γ |-oks_r nil
+      Δ ,, Γ |-ws_oks_r nil
   | W_ConsB_Rec : forall b bs,
-      Δ ,, Γ |-ok_b b ->
-      Δ ,, Γ |-oks_r bs ->
-      Δ ,, Γ |-oks_r (b :: bs)
+      Δ ,, Γ |-ws_ok_b b ->
+      Δ ,, Γ |-ws_oks_r bs ->
+      Δ ,, Γ |-ws_oks_r (b :: bs)
 
 with binding_well_formed (Δ Γ : ctx) : Binding -> Prop :=
   | W_Term : forall s x T t,
       Δ |-* T ->
       Δ ,, Γ |-+ t ->
-      Δ ,, Γ |-ok_b (TermBind s (VarDecl x T) t)
+      Δ ,, Γ |-ws_ok_b (TermBind s (VarDecl x T) t)
   | W_Type : forall X K T,
       Δ |-* T ->
-      Δ ,, Γ |-ok_b (TypeBind (TyVarDecl X K) T)
+      Δ ,, Γ |-ws_ok_b (TypeBind (TyVarDecl X K) T)
   | W_Data : forall X YKs cs matchFunc Δ',
       Δ' = rev (map tvd_name YKs) ++ Δ  ->
-      (forall c, In c cs -> Δ' |-ok_c c) ->
-      Δ ,, Γ |-ok_b (DatatypeBind (Datatype X YKs matchFunc cs))
+      (forall c, In c cs -> Δ' |-ws_ok_c c) ->
+      Δ ,, Γ |-ws_ok_b (DatatypeBind (Datatype X YKs matchFunc cs))
 
   where "Δ ',,' Γ '|-+' t" := (well_scoped Δ Γ t)
-  and "Δ ',,' Γ '|-oks_nr' bs" := (bindings_well_formed_nonrec Δ Γ bs)
-  and "Δ ',,' Γ '|-oks_r' bs" := (bindings_well_formed_rec Δ Γ bs)
-  and "Δ ',,' Γ '|-ok_b' b" := (binding_well_formed Δ Γ b)
+  and "Δ ',,' Γ '|-ws_oks_nr' bs" := (bindings_well_formed_nonrec Δ Γ bs)
+  and "Δ ',,' Γ '|-ws_oks_r' bs" := (bindings_well_formed_rec Δ Γ bs)
+  and "Δ ',,' Γ '|-ws_ok_b' b" := (binding_well_formed Δ Γ b)
 .
 
 Definition closed := well_scoped [] [].
