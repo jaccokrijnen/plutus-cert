@@ -18,7 +18,7 @@ Definition Rel (T T' : Ty) (Chi : nat -> Term -> Term -> Prop) : Prop :=
     Chi j v v' -> 0 < j ->
       value v /\ value v' /\
       (exists Tn, normalise T Tn /\ ([] ,, [] |-+ v : Tn)) /\
-      (exists Tn', normalise T' Tn' /\ ([] ,, [] |-+ v' : Tn')) /\ 
+      (exists Tn', normalise T' Tn' /\ ([] ,, [] |-+ v' : Tn')) /\
       forall i,
         i <= j ->
         Chi i v v'.
@@ -34,12 +34,12 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
     forall j (Hlt_j : j < k) e_f,
       e =[j]=> e_f ->
       exists e'_f j', e' =[j']=> e'_f /\
-      
+
       (* RV *)
       (exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([] ,, [] |-+ e_f : Tn)) /\
       (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\  ([] ,, [] |-+ e'_f : Tn')) /\
-      
-      ( 
+
+      (
         (
           ~ is_error e_f /\
           ~ is_error e'_f /\
@@ -49,7 +49,7 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
             (* RV for type variable *)
             | Ty_Var a =>
                 forall Chi,
-                  sem rho a = Datatypes.Some Chi ->  
+                  sem rho a = Datatypes.Some Chi ->
                   Chi (k - j) e_f e'_f
 
             (* RV for type lambda *)
@@ -57,11 +57,11 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
                 False
 
             (* RV for type application *)
-            | Ty_App T1 T2 => 
+            | Ty_App T1 T2 =>
                 False
 
             (* RV for built-in types *)
-            | Ty_Builtin st => 
+            | Ty_Builtin st =>
                 exists sv sv',
                   (* Determine the shape of e_f and e'_f *)
                   e_f = Constant sv /\
@@ -96,7 +96,7 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
                     RC i T0n rho v_0 v'_0
 
             (* RV for universal types *)
-            | Ty_Forall X K Tn => 
+            | Ty_Forall X K Tn =>
                 exists e_body e'_body,
                   (* Determine the shape of e_f and e_f' *)
                   e_f = TyAbs X K e_body /\
@@ -121,6 +121,44 @@ Definition RV (k : nat) (T : Ty) (rho : tymapping) (v v' : Term) : Prop :=
   value v /\ value v' /\ RC k T rho v v'.
 
 (** Converting from RC to RV and vice versa *)
+
+Lemma make_RC k T rho e e' :
+  (forall j (Hlt_j : j < k) e_f,
+    e =[j]=> e_f ->
+    exists e'_f j', e' =[j']=> e'_f /\ RV (k - j) T rho e_f e'_f
+  ) ->
+  RC k T rho e e'.
+Proof with auto.
+  intros H.
+  autorewrite with RC.
+  intros.
+
+  assert (
+    exists (e'_f : Term) (j' : nat),
+      e' =[ j' ]=> e'_f /\ RV (k - j) T rho e_f e'_f
+      )...
+  destruct H1 as [e'_f [j' [H_e'_runs H_RV_e_f_e'_f]]].
+  exists e'_f, j'.
+  split.
+    - assumption.
+    - unfold RV in H_RV_e_f_e'_f.
+      destruct H_RV_e_f_e'_f as [H_val_e_f [H_val_e'_f H_RC]].
+      autorewrite with RC in H_RC.
+      assert (H_lt : 0 < k - j).
+        { lia. }
+      assert (H_eval := eval_value__value _ H_val_e_f).
+      assert (H__ := H_RC 0 H_lt e_f H_eval); clear H_RC.
+      destruct H__ as [e'f0 [j'' [H_eval_e'_f HH]]].
+
+      (* Since j is e'_f is a value, we should know that e'f0 = e'_f*)
+      assert (H_eval_e'_f_val := eval_value__value _ H_val_e'_f).
+      assert (H_eqs := eval__deterministic _ _ _ H_eval_e'_f _ _ H_eval_e'_f_val).
+      destruct H_eqs; subst.
+
+      assert (H_kj0 : forall k j, k - j - 0 = k - j). lia.
+      rewrite H_kj0 in HH.
+      assumption.
+Qed.
 
 Lemma RC_to_RV : forall k T rho e e',
     RC k T rho e e' ->
@@ -151,6 +189,17 @@ Proof.
   split. eapply eval_value__value. eapply eval_to_value__eval. eauto.
   rewrite <- minus_n_O.
   eauto.
+Qed.
+
+Lemma RV_RC k T rho e e' :
+  RC k T rho e e' <->
+  (forall j (Hlt_j : j < k) e_f,
+    e =[j]=> e_f ->
+    exists e'_f j', e' =[j']=> e'_f /\ RV (k - j) T rho e_f e'_f
+  ).
+Proof.
+constructor;
+eauto using make_RC, RC_to_RV.
 Qed.
 
 Corollary RV_unfolded_to_RV : forall k T rho v v',
@@ -192,7 +241,7 @@ Inductive RG (rho : tymapping) (k : nat) : tass -> env -> env -> Prop :=
       ~ (is_error v1) ->
       RG rho k c e1 e2 ->
       RG rho k ((x, T) :: c) ((x, v1) :: e1) ((x, v2) :: e2).
-  
+
 Fixpoint closed_env (env : env) :=
   match env with
   | nil => True
@@ -203,7 +252,7 @@ Fixpoint closed_env (env : env) :=
 
     If $\Gamma \vdash e : \tau$ and $\Gamma \vdash e' : \tau$, then we write
     $\Gamma \vdash e \leq e' : \tau$ to mean that
-    for all $k \geq 0$, if $env$ and $env'$ are mappings from variables $x$ to closed 
+    for all $k \geq 0$, if $env$ and $env'$ are mappings from variables $x$ to closed
     values that are lated for $k$ steps at $\Gamma$, then $\gamma(e)$ and
     $\gamma(e')$ are related for $k$ steps as computations of type $\tau$.
 *)
@@ -214,10 +263,10 @@ Definition LR_logically_approximate (Delta : list (string * Kind)) (Gamma : list
       RD Delta rho ->
       RG rho k Gamma env env' ->
       RC k T rho (msubst_term env (msubstA_term (msyn1 rho) e)) (msubst_term env' (msubstA_term (msyn2 rho) e')).
-      
-(** Logical relation: logical equivalence 
 
-    We say $e$ and $e'$ are logically equivalent, written 
+(** Logical relation: logical equivalence
+
+    We say $e$ and $e'$ are logically equivalent, written
     $\Gamma \vdash e \tilde e' : \tau$, if they logically approximate one
     another.
 *)
