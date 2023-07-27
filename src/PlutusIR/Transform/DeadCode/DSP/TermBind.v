@@ -152,7 +152,13 @@ Proof.
   destruct
     (* binder x should not occur as let-bound variable in bs *)
     (existsb (eqb x) (bvbs <{ /[ γ /][bnr] (/[[ msyn1 ρ /][bnr] bs) }>)).
-    + admit. (* should be impossible by uniqueness *)
+    + admit.
+
+      (* 1. bvbs don't change with substitution *)
+      (* 2. existsb (eqb x) (bvbs bs) -> Term.appears_bound_in x (Let r bs t) *)
+      (* 3. Inversion on H_unique gives case: UNI_Let_TermBind *)
+      (* 4. Contradiction with premise of that rule *)
+
     +
       (* combine single substitution with multi-substitution *)
       rewrite compose_subst_msubst
