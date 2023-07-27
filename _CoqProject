@@ -39,6 +39,7 @@ src/PlutusIR/Transform/LetNonRec/SSP.v
 src/PlutusIR/Transform/LetTypes.v
 src/PlutusIR/Transform/DeadCode.v
 src/PlutusIR/Transform/DeadCode/DecideBool.v
+src/PlutusIR/Transform/DeadCode/DSP.v
 src/PlutusIR/Transform/Beta.v
 src/PlutusIR/Transform/Unwrap.v
 #src/PlutusIR/Transform/ScottEnc.v
@@ -126,4 +127,5 @@ src/PlutusIR/Semantics/Misc/Axiom.v
 
 src/Util/List.v
 src/Util/Map.v
+src/Util/Tactics.v
 src/Util/Map/Mupdate.v
