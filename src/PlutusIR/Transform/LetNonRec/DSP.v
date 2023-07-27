@@ -22,52 +22,6 @@ Require Import Coq.Program.Basics.
 
 (** ** Translation relation specific compatibility lemmas *)
 
-Lemma compatibility_LetNonRec_Nil__desugar : forall Delta Gamma t t' Tn,
-    Delta |-* Tn : Kind_Base ->
-    LR_logically_approximate Delta Gamma t t' Tn ->
-    LR_logically_approximate Delta Gamma (Let NonRec nil t) t' Tn.
-Proof with eauto_LR.
-  intros Delta Gamma t t' Tn Hkind__T IHLR__t.
-  unfold LR_logically_approximate.
-
-  destruct IHLR__t as [Htyp__t [Htyp__t' IH__t]].
-
-  split...
-  split...
-
-  intros k rho env env' H_RD H_RG.
-
-  rewrite msubstA_LetNonRec_nil.
-  rewrite msubst_LetNonRec_nil.
-
-  autorewrite with RC.
-
-  intros j Hlt__j e_f Hev__e_f.
-  inversion Hev__e_f. subst.
-  inversion H3. subst.
-  rename j0 into j_1.
-  rename H3 into Hev'__e_f.
-  rename H0 into Hev''__e_f.
-  
-
-  assert (HRC__t : RC k Tn rho 
-    (msubst_term env (msubstA_term (msyn1 rho) t))
-    (msubst_term env' (msubstA_term (msyn2 rho) t'))
-  )...
-
-  apply RC_to_RV with (j := j_1) (e_f := e_f) in HRC__t as temp...
-  destruct temp as [e'_f1 [j'_1 [Hev__e'_f1 HRV__t]]].
-
-  eexists. eexists.
-
-  split...
-
-  split... eapply RV_typable_empty_1...
-  split... eapply RV_typable_empty_2...
-
-  eapply RV_condition... 
-  eapply RV_monotone...
-Qed.
 
 Lemma compatibility_TermBind__desugar : forall Delta Gamma t t' Tn b bs fbs' tb tb' x Tb Tbn,
   Delta |-* Tb : Kind_Base ->
@@ -411,7 +365,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
     + inversion X. subst.
       inversion H0. subst.
       simpl in H2.
-      eapply compatibility_LetNonRec_Nil__desugar...
+      eapply compatibility_LetNonRec_Nil'...
   - (* W_ConsB_NonRec *)
     split. all: intros. all: subst.
     + rewrite flatten_app in H5.
