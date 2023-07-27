@@ -47,29 +47,29 @@ Proof.
   apply compatibility_LetNonRec_Nil'.
 Qed.
 
-Lemma compat_TermBind pm_Δ pm_Γ t t' Tn b bs x Tb tb Tbn :
-  pm_Δ |-* Tb : Kind_Base ->
+Lemma compat_TermBind Δ Γ t t' Tn b bs x Tb tb Tbn :
+  Δ |-* Tb : Kind_Base ->
   normalise Tb Tbn ->
-  (pm_Δ ,, pm_Γ |-+ tb : Tbn) ->
+  (Δ ,, Γ |-+ tb : Tbn) ->
 
   disjoint (bvb b) (fv t') ->
-  unique t ->
+  unique (Let NonRec bs t) ->
   (* pure_binding [] b -> *)
   (* TODO, generalize pure_binding to arbitrary Γ, because this limits b to strictly bound values.
   This is not a typing environment though: for each var in scope,
   is it letbound strict/nonstrict or lambdabound *)
 
-  forall pm_Δbs pm_Γbs,
+  forall Δbs Γbs,
     b = TermBind Strict (VarDecl x Tb) tb ->
-    pure_open pm_Δ pm_Γ tb Tbn ->
-    pm_Δbs = pm_Δ ->
-    pm_Γbs = (x, Tbn) :: pm_Γ ->
-    LR_logically_approximate pm_Δbs pm_Γbs (Let NonRec       bs  t) t' Tn ->
-    LR_logically_approximate pm_Δ   pm_Γ   (Let NonRec (b :: bs) t) t' Tn.
+    pure_open Δ Γ tb Tbn ->
+    Δbs = Δ ->
+    Γbs = (x, Tbn) :: Γ ->
+    LR_logically_approximate Δbs Γbs (Let NonRec       bs  t) t' Tn ->
+    LR_logically_approximate Δ   Γ   (Let NonRec (b :: bs) t) t' Tn.
 Proof.
   intros H_Tb_kind H_Tbn H_tb_ty.
   intros H_disjoint_b H_unique.
-  intros pm_Δbs pm_Γbs.
+  intros Δbs Γbs.
   intros H_Eqb H_pure H_Δb H_Γb.
   intros H_IH_let_bs.
 
@@ -134,7 +134,7 @@ Proof.
     specialize (H_pure ltac:(assumption) ltac:(assumption) (msyn1 ρ) γ).
 
     assert (H_pure_γ : pure_substitution γ). { apply RG_pure_substitution_1 in H_Γ_γ_γ'. assumption. }
-    assert (H_substitution_γ : substitution pm_Γ γ). { apply RG_substitution_1 in H_Γ_γ_γ'. assumption. }
+    assert (H_substitution_γ : substitution Γ γ). { apply RG_substitution_1 in H_Γ_γ_γ'. assumption. }
 
     assert (H_pure_closed : pure (close (msyn1 ρ) γ tb)) by auto.
     destruct H_pure_closed as [l [v [H_eval H_not_err]]].
@@ -170,7 +170,7 @@ Proof.
 
       (** Use fundamental property to find relates values for the
           RHS term tb. *)
-      assert (H_LR_tb : LR_logically_approximate pm_Δ pm_Γ tb tb Tbn).
+      assert (H_LR_tb : LR_logically_approximate Δ Γ tb tb Tbn).
         { auto using LR_reflexivity. }
       destruct H_LR_tb as [_ [_ H_approx]].
       assert
@@ -188,7 +188,7 @@ Proof.
       apply E_Let in H_bs_terminate. (* use eval instead of eval_bindings_nonrec *)
 
       (** Construct related environments *)
-      assert (H_γₓ_γ'ₓ : RG ρ (k - j1) ((x, Tbn) :: pm_Γ) γₓ γ'ₓ).
+      assert (H_γₓ_γ'ₓ : RG ρ (k - j1) ((x, Tbn) :: Γ) γₓ γ'ₓ).
       { subst γₓ γ'ₓ.
         eapply RG_cons.
         - eapply RV_monotone.
