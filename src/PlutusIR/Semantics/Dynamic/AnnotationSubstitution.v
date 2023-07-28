@@ -1,4 +1,5 @@
 Require Import PlutusCert.PlutusIR.
+Import PlutusNotations.
 Import NamedTerm.
 
 Require Import PlutusCert.PlutusIR.Semantics.Static.TypeSubstitution.
@@ -109,6 +110,7 @@ Notation "'[[' U '/' X '][bnr]' bs" := (substA_bnr X U bs) (in custom plutus_ter
 Notation "'[[' U '/' X '][br]' bs" := (substA_br X U bs) (in custom plutus_term at level 20, X constr).
 Notation "'[[' U '/' X '][cs]' cs" := (substA_cs X U cs) (in custom plutus_term at level 20, X constr).
 Notation "'[[' U '/' X '][c]' c" := (substA_c X U c) (in custom plutus_term at level 20, X constr).
+
 
 (** Multi-substitutions of types in type annotations *)
 Fixpoint msubstA (ss : list (tyname * Ty)) (t : Term) : Term :=

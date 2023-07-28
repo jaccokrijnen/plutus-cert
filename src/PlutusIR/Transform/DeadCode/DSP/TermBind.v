@@ -17,6 +17,8 @@ From PlutusCert Require Import Analysis.UniqueBinders.
 From PlutusCert Require Import Substitution.
 From PlutusCert Require Import Util.Tactics.
 
+Import PlutusNotations.
+
 From PlutusCert Require Import DeadCode.DSP.Lemmas.
 
 Import NamedTerm.

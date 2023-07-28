@@ -10,6 +10,8 @@ Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyp
 Require Import PlutusCert.Util.Map.Mupdate.
 Require Import PlutusCert.Util.List.
 
+Import PlutusNotations.
+
 Require Import Coq.Lists.List.
 Import ListNotations.
 

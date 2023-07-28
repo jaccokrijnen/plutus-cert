@@ -3,6 +3,8 @@ Require Import PlutusCert.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.Tymapping.
 Require Import PlutusCert.Util.List.
 
+Import PlutusNotations.
+
 From Coq Require Import Lia.
 
 Require Import Arith.

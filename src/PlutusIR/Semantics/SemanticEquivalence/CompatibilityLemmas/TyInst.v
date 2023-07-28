@@ -6,6 +6,8 @@ Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNorma
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
 
+Import PlutusNotations.
+
 Require Import Arith.
 
 
