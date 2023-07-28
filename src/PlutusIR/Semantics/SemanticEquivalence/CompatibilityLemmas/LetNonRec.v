@@ -42,8 +42,8 @@ Proof with eauto_LR.
   rename H0 into Hev''__e_f.
 
   assert (HRC__t : RC k Tn rho 
-    (msubst env (msubstA_term (msyn1 rho) t))
-    (msubst env' (msubstA_term (msyn2 rho) t'))
+    (msubst env (msubstA (msyn1 rho) t))
+    (msubst env' (msubstA (msyn2 rho) t'))
   )...
 
   apply RC_to_RV with (j := j_1) (e_f := e_f) in HRC__t as temp...
@@ -98,8 +98,8 @@ Proof with eauto_LR.
   
 
   assert (HRC__t : RC k Tn rho 
-    (msubst env (msubstA_term (msyn1 rho) t))
-    (msubst env' (msubstA_term (msyn2 rho) t'))
+    (msubst env (msubstA (msyn1 rho) t))
+    (msubst env' (msubstA (msyn2 rho) t'))
   )...
 
   apply RC_to_RV with (j := j_1) (e_f := e_f) in HRC__t as temp...

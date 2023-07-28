@@ -67,7 +67,7 @@ Definition P_Binding (b : Binding) : Prop :=
   P_Binding
   : core.
 
-Theorem substituteA_preserves_typing : 
+Theorem substA_preserves_typing : 
   forall t, P_Term t.
 Proof with (eauto using substituteT_preserves_kinding with typing). 
   apply Term__ind with P_Binding.

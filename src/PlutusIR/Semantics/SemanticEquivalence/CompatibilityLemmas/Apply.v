@@ -46,8 +46,8 @@ Proof with eauto_LR.
 
     assert (HRC1 : 
       RC k (Ty_Fun T1 T2) rho 
-        (msubst env (msubstA_term (msyn1 rho) e1)) 
-        (msubst env' (msubstA_term (msyn2 rho) e1'))
+        (msubst env (msubstA (msyn1 rho) e1)) 
+        (msubst env' (msubstA (msyn2 rho) e1'))
     )...
 
     apply RC_to_RV with (j := j_1) (e_f := LamAbs x T t0) in HRC1 as temp...
@@ -56,8 +56,8 @@ Proof with eauto_LR.
     assert (k - j_1 <= k)...
     assert (HRC2 : 
       RC (k - j_1) T1 rho 
-        (msubst env (msubstA_term (msyn1 rho) e2)) 
-        (msubst env' (msubstA_term (msyn2 rho) e2'))
+        (msubst env (msubstA (msyn1 rho) e2)) 
+        (msubst env' (msubstA (msyn2 rho) e2'))
     ) by eauto using RG_monotone.
     clear H.
 
@@ -113,8 +113,8 @@ Proof with eauto_LR.
 
     assert (HRC1 : 
       RC k (Ty_Fun T1 T2) rho 
-        (msubst env (msubstA_term (msyn1 rho) e1)) 
-        (msubst env' (msubstA_term (msyn2 rho) e1'))
+        (msubst env (msubstA (msyn1 rho) e1)) 
+        (msubst env' (msubstA (msyn2 rho) e1'))
     )...
 
     apply RC_to_RV with (j := j_1) (e_f := Error T) in HRC1 as temp...
@@ -157,8 +157,8 @@ Proof with eauto_LR.
 
     assert (HRC2 : 
       RC k T1 rho 
-        (msubst env (msubstA_term (msyn1 rho) e2)) 
-        (msubst env' (msubstA_term (msyn2 rho) e2'))
+        (msubst env (msubstA (msyn1 rho) e2)) 
+        (msubst env' (msubstA (msyn2 rho) e2'))
     ) by eauto using RG_monotone.
 
     apply RC_to_RV  with (j := j_2) (e_f := Error T) in HRC2 as temp...

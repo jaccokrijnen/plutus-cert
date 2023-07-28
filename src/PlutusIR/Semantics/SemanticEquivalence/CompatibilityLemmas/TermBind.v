@@ -26,7 +26,7 @@ Proof.
 Qed.
 
 Lemma msubstA_TermBind : forall ss stricty x T e,
-    msubstA_binding ss (TermBind stricty (VarDecl x T) e) = TermBind stricty (VarDecl x (msubstT ss T)) (msubstA_term ss e).
+    msubstA_b ss (TermBind stricty (VarDecl x T) e) = TermBind stricty (VarDecl x (msubstT ss T)) (msubstA ss e).
 Proof.
   induction ss; intros.
   - reflexivity.
@@ -132,8 +132,8 @@ Proof with eauto_LR.
 
     assert (HRC__tb :
     RC k Tbn rho
-      (msubst env (msubstA_term (msyn1 rho) tb))
-      (msubst env' (msubstA_term (msyn2 rho) tb'))  
+      (msubst env (msubstA (msyn1 rho) tb))
+      (msubst env' (msubstA (msyn2 rho) tb'))  
     )...
     clear IH__tb.
 
@@ -154,8 +154,8 @@ Proof with eauto_LR.
         eapply normalisation__deterministic in Hnorm__Tbn...
       - assert (closed vb). eapply RV_closed_1...
         assert (closed vb'). eapply RV_closed_2...
-        replace vb with (msubstA_term (msyn1 rho) vb) by (eapply msubstA_closed; eauto).
-        replace vb' with (msubstA_term (msyn2 rho) vb') by (eapply msubstA_closed; eauto).
+        replace vb with (msubstA (msyn1 rho) vb) by (eapply msubstA_closed; eauto).
+        replace vb' with (msubstA (msyn2 rho) vb') by (eapply msubstA_closed; eauto).
         simpl in Hmapnorm__bsGn.
         inversion Hmapnorm__bsGn. subst.
         replace Tn0 with Tbn...
@@ -319,8 +319,8 @@ Proof with eauto_LR.
 
     assert (HRC__tb :
       RC k Tbn rho
-        (msubst env (msubstA_term (msyn1 rho) tb))
-        (msubst env' (msubstA_term (msyn2 rho) tb'))  
+        (msubst env (msubstA (msyn1 rho) tb))
+        (msubst env' (msubstA (msyn2 rho) tb'))  
       )...
     clear IH__tb.
 

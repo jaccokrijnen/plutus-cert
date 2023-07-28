@@ -90,7 +90,7 @@ Qed.
 Lemma msubstA_closed : forall t,
     closed t ->
     forall ss,
-      msubstA_term ss t = t.
+      msubstA ss t = t.
 Proof.
   induction ss.
   - reflexivity.
@@ -163,7 +163,7 @@ Proof. Admitted.
 
 Lemma substA_msubstA : forall envA X U t,
     Ty.closed U ->
-    msubstA_term envA <{ [[U/X]t }> = <{ [[U/X] {msubstA_term (drop X envA) t} }>.
+    msubstA envA <{ [[U/X]t }> = <{ [[U/X] {msubstA (drop X envA) t} }>.
 Proof. Admitted.
 
 Lemma substA_msubst : forall X U env t,
@@ -262,7 +262,7 @@ Lemma msubstA_preserves_typing_1 : forall rho ck,
     forall Delta Gamma t T Tn,
       ck ++ Delta ,, Gamma |-+ t : T ->
       normalise (msubstT (msyn1 rho) T) Tn ->
-      Delta ,, mgsubst (msyn1 rho) Gamma |-+ (msubstA_term (msyn1 rho) t) : Tn. 
+      Delta ,, mgsubst (msyn1 rho) Gamma |-+ (msubstA (msyn1 rho) t) : Tn. 
 Proof.
   intros rho ck V.
   induction V.
@@ -281,7 +281,7 @@ Proof.
     eapply normalise_commutes in H3 as temp.
     destruct temp as [T0n [Hn1 Hn2]].
     eapply IHV.
-    + eapply substituteA_preserves_typing.
+    + eapply substA_preserves_typing.
       * eauto.
       * eauto.
       * apply Hn1.
@@ -293,7 +293,7 @@ Lemma msubstA_preserves_typing_2 : forall rho ck,
     forall Delta Gamma t T Tn,
       ck ++ Delta ,, Gamma |-+ t : T ->
       normalise (msubstT (msyn2 rho) T) Tn ->
-      Delta ,, mgsubst (msyn2 rho) Gamma |-+ (msubstA_term (msyn2 rho) t) : Tn. 
+      Delta ,, mgsubst (msyn2 rho) Gamma |-+ (msubstA (msyn2 rho) t) : Tn. 
 Proof.
   intros rho ck V.
   induction V.
@@ -312,7 +312,7 @@ Proof.
     eapply normalise_commutes in H3 as temp.
     destruct temp as [T0n [Hn1 Hn2]].
     eapply IHV.
-    + eapply substituteA_preserves_typing.
+    + eapply substA_preserves_typing.
       * eauto.
       * eauto.
       * apply Hn1.
@@ -423,7 +423,7 @@ Corollary closingA_preserves_typing_1 : forall Delta Gamma rho t T Tn,
     RD Delta rho ->
     Delta ,, Gamma |-+ t : T ->
     normalise (msubstT (msyn1 rho) T) Tn ->
-    [] ,, mgsubst (msyn1 rho) Gamma |-+ (msubstA_term (msyn1 rho) t) : Tn. 
+    [] ,, mgsubst (msyn1 rho) Gamma |-+ (msubstA (msyn1 rho) t) : Tn. 
 Proof with eauto.
   intros.
   rewrite <- app_nil_r with (l := Delta) in H0.
@@ -434,7 +434,7 @@ Corollary closingA_preserves_typing_2 : forall Delta Gamma rho t T Tn,
     RD Delta rho ->
     Delta ,, Gamma |-+ t : T ->
     normalise (msubstT (msyn2 rho) T) Tn ->
-    [] ,, mgsubst (msyn2 rho) Gamma |-+ (msubstA_term (msyn2 rho) t) : Tn. 
+    [] ,, mgsubst (msyn2 rho) Gamma |-+ (msubstA (msyn2 rho) t) : Tn. 
 Proof with eauto.
   intros.
   rewrite <- app_nil_r with (l := Delta) in H0.

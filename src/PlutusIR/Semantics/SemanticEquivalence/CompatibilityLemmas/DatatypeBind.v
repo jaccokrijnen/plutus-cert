@@ -17,7 +17,7 @@ Proof.
 Qed.
 
 Lemma msubstA_DatatypeBind : forall ss X YKs matchFunc cs,
-    msubstA_binding ss (DatatypeBind (Datatype X YKs matchFunc cs)) = DatatypeBind (Datatype X YKs matchFunc (msubstA_constructors ss cs)).
+    msubstA_b ss (DatatypeBind (Datatype X YKs matchFunc cs)) = DatatypeBind (Datatype X YKs matchFunc (msubstA_cs ss cs)).
 Proof.
   induction ss; intros.
   - reflexivity.

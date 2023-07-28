@@ -63,8 +63,8 @@ Lemma msubstBind ss s x t : msubst_b ss (TermBind s x t)
   = TermBind s x (msubst ss t).
 Admitted.
 
-Lemma msubstA_TermBind ss s x t : msubstA_binding ss (TermBind s x t)
-  = TermBind s x (msubstA_term ss t).
+Lemma msubstA_TermBind ss s x t : msubstA_b ss (TermBind s x t)
+  = TermBind s x (msubstA ss t).
 Admitted.
 
 Lemma compose_subst_msubst : forall x tx γ t,
@@ -118,7 +118,7 @@ Admitted.
 End ScopingLemmas.
 
 
-Definition close ρ γ t := msubst γ (msubstA_term ρ t).
+Definition close ρ γ t := msubst γ (msubstA ρ t).
 
 Section Purity.
 
