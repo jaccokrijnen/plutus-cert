@@ -37,7 +37,7 @@ Definition P_binding_well_formed Δ Γ b :=
     LR_logically_approximate Δ_t Γ_t (Let NonRec bs t) (Let NonRec bs' t') Tn ->
     LR_logically_approximate Δ Γ (Let NonRec (b :: bs) t) (Let NonRec (b :: bs') t') Tn.
 
-#[export] Hint Unfold 
+#[export] Hint Unfold
   P_has_type
   P_constructor_well_formed
   P_bindings_well_formed_nonrec
@@ -52,7 +52,7 @@ Lemma LR_reflexivity : forall Δ Γ e T,
     LR_logically_approximate Δ Γ e e T.
     (* P_has_type Δ Γ e T. *)
 Proof with eauto.
-  apply has_type__ind with 
+  apply has_type__ind with
     (P := P_has_type)
     (P0 := P_constructor_well_formed)
     (P1 := P_bindings_well_formed_nonrec)

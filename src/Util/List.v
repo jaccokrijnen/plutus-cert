@@ -67,7 +67,7 @@ Proof with auto.
 Qed.
 
 Lemma lookup_append_cong {X : Type} k (new kvs kvs' : list (string * X)) :
-  lookup k kvs = lookup k kvs' -> 
+  lookup k kvs = lookup k kvs' ->
   lookup k (new ++ kvs) = lookup k (new ++ kvs').
 Proof with auto.
   intros H_kvs_kvs'.
@@ -151,7 +151,7 @@ Proof with auto.
   all: try (simpl; rewrite H_x_x1, H_x_x2; auto).
   assert (x2 = x1).
     { rewrite -> eqb_eq in *.
-      apply eq_sym in H_x_x2. 
+      apply eq_sym in H_x_x2.
       transitivity x...
     }
   contradiction.
@@ -248,7 +248,7 @@ Fixpoint mdrop {X:Type} (ns : list string) (nxs: list (string * X)) : list (stri
   match ns with
   | nil => nxs
   | n :: ns' =>
-      mdrop ns' (drop n nxs) 
+      mdrop ns' (drop n nxs)
   end.
 
 Definition forall2b {A} (p : A -> A -> bool) := fix f xs ys :=

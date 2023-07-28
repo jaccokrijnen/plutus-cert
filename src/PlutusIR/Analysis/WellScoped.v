@@ -42,7 +42,7 @@ Inductive well_scoped_Ty (Δ : ctx) : Ty -> Prop :=
   | WST_App : forall T1 T2,
       Δ |-* T1 ->
       Δ |-* T2 ->
-      Δ |-* (Ty_App T1 T2) 
+      Δ |-* (Ty_App T1 T2)
 where "Δ '|-*' T " := (well_scoped_Ty Δ T).
 
 Reserved Notation "Δ ',,' Γ '|-+' t " (at level 101, t at level 0, no associativity).
@@ -55,7 +55,7 @@ Inductive constructor_well_formed (Δ : ctx) : constructor -> Prop :=
   | W_Con : forall x T ar,
       Δ |-* T ->
       Δ |-ws_ok_c (Constructor (VarDecl x T) ar)
-  where 
+  where
     "Δ '|-ws_ok_c' c" := (constructor_well_formed Δ c)
 .
 

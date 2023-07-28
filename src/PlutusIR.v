@@ -424,7 +424,7 @@ Section Term_rect.
     (H_Error    : forall t : Ty, P (Error t))
     (H_IWrap    : forall (t t0 : Ty) (t1 : Term), P t1 -> P (IWrap t t0 t1))
     (H_Unwrap   : forall t : Term, P t -> P (Unwrap t)).
-    
+
   Context
     (H_TermBind : forall s v t, P t -> Q (TermBind s v t))
     (H_TypeBind : forall v ty, Q (TypeBind v ty))
@@ -458,7 +458,7 @@ Section Term_rect.
       | DatatypeBind dtd => H_DatatypeBind dtd
     end.
 End Term_rect.
- 
+
 Section Term__ind.
   Import NamedTerm.
 
@@ -479,7 +479,7 @@ Section Term__ind.
     (H_Error    : forall t : Ty, P (Error t))
     (H_IWrap    : forall (t t0 : Ty) (t1 : Term), P t1 -> P (IWrap t t0 t1))
     (H_Unwrap   : forall t : Term, P t -> P (Unwrap t)).
-    
+
   Context
     (H_TermBind : forall s v t, P t -> Q (TermBind s v t))
     (H_TypeBind : forall v ty, Q (TypeBind v ty))

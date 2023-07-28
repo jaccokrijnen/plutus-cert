@@ -64,9 +64,9 @@ Fixpoint splitTy (T : Ty) : list Ty * Ty :=
 
 Definition fromDecl (tvd : tvdecl tyname) : tyname * Kind :=
   match tvd with
-  | TyVarDecl v K => (v, K)   
+  | TyVarDecl v K => (v, K)
   end.
-    
+
 Definition unwrapIFix (F : Ty) (K : Kind) (T : Ty) : Ty := (Ty_App (Ty_App F (Ty_Lam "X" K (Ty_IFix F (Ty_Var "X")))) T).
 
 (** Typing of terms *)
@@ -87,7 +87,7 @@ Inductive has_type : list (string * Kind) -> list (string * Ty) -> Term -> Ty ->
   | T_LamAbs : forall Delta Gamma x T1 t T2n T1n,
       Delta |-* T1 : Kind_Base ->
       normalise T1 T1n ->
-      Delta ,, (x, T1n) :: Gamma |-+ t : T2n -> 
+      Delta ,, (x, T1n) :: Gamma |-+ t : T2n ->
       Delta ,, Gamma |-+ (LamAbs x T1 t) : (Ty_Fun T1n T2n)
   | T_Apply : forall Delta Gamma t1 t2 T1n T2n,
       Delta ,, Gamma |-+ t1 : (Ty_Fun T1n T2n) ->
@@ -131,12 +131,12 @@ Inductive has_type : list (string * Kind) -> list (string * Ty) -> Term -> Ty ->
   (** Let-bindings
       Note: The rules for let-constructs differ significantly from the paper definitions
       because we had to adapt the typing rules to the compiler implementation of type checking.
-      Reference: The Haskell module PlutusIR.TypeCheck.Internal in the 
+      Reference: The Haskell module PlutusIR.TypeCheck.Internal in the
       iohk/plutus/plutus-core/plutus-ir project.
   **)
   | T_Let : forall Delta Gamma bs t Tn Delta' Gamma' bsGn,
       Delta' = flatten (map binds_Delta bs) ++ Delta ->
-      map_normalise (flatten (map binds_Gamma bs)) bsGn -> 
+      map_normalise (flatten (map binds_Gamma bs)) bsGn ->
       Gamma' = bsGn ++ Gamma ->
       Delta ,, Gamma |-oks_nr bs ->
       Delta' ,, Gamma' |-+ t : Tn ->
@@ -144,7 +144,7 @@ Inductive has_type : list (string * Kind) -> list (string * Ty) -> Term -> Ty ->
       Delta ,, Gamma |-+ (Let NonRec bs t) : Tn
   | T_LetRec : forall Delta Gamma bs t Tn Delta' Gamma' bsGn,
       Delta' = flatten (map binds_Delta bs) ++ Delta ->
-      map_normalise (flatten (map binds_Gamma bs)) bsGn -> 
+      map_normalise (flatten (map binds_Gamma bs)) bsGn ->
       Gamma' = bsGn ++ Gamma->
       Delta' ,, Gamma' |-oks_r bs ->
       Delta' ,, Gamma' |-+ t : Tn ->
@@ -200,7 +200,7 @@ Scheme has_type__ind := Minimality for has_type Sort Prop
   with bindings_well_formed_rec__ind := Minimality for bindings_well_formed_rec Sort Prop
   with binding_well_formed__ind := Minimality for binding_well_formed Sort Prop.
 
-Combined Scheme has_type__multind from 
+Combined Scheme has_type__multind from
   has_type__ind,
   bindings_well_formed_nonrec__ind,
   bindings_well_formed_rec__ind,
@@ -234,7 +234,7 @@ Inductive context_has_type : list (string * Kind) -> list (string * Ty) -> Conte
   | T_C_LamAbs : forall Δ₁ Γ₁ x T1 C Δ Γ Tn T2n T1n,
       Δ₁ |-* T1 : Kind_Base ->
       normalise T1 T1n ->
-      Δ₁ ,, (x, T1n) :: Γ₁ |-C C                 : (Δ ,, Γ ▷ Tn) ↝ T2n -> 
+      Δ₁ ,, (x, T1n) :: Γ₁ |-C C                 : (Δ ,, Γ ▷ Tn) ↝ T2n ->
       Δ₁ ,,             Γ₁ |-C (C_LamAbs x T1 C) : (Δ ,, Γ ▷ Tn) ↝ (Ty_Fun T1n T2n)
 
   | T_C_Apply_L : forall Δ₁ Γ₁ Δ Γ C t Tn T1n T2n,

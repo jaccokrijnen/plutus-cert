@@ -55,7 +55,7 @@ Definition P_Term (t : Term) :=
     [] |-* U : K ->
     normalise (substituteT X U T) Tn ->
     Delta ,, (gsubst X U Gamma) |-+ <{ [[U / X] t }> : Tn.
-    
+
 Definition P_Binding (b : Binding) : Prop :=
   forall Delta Gamma X K U,
     ((X, K) :: Delta) ,, Gamma |-ok_b b ->
@@ -67,9 +67,9 @@ Definition P_Binding (b : Binding) : Prop :=
   P_Binding
   : core.
 
-Theorem substA_preserves_typing : 
+Theorem substA_preserves_typing :
   forall t, P_Term t.
-Proof with (eauto using substituteT_preserves_kinding with typing). 
+Proof with (eauto using substituteT_preserves_kinding with typing).
   apply Term__ind with P_Binding.
   all: intros.
   all: unfold P_Term.

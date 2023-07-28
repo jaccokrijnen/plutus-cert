@@ -15,13 +15,13 @@ Require Export PlutusCert.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLe
 Require Export PlutusCert.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.Var.
 
 Create HintDb DSP_compatibility_lemmas.
-#[export] Hint Resolve 
+#[export] Hint Resolve
   compatibility_Apply
   compatibility_Builtin
   compatibility_Constant
   compatibility_DatatypeBind
   compatibility_Error
-  compatibility_IWrap 
+  compatibility_IWrap
   compatibility_LamAbs
   compatibility_LetNonRec_Nil
   compatibility_LetRec

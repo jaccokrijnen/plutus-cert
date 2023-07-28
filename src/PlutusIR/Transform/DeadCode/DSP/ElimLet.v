@@ -108,12 +108,12 @@ Definition P_has_type Δ Γ t T : Prop :=
 
 Definition P_constructor_well_formed Delta c Tr : Prop := Delta |-ok_c c : Tr.
 
-Definition P_bindings_well_formed_nonrec Delta Gamma bs : Prop := 
+Definition P_bindings_well_formed_nonrec Delta Gamma bs : Prop :=
   True.
 
 Definition P_bindings_well_formed_rec Delta Gamma bs1 : Prop := Delta ,, Gamma |-oks_r bs1.
 
-Definition P_binding_well_formed Delta Gamma b : Prop := 
+Definition P_binding_well_formed Delta Gamma b : Prop :=
   True.
 *)
 

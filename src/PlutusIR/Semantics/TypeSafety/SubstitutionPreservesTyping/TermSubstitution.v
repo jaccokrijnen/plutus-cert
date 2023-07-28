@@ -165,11 +165,11 @@ Qed.
 
 (** * Main lemmas *)
 
-Lemma substitution_preserves_typing : 
+Lemma substitution_preserves_typing :
   (forall t, P_Term t) /\ (forall b, P_Binding b).
 Proof with eauto.
-  apply Term__multind with 
-    (P := P_Term) 
+  apply Term__multind with
+    (P := P_Term)
     (Q := P_Binding).
   all: intros; autounfold; intros.
   all: try solve [try (inversion H || inversion H0 || inversion H1); subst; eauto with typing].
@@ -270,7 +270,7 @@ Proof with eauto.
     inversion H0. subst.
     simpl.
     destruct (x =? s)%string eqn:Heqb.
-    + apply eqb_eq in Heqb as Heq. 
+    + apply eqb_eq in Heqb as Heq.
       subst.
       apply T_LamAbs...
       apply Typing.weakening_term with (Delta' := Delta) (Gamma' := ((s, T1n) :: Gamma)) in H11 .

@@ -10,26 +10,26 @@ Require Import Coq.Strings.String.
 Local Open Scope string_scope.
 
 Definition fact_term (n : Z) : Term :=
-  Let 
+  Let
     Rec
-    [ TermBind 
-        Strict 
-        (VarDecl 
-          "fact" 
-          (Ty_Fun 
-            (Ty_Builtin (Some (TypeIn DefaultUniInteger))) 
+    [ TermBind
+        Strict
+        (VarDecl
+          "fact"
+          (Ty_Fun
+            (Ty_Builtin (Some (TypeIn DefaultUniInteger)))
             (Ty_Builtin (Some (TypeIn DefaultUniInteger)))
           )
-        ) 
-        (LamAbs 
-          "x" 
+        )
+        (LamAbs
+          "x"
           (Ty_Builtin (Some (TypeIn DefaultUniInteger)))
           (Apply
             (Apply
               (Apply
                 (TyInst
                   (Builtin IfThenElse)
-                  (Ty_Builtin (Some (TypeIn DefaultUniInteger)))  
+                  (Ty_Builtin (Some (TypeIn DefaultUniInteger)))
                 )
                 (Apply
                   (Apply
@@ -59,10 +59,10 @@ Definition fact_term (n : Z) : Term :=
             )
           )
         )
-    ] 
+    ]
     (Apply
       (Var "fact")
-      (Constant (Some (ValueOf DefaultUniInteger n)))  
+      (Constant (Some (ValueOf DefaultUniInteger n)))
     ).
 
 Ltac invert_contra := let Hcon := fresh "Hcon" in intros Hcon; inversion Hcon.
@@ -125,7 +125,7 @@ Admitted.
         decide_neutral...
       } {
         eapply E_Apply... {
-          eapply E_LetRec... 
+          eapply E_LetRec...
           eapply E_LetRec_TermBind...
         } {
           eapply E_NeutralApplyFull...
@@ -158,7 +158,7 @@ Admitted.
               eapply E_LetRec...
               eapply E_LetRec_TermBind...
             } {
-              eapply E_NeutralApplyFull... 
+              eapply E_NeutralApplyFull...
               eapply FA_Apply...
               eapply FA_Apply...
               eapply FA_Builtin...

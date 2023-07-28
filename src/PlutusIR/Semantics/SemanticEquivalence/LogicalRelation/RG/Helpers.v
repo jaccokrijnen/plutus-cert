@@ -34,7 +34,7 @@ Lemma RG_domains_match : forall c e1 e2 k rho,
         lookup x e1 = Datatypes.Some v1 /\
         lookup x e2 = Datatypes.Some v2.
 Proof.
-  intros c e1 e2 k rho V. 
+  intros c e1 e2 k rho V.
   induction V; intros x0 T0 C.
   - discriminate.
   - simpl.
@@ -71,7 +71,7 @@ Proof.
   - split; reflexivity.
   - split.
     + simpl.
-      split. 
+      split.
       * eapply RV_typable_empty_1 in H; eauto.
         destruct H as [Tn [Hnorm__Tn Htyp__v1]].
         eapply typable_empty__closed.
@@ -114,7 +114,7 @@ Proof.
     + inversion G. subst.
       inversion E1. subst.
       inversion E2. subst.
-      assumption. 
+      assumption.
     + apply IHV with x'; assumption.
 Qed.
 

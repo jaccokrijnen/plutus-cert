@@ -10,7 +10,7 @@ Inductive is_error : Term -> Prop :=
 
 Inductive value : Term -> Prop :=
   | V_LamAbs : forall x T t0,
-      value (LamAbs x T t0) 
+      value (LamAbs x T t0)
   | V_TyAbs : forall X K t,
       value (TyAbs X K t)
   | V_IWrap : forall F T v,
@@ -21,15 +21,15 @@ Inductive value : Term -> Prop :=
       value (Constant u)
   | V_Error : forall T,
       value (Error T)
-  (** Builtins *) 
+  (** Builtins *)
   | V_Neutral : forall nv,
       neutral_value 0 nv ->
       value nv
-  (** If-Then-Else constructs 
+  (** If-Then-Else constructs
 
       NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity.
   *)
-  (* | V_If : 
+  (* | V_If :
       value (Builtin IfThenElse)
   | V_If1 : forall T,
       value (TyInst (Builtin IfThenElse) T)
@@ -60,7 +60,7 @@ with neutral_value : nat -> Term -> Prop :=
 Scheme value__ind := Minimality for value Sort Prop
   with neutral_value__ind := Minimality for neutral_value Sort Prop.
 
-Combined Scheme value__multind from 
+Combined Scheme value__multind from
   value__ind,
   neutral_value__ind.
 

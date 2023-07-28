@@ -10,7 +10,7 @@ Local Open Scope string_scope.
     triplets of the form [(Chi, T1, T2)].
 
     [Chi] is the semantic substitution for the type variable [a], wherease [T1]
-    and [T2] are, respectively, the ''left'' and ''right'' syntactic substitutions 
+    and [T2] are, respectively, the ''left'' and ''right'' syntactic substitutions
     for the type variable [a].
 *)
 Definition tymapping := list (tyname * ((nat -> Term -> Term -> Prop) * Ty * Ty)).
@@ -22,7 +22,7 @@ Definition tymapping := list (tyname * ((nat -> Term -> Term -> Prop) * Ty * Ty)
 Fixpoint sem (rho : tymapping) (a : tyname) : option (nat -> Term -> Term -> Prop) :=
   match rho with
   | nil => None
-  | (a', (Chi, _ , _)) :: rho' => 
+  | (a', (Chi, _ , _)) :: rho' =>
       if a =? a' then Datatypes.Some Chi else sem rho' a
   end.
 
@@ -30,7 +30,7 @@ Fixpoint sem (rho : tymapping) (a : tyname) : option (nat -> Term -> Term -> Pro
 Fixpoint syn1 (rho : tymapping) (a : tyname) : option Ty :=
   match rho with
   | nil => None
-  | (a', (_, T1, _)) :: rho' => 
+  | (a', (_, T1, _)) :: rho' =>
       if a =? a' then Datatypes.Some T1 else syn1 rho' a
   end.
 
@@ -38,7 +38,7 @@ Fixpoint syn1 (rho : tymapping) (a : tyname) : option Ty :=
 Fixpoint syn2 (rho : tymapping) (a : tyname) : option Ty :=
   match rho with
   | nil => None
-  | (a', (_, _, T2)) :: rho' => 
+  | (a', (_, _, T2)) :: rho' =>
       if a =? a' then Datatypes.Some T2 else syn2 rho' a
   end.
 
@@ -46,7 +46,7 @@ Fixpoint syn2 (rho : tymapping) (a : tyname) : option Ty :=
 Fixpoint msyn1 (rho : tymapping) : list (tyname * Ty) :=
   match rho with
   | nil => nil
-  | (a', (_, T1, _)) :: rho' => 
+  | (a', (_, T1, _)) :: rho' =>
       (a', T1) :: msyn1 rho'
   end.
 
@@ -54,6 +54,6 @@ Fixpoint msyn1 (rho : tymapping) : list (tyname * Ty) :=
 Fixpoint msyn2 (rho : tymapping) : list (tyname * Ty) :=
   match rho with
   | nil => nil
-  | (a', (_, _, T2)) :: rho' => 
+  | (a', (_, _, T2)) :: rho' =>
       (a', T2) :: msyn2 rho'
   end.

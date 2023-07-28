@@ -49,7 +49,7 @@ Section Bindings.
     | b :: bs => if String.eqb (name_Binding b) (name_Binding b') then dec_Binding b b' else find bs
     end.
 
-  (* This does not work in the termination checker, it doesn't see that b returned by find 
+  (* This does not work in the termination checker, it doesn't see that b returned by find
      is a structural subterm.
      It would have to fuse the result of find (an option string) with the resulting, which is
      what I did in the above definition*)
@@ -79,13 +79,13 @@ End Bindings.
 
 Fixpoint dec_Term (x y : Term) {struct x} : bool := match x, y with
 
-  | Let r bs t   , Let r' bs' t' => 
+  | Let r bs t   , Let r' bs' t' =>
       if dec_Bindings dec_Term bs bs'
       then (* same let block, but bindings were removed *)
         Recursivity_eqb r r' && dec_Term t t'
       else (* t' is another let block, the whole block in the pre-term was removed *)
         forallb (dec_pure_binding []) bs && dec_Term t y (* Check whether the whole let was removed *)
-  | Let _ bs t   , _ => 
+  | Let _ bs t   , _ =>
      forallb (dec_pure_binding []) bs && dec_Term t y (* Check whether the whole let was removed *)
   | TyInst (TyAbs α k t) τ , TyInst (TyAbs α' k' t') τ'  =>
      String.eqb α α' &&
@@ -242,7 +242,7 @@ Qed.
 
 Lemma dec_TermBind_sound : ∀ s v t b b',
   b = TermBind s v t ->
-  P_Term t -> 
+  P_Term t ->
   dec_Binding dec_Term b b' = true ->
   elim_binding b b'.
 Proof with eauto with Hints_soundness.
@@ -304,9 +304,9 @@ Hint Resolve all_pure : Hints_soundness.
 Hint Resolve dec_Bindings_sound' : Hints_soundness.
 #[local]
 Hint Resolve
-  dec_TermBind_sound 
-  dec_TypeBind_sound 
-  dec_DatatypeBind_sound 
+  dec_TermBind_sound
+  dec_TypeBind_sound
+  dec_DatatypeBind_sound
   : Hints_soundness.
 #[local]
 Hint Constructors Compat : Hints_soundness.

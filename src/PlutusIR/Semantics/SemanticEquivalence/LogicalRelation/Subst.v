@@ -15,19 +15,19 @@ Import ListNotations.
 
 Local Open Scope string_scope.
 
-(* ADMIT: We admit many lemmas here due to time constraints. They should hold or should at least hold with 
+(* ADMIT: We admit many lemmas here due to time constraints. They should hold or should at least hold with
    minor adjustements to our definitions. *)
 
 (** Properties of substitutions *)
 
 Lemma subst_closed : forall t,
-    closed t -> 
+    closed t ->
     forall x s,
       <{ [s / x] t }> = t.
 Proof. Admitted.
 
 Lemma substA_closed : forall t,
-    closed t -> 
+    closed t ->
     forall X T,
       <{ [[T / X] t }> = t.
 Proof. Admitted.
@@ -128,7 +128,7 @@ Proof.
     subst.
     eauto.
   - apply eqb_neq in Heqb as Hneq.
-    simpl.  
+    simpl.
     rewrite swap_subst; eauto.
 Qed.
 
@@ -203,9 +203,9 @@ Qed.
 
 (*
 Lemma mupdate_drop : forall (c : tass) Gamma x x',
-      lookupT (mupdate Gamma (drop x c)) x' 
-    = if String.eqb x x' 
-        then lookupT Gamma x' 
+      lookupT (mupdate Gamma (drop x c)) x'
+    = if String.eqb x x'
+        then lookupT Gamma x'
         else lookupT (mupdate Gamma c) x'.
 Proof. Admitted.
 *)
@@ -241,7 +241,7 @@ Proof.
   induction xts.
   - auto.
   - intros.
-    destruct a. 
+    destruct a.
     simpl.
     eauto.
 Qed.
@@ -252,7 +252,7 @@ Proof. induction xts; auto. simpl. destruct a. auto. Qed.
 
 Lemma normalise_commutes : forall ss X U T Tn,
     normalise (msubstT ss (substituteT X U T)) Tn ->
-    exists T0n, 
+    exists T0n,
       normalise (substituteT X U T) T0n /\
       normalise (msubstT ss T0n) Tn.
 Proof. Admitted.
@@ -262,7 +262,7 @@ Lemma msubstA_preserves_typing_1 : forall rho ck,
     forall Delta Gamma t T Tn,
       ck ++ Delta ,, Gamma |-+ t : T ->
       normalise (msubstT (msyn1 rho) T) Tn ->
-      Delta ,, mgsubst (msyn1 rho) Gamma |-+ (msubstA (msyn1 rho) t) : Tn. 
+      Delta ,, mgsubst (msyn1 rho) Gamma |-+ (msubstA (msyn1 rho) t) : Tn.
 Proof.
   intros rho ck V.
   induction V.
@@ -285,7 +285,7 @@ Proof.
       * eauto.
       * eauto.
       * apply Hn1.
-    + eassumption. 
+    + eassumption.
 Qed.
 
 Lemma msubstA_preserves_typing_2 : forall rho ck,
@@ -293,7 +293,7 @@ Lemma msubstA_preserves_typing_2 : forall rho ck,
     forall Delta Gamma t T Tn,
       ck ++ Delta ,, Gamma |-+ t : T ->
       normalise (msubstT (msyn2 rho) T) Tn ->
-      Delta ,, mgsubst (msyn2 rho) Gamma |-+ (msubstA (msyn2 rho) t) : Tn. 
+      Delta ,, mgsubst (msyn2 rho) Gamma |-+ (msubstA (msyn2 rho) t) : Tn.
 Proof.
   intros rho ck V.
   induction V.
@@ -316,7 +316,7 @@ Proof.
       * eauto.
       * eauto.
       * apply Hn1.
-    + eassumption. 
+    + eassumption.
 Qed.
 
 Lemma msubst_preserves_typing_1 : forall rho k c e1 e2,
@@ -324,7 +324,7 @@ Lemma msubst_preserves_typing_1 : forall rho k c e1 e2,
     0 < k ->
     forall Gamma T t,
       [] ,, (mgsubst (msyn1 rho) (c ++ Gamma)) |-+ t : T ->
-      [] ,, (mgsubst (msyn1 rho) Gamma) |-+ (msubst e1 t) : T. 
+      [] ,, (mgsubst (msyn1 rho) Gamma) |-+ (msubst e1 t) : T.
 Proof.
   intros rho k c e1 e2 V Hlt.
   induction V as [ | ? ? ? ? ? ? ? H_RV H_normal H_pure ].
@@ -348,7 +348,7 @@ Lemma msubst_preserves_typing_2 : forall rho k c e1 e2,
     0 < k ->
     forall Gamma T t,
       [] ,, (mgsubst (msyn2 rho) (c ++ Gamma)) |-+ t : T ->
-      [] ,, (mgsubst (msyn2 rho) Gamma) |-+ (msubst e2 t) : T. 
+      [] ,, (mgsubst (msyn2 rho) Gamma) |-+ (msubst e2 t) : T.
 Proof.
   intros rho k c e1 e2 V Hlt.
   induction V as [ | ? ? ? ? ? ? ? H_RV H_normal H_pure ].
@@ -365,7 +365,7 @@ Proof.
       eauto.
     + eauto.
     + eauto.
-Qed. 
+Qed.
 
 Lemma msubstT_preserves_kinding_1 : forall ck rho,
   RD ck rho ->
@@ -423,7 +423,7 @@ Corollary closingA_preserves_typing_1 : forall Delta Gamma rho t T Tn,
     RD Delta rho ->
     Delta ,, Gamma |-+ t : T ->
     normalise (msubstT (msyn1 rho) T) Tn ->
-    [] ,, mgsubst (msyn1 rho) Gamma |-+ (msubstA (msyn1 rho) t) : Tn. 
+    [] ,, mgsubst (msyn1 rho) Gamma |-+ (msubstA (msyn1 rho) t) : Tn.
 Proof with eauto.
   intros.
   rewrite <- app_nil_r with (l := Delta) in H0.
@@ -434,7 +434,7 @@ Corollary closingA_preserves_typing_2 : forall Delta Gamma rho t T Tn,
     RD Delta rho ->
     Delta ,, Gamma |-+ t : T ->
     normalise (msubstT (msyn2 rho) T) Tn ->
-    [] ,, mgsubst (msyn2 rho) Gamma |-+ (msubstA (msyn2 rho) t) : Tn. 
+    [] ,, mgsubst (msyn2 rho) Gamma |-+ (msubstA (msyn2 rho) t) : Tn.
 Proof with eauto.
   intros.
   rewrite <- app_nil_r with (l := Delta) in H0.

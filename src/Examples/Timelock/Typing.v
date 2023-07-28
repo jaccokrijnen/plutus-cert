@@ -46,7 +46,7 @@ Ltac solve__constructors :=
       let H := fresh in
       intros c H; simpl; repeat solve__constructor
   end.
-  
+
 Ltac solve__kinding :=
   match goal with
   | |- ?Delta |-* ?T : ?K =>
@@ -91,7 +91,7 @@ Ltac solve__BindingsNonRec :=
   | |- ?Delta ,, ?Gamma |-oks_nr (?b :: ?bs) =>
       eapply W_ConsB_NonRec; try solve [ eauto with typing || solve__map_normalise || solve__DatatypeBind || solve__TermBind]
   end.
-  
+
 Ltac solve__Let :=
   match goal with
   | |- ?Delta ,, ?Gamma |-+ (Let ?rec ?bs ?t) : ?T =>
@@ -103,7 +103,7 @@ Ltac solve__typing :=
 
 
 
-(* 
+(*
    For readability purpose. These reduce to 11 and 71 respectively *m
 *)
 Definition ty_Bool := (TyName (Name ("Bool") (Unique (11)))).

@@ -31,8 +31,8 @@ Proof with eauto_LR.
   subst.
 
   autorewrite with RC.
-  
-  rewrite msubstA_Apply. rewrite msubstA_Apply. 
+
+  rewrite msubstA_Apply. rewrite msubstA_Apply.
   rewrite msubst_Apply. rewrite msubst_Apply.
 
   intros j Hlt__j e_f Hev__e_f.
@@ -44,9 +44,9 @@ Proof with eauto_LR.
     rename j2 into j_2.
     rename j0 into j_3.
 
-    assert (HRC1 : 
-      RC k (Ty_Fun T1 T2) rho 
-        (msubst env (msubstA (msyn1 rho) e1)) 
+    assert (HRC1 :
+      RC k (Ty_Fun T1 T2) rho
+        (msubst env (msubstA (msyn1 rho) e1))
         (msubst env' (msubstA (msyn2 rho) e1'))
     )...
 
@@ -54,9 +54,9 @@ Proof with eauto_LR.
     destruct temp as [e'_f1 [j'_1 [Hev__e'_f1 HRV1]]].
 
     assert (k - j_1 <= k)...
-    assert (HRC2 : 
-      RC (k - j_1) T1 rho 
-        (msubst env (msubstA (msyn1 rho) e2)) 
+    assert (HRC2 :
+      RC (k - j_1) T1 rho
+        (msubst env (msubstA (msyn1 rho) e2))
         (msubst env' (msubstA (msyn2 rho) e2'))
     ) by eauto using RG_monotone.
     clear H.
@@ -67,7 +67,7 @@ Proof with eauto_LR.
     apply RV_functional_extensionality in HRV1 as temp...
 
     destruct temp as [temp | temp].
-    + destruct temp as [Hnerr [Hnerr' temp]]. 
+    + destruct temp as [Hnerr [Hnerr' temp]].
       destruct temp as [x0 [e_body [e'_body [T1a [T1'a [Heq [Heq' Hfe]]]]]]].
       inversion Heq. subst. clear Heq.
 
@@ -82,7 +82,7 @@ Proof with eauto_LR.
       apply RC_to_RV with (j := j_3) (e_f := e_f) in HRC0 as temp...
       destruct temp as [e'_f [j'_3 [Hev__e'_f HRV0]]].
 
-      eexists. eexists. 
+      eexists. eexists.
       split. eapply E_Apply... apply RV_error in HRV2... destruct HRV2 as [ [Hnerr0 Hnerr0'] | [Herr0 Herr0']]...
 
       split. eapply RV_typable_empty_1...
@@ -111,9 +111,9 @@ Proof with eauto_LR.
   - (* E_Error_Apply1 *)
     rename j1 into j_1.
 
-    assert (HRC1 : 
-      RC k (Ty_Fun T1 T2) rho 
-        (msubst env (msubstA (msyn1 rho) e1)) 
+    assert (HRC1 :
+      RC k (Ty_Fun T1 T2) rho
+        (msubst env (msubstA (msyn1 rho) e1))
         (msubst env' (msubstA (msyn2 rho) e1'))
     )...
 
@@ -151,13 +151,13 @@ Proof with eauto_LR.
       }
 
       right...
-      
+
   - (* E_Error_Apply2 *)
     rename j2 into j_2.
 
-    assert (HRC2 : 
-      RC k T1 rho 
-        (msubst env (msubstA (msyn1 rho) e2)) 
+    assert (HRC2 :
+      RC k T1 rho
+        (msubst env (msubstA (msyn1 rho) e2))
         (msubst env' (msubstA (msyn2 rho) e2'))
     ) by eauto using RG_monotone.
 

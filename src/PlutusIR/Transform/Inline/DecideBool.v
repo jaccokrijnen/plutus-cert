@@ -79,7 +79,7 @@ Section Bindings.
       constructor.
         *  econstructor.
 
-    + destruct b. 
+    + destruct b.
       2, 3: inversion H_true.
       * inversion H_true.
       * inversion H_true.

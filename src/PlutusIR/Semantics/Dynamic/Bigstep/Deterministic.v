@@ -46,22 +46,22 @@ Ltac use_IH :=
   let H4 := fresh "H" in
   let H5 := fresh "H" in
   match goal with
-  | H1 : forall y2 j2, ?x =[j2]=> y2 -> ?y1 = y2 /\ ?j1 = j2, 
-    H2 : ?x =[?j1]=> ?v1, 
+  | H1 : forall y2 j2, ?x =[j2]=> y2 -> ?y1 = y2 /\ ?j1 = j2,
+    H2 : ?x =[?j1]=> ?v1,
     H3 : ?x =[?j3]=> ?v3
       |- ?v = ?v' /\ ?j = ?j' =>
     eapply H1 in H3; eauto; destruct H3 as [H4 H5]; try (inversion H4); subst
-  | H1 : forall y2 j2, ?x =[j2]=>nr y2 -> ?y1 = y2 /\ ?j1 = j2, 
-    H2 : ?x =[?j1]=>nr ?v1, 
+  | H1 : forall y2 j2, ?x =[j2]=>nr y2 -> ?y1 = y2 /\ ?j1 = j2,
+    H2 : ?x =[?j1]=>nr ?v1,
     H3 : ?x =[?j3]=>nr ?v3
       |- ?v = ?v' /\ ?j = ?j' =>
     eapply H1 in H3; eauto; destruct H3 as [H4 H5]; try (inversion H4); subst
-  | H1 : forall y2 j2, ?x =[j2]=>r y2 WITH ?bs0 -> ?y1 = y2 /\ ?j1 = j2, 
-    H2 : ?x =[?j1]=>r ?v1 WITH ?bs0, 
+  | H1 : forall y2 j2, ?x =[j2]=>r y2 WITH ?bs0 -> ?y1 = y2 /\ ?j1 = j2,
+    H2 : ?x =[?j1]=>r ?v1 WITH ?bs0,
     H3 : ?x =[?j3]=>r ?v3 WITH ?bs0
       |- ?v = ?v' /\ ?j = ?j' =>
     eapply H1 in H3; eauto; destruct H3 as [H4 H5]; try (inversion H4); subst
-  end. 
+  end.
 
 Ltac error_is_error :=
   match goal with
@@ -90,7 +90,7 @@ Proof with eauto.
   all: intros y5 j5 Hev.
   all: unfold_predicates.
   all: try solve [inversion Hev; subst; try_solve].
-  - inversion Hev; subst. 
+  - inversion Hev; subst.
     all: try_solve.
     + inversion H10. subst.
       apply eval_value in H12.
@@ -107,6 +107,6 @@ Proof with eauto.
       invert_neutral.
 (* ADMIT: Remaining proof cases are technical overhead.
     Since we have multiple evaluation rules for applications
-    and type instantiations, we need to do tedious work to 
+    and type instantiations, we need to do tedious work to
     derive contradictions. *)
 Admitted.

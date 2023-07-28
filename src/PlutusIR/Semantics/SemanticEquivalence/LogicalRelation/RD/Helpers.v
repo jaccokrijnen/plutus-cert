@@ -38,7 +38,7 @@ Lemma RD_sem_syn : forall ck rho,
     RD ck rho ->
     forall X Chi,
       sem rho X = Datatypes.Some Chi ->
-      exists T1 T2, 
+      exists T1 T2,
         syn1 rho X = Datatypes.Some T1 /\
         syn2 rho X = Datatypes.Some T2.
 Proof.

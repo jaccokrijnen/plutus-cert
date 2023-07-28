@@ -18,7 +18,7 @@ Proof with (eauto || solver).
   - (* ADMIT: See end of proof *)
     admit.
   - inversion IHhas_type1...
-  - inversion IHhas_type. subst. 
+  - inversion IHhas_type. subst.
     eapply preservation.
     2:{
       apply H2.
