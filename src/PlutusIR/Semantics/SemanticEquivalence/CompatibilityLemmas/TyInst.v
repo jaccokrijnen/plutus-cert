@@ -54,8 +54,8 @@ Proof with eauto_LR.
 
     assert (HRC :
       RC k (Ty_Forall X K2 T1n) rho
-        (msubst_term env (msubstA_term (msyn1 rho) e))
-        (msubst_term env' (msubstA_term (msyn2 rho) e'))
+        (msubst env (msubstA_term (msyn1 rho) e))
+        (msubst env' (msubstA_term (msyn2 rho) e'))
     )...
 
     apply RC_to_RV with (j := j_1) (e_f := TyAbs X0 K t0) in HRC as temp...

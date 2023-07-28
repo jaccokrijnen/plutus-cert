@@ -83,8 +83,8 @@ Proof with eauto_LR.
 
     assert (HRC : 
       RC k T0n rho 
-        (msubst_term env (msubstA_term (msyn1 rho) e)) 
-        (msubst_term env' (msubstA_term (msyn2 rho) e'))
+        (msubst env (msubstA_term (msyn1 rho) e)) 
+        (msubst env' (msubstA_term (msyn2 rho) e'))
     )... 
 
     apply RC_to_RV with (j := j) (e_f := e_f) in HRC as temp...
@@ -158,8 +158,8 @@ Proof with eauto_LR.
   - (* E_Error_Iwrap *)
     assert (HRC : 
       RC k T0n rho 
-        (msubst_term env (msubstA_term (msyn1 rho) e)) 
-        (msubst_term env' (msubstA_term (msyn2 rho) e'))
+        (msubst env (msubstA_term (msyn1 rho) e)) 
+        (msubst env' (msubstA_term (msyn2 rho) e'))
     )... 
 
     apply RC_to_RV with (j := j0) (e_f := Error T') in HRC as temp...

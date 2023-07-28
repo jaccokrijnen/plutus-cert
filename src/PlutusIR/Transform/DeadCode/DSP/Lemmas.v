@@ -59,8 +59,8 @@ Lemma msubstA_bs_cons ss b bs : <{ /[[ ss /][bnr] {b :: bs} }>
   = <{ /[[ ss /][b]b }> :: <{ /[[ ss /][bnr]bs }>.
 Admitted.
 
-Lemma msubst_TermBind ss s x t : msubst_binding ss (TermBind s x t)
-  = TermBind s x (msubst_term ss t).
+Lemma msubstBind ss s x t : msubst_b ss (TermBind s x t)
+  = TermBind s x (msubst ss t).
 Admitted.
 
 Lemma msubstA_TermBind ss s x t : msubstA_binding ss (TermBind s x t)
@@ -68,7 +68,7 @@ Lemma msubstA_TermBind ss s x t : msubstA_binding ss (TermBind s x t)
 Admitted.
 
 Lemma compose_subst_msubst : forall x tx γ t,
-  substitute x tx (msubst_term γ t) = msubst_term ((x, tx) :: γ) t.
+  subst x tx (msubst γ t) = msubst ((x, tx) :: γ) t.
 Admitted.
 
 Lemma compose_subst_msubst_bindings_nonrec : forall x tx γ bs,
@@ -118,7 +118,7 @@ Admitted.
 End ScopingLemmas.
 
 
-Definition close ρ γ t := msubst_term γ (msubstA_term ρ t).
+Definition close ρ γ t := msubst γ (msubstA_term ρ t).
 
 Section Purity.
 
