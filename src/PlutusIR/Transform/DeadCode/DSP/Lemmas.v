@@ -12,6 +12,8 @@ From PlutusCert Require Import Analysis.WellScoped.
 From PlutusCert Require Import TypeSafety.TypeLanguage.Preservation.
 From PlutusCert Require Import SemanticEquivalence.LogicalRelation.
 
+Import PlutusNotations.
+
 Import ListNotations.
 Import UniqueBinders.Term.
 

@@ -11,6 +11,7 @@ Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Auto.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation.
 
+Import PlutusNotations.
 
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Basics.

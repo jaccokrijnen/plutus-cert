@@ -10,6 +10,8 @@ Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstituti
 
 Require Import PlutusCert.Util.
 
+Import PlutusNotations.
+
 Require Import Coq.Lists.List.
 
 Local Open Scope list_scope.

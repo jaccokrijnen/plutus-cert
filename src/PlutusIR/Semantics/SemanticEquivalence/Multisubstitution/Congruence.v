@@ -6,6 +6,8 @@ Require Import PlutusCert.Util.List.
 Require Import PlutusCert.Util.Map.
 Require Import PlutusCert.Util.Map.Mupdate.
 
+Import PlutusNotations.
+
 Require Import Arith.
 Require Import Coq.Lists.List.
 

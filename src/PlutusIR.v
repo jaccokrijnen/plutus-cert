@@ -663,21 +663,27 @@ Definition Mu (f : Type -> Type) (g : Type -> Type) := forall a, (f a -> a) -> (
 
 Definition unitVal : NamedTerm.Term := Constant (Some (ValueOf DefaultUniUnit tt)).
 
-
+Declare Scope plutus_scope.
 
 Declare Custom Entry plutus_term.
 Declare Custom Entry plutus_ty.
 Declare Custom Entry plutus_kind.
 
-Notation "<{ e }>" := e (e custom plutus_term at level 99).
-Notation "<{{ e }}>" := e (e custom plutus_ty at level 99).
-Notation "<{{{ e }}}>" := e (e custom plutus_kind at level 99).
-Notation "( x )" := x (in custom plutus_term, x at level 99).
-Notation "( x )" := x (in custom plutus_ty, x at level 99).
-Notation "( x )" := x (in custom plutus_kind, x at level 99).
-Notation "x" := x (in custom plutus_term at level 0, x constr at level 0).
-Notation "x" := x (in custom plutus_ty at level 0, x constr at level 0).
-Notation "x" := x (in custom plutus_kind at level 0, x constr at level 0).
-Notation "{ x }" := x (in custom plutus_term at level 1, x constr).
-Notation "{ x }" := x (in custom plutus_ty at level 1, x constr).
-Notation "{ x }" := x (in custom plutus_kind at level 1, x constr).
+Module PlutusNotations.
+
+Notation "<{ e }>" := e (e custom plutus_term at level 99) : plutus_scope.
+Notation "<{{ e }}>" := e (e custom plutus_ty at level 99) : plutus_scope.
+Notation "<{{{ e }}}>" := e (e custom plutus_kind at level 99) : plutus_scope.
+Notation "( x )" := x (in custom plutus_term, x at level 99) : plutus_scope.
+Notation "( x )" := x (in custom plutus_ty, x at level 99) : plutus_scope.
+Notation "( x )" := x (in custom plutus_kind, x at level 99) : plutus_scope.
+Notation "x" := x (in custom plutus_term at level 0, x constr at level 0) : plutus_scope.
+Notation "x" := x (in custom plutus_ty at level 0, x constr at level 0) : plutus_scope.
+Notation "x" := x (in custom plutus_kind at level 0, x constr at level 0) : plutus_scope.
+Notation "{ x }" := x (in custom plutus_term at level 1, x constr) : plutus_scope.
+Notation "{ x }" := x (in custom plutus_ty at level 1, x constr) : plutus_scope.
+Notation "{ x }" := x (in custom plutus_kind at level 1, x constr) : plutus_scope.
+
+#[global]
+Open Scope plutus_scope.
+End PlutusNotations.

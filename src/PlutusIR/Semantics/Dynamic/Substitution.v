@@ -1,4 +1,5 @@
 Require Import PlutusCert.PlutusIR.
+Import PlutusNotations.
 Import NamedTerm.
 
 Require Export PlutusCert.PlutusIR.Analysis.BoundVars.
@@ -89,8 +90,8 @@ Definition subst_br x s bs := (@subst_br' subst_b x s bs).
 
 Notation "'[' s '/' x ']' t" := (subst x s t) (in custom plutus_term at level 20, x constr).
 Notation "'[' s '/' x '][b]' b" := (subst_b x s b) (in custom plutus_term at level 20, x constr).
-Notation "'[' s '/' x '][bnr]' bs" := (@subst_bnr' subst_b x s bs) (in custom plutus_term at level 20, x constr).
-Notation "'[' s '/' x '][br]' bs" := (@subst_br' subst_b x s bs) (in custom plutus_term at level 20, x constr).
+Notation "'[' s '/' x '][bnr]' bs" := (@subst_bnr x s bs) (in custom plutus_term at level 20, x constr).
+Notation "'[' s '/' x '][br]' bs" := (@subst_br  x s bs) (in custom plutus_term at level 20, x constr).
 
 (** Multi-substitutions of terms *)
 Fixpoint msubst (ss : list (name * Term)) (t : Term) : Term :=

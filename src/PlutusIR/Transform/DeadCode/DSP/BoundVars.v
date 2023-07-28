@@ -2,6 +2,9 @@ From PlutusCert Require Import PlutusIR.
 From PlutusCert Require Import Analysis.UniqueBinders.
 From PlutusCert Require Import Semantics.Dynamic.Substitution.
 From PlutusCert Require Import Semantics.Dynamic.AnnotationSubstitution.
+From PlutusCert Require Import Multisubstitution.Congruence.
+
+Import NamedTerm.
 
 Import UniqueBinders.Term.
 
@@ -9,15 +12,10 @@ Require Import Utf8_core.
 Require Import Lists.List.
 Require Import Strings.String.
 
-Set Diffs "on".
 
+(* Lemmas that prove that substitution will not change the set of bound variables *)
 
-
-(*
-Lemma msubst_cons γ b bs :
-msubst_bnr γ (b :: bs) = msubst_bnr γ bs
-*)
-
+(* Substitution does not change bound variables *)
 Definition bvb_subst_b x t b :
   bvb (subst_b x t b) = bvb b
   := match b with
@@ -25,43 +23,19 @@ Definition bvb_subst_b x t b :
       | _ => eq_refl
     end.
 
-Fixpoint bvbs_subst_bnr x t bs :
-  bvbs (subst_bnr x t bs) = bvbs bs.
-  refine (
-    match bs with
-       | nil => eq_refl
-       | b :: bs => _
-     end
-     ).
-    simpl.
-    refine (
-    match existsb (eqb x) (bvb b) with
-      | true  => _
-      | false => _
-    end
-    ).
-    - unfold bvbs.
-      rewrite map_cons.
-      rewrite bvb_subst_b.
-      reflexivity.
-    - rewrite @bvbs_cons.
-      rewrite @bvbs_cons. (* TODO, why does rewrite need @? *)
-
-    rewrite bvbs_subst_bnr.
-      rewrite bvb_subst_b.
-      reflexivity.
-Qed.
-
-Lemma bvbs_msubst_bnr γ b bs :
-  bvbs (msubst_bnr γ (b :: bs)) = bvb b ++ bvbs (msubst_bnr γ bs).
-Proof with auto.
+(* Substitution does not change bound variables *)
+Definition bvb_msubst_b γ b :
+  bvb (msubst_b γ b) = bvb b.
+Proof.
+  revert b.
   induction γ as [_ | [x t] γ] .
-  - simpl.
-    rewrite @bvbs_cons.
+  - intros b. reflexivity.
+  - intros b.
+    simpl.
+    rewrite IHγ.
+    rewrite bvb_subst_b.
     reflexivity.
-  - unfold msubst_bnr.
-    admit.
-Admitted.
+Qed.
 
 Lemma msubst_bnr_nil γ :
   msubst_bnr γ nil = nil.
@@ -71,20 +45,29 @@ Proof with auto.
   - destruct a...
 Qed.
 
-Lemma bvbs_msubst γ bs :
-  bvbs bs = bvbs (msubst_bnr γ bs).
-Proof with auto.
-  induction bs.
-  - induction γ.
-    + reflexivity.
-    + rewrite msubst_bnr_nil...
-  - rewrite bvbs_cons.
-Admitted.
 
-Lemma bvbs_msubstA : ∀ ρ bs ,
-  bvbs bs = bvbs <{ /[[ ρ /][bnr] bs }>.
+(* Substitution does not change bound variables *)
+Lemma bvbs_msubst_bnr γ bs :
+  bvbs (msubst_bnr γ bs) = bvbs bs.
+Proof with auto.
+  revert γ.
+  induction bs as [ | b bs].
+  all: intros γ.
+  - rewrite msubst_bnr_nil.
+    reflexivity.
+  - rewrite @bvbs_cons.
+    rewrite msubst_bnr_cons.
+    rewrite @bvbs_cons.
+    rewrite bvb_msubst_b.
+    rewrite IHbs with (γ := List.mdrop (bvb b) γ).
+    reflexivity.
+Qed.
+
+Lemma bvbs_msubstA_bnr : ∀ ρ bs ,
+  bvbs bs = bvbs (msubstA_bnr ρ bs).
 Admitted.
 
 Lemma existsb_appears_bound_in : ∀ x bs r t,
-  existsb (eqb x) (bvbs bs) = true -> Term.appears_bound_in x (Let r bs t).
+  existsb (eqb x) (bvbs bs) = true ->
+  Term.appears_bound_in x (Let r bs t).
 Admitted.

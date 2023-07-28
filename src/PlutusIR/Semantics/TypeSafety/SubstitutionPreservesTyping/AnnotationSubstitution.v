@@ -2,6 +2,8 @@ Require Import PlutusCert.PlutusIR.Semantics.Static.
 Require Import PlutusCert.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.TypeSubstitution.
 
+Import PlutusNotations.
+
 Require Import PlutusCert.Util.List.
 
 Require Import Lists.List.

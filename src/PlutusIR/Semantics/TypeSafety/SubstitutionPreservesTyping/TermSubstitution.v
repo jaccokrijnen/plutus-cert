@@ -2,6 +2,8 @@ Require Import PlutusCert.PlutusIR.Semantics.Static.
 Require Import PlutusCert.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.Util.List.
 
+Import PlutusNotations.
+
 Require Import Coq.Lists.List.
 Import ListNotations.
 
