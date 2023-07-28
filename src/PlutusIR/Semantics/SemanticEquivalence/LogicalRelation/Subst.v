@@ -78,7 +78,7 @@ Proof. Admitted.
 Lemma msubst_closed : forall t,
     closed t ->
     forall ss,
-       msubst_term ss t = t.
+       msubst ss t = t.
 Proof.
   induction ss.
   - reflexivity.
@@ -102,7 +102,7 @@ Qed.
 Lemma subst_msubst : forall env x v t,
     closed v ->
     closed_env env ->
-    msubst_term env <{ [v/x]t }> = <{ [v/x] {msubst_term (drop x env) t} }>.
+    msubst env <{ [v/x]t }> = <{ [v/x] {msubst (drop x env) t} }>.
 Proof.
   induction env; intros; auto.
   destruct a. simpl.
@@ -118,7 +118,7 @@ Qed.
 Lemma subst_msubst' : forall env x v t,
     closed v ->
     closed_env env ->
-    msubst_term (drop x env) <{ [v/x]t }> = <{ [v/x] {msubst_term (drop x env) t} }>.
+    msubst (drop x env) <{ [v/x]t }> = <{ [v/x] {msubst (drop x env) t} }>.
 Proof.
   induction env; intros; auto.
   destruct a. simpl.
@@ -136,13 +136,13 @@ Lemma subst_msubst'' : forall env x xs v t,
     closed v ->
     closed_env env ->
     ~ In x xs ->
-    msubst_term (mdrop xs env) <{ [v/x]t }> = <{ [v/x] {msubst_term (mdrop xs env) t} }>.
+    msubst (mdrop xs env) <{ [v/x]t }> = <{ [v/x] {msubst (mdrop xs env) t} }>.
 Proof. Admitted.
 
 Lemma subst_bnr__msubst_bnr : forall env x v bs,
     closed v ->
     closed_env env ->
-    msubst_bindings_nonrec env <{ [v/x][bnr] bs }> = <{ [v/x][bnr] {msubst_bindings_nonrec (drop x env) bs} }>.
+    msubst_bnr env <{ [v/x][bnr] bs }> = <{ [v/x][bnr] {msubst_bnr (drop x env) bs} }>.
 Proof.
   induction env; intros; auto.
   destruct a. simpl.
@@ -158,7 +158,7 @@ Qed.
 Lemma subst_bnr__msubst_bnr' : forall env x v bs,
     closed v ->
     closed_env env ->
-    msubst_bindings_nonrec (drop x env) <{ [v/x][bnr] bs }> = <{ [v/x][bnr] {msubst_bindings_nonrec (drop x env) bs} }>.
+    msubst_bnr (drop x env) <{ [v/x][bnr] bs }> = <{ [v/x][bnr] {msubst_bnr (drop x env) bs} }>.
 Proof. Admitted.
 
 Lemma substA_msubstA : forall envA X U t,
@@ -324,7 +324,7 @@ Lemma msubst_preserves_typing_1 : forall rho k c e1 e2,
     0 < k ->
     forall Gamma T t,
       [] ,, (mgsubst (msyn1 rho) (c ++ Gamma)) |-+ t : T ->
-      [] ,, (mgsubst (msyn1 rho) Gamma) |-+ (msubst_term e1 t) : T. 
+      [] ,, (mgsubst (msyn1 rho) Gamma) |-+ (msubst e1 t) : T. 
 Proof.
   intros rho k c e1 e2 V Hlt.
   induction V as [ | ? ? ? ? ? ? ? H_RV H_normal H_pure ].
@@ -348,7 +348,7 @@ Lemma msubst_preserves_typing_2 : forall rho k c e1 e2,
     0 < k ->
     forall Gamma T t,
       [] ,, (mgsubst (msyn2 rho) (c ++ Gamma)) |-+ t : T ->
-      [] ,, (mgsubst (msyn2 rho) Gamma) |-+ (msubst_term e2 t) : T. 
+      [] ,, (mgsubst (msyn2 rho) Gamma) |-+ (msubst e2 t) : T. 
 Proof.
   intros rho k c e1 e2 V Hlt.
   induction V as [ | ? ? ? ? ? ? ? H_RV H_normal H_pure ].
@@ -445,7 +445,7 @@ Corollary closing_preserves_typing_1 : forall Gamma T t rho k e1 e2,
     RG rho k Gamma e1 e2 ->
     0 < k ->
       [] ,, (mgsubst (msyn1 rho) Gamma) |-+ t : T ->
-      [] ,, [] |-+ (msubst_term e1 t) : T.
+      [] ,, [] |-+ (msubst e1 t) : T.
 Proof with eauto.
   intros.
   rewrite <- app_nil_r with (l := Gamma) in H1.
@@ -458,7 +458,7 @@ Corollary closing_preserves_typing_2 : forall Gamma T t rho k e1 e2,
     RG rho k Gamma e1 e2 ->
     0 < k ->
       [] ,, (mgsubst (msyn2 rho) Gamma) |-+ t : T ->
-      [] ,, [] |-+ (msubst_term e2 t) : T.
+      [] ,, [] |-+ (msubst e2 t) : T.
 Proof with eauto.
   intros.
   rewrite <- app_nil_r with (l := Gamma) in H1.

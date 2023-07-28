@@ -73,7 +73,7 @@ Proof with eauto_LR.
   rewrite msubstA_BindingsNonRec_cons.
   rewrite msubstA_TermBind.
   rewrite msubst_LetNonRec.
-  rewrite msubst_BindingsNonRec_cons.
+  rewrite msubst_bnr_cons.
   rewrite msubst_TermBind.
 
   rewrite msubstA_Apply.
@@ -96,8 +96,8 @@ Proof with eauto_LR.
 
     assert (HRC__tb :
       RC k Tbn rho
-        (msubst_term env (msubstA_term (msyn1 rho) tb))
-        (msubst_term env' (msubstA_term (msyn2 rho) tb'))  
+        (msubst env (msubstA_term (msyn1 rho) tb))
+        (msubst env' (msubstA_term (msyn2 rho) tb'))  
     )...
     clear IH__tb.
 
@@ -222,8 +222,8 @@ Proof with eauto_LR.
 
     assert (HRC__tb :
       RC k Tbn rho
-        (msubst_term env (msubstA_term (msyn1 rho) tb))
-        (msubst_term env' (msubstA_term (msyn2 rho) tb'))  
+        (msubst env (msubstA_term (msyn1 rho) tb))
+        (msubst env' (msubstA_term (msyn2 rho) tb'))  
     )...
     clear IH__tb.
 

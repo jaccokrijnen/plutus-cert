@@ -18,7 +18,7 @@ Set Diffs "on".
 
 
 Lemma msubst_TermBind : forall ss stricty x T e,
-    msubst_binding ss (TermBind stricty (VarDecl x T) e) = TermBind stricty (VarDecl x T) (msubst_term ss e).
+    msubst_b ss (TermBind stricty (VarDecl x T) e) = TermBind stricty (VarDecl x T) (msubst ss e).
 Proof.
   induction ss; intros.
   - reflexivity.
@@ -112,7 +112,7 @@ Proof with eauto_LR.
   rewrite msubstA_BindingsNonRec_cons.
   rewrite msubstA_TermBind.
   rewrite msubst_LetNonRec.
-  rewrite msubst_BindingsNonRec_cons.
+  rewrite msubst_bnr_cons.
   rewrite msubst_TermBind.
 
   simpl.
@@ -132,8 +132,8 @@ Proof with eauto_LR.
 
     assert (HRC__tb :
     RC k Tbn rho
-      (msubst_term env (msubstA_term (msyn1 rho) tb))
-      (msubst_term env' (msubstA_term (msyn2 rho) tb'))  
+      (msubst env (msubstA_term (msyn1 rho) tb))
+      (msubst env' (msubstA_term (msyn2 rho) tb'))  
     )...
     clear IH__tb.
 
@@ -180,7 +180,7 @@ Proof with eauto_LR.
       rewrite msubstA_BindingsNonRec_cons.
       rewrite msubstA_TermBind.
       rewrite msubst_LetNonRec.
-      rewrite msubst_BindingsNonRec_cons.
+      rewrite msubst_bnr_cons.
       rewrite msubst_TermBind.
     
       rewrite msubstA_LetNonRec in Hev__e'_f.
@@ -319,8 +319,8 @@ Proof with eauto_LR.
 
     assert (HRC__tb :
       RC k Tbn rho
-        (msubst_term env (msubstA_term (msyn1 rho) tb))
-        (msubst_term env' (msubstA_term (msyn2 rho) tb'))  
+        (msubst env (msubstA_term (msyn1 rho) tb))
+        (msubst env' (msubstA_term (msyn2 rho) tb'))  
       )...
     clear IH__tb.
 
@@ -341,7 +341,7 @@ Proof with eauto_LR.
         rewrite msubstA_BindingsNonRec_cons.
         rewrite msubstA_TermBind.
         rewrite msubst_LetNonRec.
-        rewrite msubst_BindingsNonRec_cons.
+        rewrite msubst_bnr_cons.
         rewrite msubst_TermBind.
 
         eapply E_Let.

@@ -5,7 +5,7 @@ From Coq Require Import
 From PlutusCert Require Import
   PlutusIR
   FreeVars
-  BoundVars
+  Analysis.BoundVars
   Equality
   Util
   Util.List

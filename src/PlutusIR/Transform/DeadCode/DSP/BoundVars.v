@@ -12,8 +12,6 @@ Require Import Strings.String.
 Set Diffs "on".
 
 
-Definition msubst_bnr := msubst_bindings_nonrec.
-
 
 (*
 Lemma msubst_cons γ b bs :
@@ -21,7 +19,7 @@ msubst_bnr γ (b :: bs) = msubst_bnr γ bs
 *)
 
 Definition bvb_subst_b x t b :
-  bvb (substitute_binding x t b) = bvb b
+  bvb (subst_b x t b) = bvb b
   := match b with
       | TermBind s (VarDecl y T) tb => eq_refl
       | _ => eq_refl

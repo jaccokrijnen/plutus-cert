@@ -9,7 +9,7 @@ Require Import Coq.Lists.List.
 
 
 Lemma msubst_DatatypeBind : forall ss X YKs matchFunc cs,
-    msubst_binding ss (DatatypeBind (Datatype X YKs matchFunc cs)) = DatatypeBind (Datatype X YKs matchFunc cs).
+    msubst_b ss (DatatypeBind (Datatype X YKs matchFunc cs)) = DatatypeBind (Datatype X YKs matchFunc cs).
 Proof.
   induction ss; intros.
   - reflexivity.
@@ -111,7 +111,7 @@ Proof with eauto_LR.
   rewrite msubstA_BindingsNonRec_cons.
   rewrite msubstA_DatatypeBind.
   rewrite msubst_LetNonRec.
-  rewrite msubst_BindingsNonRec_cons.
+  rewrite msubst_bnr_cons.
   rewrite msubst_DatatypeBind.
 
   autorewrite with RC.
