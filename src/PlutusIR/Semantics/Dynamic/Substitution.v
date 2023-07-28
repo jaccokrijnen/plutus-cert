@@ -84,6 +84,9 @@ with substitute_binding (x : name) (s : Term) (b : Binding) {struct b} : Binding
   | _ => b
   end.
 
+Definition subst_bnr x s bs := (@substitute_bindings_nonrec substitute_binding x s bs).
+Definition subst_br x s bs := (@substitute_bindings_rec substitute_binding x s bs).
+
 Notation "'[' s '/' x ']' t" := (substitute x s t) (in custom plutus_term at level 20, x constr).
 Notation "'[' s '/' x '][b]' b" := (substitute_binding x s b) (in custom plutus_term at level 20, x constr).
 Notation "'[' s '/' x '][bnr]' bs" := (@substitute_bindings_nonrec substitute_binding x s bs) (in custom plutus_term at level 20, x constr).

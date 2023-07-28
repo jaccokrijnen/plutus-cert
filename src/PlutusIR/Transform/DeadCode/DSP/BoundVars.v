@@ -12,12 +12,79 @@ Require Import Strings.String.
 Set Diffs "on".
 
 
-Lemma bvbs_msubst : ∀ γ bs ,
-  bvbs bs = bvbs <{ /[ γ /][bnr] bs }>.
+Definition msubst_bnr := msubst_bindings_nonrec.
+
+
+(*
+Lemma msubst_cons γ b bs :
+msubst_bnr γ (b :: bs) = msubst_bnr γ bs
+*)
+
+Definition bvb_subst_b x t b :
+  bvb (substitute_binding x t b) = bvb b
+  := match b with
+      | TermBind s (VarDecl y T) tb => eq_refl
+      | _ => eq_refl
+    end.
+
+Fixpoint bvbs_subst_bnr x t bs :
+  bvbs (subst_bnr x t bs) = bvbs bs.
+  refine (
+    match bs with
+       | nil => eq_refl
+       | b :: bs => _
+     end
+     ).
+    simpl.
+    refine (
+    match existsb (eqb x) (bvb b) with
+      | true  => _
+      | false => _
+    end
+    ).
+    - unfold bvbs.
+      rewrite map_cons.
+      rewrite bvb_subst_b.
+      reflexivity.
+    - rewrite @bvbs_cons.
+      rewrite @bvbs_cons. (* TODO, why does rewrite need @? *)
+
+    rewrite bvbs_subst_bnr.
+      rewrite bvb_subst_b.
+      reflexivity.
+Qed.
+
+Lemma bvbs_msubst_bnr γ b bs :
+  bvbs (msubst_bnr γ (b :: bs)) = bvb b ++ bvbs (msubst_bnr γ bs).
+Proof with auto.
+  induction γ as [_ | [x t] γ] .
+  - simpl.
+    rewrite @bvbs_cons.
+    reflexivity.
+  - unfold msubst_bnr.
+    admit.
+Admitted.
+
+Lemma msubst_bnr_nil γ :
+  msubst_bnr γ nil = nil.
+Proof with auto.
+  induction γ.
+  - reflexivity.
+  - destruct a...
+Qed.
+
+Lemma bvbs_msubst γ bs :
+  bvbs bs = bvbs (msubst_bnr γ bs).
+Proof with auto.
+  induction bs.
+  - induction γ.
+    + reflexivity.
+    + rewrite msubst_bnr_nil...
+  - rewrite bvbs_cons.
 Admitted.
 
 Lemma bvbs_msubstA : ∀ ρ bs ,
-  bvbs bs = bvbs <{ /[ ρ /][bnr] bs }>.
+  bvbs bs = bvbs <{ /[[ ρ /][bnr] bs }>.
 Admitted.
 
 Lemma existsb_appears_bound_in : ∀ x bs r t,
