@@ -262,7 +262,7 @@ Definition LR_logically_approximate (Delta : list (string * Kind)) (Gamma : list
     forall k rho env env',
       RD Delta rho ->
       RG rho k Gamma env env' ->
-      RC k T rho (msubst env (msubstA_term (msyn1 rho) e)) (msubst env' (msubstA_term (msyn2 rho) e')).
+      RC k T rho (msubst env (msubstA (msyn1 rho) e)) (msubst env' (msubstA (msyn2 rho) e')).
 
 (** Logical relation: logical equivalence
 

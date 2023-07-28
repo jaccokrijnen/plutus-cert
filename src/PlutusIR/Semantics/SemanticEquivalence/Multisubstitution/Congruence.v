@@ -277,7 +277,7 @@ Proof.
 Qed.
 
 Lemma msubstA_LetNonRec_nil : forall ss e,
-    msubstA_term ss (Let NonRec nil e) = Let NonRec nil (msubstA_term ss e).
+    msubstA ss (Let NonRec nil e) = Let NonRec nil (msubstA ss e).
 Proof.
   induction ss; intros.
   - reflexivity.
@@ -285,19 +285,19 @@ Proof.
 Qed.
 
 Lemma msubstA_LetNonRec : forall ss bs e,
-    msubstA_term ss (Let NonRec bs e) = Let NonRec (msubstA_bindings_nonrec ss bs) (msubstA_term (mdrop (btvbs bs) ss) e).
+    msubstA ss (Let NonRec bs e) = Let NonRec (msubstA_bnr ss bs) (msubstA (mdrop (btvbs bs) ss) e).
 Proof.
 (* ADMIT: I had no time to finish this. Should hold, it is a congruence lemma. *)
 Admitted.
 
 Lemma msubstA_LetRec : forall ss bs e,
-    msubstA_term ss (Let Rec bs e) = Let Rec (msubstA_bindings_rec (mdrop (btvbs bs) ss) bs) (msubstA_term (mdrop (btvbs bs) ss) e).
+    msubstA ss (Let Rec bs e) = Let Rec (msubstA_br (mdrop (btvbs bs) ss) bs) (msubstA (mdrop (btvbs bs) ss) e).
 Proof.
 (* ADMIT: I had no time to finish this. Should hold, it is a congruence lemma. *)
 Admitted.
 
 Lemma msubstA_TermBind : forall ss stricty x T e,
-    msubstA_binding ss (TermBind stricty (VarDecl x T) e) = TermBind stricty (VarDecl x (msubstT ss T)) (msubstA_term ss e).
+    msubstA_b ss (TermBind stricty (VarDecl x T) e) = TermBind stricty (VarDecl x (msubstT ss T)) (msubstA ss e).
 Proof.
   induction ss; intros.
   - reflexivity.
@@ -305,7 +305,7 @@ Proof.
 Qed.
 
 Lemma msubstA_BindingsNonRec_cons : forall ss b bs,
-    msubstA_bindings_nonrec ss (b :: bs) = msubstA_binding ss b :: msubstA_bindings_nonrec (mdrop (btvb b) ss) bs.
+    msubstA_bnr ss (b :: bs) = msubstA_b ss b :: msubstA_bnr (mdrop (btvb b) ss) bs.
 Proof.
 (* ADMIT: I had no time to finish this. Should hold, it is a congruence lemma. *)
 Admitted.
@@ -331,7 +331,7 @@ Proof.
 Qed.
 
 Lemma msubstA_LamAbs : forall ss x T t0,
-    msubstA_term ss (LamAbs x T t0) = LamAbs x (msubstT ss T) (msubstA_term ss t0).
+    msubstA ss (LamAbs x T t0) = LamAbs x (msubstT ss T) (msubstA ss t0).
 Proof.
   induction ss; intros.
   - reflexivity.
@@ -355,7 +355,7 @@ Proof.
 Qed.
 
 Lemma msubstA_Apply : forall ss t1 t2,
-    msubstA_term ss (Apply t1 t2) = Apply (msubstA_term ss t1) (msubstA_term ss t2).
+    msubstA ss (Apply t1 t2) = Apply (msubstA ss t1) (msubstA ss t2).
 Proof.
   induction ss; intros.
   - reflexivity.
@@ -371,7 +371,7 @@ Proof.
 Qed.
 
 Lemma msubstA_Builtin : forall ss f,
-    msubstA_term ss (Builtin f) = Builtin f.
+    msubstA ss (Builtin f) = Builtin f.
 Proof. 
   induction ss; intros.
   - reflexivity.
@@ -388,7 +388,7 @@ Proof.
 Qed.
 
 Lemma msubstA_Constant : forall ss sv ,
-    msubstA_term ss (Constant sv) = Constant sv.
+    msubstA ss (Constant sv) = Constant sv.
 Proof.
   induction ss; intros. 
   - reflexivity.
@@ -412,7 +412,7 @@ Proof.
 Qed.
 
 Lemma msubstA_DatatypeBind : forall ss X YKs matchFunc cs,
-    msubstA_binding ss (DatatypeBind (Datatype X YKs matchFunc cs)) = DatatypeBind (Datatype X YKs matchFunc (msubstA_constructors ss cs)).
+    msubstA_b ss (DatatypeBind (Datatype X YKs matchFunc cs)) = DatatypeBind (Datatype X YKs matchFunc (msubstA_cs ss cs)).
 Proof.
   induction ss; intros.
   - reflexivity.
@@ -429,7 +429,7 @@ Proof.
 Qed.
 
 Lemma msubstA_Error : forall ss T,
-    msubstA_term ss (Error T) = Error (msubstT ss T).
+    msubstA ss (Error T) = Error (msubstT ss T).
 Proof.
   induction ss; intros.
   - reflexivity.
@@ -445,7 +445,7 @@ Proof.
 Qed. 
 
 Lemma msubstA_IWrap : forall ss F T M,
-    msubstA_term ss (IWrap F T M) = IWrap (msubstT ss F) (msubstT ss T) (msubstA_term ss M).
+    msubstA ss (IWrap F T M) = IWrap (msubstT ss F) (msubstT ss T) (msubstA ss M).
 Proof.
   induction ss; intros.
   - reflexivity.
@@ -465,7 +465,7 @@ Lemma msubst_TyAbs : forall ss bX K t0,
 Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
 Lemma msubstA_TyAbs : forall ss bX K t0,
-    msubstA_term ss (TyAbs bX K t0) = TyAbs bX K (msubstA_term (drop bX ss) t0).
+    msubstA ss (TyAbs bX K t0) = TyAbs bX K (msubstA (drop bX ss) t0).
 Proof. induction ss; intros. - reflexivity. - intros. destruct a. simpl. destruct (s =? bX)%string; eauto. Qed.
 
 
@@ -479,7 +479,7 @@ Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
 
 Lemma msubstA_TyInst : forall ss t0 T0,
-    msubstA_term ss (TyInst t0 T0) = TyInst (msubstA_term ss t0) (msubstT ss T0).
+    msubstA ss (TyInst t0 T0) = TyInst (msubstA ss t0) (msubstT ss T0).
 Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
 
@@ -488,7 +488,7 @@ Lemma msubst_Unwrap : forall ss M,
 Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
 Lemma msubstA_Unwrap : forall ss M ,
-    msubstA_term ss (Unwrap M) = Unwrap (msubstA_term ss M).
+    msubstA ss (Unwrap M) = Unwrap (msubstA ss M).
 Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
 
@@ -518,7 +518,7 @@ Proof.
 Qed.
 
 Lemma msubstA_Var : forall ss x,
-    msubstA_term ss (Var x) = Var x.
+    msubstA ss (Var x) = Var x.
 Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
 
@@ -546,7 +546,7 @@ Hint Rewrite
   msubstA_Var
   : msubstA_cong.
 
-Lemma not_is_error_msubstA : forall v ss, ~ is_error v -> ~ is_error (msubstA_term ss v).
+Lemma not_is_error_msubstA : forall v ss, ~ is_error v -> ~ is_error (msubstA ss v).
   intros v ss H_not_err H_err.
   destruct v; simpl in H_err.
   all: try (autorewrite with msubstA_cong in H_err; inversion H_err).

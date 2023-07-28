@@ -62,8 +62,8 @@ Proof with eauto_LR.
 
     assert (HRC : 
       RC k (Ty_IFix Fn Tn) rho
-        (msubst env (msubstA_term (msyn1 rho) e))
-        (msubst env' (msubstA_term (msyn2 rho) e'))
+        (msubst env (msubstA (msyn1 rho) e))
+        (msubst env' (msubstA (msyn2 rho) e'))
     )...
 
     apply RC_to_RV with (j := j_1) (e_f := IWrap F T e_f) in HRC as temp...
@@ -121,8 +121,8 @@ Proof with eauto_LR.
     
     assert (HRC :
       RC k (Ty_IFix Fn Tn) rho
-        (msubst env (msubstA_term (msyn1 rho) e))
-        (msubst env' (msubstA_term (msyn2 rho) e'))
+        (msubst env (msubstA (msyn1 rho) e))
+        (msubst env' (msubstA (msyn2 rho) e'))
     )...
 
     apply RC_to_RV with (j := j_0) (e_f := Error T) in HRC as temp...
