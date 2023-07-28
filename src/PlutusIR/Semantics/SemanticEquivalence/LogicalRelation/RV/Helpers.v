@@ -19,9 +19,9 @@ Lemma RV_typable_empty : forall k T rho v v',
     0 < k ->
     (exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([],, [] |-+ v : Tn)) /\
     (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\  ([],, [] |-+ v' : Tn')).
-Proof. 
-  intros. 
-  unfold RV in H. 
+Proof.
+  intros.
+  unfold RV in H.
   destruct H as [Hval__v [Hval__v' HRC]].
   autorewrite with RC in HRC.
   apply eval_value in Hval__v as Hev__v.
@@ -88,7 +88,7 @@ Lemma RV_error : forall k T rho v v',
 
     (~ is_error v /\ ~ is_error v' ) \/
     (is_error v /\ is_error v').
-Proof. 
+Proof.
   intros.
   destruct H as [Hval__v [Hval__v' HRC]].
   apply eval_value__value in Hval__v as Hev__v.
@@ -106,7 +106,7 @@ Lemma RV_condition : forall k T rho v v',
     RV k T rho v v' ->
     0 < k ->
 
-    ( 
+    (
       ~ is_error v /\
       ~ is_error v' /\
       (
@@ -115,7 +115,7 @@ Lemma RV_condition : forall k T rho v v',
         (* RV for type variable *)
         | Ty_Var a =>
             forall Chi,
-              sem rho a = Datatypes.Some Chi ->  
+              sem rho a = Datatypes.Some Chi ->
               Chi k v v'
 
         (* RV for type lambda *)
@@ -123,11 +123,11 @@ Lemma RV_condition : forall k T rho v v',
             False
 
         (* RV for type application *)
-        | Ty_App T1 T2 => 
+        | Ty_App T1 T2 =>
             False
 
         (* RV for built-in types *)
-        | Ty_Builtin st => 
+        | Ty_Builtin st =>
             exists sv sv',
               (* Determine the shape of v and v'*)
               v = Constant sv /\
@@ -162,7 +162,7 @@ Lemma RV_condition : forall k T rho v v',
                 RC i T0n rho v_0 v'_0
 
         (* RV for universal types *)
-        | Ty_Forall bX K T => 
+        | Ty_Forall bX K T =>
             exists e_body e'_body,
               (* Determine the shape of v and v' *)
               v = TyAbs bX K e_body /\
@@ -192,14 +192,14 @@ Proof.
   assert (v'' = v' /\ j'' = 0) by (eapply eval__deterministic; eauto).
   destruct H. subst.
   rewrite <- minus_n_O in condition.
-  eauto. 
+  eauto.
 Qed.
-  
+
 Corollary RV_syntactic_equality : forall k st rho v v',
     RV k (Ty_Builtin st) rho v v' ->
     0 < k ->
 
-    ( 
+    (
       ~ is_error v /\
       ~ is_error v' /\
       exists sv sv',
@@ -218,7 +218,7 @@ Corollary RV_functional_extensionality : forall k T1n T2n rho v v',
     RV k (Ty_Fun T1n T2n) rho v v' ->
     0 < k ->
 
-    ( 
+    (
       ~ is_error v /\
       ~ is_error v' /\
       (* Determine the shape of v and v' *)

@@ -47,7 +47,7 @@ Module Ty.
     | ABI_TyApp1 : forall T1 T2,
         appears_bound_in X T1 ->
         appears_bound_in X (Ty_App T1 T2)
-    | ABI_TyApp2 : forall T1 T2,  
+    | ABI_TyApp2 : forall T1 T2,
         appears_bound_in X T2 ->
         appears_bound_in X (Ty_App T1 T2).
 
@@ -98,7 +98,7 @@ Module Term.
         appears_bound_in x (Let recty (TermBind stricty (VarDecl y T) t :: bs) t0)
     | ABI_Let_DatatypeBind : forall recty XK YKs mfunc cs t0 bs,
         In x (mfunc :: map bv_constructor cs) ->
-        appears_bound_in x (Let recty (DatatypeBind (Datatype XK YKs mfunc cs) :: bs) t0) 
+        appears_bound_in x (Let recty (DatatypeBind (Datatype XK YKs mfunc cs) :: bs) t0)
     .
 
 End Term.
@@ -163,13 +163,13 @@ Module Annotation.
         Ty.appears_bound_in X T ->
         appears_bound_in X (Let recty (TypeBind (TyVarDecl Y K) T :: bs) t0)
     | ABI_Let_DatatypeBind : forall recty K YKs mfunc cs t0 bs,
-        appears_bound_in X (Let recty (DatatypeBind (Datatype (TyVarDecl X K) YKs mfunc cs) :: bs) t0) 
+        appears_bound_in X (Let recty (DatatypeBind (Datatype (TyVarDecl X K) YKs mfunc cs) :: bs) t0)
     .
 
 End Annotation.
 
-#[export] Hint Constructors 
-  Ty.appears_bound_in 
+#[export] Hint Constructors
+  Ty.appears_bound_in
   Term.appears_bound_in
   Annotation.appears_bound_in
   : core.
@@ -265,7 +265,7 @@ Proof with eauto using appears_bound_in.
     + unfold P_Binding in H.
       induction bs.
       * constructor.
-      * simpl. 
+      * simpl.
         apply Forall_app.
         split.
           ** apply ForallP_Forall in H.
@@ -298,7 +298,7 @@ Proof with eauto using appears_bound_in.
   - intros.
     eapply Forall_cons...
     eapply Forall_impl with (P := fun a => appears_bound_in a t0)...
-    intros. 
+    intros.
       destruct (string_dec a s).
       * subst. apply ABI_LamAbs1.
       * apply ABI_LamAbs2...

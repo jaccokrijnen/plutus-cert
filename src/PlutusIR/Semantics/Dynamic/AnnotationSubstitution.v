@@ -18,9 +18,9 @@ Section SubstABindings.
 
   Fixpoint substA_bnr' (X : tyname) (U : Ty) (bs : list Binding) : list Binding :=
     match bs with
-    | nil => 
+    | nil =>
         nil
-    | b :: bs' => 
+    | b :: bs' =>
         if existsb (eqb X) (btvb b)
           then
             substAb X U b :: bs'
@@ -56,17 +56,17 @@ Fixpoint substA (X : tyname) (U : Ty) (t : Term) {struct t} : Term :=
   match t with
   | Let NonRec bs t0 =>
       Let NonRec (@substA_bnr' substA_b X U bs)
-        (if existsb (eqb X) (btvbs bs) 
+        (if existsb (eqb X) (btvbs bs)
           then t0
           else substA X U t0
-        ) 
+        )
   | Let Rec bs t0 =>
-      if existsb (eqb X) (btvbs bs) 
-        then 
+      if existsb (eqb X) (btvbs bs)
+        then
           Let Rec bs t0
         else
           Let Rec (@substA_br' substA_b X U bs) (substA X U t0)
-  | Var y => 
+  | Var y =>
       Var y
   | TyAbs bX K t0 =>
       if X =? bX
@@ -94,7 +94,7 @@ with substA_b (X : tyname) (U : Ty) (b : Binding) {struct b} : Binding :=
   match b with
   | TermBind stricty (VarDecl y T) tb =>
       TermBind stricty (VarDecl y (substituteT X U T)) (substA X U tb)
-  | TypeBind tvd T => 
+  | TypeBind tvd T =>
       TypeBind tvd (substituteT X U T)
   | DatatypeBind (Datatype tvd YKs matchFunc cs) =>
       DatatypeBind (Datatype tvd YKs matchFunc (substA_cs X U cs))
@@ -145,4 +145,4 @@ Notation "'/[[' ss '/]' t" := (msubstA ss t) (in custom plutus_term at level 20,
 Notation "'/[[' ss '/][b]' b" := (msubstA_b ss b) (in custom plutus_term at level 20, ss constr).
 Notation "'/[[' ss '/][bnr]' bs" := (msubstA_bnr ss bs) (in custom plutus_term at level 20, ss constr).
 Notation "'/[[' ss '/][cs]' cs" := (msubstA_cs ss cs) (in custom plutus_term at level 20, ss constr).
-  
+

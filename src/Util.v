@@ -48,7 +48,7 @@ Definition ForallT_tl {A P} {x : A} {xs} : ForallT P (x :: xs) -> ForallT P xs :
     | ForallT_cons p ps => ps
   end.
 
-(* ForallT for Props *)  
+(* ForallT for Props *)
 Inductive ForallP (A : Type) (P : A -> Prop) : list A -> Prop :=
   | ForallP_nil : ForallP P nil
   | ForallP_cons : forall {x : A} {l : list A},

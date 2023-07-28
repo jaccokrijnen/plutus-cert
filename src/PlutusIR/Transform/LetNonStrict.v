@@ -5,7 +5,7 @@ From PlutusCert Require
   PlutusIR
 .
 
-Import PlutusIR (term(..), tvdecl(..), vdecl(..), ty(..), 
+Import PlutusIR (term(..), tvdecl(..), vdecl(..), ty(..),
   dtdecl(..), binding(..), constr(..), Recursivity(..), DefaultUni(..),
   kind(..), Strictness(..)).
 

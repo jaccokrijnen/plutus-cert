@@ -77,7 +77,7 @@ Inductive thunk_rec (Γ : ctx) : Term -> Term -> Type :=
       thunk_rec Γ (Let Rec bs t) (Let Rec bs' (mk_let NonRec bs_new t'))
 
   (* Compatibility cases, `Compat` cannot currently capture
-     this pattern, which has to extend the ctx Γ in all 
+     this pattern, which has to extend the ctx Γ in all
      term binders *)
   | tr_Let_NonRec : forall bs bs' t t' Γ_bs,
      thunk_rec_Bindings_NonRec Γ bs bs' Γ_bs ->

@@ -180,7 +180,7 @@ Proof.
         { auto using LR_reflexivity. }
       destruct H_LR_tb as [_ [_ H_approx]].
       assert
-         (H_RC_tb : RC k Tbn ρ 
+         (H_RC_tb : RC k Tbn ρ
            <{ /[ γ  /] (/[[ msyn1 ρ /] tb) }>
            <{ /[ γ' /] (/[[ msyn2 ρ /] tb) }>).
            { eapply H_approx with (env0 := γ) (env' := γ'); auto. }
@@ -232,8 +232,8 @@ Proof.
       eexists.
       split.
 
-      * simpl in H_disjoint_b. 
-        unfold disjoint in H_disjoint_b. 
+      * simpl in H_disjoint_b.
+        unfold disjoint in H_disjoint_b.
         apply Forall_inv in H_disjoint_b.
         rewrite Heqγ'ₓ in H_t'_terminates.
         rewrite msubst_not_in_fv in H_t'_terminates.

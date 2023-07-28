@@ -5,7 +5,7 @@ Import NamedTerm.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
 
 (** Kinds of built-in types *)
-Definition lookupBuiltinKind (u : DefaultUni) : Kind := 
+Definition lookupBuiltinKind (u : DefaultUni) : Kind :=
   match u with
   | DefaultUniInteger    => Kind_Base
   | DefaultUniByteString => Kind_Base

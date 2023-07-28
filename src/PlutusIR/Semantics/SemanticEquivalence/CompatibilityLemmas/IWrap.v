@@ -14,7 +14,7 @@ Lemma normalise_msubstT_commutes_1 : forall T Tn Tn' ck rho K,
     normalise T Tn ->
     normalise (msubstT (msyn1 rho) Tn) Tn' ->
     normalise (msubstT (msyn1 rho) T) Tn'.
-Proof. 
+Proof.
 (* ADMIT: Commutativity should hold. *)
 Admitted.
 
@@ -24,7 +24,7 @@ Lemma normalise_msubstT_commutes_2 : forall T Tn Tn' ck rho K,
     normalise T Tn ->
     normalise (msubstT (msyn2 rho) Tn) Tn' ->
     normalise (msubstT (msyn2 rho) T) Tn'.
-Proof. 
+Proof.
 (* ADMIT: Commutativity should hold. *)
 Admitted.
 
@@ -76,16 +76,16 @@ Proof with eauto_LR.
 
   rewrite msubstA_IWrap. rewrite msubstA_IWrap.
   rewrite msubst_IWrap. rewrite msubst_IWrap.
-  
+
   intros j Hlt__j e_f Hev__e_f.
   inversion Hev__e_f; subst.
-  - rename v0 into e_f. 
+  - rename v0 into e_f.
 
-    assert (HRC : 
-      RC k T0n rho 
-        (msubst env (msubstA (msyn1 rho) e)) 
+    assert (HRC :
+      RC k T0n rho
+        (msubst env (msubstA (msyn1 rho) e))
         (msubst env' (msubstA (msyn2 rho) e'))
-    )... 
+    )...
 
     apply RC_to_RV with (j := j) (e_f := e_f) in HRC as temp...
     destruct temp as [e'_f [j' [Hev__e'_f HRV]]].
@@ -112,7 +112,7 @@ Proof with eauto_LR.
       - eapply closing_preserves_kinding_1...
       - eapply normalise_msubstT_commutes_1...
       - eapply normalise_unwrapIFix_commutes_1...
-    } 
+    }
     split... {
       rewrite msubstT_IFix.
       eapply preservation in Hkind__T as H...
@@ -134,13 +134,13 @@ Proof with eauto_LR.
       - eapply normalise_unwrapIFix_commutes_2...
     }
 
-    left. 
+    left.
     split. intros Hcon. inversion Hcon.
     split. intros Hcon. inversion Hcon.
 
     eexists. eexists. eexists. eexists. eexists. eexists.
     split... split...
-    
+
     intros.
 
     assert (K0 = K). {
@@ -156,11 +156,11 @@ Proof with eauto_LR.
 
     eapply RV_monotone...
   - (* E_Error_Iwrap *)
-    assert (HRC : 
-      RC k T0n rho 
-        (msubst env (msubstA (msyn1 rho) e)) 
+    assert (HRC :
+      RC k T0n rho
+        (msubst env (msubstA (msyn1 rho) e))
         (msubst env' (msubstA (msyn2 rho) e'))
-    )... 
+    )...
 
     apply RC_to_RV with (j := j0) (e_f := Error T') in HRC as temp...
     destruct temp as [e'_f [j' [Hev__e'_f HRV]]].
@@ -172,7 +172,7 @@ Proof with eauto_LR.
     + inversion Herr'. subst.
       eexists. eexists.
       split... eapply E_Error_IWrap...
-      
+
       split. {
         rewrite msubstT_IFix.
         eapply preservation in Hkind__T as H...

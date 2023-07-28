@@ -27,11 +27,11 @@ Proof.
       reflexivity.
     + apply eqb_neq in Heqb as Hneq.
       destruct H.
-      * symmetry in H. 
+      * symmetry in H.
         apply Hneq in H.
         destruct H.
       * eapply IHns.
-        assumption. 
+        assumption.
 Qed.
 
 
@@ -62,7 +62,7 @@ Proof. induction ns.
     reflexivity.
 Qed.
 
-      
+
 
 Lemma In__mdrop_drop : forall {X} ns ss x,
     List.In x ns ->
@@ -109,8 +109,8 @@ Proof. intros. induction b. all: eauto. destruct v. eauto. Qed.
 
 Lemma subst_bnr__bound_vars : forall x s bs,
     bvbs bs = bvbs <{ [s/x][bnr] bs }>.
-Proof. 
-  intros. 
+Proof.
+  intros.
   induction bs.
   - reflexivity.
   - simpl.
@@ -146,8 +146,8 @@ Proof. intros. induction b. all: eauto. destruct v; eauto. destruct d; eauto. Qe
 
 Lemma substA_bnr__bound_tyvars : forall a T bs,
     btvbs bs = btvbs <{ [[T/a][bnr] bs }>.
-Proof. 
-  intros. 
+Proof.
+  intros.
   induction bs.
   - reflexivity.
   - simpl.
@@ -241,7 +241,7 @@ Proof with auto.
 Qed.
 
 Lemma msubst_TermBind : forall ss stricty x T e,
-    msubst_b ss (TermBind stricty (VarDecl x T) e) = TermBind stricty (VarDecl x T) (msubst ss e). 
+    msubst_b ss (TermBind stricty (VarDecl x T) e) = TermBind stricty (VarDecl x T) (msubst ss e).
 Proof.
   induction ss; intros.
   - reflexivity.
@@ -253,7 +253,7 @@ Lemma msubst_bnr_cons : forall ss b bs,
 Proof.
   induction ss; intros.
   - rewrite mdrop_nil. reflexivity.
-  - destruct a. 
+  - destruct a.
     simpl.
     destruct (existsb (eqb s) (bvb b)) eqn:Hexb.
     + apply existsb_exists in Hexb.
@@ -261,7 +261,7 @@ Proof.
       apply eqb_eq in Heqb as Heq.
       subst.
       rewrite In__mdrop.
-      * erewrite subst_b__bound_vars.  
+      * erewrite subst_b__bound_vars.
         eapply IHss.
       * assumption.
     + apply existsb_nexists in Hexb.
@@ -364,7 +364,7 @@ Qed.
 
 Lemma msubst_Builtin : forall ss f,
     msubst ss (Builtin f) = Builtin f.
-Proof. 
+Proof.
   induction ss; intros.
   - reflexivity.
   - destruct a. eauto.
@@ -372,7 +372,7 @@ Qed.
 
 Lemma msubstA_Builtin : forall ss f,
     msubstA ss (Builtin f) = Builtin f.
-Proof. 
+Proof.
   induction ss; intros.
   - reflexivity.
   - destruct a. eauto.
@@ -381,7 +381,7 @@ Qed.
 Lemma msubst_Constant : forall ss sv,
     msubst ss (Constant sv) = Constant sv.
 Proof.
-  induction ss; intros. 
+  induction ss; intros.
   - reflexivity.
   - destruct a.
     eauto.
@@ -390,7 +390,7 @@ Qed.
 Lemma msubstA_Constant : forall ss sv ,
     msubstA ss (Constant sv) = Constant sv.
 Proof.
-  induction ss; intros. 
+  induction ss; intros.
   - reflexivity.
   - destruct a. eauto.
 Qed.
@@ -422,7 +422,7 @@ Qed.
 
 Lemma msubst_Error : forall ss T,
     msubst ss (Error T) = Error T.
-Proof. 
+Proof.
   induction ss; intros.
   - reflexivity.
   - destruct a. eauto.
@@ -438,11 +438,11 @@ Qed.
 
 Lemma msubst_IWrap : forall ss F T M,
     msubst ss (IWrap F T M) = IWrap F T (msubst ss M).
-Proof. 
+Proof.
   induction ss; intros.
   - reflexivity.
   - destruct a. eauto.
-Qed. 
+Qed.
 
 Lemma msubstA_IWrap : forall ss F T M,
     msubstA ss (IWrap F T M) = IWrap (msubstT ss F) (msubstT ss T) (msubstA ss M).
@@ -450,7 +450,7 @@ Proof.
   induction ss; intros.
   - reflexivity.
   - destruct a. eauto.
-Qed. 
+Qed.
 
 Lemma msubstT_IFix : forall ss F T,
     msubstT ss (Ty_IFix F T) = Ty_IFix (msubstT ss F) (msubstT ss T).
@@ -458,7 +458,7 @@ Proof.
   induction ss; intros.
     - reflexivity.
     - destruct a. eauto.
-Qed. 
+Qed.
 
 Lemma msubst_TyAbs : forall ss bX K t0,
     msubst ss (TyAbs bX K t0) = TyAbs bX K (msubst ss t0).
@@ -499,12 +499,12 @@ Lemma msubst_Var : forall ss x,
       | Datatypes.Some t => t
       | None => Var x
       end.
-Proof. 
-  induction ss; intros. 
-  - reflexivity. 
-  - intros. 
-    destruct a. 
-    simpl. 
+Proof.
+  induction ss; intros.
+  - reflexivity.
+  - intros.
+    destruct a.
+    simpl.
     destruct (s =? x)%string eqn:Heqb.
     + apply eqb_eq in Heqb as Heq.
       subst.

@@ -54,7 +54,7 @@ Module Term.
         unique (Apply t1 t2)
     | UNI_TyAbs : forall X K t,
         ~ Annotation.appears_bound_in X t ->
-        unique t ->   
+        unique t ->
         unique (TyAbs X K t)
     | UNI_TyInst : forall t T,
         unique t ->
@@ -93,7 +93,7 @@ Module Term.
     | UNI_Let_DatatypeBind : forall recty X K YKs mfunc cs t0 bs,
         ~ Annotation.appears_bound_in X (Let recty bs t0) ->
         unique (Let recty bs t0) ->
-        unique (Let recty (DatatypeBind (Datatype (TyVarDecl X K) YKs mfunc cs) :: bs) t0) 
+        unique (Let recty (DatatypeBind (Datatype (TyVarDecl X K) YKs mfunc cs) :: bs) t0)
     .
 
 End Term.

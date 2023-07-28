@@ -46,7 +46,7 @@ Module Term.
     forall x,
       Term.appears_free_in x t ->
       exists T', lookup x Gamma = Datatypes.Some T'.
-      
+
   Definition P_constructor_well_formed (Delta : list (string * Kind)) (c : constructor) (T : Ty) :=
     Delta |-ok_c c : T.
 
@@ -115,7 +115,7 @@ Module Term.
         eapply notIn__map_normalise in H10...
         rewrite notIn__lookup_append in H11...
     - (* W_ConsB_NonRec *)
-      inversion Hafi. 
+      inversion Hafi.
       + subst.
         apply H0...
       + subst.
@@ -132,7 +132,7 @@ Module Annotation.
     forall X,
       Annotation.appears_free_in X t ->
       exists K', lookup X Delta = Datatypes.Some K'.
-      
+
   Definition P_constructor_well_formed (Delta : list (string * Kind)) (c : constructor) (T : Ty) :=
     forall X,
       Annotation.appears_free_in__constructor X c ->
@@ -153,7 +153,7 @@ Module Annotation.
       Annotation.appears_free_in__binding X b ->
       exists K', lookup X Delta = Datatypes.Some K'.
 
-    
+
   #[export] Hint Unfold
     P_has_type
     P_constructor_well_formed
@@ -162,7 +162,7 @@ Module Annotation.
     P_binding_well_formed
     : core.
 
-  Lemma free_in_context : 
+  Lemma free_in_context :
       (forall Delta Gamma t T, Delta ,, Gamma |-+ t : T -> P_has_type Delta Gamma t T) /\
       (forall Delta Gamma bs, Delta ,, Gamma |-oks_nr bs -> P_bindings_well_formed_nonrec Delta Gamma bs) /\
       (forall Delta Gamma bs, Delta ,, Gamma |-oks_r bs -> P_bindings_well_formed_rec Delta Gamma bs) /\

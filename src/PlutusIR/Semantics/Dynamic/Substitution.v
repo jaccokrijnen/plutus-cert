@@ -17,9 +17,9 @@ Section SubstBindings.
 
   Fixpoint subst_bnr' (x : name) (s : Term) (bs : list Binding) : list Binding :=
     match bs with
-    | nil => 
+    | nil =>
         nil
-    | b :: bs' => 
+    | b :: bs' =>
         if existsb (eqb x) (bvb b)
           then
             subst_b x s b :: bs'
@@ -41,17 +41,17 @@ Fixpoint subst (x : name) (s : Term) (t : Term) {struct t} : Term :=
   match t with
   | Let NonRec bs t0 =>
       Let NonRec (@subst_bnr' subst_b x s bs)
-        (if existsb (eqb x) (bvbs bs) 
+        (if existsb (eqb x) (bvbs bs)
           then t0
           else subst x s t0
-        ) 
+        )
   | Let Rec bs t0 =>
-      if existsb (eqb x) (bvbs bs) 
-        then 
+      if existsb (eqb x) (bvbs bs)
+        then
           Let Rec bs t0
         else
           Let Rec (@subst_br' subst_b x s bs) (subst x s t0)
-  | Var y => 
+  | Var y =>
       if x =? y
         then s
         else Var y

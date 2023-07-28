@@ -43,7 +43,7 @@ Lemma mupdate_shadow : forall {X : Type} (xts : list (string * X)) (m : partial_
 Proof with eauto.
   induction xts. all: intros.
   - simpl. apply update_shadow.
-  - simpl. 
+  - simpl.
     destruct a as [y z].
     destruct (x =? y)%string eqn:Heqb.
     + apply eqb_eq in Heqb as Heq.
@@ -96,7 +96,7 @@ Proof with eauto.
       apply H.
       right...
 Qed.
-    
+
 Lemma inclusion_mupdate : forall {X : Type} (m m' : partial_map X) xts,
   inclusion m m' ->
   inclusion (mupdate m xts) (mupdate m' xts).
@@ -144,7 +144,7 @@ Proof with eauto.
       rewrite update_eq.
       reflexivity.
     + destruct (x =? y)%string eqn:Heqb.
-      * apply eqb_eq in Heqb. 
+      * apply eqb_eq in Heqb.
         subst.
         rewrite update_eq.
         rewrite update_eq.

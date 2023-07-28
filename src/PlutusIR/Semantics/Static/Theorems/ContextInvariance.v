@@ -67,27 +67,27 @@ Module Typing.
   Definition P_bindings_well_formed_nonrec (Delta : list (string * Kind)) (Gamma : list (string * Ty)) (bs : list Binding) :=
     forall Gamma',
       (forall x, Term.appears_free_in__bindings_nonrec x bs -> lookup x Gamma = lookup x Gamma') ->
-      Delta ,, Gamma' |-oks_nr bs.  
+      Delta ,, Gamma' |-oks_nr bs.
 
   Definition P_bindings_well_formed_rec (Delta : list (string * Kind)) (Gamma : list (string * Ty)) (bs : list Binding) :=
     forall Gamma',
       (forall x, Term.appears_free_in__bindings_rec x bs -> lookup x Gamma = lookup x Gamma') ->
-      Delta ,, Gamma' |-oks_r bs.  
+      Delta ,, Gamma' |-oks_r bs.
 
   Definition P_binding_well_formed (Delta : list (string * Kind)) (Gamma : list (string * Ty)) (b : Binding) :=
     forall Gamma',
       (forall x, Term.appears_free_in__binding x b -> lookup x Gamma = lookup x Gamma') ->
       Delta ,, Gamma' |-ok_b b.
 
-  #[export] Hint Unfold 
+  #[export] Hint Unfold
     P_has_type
     P_constructor_well_formed
     P_bindings_well_formed_nonrec
     P_bindings_well_formed_rec
-    P_binding_well_formed 
+    P_binding_well_formed
     : core.
 
-  Theorem context_invariance : 
+  Theorem context_invariance :
     (forall Delta Gamma t T, Delta ,, Gamma |-+ t : T -> P_has_type Delta Gamma t T) /\
     (forall Delta Gamma bs, Delta ,, Gamma |-oks_nr bs -> P_bindings_well_formed_nonrec Delta Gamma bs) /\
     (forall Delta Gamma bs, Delta ,, Gamma |-oks_r bs -> P_bindings_well_formed_rec Delta Gamma bs) /\

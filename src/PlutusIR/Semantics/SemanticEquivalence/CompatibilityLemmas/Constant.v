@@ -25,7 +25,7 @@ Proof with eauto_LR.
   rewrite msubstA_Constant. rewrite msubstA_Constant.
   rewrite msubst_Constant. rewrite msubst_Constant.
   rewrite msubstT_TyBuiltin. rewrite msubstT_TyBuiltin.
-  
+
   intros j Hlt__j e_f Hev__e_f.
   inversion Hev__e_f. subst.
 

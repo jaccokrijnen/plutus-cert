@@ -94,7 +94,7 @@ Inductive rename (Γ Δ : ctx) : Term -> Term -> Type :=
 
       (* All bound type- and term variables in the bindings should not capture _in the body_.
 
-         Alternatively, this could have been implemented by adding `Let NonRec bs t` as 
+         Alternatively, this could have been implemented by adding `Let NonRec bs t` as
          an index in rename_binding and putting a simple no_capture at the actual binding *)
       Forall (fun '(_, x') => no_capture x' Γ t) Γ_bs ->
       Forall (fun '(_, α') => no_captureA α' Δ t) Δ_bs ->
@@ -117,7 +117,7 @@ Inductive rename (Γ Δ : ctx) : Term -> Term -> Type :=
 
       (* All bound (type) variables in the let should not capture.
 
-         Alternatively, add `Let NonRec bs t` as index in rename_binding 
+         Alternatively, add `Let NonRec bs t` as index in rename_binding
          and put a simple no_capture at the actual binding *)
       Forall (fun '(_, x') => no_capture x' Γ (Let NonRec bs t)) Γ_b ->
       Forall (fun '(_, α') => no_captureA α' Δ (Let NonRec bs t)) Δ_b ->

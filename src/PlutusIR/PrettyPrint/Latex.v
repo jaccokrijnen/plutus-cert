@@ -127,7 +127,7 @@ Definition print_rules ind Σ (mindb : mutual_inductive_body) : string :=
   let print rs := concat (newline ) (map (print_rule Σ) rs) in
   let all_rules := concat (newline ++ newline) (map print (mind_rules ind mindb)) in
 
-  escape (concat newline 
+  escape (concat newline
     [ documentclass "article"
     ; usepackage "inputenc" ["utf8x"]
     ; usepackage "textgreek" []

@@ -205,23 +205,23 @@ Module Annotation.
 
 End Annotation.
 
-#[export] Hint Constructors 
-  Ty.appears_free_in 
+#[export] Hint Constructors
+  Ty.appears_free_in
   : core.
 
-#[export] Hint Constructors 
-  Term.appears_free_in 
+#[export] Hint Constructors
+  Term.appears_free_in
   Term.appears_free_in__bindings_nonrec
   Term.appears_free_in__bindings_rec
-  Term.appears_free_in__binding 
+  Term.appears_free_in__binding
   : core.
 
-#[export] Hint Constructors 
-  Annotation.appears_free_in 
+#[export] Hint Constructors
+  Annotation.appears_free_in
   Annotation.appears_free_in__constructor
   Annotation.appears_free_in__bindings_nonrec
   Annotation.appears_free_in__bindings_rec
-  Annotation.appears_free_in__binding : core. 
+  Annotation.appears_free_in__binding : core.
 
 (** Full closedness of terms (and type annotations) *)
 Definition closed (t : Term) :=

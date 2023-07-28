@@ -84,7 +84,7 @@ Proof with eauto_LR.
       admit.
     - rewrite List.app_assoc in H7. eapply H7.
     - (* ADMIT: Should follow from uniqueness property. *)
-      admit. 
+      admit.
   }
 
   split. {

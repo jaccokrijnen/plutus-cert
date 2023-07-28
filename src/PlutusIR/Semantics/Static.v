@@ -25,9 +25,9 @@ Create HintDb typing.
 #[export] Hint Constructors Ty.appears_free_in : typing.
 #[export] Hint Constructors Term.appears_free_in : typing.
 #[export] Hint Constructors Annotation.appears_free_in : typing.
-#[export] Hint Resolve 
+#[export] Hint Resolve
   normalise_to_normal
   normalisation__deterministic
-  normalisation__stable 
+  normalisation__stable
   has_type__normal
   : typing.

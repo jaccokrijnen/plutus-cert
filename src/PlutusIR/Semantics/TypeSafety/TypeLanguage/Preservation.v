@@ -6,6 +6,6 @@ Theorem preservation : forall Delta T K Tn,
     Delta |-* T : K ->
     normalise T Tn ->
     Delta |-* Tn : K.
-Proof. 
+Proof.
 (* ADMIT: I had no time to finish this. Should hold according to papers. *)
 Admitted.

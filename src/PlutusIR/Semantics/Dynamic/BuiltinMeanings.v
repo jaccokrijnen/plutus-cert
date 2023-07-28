@@ -66,7 +66,7 @@ Definition drop (x : Z) (s : string) : string := substring (Z.to_nat x) (length 
   : core.
 
 (** Computes results of fully applied default functions where possible.
-    
+
     Note that not all default functions have sensible implementations, such
     as SHA2, SHA3 and VerifySignature. This is bound to change in the future.
 *)
@@ -74,131 +74,131 @@ Definition compute_defaultfun (t : Term) : option Term :=
   match t with
   (** Binary operators on integers *)
   (* AddInteger *)
-  | (Apply 
-      (Apply 
-        (Builtin AddInteger) 
+  | (Apply
+      (Apply
+        (Builtin AddInteger)
         (Constant (@Some _ DefaultUniInteger (ValueOf _ x)))
-      ) 
+      )
       (Constant (@Some _ DefaultUniInteger (ValueOf _  y)))
     ) => Datatypes.Some (constInt (x + y))
   (* SubtractInteger *)
-  | (Apply 
-      (Apply 
-        (Builtin SubtractInteger) 
+  | (Apply
+      (Apply
+        (Builtin SubtractInteger)
         (Constant (@Some _ DefaultUniInteger (ValueOf _ x)))
-      ) 
+      )
       (Constant (@Some _ DefaultUniInteger (ValueOf _ y)))
     ) => Datatypes.Some (constInt (x - y))
   (* MultiplyInteger *)
-  | (Apply 
-      (Apply 
-        (Builtin MultiplyInteger) 
+  | (Apply
+      (Apply
+        (Builtin MultiplyInteger)
         (Constant (@Some _ DefaultUniInteger (ValueOf _ x)))
-      ) 
+      )
       (Constant (@Some _ DefaultUniInteger (ValueOf _ y)))
     ) => Datatypes.Some (constInt (x * y))
   (* DivideInteger *)
-  | (Apply 
-      (Apply 
-        (Builtin DivideInteger) 
+  | (Apply
+      (Apply
+        (Builtin DivideInteger)
         (Constant (@Some _ DefaultUniInteger (ValueOf _ x)))
-      ) 
+      )
       (Constant (@Some _ DefaultUniInteger (ValueOf _ y)))
     ) => Datatypes.Some (constInt (x / y))
   (* QuotientInteger *)
-  | (Apply 
-      (Apply 
-        (Builtin QuotientInteger) 
+  | (Apply
+      (Apply
+        (Builtin QuotientInteger)
         (Constant (@Some _ DefaultUniInteger (ValueOf _ x)))
-      ) 
+      )
       (Constant (@Some _ DefaultUniInteger (ValueOf _ y)))
     ) => Datatypes.Some (constInt (x ÷ y))
   (* RemainderInteger *)
-  | (Apply 
-      (Apply 
-        (Builtin RemainderInteger) 
+  | (Apply
+      (Apply
+        (Builtin RemainderInteger)
         (Constant (@Some _ DefaultUniInteger (ValueOf _ x)))
-      ) 
+      )
       (Constant (@Some _ DefaultUniInteger (ValueOf _ y)))
     ) => Datatypes.Some (constInt (Z.rem x y))
   (* ModInteger *)
-  | (Apply 
-      (Apply 
-        (Builtin ModInteger) 
+  | (Apply
+      (Apply
+        (Builtin ModInteger)
         (Constant (@Some _ DefaultUniInteger (ValueOf _ x)))
-      ) 
+      )
       (Constant (@Some _ DefaultUniInteger (ValueOf _ y)))
     ) => Datatypes.Some (constInt (x mod y))
   (** Binary predicates on integers *)
   (* LessThanInteger*)
-  | (Apply 
-      (Apply 
-        (Builtin LessThanInteger) 
+  | (Apply
+      (Apply
+        (Builtin LessThanInteger)
         (Constant (@Some _ DefaultUniInteger (ValueOf _ x)))
-      ) 
+      )
       (Constant (@Some _ DefaultUniInteger (ValueOf _ y)))
     ) => Datatypes.Some (constBool (x <? y))
   (* LessThanEqInteger *)
-  | (Apply 
-      (Apply 
-        (Builtin LessThanEqInteger) 
+  | (Apply
+      (Apply
+        (Builtin LessThanEqInteger)
         (Constant (@Some _ DefaultUniInteger (ValueOf _ x)))
-      ) 
+      )
       (Constant (@Some _ DefaultUniInteger (ValueOf _ y)))
     ) => Datatypes.Some (constBool (x <=? y))
   (* GreaterThanInteger *)
-  | (Apply 
-      (Apply 
-        (Builtin GreaterThanInteger) 
+  | (Apply
+      (Apply
+        (Builtin GreaterThanInteger)
         (Constant (@Some _ DefaultUniInteger (ValueOf _ x)))
-      ) 
+      )
       (Constant (@Some _ DefaultUniInteger (ValueOf _ y)))
     ) => Datatypes.Some (constBool (x >? y))
   (* GreaterThanEqInteger *)
-  | (Apply 
-      (Apply 
-        (Builtin GreaterThanEqInteger) 
+  | (Apply
+      (Apply
+        (Builtin GreaterThanEqInteger)
         (Constant (@Some _ DefaultUniInteger (ValueOf _ x)))
-      ) 
+      )
       (Constant (@Some _ DefaultUniInteger (ValueOf _ y)))
     ) => Datatypes.Some (constBool (x >=? y))
   (* EqInteger *)
-  | (Apply 
-      (Apply 
-        (Builtin EqInteger) 
+  | (Apply
+      (Apply
+        (Builtin EqInteger)
         (Constant (@Some _ DefaultUniInteger (ValueOf _ x)))
-      ) 
+      )
       (Constant (@Some _ DefaultUniInteger (ValueOf _ y)))
     ) => Datatypes.Some (constBool (x =? y))
   (** Bytestring operations *)
   (* Concatenate *)
-  | (Apply 
+  | (Apply
       (Apply
         (Builtin Concatenate)
-        (Constant (@Some _ DefaultUniByteString (ValueOf _ bs1)))    
+        (Constant (@Some _ DefaultUniByteString (ValueOf _ bs1)))
       )
       (Constant (@Some _ DefaultUniByteString (ValueOf _ bs2)))
     ) => Datatypes.Some (constBS (bs1 ++ bs2))
   (* TakeByteString *)
-  | (Apply 
+  | (Apply
       (Apply
         (Builtin TakeByteString)
-        (Constant (@Some _ DefaultUniInteger (ValueOf _ x)))    
+        (Constant (@Some _ DefaultUniInteger (ValueOf _ x)))
       )
       (Constant (@Some _ DefaultUniByteString (ValueOf _ bs)))
     ) => Datatypes.Some (constBS (take x bs))
   (* DropByteString *)
-  | (Apply 
+  | (Apply
       (Apply
         (Builtin DropByteString)
-        (Constant (@Some _ DefaultUniInteger (ValueOf _ x)))    
+        (Constant (@Some _ DefaultUniInteger (ValueOf _ x)))
       )
       (Constant (@Some _ DefaultUniByteString (ValueOf _ bs)))
     ) => Datatypes.Some (constBS (drop x bs))
   (** Bytestring hashing
-      
+
       Note: We model hashing by identity. Comparing hashes now becomes a straightforward equality check.
-      We believe modelling hash function as such is sufficient, because the dynamic semantics is not meant to 
+      We believe modelling hash function as such is sufficient, because the dynamic semantics is not meant to
       be used as a basis for a real-world evaluator.
   *)
   | (Apply
@@ -209,15 +209,15 @@ Definition compute_defaultfun (t : Term) : option Term :=
       (Builtin SHA3)
       (Constant (@Some _ DefaultUniByteString (ValueOf _ bs)))
     ) => Datatypes.Some (constBS bs)
-  (** Signature verification 
-      
-      TODO: Obviously, this should evaluate to true. However, how can we model the verification of signatures? 
+  (** Signature verification
+
+      TODO: Obviously, this should evaluate to true. However, how can we model the verification of signatures?
       Implementation of signature verification:
       https://input-output-hk.github.io/ouroboros-network/cardano-crypto/Crypto-ECC-Ed25519Donna.html
   *)
-  | (Apply 
+  | (Apply
       (Apply
-        (Apply 
+        (Apply
           (Builtin VerifySignature)
           (Constant (@Some _ DefaultUniByteString (ValueOf _ publicKey)))
         )
@@ -227,31 +227,31 @@ Definition compute_defaultfun (t : Term) : option Term :=
     ) => Datatypes.Some (constBool true)
   (** Binary predicates on bytestrings *)
   (* EqByteString *)
-  | (Apply 
+  | (Apply
       (Apply
         (Builtin EqByteString)
-        (Constant (@Some _ DefaultUniByteString (ValueOf _ bs1)))    
+        (Constant (@Some _ DefaultUniByteString (ValueOf _ bs1)))
       )
       (Constant (@Some _ DefaultUniByteString (ValueOf _ bs2)))
     ) => Datatypes.Some (constBool (bs1 =? bs2)%string)
   (* LtByteString *)
-  | (Apply 
+  | (Apply
       (Apply
         (Builtin LtByteString)
-        (Constant (@Some _ DefaultUniByteString (ValueOf _ bs1)))    
+        (Constant (@Some _ DefaultUniByteString (ValueOf _ bs1)))
       )
       (Constant (@Some _ DefaultUniByteString (ValueOf _ bs2)))
     ) => Datatypes.Some (constBool (to_Z bs1 <? to_Z bs2))
   (* GtByteString *)
-  | (Apply 
+  | (Apply
       (Apply
         (Builtin GtByteString)
-        (Constant (@Some _ DefaultUniByteString (ValueOf _ bs1)))    
+        (Constant (@Some _ DefaultUniByteString (ValueOf _ bs1)))
       )
       (Constant (@Some _ DefaultUniByteString (ValueOf _ bs2)))
     ) => Datatypes.Some (constBool (to_Z bs1 >? to_Z bs2))
   (** If-Then-Else *)
-  | (Apply  
+  | (Apply
       (Apply
         (Apply
           (TyInst
@@ -268,7 +268,7 @@ Definition compute_defaultfun (t : Term) : option Term :=
   (* CharToString *)
   | (Apply
       (Builtin CharToString)
-      (Constant (@Some _ DefaultUniChar (ValueOf _ ch)))  
+      (Constant (@Some _ DefaultUniChar (ValueOf _ ch)))
     ) => Datatypes.Some (constString (String ch EmptyString))
   (* Append *)
   | (Apply
@@ -281,7 +281,7 @@ Definition compute_defaultfun (t : Term) : option Term :=
   (* Trace *)
   | (Apply
       (Builtin Trace)
-      (Constant (@Some _ DefaultUniString (ValueOf _ s))) 
+      (Constant (@Some _ DefaultUniString (ValueOf _ s)))
     ) => Datatypes.Some (constUnit tt)
   (* Catch-all: The argument term is not a fully applied builtin *)
   | _ => None

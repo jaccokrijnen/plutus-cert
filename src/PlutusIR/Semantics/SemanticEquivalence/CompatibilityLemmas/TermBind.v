@@ -133,7 +133,7 @@ Proof with eauto_LR.
     assert (HRC__tb :
     RC k Tbn rho
       (msubst env (msubstA (msyn1 rho) tb))
-      (msubst env' (msubstA (msyn2 rho) tb'))  
+      (msubst env' (msubstA (msyn2 rho) tb'))
     )...
     clear IH__tb.
 
@@ -141,7 +141,7 @@ Proof with eauto_LR.
     destruct temp as [vb' [jb' [Hev__vb' HRV__vb]]].
     clear Hev__vb.
     clear HRC__tb.
-  
+
     assert (HRC__ih :
       RC (k - jb - 1) Tn rho
         <{ /[ (x, vb) :: env /] ( /[[ msyn1 rho /] {Let NonRec bs t} ) }>
@@ -182,7 +182,7 @@ Proof with eauto_LR.
       rewrite msubst_LetNonRec.
       rewrite msubst_bnr_cons.
       rewrite msubst_TermBind.
-    
+
       rewrite msubstA_LetNonRec in Hev__e'_f.
       rewrite msubst_LetNonRec in Hev__e'_f.
 
@@ -251,12 +251,12 @@ Proof with eauto_LR.
 
       split... eapply RV_typable_empty_1...
       split... eapply RV_typable_empty_2...
-    
+
       eapply RV_condition...
       eapply RV_monotone...
 
     + rewrite msubstA_LetNonRec.
-      rewrite msubst_LetNonRec. 
+      rewrite msubst_LetNonRec.
       apply E_Let.
 
       simpl.
@@ -273,7 +273,7 @@ Proof with eauto_LR.
         rewrite <- subst_bnr__msubst_bnr in Hev__e_f...
         replace (concat (map bvb <{ /[[ msyn1 rho /][bnr] bs }>)) with
           (bvbs <{ /[[ msyn1 rho /][bnr] bs }>) in Hev__e_f...
-        
+
         unfold btvbs in Hev__e_f.
         simpl in Hev__e_f.
         rewrite <- msubstA_bnr__bvbs.
@@ -293,7 +293,7 @@ Proof with eauto_LR.
         rewrite <- subst_bnr__msubst_bnr in Hev__e_f...
         replace (concat (map bvb <{ /[[ msyn1 rho /][bnr] bs }>)) with
           (bvbs <{ /[[ msyn1 rho /][bnr] bs }>) in Hev__e_f...
-        
+
         unfold btvbs in Hev__e_f.
         simpl in Hev__e_f.
         rewrite <- msubstA_bnr__bvbs.
@@ -320,7 +320,7 @@ Proof with eauto_LR.
     assert (HRC__tb :
       RC k Tbn rho
         (msubst env (msubstA (msyn1 rho) tb))
-        (msubst env' (msubstA (msyn2 rho) tb'))  
+        (msubst env' (msubstA (msyn2 rho) tb'))
       )...
     clear IH__tb.
 
@@ -330,7 +330,7 @@ Proof with eauto_LR.
     clear HRC__tb.
 
     eapply RV_error in HRV__vb as temp...
-    
+
     destruct temp as [ [Hnerr Hnerr'] | [Herr Herr']].
     + exfalso. eapply Hnerr. econstructor.
     + inversion Herr'. subst.
@@ -347,14 +347,14 @@ Proof with eauto_LR.
         eapply E_Let.
         eapply E_Error_Let_TermBind...
       }
-      
+
       split. {
         inversion Htyp__ih. subst.
         simpl in H9.
         eapply closing_preserves_kinding_1 in H9 as H10...
         eapply strong_normalisation in H10 as H11...
         destruct H11.
-        
+
         eexists. split...
       }
 
@@ -364,7 +364,7 @@ Proof with eauto_LR.
         eapply closing_preserves_kinding_2 in H9 as H10...
         eapply strong_normalisation in H10 as H11...
         destruct H11.
-        
+
         eexists. split...
       }
       right...

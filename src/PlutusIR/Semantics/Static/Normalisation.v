@@ -76,7 +76,7 @@ with neutral_Ty : Ty -> Prop :=
 Scheme normal_Ty__ind := Minimality for normal_Ty Sort Prop
   with neutral_Ty__ind := Minimality for neutral_Ty Sort Prop.
 
-Combined Scheme normal_Ty__multind from 
+Combined Scheme normal_Ty__multind from
   normal_Ty__ind,
   neutral_Ty__ind.
 
@@ -120,7 +120,7 @@ Inductive normalise : Ty -> Ty -> Prop :=
 Lemma normalise_to_normal : forall T Tn,
     normalise T Tn ->
     normal_Ty Tn.
-Proof. 
+Proof.
   induction 1; eauto.
 Qed.
 
@@ -138,7 +138,7 @@ Proof.
       apply IHnormalise2 in H6. subst.
       apply IHnormalise3; eauto.
     + subst.
-      apply IHnormalise1 in H5. 
+      apply IHnormalise1 in H5.
       inversion H5. subst.
       inversion H6.
   - inversion H2.
@@ -182,30 +182,30 @@ Proof with eauto.
       f_equal...
 Qed.
 
-Corollary normalisation__stable__normal : forall T, 
-    normal_Ty T -> 
-    forall Tn, 
+Corollary normalisation__stable__normal : forall T,
+    normal_Ty T ->
+    forall Tn,
       normalise T Tn -> T = Tn.
 Proof. apply normalisation__stable. Qed.
 
 Corollary normalisation__stable__neutral : forall T,
-    neutral_Ty T -> 
-    forall Tn, 
+    neutral_Ty T ->
+    forall Tn,
       normalise T Tn -> T = Tn.
 Proof. apply normalisation__stable. Qed.
 
-Lemma normalisation__stable' : 
+Lemma normalisation__stable' :
   (forall Tn, normal_Ty Tn -> normalise Tn Tn) /\
   (forall Tn, neutral_Ty Tn -> normalise Tn Tn).
 Proof. apply normal_Ty__multind; eauto. Qed.
 
-Corollary normalisation__stable'__normal : forall Tn, 
-    normal_Ty Tn -> 
+Corollary normalisation__stable'__normal : forall Tn,
+    normal_Ty Tn ->
     normalise Tn Tn.
 Proof. apply normalisation__stable'. Qed.
 
-Corollary normalisation__stable'__neutral : forall Tn, 
-    neutral_Ty Tn -> 
+Corollary normalisation__stable'__neutral : forall Tn,
+    neutral_Ty Tn ->
     normalise Tn Tn.
 Proof. apply normalisation__stable'. Qed.
 
@@ -222,7 +222,7 @@ Proof. Abort.
 
 (** Normalisation of lists of types*)
 Inductive map_normalise : list (tyname * Ty) -> list (tyname * Ty) -> Prop :=
-  | MN_nil : 
+  | MN_nil :
       map_normalise nil nil
   | MN_cons : forall X T Ts Tn Tsn,
       map_normalise Ts Tsn ->
@@ -235,7 +235,7 @@ Require Import Coq.Lists.List.
 
 Lemma map_normalise__app : forall l1 l2 ln,
     map_normalise (l1 ++ l2) ln ->
-    exists l1n l2n, 
+    exists l1n l2n,
       map_normalise l1 l1n /\
       map_normalise l2 l2n /\
       ln = l1n ++ l2n.
@@ -255,7 +255,7 @@ Lemma map_normalise__deterministic : forall l ln ln',
     map_normalise l ln ->
     map_normalise l ln' ->
     ln = ln'.
-Proof with eauto. 
+Proof with eauto.
   induction l. all: intros.
   all: inversion H.
   all: inversion H0.

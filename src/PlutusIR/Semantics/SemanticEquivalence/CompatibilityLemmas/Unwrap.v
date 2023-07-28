@@ -60,7 +60,7 @@ Proof with eauto_LR.
   - rename j0 into j_1.
     rename H0 into Hev'__e_f.
 
-    assert (HRC : 
+    assert (HRC :
       RC k (Ty_IFix Fn Tn) rho
         (msubst env (msubstA (msyn1 rho) e))
         (msubst env' (msubstA (msyn2 rho) e'))
@@ -109,7 +109,7 @@ Proof with eauto_LR.
 
       eapply RV_condition...
       eapply RV_unfolded_to_RV.
-      split. eapply eval_to_value in Hev'__e_f. inversion Hev'__e_f. subst. assumption. inversion H. 
+      split. eapply eval_to_value in Hev'__e_f. inversion Hev'__e_f. subst. assumption. inversion H.
       split. eapply eval_to_value in Hev__e'_f. inversion Hev__e'_f. subst. assumption. inversion H.
       eapply Hunwr...
 
@@ -118,7 +118,7 @@ Proof with eauto_LR.
     + destruct temp as [Herr Herr'].
       inversion Herr.
   - rename j0 into j_0.
-    
+
     assert (HRC :
       RC k (Ty_IFix Fn Tn) rho
         (msubst env (msubstA (msyn1 rho) e))
@@ -141,5 +141,5 @@ Proof with eauto_LR.
 
       split... admit. (* ADMIT: I had no time to finish this. Should hold. *)
       split... admit. (* ADMIT: I had no time to finish this. Should hold. *)
-(* ADMIT: Proof contains admits. *) 
+(* ADMIT: Proof contains admits. *)
 Admitted.

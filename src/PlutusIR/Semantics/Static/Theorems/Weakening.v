@@ -5,7 +5,7 @@ Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.
 Require Import PlutusCert.Util.List.
 Require Import Lists.List.
 Import ListNotations.
-      
+
 Module Kinding.
 
   Lemma weakening : forall Delta Delta' T K,
@@ -66,17 +66,17 @@ Module Typing.
     P_constructor_well_formed
     P_bindings_well_formed_nonrec
     P_bindings_well_formed_rec
-    P_binding_well_formed 
+    P_binding_well_formed
     : core.
 
-  Lemma weakening : 
+  Lemma weakening :
     (forall Delta Gamma t T, Delta ,, Gamma |-+ t : T -> P_has_type Delta Gamma t T) /\
     (forall Delta Gamma bs, Delta ,, Gamma |-oks_nr bs -> P_bindings_well_formed_nonrec Delta Gamma bs) /\
     (forall Delta Gamma bs, Delta ,, Gamma |-oks_r bs -> P_bindings_well_formed_rec Delta Gamma bs) /\
     (forall  Delta Gamma b, Delta ,, Gamma |-ok_b b -> P_binding_well_formed Delta Gamma b).
   Proof with eauto using Kinding.weakening, inclusion_cons, inclusion_append.
-    apply has_type__multind with 
-      (P := P_has_type) 
+    apply has_type__multind with
+      (P := P_has_type)
       (P0 := P_constructor_well_formed)
       (P1 := P_bindings_well_formed_nonrec)
       (P2 := P_bindings_well_formed_rec)

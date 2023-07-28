@@ -5,7 +5,7 @@ Require Import PlutusCert.PlutusIR.Semantics.Dynamic.Bigstep.
 
 Require Import Lia.
 
-Lemma eval_value : 
+Lemma eval_value :
   (forall v, value v -> v =[0]=> v) /\
   (forall n v, neutral_value n v -> v =[0]=> v).
 Proof with (autounfold; (eauto || (try lia))).

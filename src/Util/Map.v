@@ -9,7 +9,7 @@ Local Open Scope string_scope.
 
 Definition total_map (A : Type) := string -> A.
 
-Definition t_empty {A : Type} (v : A) : total_map A := 
+Definition t_empty {A : Type} (v : A) : total_map A :=
   (fun _ => v).
 
 Definition t_update {A} (m : total_map A) (x : string) (v : A) :=
@@ -41,8 +41,8 @@ Qed.
 
 Theorem t_update_shadow : forall (A : Type) (m : total_map A) x v1 v2,
     (x !-> v2; x !-> v1; m) = (x !-> v2; m).
-Proof. 
-  intros. 
+Proof.
+  intros.
   unfold t_update.
   apply functional_extensionality.
   intros.
@@ -53,11 +53,11 @@ Qed.
 
 Theorem t_update_same : forall (A : Type) (m : total_map A) x,
     (x !-> m x; m) = m.
-Proof. 
-  intros. 
-  apply functional_extensionality. 
-  intros. 
-  unfold t_update. 
+Proof.
+  intros.
+  apply functional_extensionality.
+  intros.
+  unfold t_update.
   destruct (x =? x0) eqn:Heqb.
   - apply eqb_eq in Heqb as Heq.
     subst.
@@ -90,7 +90,7 @@ Qed.
 
 Definition partial_map (A : Type) := total_map (option A).
 
-Definition empty {A : Type} : partial_map A := 
+Definition empty {A : Type} : partial_map A :=
   t_empty None.
 
 Definition update {A : Type} (m : partial_map A) (x : string) (v : A) :=
@@ -122,7 +122,7 @@ Lemma update_neq : forall (A : Type) (m : partial_map A) x1 x2 v,
 Proof.
   intros A m x1 x2 v H.
   unfold update. rewrite t_update_neq. reflexivity.
-  apply H. 
+  apply H.
 Qed.
 
 Theorem update_shadow :  forall (A : Type) (m : partial_map A) x v1 v2,

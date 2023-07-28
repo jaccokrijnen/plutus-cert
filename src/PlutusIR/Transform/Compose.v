@@ -34,8 +34,8 @@ Definition cat_rhs z Rs rs := match rs with
 *)
 (*
 Definition depArgs : compose Rs x y -> Type :=
-  
-    | ComposeCons r rs' => 
+
+    | ComposeCons r rs' =>
     | ComposeNil  => unit
   end.
 *)

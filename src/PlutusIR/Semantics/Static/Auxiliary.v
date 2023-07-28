@@ -31,8 +31,8 @@ Definition getKind (tvd : TVDecl) :=
 (** Auxiliary functions *)
 Definition branchTy (c : constructor) (R : Ty) : Ty :=
   match c with
-  | Constructor (VarDecl x T) _ => 
-    let 
+  | Constructor (VarDecl x T) _ =>
+    let
       fix branchTy' S :=
         match S with
         | Ty_Fun S1 S2 => Ty_Fun S1 (branchTy' S2)
@@ -73,7 +73,7 @@ Definition matchTy (d : DTDecl) : Ty :=
   | Datatype X YKs matchFunc cs =>
     let indexTyVars := map (compose (@Ty_Var tyname binderTyname) getTyname) YKs in
     let indexForalls := map (fun YK => Ty_Forall (getTyname YK) (getKind YK)) YKs in
-    fold_right apply (Ty_Fun (constrLastTy d) (fold_left (@Ty_App tyname binderTyname) indexTyVars (dataTy d))) indexForalls 
+    fold_right apply (Ty_Fun (constrLastTy d) (fold_left (@Ty_App tyname binderTyname) indexTyVars (dataTy d))) indexForalls
   end.
 
 (** Binder functions *)
@@ -105,8 +105,8 @@ Definition binds_Delta (b : Binding) : list (tyname * Kind) :=
 Definition binds_Gamma (b : Binding) : list (name * Ty) :=
   match b with
   | TermBind _ (VarDecl x T) _ => (x, T) :: nil
-  | TypeBind _ _ => nil 
-  | DatatypeBind d => 
+  | TypeBind _ _ => nil
+  | DatatypeBind d =>
       let constrBs := constrBinds d in
       let matchB := matchBind d in
       matchB :: constrBs

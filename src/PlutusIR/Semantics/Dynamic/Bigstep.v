@@ -75,7 +75,7 @@ Inductive eval : Term -> Term -> nat -> Prop :=
       fully_applied (TyInst nv1 T) ->
       compute_defaultfun (TyInst nv1 T) = Datatypes.Some v ->
       TyInst nv1 T =[1]=> v
-  (** Builtins: If-Then-Else 
+  (** Builtins: If-Then-Else
 
       We handle this built-in function separately because it has a unique behaviour:
       The ``then''-branch should only be evaluated when the condition is true,
@@ -109,10 +109,10 @@ Inductive eval : Term -> Term -> nat -> Prop :=
   (* Errors and their propagation *)
   | E_Error : forall T,
       Error T =[0]=> Error T
-  | E_Error_Apply1 : forall t1 t2 j1 T, 
+  | E_Error_Apply1 : forall t1 t2 j1 T,
       t1 =[j1]=> Error T ->
       Apply t1 t2 =[j1 + 1]=> Error T
-  | E_Error_Apply2 : forall t1 t2 j2 T, 
+  | E_Error_Apply2 : forall t1 t2 j2 T,
       t2 =[j2]=> Error T ->
       Apply t1 t2 =[j2 + 1]=> Error T
   | E_Error_TyInst : forall t1 T2 j1 T,
@@ -166,7 +166,7 @@ Scheme eval__ind := Minimality for eval Sort Prop
   with eval_bindings_nonrec__ind := Minimality for eval_bindings_nonrec Sort Prop
   with eval_bindings_rec__ind := Minimality for eval_bindings_rec Sort Prop.
 
-Combined Scheme eval__multind from 
+Combined Scheme eval__multind from
   eval__ind,
   eval_bindings_nonrec__ind,
   eval_bindings_rec__ind.

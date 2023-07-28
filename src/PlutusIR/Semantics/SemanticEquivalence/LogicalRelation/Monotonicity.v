@@ -10,7 +10,7 @@ From Coq Require Import Lia.
 
 Lemma RC_monotone : forall k rho T i e e' ck,
     RD ck rho ->
-    RC k T rho e e' ->  
+    RC k T rho e e' ->
     i <= k ->
     RC i T rho e e'.
 Proof with (try solve [eauto || lia]).
@@ -57,10 +57,10 @@ Proof with (try solve [eauto || lia]).
     split... split...
     intros. eapply Hie...
 Qed.
-    
+
 Lemma RV_monotone : forall k rho T i v v' ck,
     RD ck rho ->
-    RV k T rho v v' ->  
+    RV k T rho v v' ->
     i <= k ->
     RV i T rho v v'.
 Proof.
@@ -73,13 +73,13 @@ Qed.
 
 Lemma RG_monotone : forall c ck rho i k env env',
     RD ck rho ->
-    RG rho k c env env' ->  
+    RG rho k c env env' ->
     i <= k ->
     RG rho i c env env'.
 Proof.
   induction c.
   - intros.
-    inversion H0. 
+    inversion H0.
     subst.
     constructor.
   - intros.
@@ -87,4 +87,4 @@ Proof.
     subst.
     eapply RG_cons; eauto.
     eapply RV_monotone; eauto.
-Qed. 
+Qed.
