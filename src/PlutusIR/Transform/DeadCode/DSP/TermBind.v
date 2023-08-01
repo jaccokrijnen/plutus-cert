@@ -20,6 +20,7 @@ From PlutusCert Require Import Util.Tactics.
 Import PlutusNotations.
 
 From PlutusCert Require Import DeadCode.DSP.Lemmas.
+From PlutusCert Require Import DeadCode.DSP.BoundVars.
 
 Import NamedTerm.
 Import ListNotations.
@@ -55,7 +56,7 @@ Lemma compat_TermBind Δ Γ t t' Tn b bs x Tb tb Tbn :
   (Δ ,, Γ |-+ tb : Tbn) ->
 
   disjoint (bvb b) (fv t') ->
-  unique (Let NonRec bs t) ->
+  unique (Let NonRec (b :: bs) t) ->
   (* pure_binding [] b -> *)
   (* TODO, generalize pure_binding to arbitrary Γ, because this limits b to strictly bound values.
   This is not a typing environment though: for each var in scope,
@@ -153,13 +154,20 @@ Proof.
   simpl in H_bs_terminate.
   destruct
     (* binder x should not occur as let-bound variable in bs *)
-    (existsb (eqb x) (bvbs <{ /[ γ /][bnr] (/[[ msyn1 ρ /][bnr] bs) }>)).
-    + admit.
+    (existsb (eqb x) (bvbs <{ /[ γ /][bnr] (/[[ msyn1 ρ /][bnr] bs) }>)) eqn:H_ex.
 
-      (* 1. bvbs don't change with substitution *)
+    + (* 1. bvbs don't change with substitution *)
+      rewrite bvbs_msubst_bnr in H_ex.
+      rewrite bvbs_msubstA_bnr in H_ex.
+
       (* 2. existsb (eqb x) (bvbs bs) -> Term.appears_bound_in x (Let r bs t) *)
+
+      apply existsb_appears_bound_in with (r := NonRec) (t := t) in H_ex.
       (* 3. Inversion on H_unique gives case: UNI_Let_TermBind *)
+
+      inversion H_unique.
       (* 4. Contradiction with premise of that rule *)
+      contradiction.
 
     +
       (* combine single substitution with multi-substitution *)
@@ -247,7 +255,7 @@ Proof.
         -- eassumption.
         -- eassumption.
         -- lia.
-Admitted.
+Qed.
 
 
 End CompatibilityLemmas.
