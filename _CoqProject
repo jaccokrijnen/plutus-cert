@@ -41,6 +41,7 @@ src/PlutusIR/Transform/DeadCode.v
 src/PlutusIR/Transform/DeadCode/DecideBool.v
 src/PlutusIR/Transform/DeadCode/DSP/TermBind.v
 src/PlutusIR/Transform/DeadCode/DSP/Lemmas.v
+src/PlutusIR/Transform/DeadCode/DSP/BoundVars.v
 src/PlutusIR/Transform/Beta.v
 src/PlutusIR/Transform/Unwrap.v
 #src/PlutusIR/Transform/ScottEnc.v

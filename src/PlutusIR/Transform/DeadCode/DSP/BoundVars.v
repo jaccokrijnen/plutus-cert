@@ -71,7 +71,7 @@ Section Bvbs.
   Qed.
 
   Lemma bvbs_msubstA_bnr : ∀ ρ bs ,
-    bvbs bs = bvbs (msubstA_bnr ρ bs).
+    bvbs (msubstA_bnr ρ bs) = bvbs bs .
     (* TODO: should be similar to bvbs_msubst_bnr *)
   Admitted.
 
