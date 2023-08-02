@@ -53,7 +53,7 @@ Lemma compatibility_dc_delete_let Δ Γ t t' T Tn r bs Δ' Γ' bsn :
   Δ ,, Γ |-+ (Let r bs t) : Tn ->
 
   unique (Let r bs t) ->
-  disjoint (fv t') (bound_vars_bindings bs) ->
+  disjoint (fv t') (bvbs bs) ->
   Forall (pure_binding []) bs ->
 
   (* Extended environments *)
