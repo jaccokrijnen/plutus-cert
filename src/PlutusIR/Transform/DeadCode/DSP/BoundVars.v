@@ -30,7 +30,7 @@ Section Bvb.
     bvb (msubst_b γ b) = bvb b.
   Proof.
     revert b.
-    induction γ as [_ | [x t] γ] .
+    induction γ as [ | [x t] γ] .
     - intros b. reflexivity.
     - intros b.
       simpl.

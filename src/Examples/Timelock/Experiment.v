@@ -7,7 +7,7 @@ From Coq Require Import
 From PlutusCert Require Import
   PlutusIR
   FreeVars
-  BoundVars
+  Analysis.BoundVars
   Equality
   Util
   Util.List
@@ -50,7 +50,7 @@ Definition trace_passes := fun trace => match trace with
 Definition t0 := trace_t0 trace.
 Definition ps := trace_passes trace.
 
-Example t0_closed : free_vars var_eqb t0 = nil.
+Example t0_closed : fv var_eqb t0 = nil.
   Proof. reflexivity. Qed.
 
 Compute Datatypes.length (bound_vars t0).
