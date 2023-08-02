@@ -11,6 +11,7 @@ From PlutusCert Require Import Transform.DeadCode.
 From PlutusCert Require Import Analysis.WellScoped.
 From PlutusCert Require Import TypeSafety.TypeLanguage.Preservation.
 From PlutusCert Require Import SemanticEquivalence.LogicalRelation.
+From PlutusCert Require Import FreeVars.
 
 Import PlutusNotations.
 
@@ -18,6 +19,11 @@ Import ListNotations.
 Import UniqueBinders.Term.
 
 Set Diffs "on".
+
+(* TODO: rename the actual functions *)
+Notation fv := (free_vars String.eqb).
+Notation fv_binding := (free_vars_binding String.eqb).
+Notation fv_bindings := (free_vars_bindings String.eqb fv_binding).
 
 Definition disjoint {A} (xs ys : list A) : Prop :=
   Forall (fun v => ~ In v ys) xs.
@@ -168,9 +174,19 @@ Section Purity.
 
 End Purity.
 
+Lemma Forall_singleton {A} P (x : A) :
+  Forall P [x] <-> P x.
+Proof.
+  split.
+  - inversion 1. assumption.
+  - auto.
+Qed.
+
 
 (** For the case of removing a subset of bindings
 
+*)
+(*
     TODO: generalize return type to take into account all of
     its binders (datatypes have multiple)
 
@@ -187,16 +203,20 @@ Lemma unique_well_scoped_disjoint Δ Γ rec bs t Δ' Γ' bs' t' :
   forall b,
   In b bs ->
   name_removed b bs' ->
-  ~ In (name_Binding b) (fv (Let rec bs' t')).
+  disjoint (bvb b) (fv (Let rec bs' t')).
+  (* /\ disjoint (btvb b) (ftv (Let rec bs' t')).*)
 Proof.
   intros
     H_dc H_unique H_ws_pre H_ws_post
     b H_In_b_bs H_removed_b_bs.
-  intro H_in_fv.
   destruct b as [ s [v ty_v] t_b | tvd ty | dtd ]; simpl in *.
 
   (* TermBind *)
-  - assert (H_v_in_Γ' : In v Γ').
+  - unfold disjoint.
+    apply Forall_singleton.
+    intros H_in_fv.
+
+    assert (H_v_in_Γ' : In v Γ').
       { eapply (well_scoped_fv H_ws_post _ H_in_fv). }
     assert (H_v_not_in_Γ' : ~ In v Γ').
       {

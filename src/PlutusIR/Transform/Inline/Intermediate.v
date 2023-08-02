@@ -136,7 +136,7 @@ Section InlineOnly.
     (elims : list A) (bs : list Binding) : bool :=
     forallb
       (fun v => elem A_eqb v elims)
-      (bound_vars_bindings bs)
+      (bvbs bs)
   .
 
 

@@ -27,10 +27,13 @@ Set Implicit Arguments.
 Set Equations Transparent.
 
 
-Notation fv := (free_vars String.eqb).
-Notation fv_binding := (free_vars_binding String.eqb).
-Notation fv_bindings := (free_vars_bindings String.eqb fv_binding).
 
+
+(* The primary name that is bound by the binding.
+   Note: this is different than the variables bound by a binding (bvb), since
+   DatatypeBind binds more names, but this  suffices for detecting whether
+   a binding is removed
+*)
 Definition name_Binding (b : Binding) :=
   match b with
     | TermBind s (VarDecl x _) t => x
