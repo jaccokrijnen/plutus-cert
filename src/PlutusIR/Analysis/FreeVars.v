@@ -46,40 +46,40 @@ Section FreeVars.
 
   Definition binding' := binding var tyvar var tyvar.
 
-  Definition free_vars_bindings (free_vars_binding : Recursivity -> binding' -> list var) :=
-    fix free_vars_bindings rec (bs : list binding') : list var :=
+  Definition fvbs (fvb : Recursivity -> binding' -> list var) :=
+    fix fvbs rec (bs : list binding') : list var :=
     match rec with
       | Rec    =>
-          delete_many var_eqb (bvbs bs) (concat (map (free_vars_binding Rec) bs))
+          delete_many var_eqb (bvbs bs) (concat (map (fvb Rec) bs))
       | NonRec =>
           match bs with
             | nil     => []
-            | b :: bs => free_vars_binding NonRec b
-                ++ delete_many var_eqb (bvb b) (free_vars_bindings NonRec bs)
+            | b :: bs => fvb NonRec b
+                ++ delete_many var_eqb (bvb b) (fvbs NonRec bs)
           end
     end.
 
 
-  Fixpoint free_vars (t : term var tyvar var tyvar) : list var :=
+  Fixpoint fv (t : term var tyvar var tyvar) : list var :=
    match t with
-     | Let rec bs t => free_vars_bindings free_vars_binding rec bs ++ delete_many var_eqb (bvbs bs) (free_vars t)
-     | (LamAbs n ty t)   => delete var_eqb n (free_vars t)
+     | Let rec bs t => fvbs fvb rec bs ++ delete_many var_eqb (bvbs bs) (fv t)
+     | (LamAbs n ty t)   => delete var_eqb n (fv t)
      | (Var n)           => [n]
-     | (TyAbs n k t)     => free_vars t
-     | (Apply s t)       => free_vars s ++ free_vars t
-     | (TyInst t ty)     => free_vars t
-     | (IWrap ty1 ty2 t) => free_vars t
-     | (Unwrap t)        => free_vars t
+     | (TyAbs n k t)     => fv t
+     | (Apply s t)       => fv s ++ fv t
+     | (TyInst t ty)     => fv t
+     | (IWrap ty1 ty2 t) => fv t
+     | (Unwrap t)        => fv t
      | (Error ty)        => []
      | (Constant v)      => []
      | (Builtin f)       => []
      end
 
-  with free_vars_binding rec (b : binding') : list var :=
+  with fvb rec (b : binding') : list var :=
     match b with
       | TermBind _ (VarDecl v _) t => match rec with
-        | Rec    => delete var_eqb v (free_vars t)
-        | NonRec => free_vars t
+        | Rec    => delete var_eqb v (fv t)
+        | NonRec => fv t
         end
       | _        => []
     end
