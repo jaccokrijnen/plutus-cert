@@ -35,87 +35,88 @@ Definition unique_open Δ Γ t :=
 
 Section SubstitutionLemmas.
 
-Lemma subst_not_in_fv x t' t : ~ (In x (fv t)) -> <{ [t' / x] t }> = t.
-Admitted.
+  Lemma subst_not_in_fv x t' t : ~ (In x (fv t)) -> <{ [t' / x] t }> = t.
+  Admitted.
 
-(* Substituting type annotations will not change free term variables*)
-Lemma fv_msubstA_fv γ t : fv <{ /[[ γ /] t }> = fv t.
-Admitted.
+  (* Substituting type annotations will not change free term variables*)
+  Lemma fv_msubstA_fv γ t : fv <{ /[[ γ /] t }> = fv t.
+  Admitted.
 
-Lemma msubst_not_in_fv x t' γ t : ~ (In x (fv t)) -> <{ /[(x, t') :: γ /] t }> = <{ /[γ/] t }>.
-Admitted.
+  Lemma msubst_not_in_fv x t' γ t : ~ (In x (fv t)) -> <{ /[(x, t') :: γ /] t }> = <{ /[γ/] t }>.
+  Admitted.
 
-Lemma msubstA_LetNonRec ss bs t : <{ /[[ ss /] {Let NonRec bs t} }>
-  = Let NonRec <{ /[[ ss /][bnr] bs }> <{/[[ ss /] t}>.
-Admitted.
+  Lemma msubstA_LetNonRec ss bs t : <{ /[[ ss /] {Let NonRec bs t} }>
+    = Let NonRec <{ /[[ ss /][bnr] bs }> <{/[[ ss /] t}>.
+  Admitted.
 
-Lemma msubst_LetNonRec ss bs t : <{ /[ ss /] {Let NonRec bs t} }>
-  = Let NonRec <{ /[ ss /][bnr] bs }> <{/[ ss /] t}>.
-Admitted.
+  Lemma msubst_LetNonRec ss bs t : <{ /[ ss /] {Let NonRec bs t} }>
+    = Let NonRec <{ /[ ss /][bnr] bs }> <{/[ ss /] t}>.
+  Admitted.
 
-Lemma msubst_bs_cons ss b bs : <{ /[ ss /][bnr] {b :: bs} }>
-  = <{ /[ ss /][b]b }> :: <{ /[ ss /][bnr]bs }>.
-Admitted.
+  Lemma msubst_bs_cons ss b bs : <{ /[ ss /][bnr] {b :: bs} }>
+    = <{ /[ ss /][b]b }> :: <{ /[ ss /][bnr]bs }>.
+  Admitted.
 
-Lemma msubstA_bs_cons ss b bs : <{ /[[ ss /][bnr] {b :: bs} }>
-  = <{ /[[ ss /][b]b }> :: <{ /[[ ss /][bnr]bs }>.
-Admitted.
+  Lemma msubstA_bs_cons ss b bs : <{ /[[ ss /][bnr] {b :: bs} }>
+    = <{ /[[ ss /][b]b }> :: <{ /[[ ss /][bnr]bs }>.
+  Admitted.
 
-Lemma msubstBind ss s x t : msubst_b ss (TermBind s x t)
-  = TermBind s x (msubst ss t).
-Admitted.
+  Lemma msubst_TermBind ss s x t : msubst_b ss (TermBind s x t)
+    = TermBind s x (msubst ss t).
+  Admitted.
 
-Lemma msubstA_TermBind ss s x t : msubstA_b ss (TermBind s x t)
-  = TermBind s x (msubstA ss t).
-Admitted.
+  Lemma msubstA_TermBind ss s x t : msubstA_b ss (TermBind s x t)
+    = TermBind s x (msubstA ss t).
+  Admitted.
 
-Lemma compose_subst_msubst : forall x tx γ t,
-  subst x tx (msubst γ t) = msubst ((x, tx) :: γ) t.
-Admitted.
+  Lemma compose_subst_msubst : forall x tx γ t,
+    subst x tx (msubst γ t) = msubst ((x, tx) :: γ) t.
+  Admitted.
 
-Lemma compose_subst_msubst_bindings_nonrec : forall x tx γ bs,
-  <{ [ tx / x ][bnr] (/[ γ /][bnr] bs) }> = <{ /[ (x, tx) :: γ /][bnr] bs }>.
-Admitted.
+  Lemma compose_subst_msubst_bindings_nonrec : forall x tx γ bs,
+    <{ [ tx / x ][bnr] (/[ γ /][bnr] bs) }> = <{ /[ (x, tx) :: γ /][bnr] bs }>.
+  Admitted.
 
-Lemma value_msubstA_value v δ :
-  value v ->
-  value <{/[[ δ /] v}>.
-Proof.
-(** Should hold: only substitutes in types *)
-Admitted.
+  Lemma value_msubstA_value v δ :
+    value v ->
+    value <{/[[ δ /] v}>.
+  Proof.
+  (** Should hold: only substitutes in types *)
+  Admitted.
 
 
-Lemma value_msubst_value v γ :
-  value v ->
-  value <{/[ γ /] v}>.
-Proof.
-(** Should hold: only substitute under lambdas etc *)
-Admitted.
+  Lemma value_msubst_value v γ :
+    value v ->
+    value <{/[ γ /] v}>.
+  Proof.
+  (** Should hold: only substitute under lambdas etc *)
+  Admitted.
 
 
 End SubstitutionLemmas.
 
 
 Section ScopingLemmas.
-Lemma dead_code_strengthen {Δ Δ' Γ Γ' t t'}:
-  elim t t' ->
-  well_scoped Δ  Γ  t ->
-  well_scoped Δ' Γ' t' ->
-  Γ' ⊆  Γ.
-Admitted.
 
-Lemma well_scoped_fv {Δ Γ t}:
-  well_scoped Δ Γ t ->
-  forall v, In v (fv t) ->
-  In v Γ.
-Admitted.
+  Lemma dead_code_strengthen {Δ Δ' Γ Γ' t t'}:
+    elim t t' ->
+    well_scoped Δ  Γ  t ->
+    well_scoped Δ' Γ' t' ->
+    Γ' ⊆  Γ.
+  Admitted.
 
-Lemma strengthen_Γ Δ Γ x t Tx T :
-  ~ In x (fv t) ->
-  Δ,, (x , Tx) :: Γ |-+ t : T ->
-  Δ,, Γ |-+ t : T
-.
-Admitted.
+  Lemma well_scoped_fv {Δ Γ t}:
+    well_scoped Δ Γ t ->
+    forall v, In v (fv t) ->
+    In v Γ.
+  Admitted.
+
+  Lemma strengthen_Γ Δ Γ x t Tx T :
+    ~ In x (fv t) ->
+    Δ,, (x , Tx) :: Γ |-+ t : T ->
+    Δ,, Γ |-+ t : T
+  .
+  Admitted.
 
 End ScopingLemmas.
 
@@ -124,46 +125,46 @@ Definition close ρ γ t := msubst γ (msubstA ρ t).
 
 Section Purity.
 
-(* Semantically pure _closed_ term *)
-Definition pure t := exists k v, t =[k]=> v /\ ~ is_error v.
+  (* Semantically pure _closed_ term *)
+  Definition pure t := exists k v, t =[k]=> v /\ ~ is_error v.
 
-(* Only substitutes pure (closed) terms *)
-Definition pure_substitution (γ : env) := Forall (fun '(x, t) => pure t) γ.
+  (* Only substitutes pure (closed) terms *)
+  Definition pure_substitution (γ : env) := Forall (fun '(x, t) => pure t) γ.
 
-Lemma RG_pure_substitution_1 : forall ρ k Γ γ γ',
-  RG ρ k Γ γ γ' -> pure_substitution γ.
-Proof.
-  intros ρ k Γ γ γ' H_RG.
-  dependent induction H_RG.
-  - constructor.
-  - constructor.
-    destruct H.
-    assert (v1 =[0]=> v1). { apply eval_value__value. assumption. }
-    + repeat eexists.
-      all: eassumption.
-    + assumption.
-Qed.
+  Lemma RG_pure_substitution_1 : forall ρ k Γ γ γ',
+    RG ρ k Γ γ γ' -> pure_substitution γ.
+  Proof.
+    intros ρ k Γ γ γ' H_RG.
+    dependent induction H_RG.
+    - constructor.
+    - constructor.
+      destruct H.
+      assert (v1 =[0]=> v1). { apply eval_value__value. assumption. }
+      + repeat eexists.
+        all: eassumption.
+      + assumption.
+  Qed.
 
-Inductive substitution : tass -> env -> Prop :=
-  | S_nil : substitution [] []
-  | S_cons : forall Γ γ x t T,
-      substitution Γ γ ->
-      normal_Ty T ->
-      ([] ,, [] |-+ t : T) ->
-      substitution ((x, T) :: Γ) ((x, t) :: γ).
+  Inductive substitution : tass -> env -> Prop :=
+    | S_nil : substitution [] []
+    | S_cons : forall Γ γ x t T,
+        substitution Γ γ ->
+        normal_Ty T ->
+        ([] ,, [] |-+ t : T) ->
+        substitution ((x, T) :: Γ) ((x, t) :: γ).
 
-Lemma RG_substitution_1 : forall ρ k Γ γ γ', RG ρ k Γ γ γ' -> substitution Γ γ.
-(* Should hold: substitution contains less information *)
-Admitted.
+  Lemma RG_substitution_1 : forall ρ k Γ γ γ', RG ρ k Γ γ γ' -> substitution Γ γ.
+  (* Should hold: substitution contains less information *)
+  Admitted.
 
-(* Semantically pure _open_ term *)
-Definition pure_open Δ Γ t τ :=
-  normal_Ty τ ->
-  Δ ,, Γ |-+ t : τ ->
-  forall ρ γ,
-  substitution Γ γ ->
-  pure_substitution γ ->
-  pure (close ρ γ t).
+  (* Semantically pure _open_ term *)
+  Definition pure_open Δ Γ t τ :=
+    normal_Ty τ ->
+    Δ ,, Γ |-+ t : τ ->
+    forall ρ γ,
+    substitution Γ γ ->
+    pure_substitution γ ->
+    pure (close ρ γ t).
 
 End Purity.
 
@@ -180,7 +181,7 @@ End Purity.
 *)
 Lemma unique_well_scoped_disjoint Δ Γ rec bs t Δ' Γ' bs' t' :
   elim (Let rec bs t) (Let rec bs' t') ->
-  unique_open Δ Γ (Let rec bs t) ->
+  unique_open Δ  Γ  (Let rec bs  t ) ->
   well_scoped Δ  Γ  (Let rec bs  t ) ->
   well_scoped Δ' Γ' (Let rec bs' t') ->
   forall b,
