@@ -1,5 +1,7 @@
 From Equations Require Import Equations.
 Require Import PlutusCert.PlutusIR.
+From PlutusCert Require Import Analysis.FreeVars.
+Import Ty.
 Import NamedTerm.
 
 Require Import Coq.Lists.List.
@@ -37,23 +39,8 @@ Fixpoint msubstT (ss : list (tyname * Ty)) (T : Ty) : Ty :=
 Require Import Lia.
 Import ListNotations.
 
-Fixpoint ftv (T : Ty) : list tyname :=
-  match T with
-  | Ty_Var X =>
-      [X]
-  | Ty_Fun T1 T2 =>
-      ftv T1 ++ ftv T2
-  | Ty_IFix F T =>
-      ftv F ++ ftv T
-  | Ty_Forall X K T' =>
-      remove string_dec X (ftv T')
-  | Ty_Builtin u =>
-      []
-  | Ty_Lam X K1 T' =>
-      remove string_dec X (ftv T')
-  | Ty_App T1 T2 =>
-      ftv T1 ++ ftv T2
-  end.
+
+Definition ftv := Ty.ftv string_dec.
 
 (** Assume that we compute the substitution of U for X in (LamAbs Y K T).
     We reduce the  problem of generating a fresh type variable to generating

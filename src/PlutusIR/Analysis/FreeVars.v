@@ -22,26 +22,53 @@ Section ListHelpers.
 
   Context
     {A : Set}
-    (A_eqb : A -> A -> bool)
+    (A_dec : forall x y : A, {x = y} + {x <> y})
     .
 
-  Definition delete : A -> list A -> list A :=
-    fun x xs => filter (fun y => negb (A_eqb x y)) xs.
-
-  Definition elem x xs := existsb (A_eqb x) xs.
-
-  Definition delete_many : list A -> list A -> list A :=
-    fun ds xs => filter (fun x => negb (elem x ds)) xs.
+  Definition remove_many : list A -> list A -> list A :=
+    fun xs ys => fold_right (remove A_dec) ys xs.
 
 End ListHelpers.
 
-(* Parametrized for _named_ binders (not de Bruijn) *)
-Section FreeVars.
+Module Ty.
 
+
+  Section FreeVars.
+  Context
+    {tyvar : Set}
+    (tyvar_dec : forall x y : tyvar, {x = y} + {x <> y})
+    .
+
+  Fixpoint ftv (T : ty tyvar tyvar) : list tyvar :=
+    match T with
+    | Ty_Var X =>
+        [X]
+    | Ty_Fun T1 T2 =>
+        ftv T1 ++ ftv T2
+    | Ty_IFix F T =>
+        ftv F ++ ftv T
+    | Ty_Forall X K T' =>
+        remove tyvar_dec X (ftv T')
+    | Ty_Builtin u =>
+        []
+    | Ty_Lam X K1 T' =>
+        remove tyvar_dec X (ftv T')
+    | Ty_App T1 T2 =>
+        ftv T1 ++ ftv T2
+    end.
+    End FreeVars.
+
+End Ty.
+
+
+Module Term.
+  Section FreeVars.
+
+  (* Parametrized for _named_ binders (not de Bruijn) *)
   Context
     {var tyvar : Set}
-    (var_eqb : var -> var -> bool)
-    (tyvar_eqb : var -> var -> bool)
+    (var_dec : forall x y : var, {x = y} + {x <> y})
+    (tyvar_dec : forall x y : tyvar, {x = y} + {x <> y})
     .
 
   Definition binding' := binding var tyvar var tyvar.
@@ -50,20 +77,20 @@ Section FreeVars.
     fix fvbs rec (bs : list binding') : list var :=
     match rec with
       | Rec    =>
-          delete_many var_eqb (bvbs bs) (concat (map (fvb Rec) bs))
+          remove_many var_dec (bvbs bs) (concat (map (fvb Rec) bs))
       | NonRec =>
           match bs with
             | nil     => []
             | b :: bs => fvb NonRec b
-                ++ delete_many var_eqb (bvb b) (fvbs NonRec bs)
+                ++ remove_many var_dec (bvb b) (fvbs NonRec bs)
           end
     end.
 
 
   Fixpoint fv (t : term var tyvar var tyvar) : list var :=
    match t with
-     | Let rec bs t => fvbs fvb rec bs ++ delete_many var_eqb (bvbs bs) (fv t)
-     | (LamAbs n ty t)   => delete var_eqb n (fv t)
+     | Let rec bs t => fvbs fvb rec bs ++ remove_many var_dec (bvbs bs) (fv t)
+     | (LamAbs n ty t)   => remove var_dec n (fv t)
      | (Var n)           => [n]
      | (TyAbs n k t)     => fv t
      | (Apply s t)       => fv s ++ fv t
@@ -78,12 +105,53 @@ Section FreeVars.
   with fvb rec (b : binding') : list var :=
     match b with
       | TermBind _ (VarDecl v _) t => match rec with
-        | Rec    => delete var_eqb v (fv t)
+        | Rec    => remove var_dec v (fv t)
         | NonRec => fv t
         end
       | _        => []
     end
     .
 
-End FreeVars.
+  Definition ftvbs (fvb : Recursivity -> binding' -> list tyvar) :=
+    fix ftvbs rec (bs : list binding') : list tyvar :=
+    match rec with
+      | Rec    =>
+          remove_many tyvar_dec (btvbs bs) (concat (map (fvb Rec) bs))
+      | NonRec =>
+          match bs with
+            | nil     => []
+            | b :: bs => fvb NonRec b
+                ++ remove_many tyvar_dec (btvb b) (ftvbs NonRec bs)
+          end
+    end.
 
+  Definition ftvc (c : constr tyvar var tyvar) : list tyvar :=
+    match c with
+      | Constructor (VarDecl _ τ) _ => Ty.ftv tyvar_dec τ
+    end.
+
+  Fixpoint ftv (t : term var tyvar var tyvar) : list tyvar :=
+   match t with
+     | Let rec bs t => ftvbs ftvb rec bs ++ remove_many tyvar_dec (btvbs bs) (ftv t)
+     | (LamAbs n ty t)   => ftv t
+     | (Var n)           => []
+     | (TyAbs α k t)     => remove tyvar_dec α (ftv t)
+     | (Apply s t)       => ftv s ++ ftv t
+     | (TyInst t ty)     => ftv t
+     | (IWrap ty1 ty2 t) => ftv t
+     | (Unwrap t)        => ftv t
+     | (Error ty)        => []
+     | (Constant v)      => []
+     | (Builtin f)       => []
+     end
+
+  with ftvb rec (b : binding') : list tyvar :=
+    match b with
+      | TermBind _ _ t => ftv t
+      | TypeBind (TyVarDecl α _) _  => [α]
+      | DatatypeBind (Datatype (TyVarDecl α _) params m cs) => concat (map ftvc cs)
+    end
+    .
+
+  End FreeVars.
+End Term.
