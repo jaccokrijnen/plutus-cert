@@ -21,9 +21,9 @@ Import UniqueBinders.Term.
 Set Diffs "on".
 
 (* TODO: rename the actual functions *)
-Definition fv : Term -> list string := (FreeVars.fv String.eqb).
-Definition fv_binding : Recursivity -> Binding -> list string := (FreeVars.fvb String.eqb).
-Definition fv_bindings : Recursivity -> list Binding -> list string := (FreeVars.fvbs String.eqb fv_binding).
+Definition fv : Term -> list string := (Term.fv string_dec).
+Definition fv_binding : Recursivity -> Binding -> list string := (Term.fvb string_dec).
+Definition fv_bindings : Recursivity -> list Binding -> list string := (Term.fvbs string_dec fv_binding).
 
 Definition disjoint {A} (xs ys : list A) : Prop :=
   Forall (fun v => ~ In v ys) xs.

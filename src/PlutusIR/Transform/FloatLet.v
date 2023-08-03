@@ -14,7 +14,7 @@ From PlutusCert Require Import
 Import NamedTerm.
 
 
-Definition fv : Term -> list string := (FreeVars.fv String.eqb).
+Definition fv : Term -> list string := (Term.fv string_dec).
 
 Inductive let_merge : Term -> Term -> Prop :=
   | LM_lets : forall t_inner t_inner' t bs bs' min_rec,
