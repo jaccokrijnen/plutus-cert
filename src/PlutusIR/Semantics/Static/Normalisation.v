@@ -1,4 +1,5 @@
 Require Import PlutusCert.PlutusIR.
+Require Import Strings.String.
 Import NamedTerm.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.TypeSubstitution.
@@ -221,7 +222,7 @@ Lemma normalisation__complete : forall S T Sn,
 Proof. Abort.
 
 (** Normalisation of lists of types*)
-Inductive map_normalise : list (tyname * Ty) -> list (tyname * Ty) -> Prop :=
+Inductive map_normalise : list (string * Ty) -> list (string * Ty) -> Prop :=
   | MN_nil :
       map_normalise nil nil
   | MN_cons : forall X T Ts Tn Tsn,

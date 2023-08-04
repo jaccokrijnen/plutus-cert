@@ -289,23 +289,16 @@ Definition TyName (s : string) := s.
 Inductive tyname := TyName : name -> tyname.
 *)
 
-(* TODO: Coq prints wrong notation for LamAbs type, perhaps just use string
-    everywhere? *)
-Notation name := string (only parsing).
-Notation tyname := string (only parsing).
-Notation binderName := string (only parsing).
-Notation binderTyname := string (only parsing).
-
 Notation Kind := (kind).
-Notation Ty := (ty tyname binderTyname).
-Notation VDecl := (vdecl name tyname binderName).
-Notation TVDecl := (tvdecl binderTyname).
-Notation DTDecl := (dtdecl name tyname binderTyname).
-Notation constructor := (constr tyname binderName binderTyname).
-Notation Term := (term name tyname binderName binderTyname).
-Notation Binding := (binding name tyname binderName binderTyname).
+Notation Ty := (ty string string).
+Notation VDecl := (vdecl string string string).
+Notation TVDecl := (tvdecl string).
+Notation DTDecl := (dtdecl string string string).
+Notation constructor := (constr string string string).
+Notation Term := (term string string string string).
+Notation Binding := (binding string string string string).
 
-Notation Context := (context name tyname binderName binderTyname).
+Notation Context := (context string string string string).
 
 Arguments C_Hole { _ _ _ _ }.
 
@@ -317,19 +310,14 @@ End NamedTerm.
 (** * De Bruijn terms *)
 Module DeBruijnTerm.
 
-Notation name := nat (only parsing).
-Notation tyname := nat (only parsing).
-Notation binderName := unit (only parsing).
-Notation binderTyname := unit (only parsing).
-
 Notation Kind := (kind).
-Notation Ty := (ty tyname binderTyname).
-Notation VDecl := (vdecl tyname binderName binderTyname).
-Notation TVDecl := (tvdecl binderTyname).
-Notation DTDecl := (dtdecl tyname binderName binderTyname).
-Notation constructor := (constr tyname binderName binderTyname).
-Notation Term := (term name tyname binderName binderTyname).
-Notation Binding := (binding name tyname binderName binderTyname).
+Notation Ty := (ty nat unit).
+Notation VDecl := (vdecl nat unit unit).
+Notation TVDecl := (tvdecl unit).
+Notation DTDecl := (dtdecl nat unit unit).
+Notation constructor := (constr nat unit unit).
+Notation Term := (term nat nat unit unit).
+Notation Binding := (binding nat nat unit unit).
 
 
 Fixpoint shift_ty' (k c : nat) (T : Ty) : Ty :=
@@ -414,9 +402,9 @@ Section Term_rect.
 
   Context
     (H_Let      : forall rec bs t, ForallT Q bs -> P t -> P (Let rec bs t))
-    (H_Var      : forall s : tyname, P (Var s))
-    (H_TyAbs    : forall (s : tyname) (k : Kind) (t : Term), P t -> P (TyAbs s k t))
-    (H_LamAbs   : forall (s : tyname) (t : Ty) (t0 : Term), P t0 -> P (LamAbs s t t0))
+    (H_Var      : forall s : string, P (Var s))
+    (H_TyAbs    : forall (s : string) (k : Kind) (t : Term), P t -> P (TyAbs s k t))
+    (H_LamAbs   : forall (s : string) (t : Ty) (t0 : Term), P t0 -> P (LamAbs s t t0))
     (H_Apply    : forall t : Term, P t -> forall t0 : Term, P t0 -> P (Apply t t0))
     (H_Constant : forall s : some valueOf, P (Constant s))
     (H_Builtin  : forall d : DefaultFun, P (Builtin d))
@@ -469,9 +457,9 @@ Section Term__ind.
 
   Context
     (H_Let      : forall rec bs t, ForallP Q bs -> P t -> P (Let rec bs t))
-    (H_Var      : forall s : tyname, P (Var s))
-    (H_TyAbs    : forall (s : tyname) (k : Kind) (t : Term), P t -> P (TyAbs s k t))
-    (H_LamAbs   : forall (s : tyname) (t : Ty) (t0 : Term), P t0 -> P (LamAbs s t t0))
+    (H_Var      : forall s : string, P (Var s))
+    (H_TyAbs    : forall (s : string) (k : Kind) (t : Term), P t -> P (TyAbs s k t))
+    (H_LamAbs   : forall (s : string) (t : Ty) (t0 : Term), P t0 -> P (LamAbs s t t0))
     (H_Apply    : forall t : Term, P t -> forall t0 : Term, P t0 -> P (Apply t t0))
     (H_Constant : forall s : some valueOf, P (Constant s))
     (H_Builtin  : forall d : DefaultFun, P (Builtin d))

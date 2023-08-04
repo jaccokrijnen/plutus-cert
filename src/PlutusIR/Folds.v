@@ -19,9 +19,9 @@ Section Algebras.
 
 Record AlgTerm: Type := mkTermAlg
   { a_Let      : Recursivity -> rBindings -> rTerm -> rTerm
-  ; a_Var      : name -> rTerm
-  ; a_TyAbs    : tyname -> Kind -> rTerm -> rTerm
-  ; a_LamAbs   : name -> Ty -> rTerm -> rTerm
+  ; a_Var      : string -> rTerm
+  ; a_TyAbs    : string -> Kind -> rTerm -> rTerm
+  ; a_LamAbs   : string -> Ty -> rTerm -> rTerm
   ; a_Apply    : rTerm -> rTerm -> rTerm
   ; a_Constant : @some valueOf -> rTerm
   ; a_Builtin  : DefaultFun -> rTerm
@@ -267,9 +267,9 @@ Section Use. (* name comes from "use" rules in attribute grammars *)
   refine (
     {|
     a_Let := fun (_ : Recursivity) (rBs : a) (r : a) => f [rBs; r];
-    a_Var := fun _ : name => f nil ;
-    a_TyAbs := fun (_ : tyname) (_ : Kind) (X : a) => f [X];
-    a_LamAbs := fun (_ : name) (_ : Ty) (X : a) => f [X];
+    a_Var := fun _ : string => f nil ;
+    a_TyAbs := fun (_ : string) (_ : Kind) (X : a) => f [X];
+    a_LamAbs := fun (_ : string) (_ : Ty) (X : a) => f [X];
     a_Apply := fun X X0 : a => f [X; X0];
     a_Constant := fun _ : @some valueOf => f [];
     a_Builtin := fun _ : DefaultFun => f [];
@@ -328,7 +328,7 @@ End Attributes.
       | _ => _
     end.
       | Var      => name -> Term
-      | TyAbs    => tyname -> Kind -> Term -> Term
+      | TyAbs    => string -> Kind -> Term -> Term
       | LamAbs   =>  name -> Ty -> Term -> Term
       | Apply    =>  Term -> Term -> Term
       | Constant =>  some -> Term
@@ -384,7 +384,7 @@ Inductive con_binding :=
   | con_DatatypeBind
   .
 
-Definition con_type_binding (name tyname : Set) (P : term name tyname binderName binderTyname -> Type) (Q : binding name tyname binderName binderTyname -> Type) : con_binding -> Type :=
+Definition con_type_binding (name string : Set) (P : term name string string string -> Type) (Q : binding name string string string -> Type) : con_binding -> Type :=
   fun c => match c with
     | con_TermBind => forall s v t, P t -> Q (TermBind s v t)
     | con_TypeBind => forall v ty, Q (TypeBind v ty)

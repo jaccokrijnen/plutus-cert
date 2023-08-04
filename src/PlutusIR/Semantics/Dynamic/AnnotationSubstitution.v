@@ -15,9 +15,9 @@ Local Open Scope string_scope.
 (** Substitution of types in type annotations *)
 
 Section SubstABindings.
-  Context {substAb : tyname -> Ty -> Binding -> Binding}.
+  Context {substAb : string -> Ty -> Binding -> Binding}.
 
-  Fixpoint substA_bnr' (X : tyname) (U : Ty) (bs : list Binding) : list Binding :=
+  Fixpoint substA_bnr' (X : string) (U : Ty) (bs : list Binding) : list Binding :=
     match bs with
     | nil =>
         nil
@@ -29,7 +29,7 @@ Section SubstABindings.
             substAb X U b :: substA_bnr' X U bs'
     end.
 
-  Fixpoint substA_br' (X : tyname) (U : Ty) (bs : list Binding) : list Binding :=
+  Fixpoint substA_br' (X : string) (U : Ty) (bs : list Binding) : list Binding :=
     match bs with
     | nil =>
         nil
@@ -41,19 +41,19 @@ End SubstABindings.
 
 Section SubstAConstructors.
 
-  Definition substA_c (X : tyname) (U : Ty) (c : constructor) : constructor :=
+  Definition substA_c (X : string) (U : Ty) (c : constructor) : constructor :=
     match c with
     | Constructor (VarDecl bx T) ar =>
         Constructor (VarDecl bx (substituteT X U T)) ar
     end.
 
-  Definition substA_cs (X : tyname) (U : Ty) (cs : list constructor) : list constructor :=
+  Definition substA_cs (X : string) (U : Ty) (cs : list constructor) : list constructor :=
     map (substA_c X U) cs.
 
 End SubstAConstructors.
 
 
-Fixpoint substA (X : tyname) (U : Ty) (t : Term) {struct t} : Term :=
+Fixpoint substA (X : string) (U : Ty) (t : Term) {struct t} : Term :=
   match t with
   | Let NonRec bs t0 =>
       Let NonRec (@substA_bnr' substA_b X U bs)
@@ -91,7 +91,7 @@ Fixpoint substA (X : tyname) (U : Ty) (t : Term) {struct t} : Term :=
       Unwrap (substA X U t0)
   end
 
-with substA_b (X : tyname) (U : Ty) (b : Binding) {struct b} : Binding :=
+with substA_b (X : string) (U : Ty) (b : Binding) {struct b} : Binding :=
   match b with
   | TermBind stricty (VarDecl y T) tb =>
       TermBind stricty (VarDecl y (substituteT X U T)) (substA X U tb)
@@ -113,31 +113,31 @@ Notation "'[[' U '/' X '][c]' c" := (substA_c X U c) (in custom plutus_term at l
 
 
 (** Multi-substitutions of types in type annotations *)
-Fixpoint msubstA (ss : list (tyname * Ty)) (t : Term) : Term :=
+Fixpoint msubstA (ss : list (string * Ty)) (t : Term) : Term :=
   match ss with
   | nil => t
   | (X, U) :: ss' => msubstA ss' <{ [[U / X] t }>
   end.
 
-Fixpoint msubstA_b (ss : list (tyname * Ty)) (b : Binding) : Binding :=
+Fixpoint msubstA_b (ss : list (string * Ty)) (b : Binding) : Binding :=
   match ss with
   | nil => b
   | (X, U) :: ss' => msubstA_b ss' <{ [[U / X][b] b }>
   end.
 
-Fixpoint msubstA_bnr (ss : list (tyname * Ty)) (bs : list Binding) : list Binding :=
+Fixpoint msubstA_bnr (ss : list (string * Ty)) (bs : list Binding) : list Binding :=
   match ss with
   | nil => bs
   | (X, U) :: ss' => msubstA_bnr ss' <{ [[U / X][bnr] bs }>
   end.
 
-Fixpoint msubstA_br (ss : list (tyname * Ty)) (bs : list Binding) : list Binding :=
+Fixpoint msubstA_br (ss : list (string * Ty)) (bs : list Binding) : list Binding :=
   match ss with
   | nil => bs
   | (X, U) :: ss' => msubstA_br ss' <{ [[U / X][br] bs }>
   end.
 
-Fixpoint msubstA_cs (ss : list (tyname * Ty)) (cs : list constructor) : list constructor :=
+Fixpoint msubstA_cs (ss : list (string * Ty)) (cs : list constructor) : list constructor :=
   match ss with
   | nil => cs
   | (X, U) :: ss' => msubstA_cs ss' <{ [[U / X][cs] cs}>

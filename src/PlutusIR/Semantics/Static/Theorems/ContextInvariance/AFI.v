@@ -9,7 +9,7 @@ Require Import Coq.Strings.String.
 
 Module Ty.
 
-  Inductive appears_free_in : tyname -> Ty -> Prop :=
+  Inductive appears_free_in : string -> Ty -> Prop :=
     | AFI_TyVar : forall X,
         appears_free_in X (Ty_Var X)
     | AFI_TyFun1 : forall X T1 T2,
@@ -47,7 +47,7 @@ End Ty.
 
 Module Term.
 
-  Inductive appears_free_in : name -> Term -> Prop :=
+  Inductive appears_free_in : string -> Term -> Prop :=
     | AFIT_Let : forall x r bs t,
         ~(In x (bvbs bs)) ->
         appears_free_in x t ->
@@ -84,7 +84,7 @@ Module Term.
         appears_free_in x t0 ->
         appears_free_in x (Unwrap t0)
 
-  with appears_free_in__bindings_nonrec : name -> list Binding -> Prop :=
+  with appears_free_in__bindings_nonrec : string -> list Binding -> Prop :=
     | AFIT_ConsB1_NonRec : forall x b bs,
         appears_free_in__binding x b ->
         appears_free_in__bindings_nonrec x (b :: bs)
@@ -93,7 +93,7 @@ Module Term.
         appears_free_in__bindings_nonrec x bs ->
         appears_free_in__bindings_nonrec x (b :: bs)
 
-  with appears_free_in__bindings_rec : name -> list Binding -> Prop :=
+  with appears_free_in__bindings_rec : string -> list Binding -> Prop :=
     | AFIT_ConsB1_Rec : forall x b bs,
         appears_free_in__binding x b ->
         appears_free_in__bindings_rec x (b :: bs)
@@ -101,7 +101,7 @@ Module Term.
         appears_free_in__bindings_rec x bs ->
         appears_free_in__bindings_rec x (b :: bs)
 
-  with appears_free_in__binding : name -> Binding -> Prop :=
+  with appears_free_in__binding : string -> Binding -> Prop :=
     | AFIT_TermBind : forall x s vd t0,
         appears_free_in x t0 ->
         appears_free_in__binding x (TermBind s vd t0)
@@ -114,7 +114,7 @@ End Term.
 
 Module Annotation.
 
-  Inductive appears_free_in (X : tyname) : Term -> Prop :=
+  Inductive appears_free_in (X : string) : Term -> Prop :=
     | AFIA_Let : forall r bs t,
         ~(In X (btvbs bs)) ->
         appears_free_in X t ->
@@ -161,13 +161,13 @@ Module Annotation.
         appears_free_in X t0 ->
         appears_free_in X (Unwrap t0)
 
-  with appears_free_in__constructor (X : tyname) : constructor -> Prop :=
+  with appears_free_in__constructor (X : string) : constructor -> Prop :=
     | AFIA_Constructor : forall x T ar Targs Tr,
         (Targs, Tr) = splitTy T ->
         (exists U, In U Targs /\ Ty.appears_free_in X U) ->
         appears_free_in__constructor X (Constructor (VarDecl x T) ar)
 
-  with appears_free_in__bindings_nonrec (X : tyname) : list Binding -> Prop :=
+  with appears_free_in__bindings_nonrec (X : string) : list Binding -> Prop :=
     | AFIA_ConsB1_NonRec : forall b bs,
         appears_free_in__binding X b ->
         appears_free_in__bindings_nonrec X (b :: bs)
@@ -176,7 +176,7 @@ Module Annotation.
         appears_free_in__bindings_nonrec X bs ->
         appears_free_in__bindings_nonrec X (b :: bs)
 
-  with appears_free_in__bindings_rec (X : tyname) : list Binding -> Prop :=
+  with appears_free_in__bindings_rec (X : string) : list Binding -> Prop :=
     | AFIA_ConsB1_Rec : forall b bs,
         appears_free_in__binding X b ->
         appears_free_in__bindings_rec X (b :: bs)
@@ -184,7 +184,7 @@ Module Annotation.
         appears_free_in__bindings_rec X bs ->
         appears_free_in__bindings_rec X (b :: bs)
 
-  with appears_free_in__binding (X: tyname) : Binding -> Prop :=
+  with appears_free_in__binding (X: string) : Binding -> Prop :=
     | AFIA_TermBind1 : forall s x T t0,
         Ty.appears_free_in X T ->
         appears_free_in__binding X (TermBind s (VarDecl x T) t0)

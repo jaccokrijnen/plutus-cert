@@ -215,7 +215,7 @@ Lemma RV_to_RC : forall k T rho v v',
 Proof. intros. apply H. Qed.
 
 (** Kind assignments *)
-Definition kass := list (name * Kind).
+Definition kass := list (string * Kind).
 
 (** RD = Interpretation of kind contexts as type mappings *)
 Inductive RD : kass -> tymapping -> Prop :=
@@ -229,9 +229,9 @@ Inductive RD : kass -> tymapping -> Prop :=
       RD ((X, K) :: ck) ((X, (Chi, T1, T2)) :: rho).
 
 (** Term environment *)
-Definition env := list (name * Term).
+Definition env := list (string * Term).
 (** Type assignments *)
-Definition tass := list (name * Ty).
+Definition tass := list (string * Ty).
 
 (** RG = Interpretation of type contexts as logically related term environments *)
 Inductive RG (rho : tymapping) (k : nat) : tass -> env -> env -> Prop :=

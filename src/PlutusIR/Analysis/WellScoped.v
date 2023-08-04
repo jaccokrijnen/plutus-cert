@@ -13,7 +13,7 @@ Import ListNotations.
 
 Definition ctx := list string.
 
-Definition tvd_name (tvd : tvdecl tyname) : tyname :=
+Definition tvd_name (tvd : tvdecl string) : string :=
   match tvd with
   | TyVarDecl v K => v
   end.

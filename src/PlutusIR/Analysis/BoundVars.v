@@ -19,7 +19,7 @@ Import NamedTerm.
 
 Module Ty.
 
-  Inductive appears_bound_in (X: tyname) : Ty -> Prop :=
+  Inductive appears_bound_in (X: string) : Ty -> Prop :=
     | ABI_TyFun1 : forall T1 T2,
         appears_bound_in X T1 ->
         appears_bound_in X (Ty_Fun T1 T2)
@@ -60,7 +60,7 @@ Module Term.
     | Constructor (VarDecl x _) _ => x
     end.
 
-  Inductive appears_bound_in (x : name) : Term -> Prop :=
+  Inductive appears_bound_in (x : string) : Term -> Prop :=
     | ABI_LamAbs1 : forall T t,
         appears_bound_in x (LamAbs x T t)
     | ABI_LamAbs2 : forall y T t,
@@ -105,7 +105,7 @@ End Term.
 
 Module Annotation.
 
-  Inductive appears_bound_in (X : tyname) : Term -> Prop :=
+  Inductive appears_bound_in (X : string) : Term -> Prop :=
     | ABI_LamAbs1 : forall x T t,
         Ty.appears_bound_in X T ->
         appears_bound_in X (LamAbs x T t)

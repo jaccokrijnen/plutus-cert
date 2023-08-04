@@ -10,7 +10,7 @@ Local Open Scope string_scope.
 
 (** * Regular substitution of types *)
 
-Fixpoint substituteT (X : tyname) (U T : Ty) : Ty :=
+Fixpoint substituteT (X : string) (U T : Ty) : Ty :=
   match T with
   | Ty_Var Y =>
     if X =? Y then U else Ty_Var Y
@@ -29,7 +29,7 @@ Fixpoint substituteT (X : tyname) (U T : Ty) : Ty :=
   end.
 
 (** Multi-substitutions of types*)
-Fixpoint msubstT (ss : list (tyname * Ty)) (T : Ty) : Ty :=
+Fixpoint msubstT (ss : list (string * Ty)) (T : Ty) : Ty :=
   match ss with
   | nil => T
   | (a, T0) :: ss' => msubstT ss' (substituteT a T0 T)
@@ -39,7 +39,7 @@ Fixpoint msubstT (ss : list (tyname * Ty)) (T : Ty) : Ty :=
 Require Import Lia.
 Import ListNotations.
 
-
+#[local]
 Definition ftv := Ty.ftv string_dec.
 
 (** Assume that we compute the substitution of U for X in (LamAbs Y K T).
@@ -58,7 +58,7 @@ Definition ftv := Ty.ftv string_dec.
     TODO: The above is only an informal proof, so we should prove freshness
     formally as well.
 *)
-Definition fresh (X : tyname) (U T : Ty) : tyname :=
+Definition fresh (X : string) (U T : Ty) : string :=
   "a" ++ X ++ (concat EmptyString (ftv U)) ++ (concat EmptyString (ftv T)).
 
 Lemma fresh__X : forall X U T,
@@ -78,7 +78,7 @@ Lemma fresh__T : forall X U T,
     ~ In (fresh X U T) (ftv T).
 Proof. Abort.
 
-Definition rename (X Y : tyname) (T : Ty) := substituteT X (Ty_Var Y) T.
+Definition rename (X Y : string) (T : Ty) := substituteT X (Ty_Var Y) T.
 
 Fixpoint size (T : Ty) : nat :=
   match T with
@@ -101,7 +101,7 @@ Proof.
   - destruct (X =? b); simpl; eauto.
 Qed.
 
-Equations? substituteTCA (X : tyname) (U T : Ty) : Ty by wf (size T) :=
+Equations? substituteTCA (X : string) (U T : Ty) : Ty by wf (size T) :=
   substituteTCA X U (Ty_Var Y) =>
       if X =? Y then U else Ty_Var Y ;
   substituteTCA X U (Ty_Fun T1 T2) =>

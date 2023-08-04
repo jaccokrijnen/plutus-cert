@@ -30,12 +30,12 @@ Section Bindings.
     end.
 
   Definition dec_removed b bs' :=
-    if negb (existsb (String.eqb (name_Binding b)) bs')
+    if negb (existsb (String.eqb (name b)) bs')
       then dec_pure_binding [] b
       else true.
 
   Definition dec_was_present b' bs : bool :=
-    match find (λ b, String.eqb (name_Binding b) (name_Binding b')) bs with
+    match find (λ b, String.eqb (name b) (name b')) bs with
       | Datatypes.Some b => dec_Binding b b'
       | None => false
     end
@@ -46,7 +46,7 @@ Section Bindings.
   fix find (bs : list Binding) : bool :=
     match bs with
     | []      => false
-    | b :: bs => if String.eqb (name_Binding b) (name_Binding b') then dec_Binding b b' else find bs
+    | b :: bs => if String.eqb (name b) (name b') then dec_Binding b b' else find bs
     end.
 
   (* This does not work in the termination checker, it doesn't see that b returned by find
@@ -54,22 +54,22 @@ Section Bindings.
      It would have to fuse the result of find (an option string) with the resulting, which is
      what I did in the above definition*)
   Definition find_Binding' b' bs :=
-    match find (λ b, String.eqb (name_Binding b) (name_Binding b')) bs with
+    match find (λ b, String.eqb (name b) (name b')) bs with
       | Datatypes.Some b => dec_Binding b b'
       | None => false
     end.
 
 
   Definition dec_Bindings (bs bs' : list Binding) : bool :=
-    let bsn := map name_Binding bs in
-    let bs'n := map name_Binding bs' in
+    let bsn := map name bs in
+    let bs'n := map name bs' in
     forallb (fun b => dec_removed b bs'n) bs &&
     forallb (fun b' => find_Binding b' bs) bs'.
 
   (* this did not pass termination checking *)
   (*
     forallb (fun b' =>
-    match find (λ b, String.eqb (name_Binding b) (name_Binding b')) bs with
+    match find (λ b, String.eqb (name b) (name b')) bs with
       | Datatypes.Some b => dec_Binding b b'
       | None => false
     end
@@ -144,7 +144,7 @@ Ltac split_hypos :=
 
 
 Lemma H_dec_removed bs bs':
-    forallb (fun b => dec_removed b (map name_Binding bs')) bs = true ->
+    forallb (fun b => dec_removed b (map name bs')) bs = true ->
     ∀ b : Binding, In b bs → name_removed b bs' → pure_binding [] b.
 Proof with eauto with Hints_soundness.
   intros H_dec.
@@ -155,8 +155,8 @@ Proof with eauto with Hints_soundness.
   clear H_dec H_In.
 
   destruct (negb
-    (existsb (String.eqb (name_Binding b))
-       (map name_Binding bs')))
+    (existsb (String.eqb (name b))
+       (map name bs')))
        eqn:H_1.
   + apply sound_dec_pure_binding...
 
@@ -175,7 +175,7 @@ Lemma H_find_binding' bs bs' :
     forallb (fun b' => find_Binding dec_Term b' bs) bs' = true ->
     ∀ b', In b' bs' ->
        ∃ x, In x bs /\
-         name_Binding x = name_Binding b' /\
+         name x = name b' /\
          elim_binding x b'
     .
 Proof with eauto with Hints_soundness.
@@ -187,7 +187,7 @@ Proof with eauto with Hints_soundness.
   induction bs as [ | b ].
   - discriminate H_find_b'.
   - simpl in H_find_b'.
-    destruct (name_Binding b =? name_Binding b')%string
+    destruct (name b =? name b')%string
       eqn:H_name_eq.
 
     (* b related to b' *)
