@@ -175,7 +175,7 @@ Proof. Admitted.
 
 (** ** Properties of multi-extensions *)
 
-Lemma mupdate_lookup : forall (c : tass) (x : name),
+Lemma mupdate_lookup : forall (c : tass) (x : string),
     lookup x c = lookup x (c ++ []).
 Proof with auto.
   induction c.

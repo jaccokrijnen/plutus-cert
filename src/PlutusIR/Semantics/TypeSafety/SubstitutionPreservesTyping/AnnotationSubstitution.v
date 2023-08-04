@@ -11,7 +11,7 @@ Import ListNotations.
 
 Require Import Coq.Logic.FunctionalExtensionality.
 
-Definition gsubst (a : tyname) (T' : Ty ) (Gamma : list (string * Ty)) :=
+Definition gsubst (a : string) (T' : Ty ) (Gamma : list (string * Ty)) :=
   map (fun '(x, T) => (x, substituteT a T' T)) Gamma.
 
 Lemma gsubst_empty : forall X U,

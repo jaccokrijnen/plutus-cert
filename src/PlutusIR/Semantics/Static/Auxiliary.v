@@ -46,7 +46,7 @@ Definition dataTy (d : DTDecl) : Ty :=
   match d with
   | Datatype X YKs matchFunc cs =>
     let branchTypes : list Ty := map (fun c => branchTy c (Ty_Var "R")) cs in
-    let branchTypesFolded := fold_right (@Ty_Fun tyname binderTyname) (Ty_Var "R") branchTypes in
+    let branchTypesFolded := fold_right (@Ty_Fun string string) (Ty_Var "R") branchTypes in
     let indexKinds := map (fun YK => Ty_Lam (getTyname YK) (getKind YK)) YKs in
     fold_right apply (Ty_Forall "R" Kind_Base branchTypesFolded) indexKinds
   end.
@@ -54,15 +54,15 @@ Definition dataTy (d : DTDecl) : Ty :=
 Definition constrLastTy (d : DTDecl) : Ty :=
   match d with
   | Datatype X YKs matchFunc cs =>
-      let indexTyVars := map (compose (@Ty_Var tyname binderTyname) getTyname) YKs in
-      let indexTyVarsAppliedToX := fold_left (@Ty_App tyname binderTyname) indexTyVars (Ty_Var (getTyname X)) in
+      let indexTyVars := map (compose (@Ty_Var string string) getTyname) YKs in
+      let indexTyVarsAppliedToX := fold_left (@Ty_App string string) indexTyVars (Ty_Var (getTyname X)) in
       indexTyVarsAppliedToX
   end.
 
 Definition constrTy (d : DTDecl) (c : constructor) : Ty :=
   match d, c with
   | Datatype X YKs matchFunc cs, Constructor (VarDecl x T) _ =>
-    let indexTyVars := map (compose (@Ty_Var tyname binderTyname) getTyname) YKs in
+    let indexTyVars := map (compose (@Ty_Var string string) getTyname) YKs in
     let branchType := branchTy c (constrLastTy d) in
     let indexForalls := map (fun YK => Ty_Forall (getTyname YK) (getKind YK)) YKs in
     fold_right apply branchType indexForalls
@@ -71,38 +71,38 @@ Definition constrTy (d : DTDecl) (c : constructor) : Ty :=
 Definition matchTy (d : DTDecl) : Ty :=
   match d with
   | Datatype X YKs matchFunc cs =>
-    let indexTyVars := map (compose (@Ty_Var tyname binderTyname) getTyname) YKs in
+    let indexTyVars := map (compose (@Ty_Var string string) getTyname) YKs in
     let indexForalls := map (fun YK => Ty_Forall (getTyname YK) (getKind YK)) YKs in
-    fold_right apply (Ty_Fun (constrLastTy d) (fold_left (@Ty_App tyname binderTyname) indexTyVars (dataTy d))) indexForalls
+    fold_right apply (Ty_Fun (constrLastTy d) (fold_left (@Ty_App string string) indexTyVars (dataTy d))) indexForalls
   end.
 
 (** Binder functions *)
-Definition constrBind (d : DTDecl) (c : constructor) : name * Ty :=
+Definition constrBind (d : DTDecl) (c : constructor) : string * Ty :=
   match d, c with
   | Datatype X YKs matchFunc cs, Constructor (VarDecl x T) _ =>
     (x, constrTy d c)
   end.
 
-Definition constrBinds (d : DTDecl) : list (name * Ty) :=
+Definition constrBinds (d : DTDecl) : list (string * Ty) :=
   match d with
   | Datatype X YKs matchFunc cs =>
     rev (map (constrBind d) cs)
   end.
 
-Definition matchBind (d : DTDecl) : name * Ty :=
+Definition matchBind (d : DTDecl) : string * Ty :=
   match d with
   | Datatype X YKs matchFunc cs =>
     (matchFunc, matchTy d)
   end.
 
-Definition binds_Delta (b : Binding) : list (tyname * Kind) :=
+Definition binds_Delta (b : Binding) : list (string * Kind) :=
   match b with
   | TermBind _ _ _ => nil
   | TypeBind (TyVarDecl X K) ty => (X, K) :: nil
   | DatatypeBind (Datatype (TyVarDecl X K) _ _ _) => (X, K):: nil
   end.
 
-Definition binds_Gamma (b : Binding) : list (name * Ty) :=
+Definition binds_Gamma (b : Binding) : list (string * Ty) :=
   match b with
   | TermBind _ (VarDecl x T) _ => (x, T) :: nil
   | TypeBind _ _ => nil

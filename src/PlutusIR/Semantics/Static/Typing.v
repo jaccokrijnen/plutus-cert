@@ -62,7 +62,7 @@ Fixpoint splitTy (T : Ty) : list Ty * Ty :=
   | Tr => (nil, Tr)
   end.
 
-Definition fromDecl (tvd : tvdecl tyname) : tyname * Kind :=
+Definition fromDecl (tvd : tvdecl string) : string * Kind :=
   match tvd with
   | TyVarDecl v K => (v, K)
   end.
