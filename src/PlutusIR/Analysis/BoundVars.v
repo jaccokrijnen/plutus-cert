@@ -15,6 +15,8 @@ From PlutusCert Require Import
   PlutusIR.Folds
   .
 
+Require Import Utf8_core.
+
 Import NamedTerm.
 
 Module Ty.
@@ -50,6 +52,31 @@ Module Ty.
     | ABI_TyApp2 : forall T1 T2,
         appears_bound_in X T2 ->
         appears_bound_in X (Ty_App T1 T2).
+
+  Section btv.
+    Context
+      {tyvar : Set}
+      (tyvar_dec : forall x y : tyvar, {x = y} + {x <> y})
+      .
+
+    Fixpoint btv (T : ty tyvar tyvar) : list tyvar :=
+      match T with
+      | Ty_Var X =>
+          []
+      | Ty_Fun T1 T2 =>
+          btv T1 ++ btv T2
+      | Ty_IFix F T =>
+          btv F ++ btv T
+      | Ty_Forall X K T' =>
+          X :: (btv T')
+      | Ty_Builtin u =>
+          []
+      | Ty_Lam X K1 T' =>
+          X :: btv T'
+      | Ty_App T1 T2 =>
+          btv T1 ++ btv T2
+      end.
+  End btv.
 
 End Ty.
 
@@ -179,6 +206,7 @@ Section BoundVars.
   Context
     {var tyvar : Set}
     (var_eqb : var -> var -> bool)
+    (tyvar_dec : forall x y : tyvar, {x = y} + {x <> y})
     .
 
 Definition term' := term var tyvar var tyvar.
@@ -246,6 +274,36 @@ with bound_vars_binding (b : binding') : list var := match b with
   end.
 
 Definition bound_vars_bindings := @concat _ ∘ map bound_vars_binding.
+
+Definition btvc (c : constructor') : list tyvar :=
+  match c with
+    | Constructor (VarDecl v ty) _ => Ty.btv ty
+  end.
+
+Fixpoint btv (t : term') : list tyvar :=
+ match t with
+   | Let rec bs t    => concat (map btv_binding bs) ++ btv t
+   | LamAbs n ty t   => Ty.btv ty ++ btv t
+   | Var n           => []
+   | TyAbs n k t     => n :: btv t
+   | Apply s t       => btv s ++ btv t
+   | TyInst t ty     => btv t ++ Ty.btv ty
+   | IWrap ty1 ty2 t => Ty.btv ty1 ++ Ty.btv ty2 ++ btv t
+   | Unwrap t        => btv t
+   | Error ty        => Ty.btv ty
+   | Constant v      => []
+   | Builtin f       => []
+   end
+with btv_binding (b : binding') : list tyvar := match b with
+  | TermBind s (VarDecl v ty) t =>
+      Ty.btv ty ++ btv t
+
+  | DatatypeBind (Datatype (TyVarDecl t k) tvs matchf constructors ) =>
+      [t] ++ map TyVarDeclVar tvs
+          ++ concat (map (Ty.btv ∘ constructorType) constructors)
+
+  | TypeBind (TyVarDecl v k) ty => [v] ++ Ty.btv ty
+  end.
 
 End BoundVars.
 
