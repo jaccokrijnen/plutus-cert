@@ -14,14 +14,14 @@ From PlutusCert Require Import SemanticEquivalence.LogicalRelation.
 From PlutusCert Require Import FreeVars.
 
 Import PlutusNotations.
-
 Import ListNotations.
 Import UniqueBinders.Term.
+Import Utf8_core.
 
 Set Diffs "on".
 
-(* TODO: rename the actual functions *)
 Definition fv : Term -> list string := (Term.fv string_dec).
+Definition ftv : Term -> list string := (Term.ftv string_dec).
 Definition fv_binding : Recursivity -> Binding -> list string := (Term.fvb string_dec).
 Definition fv_bindings : Recursivity -> list Binding -> list string := (Term.fvbs string_dec fv_binding).
 
@@ -30,7 +30,7 @@ Definition disjoint {A} (xs ys : list A) : Prop :=
 
 
 Definition subset {A} (xs ys : list A) := forall x, In x xs -> In x ys.
-Notation "xs ⊆  ys" := (subset xs ys) (at level 0).
+Notation "xs ⊆  ys" := (subset xs ys) (at level 11).
 
 (* Uniqueness of binders for open terms *)
 Definition unique_open Δ Γ t :=
@@ -108,20 +108,72 @@ Section ScopingLemmas.
     elim t t' ->
     well_scoped Δ  Γ  t ->
     well_scoped Δ' Γ' t' ->
-    Γ' ⊆  Γ.
+    Γ' ⊆ Γ.
   Admitted.
-
-  Lemma well_scoped_fv {Δ Γ t}:
-    well_scoped Δ Γ t ->
-    forall v, In v (fv t) ->
-    In v Γ.
-  Admitted.
+  (* Is this true? *)
 
   Lemma strengthen_Γ Δ Γ x t Tx T :
     ~ In x (fv t) ->
     Δ,, (x , Tx) :: Γ |-+ t : T ->
     Δ,, Γ |-+ t : T
   .
+  Admitted.
+
+  Lemma elim_ws {Δ Γ t t'}:
+    elim t t' ->
+    well_scoped Δ Γ t ->
+    well_scoped Δ Γ t'.
+  Admitted.
+
+  Lemma elim_fv {t t'}:
+    elim t t' ->
+    fv t ⊆ fv t'.
+  Admitted.
+
+  Lemma elim_abi {t t' x} :
+    elim t t' ->
+    Term.appears_bound_in x t' ->
+    Term.appears_bound_in x t.
+  (* By conditions of elim_bindings_pure *)
+  Admitted.
+
+  Lemma elim_abi_annotation {t t' x} :
+    elim t t' ->
+    Annotation.appears_bound_in x t' ->
+    Annotation.appears_bound_in x t.
+  (* By conditions of elim_bindings_pure *)
+  Admitted.
+
+  Lemma elim_bvbs {bs bs'} :
+    elim_bindings bs bs' ->
+    bvbs bs' ⊆ bvbs bs.
+  (* By conditions of elim_bindings_pure *)
+  Admitted.
+
+  Lemma well_scoped_fv_ftv {t} :
+    well_scoped (ftv t) (fv t) t.
+  Admitted.
+
+  Lemma well_scoped_fv {Δ Γ t}:
+    well_scoped Δ Γ t ->
+    fv t ⊆ Γ.
+  Admitted.
+
+  Lemma well_scoped_ftv {Δ Γ t}:
+    well_scoped Δ Γ t ->
+    ftv t ⊆ Δ.
+  Admitted.
+
+  Lemma well_scoped_unique { Δ Γ t } :
+    well_scoped Δ Γ t ->
+    unique_open Δ Γ t ->
+    disjoint Γ (bound_vars t).
+  Admitted.
+
+  Lemma elim_unique {t t'} :
+    elim t t' ->
+    unique t  ->
+    unique t'.
   Admitted.
 
 End ScopingLemmas.
@@ -182,6 +234,69 @@ Proof.
   - auto.
 Qed.
 
+Definition unique_inv t :=
+  unique t /\
+  disjoint (fv t) (bound_vars t) /\
+  disjoint (ftv t) (btv t).
+
+Lemma elim_unique_disjoint rec bs t bs' t' :
+  (* From elim_delete_bindings rule *)
+  elim t t' ->
+  elim_bindings bs bs' ->
+
+  (* Properties on pre- and post-term*)
+  unique_inv (Let rec bs' t') ->
+  forall b,
+    In b bs ->
+    name b ∉ map name bs' ->
+    disjoint (bvb b) (fv (Let rec bs' t')) /\
+    disjoint (btvb b) (ftv (Let rec bs' t')).
+Proof.
+  intros
+    elim_t_t'
+    elim_bindings_bs_bs'
+    unique_inv_t'
+    b
+    b_in_bs
+    b_removed
+  .
+  destruct unique_inv_t' as [unique_t' [H_disjoint_term H_disjoint_ty]].
+  destruct b as [ s [v ty_v] t_b | [v k] ty | [ [ty k] vs matchf cs ] ].
+  all: split.
+
+  (* TermBind bvb *)
+  - simpl.
+    apply Forall_singleton.
+    assert (H_bound : v ∈ bound_vars (Let rec bs' t')).
+      admit.
+    intros H_v_in.
+    unfold disjoint in H_disjoint_term.
+    rewrite Forall_forall in H_disjoint_term.
+    unfold not in *.
+    eauto.
+
+  (* TermBind btvb *)
+  - simpl.
+    constructor.
+
+  (* TypeBind bvb *)
+  - simpl.
+    constructor.
+
+  (* TypeBind btvb *)
+  (* duplicate of TermBind bvb case *)
+  - simpl.
+    apply Forall_singleton.
+    assert (H_bound : v ∈ btv (Let rec bs' t')).
+    admit.
+    intros H_v_in.
+    unfold disjoint in H_disjoint_ty.
+    rewrite Forall_forall in H_disjoint_ty.
+    unfold not in *.
+    eauto.
+
+  - simpl.
+Admitted.
 
 (** For the case of removing a subset of bindings
 
@@ -191,72 +306,83 @@ Qed.
     its binders (datatypes have multiple)
 
       disjoint (bvb b) (fv ...) /\ disjoint (btvb b) (Annotation.fv ...)
-
-    Annotation.fv doesn't exist yet it seems.
-    Move TypeSubstitution.ftv to FreeVars module
 *)
 Lemma unique_well_scoped_disjoint Δ Γ rec bs t Δ' Γ' bs' t' :
-  elim (Let rec bs t) (Let rec bs' t') ->
+  (* From elim_delete_bindings rule *)
+  elim t t' ->
+  elim_bindings bs bs' ->
+
+  (* Properties on pre- and post-term*)
   unique_open Δ  Γ  (Let rec bs  t ) ->
-  well_scoped Δ  Γ  (Let rec bs  t ) ->
   well_scoped Δ' Γ' (Let rec bs' t') ->
   forall b,
-  In b bs ->
-  name_removed b bs' ->
-  disjoint (bvb b) (fv (Let rec bs' t')).
-  (* /\ disjoint (btvb b) (ftv (Let rec bs' t')).*)
+    In b bs ->
+    name b ∉ map name bs' ->
+    disjoint (bvb b) (fv (Let rec bs' t')) /\
+    disjoint (btvb b) (ftv (Let rec bs' t')).
 Proof.
   intros
-    H_dc H_unique H_ws_pre H_ws_post
+    H_elim H_elim_bs H_unique H_ws_post
     b H_In_b_bs H_removed_b_bs.
   destruct b as [ s [v ty_v] t_b | tvd ty | dtd ]; simpl in *.
 
   (* TermBind *)
   - unfold disjoint.
-    apply Forall_singleton.
-    intros H_in_fv.
+    split.
 
-    assert (H_v_in_Γ' : In v Γ').
-      { eapply (well_scoped_fv H_ws_post _ H_in_fv). }
-    assert (H_v_not_in_Γ' : ~ In v Γ').
-      {
-        (** v is bound in bs and therefore not in Γ (uniqueness).
-            Then, by dead_code_strengthen, it is not in Γ' either
-        *)
-        assert (H_v_not_in_Γ : ~ In v Γ).
+    (* disjoint (bvb) (fv (...)) *)
+    + apply Forall_singleton.
+      intros H_in_fv.
+
+      assert (H_v_in_Γ' : In v Γ').
+        { eapply (well_scoped_fv H_ws_post _ H_in_fv). }
+      assert (H_v_not_in_Γ' : ~ In v Γ').
         {
-          intros H_v_in_Γ.
-          assert (H_v_nbi : ~ Term.appears_bound_in v (Let rec bs t)).
+          (** v is bound in bs and therefore not in Γ (uniqueness).
+              Then, by dead_code_strengthen, it is not in Γ' either
+          *)
+          assert (H_v_not_in_Γ : ~ In v Γ).
           {
-            destruct H_unique as [_ [_ H_unique_Γ]].
-            rewrite Forall_forall in H_unique_Γ.
-            specialize (H_unique_Γ v H_v_in_Γ).
-            assumption.
-          }
+            intros H_v_in_Γ.
+            assert (H_v_nbi : ~ Term.appears_bound_in v (Let rec bs t)).
+            {
+              destruct H_unique as [_ [_ H_unique_Γ]].
+              rewrite Forall_forall in H_unique_Γ.
+              specialize (H_unique_Γ v H_v_in_Γ).
+              assumption.
+            }
 
-          assert (H_v_bi : Term.appears_bound_in v (Let rec bs t)).
-          {
-            clear - H_In_b_bs.
+            assert (H_v_bi : Term.appears_bound_in v (Let rec bs t)).
+            {
+              clear - H_In_b_bs.
 
-            (* TODO simplify with auto *)
-            induction bs; simpl in H_In_b_bs.
-              - contradiction.
-              - destruct H_In_b_bs.
-                + subst.
-                  apply Term.ABI_Let_TermBind1.
-                + apply Term.ABI_Let_Cons.
-                  auto.
+              (* TODO simplify with auto *)
+              induction bs; simpl in H_In_b_bs.
+                - contradiction.
+                - destruct H_In_b_bs.
+                  + subst.
+                    apply Term.ABI_Let_TermBind1.
+                  + apply Term.ABI_Let_Cons.
+                    auto.
+            }
+            contradiction.
           }
+          admit.
+          (* apply (dead_code_strengthen H_dc H_ws_pre H_ws_post) in H_v_in_Γ'.
           contradiction.
+          *)
         }
+      contradiction.
 
-        apply (dead_code_strengthen H_dc H_ws_pre H_ws_post) in H_v_in_Γ'.
-        contradiction.
-      }
-    contradiction.
+    (* disjoint (btvbs) (ftv (...)) *)
+    + constructor.
 
   (* TypeBind *)
   - destruct tvd as [v k].
+    split.
+    + constructor.
+    + apply Forall_singleton.
+      intros H_In.
     assert (H_v_in_Δ' : In v Δ').
       { admit. (* similar to TermBind case *)}
     assert (H_v_no_in_Δ' : ~In v Δ').
