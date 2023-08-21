@@ -262,6 +262,21 @@ Definition constructorName {tyname binderName binderTyname} : constr tyname bind
   end
   .
 
+Definition constructorType {tyname binderName binderTyname} :
+  constr tyname binderName binderTyname -> ty tyname binderTyname :=
+  fun c => match c with
+  | Constructor (VarDecl _ ty) _ => ty
+  end
+  .
+
+Definition TyVarDeclVar {binderTyname} :
+  tvdecl binderTyname -> binderTyname :=
+    fun tvd =>
+      match tvd with
+      | TyVarDecl v ty => v
+      end
+.
+
 (** * Named terms (all variables and binders are strings) *)
 Module NamedTerm.
 
