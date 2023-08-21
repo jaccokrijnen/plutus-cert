@@ -152,11 +152,16 @@ Proof.
   rename H9 into H_bs_terminate.
 
   simpl in H_bs_terminate.
+
+  (* To reduce in H_bs_terminate we need to consider the case:*)
   destruct
     (* binder x should not occur as let-bound variable in bs *)
     (existsb (eqb x) (bvbs <{ /[ γ /][bnr] (/[[ msyn1 ρ /][bnr] bs) }>)) eqn:H_ex.
 
-    + (* 1. bvbs don't change with substitution *)
+    +
+    (* TODO: I think this can be proven without H_unique (not a contradiction) *)
+
+    (* 1. bvbs don't change with substitution *)
       rewrite bvbs_msubst_bnr in H_ex.
       rewrite bvbs_msubstA_bnr in H_ex.
 
