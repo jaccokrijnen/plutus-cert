@@ -24,18 +24,17 @@ Definition disjoint {A} (xs ys : list A) : Prop :=
   Forall (fun v => ~ In v ys) xs.
 
 
-Inductive dc : Term -> Term -> Prop :=
+Inductive dc : Term -> Term -> Type :=
   | dc_compat : ∀ t t',
       Compat dc t t' ->
       dc t t'
 
-      (* Note: there is another way to relate `Let` groups that have no bindings
-         removed, by using dc_keep_binding and dc_compat_let_nil_nil
-         If we change this, there should be `compat` constructors for each of the
+      (* Note: This includes a case for Let, which are already covered by the following
+         four constructors. If we change this, there should be `compat` constructors for each of the
          other AST constructor *)
 
 
-  | dc_delete_binding : ∀ rec b bs t t',
+  | dc_delete_binding : ∀ b bs t t',
 
       (* Syntactic approximation of a pure binding *)
       pure_binding [] b ->
@@ -44,39 +43,28 @@ Inductive dc : Term -> Term -> Prop :=
       disjoint (bvb b) (fv t') ->
       disjoint (btvb b) (ftv t') ->
 
-      dc (Let rec       bs  t) t' ->
-      dc (Let rec (b :: bs) t) t'
+      dc (Let NonRec       bs  t) t' ->
+      dc (Let NonRec (b :: bs) t) t'
 
-  | dc_keep_binding : ∀ rec b b' bs bs' t t',
+  | dc_keep_binding : ∀ b b' bs bs' t t',
       dc t t' ->
-      dc_binding b b' ->
-      dc (Let rec       bs  t) (Let rec        bs'  t') ->
-      dc (Let rec (b :: bs) t) (Let rec (b' :: bs') t')
+      Compat_Binding dc b b' ->
+      dc (Let NonRec       bs  t) (Let NonRec        bs'  t') ->
+      dc (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t')
 
-  | dc_delete_let_nil : ∀ rec t t',
+  | dc_delete_let_nil : ∀ t t',
       dc             t  t' ->
-      dc (Let rec [] t) t'
+      dc (Let NonRec [] t) t'
 
-  | dc_compat_let_nil_nil : ∀ rec t t',
+  | dc_compat_let_nil_nil : ∀ NonRec t t',
       dc             t              t' ->
-      dc (Let rec [] t) (Let rec [] t')
+      dc (Let NonRec [] t) (Let NonRec [] t').
 
+  (* TODO: support Let Rec (See #42) *)
 
-with dc_binding : Binding -> Binding -> Prop :=
+Open Scope type_scope.
 
-  | dc_TermBind : ∀ s vd t t',
-      dc t t' ->
-      dc_binding (TermBind s vd t) (TermBind s vd t')
-
-  | dc_TypeBind : ∀ tvd ty,
-      dc_binding (TypeBind tvd ty) (TypeBind tvd ty)
-
-  | dc_DatatypeBind : ∀ dtd,
-      dc_binding (DatatypeBind dtd) (DatatypeBind dtd)
-.
-
-
-Definition dead_code t t' := unique t /\ dc t t'.
+Definition dead_code t t' := unique t * dc t t'.
 
 Lemma dc_sym : ∀ t, dc t t.
 Admitted.
