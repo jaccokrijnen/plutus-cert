@@ -12,6 +12,7 @@ From PlutusCert Require Import Analysis.WellScoped.
 From PlutusCert Require Import TypeSafety.TypeLanguage.Preservation.
 From PlutusCert Require Import SemanticEquivalence.LogicalRelation.
 From PlutusCert Require Import FreeVars.
+From PlutusCert Require Import Purity.
 
 Import PlutusNotations.
 Import ListNotations.
@@ -223,6 +224,35 @@ Section Purity.
     substitution Γ γ ->
     pure_substitution γ ->
     pure (close ρ γ t).
+
+
+  Lemma msubst_value t γ ρ:
+    value t /\ ~ is_error t ->
+    value (msubst γ (msubstA ρ t)) /\ ~ is_error (msubst γ (msubstA ρ t)).
+  Admitted.
+
+  Lemma is_pure_nil_pure_open Δ Γ t τ:
+    is_pure [] t ->
+    pure_open Δ Γ t τ.
+  Proof.
+    intros H_is_pure H_normal H_ty ρ γ Γ_γ γ_pure.
+    inversion H_is_pure.
+    - unfold pure, close.
+      remember (msubst γ (msubstA ρ t)) as t'.
+      assert (H_t' : value t' /\ ~ is_error t').
+      { subst. auto using msubst_value. }
+      destruct H_t'.
+      exists 0, t'.
+      split.
+      + apply eval_value. assumption.
+      + assumption.
+    - inversion H.
+    - inversion H.
+  Qed.
+
+
+
+
 
 End Purity.
 
