@@ -233,6 +233,26 @@ Inductive map_normalise : list (string * Ty) -> list (string * Ty) -> Prop :=
 #[export] Hint Constructors map_normalise : core.
 
 Require Import Coq.Lists.List.
+Import ListNotations.
+
+Lemma MN_snoc : forall X T Ts Tn Tsn,
+  map_normalise Ts Tsn ->
+  normalise T Tn ->
+  map_normalise (Ts ++ [(X, T)]) (Tsn ++ [(X, Tn)])
+.
+Proof.
+  induction Ts.
+  - simpl.
+    induction Tsn.
+    + eauto using map_normalise.
+    + intros H_problem.
+      inversion H_problem.
+  - intros.
+    inversion H. subst.
+    simpl.
+    econstructor; eauto.
+Qed.
+
 
 Lemma map_normalise__app : forall l1 l2 ln,
     map_normalise (l1 ++ l2) ln ->
