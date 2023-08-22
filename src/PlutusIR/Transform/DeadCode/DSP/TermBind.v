@@ -26,21 +26,58 @@ Import NamedTerm.
 Import ListNotations.
 Import UniqueBinders.Term.
 
+Import Utf8_core.
+
 Set Diffs "on".
 
 
 Section CompatibilityLemmas.
 
+Lemma flatten_nil : ∀ A (xs : list (list A)), flatten ([] :: xs) = flatten xs.
+Proof.
+  intros A xs.
+  induction xs.
+  - auto.
+  - unfold flatten in *.
+Admitted.
+
 Lemma compat_TermBind_typing Δ Γ b x Tb tb Tbn bs t Tn :
   b = TermBind Strict (VarDecl x Tb) tb ->
+  Δ |-* Tb : Kind_Base ->
   normalise Tb Tbn ->
   (Δ ,, Γ |-+ tb : Tbn) ->
   (Δ ,, (x, Tbn) :: Γ |-+ (Let NonRec       bs  t) : Tn) ->
-  (Δ ,,             Γ  |-+ (Let NonRec (b :: bs) t) : Tn).
+  (Δ ,,             Γ |-+ (Let NonRec (b :: bs) t) : Tn).
 Proof.
-Admitted.
+  intros H_eq H_kind_base H_norm H_ty_tb H_ty_let_bs.
 
+  assert (H_b_wf : Δ ,, Γ |-ok_b b). {
+    subst b.
+    apply W_Term with (Tn := Tbn); auto.
+  }
 
+  inversion H_ty_let_bs.
+  eapply T_Let with (bsGn := bsGn ++ [(x, Tbn)]).
+  - reflexivity.
+  - subst b.
+    rewrite flatten_app.
+    apply MN_snoc; auto.
+  - reflexivity.
+  - econstructor.
+    + assumption.
+    + subst b; simpl.
+      eapply MN_cons.
+        * constructor.
+        * exact H_norm.
+    + subst b; simpl.
+      assumption.
+  - subst b; simpl.
+    rewrite flatten_nil.
+    subst.
+    rewrite <- app_assoc.
+    assumption.
+  - assumption.
+Qed.
 
 Lemma compat_nil Δ Γ T t t' :
   Δ |-* T : Kind_Base -> (* May not be necessary, see #7 *)
