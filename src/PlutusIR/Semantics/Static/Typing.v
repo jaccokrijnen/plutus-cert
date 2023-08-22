@@ -159,7 +159,7 @@ with constructor_well_formed : list (string * Kind) -> constructor -> Ty -> Prop
 
 with bindings_well_formed_nonrec : list (string * Kind) -> list (string * Ty) -> list Binding -> Prop :=
   | W_NilB_NonRec : forall Delta Gamma,
-    Delta ,, Gamma |-oks_nr nil
+      Delta ,, Gamma |-oks_nr nil
   | W_ConsB_NonRec : forall Delta Gamma b bs bsGn,
       Delta ,, Gamma |-ok_b b ->
       map_normalise (binds_Gamma b) bsGn ->

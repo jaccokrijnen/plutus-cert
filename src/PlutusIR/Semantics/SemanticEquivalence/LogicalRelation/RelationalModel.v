@@ -266,6 +266,13 @@ Definition LR_logically_approximate (Delta : list (string * Kind)) (Gamma : list
       RG rho k Gamma env env' ->
       RC k T rho (msubst env (msubstA (msyn1 rho) e)) (msubst env' (msubstA (msyn2 rho) e')).
 
+Notation "Δ ',,' Γ '|-' e1 ≤ e2 ':' T" := (LR_logically_approximate Δ Γ e1 e2 T)
+  ( at level 101
+  , e1 at level 0
+  , e2 at level 0
+  , T at level 0
+  , no associativity).
+
 (** Logical relation: logical equivalence
 
     We say $e$ and $e'$ are logically equivalent, written
@@ -285,3 +292,4 @@ Definition LR_logically_approximate_context Δ₁ Γ₁ C C' Δ Γ T T₁ :=
   forall e e',
     LR_logically_approximate Δ Γ e e' T ->
     LR_logically_approximate Δ₁ Γ₁ (context_apply C e) (context_apply C' e') T₁.
+
