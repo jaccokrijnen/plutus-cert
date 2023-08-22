@@ -147,9 +147,9 @@ with eval_bindings_nonrec : Term -> Term -> nat -> Prop :=
       <{ [[T / X] ({Let NonRec bs t0}) }> =[j1]=> v1 ->
       Let NonRec ((TypeBind (TyVarDecl X K) T) :: bs) t0 =[j1 + 1]=>nr v1
   (* Error propagation *)
-  | E_Error_Let_TermBind : forall s x T t1 j1 T' bs t0,
+  | E_Error_Let_TermBind : forall x T t1 j1 T' bs t0,
       t1 =[j1]=> Error T' ->
-      Let NonRec ((TermBind s (VarDecl x T) t1) :: bs) t0 =[j1 + 1]=>nr Error T'
+      Let NonRec ((TermBind Strict (VarDecl x T) t1) :: bs) t0 =[j1 + 1]=>nr Error T'
 
 with eval_bindings_rec : list Binding -> Term -> Term -> nat -> Prop :=
   | E_LetRec_Nil : forall bs0 t0 v0 j0,

@@ -219,7 +219,7 @@ Proof with eauto_LR.
       }
   - clear Hev__e_f.
     rename j1 into jb.
-    rename H7 into Hev__vb.
+    rename H6 into Hev__vb.
 
     assert (HRC__tb :
       RC k Tbn rho

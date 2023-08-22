@@ -139,7 +139,7 @@ Proof.
     destruct H_pure_closed as [l [v [H_eval H_not_err]]].
     apply eval__deterministic in H_eval.
     unfold P_eval in H_eval.
-    apply H_eval in H7 as [H_v_Error _].
+    apply H_eval in H6 as [H_v_Error _].
     subst v.
     assert (is_error (Error T')) by constructor.
     contradiction.
