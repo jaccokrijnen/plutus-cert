@@ -57,10 +57,6 @@ Lemma compat_TermBind Δ Γ t t' Tn b bs x Tb tb Tbn :
 
   disjoint (bvb b) (fv t') ->
   unique (Let NonRec (b :: bs) t) ->
-  (* pure_binding [] b -> *)
-  (* TODO, generalize pure_binding to arbitrary Γ, because this limits b to strictly bound values.
-  This is not a typing environment though: for each var in scope,
-  is it letbound strict/nonstrict or lambdabound *)
 
   forall Δbs Γbs,
     b = TermBind Strict (VarDecl x Tb) tb ->
@@ -126,7 +122,7 @@ Proof.
 
 
   (* Two cases apply: E_Let and E_Error, E_Error_Let_TermBind *)
-  inversion H_b_bs_terminate. subst s x0 T t1 bs0 t0 v2.
+  inversion H_b_bs_terminate. subst x0 T t1 bs0 t0 v2.
 
   (* case E_Error_Let_TermBind *)
   2: {
@@ -149,7 +145,7 @@ Proof.
     contradiction.
     }
 
-  rename H9 into H_bs_terminate.
+  rename H8 into H_bs_terminate.
 
   simpl in H_bs_terminate.
 
@@ -201,7 +197,7 @@ Proof.
            { eapply H_approx with (env0 := γ) (env' := γ'); auto. }
       clear H_approx.
       rewrite RV_RC in H_RC_tb.
-      specialize (H_RC_tb j1 ltac:(lia) _ H7).
+      specialize (H_RC_tb j1 ltac:(lia) _ H6).
       destruct H_RC_tb as [v' [_ [_ H_RV_v1_v']]].
 
       remember ((x, v1) :: γ) as γₓ.
