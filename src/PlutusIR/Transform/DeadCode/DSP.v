@@ -21,8 +21,9 @@ Require Import Coq.Program.Basics.
 (** ** Predicates *)
 
 Definition P_has_type Δ Γ t T : Prop :=
-  forall t',
-    dc t t' ->
+  forall
+    t'
+    (H_dc : dc t t'),
     Δ ,, Γ |- t ≤ t' : T.
 
 Definition P_constructor_well_formed Δ c Tr : Prop := Δ |-ok_c c : Tr.
@@ -44,8 +45,9 @@ Definition P_bindings_well_formed_rec Δ Γ bs1 : Prop := Δ ,, Γ |-oks_r bs1.
 
 Definition P_binding_well_formed Δ Γ b : Prop :=
   (
-    forall b',
-      Compat.Compat_Binding dc b b' ->
+    forall
+      b'
+      (H_compat : Compat.Compat_Binding dc b b'),
       forall Δ_t Γ_t bsGn t t' Tn bs bs',
         Δ_t = binds_Delta b ++ Δ ->
         map_normalise (binds_Gamma b) bsGn ->
@@ -75,30 +77,42 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
     (P2 := P_bindings_well_formed_rec)
     (P3 := P_binding_well_formed).
   all : intros; autounfold; intros; subst.
-  all : try solve [
-    inversion X; subst;
-    inversion X0; subst;
-    eauto with DSP_compatibility_lemmas typing
-  ].
-  all : try solve [
-    inversion X0; subst;
-    inversion X1; subst;
-    eauto with DSP_compatibility_lemmas typing
-  ].
-  all : try solve [
-    eauto with typing
-  ].
 
-  (* T_Let *)
-  - inversion X; subst.
+
+  (* P_has_type, compatibility cases *)
+  all: try (
+    inversion H_dc;
+    match goal with
+      | H : Compat.Compat dc _ _ |- _ =>
+          inversion H;
+          eauto with DSP_compatibility_lemmas typing
+    end
+    ).
+
+  (* P_constructor_well_formed *)
+  all: try eauto with typing.
+
+  (* P_binding_well_formed *)
+  all: try (
+    match goal with
+      | H : Compat.Compat_Binding dc _ _ |- _ =>
+          inversion H;
+          eauto with DSP_compatibility_lemmas typing
+    end
+    ).
+
+  (* P_has_type, T_Let *)
+  - inversion H_dc; subst.
 
     (* dc_compat *)
-    + inversion X0.
-      eapply H3...
+    + inversion H_compat.
+      subst...
 
     (* dc_delete_binding *)
-    + admit.
+    +
       (* TODO: use TermBind/TypeBind/DatatypeBind lemmas *)
+
+      admit.
 
     (* dc_keep_binding *)
     + admit.
