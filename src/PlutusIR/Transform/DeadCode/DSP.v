@@ -1,8 +1,14 @@
+Require Import Coq.Lists.List.
+Require Import Coq.Program.Basics.
+
 Require Import PlutusCert.PlutusIR.Transform.DeadCode2.
 Require Import PlutusCert.PlutusIR.Transform.DeadCode.SSP.
+Require Import PlutusCert.PlutusIR.Transform.DeadCode.DSP.Lemmas.
+Require Import PlutusCert.PlutusIR.Transform.DeadCode.DSP.TermBind.
 Require Import PlutusCert.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.PlutusIR.Semantics.Misc.Axiom.
 Require Import PlutusCert.PlutusIR.Analysis.BoundVars.
+Require Import PlutusCert.PlutusIR.Analysis.UniqueBinders.
 Require Import PlutusCert.PlutusIR.Semantics.Static.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
@@ -11,10 +17,10 @@ Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Auto.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation.
 
+Import UniqueBinders.Term.
+
 Import PlutusNotations.
 
-Require Import Coq.Lists.List.
-Require Import Coq.Program.Basics.
 
 
 
@@ -39,6 +45,14 @@ Definition P_bindings_well_formed_nonrec Δ Γ bs : Prop :=
         Δ |-* Tn : Kind_Base ->
         Δ_t ,, Γ_t |- t ≤ t' : Tn ->
         Δ   ,, Γ   |- (Let NonRec bs t) ≤ (Let NonRec bs' t') : Tn
+  ) /\ (
+      forall Δ' Γ' b bs' bsGn t Tn,
+        bs = b :: bs' ->
+        map_normalise (rev (binds_Gamma b)) bsGn ->
+        Γ' = bsGn ++ Γ ->
+        Δ' = (rev (binds_Delta b)) ++ Δ ->
+        Δ |-* Tn : Kind_Base ->
+        P_has_type Δ' Γ' (Let NonRec bs' t) Tn
   ).
 
 Definition P_bindings_well_formed_rec Δ Γ bs1 : Prop := Δ ,, Γ |-oks_r bs1.
@@ -103,16 +117,73 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
 
   (* P_has_type, T_Let *)
   - inversion H_dc; subst.
+    all: rename Delta into Δ.
+    all: rename Gamma into Γ.
 
     (* dc_compat *)
     + inversion H_compat.
+      destruct H3 as [H_bs H_bbs].
       subst...
 
     (* dc_delete_binding *)
     +
       (* TODO: use TermBind/TypeBind/DatatypeBind lemmas *)
+      destruct H3 as [_ H_bbs].
 
-      admit.
+      assert (bsGn_b : list (string * Ty)). admit.
+      assert (H_norm_b : map_normalise (rev (binds_Gamma b)) bsGn_b). admit.
+      remember (rev (binds_Delta b) ++ Δ) as Δ'.
+      remember (bsGn_b ++ Γ) as Γ'.
+
+      (* Construct the right Induction Hypothesis *)
+      assert (H : P_has_type Δ' Γ'  (Let NonRec bs0 t) Tn). {
+        eauto.
+      }
+
+      (* Use IH *)
+      assert (H_approx_bs : Δ',, Γ' |- (Let NonRec (bs0) t) ≤ t' : Tn). {
+        eauto.
+      }
+
+      assert (H_unique : unique (Let NonRec (b :: bs0) t)).
+        admit. (* Precondition of translation relation, add to P_... *)
+
+      destruct b as [ [] [x Tb] tb | | ].
+
+      (* TermBind NonStrict *)
+      * admit. (* Add non-strict semantics *)
+
+      (* TermBind Strict *)
+      *
+        simpl in H_norm_b.
+        inversion H_norm_b; subst.
+        rename Tn0 into Tbn.
+        inversion H9; subst.
+
+        assert (pure_open Δ Γ tb Tbn). {
+          inversion H_pure.
+          eauto using is_pure_nil_pure_open.
+        }
+
+        assert (H_ty_tb : Δ ,, Γ |-+ tb : Tbn).
+          admit. (* Follows from term being well-typed, add to P_... *)
+
+        assert (H_Tb_wf : Δ |-* Tb : Kind_Base).
+          admit. (* Follows from term being well-typed, add to P_... *)
+
+        simpl in H_approx_bs.
+
+        remember (TermBind Strict (VarDecl x Tb) tb) as b.
+
+        (* Use TermBind lemma *)
+        eauto using compat_TermBind.
+
+      (* TypeBind *)
+      * admit. (* Lemma similar to compat_TermBind *)
+
+      (* DatatypeBind *)
+      * admit. (* Add Datatype semantics, lemma similar to compat_TermBind *)
+
 
     (* dc_keep_binding *)
     + admit.
