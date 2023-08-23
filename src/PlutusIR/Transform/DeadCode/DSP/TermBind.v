@@ -43,6 +43,20 @@ Proof.
   reflexivity.
 Qed.
 
+
+(* The has_type relation considers binding groups all at once
+
+  | T_Let : ∀ ...
+        Delta' = flatten (map binds_Delta bs) ++ Delta
+      → map_normalise (flatten (map binds_Gamma bs)) bsGn
+      → Gamma' = bsGn ++ Gamma
+      → (Delta,, Gamma |-oks_nr bs)
+      → (Delta',, Gamma' |-+ t : Tn)
+      → Delta |-* Tn : Kind_Base
+      → Delta,, Gamma |-+ (Let NonRec bs t) : Tn
+
+This lemma does just one binding at a time
+*)
 Lemma compat_TermBind_typing Δ Γ b x Tb tb Tbn bs t Tn :
   b = TermBind Strict (VarDecl x Tb) tb ->
   Δ |-* Tb : Kind_Base ->

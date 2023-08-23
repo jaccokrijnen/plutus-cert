@@ -80,7 +80,7 @@ Definition P_binding_well_formed Δ Γ b : Prop :=
 
 (** ** The main theorem *)
 
-Theorem CNR_Term__DSP : forall Δ Γ e T,
+Theorem dc__DSP : forall Δ Γ e T,
     Δ ,, Γ |-+ e : T ->
     P_has_type Δ Γ e T.
 Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
@@ -127,7 +127,6 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
 
     (* dc_delete_binding *)
     +
-      (* TODO: use TermBind/TypeBind/DatatypeBind lemmas *)
       destruct H3 as [_ H_bbs].
 
       assert (bsGn_b : list (string * Ty)). admit.
@@ -165,11 +164,21 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
           eauto using is_pure_nil_pure_open.
         }
 
-        assert (H_ty_tb : Δ ,, Γ |-+ tb : Tbn).
-          admit. (* Follows from term being well-typed, add to P_... *)
+        assert (H_ty_tb : Δ ,, Γ |-+ tb : Tbn). {
+          clear - H2 H10.
+          inversion H2; subst.
+          inversion H1; subst.
+          assert (Tn = Tbn) by eauto using normalisation__deterministic.
+          subst.
+          assumption.
+        }
 
-        assert (H_Tb_wf : Δ |-* Tb : Kind_Base).
-          admit. (* Follows from term being well-typed, add to P_... *)
+        assert (H_Tb_wf : Δ |-* Tb : Kind_Base). {
+          clear - H2 H10.
+          inversion H2; subst.
+          inversion H1; subst.
+          assumption.
+        }
 
         simpl in H_approx_bs.
 
