@@ -36,10 +36,12 @@ Section CompatibilityLemmas.
 Lemma flatten_nil : ∀ A (xs : list (list A)), flatten ([] :: xs) = flatten xs.
 Proof.
   intros A xs.
-  induction xs.
-  - auto.
-  - unfold flatten in *.
-Admitted.
+  rewrite <- (map_id ([] :: xs)).
+  rewrite flatten_app.
+  rewrite map_id.
+  rewrite app_nil_r.
+  reflexivity.
+Qed.
 
 Lemma compat_TermBind_typing Δ Γ b x Tb tb Tbn bs t Tn :
   b = TermBind Strict (VarDecl x Tb) tb ->
