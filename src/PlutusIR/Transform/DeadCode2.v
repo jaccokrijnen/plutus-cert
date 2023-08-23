@@ -25,40 +25,45 @@ Definition disjoint {A} (xs ys : list A) : Prop :=
 
 
 Inductive dc : Term -> Term -> Type :=
-  | dc_compat : ∀ t t',
-      Compat dc t t' ->
-      dc t t'
+  | dc_compat
+      (t t'     : Term)
+      (H_compat : Compat dc t t')
+      : dc t t'
 
       (* Note: This includes a case for Let, which are already covered by the following
          four constructors. If we change this, there should be `compat` constructors for each of the
          other AST constructor *)
 
 
-  | dc_delete_binding : ∀ b bs t t',
+  | dc_delete_binding
+      b bs t t'
 
       (* Syntactic approximation of a pure binding *)
-      pure_binding [] b ->
+      (H_pure : pure_binding [] b)
 
       (* Its bound variables do not occur free in the post-term *)
-      disjoint (bvb b) (fv t') ->
-      disjoint (btvb b) (ftv t') ->
+      (H_disjoint : disjoint (bvb b) (fv t'))
+      (H_disjoint_ty : disjoint (btvb b) (ftv t'))
 
-      dc (Let NonRec       bs  t) t' ->
-      dc (Let NonRec (b :: bs) t) t'
+      (H_dc_bs : dc (Let NonRec       bs  t) t')
+      : dc (Let NonRec (b :: bs) t) t'
 
-  | dc_keep_binding : ∀ b b' bs bs' t t',
-      dc t t' ->
-      Compat_Binding dc b b' ->
-      dc (Let NonRec       bs  t) (Let NonRec        bs'  t') ->
-      dc (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t')
+  | dc_keep_binding
+      b b' bs bs' t t'
+      (H_dc_t : dc t t')
+      (H_dc_b : Compat_Binding dc b b')
+      (H_dc_bs : dc (Let NonRec       bs  t) (Let NonRec        bs'  t'))
+      : dc (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t')
 
-  | dc_delete_let_nil : ∀ t t',
-      dc             t  t' ->
-      dc (Let NonRec [] t) t'
+  | dc_delete_let_nil
+      t t'
+      (H_dc_t : dc t t')
+      : dc (Let NonRec [] t) t'
 
-  | dc_compat_let_nil_nil : ∀ NonRec t t',
-      dc             t              t' ->
-      dc (Let NonRec [] t) (Let NonRec [] t').
+  | dc_compat_let_nil_nil
+      t t'
+      (H_dc_t : dc t t')
+      : dc (Let NonRec [] t) (Let NonRec [] t').
 
   (* TODO: support Let Rec (See #42) *)
 
