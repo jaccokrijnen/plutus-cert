@@ -117,8 +117,6 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
 
   (* P_has_type, T_Let *)
   - inversion H_dc; subst.
-    all: rename Delta into Δ.
-    all: rename Gamma into Γ.
 
     (* dc_compat *)
     + inversion H_compat.
@@ -154,6 +152,8 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
 
       (* TermBind Strict *)
       *
+        (* Set up all premises for compat_TermBind *)
+
         simpl in H_norm_b.
         inversion H_norm_b; subst.
         rename Tn0 into Tbn.
@@ -204,12 +204,19 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
     + admit.
 
   (* W_NilB_NonRec *)
-  - inversion X. subst.
-    simpl in H3...
+  - split.
+    + intros.
+      inversion X;subst.
+      eauto with DSP_compatibility_lemmas.
+    + intros.
+      inversion H.
 
   (* W_ConsB_NonRec *)
-  - inversion X. subst.
-
-    admit.
+  - split.
+    + intros.
+      inversion X. subst.
+      admit.
+    + intros. subst.
+    (* TODO, change P_bindings_well_formed_nonrec ? *)
 
 Admitted.

@@ -80,119 +80,119 @@ Local Open Scope list_scope.
 
 Inductive has_type : list (string * Kind) -> list (string * Ty) -> Term -> Ty -> Prop :=
   (* Simply typed lambda caclulus *)
-  | T_Var : forall Gamma Delta x T Tn,
-      lookup x Gamma = Coq.Init.Datatypes.Some T ->
+  | T_Var : forall Γ Δ x T Tn,
+      lookup x Γ = Coq.Init.Datatypes.Some T ->
       normalise T Tn ->
-      Delta ,, Gamma |-+ (Var x) : Tn
-  | T_LamAbs : forall Delta Gamma x T1 t T2n T1n,
-      Delta |-* T1 : Kind_Base ->
+      Δ ,, Γ |-+ (Var x) : Tn
+  | T_LamAbs : forall Δ Γ x T1 t T2n T1n,
+      Δ |-* T1 : Kind_Base ->
       normalise T1 T1n ->
-      Delta ,, (x, T1n) :: Gamma |-+ t : T2n ->
-      Delta ,, Gamma |-+ (LamAbs x T1 t) : (Ty_Fun T1n T2n)
-  | T_Apply : forall Delta Gamma t1 t2 T1n T2n,
-      Delta ,, Gamma |-+ t1 : (Ty_Fun T1n T2n) ->
-      Delta ,, Gamma |-+ t2 : T1n ->
-      Delta ,, Gamma |-+ (Apply t1 t2) : T2n
+      Δ ,, (x, T1n) :: Γ |-+ t : T2n ->
+      Δ ,, Γ |-+ (LamAbs x T1 t) : (Ty_Fun T1n T2n)
+  | T_Apply : forall Δ Γ t1 t2 T1n T2n,
+      Δ ,, Γ |-+ t1 : (Ty_Fun T1n T2n) ->
+      Δ ,, Γ |-+ t2 : T1n ->
+      Δ ,, Γ |-+ (Apply t1 t2) : T2n
   (* Universal types *)
-  | T_TyAbs : forall Delta Gamma X K t Tn,
-      ((X, K) :: Delta) ,, Gamma |-+ t : Tn ->
-      Delta ,, Gamma |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
-  | T_TyInst : forall Delta Gamma t1 T2 T1n X K2 T0n T2n,
-      Delta ,, Gamma |-+ t1 : (Ty_Forall X K2 T1n) ->
-      Delta |-* T2 : K2 ->
+  | T_TyAbs : forall Δ Γ X K t Tn,
+      ((X, K) :: Δ) ,, Γ |-+ t : Tn ->
+      Δ ,, Γ |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
+  | T_TyInst : forall Δ Γ t1 T2 T1n X K2 T0n T2n,
+      Δ ,, Γ |-+ t1 : (Ty_Forall X K2 T1n) ->
+      Δ |-* T2 : K2 ->
       normalise T2 T2n ->
       normalise (substituteTCA X T2n T1n) T0n ->
-      Delta ,, Gamma |-+ (TyInst t1 T2) : T0n
+      Δ ,, Γ |-+ (TyInst t1 T2) : T0n
   (* Recursive types *)
-  | T_IWrap : forall Delta Gamma F T M K Tn Fn T0n,
-      Delta |-* T : K ->
+  | T_IWrap : forall Δ Γ F T M K Tn Fn T0n,
+      Δ |-* T : K ->
       normalise T Tn ->
-      Delta |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
+      Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
       normalise F Fn ->
       normalise (unwrapIFix Fn K Tn) T0n ->
-      Delta ,, Gamma |-+ M : T0n ->
-      Delta ,, Gamma |-+ (IWrap F T M) : (Ty_IFix Fn Tn)
-  | T_Unwrap : forall Delta Gamma M Fn K Tn T0n,
-      Delta ,, Gamma |-+ M : (Ty_IFix Fn Tn) ->
-      Delta |-* Tn : K ->
+      Δ ,, Γ |-+ M : T0n ->
+      Δ ,, Γ |-+ (IWrap F T M) : (Ty_IFix Fn Tn)
+  | T_Unwrap : forall Δ Γ M Fn K Tn T0n,
+      Δ ,, Γ |-+ M : (Ty_IFix Fn Tn) ->
+      Δ |-* Tn : K ->
       normalise (unwrapIFix Fn K Tn) T0n ->
-      Delta ,, Gamma |-+ (Unwrap M) : T0n
+      Δ ,, Γ |-+ (Unwrap M) : T0n
   (* Additional constructs *)
-  | T_Constant : forall Delta Gamma u a,
-      Delta ,, Gamma |-+ (Constant (Some (ValueOf u a))) : (Ty_Builtin (Some (TypeIn u)))
-  | T_Builtin : forall Delta Gamma f T Tn,
+  | T_Constant : forall Δ Γ u a,
+      Δ ,, Γ |-+ (Constant (Some (ValueOf u a))) : (Ty_Builtin (Some (TypeIn u)))
+  | T_Builtin : forall Δ Γ f T Tn,
       T = lookupBuiltinTy f ->
       normalise T Tn ->
-      Delta ,, Gamma |-+ (Builtin f) : Tn
-  | T_Error : forall Delta Gamma S T Tn,
-      Delta |-* T : Kind_Base ->
+      Δ ,, Γ |-+ (Builtin f) : Tn
+  | T_Error : forall Δ Γ S T Tn,
+      Δ |-* T : Kind_Base ->
       normalise T Tn ->
-      Delta ,, Gamma |-+ (Error S) : Tn
+      Δ ,, Γ |-+ (Error S) : Tn
   (** Let-bindings
       Note: The rules for let-constructs differ significantly from the paper definitions
       because we had to adapt the typing rules to the compiler implementation of type checking.
       Reference: The Haskell module PlutusIR.TypeCheck.Internal in the
       iohk/plutus/plutus-core/plutus-ir project.
   **)
-  | T_Let : forall Delta Gamma bs t Tn Delta' Gamma' bsGn,
-      Delta' = flatten (map binds_Delta bs) ++ Delta ->
+  | T_Let : forall Δ Γ bs t Tn Δ' Γ' bsGn,
+      Δ' = flatten (map binds_Delta bs) ++ Δ ->
       map_normalise (flatten (map binds_Gamma bs)) bsGn ->
-      Gamma' = bsGn ++ Gamma ->
-      Delta ,, Gamma |-oks_nr bs ->
-      Delta' ,, Gamma' |-+ t : Tn ->
-      Delta |-* Tn : Kind_Base ->
-      Delta ,, Gamma |-+ (Let NonRec bs t) : Tn
-  | T_LetRec : forall Delta Gamma bs t Tn Delta' Gamma' bsGn,
-      Delta' = flatten (map binds_Delta bs) ++ Delta ->
+      Γ' = bsGn ++ Γ ->
+      Δ ,, Γ |-oks_nr bs ->
+      Δ' ,, Γ' |-+ t : Tn ->
+      Δ |-* Tn : Kind_Base ->
+      Δ ,, Γ |-+ (Let NonRec bs t) : Tn
+  | T_LetRec : forall Δ Γ bs t Tn Δ' Γ' bsGn,
+      Δ' = flatten (map binds_Delta bs) ++ Δ ->
       map_normalise (flatten (map binds_Gamma bs)) bsGn ->
-      Gamma' = bsGn ++ Gamma->
-      Delta' ,, Gamma' |-oks_r bs ->
-      Delta' ,, Gamma' |-+ t : Tn ->
-      Delta |-* Tn : Kind_Base ->
-      Delta ,, Gamma |-+ (Let Rec bs t) : Tn
+      Γ' = bsGn ++ Γ->
+      Δ' ,, Γ' |-oks_r bs ->
+      Δ' ,, Γ' |-+ t : Tn ->
+      Δ |-* Tn : Kind_Base ->
+      Δ ,, Γ |-+ (Let Rec bs t) : Tn
 
 with constructor_well_formed : list (string * Kind) -> constructor -> Ty -> Prop :=
-  | W_Con : forall Delta x T ar Targs Tr,
+  | W_Con : forall Δ x T ar Targs Tr,
       (Targs, Tr) = splitTy T ->
-      (forall U, In U Targs -> Delta |-* U : Kind_Base) ->
-      Delta |-ok_c (Constructor (VarDecl x T) ar) : Tr
+      (forall U, In U Targs -> Δ |-* U : Kind_Base) ->
+      Δ |-ok_c (Constructor (VarDecl x T) ar) : Tr
 
 with bindings_well_formed_nonrec : list (string * Kind) -> list (string * Ty) -> list Binding -> Prop :=
-  | W_NilB_NonRec : forall Delta Gamma,
-      Delta ,, Gamma |-oks_nr nil
-  | W_ConsB_NonRec : forall Delta Gamma b bs bsGn,
-      Delta ,, Gamma |-ok_b b ->
+  | W_NilB_NonRec : forall Δ Γ,
+      Δ ,, Γ |-oks_nr nil
+  | W_ConsB_NonRec : forall Δ Γ b bs bsGn,
+      Δ ,, Γ |-ok_b b ->
       map_normalise (binds_Gamma b) bsGn ->
-      ((binds_Delta b) ++ Delta) ,, (bsGn ++ Gamma) |-oks_nr bs ->
-      Delta ,, Gamma |-oks_nr (b :: bs)
+      ((binds_Delta b) ++ Δ) ,, (bsGn ++ Γ) |-oks_nr bs ->
+      Δ ,, Γ |-oks_nr (b :: bs)
 
 with bindings_well_formed_rec : list (string * Kind) -> list (string * Ty) -> list Binding -> Prop :=
-  | W_NilB_Rec : forall Delta Gamma,
-      Delta ,, Gamma |-oks_r nil
-  | W_ConsB_Rec : forall Delta Gamma b bs,
-      Delta ,, Gamma |-ok_b b ->
-      Delta ,, Gamma |-oks_r bs ->
-      Delta ,, Gamma |-oks_r (b :: bs)
+  | W_NilB_Rec : forall Δ Γ,
+      Δ ,, Γ |-oks_r nil
+  | W_ConsB_Rec : forall Δ Γ b bs,
+      Δ ,, Γ |-ok_b b ->
+      Δ ,, Γ |-oks_r bs ->
+      Δ ,, Γ |-oks_r (b :: bs)
 
 with binding_well_formed : list (string * Kind) -> list (string * Ty) -> Binding -> Prop :=
-  | W_Term : forall Delta Gamma s x T t Tn,
-      Delta |-* T : Kind_Base ->
+  | W_Term : forall Δ Γ s x T t Tn,
+      Δ |-* T : Kind_Base ->
       normalise T Tn ->
-      Delta ,, Gamma |-+ t : Tn ->
-      Delta ,, Gamma |-ok_b (TermBind s (VarDecl x T) t)
-  | W_Type : forall Delta Gamma X K T,
-      Delta |-* T : K ->
-      Delta ,, Gamma |-ok_b (TypeBind (TyVarDecl X K) T)
-  | W_Data : forall Delta Gamma X YKs cs matchFunc Delta',
-      Delta' = rev (map fromDecl YKs) ++ Delta ->
-      (forall c, In c cs -> Delta' |-ok_c c : (constrLastTy (Datatype X YKs matchFunc cs))) ->
-      Delta ,, Gamma |-ok_b (DatatypeBind (Datatype X YKs matchFunc cs))
+      Δ ,, Γ |-+ t : Tn ->
+      Δ ,, Γ |-ok_b (TermBind s (VarDecl x T) t)
+  | W_Type : forall Δ Γ X K T,
+      Δ |-* T : K ->
+      Δ ,, Γ |-ok_b (TypeBind (TyVarDecl X K) T)
+  | W_Data : forall Δ Γ X YKs cs matchFunc Δ',
+      Δ' = rev (map fromDecl YKs) ++ Δ ->
+      (forall c, In c cs -> Δ' |-ok_c c : (constrLastTy (Datatype X YKs matchFunc cs))) ->
+      Δ ,, Γ |-ok_b (DatatypeBind (Datatype X YKs matchFunc cs))
 
-  where "Delta ',,' Gamma '|-+' t ':' T" := (has_type Delta Gamma t T)
-  and  "Delta '|-ok_c' c ':' T" := (constructor_well_formed Delta c T)
-  and "Delta ',,' Gamma '|-oks_nr' bs" := (bindings_well_formed_nonrec Delta Gamma bs)
-  and "Delta ',,' Gamma '|-oks_r' bs" := (bindings_well_formed_rec Delta Gamma bs)
-  and "Delta ',,' Gamma '|-ok_b' b" := (binding_well_formed Delta Gamma b).
+  where "Δ ',,' Γ '|-+' t ':' T" := (has_type Δ Γ t T)
+  and  "Δ '|-ok_c' c ':' T" := (constructor_well_formed Δ c T)
+  and "Δ ',,' Γ '|-oks_nr' bs" := (bindings_well_formed_nonrec Δ Γ bs)
+  and "Δ ',,' Γ '|-oks_r' bs" := (bindings_well_formed_rec Δ Γ bs)
+  and "Δ ',,' Γ '|-ok_b' b" := (binding_well_formed Δ Γ b).
 
 Scheme has_type__ind := Minimality for has_type Sort Prop
   with constructor_well_formed__ind := Minimality for constructor_well_formed Sort Prop
