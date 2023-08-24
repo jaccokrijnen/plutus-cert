@@ -6,6 +6,8 @@ Require Import Ascii.
 Require Import Omega.
 From Equations Require Import Equations.
 
+Require Import FunInd.
+
 Set Implicit Arguments.
 
 From PlutusCert Require Import
@@ -73,21 +75,28 @@ Module Term.
 
   Definition binding' := binding var tyvar var tyvar.
 
-  Definition fvbs (fvb : Recursivity -> binding' -> list var) :=
-    fix fvbs rec (bs : list binding') : list var :=
-    match rec with
-      | Rec    =>
-          remove_many var_dec (bvbs bs) (concat (map (fvb Rec) bs))
-      | NonRec =>
-          match bs with
-            | nil     => []
-            | b :: bs => fvb NonRec b
-                ++ remove_many var_dec (bvb b) (fvbs NonRec bs)
-          end
+  Section Bindings.
+
+    (* It becomes a parameter to both fvbs and the generated
+       fvbs_equation *)
+    Context (fvb : Recursivity -> binding' -> list var).
+
+    Function fvbs  rec (bs : list binding') : list var:=
+    match bs with
+      | nil     => []
+      | b :: bs =>
+         match rec with
+           | Rec    =>
+               remove_many var_dec (bvbs (b :: bs)) (concat (map (fvb Rec) (b :: bs)))
+           | NonRec =>
+                   fvb NonRec b
+                     ++ remove_many var_dec (bvb b) (fvbs NonRec bs)
+         end
     end.
 
+  End Bindings.
 
-  Fixpoint fv (t : term var tyvar var tyvar) : list var :=
+  Function fv (t : term var tyvar var tyvar) : list var :=
    match t with
      | Let rec bs t => fvbs fvb rec bs ++ remove_many var_dec (bvbs bs) (fv t)
      | (LamAbs n ty t)   => remove var_dec n (fv t)
@@ -111,6 +120,22 @@ Module Term.
       | _        => []
     end
     .
+
+  (* Write by hand, because somehow it isn't generated for fvb *)
+  Lemma fvb_equation rec (b : binding') :
+    fvb rec b =
+    match b with
+      | TermBind _ (VarDecl v _) t => match rec with
+        | Rec    => remove var_dec v (fv t)
+        | NonRec => fv t
+        end
+      | _        => []
+    end
+    .
+  Proof.
+    destruct b; destruct rec;
+    reflexivity.
+  Qed.
 
   Definition ftvbs (fvb : Recursivity -> binding' -> list tyvar) :=
     fix ftvbs rec (bs : list binding') : list tyvar :=
