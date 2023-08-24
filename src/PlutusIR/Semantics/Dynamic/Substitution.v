@@ -7,6 +7,8 @@ Require Export PlutusCert.PlutusIR.Analysis.BoundVars.
 Import Coq.Lists.List.
 Import Coq.Strings.String.
 
+Require Import FunInd.
+
 Local Open Scope string_scope.
 
 
@@ -16,7 +18,7 @@ Local Open Scope string_scope.
 Section SubstBindings.
   Context {subst_b : string -> Term -> Binding -> Binding}.
 
-  Fixpoint subst_bnr' (x : string) (s : Term) (bs : list Binding) : list Binding :=
+  Function subst_bnr' (x : string) (s : Term) (bs : list Binding) : list Binding :=
     match bs with
     | nil =>
         nil
@@ -28,7 +30,7 @@ Section SubstBindings.
             subst_b x s b :: subst_bnr' x s bs'
     end.
 
-  Fixpoint subst_br' (x : string) (s : Term) (bs : list Binding) : list Binding :=
+  Function subst_br' (x : string) (s : Term) (bs : list Binding) : list Binding :=
     match bs with
     | nil =>
         nil
@@ -38,7 +40,7 @@ Section SubstBindings.
 
 End SubstBindings.
 
-Fixpoint subst (x : string) (s : Term) (t : Term) {struct t} : Term :=
+Function subst (x : string) (s : Term) (t : Term) {struct t} : Term :=
   match t with
   | Let NonRec bs t0 =>
       Let NonRec (@subst_bnr' subst_b x s bs)
