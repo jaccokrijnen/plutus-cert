@@ -38,6 +38,7 @@ Notation "Δ ',,' Γ '|-' e1 ≃-ctx e2 ':' T" := (contextually_equivalent e1 e2
   , T at level 0
   , no associativity).
 
+(* ciu = Closed Instantiations of Use *)
 
 Definition ciu_equivalent e e' T :=
   ([],, [] |-+ e  : T)  /\

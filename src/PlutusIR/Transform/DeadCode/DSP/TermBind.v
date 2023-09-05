@@ -21,6 +21,7 @@ Import PlutusNotations.
 
 From PlutusCert Require Import DeadCode.DSP.Lemmas.
 From PlutusCert Require Import DeadCode.DSP.BoundVars.
+From PlutusCert Require Import DeadCode.DSP.SubstitutionNonFree.
 
 Import NamedTerm.
 Import ListNotations.
@@ -247,7 +248,7 @@ Proof.
          (H_RC_tb : RC k Tbn ρ
            <{ /[ γ  /] (/[[ msyn1 ρ /] tb) }>
            <{ /[ γ' /] (/[[ msyn2 ρ /] tb) }>).
-           { eapply H_approx with (env0 := γ) (env' := γ'); auto. }
+           { eapply H_approx with (γ := γ) (γ' := γ'); auto. }
       clear H_approx.
       rewrite RV_RC in H_RC_tb.
       specialize (H_RC_tb j1 ltac:(lia) _ H6).
