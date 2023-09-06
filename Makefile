@@ -5,6 +5,7 @@
 
 all: Makefile.coq
 	+make -f Makefile.coq all
+	sed -i 's/module Extracted/module PlutusIR.Certifier.Extracted/' hs-src/PlutusIR/Certifier/Extracted.hs
 
 clean: Makefile.coq
 	+make -f Makefile.coq cleanall
