@@ -64,11 +64,6 @@ Inductive elim : Term -> Term -> Prop :=
       elim_bindings bs bs' ->
       elim (Let rec bs t) (Let rec bs' t')
 
-  | elim_delete_ty_beta : forall t t' α k τ,
-      elim t t' ->
-      elim (TyInst (TyAbs α k t) τ) t'
-
-
 with elim_bindings : list Binding -> list Binding -> Prop :=
   | elim_bindings_pure : forall bs bs',
 
