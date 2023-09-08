@@ -29,6 +29,8 @@ Definition disjoint {A} (xs ys : list A) : Prop :=
 Definition subset {A} (xs ys : list A) := forall x, In x xs -> In x ys.
 Notation "xs ⊆  ys" := (subset xs ys) (at level 11).
 
+Notation "xs \ ys" := (remove_many string_dec ys xs) (at level 10).
+
 (* Uniqueness of binders for open terms *)
 Definition unique_open Δ Γ t :=
   unique t /\
@@ -133,17 +135,80 @@ Section SubsetHelpers.
     x = y.
   Admitted.
 
+  Lemma subset_remove_many xs ys zs :
+    xs ⊆ (ys ++ zs) ->
+    xs \ ys  ⊆ zs.
+  Admitted.
+
+  Lemma subset_rev_l A (xs ys zs : list A):
+    xs ⊆ (rev ys ++ zs) ->
+    xs ⊆ (ys ++ zs).
+  Admitted.
+
+  Lemma subset_remove_many_l xs ys zs :
+    xs ⊆ zs ->
+    xs \ ys ⊆ zs.
+  Admitted.
+
+  Lemma remove_many_app_comm : ∀ xs ys zs, xs \ (ys ++ zs) = xs \ (zs ++ ys).
+  Admitted.
+
+  Lemma remove_many_app_r : ∀ xs ys zs, xs \ (ys ++ zs) = (xs \ ys) \ zs.
+  Admitted.
+
+  Lemma remove_many_app : ∀ xs ys zs, (ys ++ zs) \ xs = ys \ xs ++ zs \ xs.
+  Admitted.
+
+  Lemma remove_many_empty : ∀ xs,
+    [] \ xs = [].
+  Admitted.
+
+
 End SubsetHelpers.
 
 Section ScopingLemmas.
 
-  Lemma well_scoped_weaken {Δ Γ Δ' Γ' t} :
-    Δ ⊆ Δ' ->
-    Γ ⊆ Γ' ->
-    well_scoped Δ' Γ' t ->
-    well_scoped Δ Γ t.
-  Admitted.
+  Lemma well_scoped_bindings_Rec__Forall Δ Γ bs :
+    Δ,, Γ |-ws_oks_r bs ->
+    Forall (fun b => Δ ,, Γ |-ws_ok_b b) bs.
+  Proof.
+    intros H_ws.
+    dependent induction H_ws.
+    all: auto using Forall.
+  Qed.
 
+
+
+  (* Specialized equation of fv_bindings in case of Let Rec *)
+  Lemma fv_bindings_eq bs :
+    fv_bindings Rec bs = (List.concat (map (fv_binding Rec) bs)) \ (bvbs bs).
+  Proof.
+    destruct bs.
+    - reflexivity.
+    - unfold fv_bindings. rewrite FreeVars.Term.fvbs_equation.
+      reflexivity.
+  Qed.
+
+  Lemma fv_binding_Rec__fv_bindings_Rec bs Γ :
+    Forall (fun b => (fv_binding Rec b) \ (bvbs bs) ⊆ Γ) bs ->
+    fv_bindings Rec bs ⊆ Γ.
+  Proof.
+    intros H_bs.
+    unfold fv_bindings.
+    rewrite fv_bindings_eq.
+    revert H_bs.
+    (* Generalize (bvbs bs) so it stays constant in the IH *)
+    generalize (bvbs bs).
+    intros vars H_bs.
+    induction bs; simpl.
+    - rewrite remove_many_empty.
+      apply empty_subset.
+    - inversion H_bs. subst.
+      rewrite remove_many_app.
+      apply subset_append.
+      + assumption.
+      + auto.
+  Qed.
 
   (* Use fv_equation to unfold fv one step *)
   Ltac simpl_fv :=
@@ -151,34 +216,81 @@ Section ScopingLemmas.
     .
 
   Ltac use_IH :=
+      intros;
       simpl_fv;
       inversion H_ws; subst;
      eauto.
 
+  Definition P_Term (t : Term) : Prop :=
+    ∀ Δ Γ (H_ws : well_scoped Δ Γ t),
+    fv t ⊆ Γ.
+
+  Definition P_Binding (b : Binding) :=
+    ∀ Δ Γ rec (H_ws_bs : binding_well_formed Δ Γ b),
+    fv_binding rec b ⊆ Γ.
 
   (* The free variables of a well-scoped term appear in Γ *)
-  Lemma well_scoped_fv {Δ Γ t}:
-    well_scoped Δ Γ t ->
-    fv t ⊆ Γ.
+  Lemma well_scoped_fv : (∀ t, P_Term t) /\ (∀ b, P_Binding b).
   Proof.
-    revert Δ Γ.
-    induction t; simpl; intros Δ Γ H_ws.
+    apply Term__multind with (P := P_Term) (Q := P_Binding).
+    all: simpl; unfold P_Term; unfold P_Binding.
     - (* Let *)
+      intros rec bs t IH_bs IH_t Δ Γ H_ws.
       simpl_fv.
+      fold fv_binding fv_bindings fv.
       inversion H_ws; subst.
       + (* NonRec *)
-        (* TODO: prove using mutual induction on bindings *)
-        admit.
+        apply subset_append.
+        * (* Free vars of bs are in Γ *)
+          clear - IH_bs H4.
+          revert Δ Γ IH_bs H4.
+          induction bs as [ | b bs]; intros.
+          **  simpl. unfold subset.
+              intros.
+              inversion H.
+          ** inversion IH_bs; subst.
+             inversion H4; subst.
+             assert
+               (HH : fv_bindings NonRec bs ⊆ (bvb b ++ Γ)) by eauto.
+             unfold fv_bindings.
+             rewrite Term.fvbs_equation.
+             fold fv_bindings.
+             apply subset_append.
+             *** inversion IH_bs; subst.
+                 eapply H6. eauto.
+             *** apply subset_remove_many. eauto.
+       * (* Free vars in (t \ bvbs) are in Γ*)
+         assert (fv t ⊆ (rev (bvbs bs) ++ Γ)) by eauto.
+         apply subset_rev_l in H.
+         eauto using subset_remove_many.
+
       + (* Rec *)
-        (* TODO: prove using mutual induction on bindings *)
-        admit.
+        apply subset_append.
+        * apply fv_binding_Rec__fv_bindings_Rec.
+          apply well_scoped_bindings_Rec__Forall in H4.
+
+          rewrite Util.ForallP_Forall in IH_bs.
+          rewrite Forall_forall in *.
+          intros b H_b_bs.
+
+          specialize (H4 b H_b_bs).
+          eapply IH_bs with (rec := Rec) in H4.
+          ** apply subset_rev_l in H4.
+             apply subset_remove_many.
+             assumption.
+          ** assumption.
+        * apply IH_t in H5.
+          apply subset_rev_l in H5.
+          apply subset_remove_many.
+          assumption.
 
     - (* Var *)
+      intros x Δ Γ H_ws.
       unfold fv; rewrite Term.fv_equation.
       inversion H_ws. subst.
       unfold subset.
-      intros.
-      assert (x = n) by eauto using in_singleton_eq.
+      intros x' H_in.
+      assert (x' = x) by eauto using in_singleton_eq.
       subst.
       auto.
 
@@ -186,18 +298,20 @@ Section ScopingLemmas.
       use_IH.
 
     - (* LamAbs *)
+      intros x τ t IH_t Δ Γ.
+      intro.
       simpl_fv.
       inversion H_ws; subst.
-      specialize (IHt _ _ H3).
+      specialize (IH_t _ _ H3).
 
-      remember (remove string_dec b (Term.fv string_dec t0)) as fv'.
+      remember (remove string_dec x (Term.fv string_dec t)) as fv'.
 
-      assert (b ∉ fv'). {
+      assert (x ∉ fv'). {
         subst fv'.
         eapply remove_In.
       }
 
-      eapply (subset_cons (x := b)).
+      eapply (subset_cons (x := x)).
       + subst fv'. auto using remove_subset.
       + assumption.
 
@@ -228,6 +342,12 @@ Section ScopingLemmas.
 
   Admitted.
 
+  Corollary well_scoped_fv_term t Δ Γ :
+    (Δ,, Γ |-+ t) -> 
+    fv t ⊆ Γ.
+    revert Δ Γ.
+    apply (proj1 well_scoped_fv t).
+  Qed.
 
   (* The free type variables of a well-scoped term appear in Γ *)
   Lemma well_scoped_ftv {Δ Γ t}:
@@ -345,47 +465,6 @@ Lemma disjoint_contradiction {A} {xs ys} {x : A} :
   ¬ (disjoint xs ys).
 Admitted.
 
-
-
-Ltac use_IH :=
-    inversion H_elim; subst;
-    inversion X; subst;
-    inversion H_ws_post; subst;
-    inversion H_ws_pre; subst;
-    try constructor;
-    eauto.
-
-(* The post term is well-scoped in the kind/type environment
-   of the pre-term *)
-Lemma elim_well_scoped {Δ Γ Δ' Γ' t t'} :
-  elim t t' ->
-  well_scoped Δ Γ t ->
-  well_scoped Δ' Γ' t' ->
-  Δ' ⊆ Δ -> (* invariant *)
-  Γ' ⊆ Γ -> (* invariant *)
-  well_scoped Δ Γ t'.
-Proof.
-  revert Δ Γ Δ' Γ' t'.
-  induction t.
-  all: intros Δ Γ Δ' Γ' t' H_elim H_ws_pre H_ws_post H_sub_env.
-
-  (* All cases except for Let *)
-  all: try use_IH.
-
-  - (* Let *)
-    inversion H_elim; subst.
-
-    (* elim_compat *)
-    + admit.
-
-    (* elim_delete_let*)
-    + admit.
-
-    (* elim_delete_bindings *)
-    + admit.
-
-Admitted.
-
 Lemma unique_well_scoped_disjoint Δ Γ rec bs t Δ' Γ' bs' t' :
   elim t t' ->
   elim_bindings bs bs' ->
@@ -405,14 +484,6 @@ Proof with eauto.
   intros H_elim H_elim_bs [H_pre_ws H_pre_unique] H_post_ws H_Δ_Δ' H_Γ_Γ'.
   intros b H_in_b_bs H_name_gone.
 
-  (* The post-term is also well-scoped under Δ; Γ *)
-  assert (H_post_ws_Δ_Γ : well_scoped Δ Γ (Let rec bs' t')). {
-    eapply elim_well_scoped.
-    all: eauto.
-    apply elim_delete_bindings.
-    all: eauto.
-  }
-
   destruct b as [ s [x ty] t_rhs | | ].
   all: split.
 
@@ -425,7 +496,8 @@ Proof with eauto.
       intros H_x_in_fv.
 
       assert (H_x_in_Γ : x ∈ Γ). {
-        eapply (well_scoped_fv H_post_ws_Δ_Γ)...
+        apply H_Γ_Γ'.
+        eapply well_scoped_fv_term...
       }
 
       assert (H_x_in_bound_vars : x ∈ bound_vars (Let rec bs t)). {
