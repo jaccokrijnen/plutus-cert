@@ -7,7 +7,6 @@ From Coq Require Import
 
 From PlutusCert Require Import Semantics.Dynamic.
 From PlutusCert Require Import Semantics.Static.
-From PlutusCert Require Import Transform.DeadCode.
 From PlutusCert Require Import Analysis.WellScoped.
 From PlutusCert Require Import TypeSafety.TypeLanguage.Preservation.
 From PlutusCert Require Import SemanticEquivalence.LogicalRelation.
@@ -38,6 +37,16 @@ Definition unique_open Δ Γ t :=
   Forall (fun v => ~ Term.appears_bound_in v t) Γ.
 
 
+Section TypingHelpers.
+
+  Lemma strengthen_Γ Δ Γ x t Tx T :
+    ~ In x (fv t) ->
+    Δ,, (x , Tx) :: Γ |-+ t : T ->
+    Δ,, Γ |-+ t : T
+  .
+  Admitted.
+
+End TypingHelpers.
 
 Section SubstitutionLemmas.
 
@@ -215,6 +224,10 @@ Section ScopingLemmas.
       unfold fv; rewrite Term.fv_equation
     .
 
+  Ltac simpl_fvb :=
+      unfold fv_binding; rewrite Term.fvb_equation
+    .
+
   Ltac use_IH :=
       intros;
       simpl_fv;
@@ -340,7 +353,25 @@ Section ScopingLemmas.
     - (* Unwrap *)
       use_IH.
 
-  Admitted.
+    - (* TermBind *)
+      intros s [x ty] t IH_t Δ Γ rec H_ws_b.
+      destruct rec.
+      all: simpl_fvb.
+      + (* NonRec*)
+        inversion H_ws_b; subst.
+        eauto.
+      + inversion H_ws_b; subst.
+        eapply remove_subset.
+        eauto.
+    - (* TypeBind *)
+      + intros.
+        simpl_fvb.
+        apply empty_subset.
+    - intros dtd Δ Γ rec H_ws.
+      simpl_fvb.
+      apply empty_subset.
+
+  Qed.
 
   Corollary well_scoped_fv_term t Δ Γ :
     (Δ,, Γ |-+ t) -> 
@@ -451,38 +482,30 @@ Proof.
   - auto.
 Qed.
 
-Definition pre Δ Γ t :=
-  well_scoped Δ Γ t /\
-  unique_open Δ Γ t.
-
-Definition post Δ Γ t :=
-  well_scoped Δ Γ t.
-
-
 Lemma disjoint_contradiction {A} {xs ys} {x : A} :
   x ∈ xs ->
   x ∈ ys ->
   ¬ (disjoint xs ys).
 Admitted.
 
-Lemma unique_well_scoped_disjoint Δ Γ rec bs t Δ' Γ' bs' t' :
-  elim t t' ->
-  elim_bindings bs bs' ->
+Lemma unique_well_scoped_disjoint Δ Γ rec bs t Δ' Γ' t' :
 
-  (* Properties on pre- and post-term*)
-  pre Δ Γ (Let rec bs t) ->
-  post Δ' Γ' (Let rec bs' t') ->
+  (* Properties on pre-term *)
+  well_scoped Δ Γ (Let rec bs t) ->
+  unique_open Δ Γ (Let rec bs t) ->
+
+  (* Properties on post-term *)
+  well_scoped Δ' Γ' t' ->
 
   Δ' ⊆ Δ ->
   Γ' ⊆ Γ ->
   forall b,
     In b bs ->
-    name b ∉ map name bs' ->
-    disjoint (bvb b) (fv (Let rec bs' t')) /\
-    disjoint (btvb b) (ftv (Let rec bs' t')).
+    disjoint (bvb b) (fv t') /\
+    disjoint (btvb b) (ftv t').
 Proof with eauto.
-  intros H_elim H_elim_bs [H_pre_ws H_pre_unique] H_post_ws H_Δ_Δ' H_Γ_Γ'.
-  intros b H_in_b_bs H_name_gone.
+  intros H_pre_ws H_pre_unique H_post_ws H_Δ_Δ' H_Γ_Γ'.
+  intros b H_in_b_bs .
 
   destruct b as [ s [x ty] t_rhs | | ].
   all: split.

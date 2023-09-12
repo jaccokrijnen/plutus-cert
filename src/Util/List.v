@@ -5,6 +5,10 @@ Import ListNotations.
 Local Open Scope string_scope.
 Local Open Scope list_scope.
 Import ListNotations.
+
+Notation "x ∈ xs" := (In x xs) (at level 40).
+Notation "x ∉ xs" := (~ (In x xs)) (at level 40).
+
 Fixpoint lookup {X:Type} (k : string) (l : list (string * X)) : option X :=
   match l with
   | nil => None

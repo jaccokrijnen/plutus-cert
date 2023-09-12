@@ -185,7 +185,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
         remember (TermBind Strict (VarDecl x Tb) tb) as b.
 
         (* Use TermBind lemma *)
-        eauto using compat_TermBind.
+        eauto using elim_TermBind__approximate.
 
       (* TypeBind *)
       * admit. (* Lemma similar to compat_TermBind *)
