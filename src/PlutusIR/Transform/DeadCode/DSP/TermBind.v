@@ -104,7 +104,7 @@ Proof.
   apply compatibility_LetNonRec_Nil'.
 Qed.
 
-Lemma compat_TermBind Δ Γ t t' Tn b bs x Tb tb Tbn :
+Lemma elim_TermBind__approximate Δ Γ t t' Tn b bs x Tb tb Tbn :
   Δ |-* Tb : Kind_Base ->
   normalise Tb Tbn ->
   (Δ ,, Γ |-+ tb : Tbn) ->
@@ -117,8 +117,8 @@ Lemma compat_TermBind Δ Γ t t' Tn b bs x Tb tb Tbn :
     pure_open Δ Γ tb Tbn ->
     Δbs = Δ ->
     Γbs = (x, Tbn) :: Γ ->
-    LR_logically_approximate Δbs Γbs (Let NonRec       bs  t) t' Tn ->
-    LR_logically_approximate Δ   Γ   (Let NonRec (b :: bs) t) t' Tn.
+    Δbs ,, Γbs |- (Let NonRec       bs  t) ≤ t' : Tn ->
+    Δ ,, Γ |- (Let NonRec (b :: bs) t) ≤ (t') : Tn.
 Proof.
   intros H_Tb_kind H_Tbn H_tb_ty.
   intros H_disjoint_b H_unique.

@@ -41,9 +41,6 @@ Definition name (b : Binding) :=
     | DatatypeBind (Datatype (TyVarDecl x _) _ _ _) => x
   end.
 
-(* TODO: move into list helpers *)
-Notation "x ∈ xs" := (In x xs) (at level 40).
-Notation "x ∉ xs" := (~ (In x xs)) (at level 40).
 
 (* Whether *)
 Definition name_removed b bs : Prop :=
