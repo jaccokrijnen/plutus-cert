@@ -288,3 +288,9 @@ Proof with eauto.
       eauto using normalisation__deterministic.
     + eauto.
 Qed.
+
+Axiom norm : Ty -> Ty.
+Axiom norm_normalise : forall ty, normalise ty (norm ty).
+
+Axiom map_norm : list (string * Ty) -> list (string * Ty).
+Axiom map_norm_map_normalise : forall Ts, map_normalise Ts (map_norm Ts).

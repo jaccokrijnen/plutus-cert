@@ -104,40 +104,67 @@ Proof.
   apply compatibility_LetNonRec_Nil'.
 Qed.
 
-Lemma elim_TermBind__approximate Δ Γ t t' Tn b bs x Tb tb Tbn :
-  Δ |-* Tb : Kind_Base ->
-  normalise Tb Tbn ->
-  (Δ ,, Γ |-+ tb : Tbn) ->
+Lemma elim_TermBind__approximate Δ Γ t t' Tn b bs x Tb tb Γ_b :
+  b = TermBind Strict (VarDecl x Tb) tb ->
+
+  (* Any well-formed binding b *)
+  Δ ,, Γ |-ok_b b ->
 
   disjoint (bvb b) (fv t') ->
   unique (Let NonRec (b :: bs) t) ->
 
   forall Δbs Γbs,
-    b = TermBind Strict (VarDecl x Tb) tb ->
-    pure_open Δ Γ tb Tbn ->
-    Δbs = Δ ->
-    Γbs = (x, Tbn) :: Γ ->
+    pure_binding Δ Γ b ->
+    Δbs = binds_Delta b ++ Δ ->
+    map_normalise (binds_Gamma b) Γ_b ->
+    Γbs = Γ_b ++ Γ ->
     Δbs ,, Γbs |- (Let NonRec       bs  t) ≤ t' : Tn ->
     Δ ,, Γ |- (Let NonRec (b :: bs) t) ≤ (t') : Tn.
 Proof.
-  intros H_Tb_kind H_Tbn H_tb_ty.
+  intros H_Eqb.
+  intros H_wf_b.
+
+
+
+
   intros H_disjoint_b H_unique.
   intros Δbs Γbs.
-  intros H_Eqb H_pure H_Δb H_Γb.
+  intros H_purebind H_Δb H_norm_Γbs H_Γbs.
   intros H_IH_let_bs.
 
+  (* Consider only TermBind*)
   subst b.
+  destruct H_purebind as [Tbn' [H_Tb_Tbn' H_pure]].
+  (* TODO: postpone this until inversion is needed on H_wf_b *)
+  inversion H_wf_b
+    as [ ? ? ? ? ? ? Tbn H_Tb_kind H_Tbn H_tb_ty | | ]
+  ; subst. clear H_wf_b.
+  remember (TermBind Strict (VarDecl x Tb) tb) as b.
+
+  (* map_normalise logic *)
+  unfold binds_Gamma, binds_Delta in *; subst.
+  assert (Γ_b = [(x, Tbn)]). {
+    admit. (* normalise lemmas *)
+  }
+  subst Γ_b.
+
+  assert (Tbn' = Tbn) by admit. subst Tbn'.
+
 
   (* Split IH in typing and evaluation *)
   unfold LR_logically_approximate in H_IH_let_bs.
   destruct H_IH_let_bs as [H_ty_Let [H_ty_t' H_RC]].
 
+
+
   unfold LR_logically_approximate.
   repeat split.
 
   (** Typing of complete let *)
-  - eapply compat_TermBind_typing with
+  -
+    eapply compat_TermBind_typing with
       (x := x) (Tbn := Tbn).
+
     all: subst; auto.
 
   (** Typing of post-term in smaller Γ *)
@@ -281,8 +308,8 @@ Proof.
              <{ /[ γₓ /] (/[[ msyn1 ρ /] {Let NonRec bs t}) }>
              <{ /[ γ'ₓ /] (/[[ msyn2 ρ /] t') }>).
         { apply H_RC.
-          - rewrite H_Δb. apply H_Δ_ρ.
-          - rewrite H_Γb . apply H_γₓ_γ'ₓ.
+          - apply H_Δ_ρ.
+          - apply H_γₓ_γ'ₓ.
         }
 
       (* push substitutions through, so we can use H_bs_terminate
@@ -310,7 +337,7 @@ Proof.
         -- eassumption.
         -- eassumption.
         -- lia.
-Qed.
+Admitted.
 
 
 End CompatibilityLemmas.
