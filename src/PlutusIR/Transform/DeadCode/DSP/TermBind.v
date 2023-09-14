@@ -104,32 +104,27 @@ Proof.
   apply compatibility_LetNonRec_Nil'.
 Qed.
 
-Lemma elim_TermBind__approximate Δ Γ t t' Tn b bs x Tb tb Γ_b :
+Lemma elim_TermBind_NonRec__approximate Δ Γ t t' Tn b bs x Tb tb :
   b = TermBind Strict (VarDecl x Tb) tb ->
 
-  (* Any well-formed binding b *)
   Δ ,, Γ |-ok_b b ->
 
   disjoint (bvb b) (fv t') ->
-  unique (Let NonRec (b :: bs) t) ->
+  unique (Let NonRec (b :: bs) t) -> (* This can probably be omitted, see comment in proof *)
 
-  forall Δbs Γbs,
+  forall Δ_b Γ_b,
     pure_binding Δ Γ b ->
-    Δbs = binds_Delta b ++ Δ ->
+    Δ_b = binds_Delta b ->
     map_normalise (binds_Gamma b) Γ_b ->
-    Γbs = Γ_b ++ Γ ->
-    Δbs ,, Γbs |- (Let NonRec       bs  t) ≤ t' : Tn ->
-    Δ ,, Γ |- (Let NonRec (b :: bs) t) ≤ (t') : Tn.
+    Δ_b ++ Δ ,, Γ_b ++ Γ |- (Let NonRec       bs  t) ≤ t' : Tn ->
+           Δ ,,        Γ |- (Let NonRec (b :: bs) t) ≤ t' : Tn.
 Proof.
   intros H_Eqb.
   intros H_wf_b.
 
-
-
-
   intros H_disjoint_b H_unique.
-  intros Δbs Γbs.
-  intros H_purebind H_Δb H_norm_Γbs H_Γbs.
+  intros Δ_b Γ_b.
+  intros H_purebind H_Δ_b H_norm_Γ_bs.
   intros H_IH_let_bs.
 
   (* Consider only TermBind*)
