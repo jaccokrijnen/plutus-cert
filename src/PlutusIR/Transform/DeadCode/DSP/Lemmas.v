@@ -446,6 +446,12 @@ Section Purity.
     pure_substitution γ ->
     pure (close ρ γ t).
 
+  Definition pure_binding Δ Γ b :=
+    match b with
+      | TermBind Strict (VarDecl _ T) t => exists Tn, normalise T Tn /\ pure_open Δ Γ t Tn
+      | _ => True
+    end.
+
 
   Lemma msubst_value t γ ρ:
     value t /\ ~ is_error t ->

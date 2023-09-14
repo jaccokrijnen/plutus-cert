@@ -35,6 +35,8 @@ Definition P_has_type Δ Γ t T : Prop :=
 Definition P_constructor_well_formed Δ c Tr : Prop := Δ |-ok_c c : Tr.
 
 Definition P_bindings_well_formed_nonrec Δ Γ bs : Prop :=
+
+  (* dc_compat case *)
   (
     forall bs',
       Compat.Compat_Bindings dc bs bs' ->
@@ -45,7 +47,8 @@ Definition P_bindings_well_formed_nonrec Δ Γ bs : Prop :=
         Δ |-* Tn : Kind_Base ->
         Δ_t ,, Γ_t |- t ≤ t' : Tn ->
         Δ   ,, Γ   |- (Let NonRec bs t) ≤ (Let NonRec bs' t') : Tn
-  ) /\ (
+  ) /\
+  (
       forall Δ' Γ' b bs' bsGn t Tn,
         bs = b :: bs' ->
         map_normalise (rev (binds_Gamma b)) bsGn ->
@@ -119,8 +122,8 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
   - inversion H_dc; subst.
 
     (* dc_compat *)
-    + inversion H_compat.
-      destruct H3 as [H_bs H_bbs].
+    + inversion H_compat; subst.
+      destruct H3 as [H_bs _].
       subst...
 
     (* dc_delete_binding *)
@@ -139,7 +142,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
 
       (* Use IH *)
       assert (H_approx_bs : Δ',, Γ' |- (Let NonRec (bs0) t) ≤ t' : Tn). {
-        eauto.
+        debug eauto.
       }
 
       assert (H_unique : unique (Let NonRec (b :: bs0) t)).
@@ -152,20 +155,32 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
 
       (* TermBind Strict *)
       *
-        (* Set up all premises for compat_TermBind *)
+        (* Set up all premises for elim_TermBind__approximate *)
 
         simpl in H_norm_b.
         inversion H_norm_b; subst.
         rename Tn0 into Tbn.
         inversion H9; subst.
 
-        assert (pure_open Δ Γ tb Tbn). {
+        remember (TermBind Strict (VarDecl x Tb) tb) as b.
+
+        assert (pure_binding Δ Γ b). {
+          subst b.
+          simpl.
+          assert (pure_open Δ Γ tb Tbn). {
           inversion H_pure.
           eauto using is_pure_nil_pure_open.
+          }
+          eauto.
+        }
+
+        assert (Δ ,, Γ |-ok_b b ). {
+          inversion H2.
+          auto.
         }
 
         assert (H_ty_tb : Δ ,, Γ |-+ tb : Tbn). {
-          clear - H2 H10.
+          clear - H2 H10 Heqb.
           inversion H2; subst.
           inversion H1; subst.
           assert (Tn = Tbn) by eauto using normalisation__deterministic.
@@ -174,17 +189,22 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
         }
 
         assert (H_Tb_wf : Δ |-* Tb : Kind_Base). {
-          clear - H2 H10.
+          clear - H2 H10 Heqb.
           inversion H2; subst.
           inversion H1; subst.
           assumption.
         }
 
+        assert (H_Γ_b_normal : exists Γn_b, map_normalise (binds_Gamma b) Γn_b). {
+          admit. (* By H0 *)
+        }
+        destruct H_Γ_b_normal.
+
         simpl in H_approx_bs.
 
-        remember (TermBind Strict (VarDecl x Tb) tb) as b.
+        subst b.
 
-        (* Use TermBind lemma *)
+        (* Use elim_TermBind lemma *)
         eauto using elim_TermBind__approximate.
 
       (* TypeBind *)
