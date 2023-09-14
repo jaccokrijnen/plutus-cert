@@ -205,7 +205,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
         subst b.
 
         (* Use elim_TermBind lemma *)
-        eauto using elim_TermBind__approximate.
+        eauto using elim_TermBind_NonRec__approximate.
 
       (* TypeBind *)
       * admit. (* Lemma similar to compat_TermBind *)
