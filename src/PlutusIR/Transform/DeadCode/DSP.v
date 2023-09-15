@@ -142,7 +142,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
 
       (* Use IH *)
       assert (H_approx_bs : Δ',, Γ' |- (Let NonRec (bs0) t) ≤ t' : Tn). {
-        debug eauto.
+        eauto.
       }
 
       assert (H_unique : unique (Let NonRec (b :: bs0) t)).
