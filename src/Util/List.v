@@ -269,6 +269,16 @@ Lemma mdrop_nil : forall X ns,
     @mdrop X ns nil = nil.
 Proof. induction ns; auto. Qed.
 
+Lemma mdrop_app : forall A (xs ys : list string) (zs : list (string * A)),
+  mdrop (xs ++ ys) zs = mdrop ys (mdrop xs zs).
+Proof.
+  intros A xs ys.
+  induction xs.
+  - reflexivity.
+  - simpl.
+    eauto.
+Qed.
+
 Lemma drop_idempotent : forall X x (ns : list (string * X)), drop x (drop x ns) = drop x ns.
 Proof with auto.
   intros.

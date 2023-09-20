@@ -65,6 +65,7 @@ Section SubstitutionLemmas.
 
   Import PlutusNotations.
 
+  (*
   Lemma msubstA_LetNonRec ss bs t :
     <{ /[[ ss /] {Let NonRec bs t} }>
     = Let NonRec <{ /[[ ss /][bnr] bs }> <{/[[ ss /] t}>.
@@ -81,7 +82,9 @@ Section SubstitutionLemmas.
   Lemma msubstA_bs_cons ss b bs : <{ /[[ ss /][bnr] {b :: bs} }>
     = <{ /[[ ss /][b]b }> :: <{ /[[ ss /][bnr]bs }>.
   Admitted.
+  *)
 
+  (*
   Lemma msubst_TermBind ss s x t : msubst_b ss (TermBind s x t)
     = TermBind s x (msubst ss t).
   Admitted.
@@ -89,6 +92,7 @@ Section SubstitutionLemmas.
   Lemma msubstA_TermBind ss s x t : msubstA_b ss (TermBind s x t)
     = TermBind s x (msubstA ss t).
   Admitted.
+  *)
 
   Lemma compose_subst_msubst : forall x tx γ t,
     subst x tx (msubst γ t) = msubst ((x, tx) :: γ) t.
@@ -402,6 +406,16 @@ End ScopingLemmas.
 
 
 Definition close ρ γ t := msubst γ (msubstA ρ t).
+
+Lemma close_equation : ∀ ρ γ t,
+  close ρ γ t = msubst γ (msubstA ρ t).
+Proof. reflexivity. Qed.
+
+Definition close_bnr ρ γ bs := msubst_bnr γ (msubstA_bnr ρ bs).
+
+Lemma close_bnr_equation : ∀ ρ γ bs,
+  close_bnr ρ γ bs = msubst_bnr γ (msubstA_bnr ρ bs).
+Proof. reflexivity. Qed.
 
 Section Purity.
 

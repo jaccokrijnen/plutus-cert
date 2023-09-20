@@ -17,6 +17,9 @@ From PlutusCert Require Import Analysis.UniqueBinders.
 From PlutusCert Require Import Substitution.
 From PlutusCert Require Import Util.Tactics.
 
+From PlutusCert Require Import Multisubstitution.Congruence.
+From PlutusCert Require Import Util.List.
+
 Import PlutusNotations.
 
 From PlutusCert Require Import DeadCode.DSP.Lemmas.
@@ -108,12 +111,10 @@ Lemma elim_TermBind_NonRec__approximate Δ Γ t t' Tn b bs x Tb tb :
   b = TermBind Strict (VarDecl x Tb) tb ->
 
   Δ ,, Γ |-ok_b b ->
-
+  pure_binding Δ Γ b ->
   disjoint (bvb b) (fv t') ->
-  unique (Let NonRec (b :: bs) t) -> (* This can probably be omitted, see comment in proof *)
 
   forall Δ_b Γ_b,
-    pure_binding Δ Γ b ->
     Δ_b = binds_Delta b ->
     map_normalise (binds_Gamma b) Γ_b ->
     Δ_b ++ Δ ,, Γ_b ++ Γ |- (Let NonRec       bs  t) ≤ t' : Tn ->
@@ -122,9 +123,9 @@ Proof.
   intros H_Eqb.
   intros H_wf_b.
 
-  intros H_disjoint_b H_unique.
+  intros H_purebind H_disjoint_b.
   intros Δ_b Γ_b.
-  intros H_purebind H_Δ_b H_norm_Γ_bs.
+  intros H_Δ_b H_norm_Γ_bs.
   intros H_IH_let_bs.
 
   (* Consider only TermBind*)
@@ -177,7 +178,7 @@ Proof.
 
   apply make_RC.
 
-  intros j H_lt_j_k e_f.
+  intros j H_lt_j_k v.
 
   intros H_let_terminates.
 
@@ -186,22 +187,161 @@ Proof.
   rewrite msubst_LetNonRec in H_let_terminates.
 
   (* Find that we have terminating bindings *)
-  inversion H_let_terminates. subst bs0 t0 v j0.
+  inversion H_let_terminates as
+    [ | | | | | | | | | | | | | | | | | | | | ? ? ? ? H_b_bs_terminate | ].
+  subst.
   clear H_let_terminates.
-  rename H3 into H_b_bs_terminate.
 
-  (* Push substitutions through, so we can find that
-      γρ₁(let bs = ... in t) ⇓ e_f
-  *)
-  rewrite msubstA_bs_cons, msubst_bs_cons in H_b_bs_terminate.
+  (* Push substitutions through *)
+
+  rewrite msubstA_BindingsNonRec_cons, msubst_bnr_cons in H_b_bs_terminate.
   rewrite msubstA_TermBind, msubst_TermBind in H_b_bs_terminate.
+  inversion H_b_bs_terminate as
+    [ | ? ? ? k_v vb k_bs ? ? ? H_eval_tb H_tb_no_error H_eval_bs | | ]. subst.
+
+  (* case E_Let_TermBind *)
+  {
+
+    (* Clean up *)
+    clear H_b_bs_terminate.
+
+    assert (H_RC_tb :
+      RC k Tbn ρ
+         (close (msyn1 ρ) γ  tb)
+         (close (msyn2 ρ) γ' tb)).
+    {
+      assert (H_LR_tb : LR_logically_approximate Δ Γ tb tb Tbn).
+      { auto using LR_reflexivity. }
+      destruct H_LR_tb as [_ [_ H_approx]].
+      eauto.
+    }
+
+    assert (H_RV_vb : ∃ vb' , RV (k - k_v) Tbn ρ vb vb').
+    {
+      rewrite RV_RC in H_RC_tb.
+      specialize (H_RC_tb k_v ltac:(lia) _ H_eval_tb).
+      destruct H_RC_tb as [vb' [_ [_ H_RV_vb_vb']]].
+      eauto.
+    }
+
+    destruct H_RV_vb as [vb' H_RV_vb].
+
+    remember ((x, vb) :: γ) as γₓ.
+    remember ((x, vb') :: γ') as γ'ₓ.
+
+    (** Construct related environments *)
+    assert (H_γₓ_γ'ₓ : RG ρ (k - k_v) ((x, Tbn) :: Γ) γₓ γ'ₓ).
+    { subst γₓ γ'ₓ.
+      eapply RG_cons.
+      - eapply RV_monotone.
+        + apply H_Δ_ρ.
+        + apply H_RV_vb.
+        + lia.
+      - eapply normalise_to_normal; eauto.
+      - assumption.
+      - eapply RG_monotone.
+        + apply H_Δ_ρ.
+        + apply H_Γ_γ_γ'.
+        + lia.
+    }
+
+    specialize (H_RC (k - k_v) ρ γₓ γ'ₓ H_Δ_ρ H_γₓ_γ'ₓ).
+    setoid_rewrite <- close_equation in H_RC.
+
+    (* Pre-term of IH terminates *)
+    assert (H_pre : close (msyn1 ρ) γₓ (Let NonRec bs t) =[ k_bs ]=> v).
+    {
+
+      rewrite <- close_equation, <- close_bnr_equation in H_eval_bs.
+
+      remember (TermBind Strict (VarDecl x Tb) tb) as b.
+
+      remember (mdrop (btvbs (b :: bs)) (msyn1 ρ)) as ρ1_t.
+      remember (mdrop
+                  (List.concat (map bvb (msubstA_bnr (msyn1 ρ) bs )))
+                  (drop x γ)
+               )
+        as γ_t.
+
+      assert
+      ( H_subst_pre :
+        subst x vb
+          (Let NonRec
+            (close_bnr (msyn1 ρ) (drop x γ) bs)
+            (close ρ1_t γ_t t))
+        =
+        close (msyn1 ρ) γₓ (Let NonRec bs t)
+      ).
+      {
+        subst γ_t.
+        unfold close, close_bnr.
+        rewrite <- msubst_LetNonRec.
+        subst ρ1_t.
 
 
-  (* Two cases apply: E_Let and E_Error, E_Error_Let_TermBind *)
-  inversion H_b_bs_terminate. subst x0 T t1 bs0 t0 v2.
+        (* TODO, for general bindings, this won't simplify, but we have to
+           do a similar thing for the type substitution, factor it out *)
+        rewrite (eq_refl : btvbs (b :: bs) = btvb b ++ btvbs bs).
+        subst b. simpl.
+
+        rewrite <- msubstA_LetNonRec.
+
+        subst γₓ.
+        simpl.
+        apply eq_sym.
+        apply subst_msubst.
+
+        { admit. (* This should follow from typing and substitution *) }
+        {
+          assert (k > 0) by lia.
+          eauto using RG_env_closed_1.
+        }
+      }
+
+      rewrite H_subst_pre in H_eval_bs.
+
+      unfold close, close_bnr in *.
+      rewrite msubstA_LetNonRec, msubst_LetNonRec in *.
+      eauto using eval.
+    }
+
+    (* Post-term of IH terminates *)
+    assert (H_post : ∃ v' k', close (msyn2 ρ) γ'ₓ t' =[ k' ]=> v' /\
+                     RV (k - k_v - k_bs) Tn ρ v v').
+    {
+      simple eapply RC_to_RV in H_RC; eauto.
+      lia.
+    }
+
+  assert (x ∉ fv t').
+  {
+    simpl in H_disjoint_b.
+    unfold disjoint in H_disjoint_b.
+    rewrite Forall_singleton in H_disjoint_b.
+    assumption.
+  }
+
+  destruct H_post as [v' [k' [H_t' RV_v_v']]].
+  exists v', k'. 
+  split.
+  {
+    unfold close in H_t'.
+    subst γ'ₓ.
+    rewrite msubst_not_in_fv in H_t'.
+    - assumption.
+    - assert (fv_msubstA : ∀ xs t , fv (msubstA xs t) = fv t) by admit.
+      rewrite fv_msubstA.
+      assumption.
+  }
+  {
+    assert (k - (k_v + 1 + k_bs) <= k - k_v - k_bs) by lia.
+      eapply RV_monotone; eauto.
+  }
+
+  }
 
   (* case E_Error_Let_TermBind *)
-  2: {
+  {
     (** Contradiction: tb ⇓ Error, but tb is a safe binding, so
         it should terminate with a value *)
     unfold pure_open in *.
@@ -212,126 +352,15 @@ Proof.
     assert (H_substitution_γ : substitution Γ γ). { apply RG_substitution_1 in H_Γ_γ_γ'. assumption. }
 
     assert (H_pure_closed : pure (close (msyn1 ρ) γ tb)) by auto.
-    destruct H_pure_closed as [l [v [H_eval H_not_err]]].
+    destruct H_pure_closed as [l [vb [H_eval H_not_err]]].
     apply eval__deterministic in H_eval.
     unfold P_eval in H_eval.
-    apply H_eval in H6 as [H_v_Error _].
-    subst v.
+    apply H_eval in H as [H_v_Error _].
+    subst vb.
     assert (is_error (Error T')) by constructor.
     contradiction.
-    }
+  }
 
-  rename H8 into H_bs_terminate.
-
-  simpl in H_bs_terminate.
-
-  (* To reduce in H_bs_terminate we need to consider the case:*)
-  destruct
-    (* binder x should not occur as let-bound variable in bs *)
-    (existsb (eqb x) (bvbs <{ /[ γ /][bnr] (/[[ msyn1 ρ /][bnr] bs) }>)) eqn:H_ex.
-
-    +
-    (* TODO: I think this can be proven without H_unique (not a contradiction) *)
-
-    (* 1. bvbs don't change with substitution *)
-      rewrite bvbs_msubst_bnr in H_ex.
-      rewrite bvbs_msubstA_bnr in H_ex.
-
-      (* 2. existsb (eqb x) (bvbs bs) -> Term.appears_bound_in x (Let r bs t) *)
-
-      apply existsb_appears_bound_in with (r := NonRec) (t := t) in H_ex.
-      (* 3. Inversion on H_unique gives case: UNI_Let_TermBind *)
-
-      inversion H_unique.
-      (* 4. Contradiction with premise of that rule *)
-      contradiction.
-
-    +
-      (* combine single substitution with multi-substitution *)
-      rewrite compose_subst_msubst
-            , compose_subst_msubst_bindings_nonrec in H_bs_terminate.
-
-      (** Note about step indices
-          k  : the overall budget for let b::bs in t
-          j  : eval steps for let b::bs in t
-          j1 : eval steps for b
-          j2 : eval steps for let bs in t
-
-          j < k
-          j = j1 + 1 + j2
-      *)
-
-      (** Use fundamental property to find relates values for the
-          RHS term tb. *)
-      assert (H_LR_tb : LR_logically_approximate Δ Γ tb tb Tbn).
-        { auto using LR_reflexivity. }
-      destruct H_LR_tb as [_ [_ H_approx]].
-      assert
-         (H_RC_tb : RC k Tbn ρ
-           <{ /[ γ  /] (/[[ msyn1 ρ /] tb) }>
-           <{ /[ γ' /] (/[[ msyn2 ρ /] tb) }>).
-           { eapply H_approx with (γ := γ) (γ' := γ'); auto. }
-      clear H_approx.
-      rewrite RV_RC in H_RC_tb.
-      specialize (H_RC_tb j1 ltac:(lia) _ H6).
-      destruct H_RC_tb as [v' [_ [_ H_RV_v1_v']]].
-
-      remember ((x, v1) :: γ) as γₓ.
-      remember ((x, v') :: γ') as γ'ₓ.
-      apply E_Let in H_bs_terminate. (* use eval instead of eval_bindings_nonrec *)
-
-      (** Construct related environments *)
-      assert (H_γₓ_γ'ₓ : RG ρ (k - j1) ((x, Tbn) :: Γ) γₓ γ'ₓ).
-      { subst γₓ γ'ₓ.
-        eapply RG_cons.
-        - eapply RV_monotone.
-          + apply H_Δ_ρ.
-          + apply H_RV_v1_v'.
-          + lia.
-        - eapply normalise_to_normal; eauto.
-        - assumption.
-        - eapply RG_monotone.
-          + apply H_Δ_ρ.
-          + apply H_Γ_γ_γ'.
-          + lia.
-      }
-
-      (* Instantiate IH with γₓ and γ'ₓ for (k - j1) steps *)
-      specialize (H_RC (k - j1) ρ γₓ γ'ₓ ).
-      assert ( H_RC_ :
-           RC (k - j1) Tn ρ
-             <{ /[ γₓ /] (/[[ msyn1 ρ /] {Let NonRec bs t}) }>
-             <{ /[ γ'ₓ /] (/[[ msyn2 ρ /] t') }>).
-        { apply H_RC.
-          - apply H_Δ_ρ.
-          - apply H_γₓ_γ'ₓ.
-        }
-
-      (* push substitutions through, so we can use H_bs_terminate
-         to conclude that γ'ₓρ₂(t') ⇓ e'_f *)
-      rewrite msubstA_LetNonRec, msubst_LetNonRec in H_RC_.
-      rewrite RV_RC in H_RC_.
-      specialize (H_RC_ j2 (ltac: (lia)) _ H_bs_terminate).
-      rename H_RC_ into H_t'_terminates.
-
-      destruct H_t'_terminates as [e'_f [j' [H_t'_terminates RV_e_f_e'_f]]].
-      eexists.
-      eexists.
-      split.
-
-      * simpl in H_disjoint_b.
-        unfold disjoint in H_disjoint_b.
-        apply Forall_inv in H_disjoint_b.
-        rewrite Heqγ'ₓ in H_t'_terminates.
-        rewrite msubst_not_in_fv in H_t'_terminates.
-
-        apply H_t'_terminates.
-        rewrite fv_msubstA_fv.
-        assumption.
-      * eapply RV_monotone.
-        -- eassumption.
-        -- eassumption.
-        -- lia.
 Admitted.
 
 
