@@ -4,6 +4,7 @@
 	+make -f Makefile.coq $@
 
 all: Makefile.coq
+	+make -C lib/QuickChick
 	+make -f Makefile.coq all
 	sed -i 's/module Extracted/module PlutusIR.Certifier.Extracted/' hs-src/PlutusIR/Certifier/Extracted.hs
 
