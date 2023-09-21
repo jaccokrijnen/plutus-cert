@@ -392,8 +392,3 @@ Proof.
   apply dec_Term_Binding_sound.
 Qed.
 
-(* TODO, move this in separate files *)
-From Coq Require Import Extraction.
-Require Import Strings.Ascii.
-Extraction Language Haskell.
-Extraction "hs-src/PlutusIR/Certifier/Extracted.hs" dec_Term ascii_of_nat.

@@ -1,11 +1,10 @@
-From PlutusCert Require Import
-  DeadCode.DecideBool
-  UniqueBinders.DecOpt.
+From PlutusCert Require Import DeadCode.DecideBool.
+From PlutusCert Require Import UniqueBinders.DecOpt.
 
-From Coq Require Import Strings.Ascii.
 From Coq Require Import Extraction.
+Require Import Strings.Ascii.
 Extraction Language Haskell.
-Recursive Extraction
+Extraction "hs-src/PlutusIR/Certifier/Extracted.hs"
   dec_Term
   dec_unique
   ascii_of_nat.
