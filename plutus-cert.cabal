@@ -1,4 +1,4 @@
-cabal-version:      3.0
+cabal-version:      3.6
 name:               plutus-cert
 version:            0.1.0.0
 
@@ -19,9 +19,22 @@ maintainer:         j.o.g.krijnen@uu.nl
 -- A copyright notice.
 -- copyright:
 -- category:
-extra-source-files: CHANGELOG.md
-                    src/**/*.v
+extra-source-files: src/**/*.v
                     _CoqProject
+                    Makefile
+                    lib/QuickChick/_CoqProject
+                    lib/QuickChick/Makefile
+                    lib/QuickChick/Makefile.coq.local
+                    lib/coq-ctproxy/_CoqProject
+                    lib/coq-ctproxy/Makefile
+                    lib/**/*.v
+                    lib/**/*.ml
+                    lib/**/*.mlpack
+                    lib/**/*.mli
+                    lib/**/*.mll
+                    lib/**/*.mly
+                    lib/**/*.mlg
+                    lib/**/*.pl
 
 -- This makes cabal rebuild if any of these files change, which allow the
 -- custom setup to fire and rebuild the Haskell sources
