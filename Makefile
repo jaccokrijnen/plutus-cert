@@ -7,6 +7,8 @@ all: Makefile.coq
 	+make -C lib/QuickChick
 	+make -f Makefile.coq all
 	sed -i 's/module Extracted/module PlutusIR.Certifier.Extracted/' hs-src/PlutusIR/Certifier/Extracted.hs
+	sed -i 's/GHC.Base.unsafeCoerce/Unsafe.Coerce.unsafeCoerce/' hs-src/PlutusIR/Certifier/Extracted.hs
+	sed -i '/import qualified GHC.Base/a import qualified Unsafe.Coerce' hs-src/PlutusIR/Certifier/Extracted.hs
 
 clean: Makefile.coq
 	+make -f Makefile.coq cleanall
