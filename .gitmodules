@@ -1,6 +1,3 @@
-[submodule "iohk/plutus"]
-	path = iohk/plutus
-	url = git@github.com:jaccokrijnen/plutus.git
 [submodule "lib/coq-ctproxy"]
 	path = lib/coq-ctproxy
 	url = git@github.com:Xiving/coq-ctproxy.git

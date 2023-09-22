@@ -36,7 +36,9 @@ custom-setup
 
 library
     hs-source-dirs:   hs-src
-    build-depends:    base ^>=4.14.3.0
+
+    build-depends:
+      , base                        >=4.9     && <5
     exposed-modules:  PlutusIR.Certifier.Extracted
     autogen-modules:  PlutusIR.Certifier.Extracted
 
