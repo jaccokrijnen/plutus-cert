@@ -124,7 +124,7 @@ Proof with eauto_LR.
     destruct temp as [temp | temp].
     + destruct temp. exfalso. apply H. econstructor.
     + destruct temp.
-      Set Diffs "on".
+      (* Set Diffs "on". *)
       inversion H0. subst.
 
       eexists. eexists.

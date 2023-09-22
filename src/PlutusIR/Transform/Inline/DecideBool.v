@@ -49,7 +49,7 @@ Section Bindings.
     end
   .
 
-  Set Diffs "on".
+  (* Set Diffs "on". *)
 
   Lemma dec_Bindings_Rec_sound : ∀ Γ bs bs',
     dec_Bindings_Rec Γ bs bs' = true -> inline_Bindings_Rec Γ bs bs'.

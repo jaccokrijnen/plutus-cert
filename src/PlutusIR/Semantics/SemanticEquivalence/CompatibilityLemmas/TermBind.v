@@ -16,7 +16,7 @@ Require Import Coq.Lists.List.
 
 Local Open Scope list_scope.
 
-Set Diffs "on".
+(* Set Diffs "on". *)
 
 
 Lemma msubst_TermBind : forall ss stricty x T e,

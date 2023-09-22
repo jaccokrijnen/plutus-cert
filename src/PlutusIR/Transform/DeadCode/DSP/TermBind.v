@@ -30,7 +30,7 @@ Import ListNotations.
 
 Import Utf8_core.
 
-Set Diffs "on".
+(* Set Diffs "on". *)
 
 
 Section CompatibilityLemmas.
