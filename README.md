@@ -5,6 +5,8 @@ Translation certification of [Plutus](https://github.com/input-output-hk/plutus)
 # Status
 Work in progress
 
-# Literature
+# Reading
 
-[Translation Certification for Smart Contracts](https://arxiv.org/pdf/2201.04919.pdf) (FLOPS '22, extended version): architecture of translation relations
+[Translation Certification for Smart Contracts](https://arxiv.org/pdf/2201.04919.pdf) (Krijnen, J.O.G, Chakravarty, M.M., Keller, G. and Swierstra, W., FLOPS 2022): Translation relations for certifying Plutus compilations
+[Verified Compiler Optimisations](https://studenttheses.uu.nl/handle/20.500.12932/446) (Joris Dral, 2022 MSc thesis): Using step-indexed logical relations for verifying translation relations
+[Automatically Deriving Checkers for Compilation Verification ](https://studenttheses.uu.nl/bitstream/handle/20.500.12932/43855/master-thesis-bart-remmers.pdf?sequence=1&isAllowed=y) (Bart Remmers, 2023 MSc thesis): Generating decision procedures for translation relations
