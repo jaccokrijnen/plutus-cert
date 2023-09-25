@@ -51,7 +51,7 @@ library
     hs-source-dirs:   hs-src
 
     build-depends:
-      , base                        >=4.9     && <5
+      , base                        >=4.15     && <5
     exposed-modules:  PlutusIR.Certifier.Extracted
     autogen-modules:  PlutusIR.Certifier.Extracted
 
