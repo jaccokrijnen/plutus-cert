@@ -98,7 +98,7 @@ Fixpoint dec_Term (x y : Term) {struct x} : bool := match x, y with
 .
 
 
-Set Diffs "on".
+(* Set Diffs "on". *)
 
 Definition P_Term t := forall t', dec_Term t t' = true -> elim t t'.
 Definition P_Binding b := forall b', dec_Binding dec_Term b b' = true -> elim_binding b b'.

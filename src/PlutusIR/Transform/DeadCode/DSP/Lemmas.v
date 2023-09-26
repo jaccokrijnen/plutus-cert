@@ -18,7 +18,7 @@ Import ListNotations.
 Import UniqueBinders.
 Import Utf8_core.
 
-Set Diffs "on".
+(* Set Diffs "on". *)
 
 
 Definition disjoint {A} (xs ys : list A) : Prop :=

@@ -20,5 +20,3 @@ userhooks = simpleUserHooks {
 runMake :: IO ()
 runMake = procs "make" [] empty
 
--- runAgda :: IO ()
--- runAgda = procs "agda" ["--compile", "--ghc-dont-call-ghc", "--local-interfaces", "src/Main.lagda"] empty

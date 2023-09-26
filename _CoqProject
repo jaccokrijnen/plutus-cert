@@ -1,5 +1,6 @@
 -R lib/coq-ctproxy/src CTProxy
 -R lib/QuickChick/src QuickChick
+-I lib/QuickChick/plugin 
 
 -Q src PlutusCert
 
