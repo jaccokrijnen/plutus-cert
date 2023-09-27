@@ -16,8 +16,6 @@ Require Import Coq.Lists.List.
 
 Local Open Scope list_scope.
 
-(* Set Diffs "on". *)
-
 
 Lemma msubst_TermBind : forall ss stricty x T e,
     msubst_b ss (TermBind stricty (VarDecl x T) e) = TermBind stricty (VarDecl x T) (msubst ss e).

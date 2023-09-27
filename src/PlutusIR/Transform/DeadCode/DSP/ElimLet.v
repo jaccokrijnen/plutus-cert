@@ -34,8 +34,6 @@ Import NamedTerm.
 Import ListNotations.
 Import UniqueBinders.Term.
 
-(* Set Diffs "on". *)
-
     (*
     γ(ρ(Let (b::bs) t)) ⇓ e_f
     Let (γρb::γρbs) (γρt) ⇓ e_f

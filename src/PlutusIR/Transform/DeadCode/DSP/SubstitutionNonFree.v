@@ -18,7 +18,6 @@ Import ListNotations.
 Import UniqueBinders.
 Import Utf8_core.
 
-(* Set Diffs "on". *)
 
 Section Term.
 

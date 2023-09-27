@@ -18,8 +18,6 @@ Import ListNotations.
 Import UniqueBinders.
 Import Utf8_core.
 
-(* Set Diffs "on". *)
-
 
 Definition disjoint {A} (xs ys : list A) : Prop :=
   Forall (fun v => ~ In v ys) xs.
