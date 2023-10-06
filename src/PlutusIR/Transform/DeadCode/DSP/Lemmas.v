@@ -13,20 +13,13 @@ From PlutusCert Require Import SemanticEquivalence.LogicalRelation.
 From PlutusCert Require Import FreeVars.
 From PlutusCert Require Import Purity.
 From PlutusCert Require Import SubstitutionNonFree.
+From PlutusCert Require Import Util.List.
 
 Import ListNotations.
 Import UniqueBinders.
 Import Utf8_core.
 
 
-Definition disjoint {A} (xs ys : list A) : Prop :=
-  Forall (fun v => ~ In v ys) xs.
-
-
-Definition subset {A} (xs ys : list A) := forall x, In x xs -> In x ys.
-Notation "xs ⊆  ys" := (subset xs ys) (at level 11).
-
-Notation "xs \ ys" := (remove_many string_dec ys xs) (at level 10).
 
 (* Uniqueness of binders for open terms *)
 Definition unique_open Δ Γ t :=
@@ -118,64 +111,6 @@ Section SubstitutionLemmas.
 
 End SubstitutionLemmas.
 
-Section SubsetHelpers.
-
-  Lemma subset_cons {A} {xs ys} {x : A}:
-   xs ⊆ (x :: ys) ->
-   x ∉ xs ->
-   xs ⊆ ys.
-  Admitted.
-
-  Lemma remove_subset {xs ys} {x : string}:
-   xs ⊆ ys ->
-   (remove string_dec x xs) ⊆ ys.
-  Admitted.
-
-  Lemma subset_append {A} {xs ys zs : list A} :
-    xs ⊆ zs -> 
-    ys ⊆ zs ->
-    (xs ++ ys) ⊆ zs.
-  Admitted.
-
-  Lemma empty_subset {A} {xs : list A} :
-    [] ⊆ xs.
-  Admitted.
-
-  Lemma in_singleton_eq {A} {x y : A} :
-    x ∈ [y] ->
-    x = y.
-  Admitted.
-
-  Lemma subset_remove_many xs ys zs :
-    xs ⊆ (ys ++ zs) ->
-    xs \ ys  ⊆ zs.
-  Admitted.
-
-  Lemma subset_rev_l A (xs ys zs : list A):
-    xs ⊆ (rev ys ++ zs) ->
-    xs ⊆ (ys ++ zs).
-  Admitted.
-
-  Lemma subset_remove_many_l xs ys zs :
-    xs ⊆ zs ->
-    xs \ ys ⊆ zs.
-  Admitted.
-
-  Lemma remove_many_app_comm : ∀ xs ys zs, xs \ (ys ++ zs) = xs \ (zs ++ ys).
-  Admitted.
-
-  Lemma remove_many_app_r : ∀ xs ys zs, xs \ (ys ++ zs) = (xs \ ys) \ zs.
-  Admitted.
-
-  Lemma remove_many_app : ∀ xs ys zs, (ys ++ zs) \ xs = ys \ xs ++ zs \ xs.
-  Admitted.
-
-  Lemma remove_many_empty : ∀ xs,
-    [] \ xs = [].
-  Admitted.
-
-
-End SubsetHelpers.
 
 Section ScopingLemmas.
 

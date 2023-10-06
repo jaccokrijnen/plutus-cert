@@ -22,6 +22,7 @@ src/PlutusIR/Analysis/BoundVars.v
 src/PlutusIR/Analysis/BoundVars/DecOpt.v
 src/PlutusIR/Analysis/Purity.v
 src/PlutusIR/Analysis/WellScoped.v
+src/PlutusIR/Analysis/WellScoped/Lemmas.v
 
 src/PlutusIR/Transform/Equal.v
 src/PlutusIR/Transform/ThunkRecursions.v

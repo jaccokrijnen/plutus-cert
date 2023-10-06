@@ -83,15 +83,6 @@ Section ExistsBvbs.
 
   Import ListNotations.
 
-  Lemma In_singleton {A} (x y : A) :
-    In x [y] -> x = y.
-  Proof.
-    intros H_In.
-    inversion H_In.
-    - symmetry. assumption.
-    - contradiction.
-  Qed.
-
   Lemma In_NameIn x xs :
     In x xs <-> NameIn x xs.
   Proof with eauto using NameIn.
@@ -138,7 +129,7 @@ Section ExistsBvbs.
       + destruct b.
         * simpl in H.
           destruct v.
-          apply In_singleton in H.
+          apply in_singleton_eq in H.
           subst.
           apply ABI_Tm_Let_TermBind1.
         * simpl in H.

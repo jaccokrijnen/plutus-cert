@@ -9,6 +9,8 @@ Local Open Scope list_scope.
 Import ListNotations.
 From QuickChick Require Import QuickChick.
 
+Require Import Utf8_core.
+
 Notation "x ∈ xs" := (In x xs) (at level 40).
 Notation "x ∉ xs" := (~ (In x xs)) (at level 40).
 
@@ -18,6 +20,20 @@ Fixpoint lookup {X:Type} (k : string) (l : list (string * X)) : option X :=
   | nil => None
   | (j,x) :: l' => if j =? k then Datatypes.Some x else lookup k l'
   end.
+
+Definition remove_many {A} (A_dec : forall x y : A, {x = y} + {x <> y}) : list A -> list A -> list A :=
+  fun xs ys => fold_right (remove A_dec) ys xs.
+
+
+Lemma app_cons_app_app {A} xs ys (x : A) :
+  xs ++ x :: ys = xs ++ [x] ++ ys.
+Proof.
+  induction xs.
+  - reflexivity.
+  - simpl.
+    rewrite IHxs.
+    reflexivity.
+Qed.
 
 Lemma lookup_eq {X} k (v : X) kvs : lookup k ((k, v) :: kvs) = Some v.
 Proof.
@@ -168,6 +184,7 @@ Qed.
 Lemma append_permute A (m : list (string * A)) k (v : A) xs ys:
   ~ (In k (map fst xs)) -> inclusion (xs ++ ((k, v) :: ys)) ((k, v) :: xs ++ ys) .
 Admitted.
+  
 
 Definition equivalent {A : Type} (m m' : list (string * A)) :=
   inclusion m m' /\ inclusion m' m.
@@ -213,6 +230,178 @@ Add Parametric Relation (A : Type) : (list (string * A)) (equivalent)
 Definition my_setoid : Setoid := _.
 Global Instance equivalent_Setoid : forall (A : Type), Setoid (@equivalent A) := _.
 *)
+
+Definition subset {A} (xs ys : list A) := forall x, In x xs -> In x ys.
+
+Notation "xs \ ys" := (remove_many string_dec ys xs) (at level 10).
+
+Notation "xs ⊆  ys" := (subset xs ys) (at level 70).
+
+Section Subset.
+
+(* TODO: This should subsume `inclusion` and its lemmas, see if they can be
+   unified *)
+
+  Definition disjoint {A} (xs ys : list A) : Prop :=
+    Forall (fun v => ~ In v ys) xs.
+
+
+  Lemma subset_refl {A} {xs : list A} :
+    xs ⊆ xs.
+  Admitted.
+  Lemma subset_trans {A} {xs ys zs : list A} :
+    xs ⊆ ys ->
+    ys ⊆ zs ->
+    xs ⊆ zs.
+  Admitted.
+
+  Lemma In_append_or {A} {x} {xs ys : list A} :
+    x ∈ xs \/ x ∈ ys <->
+    x ∈ (xs ++ ys).
+  Admitted.
+
+  Lemma subset_or {A} {xs ys zs : list A} :
+    (∀ x, x ∈ xs -> x ∈ ys \/ x ∈ zs) <->
+    xs ⊆ ys ++ zs.
+  Admitted.
+
+  Lemma subset_cons {A} {xs ys} {x : A}:
+   xs ⊆ (x :: ys) ->
+   x ∉ xs ->
+   xs ⊆ ys.
+  Admitted.
+
+  Lemma remove_subset {xs ys} {x : string}:
+   xs ⊆ ys ->
+   (remove string_dec x xs) ⊆ ys.
+  Admitted.
+
+  Lemma subset_append {A} {xs ys zs : list A} :
+    xs ⊆ zs -> 
+    ys ⊆ zs ->
+    (xs ++ ys) ⊆ zs.
+  Admitted.
+
+  Lemma subset_closed_append {A} {xs ys zs ws : list A} :
+    xs ⊆ ys ->
+    zs ⊆ ws ->
+    xs ++ zs ⊆ ys ++ ws.
+  Admitted.
+
+  Lemma subset_closed_append_l {A} {xs ys zs : list A} :
+    xs ⊆ ys ->
+    zs ++ xs ⊆ zs ++ ys.
+  Admitted.
+
+  Lemma subset_closed_append_r {A} {xs ys zs : list A}:
+    xs ⊆ ys ->
+    xs ++ zs ⊆ ys ++ zs.
+  Admitted.
+
+
+  Lemma subset_append_l {A} (xs ys zs : list A) :
+    xs ⊆ ys ->
+    xs ⊆ zs ++ ys.
+  Admitted.
+
+  Lemma subset_append_r {A} (xs ys zs : list A) :
+    xs ⊆ ys ->
+    xs ⊆ ys ++ zs.
+  Admitted.
+
+  Lemma subset_cons_remove {A} (x : A) xs eq_dec :
+    xs ⊆ (x :: remove eq_dec x xs).
+  Admitted.
+
+  Lemma empty_subset {A} {xs : list A} :
+    [] ⊆ xs.
+  Admitted.
+
+
+  Lemma in_remove_many x xs ys :
+    x ∈ xs /\ x ∉ ys <->
+    x ∈ xs \ ys.
+  Admitted.
+
+  Lemma in_singleton_eq {A} {x y : A} :
+    x ∈ [y] ->
+    x = y.
+  Proof.
+    intros H_In.
+    inversion H_In.
+    - symmetry. assumption.
+    - contradiction.
+  Qed.
+
+  Lemma In_singleton {A} {x : A} :
+    x ∈ [x].
+  Proof.
+    constructor. 
+    reflexivity.
+  Qed.
+
+
+  Lemma subset_remove_many_append xs ys :
+    xs ⊆ (ys ++ xs \ ys).
+  Admitted.
+
+  Lemma subset_remove_many xs ys zs :
+    xs ⊆ (ys ++ zs) ->
+    xs \ ys  ⊆ zs.
+  Admitted.
+
+  Lemma subset_rev_l {A} (xs ys : list A) :
+    xs ⊆ ys <-> rev xs ⊆ ys.
+  Admitted.
+
+  Lemma subset_rev_r {A} (xs ys : list A) :
+    xs ⊆ ys <-> xs ⊆ rev ys.
+  Admitted.
+
+  Lemma subset_rev_append_l A (xs ys zs : list A):
+    xs ⊆ rev ys ++ zs ->
+    xs ⊆ ys ++ zs.
+  Admitted.
+
+  Lemma subset_rev_append_l' A (xs ys zs : list A):
+    xs ⊆ ys ++ zs ->
+    xs ⊆ rev ys ++ zs.
+  Admitted.
+
+  Lemma subset_remove_many_l xs ys zs :
+    xs ⊆ zs ->
+    xs \ ys ⊆ zs.
+  Admitted.
+
+  Lemma remove_many_app_comm : ∀ xs ys zs, xs \ (ys ++ zs) = xs \ (zs ++ ys).
+  Admitted.
+
+  Lemma remove_many_app_r : ∀ xs ys zs, xs \ (ys ++ zs) = (xs \ ys) \ zs.
+  Admitted.
+
+  Lemma remove_many_app : ∀ xs ys zs, (ys ++ zs) \ xs = ys \ xs ++ zs \ xs.
+  Admitted.
+
+  Lemma remove_many_empty : ∀ xs,
+    [] \ xs = [].
+  Admitted.
+
+
+End Subset.
+
+Create HintDb subset.
+Hint Resolve
+  subset_refl
+  remove_subset
+  subset_append
+  subset_remove_many
+  subset_remove_many_append
+  subset_closed_append_l
+  subset_closed_append_r
+  subset_append_l
+  subset_append_r
+  subset_cons_remove
+  empty_subset : subset.
 
 
 Fixpoint lookup' {A X : Type} (A_eqb : A -> A -> bool) (k : A) (l : list (A * X)) : option X :=
