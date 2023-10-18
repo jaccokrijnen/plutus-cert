@@ -18,17 +18,11 @@ From PlutusCert Require Import
   Util.List
 .
 
+Import NamedTerm.
 
 Module Ty.
 
-
-  Section FreeVars.
-  Context
-    {tyvar : Set}
-    (tyvar_dec : forall x y : tyvar, {x = y} + {x <> y})
-    .
-
-  Function ftv (T : ty tyvar tyvar) : list tyvar :=
+  Function ftv (T : Ty) : list string :=
     match T with
     | Ty_Var X =>
         [X]
@@ -37,72 +31,59 @@ Module Ty.
     | Ty_IFix F T =>
         ftv F ++ ftv T
     | Ty_Forall X K T' =>
-        remove tyvar_dec X (ftv T')
+        remove string_dec X (ftv T')
     | Ty_Builtin u =>
         []
     | Ty_Lam X K1 T' =>
-        remove tyvar_dec X (ftv T')
+        remove string_dec X (ftv T')
     | Ty_App T1 T2 =>
         ftv T1 ++ ftv T2
     end.
-  End FreeVars.
 
 End Ty.
 
 
 Module Term.
-  Section FreeVars.
-
-  (* Parametrized for _named_ binders (not de Bruijn) *)
-  Context
-    {var tyvar : Set}
-    (var_dec : forall x y : var, {x = y} + {x <> y})
-    (tyvar_dec : forall x y : tyvar, {x = y} + {x <> y})
-    .
-
-  Definition binding' := binding var tyvar var tyvar.
 
   Section Bindings.
 
     (* It becomes a parameter to both fvbs and the generated
        fvbs_equation *)
-    Context (fvb : Recursivity -> binding' -> list var).
+    Context (fvb : Recursivity -> Binding -> list string).
 
-    Function fvbs  rec (bs : list binding') : list var :=
-    match bs with
-      | nil     => []
-      | b :: bs =>
-         match rec with
-           | Rec    =>
-               remove_many var_dec (bvbs (b :: bs)) (fvb Rec b)
-               ++ remove_many var_dec (bvbs (b :: bs)) (fvbs Rec bs)
-           | NonRec =>
-               fvb NonRec b
-               ++ remove_many var_dec (bvb b) (fvbs NonRec bs)
-         end
-    end.
+    Function fvbs  rec (bs : list Binding) : list string :=
+      match bs with
+       | nil     => []
+        | b :: bs =>
+           match rec with
+             | Rec    =>
+                 (fvb Rec b ++ fvbs Rec bs) \ (bvbs (b :: bs))
+             | NonRec =>
+                 fvb NonRec b ++ (fvbs NonRec bs \ (bvb b))
+           end
+      end.
 
   End Bindings.
 
-  Function fv (t : term var tyvar var tyvar) : list var :=
-   match t with
-     | Let rec bs t => fvbs fvb rec bs ++ remove_many var_dec (bvbs bs) (fv t)
-     | (LamAbs n ty t)   => remove var_dec n (fv t)
-     | (Var n)           => [n]
-     | (TyAbs n k t)     => fv t
-     | (Apply s t)       => fv s ++ fv t
-     | (TyInst t ty)     => fv t
-     | (IWrap ty1 ty2 t) => fv t
-     | (Unwrap t)        => fv t
-     | (Error ty)        => []
-     | (Constant v)      => []
-     | (Builtin f)       => []
-     end
+  Function fv (t : Term) : list string :=
+    match t with
+     | Let rec bs t    => fvbs fvb rec bs ++ remove_many string_dec (bvbs bs) (fv t)
+     | LamAbs n ty t   => remove string_dec n (fv t)
+     | Var n           => [n]
+     | TyAbs n k t     => fv t
+     | Apply s t       => fv s ++ fv t
+     | TyInst t ty     => fv t
+     | IWrap ty1 ty2 t => fv t
+     | Unwrap t        => fv t
+     | Error ty        => []
+     | Constant v      => []
+     | Builtin f       => []
+   end
 
-  with fvb rec (b : binding') : list var :=
+  with fvb rec (b : Binding) : list string :=
     match b with
       | TermBind _ (VarDecl v _) t => match rec with
-        | Rec    => remove var_dec v (fv t)
+        | Rec    => remove string_dec v (fv t)
         | NonRec => fv t
         end
       | _        => []
@@ -114,7 +95,7 @@ Module Term.
     fvb rec b =
     match b with
       | TermBind _ (VarDecl v _) t => match rec with
-        | Rec    => remove var_dec v (fv t)
+        | Rec    => remove string_dec v (fv t)
         | NonRec => fv t
         end
       | _        => []
@@ -127,18 +108,18 @@ Module Term.
 
 
   Section Bindings.
-  Context (ftvb : Recursivity -> binding' -> list tyvar).
+  Context (ftvb : Recursivity -> Binding -> list string).
 
-  Function ftvbs rec bs : list tyvar :=
+  Function ftvbs rec bs : list string :=
     match bs with
       | nil => []
       | b :: bs => match rec with
         | Rec =>
-             remove_many tyvar_dec (btvbs (b :: bs)) (ftvb Rec b)
-          ++ remove_many tyvar_dec (btvbs (b :: bs)) (ftvbs NonRec bs)
+             remove_many string_dec (btvbs (b :: bs)) (ftvb Rec b)
+          ++ remove_many string_dec (btvbs (b :: bs)) (ftvbs NonRec bs)
         | NonRec =>
              ftvb NonRec b
-          ++ remove_many tyvar_dec (btvb b) (ftvbs NonRec bs)
+          ++ remove_many string_dec (btvb b) (ftvbs NonRec bs)
         end
     end.
 
@@ -162,39 +143,39 @@ Module Term.
   Qed.
   *)
 
-  Definition ftvc (c : constr tyvar var tyvar) : list tyvar :=
+  Definition ftvc (c : constructor) : list string :=
     match c with
-      | Constructor (VarDecl _ τ) _ => Ty.ftv tyvar_dec τ
+      | Constructor (VarDecl _ τ) _ => Ty.ftv τ
     end.
 
-  Function ftv (t : term var tyvar var tyvar) : list tyvar :=
+  Function ftv (t : Term) : list string :=
    match t with
-     | Let rec bs t => ftvbs ftvb rec bs ++ remove_many tyvar_dec (btvbs bs) (ftv t)
-     | LamAbs n τ t    => Ty.ftv tyvar_dec τ ++ ftv t
+     | Let rec bs t    => ftvbs ftvb rec bs ++ remove_many string_dec (btvbs bs) (ftv t)
+     | LamAbs n τ t    => Ty.ftv τ ++ ftv t
      | Var n           => []
-     | TyAbs α k t     => remove tyvar_dec α (ftv t)
+     | TyAbs α k t     => remove string_dec α (ftv t)
      | Apply s t       => ftv s ++ ftv t
-     | TyInst t τ      => Ty.ftv tyvar_dec τ ++ ftv t
-     | IWrap τ1 τ2 t   => Ty.ftv tyvar_dec τ1 ++ Ty.ftv tyvar_dec τ2 ++ ftv t
+     | TyInst t τ      => Ty.ftv τ ++ ftv t
+     | IWrap τ1 τ2 t   => Ty.ftv τ1 ++ Ty.ftv τ2 ++ ftv t
      | Unwrap t        => ftv t
-     | Error τ         => Ty.ftv tyvar_dec τ
+     | Error τ         => Ty.ftv τ
      | Constant v      => []
      | Builtin f       => []
      end
 
-  with ftvb rec (b : binding') : list tyvar :=
+  with ftvb rec (b : Binding) : list string :=
     match b with
-      | TermBind s (VarDecl _ τ) t => Ty.ftv tyvar_dec τ ++ ftv t
-      | TypeBind (TyVarDecl α k) τ  => Ty.ftv tyvar_dec τ
+      | TermBind s (VarDecl _ τ) t => Ty.ftv τ ++ ftv t
+      | TypeBind (TyVarDecl α k) τ  => Ty.ftv τ
       | DatatypeBind (Datatype (TyVarDecl α _) params m cs) => concat (map ftvc cs)
     end
     .
 
-  Lemma ftvb_equation rec b :  
+  Lemma ftvb_equation rec b :
     ftvb rec b =
     match b with
-      | TermBind s (VarDecl _ τ) t => Ty.ftv tyvar_dec τ ++ ftv t
-      | TypeBind (TyVarDecl α k) τ  => Ty.ftv tyvar_dec τ
+      | TermBind s (VarDecl _ τ) t => Ty.ftv τ ++ ftv t
+      | TypeBind (TyVarDecl α k) τ => Ty.ftv τ
       | DatatypeBind (Datatype (TyVarDecl α _) params m cs) => concat (map ftvc cs)
     end.
   Proof.
@@ -202,5 +183,4 @@ Module Term.
     all: reflexivity.
   Qed.
 
-  End FreeVars.
 End Term.

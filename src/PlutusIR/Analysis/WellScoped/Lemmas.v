@@ -11,6 +11,8 @@ Import ListNotations.
 
 Import FreeVars.Term.
 
+Import NamedTerm.
+
 Section Weakening.
 
   Lemma weaken_well_scoped_Ty {Δ Δ' τ} :
@@ -63,16 +65,16 @@ Hint Resolve
    : weakening.
 
 Definition P_Term t :=
-  ftv string_dec t ,, fv string_dec t |-+ t.
+  ftv t ,, fv t |-+ t.
 
 Definition P_Binding b := forall rec,
 match rec with
-  | NonRec => ftvb string_dec rec b ,, fvb string_dec rec b |-ws_ok_b b
-  | Rec    => btvb b ++ ftvb string_dec rec b ,, bvb b ++ fvb string_dec rec b |-ws_ok_b b
+  | NonRec => ftvb rec b ,, fvb rec b |-ws_ok_b b
+  | Rec    => btvb b ++ ftvb rec b ,, bvb b ++ fvb rec b |-ws_ok_b b
 end.
 
 
-Lemma ftv_well_scoped_Ty τ : Ty.ftv string_dec τ |-* τ.
+Lemma ftv_well_scoped_Ty τ : Ty.ftv τ |-* τ.
 Proof.
   induction τ.
   all: rewrite Ty.ftv_equation.
@@ -111,7 +113,7 @@ Qed.
 
 Lemma P_Binding_P_Bindings bs :
   Forall P_Binding bs ->
-  ftvbs string_dec (ftvb string_dec) NonRec bs ,, fvbs string_dec (fvb string_dec) NonRec bs
+  ftvbs ftvb NonRec bs ,, fvbs fvb NonRec bs
     |-ws_oks_nr bs.
 Proof.
   intros H_bs.
@@ -137,9 +139,9 @@ Qed.
 
 Section LetRecLemmas.
 
-  Lemma ftvbs_app {var} (bs bs' : list (binding var string var string)) :
-    ftvbs string_dec (ftvb string_dec) Rec (bs ++ bs')
-    ⊆ ftvbs string_dec (ftvb string_dec) Rec (bs' ++ bs).
+  Lemma ftvbs_app (bs bs' : list Binding) :
+    ftvbs ftvb Rec (bs ++ bs')
+    ⊆ ftvbs ftvb Rec (bs' ++ bs).
   Proof.
   Admitted.
 
@@ -197,8 +199,8 @@ Proof.
         assert (exists bs', bs = bs') by (exists bs; reflexivity).
         destruct H1 as [bs' H_bs'].
         remember 
-          (rev (BoundVars.btvbs bs) ++ ftv string_dec (Let Rec bs t)) as Δ.
-        remember (rev (BoundVars.bvbs bs) ++ fv string_dec (Let Rec bs t))
+          (rev (BoundVars.btvbs bs) ++ ftv (Let Rec bs t)) as Δ.
+        remember (rev (BoundVars.bvbs bs) ++ fv (Let Rec bs t))
           as Γ.
         rewrite H_bs' in HeqΔ, HeqΓ.
         assert (H_ex : exists bs_init, bs' = bs_init ++ bs).

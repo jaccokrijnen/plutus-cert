@@ -40,7 +40,7 @@ Require Import Lia.
 Import ListNotations.
 
 #[local]
-Definition ftv := Ty.ftv string_dec.
+Definition ftv := Ty.ftv.
 
 (** Assume that we compute the substitution of U for X in (LamAbs Y K T).
     We reduce the  problem of generating a fresh type variable to generating

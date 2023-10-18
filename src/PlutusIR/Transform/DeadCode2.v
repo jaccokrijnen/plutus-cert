@@ -17,8 +17,8 @@ Import NamedTerm.
 Import UniqueBinders.
 Import ListNotations.
 
-Definition fv : Term -> list string := Term.fv string_dec.
-Definition ftv : Term -> list string := Term.ftv string_dec.
+Definition fv : Term -> list string := Term.fv.
+Definition ftv : Term -> list string := Term.ftv.
 
 Definition disjoint {A} (xs ys : list A) : Prop :=
   Forall (fun v => ~ In v ys) xs.

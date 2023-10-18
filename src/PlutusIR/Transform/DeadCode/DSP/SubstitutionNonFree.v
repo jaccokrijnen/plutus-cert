@@ -23,10 +23,10 @@ Section Term.
 
   Import FreeVars.Term.
 
-  Definition fv : Term -> list string := (Term.fv string_dec).
-  Definition ftv : Term -> list string := (Term.ftv string_dec).
-  Definition fv_binding : Recursivity -> Binding -> list string := (Term.fvb string_dec).
-  Definition fv_bindings : Recursivity -> list Binding -> list string := (Term.fvbs string_dec fv_binding).
+  Definition fv : Term -> list string := Term.fv.
+  Definition ftv : Term -> list string := Term.ftv.
+  Definition fv_binding : Recursivity -> Binding -> list string := Term.fvb.
+  Definition fv_bindings : Recursivity -> list Binding -> list string := Term.fvbs fv_binding.
 
 
   Lemma not_in_app : ∀ A (x : A) xs xs',

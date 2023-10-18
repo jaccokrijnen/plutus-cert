@@ -19,6 +19,8 @@ Import ListNotations.
 Import UniqueBinders.
 Import Utf8_core.
 
+Import FreeVars.Term.
+
 
 
 (* Uniqueness of binders for open terms *)
@@ -125,14 +127,51 @@ Section ScopingLemmas.
 
 
 
-  (* Specialized equation of fv_bindings in case of Let Rec *)
-  Lemma fv_bindings_eq bs :
-    fv_bindings Rec bs = (List.concat (map (fv_binding Rec) bs)) \ (bvbs bs).
+  Lemma append_distr_remove_many xs ys zs :
+    (xs ++ ys) \ zs = (xs \ zs) ++ (ys \ zs).
+  Admitted.
+
+  Lemma remove_assoc xs ys zs :
+    (xs \ ys) \ zs = xs \ (ys ++ zs).
+  Admitted.
+
+  Lemma remove_swap xs ys zs :
+    (xs \ ys) \ zs = (xs \ zs) \ ys.
+  Admitted.
+
+  Lemma remove_idemp xs ys :
+    (xs \ ys) \ ys = xs \ ys.
+  Admitted.
+
+  Lemma remove_many_nil xs :
+    [] \ xs = [].
   Proof.
-    destruct bs.
-    - reflexivity.
-    - unfold fv_bindings. rewrite FreeVars.Term.fvbs_equation.
-      reflexivity.
+    induction xs.
+    all: simpl; try rewrite IHxs; auto.
+  Qed.
+
+
+  (* Convenient *)
+  Lemma fv_bindings_eq bs :
+    fv_bindings Rec bs = List.concat (map (fvb Rec) bs) \ (bvbs bs).
+  Proof.
+    unfold fv_bindings.
+    (* generalize (bvbs bs) as bvbs_bs.*)
+    induction bs as [ | b bs].
+    - simpl. reflexivity.
+    - 
+    simpl.
+    setoid_rewrite append_distr_remove_many.
+    f_equal.
+    rewrite IHbs.
+    setoid_rewrite bvbs_cons.
+    rewrite remove_swap.
+    rewrite remove_assoc.
+    rewrite <- app_assoc.
+    setoid_rewrite <- remove_assoc.
+    rewrite <- remove_assoc.
+    rewrite remove_idemp.
+    reflexivity.
   Qed.
 
   Lemma fv_binding_Rec__fv_bindings_Rec bs Γ :
@@ -316,6 +355,8 @@ Section ScopingLemmas.
     revert Δ Γ.
     apply (proj1 well_scoped_fv t).
   Qed.
+
+
 
   (* The free type variables of a well-scoped term appear in Γ *)
   Lemma well_scoped_ftv {Δ Γ t}:
