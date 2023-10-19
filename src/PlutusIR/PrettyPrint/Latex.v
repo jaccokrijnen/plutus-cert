@@ -3,11 +3,15 @@ From MetaCoq.Template Require Import
   utils
   monad_utils
   Checker
-  All.
+  All
+  Pretty
+  .
 
+    (*
 From PlutusCert Require Import
   Pretty
 .
+  *)
 
 From Coq Require Import
   Strings.String
@@ -20,6 +24,7 @@ Definition enclose l r s := l ++ s ++ r.
 Definition newline := "
 ".
 
+(* Escape special LaTeX characters *)
 Definition escape s :=
   let replace (c : ascii) :=
     if Ascii.eqb c "_"
@@ -59,15 +64,24 @@ Definition vspace h := latex_simple_command "vspace" h.
 
 Definition inferrule name hypos conc := latex_command "inferrule*" ["Right=" ++ name] [concat (" " ++ linebreak ++ newline) hypos; conc].
 
-Definition quote_ind {A} (t : A) :=
+Definition quote_ind {A} (t : A) : TemplateMonad (global_env_ext × inductive) :=
   '(Σ, ty_closed) <- tmQuoteRec t ;;
   match ty_closed with
-    | tInd ind _ => ret (TemplateEnvironment.empty_ext Σ, ind)
+    | tInd ind _ => ret (empty_ext Σ, ind)
     | _ => tmFail "Not an inductive type"
   end
     .
 
 Definition rule := string * list (context * aname * term) * (context * term).
+
+
+(*
+  Consider terms of the form
+
+    (x1 : t_1) -> ... -> t_n
+
+  Returns all the argument types and return type in their respective contexts
+*)
 Fixpoint ty_params Γ (t : term) : list (context * aname * term) * (context * term) :=
   match t with
     | tProd x σ τ =>
@@ -78,29 +92,56 @@ Fixpoint ty_params Γ (t : term) : list (context * aname * term) * (context * te
   end.
 
 (* Constructing rules *)
+
+(* Constructor to rule *)
 Definition ctor_to_rule mindb ind (ctor : ident * term * nat) : rule :=
   match ctor with
     | (name , ty , _) =>
         let ty' := type_of_constructor mindb ctor (ind, 0) [] in
-        let '(args, r) := ty_params [] ty' in (name, args, r)
+        let '(args, r) := ty_params [] ty'
+        in (name, args, r)
   end.
 
+(* Inductive to rules *)
 Definition ind_rules mindb ind (indb : one_inductive_body) : list rule :=
   map (ctor_to_rule ind mindb) (ind_ctors indb).
 
+(* Mutual inductive to rules *)
 Definition mind_rules ind (mindb : mutual_inductive_body) : list (list rule) :=
   map (ind_rules ind mindb) (ind_bodies mindb).
+
+Definition print_var n Γ : option string :=
+  match nth_error n Γ with
+    | None => None
+    | Some (mkdecl (mkBindAnn (nNamed str) _) _ _) => Some str
+    | _ => Some "_"
+  end.
+
+    (*
+Fixpoint print_term (Σ : global_env) Γ (useParens : bool) (t : term) :=
+  match t with
+    | tRel n =>
+      match print_var Γ n with
+        | Some str => str
+        | None => "<unbound variable: " ++ string_of_nat n ++ " with length Γ = " ++ string_of_nat (List.length Γ ) ++">"
+      end
+    | tApp t ts =>    enclose "(" ")" (print_term Σ Γ true t)
+                   ++ " "
+                   ++ concat " " (map (enclose "(" ")"  ∘ print_term Σ Γ true) ts)
+    | _ => ""
+  end.
+    *)
 
 Definition print_hypo Σ '(Γ, binder, t) : string :=
   let binder_str := match binder with
     | mkBindAnn (nNamed x) rel => texttt x ++ " : "
     | mkBindAnn _ _ => ""
   end in
-  binder_str ++ texttt (Pretty.print_term Σ Γ true t)
+  binder_str ++ texttt (print_term Σ Γ true t)
 .
 
 Definition print_conclusion Σ '(Γ, t) : string :=
-  texttt (Pretty.print_term Σ Γ true t).
+  texttt (print_term Σ Γ true t).
 
 
 Definition sep := (newline ++ vspace "2em" ++ newline).
