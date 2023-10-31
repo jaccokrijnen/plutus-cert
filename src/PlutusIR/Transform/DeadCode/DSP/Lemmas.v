@@ -195,18 +195,13 @@ Section ScopingLemmas.
       + auto.
   Qed.
 
-  (* Use fv_equation to unfold fv one step *)
-  Ltac simpl_fv :=
-      unfold fv; rewrite Term.fv_equation
-    .
-
   Ltac simpl_fvb :=
       unfold fv_binding; rewrite Term.fvb_equation
     .
 
   Ltac use_IH :=
       intros;
-      simpl_fv;
+      rewrite fv_equation;
       inversion H_ws; subst;
      eauto.
 
@@ -225,8 +220,8 @@ Section ScopingLemmas.
     all: simpl; unfold P_Term; unfold P_Binding.
     - (* Let *)
       intros rec bs t IH_bs IH_t Δ Γ H_ws.
-      simpl_fv.
-      fold fv_binding fv_bindings fv.
+      rewrite Term.fv_equation.
+
       inversion H_ws; subst.
       + (* NonRec *)
         apply subset_append.
@@ -250,7 +245,7 @@ Section ScopingLemmas.
              *** apply subset_remove_many. eauto.
        * (* Free vars in (t \ bvbs) are in Γ*)
          assert (fv t ⊆ (rev (bvbs bs) ++ Γ)) by eauto.
-         apply subset_rev_l in H.
+         apply subset_rev_append_l in H.
          eauto using subset_remove_many.
 
       + (* Rec *)
@@ -264,18 +259,18 @@ Section ScopingLemmas.
 
           specialize (H4 b H_b_bs).
           eapply IH_bs with (rec := Rec) in H4.
-          ** apply subset_rev_l in H4.
+          ** apply subset_rev_append_l in H4.
              apply subset_remove_many.
              assumption.
           ** assumption.
         * apply IH_t in H5.
-          apply subset_rev_l in H5.
+          apply subset_rev_append_l in H5.
           apply subset_remove_many.
           assumption.
 
     - (* Var *)
       intros x Δ Γ H_ws.
-      unfold fv; rewrite Term.fv_equation.
+      rewrite Term.fv_equation.
       inversion H_ws. subst.
       unfold subset.
       intros x' H_in.
@@ -289,11 +284,11 @@ Section ScopingLemmas.
     - (* LamAbs *)
       intros x τ t IH_t Δ Γ.
       intro.
-      simpl_fv.
+      rewrite fv_equation.
       inversion H_ws; subst.
       specialize (IH_t _ _ H3).
 
-      remember (remove string_dec x (Term.fv string_dec t)) as fv'.
+      remember (remove string_dec x (Term.fv t)) as fv'.
 
       assert (x ∉ fv'). {
         subst fv'.
