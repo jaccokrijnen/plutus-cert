@@ -233,7 +233,7 @@ Section Term.
     all: try (
       unfold P_Term in *;
       intros;
-      rewrite subst_equation;
+      rewrite subst_unfold;
       f_equal;
       eauto with not_in
    ).
@@ -290,10 +290,19 @@ Section Term.
       + reflexivity.
       + f_equal; eauto with not_in.
 
+    (* Constr *)
+    - admit. (* TODO *)
+
+    (* Case t *)
+    - admit. (* TODO *)
+
+    (* Case ts *)
+    - admit. (* TODO *)
+
     (* TermBind *)
     - unfold P_Term, P_Binding.
       intros.
-      rewrite subst_b_equation.
+      rewrite subst_b_unfold.
       destruct v as [y ty].
       destruct (x =? y)%string eqn:H_eqb.
       + unfold fv_binding in *.

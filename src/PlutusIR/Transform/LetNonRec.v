@@ -65,6 +65,8 @@ Fixpoint compile_term (t : Term) : Term := match t with
   | Constant c      => Constant c
   | Builtin f       => Builtin f
   | Error τ         => Error τ
+  | Constr i ts     => Constr i (map compile_term ts)
+  | Case t ts       => Case (compile_term t) (map compile_term ts)
   end
 
 with compile_NonRec_Binding (b : Binding) : Term -> Term :=

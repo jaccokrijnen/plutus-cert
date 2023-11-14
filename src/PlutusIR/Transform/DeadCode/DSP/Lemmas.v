@@ -324,6 +324,12 @@ Section ScopingLemmas.
     - (* Unwrap *)
       use_IH.
 
+    - (* Constr *)
+      admit.
+
+    - (* Case *)
+      admit.
+
     - (* TermBind *)
       intros s [x ty] t IH_t Δ Γ rec H_ws_b.
       destruct rec.
@@ -342,7 +348,7 @@ Section ScopingLemmas.
       simpl_fvb.
       apply empty_subset.
 
-  Qed.
+  Admitted.
 
   Corollary well_scoped_fv_term t Δ Γ :
     (Δ,, Γ |-+ t) -> 

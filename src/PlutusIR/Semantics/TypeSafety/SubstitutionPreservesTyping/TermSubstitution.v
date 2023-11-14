@@ -281,7 +281,10 @@ Proof with eauto.
       apply T_LamAbs...
       apply Typing.weakening_term with (Delta' := Delta) (Gamma' := (x, U) :: (s, T1n) :: Gamma) in H11.
       all: auto using inclusion_refl, cons_permute...
-Qed.
+
+  - admit. (* Constr *)
+  - admit. (* Case *)
+Admitted.
 
 Corollary substitution_preserves_typing__Term : forall t Delta Gamma x U Un v T,
     Delta ,, ((x, U) :: Gamma)  |-+ t : T ->

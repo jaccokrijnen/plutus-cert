@@ -116,6 +116,27 @@ Inductive appears_bound_in_tm (x : string) : Term -> Prop :=
   | ABI_Tm_Unwrap : forall t,
       appears_bound_in_tm x t ->
       appears_bound_in_tm x (Unwrap t)
+
+  | ABI_Tm_Constr_Cons_Head : forall i t ts,
+        appears_bound_in_tm x t ->
+        appears_bound_in_tm x (Constr i (t :: ts))
+  | ABI_Tm_Constr_Cons_Tail : forall i t ts,
+        appears_bound_in_tm x (Constr i ts) ->
+        appears_bound_in_tm x (Constr i (t :: ts))
+  | ABI_Tm_Constr_Nil : forall i t,
+        appears_bound_in_tm x t ->
+        appears_bound_in_tm x (Constr i (t :: nil))
+
+  | ABI_Tm_Case_Cons_Tail : forall t t1 ts,
+        appears_bound_in_tm x (Case t ts) ->
+        appears_bound_in_tm x (Case t (t1 :: ts))
+  | ABI_Tm_Case_Cons_Head : forall t t1 ts,
+        appears_bound_in_tm x t1 ->
+        appears_bound_in_tm x (Case t (t1 :: ts))
+  | ABI_Tm_Case_Nil : forall t,
+        appears_bound_in_tm x t ->
+        appears_bound_in_tm x (Case t nil)
+
   | ABI_Tm_Let_Nil : forall recty t0,
       appears_bound_in_tm x t0 ->
       appears_bound_in_tm x (Let recty nil t0)
@@ -170,6 +191,24 @@ Inductive appears_bound_in_ann (X : string) : Term -> Prop :=
   | ABI_Ann_Unwrap : forall t,
       appears_bound_in_ann X t ->
       appears_bound_in_ann X (Unwrap t)
+
+  | ABI_Ann_Constr_Nil : forall i t,
+      appears_bound_in_ann X t ->
+      appears_bound_in_ann X (Constr i (t :: nil))
+  | ABI_Ann_Constr_Cons : forall i t ts,
+      appears_bound_in_ann X (Constr i ts) ->
+      appears_bound_in_ann X (Constr i (t :: ts))
+
+  | ABI_Ann_Case_Cons_Head : forall t t1 ts,
+        appears_bound_in_ann X t1 ->
+        appears_bound_in_ann X (Case t (t1 :: ts))
+  | ABI_Ann_Case_Cons_Tail : forall t t1 ts,
+        appears_bound_in_ann X (Case t (t1 :: ts)) ->
+        appears_bound_in_ann X (Case t (t1 :: ts))
+  | ABI_Ann_Case_Nil : forall t,
+        appears_bound_in_ann X t ->
+        appears_bound_in_ann X (Case t [])
+
   | ABI_Ann_Error : forall T,
       appears_bound_in_ty X T ->
       appears_bound_in_ann X (Error T)
@@ -266,6 +305,8 @@ Fixpoint bound_vars (t : term') : list var :=
    | (Error ty)        => []
    | (Constant v)      => []
    | (Builtin f)       => []
+   | (Constr i ts)     => concat (map bound_vars ts)
+   | (Case t ts)       => bound_vars t ++ concat (map bound_vars ts)
    end
 with bound_vars_binding (b : binding') : list var := match b with
   | TermBind _ (VarDecl v _) t => [v] ++ bound_vars t
@@ -293,6 +334,8 @@ Fixpoint btv (t : term') : list tyvar :=
    | Error ty        => Ty.btv ty
    | Constant v      => []
    | Builtin f       => []
+   | (Constr i ts)   => concat (map btv ts)
+   | (Case t ts)     => btv t ++ concat (map btv ts)
    end
 with btv_binding (b : binding') : list tyvar := match b with
   | TermBind s (VarDecl v ty) t =>
@@ -373,6 +416,8 @@ Proof with eauto using appears_bound_in_tm.
   - intros. cbv. auto.
   - tac ABI_Tm_IWrap.
   - tac ABI_Tm_Unwrap.
+  - admit. (* TODO: Constr *)
+  - admit. (* TODO: Case *)
   - intros.
     unfold P_Binding.
     intros.
@@ -401,7 +446,7 @@ Proof with eauto using appears_bound_in_tm.
       destruct a.
       destruct v.
       induction H; subst; simpl...
-Qed.
+Admitted.
 
 Inductive decide {a : Type} (P : a -> Type) (x : a) :=
   | dec_False : notT (P x) -> decide P x

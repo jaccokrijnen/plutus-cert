@@ -343,6 +343,12 @@ Proof.
   (* Unwrap *)
   admit.
 
+  (* Constr *)
+  admit.
+
+  (* Case *)
+  admit.
+
   (* TermBind*)
   {
     intros s v t H_t.
