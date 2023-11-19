@@ -84,7 +84,16 @@ Function subst (x : string) (s : Term) (t : Term) {struct t} : Term :=
       Case (subst x s t) (map (subst x s) ts)
   end
 
-with subst_b (x : string) (s : Term) (b : Binding) {struct b} : Binding :=
+with
+  (* Note [Assumption of subst_b]
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     subst_b assumes that:
+       if b is recursive bindings, x ∉ bvb b
+     this is guaranteed by the calling sites in subst and subst_bnr',
+     which check for the whole letrec group at once. Therefore the check
+     is not repeated here.
+  *)
+  subst_b (x : string) (s : Term) (b : Binding) {struct b} : Binding :=
   match b with
   | TermBind stricty (VarDecl y T) tb =>
       TermBind stricty (VarDecl y T) (subst x s tb)

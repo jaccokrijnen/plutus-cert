@@ -97,12 +97,6 @@ Section Term.
     x ∉ fv t.
   Admitted.
 
-  Lemma not_in_fv_TermBind x r s y ty t:
-    x ∉ fv_binding r (TermBind s (VarDecl y ty) t) ->
-    False ->
-    x ∉ fv t.
-  Admitted.
-
   Lemma not_in_fv_Let_NonRec_t x r bs t :
     x ∉ fv (Let r bs t) ->
     existsb (eqb x) (bvbs bs) = false ->
@@ -120,6 +114,27 @@ Section Term.
     x ∉ fv (Let NonRec bs t).
   Admitted.
 
+  Lemma not_in_fv_Constr x i ts :
+    x ∉ fv (Constr i ts) ->
+    Forall (fun t => x ∉ fv t) ts.
+  Admitted.
+
+  Lemma not_in_fv_Case_1 x t ts :
+    x ∉ fv (Case t ts) ->
+    Forall (fun t => x ∉ fv t) ts.
+  Admitted.
+
+  Lemma not_in_fv_Case_2 x t ts :
+    x ∉ fv (Case t ts) ->
+    x ∉ fv t.
+  Admitted.
+
+  Lemma not_in_remove x xs y :
+    x ∉ remove string_dec y xs->
+    x <> y ->
+    x ∉ xs.
+  Admitted.
+
   Create HintDb not_in.
   Hint Resolve
     not_in_fv_TyAbs 
@@ -132,6 +147,9 @@ Section Term.
     not_in_fv_Error
     not_in_fv_IWrap
     not_in_fv_Unwrap
+    not_in_fv_Constr
+    not_in_fv_Case_1
+    not_in_fv_Case_2
     : not_in.
 
   Lemma fv_let_cons x b bs t :
@@ -144,6 +162,7 @@ Section Term.
     subst x t' t = t.
 
   Definition P_Binding b := forall r x t',
+    (r = Rec -> x ∉ bvb b) -> (* See Note [Assumption of subst_b] *)
     x ∉ fv_binding r b ->
     subst_b x t' b = b.
 
@@ -208,11 +227,14 @@ Section Term.
       all: inversion H_bs; subst.
       + apply not_in_fv_Let_NonRec_b in H_not_in_fv.
         f_equal.
-        eauto.
+        unfold P_Binding in H1.
+        eapply H1; eauto.
+        inversion 1.
       + (* x must be bound in bs *)
         f_equal.
           * apply not_in_fv_Let_NonRec_b in H_not_in_fv.
-            eauto.
+            eapply H1; eauto.
+            inversion 1.
           *
           destruct (existsb (eqb x) (bvbs bs)) eqn:H_ex_bvbs. 
             ** assert (x ∉ fv (Let NonRec bs t)) by eauto using not_in_fv_Let_NonRec_bs.
@@ -226,98 +248,122 @@ Section Term.
   Qed.
 
 
+
+  Lemma subst_terms_not_in_fv x t ts :
+    Forall P_Term ts ->
+    Forall (fun t => x ∉ fv t) ts ->
+    map (subst x t) ts = ts.
+  Admitted.
+
+  Ltac destruct_if :=
+        match goal with
+          | |- context[if ?X then _ else _] => destruct X eqn:H_eqb
+        end.
+
+  Ltac destruct_match :=
+        match goal with
+        | |- context[match ?X with | _ => _ end] => destruct X eqn:H_match
+        end.
+
   Lemma subst_not_in_fv : forall t, P_Term t.
   Proof.
     apply Term__multind with (P := P_Term) (Q := P_Binding).
-
-    all: try (
-      unfold P_Term in *;
-      intros;
-      rewrite subst_unfold;
-      f_equal;
-      eauto with not_in
-   ).
+    all: unfold P_Term, P_Binding in *; intros.
+    all: try rewrite Util.ForallP_Forall in *.
+    all: try rewrite subst_unfold.
+    all: try rewrite subst_b_unfold.
 
     (* Let *)
-    - destruct rec; destruct (existsb (eqb x) (bvbs bs)) eqn:H_existsb.
+    -
+      destruct rec.
+      all: destruct_if.
 
       (* Let NonRec *)
-      + (* x does not occur free, but is shadowed in bs *)
+      + (* x is shadowed in bs *)
         f_equal.
-        rewrite subst_bnr'_equation.
-        induction bs.
-        * reflexivity.
-        * destruct (existsb (eqb x) (bvb a)) eqn:H_exists_here.
-          ** inversion H. subst. unfold P_Binding in H4.
-             apply not_in_fv_Let_NonRec_b in H1.
-             f_equal.
-             f_equal.
-             eauto.
-          ** f_equal.
-              ***
-                  apply not_in_fv_Let_NonRec_b in H1.
-                  inversion H. subst. unfold P_Binding in H4.
-                  eauto.
-              *** inversion H; subst. rewrite Util.ForallP_Forall in H5.
-                  eauto using subst_bnr_not_in_fv, existsb_bvbs_bs, not_in_fv_Let_NonRec_bs.
-
-      (* Let NonRec *)
-      + (* x does not occur free and is also not bound in bs *)
+        apply subst_bnr_not_in_fv with (t := t); eauto.
+      + (* x is not bound in bs *)
         f_equal.
-        rewrite Util.ForallP_Forall in H.
         * eapply subst_bnr_not_in_fv with (t := t); eauto.
-        * assert (x ∉ fv t). {
-            apply not_in_fv_Let_NonRec_t in H1; eauto.
-            }
-          eauto.
-      + reflexivity.
+        * apply not_in_fv_Let_NonRec_t in H1; eauto.
+
+      (* Let Rec *)
+      + (* x is shadowed in bs *)
+        reflexivity.
       + f_equal.
         * eapply subst_br_not_in_fv with (t := t); eauto.
+          rewrite Util.ForallP_Forall in *. assumption.
         * eapply not_in_fv_Let_NonRec_t in H1; eauto.
 
     (* Var *)
-    - simpl in H.
-      destruct (x =? s)%string eqn:H_eqb.
-      + apply eqb_eq in H_eqb.
-        apply eq_sym in H_eqb.
-        assert False. auto.
-        contradiction.
-      + reflexivity.
-
-    (* LamAbs *)
     -
-      destruct (x =? s)%string eqn:H_eqb.
+      destruct_if.
+      +
+        apply eqb_eq in H_eqb.
+        apply eq_sym in H_eqb.
+        simpl in H.
+        tauto.
       + reflexivity.
-      + f_equal; eauto with not_in.
 
-    (* Constr *)
-    - admit. (* TODO *)
+    - (* TyAbs *)
+      f_equal.
+      eauto with not_in.
 
-    (* Case t *)
-    - admit. (* TODO *)
+    - (* LamAbs *)
+      destruct_if.
+      + reflexivity.
+      + f_equal. eauto with not_in.
+      (* TODO: Why do we get this shelved existential? *)
+      Unshelve.
+      exact t.
 
-    (* Case ts *)
-    - admit. (* TODO *)
+    - f_equal; eauto with not_in.
+
+    - (* Constr *)
+      reflexivity.
+
+    - (* Builtin *)
+      reflexivity.
+
+    - (* TyInst *)
+      f_equal; eauto with not_in.
+
+    - (* Error *)
+      reflexivity.
+
+    - (* IWrap t *)
+      f_equal; eauto with not_in.
+
+    - (* Unwrap *)
+      f_equal; eauto with not_in.
+
+    - (* Constr *)
+      f_equal; eauto with not_in.
+      eapply subst_terms_not_in_fv.
+      all: eauto with not_in.
+
+    - (* Case *)
+      f_equal.  eauto with not_in.
+      eapply  subst_terms_not_in_fv;
+      eauto with not_in.
 
     (* TermBind *)
-    - unfold P_Term, P_Binding.
-      intros.
-      rewrite subst_b_unfold.
-      destruct v as [y ty].
-      destruct (x =? y)%string eqn:H_eqb.
-      + unfold fv_binding in *.
-        destruct r.
-        rewrite fvb_equation in H0.
-        *
-          f_equal.
-          eauto.
-        * f_equal.
-          rewrite eqb_eq in H_eqb. subst.
+    -
+      destruct_match.
       f_equal.
-      unfold fv_binding in H0.
-      rewrite fvb_equation in H0.
-      admit.
-      + admit.
+      rewrite fvb_equation in *.
+      destruct r.
+      + auto.
+      +  (* Rec *)
+        specialize (H0 eq_refl). (* See Note [Assumption of subst_b] *)
+        simpl in H0.
+        apply H.
+
+        eauto.
+        eapply not_in_remove in H1.
+        * assumption.
+        * unfold not in *.
+          auto.
 
     (* TypeBind *)
     - unfold P_Binding.
@@ -326,7 +372,7 @@ Section Term.
     (* DatatypeBind *)
     - unfold P_Binding.
       reflexivity.
-Admitted.
+Qed.
 
 
 
