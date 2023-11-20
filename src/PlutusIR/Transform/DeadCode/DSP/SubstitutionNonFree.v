@@ -275,7 +275,7 @@ Section Term.
 
     (* Let *)
     -
-      destruct rec.
+      destruct_match.
       all: destruct_if.
 
       (* Let NonRec *)
@@ -312,14 +312,16 @@ Section Term.
     - (* LamAbs *)
       destruct_if.
       + reflexivity.
-      + f_equal. eauto with not_in.
-      (* TODO: Why do we get this shelved existential? *)
-      Unshelve.
-      exact t.
+      + f_equal.
+        eapply H.
 
-    - f_equal; eauto with not_in.
+        (* debug eauto with not_in. *) (* Keeps a shelved var for some reason *)
+        eauto using not_in_fv_LamAbs.
 
-    - (* Constr *)
+    - (* Apply *)
+      f_equal; eauto with not_in.
+
+    - (* Constant *)
       reflexivity.
 
     - (* Builtin *)
@@ -340,15 +342,15 @@ Section Term.
     - (* Constr *)
       f_equal; eauto with not_in.
       eapply subst_terms_not_in_fv.
-      all: eauto with not_in.
+      + assumption.
+      + eauto using not_in_fv_Constr.
 
     - (* Case *)
       f_equal.  eauto with not_in.
       eapply  subst_terms_not_in_fv;
       eauto with not_in.
 
-    (* TermBind *)
-    -
+    - (* TermBind *)
       destruct_match.
       f_equal.
       rewrite fvb_equation in *.
@@ -365,12 +367,13 @@ Section Term.
         * unfold not in *.
           auto.
 
-    (* TypeBind *)
-    - unfold P_Binding.
+
+    - (* TypeBind *)
+      unfold P_Binding.
       reflexivity.
 
-    (* DatatypeBind *)
-    - unfold P_Binding.
+    - (* DatatypeBind *)
+      unfold P_Binding.
       reflexivity.
 Qed.
 
