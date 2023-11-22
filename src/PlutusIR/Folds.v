@@ -17,7 +17,7 @@ This can probably be generated as a mutual recursion scheme
 Section Algebras.
   Context (rTerm rBinding rBindings : Type).
 
-Record AlgTerm: Type := mkTermAlg
+Inductive AlgTerm: Type := mkTermAlg
   { a_Let      : Recursivity -> rBindings -> rTerm -> rTerm
   ; a_Var      : string -> rTerm
   ; a_TyAbs    : string -> Kind -> rTerm -> rTerm

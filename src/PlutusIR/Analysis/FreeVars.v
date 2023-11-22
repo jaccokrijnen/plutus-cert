@@ -3,21 +3,16 @@ Require Import Coq.Arith.PeanoNat.
 Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Ascii.
-Require Import Omega.
-From Equations Require Import Equations.
 
-Require Import FunInd.
+
+
+From PlutusCert Require Import PlutusIR.
+ From PlutusCert Require Import  PlutusIR.Folds.
+ From PlutusCert Require Import  Analysis.BoundVars.
+ From PlutusCert Require Import  Util.
+ From PlutusCert Require Import  Util.List.
 
 Set Implicit Arguments.
-
-From PlutusCert Require Import
-  PlutusIR
-  PlutusIR.Folds
-  Analysis.BoundVars
-  Util
-  Util.List
-.
-
 Import NamedTerm.
 
 Module Ty.

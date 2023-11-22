@@ -292,7 +292,7 @@ Definition btvb (b : binding') : list tyvar :=
 
 Definition btvbs (bs : list binding') : list tyvar := List.concat (map btvb bs).
 
-Fixpoint bound_vars (t : term') : list var :=
+Function bound_vars (t : term') : list var :=
  match t with
    | Let rec bs t => concat (map bound_vars_binding bs) ++ bound_vars t
    | (LamAbs n ty t)   => n :: (bound_vars t)
@@ -388,10 +388,8 @@ Proof with eauto using appears_bound_in_tm.
       apply ForallP_Forall in H.
       apply Forall_inv_tail in H.
       apply ForallP_Forall in H...
-  - intros.
-    cbv.
-    auto.
-  - intros.
+  - (* TyAbs *)
+    intros.
     eapply Forall_impl. 2: exact H.
     eauto.
   - intros.
@@ -410,12 +408,19 @@ Proof with eauto using appears_bound_in_tm.
     apply Forall_app. split.
       + tac ABI_Tm_Apply1.
       + tac ABI_Tm_Apply2.
-  - intros. cbv. auto.
-  - intros. cbv. auto.
-  - tac ABI_Tm_TyInst.
-  - intros. cbv. auto.
-  - tac ABI_Tm_IWrap.
-  - tac ABI_Tm_Unwrap.
+  - (* TyInst *)
+    intros.
+    rewrite bound_vars_equation.
+    eapply Forall_impl. 2: exact H.
+    auto.
+  - intros.
+    rewrite bound_vars_equation.
+    eapply Forall_impl. 2: exact H.
+    eauto.
+  - intros.
+    rewrite bound_vars_equation.
+    eapply Forall_impl. 2: exact H.
+    eauto.
   - admit. (* TODO: Constr *)
   - admit. (* TODO: Case *)
   - intros.

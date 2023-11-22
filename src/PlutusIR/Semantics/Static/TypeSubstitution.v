@@ -1,5 +1,5 @@
 From Equations Require Import Equations.
-Require Import PlutusCert.PlutusIR.
+From PlutusCert Require Import PlutusIR.
 From PlutusCert Require Import Analysis.FreeVars.
 Import Ty.
 Import NamedTerm.
