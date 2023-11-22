@@ -3,7 +3,6 @@ Require Import Coq.Arith.PeanoNat.
 Require Import Coq.Lists.List.
 Import Coq.Lists.List.ListNotations.
 Require Import Ascii.
-Require Import Omega.
 From Equations Require Import Equations.
 
 From PlutusCert Require Import

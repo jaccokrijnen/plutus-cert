@@ -45,33 +45,10 @@ Definition valueOf_dec : forall t, EqDec (valueOf t). solveEq. apply uniType_dec
 Definition typeIn_dec : forall t, EqDec (typeIn t). solveEq. Defined.
   #[export] Hint Resolve typeIn_dec : Eqs.
 
-(* Somewhat cumbersome, cannot use "decide equality" tactic *)
-Definition some_valueOf_dec: forall (x y : @some valueOf), {x = y} + {x <> y}.
-Proof.
-  intros x y.
-  refine (
-    match x, y with | @Some' _ u  v, @Some' _ u' v' =>
-    match DefaultUni_dec u u' with
-    | left eq   => _
-    | right neq => _
-    end end
-  ).
-  - subst. destruct (valueOf_dec v v').
-    + apply left. congruence.
-    + apply right. intros H.
-      inversion H .
-      inversion_sigma.
-      unfold eq_rect in H2.
-      assert (H3 : H0 = eq_refl). { apply UIP_refl. } (* I need UIP to reduce eq_rect and finish the proof, can this be done without? *)
-      rewrite H3 in H2.
-      contradiction.
-  - apply right. intros H.
-    inversion H. contradiction.
-Defined.
-  #[export] Hint Resolve some_valueOf_dec : Eqs.
 
 (* Somewhat cumbersome, cannot use "decide equality" tactic *)
-Definition some_typeIn_dec: forall (x y : @some typeIn), {x = y} + {x <> y}.
+Definition some_dec f (dec : forall (t : DefaultUni), EqDec (f t)) :
+  forall (x y : @some f), {x = y} + {x <> y}.
 Proof.
   intros x y.
   refine (
@@ -81,19 +58,26 @@ Proof.
     | right neq => _
     end end
   ).
-  - subst. destruct (typeIn_dec v v').
+  - subst.
+    destruct (dec _ v v').
     + apply left. congruence.
     + apply right. intros H.
-      inversion H .
+      injection H.
+      intro H_sigma_eq.
       inversion_sigma.
-      unfold eq_rect in H2.
-      assert (H3 : H0 = eq_refl). { apply UIP_refl. } (* I need UIP to reduce eq_rect and finish the proof, can this be done without? *)
-      rewrite H3 in H2.
-      contradiction.
+      (* eq_rect can only be reduced by invoking UIP on H_sigma_eq1 *)
+      assert (H_sigma_eq1 = eq_refl) by apply UIP_refl.
+      subst H_sigma_eq1; simpl in H_sigma_eq2.
+      tauto.
   - apply right. intros H.
     inversion H. contradiction.
 Defined.
-  #[export] Hint Resolve some_typeIn_dec : Eqs.
+
+Definition some_valueOf_dec := @some_dec valueOf valueOf_dec.
+#[export] Hint Resolve some_valueOf_dec : Eqs.
+
+Definition some_typeIn_dec := @some_dec typeIn typeIn_dec.
+#[export] Hint Resolve some_typeIn_dec : Eqs.
 
 Definition Kind_dec : EqDec Kind. solveEq. Defined.
   #[export] Hint Resolve Kind_dec : Eqs.

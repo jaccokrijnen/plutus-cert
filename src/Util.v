@@ -6,6 +6,7 @@ Set Implicit Arguments.
 Import ListNotations.
 
 From QuickChick Require Import QuickChick.
+From QuickChick Require Import CheckerProofs.
 
 Section list_rect'.
   Variable (a : Type).

@@ -8,6 +8,7 @@ Local Open Scope string_scope.
 Local Open Scope list_scope.
 Import ListNotations.
 From QuickChick Require Import QuickChick.
+From QuickChick Require Import CheckerProofs.
 
 Require Import Utf8_core.
 
