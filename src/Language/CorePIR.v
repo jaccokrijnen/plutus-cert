@@ -1,5 +1,6 @@
 From PlutusCert Require Import
   Language
+  Language.PIR
   Language.GHC.Core.AST
   PlutusIR
   PlutusIR.Semantics.Dynamic.Bigstep
@@ -30,15 +31,6 @@ Inductive ctp : Expr string -> Term -> Prop :=
   .
 
 Notation "s ▷ t" := (ctp s t) (at level 60).
-
-Definition PIRLang : Language :=
-  {|
-    expr  := Term
-  ; bigstep := fun t t' => exists n, eval t t' n
-  ; app   := Apply
-  ; const := fun i => Constant (Some' (ValueOf DefaultUniInteger i))
-  |}
-.
 
 From PlutusCert Require Import Core.BigStep.
 

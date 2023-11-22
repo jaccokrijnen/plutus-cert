@@ -136,6 +136,7 @@ src/PlutusIR/Semantics/SemanticEquivalence/Soundness.v
 src/PlutusIR/Semantics/Misc/Axiom.v
 
 src/Language.v
+src/Language/PIR.v
 src/Language/GHC/Core/AST.v
 src/Language/GHC/Core/BigStep.v
 
