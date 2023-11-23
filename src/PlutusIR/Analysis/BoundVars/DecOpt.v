@@ -4,6 +4,7 @@ From PlutusCert Require Import
   PlutusIR.Analysis.BoundVars.
 
 From QuickChick Require Import QuickChick.
+From QuickChick Require Import CheckerProofs.
 
 
 
