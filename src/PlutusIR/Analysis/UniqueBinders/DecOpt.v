@@ -6,6 +6,7 @@ From PlutusCert Require Import
   PlutusIR.Analysis.UniqueBinders.
 
 From QuickChick Require Import QuickChick.
+From QuickChick Require Import CheckerProofs.
 
 
   

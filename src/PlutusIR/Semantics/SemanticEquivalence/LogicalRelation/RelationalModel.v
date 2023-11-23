@@ -6,6 +6,7 @@ Require Import PlutusCert.Util.List.
 Import PlutusNotations.
 
 From Coq Require Import Lia.
+From Equations Require Import Equations.
 
 Require Import Arith.
 Require Import Coq.Lists.List.
@@ -14,6 +15,7 @@ Require Import Coq.Strings.String.
 
 Local Open Scope list_scope.
 Local Open Scope string_scope.
+
 
 Definition Rel (T T' : Ty) (Chi : nat -> Term -> Term -> Prop) : Prop :=
   forall j v v',
