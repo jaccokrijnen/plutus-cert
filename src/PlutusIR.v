@@ -42,12 +42,18 @@ Inductive Strictness := NonStrict | Strict.
 
 (** Universes *)
 Inductive DefaultUni : Type :=
-    | DefaultUniInteger    (* : DefaultUni Z (* Integer *) *)
-    | DefaultUniByteString (* : DefaultUni string (* BS.ByteString *)*)
-    | DefaultUniString     (* : DefaultUni string (* String *)*)
-    | DefaultUniChar       (* : DefaultUni ascii (* Char *)*)
-    | DefaultUniUnit       (* : DefaultUni unit (* () *)*)
-    | DefaultUniBool       (* : DefaultUni bool (* Bool *)*)
+    | DefaultUniInteger
+    | DefaultUniByteString
+    | DefaultUniString
+    | DefaultUniUnit
+    | DefaultUniBool
+    | DefaultUniProtoList
+    | DefaultUniProtoPair
+    | DefaultUniApply : DefaultUni -> DefaultUni -> DefaultUni
+    | DefaultUniData
+    | DefaultUniBLS12_381_G1_Element
+    | DefaultUniBLS12_381_G2_Element
+    | DefaultUniBLS12_381_MlResult
     .
 
 QCDerive EnumSized for DefaultUni.
@@ -62,15 +68,36 @@ Inductive typeIn (u : DefaultUni) :=
   TypeIn : typeIn u.
 Arguments TypeIn _ : clear implicits.
 
+Definition SomeTypeIn (ty : DefaultUni) := @Some' typeIn ty (TypeIn ty).
+
+
+Inductive Data :=
+  | DataConstr : Z -> list Data -> Data
+  | DataMap : list (Data * Data) -> Data
+  | DataList : list Data -> Data
+  | DataI : Z -> Data
+  | DataB : string -> Data
+  .
+
 (** Constants *)
-Definition uniType (x : DefaultUni) : Type :=
+Fixpoint uniType (x : DefaultUni) : Type :=
   match x with
-    | DefaultUniInteger    => Z
+    | DefaultUniInteger => Z
     | DefaultUniByteString => string
-    | DefaultUniString     => string
-    | DefaultUniChar       => ascii
-    | DefaultUniUnit       => unit
-    | DefaultUniBool       => bool
+    | DefaultUniString => string
+    | DefaultUniUnit => unit
+    | DefaultUniBool => bool
+    | DefaultUniData => Data
+
+    | DefaultUniApply DefaultUniProtoList t => list (uniType t)
+    | DefaultUniApply (DefaultUniApply DefaultUniPair t1) t2 => uniType t1 * uniType t2
+
+    | DefaultUniApply _ _ => Empty_set
+    | DefaultUniBLS12_381_G1_Element => Z
+    | DefaultUniBLS12_381_G2_Element => Z
+    | DefaultUniBLS12_381_MlResult => Empty_set
+    | DefaultUniProtoList => Empty_set
+    | DefaultUniProtoPair => Empty_set
   end.
 
 Inductive valueOf (u : DefaultUni) :=
@@ -79,6 +106,7 @@ Arguments ValueOf _ _ : clear implicits.
 
 (** Built-in functions*)
 Inductive DefaultFun :=
+
     | AddInteger
     | SubtractInteger
     | MultiplyInteger
@@ -86,25 +114,88 @@ Inductive DefaultFun :=
     | QuotientInteger
     | RemainderInteger
     | ModInteger
+    | EqualsInteger
     | LessThanInteger
-    | LessThanEqInteger
-    | GreaterThanInteger
-    | GreaterThanEqInteger
-    | EqInteger
-    | Concatenate
-    | TakeByteString
-    | DropByteString
-    | SHA2
-    | SHA3
-    | VerifySignature
-    | EqByteString
-    | LtByteString
-    | GtByteString
+    | LessThanEqualsInteger
+    (* Bytestrings *)
+    | AppendByteString
+    | ConsByteString
+    | SliceByteString
+    | LengthOfByteString
+    | IndexByteString
+    | EqualsByteString
+    | LessThanByteString
+    | LessThanEqualsByteString
+    (* Cryptography and hashes *)
+    | Sha2_256
+    | Sha3_256
+    | Blake2b_256
+    | VerifyEd25519Signature  (* formerly verifySignature *)
+    | VerifyEcdsaSecp256k1Signature
+    | VerifySchnorrSecp256k1Signature
+    (* Strings *)
+    | AppendString
+    | EqualsString
+    | EncodeUtf8
+    | DecodeUtf8
+    (* Bool *)
     | IfThenElse
-    | CharToString
-    | Append
-    | Trace.
-
+    (* Unit *)
+    | ChooseUnit
+    (* Tracing *)
+    | Trace
+    (* Pairs *)
+    | FstPair
+    | SndPair
+    (* Lists *)
+    | ChooseList
+    | MkCons
+    | HeadList
+    | TailList
+    | NullList
+    (* Data *)
+    | ChooseData
+    | ConstrData
+    | MapData
+    | ListData
+    | IData
+    | BData
+    | UnConstrData
+    | UnMapData
+    | UnListData
+    | UnIData
+    | UnBData
+    | EqualsData
+    | SerialiseData
+    (* Misc monomorphized constructors. *)
+    | MkPairData
+    | MkNilData
+    | MkNilPairData
+    (* BLS12_381 operations *)
+    (* G1 *)
+    | Bls12_381_G1_add
+    | Bls12_381_G1_neg
+    | Bls12_381_G1_scalarMul
+    | Bls12_381_G1_equal
+    | Bls12_381_G1_hashToGroup
+    | Bls12_381_G1_compress
+    | Bls12_381_G1_uncompress
+    (* G2 *)
+    | Bls12_381_G2_add
+    | Bls12_381_G2_neg
+    | Bls12_381_G2_scalarMul
+    | Bls12_381_G2_equal
+    | Bls12_381_G2_hashToGroup
+    | Bls12_381_G2_compress
+    | Bls12_381_G2_uncompress
+    (* Pairing *)
+    | Bls12_381_millerLoop
+    | Bls12_381_mulMlResult
+    | Bls12_381_finalVerify
+    (* Keccak_256, Blake2b_224 *)
+    | Keccak_256
+    | Blake2b_224
+.
 Section AST_term.
 Context (name tyname : Set).
 Context (binderName binderTyname : Set).
@@ -142,7 +233,7 @@ Inductive tvdecl := TyVarDecl : binderTyname -> kind -> tvdecl.
 (* This is a bit in-between hack of having types in the AST and completely ignoring them*)
 (* Constructor name and arity, needed for Scott encoding *)
 Inductive constr := Constructor : vdecl -> nat -> constr.
-Inductive dtdecl := Datatype : tvdecl -> list tvdecl -> binderName -> list constr -> dtdecl.
+Inductive dtdecl := Datatype : tvdecl -> list tvdecl -> binderName -> list vdecl -> dtdecl.
 
 (** Terms and bindings *)
 Inductive term :=
@@ -321,6 +412,14 @@ Notation Context := (context string string string string).
 
 Arguments C_Hole { _ _ _ _ }.
 
+
+Open Scope string_scope.
+Definition Some := @Some'.
+Arguments Some {_ _}.
+Open Scope Z_scope.
+Definition t := 
+  Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("verifySchnorrSecp256k1Signature") (Unique (34))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniBool))))))) (Builtin (VerifySchnorrSecp256k1Signature))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("verifyEd25519Signature") (Unique (35))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniBool))))))) (Builtin (VerifyEd25519Signature))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("verifyEcdsaSecp256k1Signature") (Unique (33))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniBool))))))) (Builtin (VerifyEcdsaSecp256k1Signature))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("unsafeDataAsMap") (Unique (85))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniData))) (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoList))) (Ty_App (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoPair))) (Ty_Builtin (SomeTypeIn (DefaultUniData)))) (Ty_Builtin (SomeTypeIn (DefaultUniData))))))) (Builtin (UnMapData))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("unsafeDataAsList") (Unique (86))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniData))) (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoList))) (Ty_Builtin (SomeTypeIn (DefaultUniData)))))) (Builtin (UnListData))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("unsafeDataAsI") (Unique (88))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniData))) (Ty_Builtin (SomeTypeIn (DefaultUniInteger))))) (Builtin (UnIData))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("unsafeDataAsConstr") (Unique (84))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniData))) (Ty_App (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoPair))) (Ty_Builtin (SomeTypeIn (DefaultUniInteger)))) (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoList))) (Ty_Builtin (SomeTypeIn (DefaultUniData))))))) (Builtin (UnConstrData))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("unsafeDataAsB") (Unique (87))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniData))) (Ty_Builtin (SomeTypeIn (DefaultUniByteString))))) (Builtin (UnBData))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("unitval") (Unique (15))) (Ty_Builtin (SomeTypeIn (DefaultUniUnit)))) (Constant (Some (ValueOf (DefaultUniUnit) (tt))))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("true") (Unique (13))) (Ty_Builtin (SomeTypeIn (DefaultUniBool)))) (Constant (Some (ValueOf (DefaultUniBool) (true))))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("trace") (Unique (55))) (Ty_Forall (TyName (Name ("a") (Unique (54)))) (Kind_Base) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniString))) (Ty_Fun (Ty_Var (TyName (Name ("a") (Unique (54))))) (Ty_Var (TyName (Name ("a") (Unique (54))))))))) (Builtin (Trace))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("tail") (Unique (68))) (Ty_Forall (TyName (Name ("a") (Unique (67)))) (Kind_Base) (Ty_Fun (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoList))) (Ty_Var (TyName (Name ("a") (Unique (67)))))) (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoList))) (Ty_Var (TyName (Name ("a") (Unique (67))))))))) (Builtin (TailList))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("subtractInteger") (Unique (37))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Builtin (SomeTypeIn (DefaultUniInteger)))))) (Builtin (SubtractInteger))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("snd") (Unique (61))) (Ty_Forall (TyName (Name ("a") (Unique (59)))) (Kind_Base) (Ty_Forall (TyName (Name ("b") (Unique (60)))) (Kind_Base) (Ty_Fun (Ty_App (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoPair))) (Ty_Var (TyName (Name ("a") (Unique (59)))))) (Ty_Var (TyName (Name ("b") (Unique (60)))))) (Ty_Var (TyName (Name ("b") (Unique (60))))))))) (Builtin (SndPair))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("sliceByteString") (Unique (20))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniByteString))))))) (Builtin (SliceByteString))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("sha3_") (Unique (24))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniByteString))))) (Builtin (Sha3_256))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("sha2_") (Unique (23))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniByteString))))) (Builtin (Sha2_256))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("serialiseData") (Unique (89))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniData))) (Ty_Builtin (SomeTypeIn (DefaultUniByteString))))) (Builtin (SerialiseData))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("remainderInteger") (Unique (42))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Builtin (SomeTypeIn (DefaultUniInteger)))))) (Builtin (RemainderInteger))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("quotientInteger") (Unique (41))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Builtin (SomeTypeIn (DefaultUniInteger)))))) (Builtin (QuotientInteger))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("null") (Unique (64))) (Ty_Forall (TyName (Name ("a") (Unique (63)))) (Kind_Base) (Ty_Fun (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoList))) (Ty_Var (TyName (Name ("a") (Unique (63)))))) (Ty_Builtin (SomeTypeIn (DefaultUniBool)))))) (Builtin (NullList))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("multiplyInteger") (Unique (38))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Builtin (SomeTypeIn (DefaultUniInteger)))))) (Builtin (MultiplyInteger))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("modInteger") (Unique (40))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Builtin (SomeTypeIn (DefaultUniInteger)))))) (Builtin (ModInteger))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("mkPairData") (Unique (62))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniData))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniData))) (Ty_App (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoPair))) (Ty_Builtin (SomeTypeIn (DefaultUniData)))) (Ty_Builtin (SomeTypeIn (DefaultUniData))))))) (Builtin (MkPairData))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("mkNilPairData") (Unique (73))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniUnit))) (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoList))) (Ty_App (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoPair))) (Ty_Builtin (SomeTypeIn (DefaultUniData)))) (Ty_Builtin (SomeTypeIn (DefaultUniData))))))) (Builtin (MkNilPairData))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("mkNilData") (Unique (72))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniUnit))) (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoList))) (Ty_Builtin (SomeTypeIn (DefaultUniData)))))) (Builtin (MkNilData))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("mkMap") (Unique (80))) (Ty_Fun (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoList))) (Ty_App (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoPair))) (Ty_Builtin (SomeTypeIn (DefaultUniData)))) (Ty_Builtin (SomeTypeIn (DefaultUniData))))) (Ty_Builtin (SomeTypeIn (DefaultUniData))))) (Builtin (MapData))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("mkList") (Unique (81))) (Ty_Fun (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoList))) (Ty_Builtin (SomeTypeIn (DefaultUniData)))) (Ty_Builtin (SomeTypeIn (DefaultUniData))))) (Builtin (ListData))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("mkI") (Unique (82))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Builtin (SomeTypeIn (DefaultUniData))))) (Builtin (IData))) (nil)) (Let (NonRec) (cons (TypeBind (TyVarDecl (TyName (Name ("BuiltinData") (Unique (5)))) (Kind_Base)) (Ty_Builtin (SomeTypeIn (DefaultUniData)))) (nil)) (Let (Rec) (cons (DatatypeBind (Datatype (TyVarDecl (TyName (Name ("Unit") (Unique (113)))) (Kind_Base)) (nil) (Name ("Unit_match") (Unique (114))) (cons (VarDecl (Name ("Unit") (Unique (115))) (Ty_Var (TyName (Name ("Unit") (Unique (113)))))) (nil)))) (nil)) (Let (NonRec) (cons (TermBind (NonStrict) (VarDecl (Name ("mkGiftValidator") (Unique (116))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniData))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniData))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniData))) (Ty_Var (TyName (Name ("Unit") (Unique (113))))))))) (LamAbs (Name ("ds") (Unique (117))) (Ty_Builtin (SomeTypeIn (DefaultUniData))) (LamAbs (Name ("ds") (Unique (118))) (Ty_Builtin (SomeTypeIn (DefaultUniData))) (LamAbs (Name ("ds") (Unique (119))) (Ty_Builtin (SomeTypeIn (DefaultUniData))) (Var (Name ("Unit") (Unique (115)))))))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("mkConstr") (Unique (79))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Fun (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoList))) (Ty_Builtin (SomeTypeIn (DefaultUniData)))) (Ty_Builtin (SomeTypeIn (DefaultUniData)))))) (Builtin (ConstrData))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("mkCons") (Unique (75))) (Ty_Forall (TyName (Name ("a") (Unique (74)))) (Kind_Base) (Ty_Fun (Ty_Var (TyName (Name ("a") (Unique (74))))) (Ty_Fun (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoList))) (Ty_Var (TyName (Name ("a") (Unique (74)))))) (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoList))) (Ty_Var (TyName (Name ("a") (Unique (74)))))))))) (Builtin (MkCons))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("mkB") (Unique (83))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniData))))) (Builtin (BData))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("lessThanInteger") (Unique (43))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Builtin (SomeTypeIn (DefaultUniBool)))))) (Builtin (LessThanInteger))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("lessThanEqualsInteger") (Unique (44))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Builtin (SomeTypeIn (DefaultUniBool)))))) (Builtin (LessThanEqualsInteger))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("lessThanEqualsByteString") (Unique (30))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniBool)))))) (Builtin (LessThanEqualsByteString))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("lessThanByteString") (Unique (29))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniBool)))))) (Builtin (LessThanByteString))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("lengthOfByteString") (Unique (21))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniInteger))))) (Builtin (LengthOfByteString))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("keccak_") (Unique (27))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniByteString))))) (Builtin (Keccak_256))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("integerNegate") (Unique (111))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Builtin (SomeTypeIn (DefaultUniInteger))))) (LamAbs (Name ("x") (Unique (112))) (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Apply (Apply (Builtin (SubtractInteger)) (Constant (Some (ValueOf (DefaultUniInteger) (0))))) (Var (Name ("x") (Unique (112))))))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("indexByteString") (Unique (22))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Builtin (SomeTypeIn (DefaultUniInteger)))))) (Builtin (IndexByteString))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("ifThenElse") (Unique (12))) (Ty_Forall (TyName (Name ("a") (Unique (11)))) (Kind_Base) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBool))) (Ty_Fun (Ty_Var (TyName (Name ("a") (Unique (11))))) (Ty_Fun (Ty_Var (TyName (Name ("a") (Unique (11))))) (Ty_Var (TyName (Name ("a") (Unique (11)))))))))) (Builtin (IfThenElse))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("head") (Unique (66))) (Ty_Forall (TyName (Name ("a") (Unique (65)))) (Kind_Base) (Ty_Fun (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoList))) (Ty_Var (TyName (Name ("a") (Unique (65)))))) (Ty_Var (TyName (Name ("a") (Unique (65)))))))) (Builtin (HeadList))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("fst") (Unique (58))) (Ty_Forall (TyName (Name ("a") (Unique (56)))) (Kind_Base) (Ty_Forall (TyName (Name ("b") (Unique (57)))) (Kind_Base) (Ty_Fun (Ty_App (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoPair))) (Ty_Var (TyName (Name ("a") (Unique (56)))))) (Ty_Var (TyName (Name ("b") (Unique (57)))))) (Ty_Var (TyName (Name ("a") (Unique (56))))))))) (Builtin (FstPair))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("false") (Unique (14))) (Ty_Builtin (SomeTypeIn (DefaultUniBool)))) (Constant (Some (ValueOf (DefaultUniBool) (false))))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("error") (Unique (49))) (Ty_Forall (TyName (Name ("a") (Unique (48)))) (Kind_Base) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniUnit))) (Ty_Var (TyName (Name ("a") (Unique (48)))))))) (TyAbs (TyName (Name ("a") (Unique (46)))) (Kind_Base) (LamAbs (Name ("thunk") (Unique (47))) (Ty_Builtin (SomeTypeIn (DefaultUniUnit))) (Error (Ty_Var (TyName (Name ("a") (Unique (46))))))))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("equalsString") (Unique (52))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniString))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniString))) (Ty_Builtin (SomeTypeIn (DefaultUniBool)))))) (Builtin (EqualsString))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("equalsInteger") (Unique (45))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Builtin (SomeTypeIn (DefaultUniBool)))))) (Builtin (EqualsInteger))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("equalsData") (Unique (78))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniData))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniData))) (Ty_Builtin (SomeTypeIn (DefaultUniBool)))))) (Builtin (EqualsData))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("equalsByteString") (Unique (28))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniBool)))))) (Builtin (EqualsByteString))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("encodeUtf") (Unique (53))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniString))) (Ty_Builtin (SomeTypeIn (DefaultUniByteString))))) (Builtin (EncodeUtf8))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("emptyString") (Unique (51))) (Ty_Builtin (SomeTypeIn (DefaultUniString)))) (Constant (Some (ValueOf (DefaultUniString) (""))))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("emptyByteString") (Unique (31))) (Ty_Builtin (SomeTypeIn (DefaultUniByteString)))) (Constant (Some (ValueOf (DefaultUniByteString) (""))))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("divideInteger") (Unique (39))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Builtin (SomeTypeIn (DefaultUniInteger)))))) (Builtin (DivideInteger))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("decodeUtf") (Unique (32))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniString))))) (Builtin (DecodeUtf8))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("consByteString") (Unique (19))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniByteString)))))) (Builtin (ConsByteString))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("chooseUnit") (Unique (17))) (Ty_Forall (TyName (Name ("a") (Unique (16)))) (Kind_Base) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniUnit))) (Ty_Fun (Ty_Var (TyName (Name ("a") (Unique (16))))) (Ty_Var (TyName (Name ("a") (Unique (16))))))))) (Builtin (ChooseUnit))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("chooseList") (Unique (71))) (Ty_Forall (TyName (Name ("a") (Unique (69)))) (Kind_Base) (Ty_Forall (TyName (Name ("b") (Unique (70)))) (Kind_Base) (Ty_Fun (Ty_App (Ty_Builtin (SomeTypeIn (DefaultUniProtoList))) (Ty_Var (TyName (Name ("a") (Unique (69)))))) (Ty_Fun (Ty_Var (TyName (Name ("b") (Unique (70))))) (Ty_Fun (Ty_Var (TyName (Name ("b") (Unique (70))))) (Ty_Var (TyName (Name ("b") (Unique (70))))))))))) (Builtin (ChooseList))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("chooseData") (Unique (77))) (Ty_Forall (TyName (Name ("a") (Unique (76)))) (Kind_Base) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniData))) (Ty_Fun (Ty_Var (TyName (Name ("a") (Unique (76))))) (Ty_Fun (Ty_Var (TyName (Name ("a") (Unique (76))))) (Ty_Fun (Ty_Var (TyName (Name ("a") (Unique (76))))) (Ty_Fun (Ty_Var (TyName (Name ("a") (Unique (76))))) (Ty_Fun (Ty_Var (TyName (Name ("a") (Unique (76))))) (Ty_Var (TyName (Name ("a") (Unique (76))))))))))))) (Builtin (ChooseData))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_mulMlResult") (Unique (109))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_MlResult))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_MlResult))) (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_MlResult)))))) (Builtin (Bls12_381_mulMlResult))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_millerLoop") (Unique (108))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G1_Element))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G2_Element))) (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_MlResult)))))) (Builtin (Bls12_381_millerLoop))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_finalVerify") (Unique (110))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_MlResult))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_MlResult))) (Ty_Builtin (SomeTypeIn (DefaultUniBool)))))) (Builtin (Bls12_381_finalVerify))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_G2_zero") (Unique (106))) (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G2_Element)))) (Constant (Some (ValueOf (DefaultUniBLS12_381_G2_Element) (0xc00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000))))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_G2_uncompress") (Unique (104))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G2_Element))))) (Builtin (Bls12_381_G2_uncompress))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_G2_scalarMul") (Unique (101))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G2_Element))) (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G2_Element)))))) (Builtin (Bls12_381_G2_scalarMul))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_G2_neg") (Unique (102))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G2_Element))) (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G2_Element))))) (Builtin (Bls12_381_G2_neg))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_G2_hashToGroup") (Unique (105))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G2_Element)))))) (Builtin (Bls12_381_G2_hashToGroup))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_G2_generator") (Unique (107))) (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G2_Element)))) (Constant (Some (ValueOf (DefaultUniBLS12_381_G2_Element) (0x93e02b6052719f607dacd3a088274f65596bd0d09920b61ab5da61bbdc7f5049334cf11213945d57e5ac7d055d042b7e024aa2b2f08f0a91260805272dc51051c6e47ad4fa403b02b4510b647ae3d1770bac0326a805bbefd48056c8c121bdb8))))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_G2_equals") (Unique (99))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G2_Element))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G2_Element))) (Ty_Builtin (SomeTypeIn (DefaultUniBool)))))) (Builtin (Bls12_381_G2_equal))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_G2_compress") (Unique (103))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G2_Element))) (Ty_Builtin (SomeTypeIn (DefaultUniByteString))))) (Builtin (Bls12_381_G2_compress))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_G2_add") (Unique (100))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G2_Element))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G2_Element))) (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G2_Element)))))) (Builtin (Bls12_381_G2_add))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_G1_zero") (Unique (97))) (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G1_Element)))) (Constant (Some (ValueOf (DefaultUniBLS12_381_G1_Element) (0xc00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000))))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_G1_uncompress") (Unique (95))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G1_Element))))) (Builtin (Bls12_381_G1_uncompress))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_G1_scalarMul") (Unique (93))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G1_Element))) (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G1_Element)))))) (Builtin (Bls12_381_G1_scalarMul))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_G1_neg") (Unique (92))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G1_Element))) (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G1_Element))))) (Builtin (Bls12_381_G1_neg))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_G1_hashToGroup") (Unique (96))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G1_Element)))))) (Builtin (Bls12_381_G1_hashToGroup))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_G1_generator") (Unique (98))) (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G1_Element)))) (Constant (Some (ValueOf (DefaultUniBLS12_381_G1_Element) (0x97f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb))))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_G1_equals") (Unique (90))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G1_Element))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G1_Element))) (Ty_Builtin (SomeTypeIn (DefaultUniBool)))))) (Builtin (Bls12_381_G1_equal))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_G1_compress") (Unique (94))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G1_Element))) (Ty_Builtin (SomeTypeIn (DefaultUniByteString))))) (Builtin (Bls12_381_G1_compress))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("bls12_381_G1_add") (Unique (91))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G1_Element))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G1_Element))) (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G1_Element)))))) (Builtin (Bls12_381_G1_add))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("blake2b_") (Unique (26))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniByteString))))) (Builtin (Blake2b_256))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("blake2b_") (Unique (25))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniByteString))))) (Builtin (Blake2b_224))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("appendString") (Unique (50))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniString))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniString))) (Ty_Builtin (SomeTypeIn (DefaultUniString)))))) (Builtin (AppendString))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("appendByteString") (Unique (18))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniByteString))) (Ty_Builtin (SomeTypeIn (DefaultUniByteString)))))) (Builtin (AppendByteString))) (nil)) (Let (NonRec) (cons (TermBind (Strict) (VarDecl (Name ("addInteger") (Unique (36))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Fun (Ty_Builtin (SomeTypeIn (DefaultUniInteger))) (Ty_Builtin (SomeTypeIn (DefaultUniInteger)))))) (Builtin (AddInteger))) (nil)) (Let (NonRec) (cons (TypeBind (TyVarDecl (TyName (Name ("Integer") (Unique (1)))) (Kind_Base)) (Ty_Builtin (SomeTypeIn (DefaultUniInteger)))) (nil)) (Let (NonRec) (cons (TypeBind (TyVarDecl (TyName (Name ("BuiltinUnit") (Unique (3)))) (Kind_Base)) (Ty_Builtin (SomeTypeIn (DefaultUniUnit)))) (nil)) (Let (NonRec) (cons (TypeBind (TyVarDecl (TyName (Name ("BuiltinString") (Unique (4)))) (Kind_Base)) (Ty_Builtin (SomeTypeIn (DefaultUniString)))) (nil)) (Let (NonRec) (cons (TypeBind (TyVarDecl (TyName (Name ("BuiltinPair") (Unique (6)))) (Kind_Arrow (Kind_Base) (Kind_Arrow (Kind_Base) (Kind_Base)))) (Ty_Builtin (SomeTypeIn (DefaultUniProtoPair)))) (nil)) (Let (NonRec) (cons (TypeBind (TyVarDecl (TyName (Name ("BuiltinList") (Unique (7)))) (Kind_Arrow (Kind_Base) (Kind_Base))) (Ty_Builtin (SomeTypeIn (DefaultUniProtoList)))) (nil)) (Let (NonRec) (cons (TypeBind (TyVarDecl (TyName (Name ("BuiltinByteString") (Unique (0)))) (Kind_Base)) (Ty_Builtin (SomeTypeIn (DefaultUniByteString)))) (nil)) (Let (NonRec) (cons (TypeBind (TyVarDecl (TyName (Name ("BuiltinBool") (Unique (2)))) (Kind_Base)) (Ty_Builtin (SomeTypeIn (DefaultUniBool)))) (nil)) (Let (NonRec) (cons (TypeBind (TyVarDecl (TyName (Name ("BuiltinBLS12_381_MlResult") (Unique (10)))) (Kind_Base)) (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_MlResult)))) (nil)) (Let (NonRec) (cons (TypeBind (TyVarDecl (TyName (Name ("BuiltinBLS12_381_G2_Element") (Unique (9)))) (Kind_Base)) (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G2_Element)))) (nil)) (Let (NonRec) (cons (TypeBind (TyVarDecl (TyName (Name ("BuiltinBLS12_381_G1_Element") (Unique (8)))) (Kind_Base)) (Ty_Builtin (SomeTypeIn (DefaultUniBLS12_381_G1_Element)))) (nil)) (Var (Name ("mkGiftValidator") (Unique (116))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+.
 
 End NamedTerm.
 
