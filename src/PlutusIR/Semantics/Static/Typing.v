@@ -12,19 +12,100 @@ Import ListNotations.
 Import Coq.Strings.String.
 Local Open Scope string_scope.
 
+(* Common built-in types *)
+Definition Ty_Int := Ty_Builtin (Some' (TypeIn DefaultUniInteger)).
+Definition Ty_Bool := Ty_Builtin (Some' (TypeIn DefaultUniBool)).
+Definition Ty_String := Ty_Builtin (Some' (TypeIn DefaultUniString)).
+Definition Ty_Unit := Ty_Builtin (Some' (TypeIn DefaultUniUnit)).
+Definition Ty_BS := Ty_Builtin (Some' (TypeIn DefaultUniByteString)).
+
+Definition Ty_BinOp t := Ty_Fun t (Ty_Fun t t).
+Definition Ty_BinPred t := Ty_Fun t (Ty_Fun t Ty_Bool).
+
 (** Types of builtin functions *)
-Definition lookupBuiltinTy (f : DefaultFun) : ty :=
-  let Ty_Int := Ty_Builtin (Some' (TypeIn DefaultUniInteger)) in
-  let Ty_Bool := Ty_Builtin (Some' (TypeIn DefaultUniBool)) in
-  let Ty_BS := Ty_Builtin (Some' (TypeIn DefaultUniByteString)) in
-  let T_Int_Bin := Ty_Fun Ty_Int (Ty_Fun Ty_Int Ty_Int) in
-  let T_Int_BinPredicate := Ty_Fun Ty_Int (Ty_Fun Ty_Int Ty_Bool) in
-  let T_BS_Bin := Ty_Fun Ty_BS (Ty_Fun Ty_BS Ty_BS) in
-  let T_BS_BinPredicate := Ty_Fun Ty_BS (Ty_Fun Ty_BS Ty_Bool) in
-  let Ty_Char := Ty_Builtin (Some' (TypeIn DefaultUniChar)) in
-  let Ty_String := Ty_Builtin (Some' (TypeIn DefaultUniString)) in
-  let Ty_Unit := Ty_Builtin (Some' (TypeIn DefaultUniUnit)) in
+Definition lookupBuiltinTy (f : DefaultFun) :=
   match f with
+  | AddInteger
+  | SubtractInteger
+  | MultiplyInteger
+  | DivideInteger
+  | QuotientInteger => Ty_BinOp Ty_Int
+  | _ => Ty_Bool (* TODO *)
+  end
+.
+  (*
+  | RemainderInteger
+  | ModInteger
+  | EqualsInteger
+  | LessThanInteger
+  | LessThanEqualsInteger
+  | AppendByteString
+  | ConsByteString
+  | SliceByteString
+  | LengthOfByteString
+  | IndexByteString
+  | EqualsByteString
+  | LessThanByteString
+  | LessThanEqualsByteString
+  | Sha2_256
+  | Sha3_256
+  | Blake2b_256
+  | VerifyEd25519Signature
+  | VerifyEcdsaSecp256k1Signature
+  | VerifySchnorrSecp256k1Signature
+  | AppendString
+  | EqualsString
+  | EncodeUtf8
+  | DecodeUtf8
+  | IfThenElse
+  | ChooseUnit
+  | Trace
+  | FstPair
+  | SndPair
+  | ChooseList
+  | MkCons
+  | HeadList
+  | TailList
+  | NullList
+  | ChooseData
+  | ConstrData
+  | MapData
+  | ListData
+  | IData
+  | BData
+  | UnConstrData
+  | UnMapData
+  | UnListData
+  | UnIData
+  | UnBData
+  | EqualsData
+  | SerialiseData
+  | MkPairData
+  | MkNilData
+  | MkNilPairData
+  | Bls12_381_G1_add
+  | Bls12_381_G1_neg
+  | Bls12_381_G1_scalarMul
+  | Bls12_381_G1_equal
+  | Bls12_381_G1_hashToGroup
+  | Bls12_381_G1_compress
+  | Bls12_381_G1_uncompress
+  | Bls12_381_G2_add
+  | Bls12_381_G2_neg
+  | Bls12_381_G2_scalarMul
+  | Bls12_381_G2_equal
+  | Bls12_381_G2_hashToGroup
+  | Bls12_381_G2_compress
+  | Bls12_381_G2_uncompress
+  | Bls12_381_millerLoop
+  | Bls12_381_mulMlResult
+  | Bls12_381_finalVerify
+  | Keccak_256
+  | Blake2b_224
+
+
+
+  (* OLD *)
   | AddInteger => T_Int_Bin
   | SubtractInteger => T_Int_Bin
   | MultiplyInteger => T_Int_Bin
@@ -34,8 +115,6 @@ Definition lookupBuiltinTy (f : DefaultFun) : ty :=
   | ModInteger => T_Int_Bin
   | LessThanInteger => T_Int_BinPredicate
   | LessThanEqInteger => T_Int_BinPredicate
-  | GreaterThanInteger => T_Int_BinPredicate
-  | GreaterThanEqInteger => T_Int_BinPredicate
   | EqInteger => T_Int_BinPredicate
   | Concatenate => T_BS_Bin
   | TakeByteString => Ty_Fun Ty_Int (Ty_Fun Ty_BS Ty_BS)
@@ -47,10 +126,9 @@ Definition lookupBuiltinTy (f : DefaultFun) : ty :=
   | LtByteString => T_BS_BinPredicate
   | GtByteString => T_BS_BinPredicate
   | IfThenElse => Ty_Forall "a" Kind_Base (Ty_Fun Ty_Bool (Ty_Fun (Ty_Var "a") (Ty_Fun (Ty_Var "a") (Ty_Var "a"))))
-  | CharToString => Ty_Fun Ty_Char Ty_String
   | Append => Ty_Fun Ty_String (Ty_Fun Ty_String Ty_String)
   | Trace => Ty_Fun Ty_String Ty_Unit (* TODO: figure out if it is the correct type*)
-  end.
+  *)
 
 (** Helper funcitons*)
 Definition flatten {A : Type} (l : list (list A)) := List.concat (rev l).

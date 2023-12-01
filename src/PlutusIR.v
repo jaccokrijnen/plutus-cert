@@ -40,14 +40,54 @@ Inductive recursivity := NonRec | Rec.
 
 Inductive strictness := NonStrict | Strict.
 
-(** Universes *)
+(** Default universe
+
+In the compiler implementation, this is a GADT: the constructors have an index
+for their Haskell interpretation. This enforces that only well-kinded types can be constructed.
+Since types may have different kinds (e.g. List vs Integer), the GADT is not directly
+annotated with its type, but by its (Haskell) kind and its (Haskell) type. The (Haskell) kind
+is not visible though, as it is existentially quantified. For example:
+
+    -- Existential quantification of a kind.
+    data Esc = forall k. Esc k
+
+    data DefaultUni =
+    ...
+    | DefaultUniApply ::
+       !(DefaultUni (Esc f)) -> !(DefaultUni (Esc a)) -> DefaultUni (Esc (f a))
+
+This approach makes that one can construct plutus types that are of higher kind, e.g.
+
+  Ty_Builtin (SomeTypeIn DefaultUniList)
+
+This is useful for polymorphic function types (see compiler Note [Representing polymorphism]).
+
+For representing constants of builtin types (which can only have kind * ), the compiler has
+
+  data ValueOf uni a = ValueOf !(uni (Esc a)) !a
+
+Since the last argument a is inferred as kind *, the use of GADT for DefaultUniverse will
+only construct values of plutus types with the right kind.
+
+In our Coq encoding, we don't use indexed types, as Coq doesn't always have the same
+conveniences for pattern matching, and automatisation such as deriving. Instead we can
+have dependently typed functions that compute the right types for constructing values 
+(see uniType and Constant).
+*)
 Inductive DefaultUni : Type :=
-    | DefaultUniInteger    (* : DefaultUni Z (* Integer *) *)
-    | DefaultUniByteString (* : DefaultUni string (* BS.ByteString *)*)
-    | DefaultUniString     (* : DefaultUni string (* String *)*)
-    | DefaultUniChar       (* : DefaultUni ascii (* Char *)*)
-    | DefaultUniUnit       (* : DefaultUni unit (* () *)*)
-    | DefaultUniBool       (* : DefaultUni bool (* Bool *)*)
+    | DefaultUniInteger
+    | DefaultUniByteString
+    | DefaultUniString
+    | DefaultUniUnit
+    | DefaultUniBool
+    | DefaultUniProtoList
+    | DefaultUniProtoPair
+    | DefaultUniData
+    | DefaultUniBLS12_381_G1_Element
+    | DefaultUniBLS12_381_G2_Element
+    | DefaultUniBLS12_381_MlResult
+
+    | DefaultUniApply : DefaultUni -> DefaultUni -> DefaultUni
     .
 
 QCDerive EnumSized for DefaultUni.
@@ -62,15 +102,61 @@ Inductive typeIn (u : DefaultUni) :=
   TypeIn : typeIn u.
 Arguments TypeIn _ : clear implicits.
 
-(** Constants *)
-Definition uniType (x : DefaultUni) : Type :=
+(* This synonym exists since the Haskell plutus implementation cannot reuse
+   the Some type. In Coq we can. *)
+Definition SomeTypeIn (ty : DefaultUni) := @Some' typeIn ty (TypeIn ty).
+
+
+Inductive Data :=
+  | DataConstr : Z -> list Data -> Data
+  | DataMap : list (Data * Data) -> Data
+  | DataList : list Data -> Data
+  | DataI : Z -> Data
+  | DataB : string -> Data
+  .
+
+(** Coq interpretation of plutus built-in types of base kind. If not of
+* base-kind (or not well-kinded), returns None.
+*)
+Fixpoint uniType_option (x : DefaultUni) : option Set :=
   match x with
-    | DefaultUniInteger    => Z
-    | DefaultUniByteString => string
-    | DefaultUniString     => string
-    | DefaultUniChar       => ascii
-    | DefaultUniUnit       => unit
-    | DefaultUniBool       => bool
+    | DefaultUniInteger    => Some Z
+    | DefaultUniByteString => Some string
+    | DefaultUniString => Some string
+    | DefaultUniUnit => Some unit
+    | DefaultUniData => Some Data
+    | DefaultUniBLS12_381_G1_Element => Some Z
+    | DefaultUniBLS12_381_G2_Element => Some Z
+    | DefaultUniBLS12_381_MlResult => Some Z
+    | DefaultUniBool => Some bool
+
+    | DefaultUniApply DefaultUniProtoList t =>
+      match uniType_option t with
+        | None => None
+        | Some A => Some (list A)
+      end
+
+    | DefaultUniApply (DefaultUniApply DefaultUniProtoPair s) t =>
+      match uniType_option s, uniType_option t with
+      | Some A, Some B => Some (prod A B)
+      | _, _ => None
+      end
+
+    | DefaultUniApply _ _ => None
+    | DefaultUniProtoList => None
+    | DefaultUniProtoPair => None
+  end
+  .
+Functional Scheme uniType_option_rect := Induction for uniType_option Sort Type.
+
+
+(** Coq interpretation of plutus built-in types of base kind. Used for constructing
+constants (See term.Constant)
+*)
+Definition uniType (x : DefaultUni) : Type :=
+  match uniType_option x with
+    | None => Empty_set
+    | Some ty => ty
   end.
 
 Inductive valueOf (u : DefaultUni) :=
@@ -79,6 +165,7 @@ Arguments ValueOf _ _ : clear implicits.
 
 (** Built-in functions*)
 Inductive DefaultFun :=
+
     | AddInteger
     | SubtractInteger
     | MultiplyInteger
@@ -86,24 +173,88 @@ Inductive DefaultFun :=
     | QuotientInteger
     | RemainderInteger
     | ModInteger
+    | EqualsInteger
     | LessThanInteger
-    | LessThanEqInteger
-    | GreaterThanInteger
-    | GreaterThanEqInteger
-    | EqInteger
-    | Concatenate
-    | TakeByteString
-    | DropByteString
-    | SHA2
-    | SHA3
-    | VerifySignature
-    | EqByteString
-    | LtByteString
-    | GtByteString
+    | LessThanEqualsInteger
+    (* Bytestrings *)
+    | AppendByteString
+    | ConsByteString
+    | SliceByteString
+    | LengthOfByteString
+    | IndexByteString
+    | EqualsByteString
+    | LessThanByteString
+    | LessThanEqualsByteString
+    (* Cryptography and hashes *)
+    | Sha2_256
+    | Sha3_256
+    | Blake2b_256
+    | VerifyEd25519Signature  (* formerly verifySignature *)
+    | VerifyEcdsaSecp256k1Signature
+    | VerifySchnorrSecp256k1Signature
+    (* Strings *)
+    | AppendString
+    | EqualsString
+    | EncodeUtf8
+    | DecodeUtf8
+    (* Bool *)
     | IfThenElse
-    | CharToString
-    | Append
-    | Trace.
+    (* Unit *)
+    | ChooseUnit
+    (* Tracing *)
+    | Trace
+    (* Pairs *)
+    | FstPair
+    | SndPair
+    (* Lists *)
+    | ChooseList
+    | MkCons
+    | HeadList
+    | TailList
+    | NullList
+    (* Data *)
+    | ChooseData
+    | ConstrData
+    | MapData
+    | ListData
+    | IData
+    | BData
+    | UnConstrData
+    | UnMapData
+    | UnListData
+    | UnIData
+    | UnBData
+    | EqualsData
+    | SerialiseData
+    (* Misc monomorphized constructors. *)
+    | MkPairData
+    | MkNilData
+    | MkNilPairData
+    (* BLS12_381 operations *)
+    (* G1 *)
+    | Bls12_381_G1_add
+    | Bls12_381_G1_neg
+    | Bls12_381_G1_scalarMul
+    | Bls12_381_G1_equal
+    | Bls12_381_G1_hashToGroup
+    | Bls12_381_G1_compress
+    | Bls12_381_G1_uncompress
+    (* G2 *)
+    | Bls12_381_G2_add
+    | Bls12_381_G2_neg
+    | Bls12_381_G2_scalarMul
+    | Bls12_381_G2_equal
+    | Bls12_381_G2_hashToGroup
+    | Bls12_381_G2_compress
+    | Bls12_381_G2_uncompress
+    (* Pairing *)
+    | Bls12_381_millerLoop
+    | Bls12_381_mulMlResult
+    | Bls12_381_finalVerify
+    (* Keccak_256, Blake2b_224 *)
+    | Keccak_256
+    | Blake2b_224
+.
 
 Definition name := string.
 Definition tyname := string.
@@ -140,8 +291,6 @@ Inductive ty :=
 Inductive vdecl := VarDecl : binderName -> ty -> vdecl.
 Inductive tvdecl := TyVarDecl : binderTyname -> kind -> tvdecl.
 Inductive dtdecl := Datatype : tvdecl -> list tvdecl -> binderName -> list vdecl -> dtdecl.
-
-
 
 (** terms and bindings *)
 (* Perhaps parametrize to mimic original AST in haskell more closely? We really only need one instantiation for now. *)

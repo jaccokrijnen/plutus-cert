@@ -8,6 +8,7 @@ From Coq Require Import
 
 From PlutusCert Require Import
   Util
+  Equality
   UniqueBinders
   Purity
   PlutusIR
@@ -100,36 +101,11 @@ Fixpoint dec_Term (x y : term) {struct x} : bool := match x, y with
 Definition P_Term t := forall t', dec_Term t t' = true -> elim t t'.
 Definition P_Binding b := forall b', dec_Binding dec_Term b b' = true -> elim_binding b b'.
 
-Axiom (String_eqb_eq       : ∀ x y, String.eqb x y = true -> x = y).
-Axiom (recursivity_eqb_eq  : ∀ x y, recursivity_eqb x y = true -> x = y).
-Axiom (strictness_eqb_eq   : ∀ x y, strictness_eqb x y = true -> x = y).
-Axiom (Kind_eqb_eq         : ∀ x y, Kind_eqb x y = true -> x = y).
-Axiom (Ty_eqb_eq           : ∀ x y, Ty_eqb x y = true -> x = y).
-Axiom (some_valueOf_eqb_eq : ∀ x y, some_valueOf_eqb x y = true -> x = y).
-Axiom (func_eqb_eq         : ∀ x y, func_eqb x y = true -> x = y).
-Axiom (VDecl_eqb_eq        : ∀ x y, VDecl_eqb x y = true -> x = y).
-Axiom (TVDecl_eqb_eq       : ∀ x y, TVDecl_eqb x y = true -> x = y).
-Axiom (DTDecl_eqb_eq       : ∀ x y, DTDecl_eqb x y = true -> x = y).
-
-Create HintDb Hints_soundness.
-#[local]
-Hint Resolve
-  String_eqb_eq
-  recursivity_eqb_eq
-  strictness_eqb_eq
-  Kind_eqb_eq
-  Ty_eqb_eq
-  some_valueOf_eqb_eq
-  func_eqb_eq
-  VDecl_eqb_eq
-  TVDecl_eqb_eq
-  DTDecl_eqb_eq
-: Hints_soundness.
 
 #[local]
 Hint Constructors
   and
-: Hints_soundness.
+: reflection.
 
 Ltac split_hypos :=
   match goal with
@@ -141,7 +117,7 @@ Ltac split_hypos :=
 Lemma H_dec_removed bs bs':
     forallb (fun b => dec_removed b (map name bs')) bs = true ->
     ∀ b : binding, In b bs → name_removed b bs' → pure_binding [] b.
-Proof with eauto with Hints_soundness.
+Proof with eauto with reflection.
   intros H_dec.
   intros b H_In H_removed.
   unfold dec_removed in H_dec.
@@ -173,7 +149,7 @@ Lemma H_find_binding' bs bs' :
          name x = name b' /\
          elim_binding x b'
     .
-Proof with eauto with Hints_soundness.
+Proof with eauto with reflection.
   intro H_P_Binding.
   rewrite forallb_forall.
   intros H_dec b' H_In.
@@ -221,7 +197,7 @@ Hint Constructors
   elim
   elim_binding
   elim_bindings
-  : Hints_soundness.
+  : reflection.
 
 Lemma dec_Bindings_sound' : ∀ bs bs',
   (∀ b, In b bs -> P_Binding b) ->
@@ -240,7 +216,7 @@ Lemma dec_TermBind_sound : ∀ s v t b b',
   P_Term t ->
   dec_Binding dec_Term b b' = true ->
   elim_binding b b'.
-Proof with eauto with Hints_soundness.
+Proof with eauto with reflection.
   intros s v t b b' H_eq H_P_Term H_dec.
   unfold P_Term in *.
   subst.
@@ -257,29 +233,30 @@ Lemma dec_TypeBind_sound : ∀ v ty b b',
   b = TypeBind v ty ->
   dec_Binding dec_Term b b' = true ->
   elim_binding b b'.
-Proof with eauto with Hints_soundness.
+Proof with eauto with reflection.
   intros v ty b b' H_eq H_dec.
   subst.
   destruct b'.
   all: try discriminate.
   simpl in H_dec.
-  split_hypos.
-  assert (v = t)... subst.
-  assert (ty = t0)... subst...
+  rewrite Binding_eqb_eq in H_dec.
+  inversion H_dec.
+  subst...
 Qed.
 
 Lemma dec_DatatypeBind_sound : ∀ dtd b b',
   b = DatatypeBind dtd ->
   dec_Binding dec_Term b b' = true ->
   elim_binding b b'.
-Proof with eauto with Hints_soundness.
+Proof with eauto with reflection.
   intros dtd b b' H_eq H_dec.
   subst.
   destruct b'.
   all: try discriminate.
   simpl in H_dec.
-  split_hypos.
-  assert (dtd = d)... subst...
+  rewrite Binding_eqb_eq in H_dec.
+  inversion H_dec.
+  subst...
 Qed.
 
 Lemma all_pure : ∀ bs,
@@ -294,21 +271,21 @@ Proof.
 Qed.
 
 #[local]
-Hint Resolve all_pure : Hints_soundness.
+Hint Resolve all_pure : reflection.
 #[local]
-Hint Resolve dec_Bindings_sound' : Hints_soundness.
+Hint Resolve dec_Bindings_sound' : reflection.
 #[local]
 Hint Resolve
   dec_TermBind_sound
   dec_TypeBind_sound
   dec_DatatypeBind_sound
-  : Hints_soundness.
+  : reflection.
 #[local]
-Hint Constructors Compat : Hints_soundness.
+Hint Constructors Compat : reflection.
 
 Theorem dec_Term_Binding_sound :
   (∀ t, P_Term t) /\ (∀ b, P_Binding b).
-Proof with eauto with Hints_soundness.
+Proof with eauto with reflection.
   apply term__multind with (P := P_Term) (Q := P_Binding).
   all: intros.
 

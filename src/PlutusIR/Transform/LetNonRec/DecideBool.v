@@ -90,8 +90,8 @@ Fixpoint dec_Term (x y : term) {struct x} : bool := match x, y with
   | Error ty       , Error ty'          => Ty_eqb ty ty'
   | IWrap ty1 ty2 t, IWrap ty1' ty2' t' => Ty_eqb ty1 ty1' && Ty_eqb ty2 ty2' && dec_Term t t'
   | Unwrap t       , Unwrap t'          => dec_Term t t'
-  | Constr i ts    , Constr i' ts'      => Nat.eqb i i' && list_eqb dec_Term ts ts'
-  | Case t ts      , Case t' ts'        => dec_Term t t' && list_eqb dec_Term ts ts'
+  | Constr i ts    , Constr i' ts'      => Nat.eqb i i' && forall2b dec_Term ts ts'
+  | Case t ts      , Case t' ts'        => dec_Term t t' && forall2b dec_Term ts ts'
 
   | _, _ => false
   end
@@ -176,7 +176,7 @@ Ltac rewrite_reflection :=
     | H : Nat.eqb _ _ = true |- _ => rewrite Nat.eqb_eq in H
     | H : strictness_eqb _ _ = true |- _ => rewrite strictness_eqb_eq in H
     | H : VDecl_eqb _ _ = true |- _ => rewrite VDecl_eqb_eq in H
-    | H : list_eqb ?eqb ?xs _ = true,
+    | H : forall2b ?eqb ?xs _ = true,
       H_elems : ForallP _ ?xs |- _
         => rewrite ForallP_Forall in H_elems;
            rewrite (forall2b_Forall2_Forall _ _ dec_Term xs _ H_elems) in H
@@ -211,7 +211,7 @@ Ltac bwd_reflection :=
     | |- VDecl_eqb _ _ = true => rewrite VDecl_eqb_eq; reflexivity
 
     |
-      H_elems : ForallP _ ?xs |- list_eqb ?eqb ?xs _ = true =>
+      H_elems : ForallP _ ?xs |- forall2b ?eqb ?xs _ = true =>
         rewrite ForallP_Forall in H_elems;
         rewrite (forall2b_Forall2_Forall _ CNR_Term dec_Term xs _ H_elems);
         assumption

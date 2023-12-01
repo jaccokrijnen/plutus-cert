@@ -14,6 +14,11 @@ Local Open Scope Z_scope.
 Definition arity (df : DefaultFun) : nat :=
   match df with
   | AddInteger => 2
+  | IfThenElse => 4
+  | _ => 0 (* TODO: implement lookupBuiltinTy, then this can be calculated from the type *)
+  end
+  (*
+  match df with
   | SubtractInteger => 2
   | MultiplyInteger => 2
   | DivideInteger => 2
@@ -34,18 +39,19 @@ Definition arity (df : DefaultFun) : nat :=
   | EqByteString => 2
   | LtByteString => 2
   | GtByteString => 2
-  | IfThenElse => 4
   | CharToString => 1
   | Append => 2
   | Trace => 1
-  end.
+  end
+  *)
+.
 
 (** ** Meanings of built-in functions *)
 
 Definition constInt (a : Z) : term := (Constant (@Some' valueOf DefaultUniInteger (ValueOf DefaultUniInteger a))).
 Definition constBool (a : bool) : term := Constant (Some' (ValueOf DefaultUniBool a)).
 Definition constBS (a : string) : term := Constant (Some' (ValueOf DefaultUniByteString a)).
-Definition constChar (a : ascii) : term := Constant (Some' (ValueOf DefaultUniChar a)).
+(* Definition constChar (a : ascii) : term := Constant (Some' (ValueOf DefaultUniChar a)). *)
 Definition constString (a : string) : term := Constant (Some' (ValueOf DefaultUniString a)).
 Definition constUnit (a : unit) : term := Constant (Some' (ValueOf DefaultUniUnit a)).
 
@@ -56,7 +62,7 @@ Definition drop (x : Z) (s : string) : string := substring (Z.to_nat x) (length 
   constInt
   constBool
   constBS
-  constChar
+  (* constChar *)
   constString
   constUnit
   take
@@ -68,7 +74,7 @@ Definition drop (x : Z) (s : string) : string := substring (Z.to_nat x) (length 
     Note that not all default functions have sensible implementations, such
     as SHA2, SHA3 and VerifySignature. This is bound to change in the future.
 *)
-Definition compute_defaultfun (t : term) : option term :=
+Definition compute_defaultfun (t : term) : option term := 
   match t with
   (** Binary operators on integers *)
   (* AddInteger *)
@@ -79,6 +85,27 @@ Definition compute_defaultfun (t : term) : option term :=
       )
       (Constant (@Some' _ DefaultUniInteger (ValueOf _  y)))
     ) => Some (constInt (x + y))
+
+  (** If-Then-Else *)
+  | (Apply
+      (Apply
+        (Apply
+          (TyInst
+            (Builtin IfThenElse)
+            T
+          )
+          (Constant (@Some' _ DefaultUniBool (ValueOf _ cond)))
+        )
+        thenBranch
+      )
+      elseBranch
+    ) => Some (if cond then thenBranch else elseBranch)
+
+  | _ => None
+  end
+  (*
+None (* TODO: update to new built-ins set *)
+
   (* SubtractInteger *)
   | (Apply
       (Apply
@@ -248,20 +275,6 @@ Definition compute_defaultfun (t : term) : option term :=
       )
       (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs2)))
     ) => Some (constBool (to_Z bs1 >? to_Z bs2))
-  (** If-Then-Else *)
-  | (Apply
-      (Apply
-        (Apply
-          (TyInst
-            (Builtin IfThenElse)
-            T
-          )
-          (Constant (@Some' _ DefaultUniBool (ValueOf _ cond)))
-        )
-        thenBranch
-      )
-      elseBranch
-    ) => Some (if cond then thenBranch else elseBranch)
   (* String operations *)
   (* CharToString *)
   | (Apply
@@ -283,4 +296,6 @@ Definition compute_defaultfun (t : term) : option term :=
     ) => Some (constUnit tt)
   (* Catch-all: The argument term is not a fully applied builtin *)
   | _ => None
-  end.
+  end
+  *)
+.

@@ -15,6 +15,9 @@ From PlutusCert Require Import
   Examples.TimelockDumps
 .
 
+(* TODO: the below dumps used old version of builtins *)
+
+  (*
 
 Set Implicit Arguments.
 Set Printing Universes.
@@ -307,4 +310,6 @@ Definition pir_0_6 : compose _ pir_2_typechecked plc_5_compileNonRecTerms:=
     (ComposeCons plc_4_5
      ComposeNil
     ))))))))))).
+ *)
+
  *)

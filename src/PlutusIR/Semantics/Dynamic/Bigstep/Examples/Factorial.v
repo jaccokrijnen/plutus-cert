@@ -32,7 +32,7 @@ Definition fact_term (n : Z) : term :=
                 )
                 (Apply
                   (Apply
-                    (Builtin EqInteger)
+                    (Builtin EqualsInteger)
                     (Var "x")
                   )
                   (Constant (Some' (ValueOf DefaultUniInteger 0)))

@@ -193,21 +193,6 @@ Section Compatibility.
     | _ => idtac
     end.
 
-  Create HintDb Hints_soundness.
-  Hint Resolve
-    string_eqb_eq
-    recursivity_eqb_eq
-    strictness_eqb_eq
-    Kind_eqb_eq
-    Ty_eqb_eq
-    some_valueOf_eqb_eq
-    func_eqb_eq
-    VDecl_eqb_eq
-    TVDecl_eqb_eq
-    DTDecl_eqb_eq
-  : Hints_soundness.
-
-
 
   Lemma dec_compat_Binding_Compat_Binding : ∀ b b',
       (∀ t t', dec_R t t' = true -> R t t') ->
