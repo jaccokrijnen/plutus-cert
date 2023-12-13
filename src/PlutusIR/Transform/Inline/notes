@@ -1,0 +1,57 @@
+
+                    ----------
+                    Ω(x) = t_x
+   ----------------------------------------- Inline-Var₁
+          [x ↦ t_x] ⊢  x  ▷  t_x
+---------------------------------------------- Inline-Let
+[] ⊢ let x = t_x in x   ▷  let x = t_x in t_x
+
+
+
+Semantic preservation
+---
+
+To Prove:
+
+  Ω ⊢ t ▷ t'  ->
+  Γ ⊢ t : τ ->
+  (∀ γ ∈ ⟦Γ⟧. Ω ≤ γ) ->    -- invariant, starting from a closed term
+
+  LR_approx t t'
+
+⟦Ω⟧ : Type
+⟦[]⟧          = True
+⟦(x, t) :: Ω⟧ =
+  ∃ Γ τ v.
+    (Γ ⊢ t : τ)
+      ∧
+    (∃ γ : ⟦Γ⟧. γ(t) ⇓ v)
+
+
+
+LR_approx := ∀ γ.
+  γ ∈ ⟦Γ⟧          ->
+  Γ ⊢ t : τ ->
+  Γ ⊢ t' : τ ->
+  γ(t) ⇓ v         ->
+  ∃ v' . γ(t') ⇓ v'   ∧  RV(v, v', τ)
+
+Induction on typing deriv of t
+
+inversion, case [Inline-Var₁]:
+
+  i.e. assume Ω ⊢ x ▷ t
+
+  (by inversion Ω(x) = t)
+
+  suppose  γ(x) ⇓ v
+
+  (to prove γ(t) ⇓ v' ∧ RV(v, v', τ))
+
+  we will prove γ(t) ⇓ v
+
+  γ is of the form γ₁ ++ γ₂
+
+    x ↦ t ∈ γ
+  Proving it for open terms is necessary
+

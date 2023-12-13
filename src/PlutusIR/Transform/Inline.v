@@ -228,4 +228,331 @@ From PlutusCert Require Import Bigstep.
 Require Import Program.
 
 
-   .
+(* Todo: move this to a subst helper module *)
+Lemma subst_here x tx : subst x tx (Var x) = tx.
+Proof.
+Admitted.
+
+Lemma Lookup_append {A B} (k : A) (v : B) xs xs':
+  Lookup k v xs -> Lookup k v (xs ++ xs').
+Admitted.
+
+Lemma Lookup_extensional {A B} (k : A) (v v' : B) xs :
+  Lookup k v xs -> Lookup k v' xs -> v = v'.
+Admitted.
+
+
+Module InlineWS.
+
+  From PlutusCert Require Import WellScoped.
+
+  (* Lowering contexts *)
+  Definition lower {A} (xs : list (string * A)) :=
+    map fst xs.
+
+  Lemma inline_well_scoped_l Δ Γ t t' :
+    inline Δ Γ t t' ->
+    well_scoped (lower Δ) (lower Γ) t.
+  Admitted.
+
+  Lemma inline_closed_l t t' :
+    inline [] [] t t' ->
+    well_scoped [] [] t.
+  Proof.
+    apply inline_well_scoped_l with (Δ := []) (Γ := []).
+  Qed.
+
+  Lemma ws_subst_id Δ Γ x tx t :
+    well_scoped Δ Γ t -> subst x tx t = t.
+  Admitted.
+
+  Lemma inline_closed_refl t :
+    well_scoped [] [] t ->
+    inline [] []  t t.
+  Admitted.
+
+  Lemma inline_refl Δ Γ t :
+    well_scoped (lower Δ) (lower Γ) t ->
+    inline Δ Γ t t.
+  Admitted.
+
+  Lemma inline_weaken Δ Γ t t' :
+    inline [] [] t t' ->
+    inline Δ Γ t t'.
+  Admitted.
+
+  Lemma inline_inv_var Δ Γ x t':
+    inline Δ Γ (Var x) t' ->
+    exists tx, Lookup x tx Γ.
+  Proof.
+    intros H_inl.
+    inversion H_inl; eauto.
+  Qed.
+
+  Lemma inline_strengthen_var Δ Γ x t' :
+    inline Δ Γ (Var x) t' ->
+    exists info, inline [] [(x, info)] (Var x) t'.
+  Proof.
+    intros H_inl.
+    inversion H_inl; subst.
+    - exists (bound_TermBind t').
+      econstructor.
+      constructor.
+    - exists info.
+      eapply inl_Var_2.
+      constructor.
+  Qed.
+
+End InlineWS.
+
+
+Import InlineWS.
+
+Lemma subst_preserves_inline_Let Δ_pre Γ_pre tx tx' t t' x :
+  inline [] [] tx tx' -> (* substituting a closed term *)
+  inline Δ_pre (Γ_pre ++ [(x, bound_TermBind tx)]) t t' -> (* into a term that has x as free variable *)
+  inline Δ_pre Γ_pre (subst x tx t) (subst x tx' t').
+Proof.
+  induction t.
+  all: intros H_inl_tx H_inl_t.
+  - (* Let *) admit.
+  - (* Var *)
+    inversion H_inl_t; subst.
+    + (* Var-1 *)
+      destruct (string_dec x n).
+      * (* n = x *)
+        subst n.
+        simpl.
+        rewrite eqb_refl.
+        assert (t' = tx) by admit. (* From lookup *)
+        subst t'.
+        rewrite (ws_subst_id (lower Δ_pre) (lower Γ_pre) x tx' _).
+        ** eapply inline_refl.
+           eauto using inline_well_scoped_l, inline_weaken.
+        ** eauto using inline_well_scoped_l, inline_weaken.
+      * (* n ≠ x *)
+
+        simpl.
+        rewrite <- eqb_neq in n0.
+        rewrite n0.
+        apply inline_strengthen_var in H_inl_t as [info inl_t].
+
+Admitted.
+
+Lemma subst_preserves_inline_Let Δ Γ Δ_pre Γ_pre tx tx' t t' x :
+  inline Δ Γ tx tx' ->
+  inline (Δ_pre ++ Δ) (Γ_pre ++ (x, bound_TermBind tx) :: Γ) t t' ->
+  ~(exists y, Lookup x y Γ_pre) ->
+        erewrite ws_subst_id; eauto.
+  inline (Δ_pre ++ Δ) (Γ_pre ++ Γ) (subst x tx t) (subst x tx' t').
+Proof.
+  induction t.
+  all: intros H_inl_tx H_inl_t H_no_shadow.
+  - (* Let *) admit.
+  - (* Var *)
+    inversion H_inl_t; subst.
+    + (* inl_Var_1 *)
+      destruct (string_dec n x).
+      * subst.
+        rewrite subst_here.
+        assert (t = tx). admit.
+        subst.
+        assert (bound_TermBind tx = bound_TermBind t) by
+          eauto using Lookup_append, Lookup_extensional.
+        inversion H; subst. clear H.
+        
+        apply f_equal in H. clear H.
+        assert ().
+        eapply inl_Var_1.
+      eauto using inline.
+      
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+Admitted.
+
+Lemma substA_preserves_inline Δ Γ T T' info t t' α :
+  inline_Ty Δ T T' ->
+  inline ((α, info) :: Δ) Γ t t' ->
+  inline Δ Γ (substA α T t) (substA α T' t').
+Admitted.
+
+Lemma inline_preserves_no_error Δ Γ t t':
+  inline Δ Γ t t' ->
+  ~(is_error t) ->
+  ~(is_error t').
+Admitted.
+
+Lemma inline_all_bindings Δ Γ bs bs' t t':
+  inline_Bindings_Rec Δ Γ (Let Rec bs t) (Let Rec bs' t') ->
+  Forall2 (inline_Binding Δ Γ) bs bs'.
+Admitted.
+
+Definition P_Term t v (k : nat) := forall Δ Γ t',
+  inline Δ Γ t t' ->
+  exists k' v',
+    eval t' v' k' /\ inline Δ Γ v v'.
+
+Definition P_LetNonRec t v (k : nat) := forall Δ Γ t',
+  inline Δ Γ t t' ->
+  exists k' v',
+    eval_bindings_nonrec t' v' k' /\ inline Δ Γ v v'.
+
+Definition P_LetRec bs t v (k : nat) := forall Δ Γ t' bs',
+  inline Δ Γ t t' ->
+  Forall2 (inline_Binding (Bindings_to_ty_ctx bs ++ Δ) (Bindings_to_ctx bs ++ Γ)) bs bs' ->
+  exists k' v',
+    eval_bindings_rec bs' t' v' k' /\ inline Δ Γ v v'.
+
+Lemma eval_inline :
+  (forall t v k, eval t v k -> P_Term t v k) /\
+  (forall t v k, eval_bindings_nonrec t v k -> P_LetNonRec t v k) /\
+  (forall bs t v k, eval_bindings_rec bs t v k -> P_LetRec bs t v k).
+Proof.
+  apply eval__multind with (P := P_Term) (P0 := P_LetNonRec) (P1 := P_LetRec).
+  - (* LamAbs *)
+    unfold P_Term.
+    intros.
+    inversion H; subst.
+    eauto using eval.
+  - (* Apply *)
+    unfold P_Term.
+    intros.
+
+    match goal with
+    | H : inline _ _ _ _ |- _ => inversion H; subst
+    end.
+
+    edestruct H0 as [k1' [v1' [H_eval_t1' H_inl_v1]]]; eauto. clear H0.
+    edestruct H2 as [k2' [v2' [H_eval_t2' H_inl_v2]]] ; eauto. clear H2.
+
+    inversion H_inl_v1; subst.
+    edestruct H5 as [k3' [v3' [H_eval_subst H_inl_v3']]]; clear H5.
+    + eapply subst_preserves_inline; eauto.
+    + repeat eexists.
+      * eapply E_Apply; eauto.
+        eauto using inline_preserves_no_error.
+      * eauto.
+  - (* TyAbs*)
+    admit.
+  - (* TyInst *)
+    admit.
+  - (**)
+    admit.
+  - (**)
+    admit.
+  - (**)
+    admit.
+  - (**)
+    admit.
+  - (**)
+    admit.
+  - (**)
+    admit.
+  - (**)
+    admit.
+  - (**)
+    admit.
+  - (**)
+    admit.
+  - (**)
+    admit.
+  - (**)
+    admit.
+  - (**)
+    admit.
+  - (**)
+    admit.
+  - (**)
+    admit.
+  - (**)
+    admit.
+  - (**)
+    admit.
+  - (* Let NonRec *)
+    unfold P_Term, P_LetNonRec.
+    intros.
+
+    match goal with
+    | H : inline _ _ _ _ |- _ => inversion H; subst
+    end.
+
+    edestruct H0 as [k' [v' [H_eval_t' H_inl_v]]]; eauto. clear H0.
+    eauto using eval.
+  - (* Let Rec*)
+    unfold P_Term, P_LetRec.
+    intros.
+
+    match goal with
+    | H : inline _ _ _ _ |- _ => inversion H; subst
+    end.
+
+    edestruct H0 as [k' [v' [H_eval_t' H_inl_v ]]]; eauto using inline_all_bindings. clear H0.
+    eauto using eval.
+
+  - (* Let NonRec [] *)
+    admit.
+
+  - (* Let NonRec TermBind *)
+    unfold P_LetNonRec in *.
+    intros.
+
+    match goal with
+    | H : inline _ _ _ _ |- _ => inversion H; clear H; subst
+    end.
+
+    inversion H8; subst.
+    inversion H6; subst.
+
+    edestruct H0; eauto.
+    destruct H4 as [v' [H_eval_tb H_inl_v1]].
+    edestruct H3.
+    (*
+      seems like something is wrong with H3, it shouldn't have the same Δ and Γ
+    *)
+    +
+      eapply subst_preserves_inline.
+      * eauto.
+      * simpl in H11.
+        eauto using inline.
+    + destruct H4 as [v'0 [H_eval_bs H_inline_v2]].
+      repeat eexists;
+      eauto using eval_bindings_nonrec, inline_preserves_no_error.
+
+  - (* Let NonRec TypeBind *)
+
+    unfold P_LetNonRec in *.
+    intros.
+
+    match goal with
+    | H : inline _ _ _ _ |- _ => inversion H; clear H; subst
+    end.
+    inversion H5; subst. clear H5.
+    simpl in H8.
+    inversion H3; subst.
+
+    unfold P_Term in *.
+
+    apply inl_Let_NonRec in H8.
+      eapply substA_preserves_inline in H8; eauto.
+      edestruct H0 as [ k' [ v' [H_eval H_inl] ] ]; eauto.
+    repeat eexists.
+    + econstructor. eauto.
+    + eauto.
+
+  - (* Let NonRec TermBind *)
+    admit.
+  - (* Let Rec [] *)
+    admit.
+  - (* Let Rec TermBind *)
+
+    admit.
+Qed.
