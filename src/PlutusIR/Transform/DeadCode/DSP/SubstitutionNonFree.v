@@ -114,6 +114,16 @@ Section Term.
     x ∉ fv (Let NonRec bs t).
   Admitted.
 
+  Lemma not_in_fv_Let_Rec_bs x b bs t :
+    x ∉ fv (Let Rec (b :: bs) t) ->
+    x ∉ fv (Let Rec bs t).
+  Admitted.
+
+  Lemma not_in_fv_Let_Rec_head x b bs t :
+    x ∉ fv (Let Rec (b :: bs) t) ->
+    x ∉ fvb Rec b.
+  Admitted.
+
   Lemma not_in_fv_Constr x i ts :
     x ∉ fv (Constr i ts) ->
     Forall (fun t => x ∉ fv t) ts.
@@ -134,6 +144,21 @@ Section Term.
     x <> y ->
     x ∉ xs.
   Admitted.
+
+  Lemma not_in_bvbs_hd (x : string) (b : Binding) bs :
+    x ∉ bvbs (b :: bs) ->
+    x ∉ bvb b.
+  Admitted.
+
+  Lemma not_in_bvbs_tl (x : string) (b : Binding) bs :
+    x ∉ bvbs (b :: bs) ->
+    x ∉ bvbs bs.
+  Admitted.
+
+  Lemma not_in_existsb x xs :
+    x ∉ xs <-> existsb (eqb x) xs = false.
+  Admitted.
+
 
   Create HintDb not_in.
   Hint Resolve
@@ -157,13 +182,16 @@ Section Term.
     (x ∈ fv (Let NonRec (b :: bs) t)).
   Admitted.
 
+
+  (* The propositions that we need to prove for terms and bindings *)
+
   Definition P_Term t := forall x t',
     x ∉ fv t ->
     subst x t' t = t.
 
   Definition P_Binding b := forall r x t',
-    (r = Rec -> x ∉ bvb b) -> (* See Note [Assumption of subst_b] *)
-    x ∉ fv_binding r b ->
+    (r = Rec -> x ∉ bvb b) -> (* See Note [Assumption of subst_b and subst_br] *)
+    x ∉ fvb r b ->
     subst_b x t' b = b.
 
   Lemma existsb_bvbs_bs x (b : Binding) bs :
@@ -182,6 +210,11 @@ Section Term.
                  inversion H_not_in_bvb.
               ** eauto.
   Qed.
+
+  Lemma existsb_bvbs_false_cons x (b : Binding) bs :
+    existsb (eqb x) (bvbs (b :: bs)) = false ->
+    existsb (eqb x) (bvbs bs) = false.
+  Admitted.
 
   Lemma existsb_In x xs :
     existsb (eqb x) xs = true ->
@@ -205,14 +238,37 @@ Section Term.
   Proof.
   Admitted.
 
+  Lemma dec_in : ∀ (x : string) xs, {x ∈ xs} + {x ∉ xs}.
+  Admitted.
 
   Lemma subst_br_not_in_fv x t' bs t :
     x ∉ fv (Let Rec bs t) ->
+    x ∉ bvbs bs -> (* See note [Assumption of subst_b and subst_br ]*)
     Util.ForallP P_Binding bs ->
-    existsb (eqb x) (bvbs bs) = false ->
     subst_br x t' bs = bs.
   Proof.
-  Admitted.
+    induction bs.
+    - auto.
+    -
+      intros H_notin_fv H_notin_bv H_bs.
+      unfold subst_br.
+      rewrite subst_br'_equation.
+      f_equal.
+      + rewrite Util.ForallP_Forall in H_bs.
+        apply Forall_inv in H_bs.
+        unfold P_Binding in H_bs.
+        apply not_in_fv_Let_Rec_head in H_notin_fv.
+        apply not_in_bvbs_hd in H_notin_bv.
+        eauto.
+
+      + (* apply existsb_bvbs_false_cons in H. *)
+        apply not_in_fv_Let_Rec_bs in H_notin_fv.
+          apply not_in_bvbs_tl in H_notin_bv.
+        rewrite Util.ForallP_Forall in H_bs.
+        inversion H_bs.
+        rewrite <- Util.ForallP_Forall in H2.
+        auto.
+  Qed.
 
   Lemma subst_bnr_not_in_fv x t' bs t:
     x ∉ fv (Let NonRec bs t) ->
@@ -291,8 +347,9 @@ Section Term.
       + (* x is shadowed in bs *)
         reflexivity.
       + f_equal.
-        * eapply subst_br_not_in_fv with (t := t); eauto.
-          rewrite Util.ForallP_Forall in *. assumption.
+        * eapply subst_br_not_in_fv with (t := t); auto.
+          ** rewrite <- not_in_existsb in H_eqb. assumption.
+          ** rewrite Util.ForallP_Forall in *. assumption.
         * eapply not_in_fv_Let_NonRec_t in H1; eauto.
 
     (* Var *)

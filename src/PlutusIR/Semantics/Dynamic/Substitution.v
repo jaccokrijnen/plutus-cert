@@ -12,6 +12,18 @@ Require Import FunInd.
 Local Open Scope string_scope.
 
 
+(* Note [Assumption of subst_b and subst_br]
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   `subst_b x s b` assumes that:
+     if b is recursive bindings, x ∉ bvb b
+   this is guaranteed by the calling sites in subst and subst_bnr',
+   which check for the whole letrec group at once. Therefore the check
+   is not repeated here.
+
+   Similarly, `subst_br' x s bs` assumes that
+     x ∉ bvbs bs
+*)
+
 
 (** Substitution of terms *)
 
@@ -30,6 +42,7 @@ Section SubstBindings.
             subst_b x s b :: subst_bnr' x s bs'
     end.
 
+  (* See note [Assumption of subst_b and subst_br] *)
   Function subst_br' (x : string) (s : Term) (bs : list Binding) : list Binding :=
     match bs with
     | nil =>
@@ -85,14 +98,8 @@ Function subst (x : string) (s : Term) (t : Term) {struct t} : Term :=
   end
 
 with
-  (* Note [Assumption of subst_b]
-     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     subst_b assumes that:
-       if b is recursive bindings, x ∉ bvb b
-     this is guaranteed by the calling sites in subst and subst_bnr',
-     which check for the whole letrec group at once. Therefore the check
-     is not repeated here.
-  *)
+
+  (* See note [Assumption of subst_b and subst_br] *)
   subst_b (x : string) (s : Term) (b : Binding) {struct b} : Binding :=
   match b with
   | TermBind stricty (VarDecl y T) tb =>
