@@ -386,4 +386,21 @@ Proof.
 
 Admitted.
 
+Lemma elim_TermBind_NonRec__approximate_rev Δ Γ t t' Tn b bs x Tb tb :
+  b = TermBind Strict (VarDecl x Tb) tb ->
+
+  Δ ,, Γ |-ok_b b ->
+  pure_binding Δ Γ b ->
+  disjoint (bvb b) (fv t') ->
+
+  forall Δ_b Γ_b,
+    Δ_b = binds_Delta b ->
+    map_normalise (binds_Gamma b) Γ_b ->
+    Δ_b ++ Δ ,, Γ_b ++ Γ |- t' ≤ (Let NonRec       bs  t) : Tn ->
+           Δ ,,        Γ |- t' ≤ (Let NonRec (b :: bs) t) : Tn.
+Proof.
+Admitted.
+
+
+
 End CompatibilityLemmas.
