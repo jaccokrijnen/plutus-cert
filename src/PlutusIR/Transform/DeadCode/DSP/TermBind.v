@@ -136,11 +136,18 @@ Proof.
   (* map_normalise logic *)
   unfold binds_Gamma, binds_Delta in *; subst.
   assert (Γ_b = [(x, Tbn)]). {
-    admit. (* normalise lemmas *)
+    inversion H_norm_Γ_bs; subst.
+    inversion H3; subst.
+    f_equal.
+    f_equal.
+    eauto using normalisation__deterministic.
   }
   subst Γ_b.
 
-  assert (Tbn' = Tbn) by admit. subst Tbn'.
+  assert (Tbn' = Tbn). {
+    eauto using normalisation__deterministic.
+  }
+  subst Tbn'.
 
 
   (* Split IH in typing and evaluation *)
@@ -287,7 +294,27 @@ Proof.
         apply eq_sym.
         apply subst_msubst.
 
-        { admit. (* This should follow from typing and substitution *) }
+        { admit. 
+          (*
+          tb is well-typed:
+            H_tb_ty : Δ,, Γ |-+ tb : Tbn
+
+          γ is well-typed to Γ:
+            H_Γ_γ_γ' : RG ρ k Γ γ γ'
+
+          msyn1 ρ is well-kinded to Δ:
+            H_Δ_ρ : RD Δ ρ
+
+          using:
+            H_eval_tb : <{ /[ γ /] (/[[ msyn1 ρ /] tb) }> =[ k_v ]=> vb
+
+          we should conclude that
+            /[ γ /] (/[[ msyn1 ρ /] tb) is typeable in empty contexts
+
+          and by preservation
+            vb is typable in empty contexts, hence it is closed
+
+          This should follow from typing and substitution *) }
         {
           assert (k > 0) by lia.
           eauto using RG_env_closed_1.
@@ -358,6 +385,5 @@ Proof.
   }
 
 Admitted.
-
 
 End CompatibilityLemmas.

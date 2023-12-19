@@ -1,25 +1,26 @@
 From Coq Require Import
   List
-  Strings.String
   Lia
   Program.Equality
   Bool.Bool
+  Strings.String
 .
 
-From PlutusCert Require Import Semantics.Dynamic.
-From PlutusCert Require Import Semantics.Static.
-From PlutusCert Require Import Transform.DeadCode.
-From PlutusCert Require Import Analysis.WellScoped.
-From PlutusCert Require Import TypeSafety.TypeLanguage.Preservation.
-From PlutusCert Require Import SemanticEquivalence.LogicalRelation.
-From PlutusCert Require Import FreeVars.
-From PlutusCert Require Import Purity.
-From PlutusCert Require Import Analysis.BoundVars.
+From PlutusCert Require Import
+  PlutusIR
+  Dynamic.Substitution
+  Analysis.FreeVars
+  Analysis.BoundVars
+  Analysis.UniqueBinders
+  Util.List
+.
 
 Import ListNotations.
 Import UniqueBinders.
 Import Utf8_core.
 
+
+Import NamedTerm.
 
 Section Term.
 
@@ -46,18 +47,6 @@ Section Term.
     reflexivity.
   Qed.
 
-  Lemma not_in_app : ∀ A (x : A) xs xs',
-    x ∉ (xs ++ xs') <->
-    x ∉ xs /\ x ∉ xs'.
-  Proof.
-    split.
-    - intuition.
-    - intros.
-      unfold not. intros.
-      destruct H.
-      apply in_app_or in H0.
-      intuition.
-  Qed.
 
   Lemma bvbs_app (xs ys : list Binding) :
     bvbs (xs ++ ys) = bvbs xs ++ bvbs ys.
@@ -140,20 +129,6 @@ Section Term.
         auto.
   Qed.
 
-  (* obsolete: in Util.Lists *)
-  Lemma not_in_remove : ∀ x y xs,
-    x ∉ xs ->
-    x ∉ remove string_dec y xs.
-  Proof.
-    induction xs; auto.
-    intros.
-    simpl.
-    destruct (string_dec y a).
-    - intuition.
-    - rewrite not_in_cons in *.
-      intuition.
-  Qed.
-
   Lemma not_in_remove_many x ys xs :
     x ∉ xs \ ys ->
     x ∉ ys ->
@@ -178,39 +153,6 @@ Section Term.
     apply <- in_remove_many in H0.
     intuition.
   Qed.
-
-  (* obsolete: in_remove in Util.List *)
-  Lemma in_remove : ∀ x y xs,
-    x ∈ xs ->
-    eqb x y = false ->
-    x ∈ remove string_dec y xs.
-  Proof.
-    intros.
-    rewrite eqb_neq in H0.
-    induction xs.
-    - auto.
-    - rewrite remove_unfold.
-      destruct (string_dec y a).
-      + subst a.
-        apply in_inv in H.
-        intuition.
-      + apply in_inv in H.
-        destruct H.
-        * subst. apply in_eq.
-        * intuition.
-  Qed.
-
-  Lemma not_in_remove' : ∀ x y xs,
-    x ∉ remove string_dec y xs ->
-    eqb x y = false ->
-    x ∉ xs.
-  Proof.
-    unfold not.
-    intros.
-    auto using in_remove.
-  Qed.
-
-
 
   Lemma not_in_in x xs ys :
     x ∉ xs \ ys ->
@@ -260,7 +202,11 @@ Section Term.
   Proof.
     intros.
     simpl in *.
-    eauto using not_in_remove'.
+    rewrite eqb_neq in *.
+    unfold not; intros.
+    apply H.
+    rewrite <- in_remove.
+    intuition.
   Qed.
 
   Lemma not_in_fv_Apply_l x t t' :
@@ -733,13 +679,11 @@ Section Term.
         specialize (H0 eq_refl). (* See Note [Assumption of subst_b] *)
         simpl in H0.
         apply H.
-
-        eauto.
-        eapply not_in_remove' in H1.
-        * assumption.
-        * unfold not in *.
-          rewrite eqb_neq.
-          auto.
+        assert (s0 ≠ x) by intuition.
+        unfold not; intros.
+        apply H1.
+        apply in_remove.
+        intuition.
 
     - (* TypeBind *)
       unfold P_Binding.

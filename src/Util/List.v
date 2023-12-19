@@ -369,6 +369,19 @@ Section Subset.
         intuition.
   Qed.
 
+  Lemma not_in_app : ∀ A (x : A) xs xs',
+    x ∉ (xs ++ xs') <->
+    x ∉ xs /\ x ∉ xs'.
+  Proof.
+    split.
+    - intuition.
+    - intros.
+      unfold not. intros.
+      destruct H.
+      apply in_app_or in H0.
+      intuition.
+  Qed.
+
   Lemma in_remove_many x xs ys :
     x ∈ xs /\ x ∉ ys <->
     x ∈ xs \ ys.
