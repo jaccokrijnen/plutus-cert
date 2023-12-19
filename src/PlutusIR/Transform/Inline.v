@@ -222,10 +222,3 @@ with inline_Binding (Δ : ty_ctx) (Γ : ctx) : Binding -> Binding -> Prop :=
       inline_Ty Δ τ τ' -> (* Cannot be recursive *)
       inline_Binding Δ Γ (TypeBind tvd τ) (TypeBind tvd τ')
 .
-
-
-From PlutusCert Require Import Bigstep.
-Require Import Program.
-
-
-   .

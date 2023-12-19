@@ -3,6 +3,7 @@ From Coq Require Import
   Strings.String
   Lia
   Program.Equality
+  Bool.Bool
 .
 
 From PlutusCert Require Import Semantics.Dynamic.
@@ -13,6 +14,7 @@ From PlutusCert Require Import TypeSafety.TypeLanguage.Preservation.
 From PlutusCert Require Import SemanticEquivalence.LogicalRelation.
 From PlutusCert Require Import FreeVars.
 From PlutusCert Require Import Purity.
+From PlutusCert Require Import Analysis.BoundVars.
 
 Import ListNotations.
 Import UniqueBinders.
@@ -28,136 +30,432 @@ Section Term.
   Definition fv_binding : Recursivity -> Binding -> list string := Term.fvb.
   Definition fv_bindings : Recursivity -> list Binding -> list string := Term.fvbs fv_binding.
 
+  Lemma remove_unfold {A} eq_dec (x : A) xs :
+    remove eq_dec x xs =
+    match xs with
+    | [] => []
+    | y :: tl => if eq_dec x y then remove eq_dec x tl else y :: remove eq_dec x tl
+    end.
+  Proof.
+    destruct xs; reflexivity.
+  Qed.
+
+  Lemma cons_app {A} (x : A) xs :
+    (x :: xs) = [x] ++ xs.
+  Proof.
+    reflexivity.
+  Qed.
 
   Lemma not_in_app : ∀ A (x : A) xs xs',
-    x ∉ (xs ++ xs') ->
+    x ∉ (xs ++ xs') <->
     x ∉ xs /\ x ∉ xs'.
   Proof.
-    intros A x xs xs' H_notin.
-    induction xs as [ | x' xs].
-    all: split; auto.
-    - cbn - [In] in H_notin.
-      apply not_in_cons in H_notin as [H_x_x' H_xs_xs'].
-      apply IHxs in H_xs_xs' as [ ].
-      apply not_in_cons.
+    split.
+    - intuition.
+    - intros.
+      unfold not. intros.
+      destruct H.
+      apply in_app_or in H0.
+      intuition.
+  Qed.
+
+  Lemma bvbs_app (xs ys : list Binding) :
+    bvbs (xs ++ ys) = bvbs xs ++ bvbs ys.
+  Proof.
+    unfold bvbs.
+    rewrite map_app.
+    rewrite concat_app.
+    reflexivity.
+  Qed.
+
+
+  Lemma not_in_bvbs_cons (x : string) (b : Binding) bs :
+    x ∉ bvbs (b :: bs) ->
+    x ∉ bvb b /\ x ∉ bvbs bs.
+  Proof.
+    rewrite cons_app.
+    rewrite bvbs_app.
+    intros.
+    rewrite not_in_app in H.
+    unfold bvbs in H.
+    simpl in H.
+    rewrite app_nil_r in H.
+    auto.
+  Qed.
+
+  Lemma not_in_bvbs_hd (x : string) (b : Binding) bs :
+    x ∉ bvbs (b :: bs) ->
+    x ∉ bvb b.
+  Proof.
+    unfold bvbs.
+    intros.
+    simpl in H.
+    rewrite not_in_app in H.
+    intuition.
+  Qed.
+
+  Lemma not_in_bvbs_tl (x : string) (b : Binding) bs :
+    x ∉ bvbs (b :: bs) ->
+    x ∉ bvbs bs.
+  Proof.
+    unfold bvbs.
+    intros.
+    simpl in H.
+    rewrite not_in_app in H.
+    intuition.
+  Qed.
+
+  Lemma not_in_existsb x xs :
+    x ∉ xs <-> existsb (eqb x) xs = false.
+  Proof.
+    split; intros.
+    - (* -> *)
+      induction xs; auto.
+      destruct (string_dec x a).
+      + (* x = a *)
+        subst a.
+        assert (x ∈ (x :: xs)) by intuition.
+        contradiction.
+      + (* x ≠ a *)
+        simpl.
+        rewrite orb_false_iff.
+        split.
+        * rewrite eqb_neq. auto.
+        * intuition.
+    - (* <- *)
+      unfold not. intros H0.
+      induction xs; inversion H0.
+      + (* x = a *)
+        apply eq_sym in H1.
+        rewrite <- eqb_eq in H1.
+        simpl in H.
+        rewrite orb_false_iff in H.
+        destruct H as [Heq _].
+        apply eq_sym in H1.
+        assert (true = false) by eauto using eq_trans.
+        inversion H.
+      + (* x ≠ a *)
+        simpl in H.
+        apply orb_false_iff in H as [_ H].
+        auto.
+  Qed.
+
+  (* obsolete: in Util.Lists *)
+  Lemma not_in_remove : ∀ x y xs,
+    x ∉ xs ->
+    x ∉ remove string_dec y xs.
+  Proof.
+    induction xs; auto.
+    intros.
+    simpl.
+    destruct (string_dec y a).
+    - intuition.
+    - rewrite not_in_cons in *.
+      intuition.
+  Qed.
+
+  Lemma not_in_remove_many x ys xs :
+    x ∉ xs \ ys ->
+    x ∉ ys ->
+    x ∉ xs.
+  Proof.
+    intros.
+    unfold not.
+    intros.
+    assert (x ∈ xs \ ys). {
+      apply in_remove_many.
       auto.
-    - eapply proj2.
-      apply IHxs.
-      cbn - [In] in H_notin.
-      apply not_in_cons in H_notin.
-      destruct H_notin; eauto.
+    }
+    auto.
+  Qed.
+
+  Lemma not_in_remove_many' x ys xs :
+    x ∉ xs ->
+    x ∉ xs \ ys.
+  Proof.
+    unfold not.
+    intros.
+    apply <- in_remove_many in H0.
+    intuition.
+  Qed.
+
+  (* obsolete: in_remove in Util.List *)
+  Lemma in_remove : ∀ x y xs,
+    x ∈ xs ->
+    eqb x y = false ->
+    x ∈ remove string_dec y xs.
+  Proof.
+    intros.
+    rewrite eqb_neq in H0.
+    induction xs.
+    - auto.
+    - rewrite remove_unfold.
+      destruct (string_dec y a).
+      + subst a.
+        apply in_inv in H.
+        intuition.
+      + apply in_inv in H.
+        destruct H.
+        * subst. apply in_eq.
+        * intuition.
+  Qed.
+
+  Lemma not_in_remove' : ∀ x y xs,
+    x ∉ remove string_dec y xs ->
+    eqb x y = false ->
+    x ∉ xs.
+  Proof.
+    unfold not.
+    intros.
+    auto using in_remove.
+  Qed.
+
+
+
+  Lemma not_in_in x xs ys :
+    x ∉ xs \ ys ->
+    x ∈ xs ->
+    x ∈ ys.
+  Proof.
+    intros.
+    destruct (in_dec string_dec x ys).
+    - auto.
+    - assert (x ∈ (xs \ ys)).
+      + rewrite <- in_remove_many.
+        intuition.
+      + intuition.
+  Qed.
+
+  Lemma in_not_in x xs ys :
+    x ∈ xs ->
+    x ∉ ys ->
+    x ∈ xs \ ys.
+  Proof.
+    intros.
+    induction ys.
+    - auto.
+    - rewrite not_in_cons in H0.
+      assert (x ∉ [a]). {
+        simpl.
+        intuition.
+      }
+      rewrite cons_app.
+      rewrite remove_many_app_comm.
+      rewrite remove_many_app_r.
+      rewrite <- in_remove_many.
+      split; intuition.
   Qed.
 
   Lemma not_in_fv_TyAbs x v k t :
     x ∉ fv (TyAbs k v t) ->
     x ∉ fv t.
-  Admitted.
+  Proof.
+    auto.
+  Qed.
 
   Lemma not_in_fv_LamAbs x y ty t :
     x ∉ fv (LamAbs y ty t) ->
-    (x =? y)%string = false -> (* TODO, require x ≠ y, either in bool or prop form *)
+    (x =? y)%string = false ->
     x ∉ fv t.
-  Admitted.
+  Proof.
+    intros.
+    simpl in *.
+    eauto using not_in_remove'.
+  Qed.
 
   Lemma not_in_fv_Apply_l x t t' :
     x ∉ fv (Apply t t') ->
     x ∉ fv t.
-  Admitted.
+  Proof. simpl. intuition. Qed.
 
   Lemma not_in_fv_Apply_r x t t' :
     x ∉ fv (Apply t t') ->
     x ∉ fv t'.
-  Admitted.
-
+  Proof. simpl. intuition. Qed.
 
   Lemma not_in_fv_Constant x c :
     x ∉ fv (Constant c).
-  Admitted.
+  Proof. simpl. intuition. Qed.
 
   Lemma not_in_fv_Builtin x f :
     x ∉ fv (Builtin f).
-  Admitted.
+  Proof. simpl. intuition. Qed.
 
   Lemma not_in_fv_TyInst x t ty :
     x ∉ fv (TyInst t ty) ->
     x ∉ fv t.
-  Admitted.
+  Proof. simpl. intuition. Qed.
 
   Lemma not_in_fv_Error x ty :
     x ∉ fv (Error ty).
-  Admitted.
+  Proof. simpl. intuition. Qed.
 
   Lemma not_in_fv_IWrap x ty1 ty2 t:
     x ∉ fv (IWrap ty1 ty2 t) ->
     x ∉ fv t.
-  Admitted.
+  Proof. simpl. intuition. Qed.
 
   Lemma not_in_fv_Unwrap x t :
     x ∉ fv (Unwrap t) ->
     x ∉ fv t.
-  Admitted.
+  Proof. simpl. intuition. Qed.
 
   Lemma not_in_fv_Let_NonRec_t x r bs t :
     x ∉ fv (Let r bs t) ->
-    existsb (eqb x) (bvbs bs) = false ->
+    x ∉ bvbs bs ->
+    (* existsb (eqb x) (bvbs bs) = false ->*)
     x ∉ fv t.
-  Admitted.
+  Proof.
+    intros.
+    simpl in H.
+    rewrite not_in_app in H.
+    destruct H.
+    unfold not.
+    intros.
+    apply H0.
+    eapply not_in_in; eauto.
+  Qed.
 
-  Lemma not_in_fv_Let_NonRec_b x b bs t :
+  Lemma not_in_fv_Let_NonRec_hd x b bs t :
     x ∉ fv (Let NonRec (b :: bs) t) ->
     x ∉ fv_binding NonRec b.
-  Admitted.
+  Proof.
+    intros.
+    simpl in H.
+    rewrite <- app_assoc in H.
+    intuition.
+  Qed.
 
-  Lemma not_in_fv_Let_NonRec_bs x b bs t :
+  Lemma not_in_fv_Let_NonRec_tl x b bs t :
     x ∉ fv (Let NonRec (b :: bs) t) ->
-    existsb (eqb x) (bvb b) = false ->
+    x ∉ bvb b ->
     x ∉ fv (Let NonRec bs t).
-  Admitted.
+  Proof.
+    intros.
+    simpl in H.
+    rewrite not_in_app in H.
+    destruct H.
+    rewrite not_in_app in H.
+    destruct H.
+    unfold not.
+    intros.
+    simpl in H3.
+    rewrite in_app_iff in H3.
+    destruct H3.
+    - eapply in_not_in with (ys := bvb b) in H3; auto.
+    - apply H1.
+      rewrite <- in_remove_many.
+      split.
+      + rewrite <- in_remove_many in H3.
+        intuition.
+      + unfold bvbs.
+        simpl.
+        rewrite not_in_app.
+        split;auto.
+        rewrite <- in_remove_many in H3.
+        intuition.
+  Qed.
+  
 
   Lemma not_in_fv_Let_Rec_bs x b bs t :
     x ∉ fv (Let Rec (b :: bs) t) ->
+    x ∉ bvbs (b :: bs) ->
     x ∉ fv (Let Rec bs t).
-  Admitted.
+  Proof.
+    intros.
+    simpl in H.
+    rewrite not_in_app in H.
+    destruct H.
+    apply not_in_remove_many with (xs := fvb Rec b ++ fvbs fvb Rec bs) in H.
+    - rewrite not_in_app in H.
+      destruct H.
+      unfold not.
+      intros.
+      simpl in H3.
+      apply in_app_or in H3.
+      destruct H3.
+      + intuition.
+      + rewrite <- in_remove_many in H3.
+        destruct H3.
+        apply H1.
+        rewrite <- in_remove_many.
+        split; auto.
+    - unfold not.
+      intros.
+      rewrite <- in_remove_many in H2.
+      destruct H2.
+      apply H0.
+      eauto using not_in_in.
+  Qed.
 
   Lemma not_in_fv_Let_Rec_head x b bs t :
     x ∉ fv (Let Rec (b :: bs) t) ->
+    x ∉ bvbs (b :: bs) ->
     x ∉ fvb Rec b.
-  Admitted.
+  Proof.
+    intros.
+    simpl in H.
+    rewrite not_in_app in H.
+    destruct H.
+    apply not_in_remove_many with (xs := fvb Rec b ++ fvbs fvb Rec bs) in H.
+    - rewrite not_in_app in H.
+      intuition.
+    - assert (x ∉ (fvb Rec b ++ fvbs fvb Rec bs)).
+      { eapply not_in_remove_many.
+        + apply H.
+        + auto.
+      }
+      unfold not. intros.
+      apply <- in_remove_many in H3.
+      intuition.
+  Qed.
 
   Lemma not_in_fv_Constr x i ts :
     x ∉ fv (Constr i ts) ->
     Forall (fun t => x ∉ fv t) ts.
-  Admitted.
+  Proof.
+    intros H.
+    induction ts; auto.
+    simpl in H.
+    rewrite not_in_app in H.
+    constructor; intuition.
+  Qed.
 
   Lemma not_in_fv_Case_1 x t ts :
     x ∉ fv (Case t ts) ->
     Forall (fun t => x ∉ fv t) ts.
-  Admitted.
+  Proof.
+    intros.
+    induction ts; auto.
+    rewrite fv_equation in H.
+    rewrite not_in_app in H.
+    destruct H.
+    constructor.
+    - simpl in H0.
+      rewrite not_in_app in H0.
+      destruct H0.
+      assumption.
+    - apply IHts.
+      simpl.
+      simpl in H0.
+      rewrite not_in_app in H0.
+      destruct H0.
+      rewrite not_in_app.
+      auto.
+  Qed.
 
   Lemma not_in_fv_Case_2 x t ts :
     x ∉ fv (Case t ts) ->
     x ∉ fv t.
-  Admitted.
-
-  Lemma not_in_remove x xs y :
-    x ∉ remove string_dec y xs->
-    x <> y ->
-    x ∉ xs.
-  Admitted.
-
-  Lemma not_in_bvbs_hd (x : string) (b : Binding) bs :
-    x ∉ bvbs (b :: bs) ->
-    x ∉ bvb b.
-  Admitted.
-
-  Lemma not_in_bvbs_tl (x : string) (b : Binding) bs :
-    x ∉ bvbs (b :: bs) ->
-    x ∉ bvbs bs.
-  Admitted.
-
-  Lemma not_in_existsb x xs :
-    x ∉ xs <-> existsb (eqb x) xs = false.
-  Admitted.
+  Proof.
+    intros.
+    unfold not.
+    intros.
+    rewrite fv_equation in H.
+    rewrite not_in_app in H.
+    destruct H.
+    intuition.
+  Qed.
 
 
   Create HintDb not_in.
@@ -177,12 +475,6 @@ Section Term.
     not_in_fv_Case_2
     : not_in.
 
-  Lemma fv_let_cons x b bs t :
-    (x ∈ fv (Let NonRec bs t)) ->
-    (x ∈ fv (Let NonRec (b :: bs) t)).
-  Admitted.
-
-
   (* The propositions that we need to prove for terms and bindings *)
 
   Definition P_Term t := forall x t',
@@ -200,21 +492,16 @@ Section Term.
     existsb (eqb x) (bvbs bs) = true.
   Proof.
     intros H_in_bvbs H_not_in_bvb.
-              unfold bvbs in H_in_bvbs.
-              simpl in H_in_bvbs.
-              rewrite existsb_app in H_in_bvbs.
-              rewrite Bool.orb_true_iff in H_in_bvbs.
-              destruct H_in_bvbs.
-              **
-                 rewrite H in H_not_in_bvb.
-                 inversion H_not_in_bvb.
-              ** eauto.
+    unfold bvbs in H_in_bvbs.
+    simpl in H_in_bvbs.
+    rewrite existsb_app in H_in_bvbs.
+    rewrite Bool.orb_true_iff in H_in_bvbs.
+    destruct H_in_bvbs.
+    **
+       rewrite H in H_not_in_bvb.
+       inversion H_not_in_bvb.
+    ** eauto.
   Qed.
-
-  Lemma existsb_bvbs_false_cons x (b : Binding) bs :
-    existsb (eqb x) (bvbs (b :: bs)) = false ->
-    existsb (eqb x) (bvbs bs) = false.
-  Admitted.
 
   Lemma existsb_In x xs :
     existsb (eqb x) xs = true ->
@@ -236,10 +523,28 @@ Section Term.
     existsb (eqb x) xs = false ->
     x ∉ xs.
   Proof.
-  Admitted.
+    induction xs; auto.
+    intros.
+    simpl in H.
+    rewrite orb_false_iff in H.
+    rewrite eqb_neq in H.
+    apply not_in_cons.
+    intuition.
+  Qed.
 
   Lemma dec_in : ∀ (x : string) xs, {x ∈ xs} + {x ∉ xs}.
-  Admitted.
+  Proof.
+    intros.
+    induction xs.
+    - auto.
+    - destruct IHxs.
+      + intuition.
+      + destruct (string_dec x a).
+        * subst. intuition.
+        * constructor 2.
+          apply not_in_cons.
+          intuition.
+  Qed.
 
   Lemma subst_br_not_in_fv x t' bs t :
     x ∉ fv (Let Rec bs t) ->
@@ -257,17 +562,18 @@ Section Term.
       + rewrite Util.ForallP_Forall in H_bs.
         apply Forall_inv in H_bs.
         unfold P_Binding in H_bs.
-        apply not_in_fv_Let_Rec_head in H_notin_fv.
+        apply not_in_fv_Let_Rec_head in H_notin_fv; auto.
         apply not_in_bvbs_hd in H_notin_bv.
         eauto.
 
-      + (* apply existsb_bvbs_false_cons in H. *)
-        apply not_in_fv_Let_Rec_bs in H_notin_fv.
-          apply not_in_bvbs_tl in H_notin_bv.
+      +
         rewrite Util.ForallP_Forall in H_bs.
-        inversion H_bs.
+        inversion H_bs; subst.
+        apply not_in_bvbs_cons in H_notin_bv as HH.
         rewrite <- Util.ForallP_Forall in H2.
-        auto.
+        apply not_in_fv_Let_Rec_bs in H_notin_fv.
+        * intuition.
+        * intuition.
   Qed.
 
   Lemma subst_bnr_not_in_fv x t' bs t:
@@ -281,21 +587,21 @@ Section Term.
     - simpl.
       destruct (existsb (eqb x) (bvb b)) eqn:H_in_bvb.
       all: inversion H_bs; subst.
-      + apply not_in_fv_Let_NonRec_b in H_not_in_fv.
+      + apply not_in_fv_Let_NonRec_hd in H_not_in_fv.
         f_equal.
         unfold P_Binding in H1.
         eapply H1; eauto.
         inversion 1.
       + (* x must be bound in bs *)
+        apply existsb_not_in in H_in_bvb.
         f_equal.
-          * apply not_in_fv_Let_NonRec_b in H_not_in_fv.
+          * apply not_in_fv_Let_NonRec_hd in H_not_in_fv.
             eapply H1; eauto.
-            inversion 1.
           *
           destruct (existsb (eqb x) (bvbs bs)) eqn:H_ex_bvbs. 
-            ** assert (x ∉ fv (Let NonRec bs t)) by eauto using not_in_fv_Let_NonRec_bs.
+            ** assert (x ∉ fv (Let NonRec bs t)) by eauto using not_in_fv_Let_NonRec_tl.
                eauto using existsb_bvbs_bs.
-            ** assert (x ∉ fv (Let NonRec bs t)) by eauto using  not_in_fv_Let_NonRec_bs.
+            ** assert (x ∉ fv (Let NonRec bs t)) by eauto using  not_in_fv_Let_NonRec_tl.
                assert (x ∉ bvbs bs). {
                  apply existsb_not_in in H_ex_bvbs.
                  assumption.
@@ -309,7 +615,15 @@ Section Term.
     Forall P_Term ts ->
     Forall (fun t => x ∉ fv t) ts ->
     map (subst x t) ts = ts.
-  Admitted.
+  Proof.
+    induction ts;
+    intros H_ts H_fv.
+    - reflexivity.
+    - simpl.
+      inversion H_ts; subst.
+      inversion H_fv; subst.
+      f_equal; auto.
+  Qed.
 
   Ltac destruct_if :=
         match goal with
@@ -341,7 +655,8 @@ Section Term.
       + (* x is not bound in bs *)
         f_equal.
         * eapply subst_bnr_not_in_fv with (t := t); eauto.
-        * apply not_in_fv_Let_NonRec_t in H1; eauto.
+        * rewrite <- not_in_existsb in H_eqb.
+          apply not_in_fv_Let_NonRec_t in H1; eauto.
 
       (* Let Rec *)
       + (* x is shadowed in bs *)
@@ -350,7 +665,8 @@ Section Term.
         * eapply subst_br_not_in_fv with (t := t); auto.
           ** rewrite <- not_in_existsb in H_eqb. assumption.
           ** rewrite Util.ForallP_Forall in *. assumption.
-        * eapply not_in_fv_Let_NonRec_t in H1; eauto.
+        * rewrite <- not_in_existsb in H_eqb.
+          eapply not_in_fv_Let_NonRec_t in H1; eauto.
 
     (* Var *)
     -
@@ -419,11 +735,11 @@ Section Term.
         apply H.
 
         eauto.
-        eapply not_in_remove in H1.
+        eapply not_in_remove' in H1.
         * assumption.
         * unfold not in *.
+          rewrite eqb_neq.
           auto.
-
 
     - (* TypeBind *)
       unfold P_Binding.

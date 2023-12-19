@@ -318,11 +318,75 @@ Section Subset.
     [] ⊆ xs.
   Admitted.
 
+  Lemma in_remove x y xs :
+    x ∈ xs /\ x ≠ y <->
+    x ∈ remove string_dec y xs.
+  Proof.
+  split; intros.
+  - apply in_in_remove; intuition.
+  - eapply in_remove.
+    exact H.
+  Qed.
+
+  Lemma not_in_remove : ∀ x y xs,
+    x ∉ xs \/ x = y <->
+    x ∉ remove string_dec y xs.
+  Proof.
+  split; intros.
+  -
+    destruct H.
+    + induction xs; auto.
+      intros.
+      simpl.
+      destruct (string_dec y a).
+      * intuition.
+      * rewrite not_in_cons in *.
+        intuition.
+    + unfold not.
+      intros.
+      induction xs.
+      * intuition.
+      * rewrite <- in_remove in H0.
+        intuition.
+  - induction xs.
+    + intuition.
+    + simpl in H.
+      destruct (string_dec y a).
+      * subst a.
+        apply IHxs in H. clear IHxs.
+        destruct H.
+        ** destruct (string_dec x y).
+          *** intuition.
+          *** left.
+              rewrite not_in_cons.
+              intuition.
+        ** intuition.
+      *
+        rewrite not_in_cons in H.
+        rewrite not_in_cons.
+        destruct H.
+        apply IHxs in H0. clear IHxs.
+        intuition.
+  Qed.
 
   Lemma in_remove_many x xs ys :
     x ∈ xs /\ x ∉ ys <->
     x ∈ xs \ ys.
-  Admitted.
+  Proof.
+    split; intros.
+    - induction ys.
+      + intuition.
+      + rewrite not_in_cons in H.
+        simpl.
+        rewrite <- in_remove.
+        intuition.
+    - induction ys.
+      + intuition.
+      + simpl in H.
+        rewrite <- in_remove in H.
+        rewrite not_in_cons.
+        intuition.
+  Qed.
 
   Lemma in_singleton_eq {A} {x y : A} :
     x ∈ [y] ->

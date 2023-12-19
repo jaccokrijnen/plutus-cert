@@ -5,6 +5,7 @@ From Coq Require Import
   Program.Equality
 .
 
+Require Import PlutusCert.PlutusIR.Transform.DeadCode3.
 From PlutusCert Require Import Semantics.Dynamic.
 From PlutusCert Require Import Semantics.Static.
 From PlutusCert Require Import Analysis.WellScoped.
@@ -492,6 +493,9 @@ Lemma unique_well_scoped_disjoint Δ Γ rec bs t Δ' Γ' t' :
   (* Properties on post-term *)
   well_scoped Δ' Γ' t' ->
 
+  (* TODO: why was this assumption not here? *)
+  elim t t' ->
+
   Δ' ⊆ Δ ->
   Γ' ⊆ Γ ->
   forall b,
@@ -499,7 +503,7 @@ Lemma unique_well_scoped_disjoint Δ Γ rec bs t Δ' Γ' t' :
     disjoint (bvb b) (fv t') /\
     disjoint (btvb b) (ftv t').
 Proof with eauto.
-  intros H_pre_ws H_pre_unique H_post_ws H_Δ_Δ' H_Γ_Γ'.
+  intros H_pre_ws H_pre_unique H_post_ws H_elim H_Δ_Δ' H_Γ_Γ'.
   intros b H_in_b_bs .
 
   destruct b as [ s [x ty] t_rhs | | ].

@@ -119,7 +119,7 @@ Ltac skipLet :=
 
 (* TODO: Update with new definition of inline and dead_code *)
 (* Lemma pir_3_inlined : Term. *)
-Lemma pir3_4 : compose_prop [inline nil; dead_code] pir_3_deadcode pir_4_inlined.
+Lemma pir3_4 : compose_prop [inline nil nil; dead_code] pir_3_deadcode pir_4_inlined.
 Proof.
 (*
   eapply ComposeCons.
