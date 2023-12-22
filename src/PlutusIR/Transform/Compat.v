@@ -56,8 +56,9 @@ Section Compatibility.
     | C_Constant : ∀ v,
         Compat (Constant v) (Constant v)
 
-    | C_Builtin : ∀ f,
-        Compat (Builtin f) (Builtin f)
+    | C_Builtin : ∀ f args args',
+        Forall2 R args args' ->
+        Compat (Builtin f args) (Builtin f args')
 
     | C_TyInst : ∀ t t' T,
         R t t' -> Compat (TyInst t T) (TyInst t' T)
@@ -90,7 +91,7 @@ Section Compatibility.
       | (LamAbs n T t), (LamAbs n' T' t')  => String.eqb n n'&& Ty_eqb T T' && dec_R t t'
       | (Apply s t), (Apply s' t')         => dec_R s s' && dec_R t t'
       | (Constant v), (Constant v')        => some_valueOf_eqb v v'
-      | (Builtin f), (Builtin f')          => func_eqb f f'
+      | (Builtin f args), (Builtin f' args') => func_eqb f f' && forall2b dec_R args args'
       | (TyInst t T), (TyInst t' T')       => Ty_eqb T T' && dec_R t t'
       | (Error T), (Error T')              => Ty_eqb T T'
       | (IWrap T1 T2 t), (IWrap T1' T2' t') => Ty_eqb T1 T1' && Ty_eqb T2 T2' && dec_R t t'

@@ -152,7 +152,7 @@ Inductive term :=
   | LamAbs   : binderName -> ty -> term -> term
   | Apply    : term -> term -> term
   | Constant : @some valueOf -> term
-  | Builtin  : DefaultFun -> term
+  | Builtin  : DefaultFun -> list term -> term (* Fully saturated built-in functions *)
   | TyInst   : term -> ty -> term
   | Error    : ty -> term
   | IWrap    : ty -> ty -> term -> term
@@ -426,7 +426,7 @@ Section Term_rect.
     (H_LamAbs   : forall (s : string) (t : Ty) (t0 : Term), P t0 -> P (LamAbs s t t0))
     (H_Apply    : forall t : Term, P t -> forall t0 : Term, P t0 -> P (Apply t t0))
     (H_Constant : forall s : some valueOf, P (Constant s))
-    (H_Builtin  : forall d : DefaultFun, P (Builtin d))
+    (H_Builtin  : forall (d : DefaultFun) (args : list Term), P (Builtin d args))
     (H_TyInst   : forall t : Term, P t -> forall t0 : Ty, P (TyInst t t0))
     (H_Error    : forall t : Ty, P (Error t))
     (H_IWrap    : forall (t t0 : Ty) (t1 : Term), P t1 -> P (IWrap t t0 t1))
@@ -466,7 +466,7 @@ Section Term_rect.
       | Unwrap t        => H_Unwrap t (Term_rect' t)
       | Error ty        => H_Error ty
       | Constant v      => H_Constant v
-      | Builtin f       => H_Builtin f
+      | Builtin f args  => H_Builtin f args
       | Constr i ts     => H_Constr i ts (Terms_rect' Term_rect' ts)
       | Case t ts       => H_Case t (Term_rect' t) ts (Terms_rect' Term_rect' ts)
     end
@@ -493,7 +493,7 @@ Section Term__ind.
     (H_LamAbs   : forall (s : string) (t : Ty) (t0 : Term), P t0 -> P (LamAbs s t t0))
     (H_Apply    : forall t : Term, P t -> forall t0 : Term, P t0 -> P (Apply t t0))
     (H_Constant : forall s : some valueOf, P (Constant s))
-    (H_Builtin  : forall d : DefaultFun, P (Builtin d))
+    (H_Builtin  : forall (d : DefaultFun) (args : list Term), P (Builtin d args))
     (H_TyInst   : forall t : Term, P t -> forall t0 : Ty, P (TyInst t t0))
     (H_Error    : forall t : Ty, P (Error t))
     (H_IWrap    : forall (t t0 : Ty) (t1 : Term), P t1 -> P (IWrap t t0 t1))
@@ -535,7 +535,7 @@ Section Term__ind.
       | Unwrap t        => H_Unwrap t (Term__ind t)
       | Error ty        => H_Error ty
       | Constant v      => H_Constant v
-      | Builtin f       => H_Builtin f
+      | Builtin f args  => H_Builtin f args
       | Constr i ts     => H_Constr i ts (Terms__ind Term__ind ts)
       | Case t ts      => H_Case t (Term__ind t) ts (Terms__ind Term__ind ts)
     end
@@ -564,7 +564,7 @@ Section term_rect.
     (H_LamAbs   : forall (s : b) (t : ty v' b') (t0 : term v v' b b'), P t0 -> P (LamAbs s t t0))
     (H_Apply    : forall t : term v v' b b', P t -> forall t0 : term v v' b b', P t0 -> P (Apply t t0))
     (H_Constant : forall s : some valueOf, P (Constant s))
-    (H_Builtin  : forall d : DefaultFun, P (Builtin d))
+    (H_Builtin  : forall (d : DefaultFun) args, P (Builtin d args))
     (H_TyInst   : forall t : term v v' b b', P t -> forall t0 : ty v' b', P (TyInst t t0))
     (H_Error    : forall t : ty v' b', P (Error t))
     (H_IWrap    : forall (t t0 : ty v' b') (t1 : term v v' b b'), P t1 -> P (IWrap t t0 t1))
@@ -607,7 +607,7 @@ Section term_rect.
       | Unwrap t        => @H_Unwrap t (term_rect' t)
       | Error ty        => @H_Error ty
       | Constant v      => @H_Constant v
-      | Builtin f       => @H_Builtin f
+      | Builtin f args  => @H_Builtin f args
       | Constr i ts     => @H_Constr i ts (terms_rect' term_rect' ts)
       | Case t ts      => @H_Case t (term_rect' t) ts (terms_rect' term_rect' ts)
     end
