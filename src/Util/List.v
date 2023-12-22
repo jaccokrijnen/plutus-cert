@@ -1,6 +1,8 @@
 From Coq Require Import
   Strings.String
-  Lists.List.
+  Lists.List
+  Bool.Bool
+.
 
 Import ListNotations.
 
@@ -550,6 +552,31 @@ Definition forall2b {A} (p : A -> A -> bool) := fix f xs ys :=
     | (x :: xs), (y :: ys) => (p x y && f xs ys)%bool
     | _        , _         => false
   end.
+
+
+(* TODO, make this bi-implication *)
+Lemma forall2b_Forall2
+  (A : Type)
+  (f : A -> A -> bool)
+  (P : A -> A -> Prop)
+  (f_P : forall x y, f x y = true -> P x y)
+  (xs ys : list A) :
+    forall2b f xs ys = true -> Forall2 P xs ys.
+Proof.
+  intros.
+  revert dependent ys.
+  induction xs; intros.
+  - simpl. destruct ys.
+    + auto.
+    + simpl in H. inversion H.
+  - intros.
+    simpl in H. destruct ys.
+    + inversion H.
+    + rewrite andb_true_iff in H.
+      destruct H as [H_hd H_tl].
+      apply f_P in H_hd.
+      auto using Forall2.
+Qed.
 
 Lemma mdrop_nil : forall X ns,
     @mdrop X ns nil = nil.
