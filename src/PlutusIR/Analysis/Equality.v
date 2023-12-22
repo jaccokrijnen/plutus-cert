@@ -5,10 +5,14 @@ Require Import Coq.Bool.BoolEq.
 Require Import Coq.Lists.List.
 Require Import Ascii.
 Require Import Eqdep.
-Set Implicit Arguments.
 
-From PlutusCert Require Import PlutusIR.
+From PlutusCert Require Import
+  PlutusIR
+  Util.List
+.
+
 Import NamedTerm.
+Set Implicit Arguments.
 
 Definition EqDec := fun A : Type => forall x y : A, {x = y} + {x <> y}.
 
@@ -499,22 +503,38 @@ Fixpoint Term_eqb (x y : Term) {struct x} : bool := match x, y with
   | Let rec bs t, Let rec' bs' t' => Recursivity_eqb rec rec'
       && list_eqb Binding_eqb bs bs'
         && Term_eqb t t'
+  | Let _ _ _, _ => false
   | Var n, Var n' => String.eqb n n'
+  | Var _, _ => false
   | TyAbs n k t, TyAbs n' k' t' => String.eqb n n' && Kind_eqb k k' && Term_eqb t t'
+  | TyAbs _ _ _, _ => false
   | LamAbs n ty t, LamAbs n' ty' t' => String.eqb n n' && Ty_eqb ty ty' && Term_eqb t t'
+  | LamAbs _ _ _, _ => false
   | Apply s t, Apply s' t' => Term_eqb s s' && Term_eqb t t'
+  | Apply _ _, _ => false
   | Constant c, Constant c' => some_valueOf_eqb c c'
+  | Constant _, _ => false
   | Builtin f, Builtin f' => func_eqb f f'
+  | Builtin _, _ => false
   | TyInst t ty, TyInst t' ty' => Term_eqb t t' && Ty_eqb ty ty'
+  | TyInst _ _, _ => false
   | Error ty , Error ty' => Ty_eqb ty ty'
+  | Error _, _ => false
   | IWrap ty1 ty2 t, IWrap ty1' ty2' t' => Ty_eqb ty1 ty1' && Ty_eqb ty2 ty2' && Term_eqb t t'
+  | IWrap _ _ _, _ => false
   | Unwrap t, Unwrap t' => Term_eqb t t'
-  | _, _ => false
+  | Unwrap _, _ => false
+  | Constr n args, Constr n' args' => Nat.eqb n n' && forall2b Term_eqb args args'
+  | Constr _ _ , _ => false
+  | Case t ts, Case t' ts' => Term_eqb t t' && forall2b Term_eqb ts ts'
+  | Case _ _, _ => false
   end
 with Binding_eqb (x y : Binding) {struct x} : bool := match x, y with
   | TermBind s vd t, TermBind s' vd' t' => Strictness_eqb s s' && VDecl_eqb vd vd' && Term_eqb t t'
+  | TermBind _ _ _, _ => false
   | TypeBind tvd ty, TypeBind tvd' ty' => TVDecl_eqb tvd tvd' && Ty_eqb ty ty'
+  | TypeBind _ _, _ => false
   | DatatypeBind  dtd, DatatypeBind dtd' => DTDecl_eqb dtd dtd'
-  | _, _ => false
+  | DatatypeBind _, _ => false
   end
   .
