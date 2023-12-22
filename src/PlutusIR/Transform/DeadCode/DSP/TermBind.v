@@ -305,14 +305,18 @@ Proof.
           msyn1 ρ is well-kinded to Δ:
             H_Δ_ρ : RD Δ ρ
 
-          using:
-            H_eval_tb : <{ /[ γ /] (/[[ msyn1 ρ /] tb) }> =[ k_v ]=> vb
 
           we should conclude that
             /[ γ /] (/[[ msyn1 ρ /] tb) is typeable in empty contexts
+          by using
+            closingA_preserves_typing_1
+            closing_preserves_typing_1
 
           and by preservation
-            vb is typable in empty contexts, hence it is closed
+            vb is typable in empty contexts, hence it is closed (typeable_empty__closed)
+
+          using:
+            H_eval_tb : <{ /[ γ /] (/[[ msyn1 ρ /] tb) }> =[ k_v ]=> vb
 
           This should follow from typing and substitution *) }
         {
