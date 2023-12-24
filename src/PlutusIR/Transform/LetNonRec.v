@@ -11,7 +11,7 @@ Import Coq.Lists.List.ListNotations.
 (* CNR = Compile Non-Recursive
    Desugaring strict, non-recursive lets into lambda-applications
 *)
-Inductive CNR_Term : Term -> Term -> Type :=
+Inductive CNR_Term : Term -> Term -> Prop :=
   | CNR_Let : forall {bs t_body t_body' f_bs},
       CNR_Term t_body t_body' ->
       CNR_Bindings bs f_bs ->
@@ -26,7 +26,7 @@ Inductive CNR_Term : Term -> Term -> Type :=
    where t_bs is of the form
      Apply (LamAbs (Apply (LamAbs ... t ...) t_1)) t_0
 *)
-with CNR_Bindings : list Binding -> list (Term -> Term) -> Type :=
+with CNR_Bindings : list Binding -> list (Term -> Term) -> Prop :=
   | CNR_Nil  :
       CNR_Bindings nil nil
   | CNR_Cons : forall {b bs f_b f_bs},
@@ -40,7 +40,7 @@ with CNR_Bindings : list Binding -> list (Term -> Term) -> Type :=
       (\v -> t) t_bound
     for any term `t`
 *)
-with CNR_Binding : Binding -> (Term -> Term) -> Type :=
+with CNR_Binding : Binding -> (Term -> Term) -> Prop :=
   | CNR_Desugar : forall {v t_bound t_bound' ty},
       CNR_Term t_bound t_bound' ->
       CNR_Binding

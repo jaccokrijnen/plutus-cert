@@ -24,7 +24,7 @@ Definition disjoint {A} (xs ys : list A) : Prop :=
   Forall (fun v => ~ In v ys) xs.
 
 
-Inductive dc : Term -> Term -> Type :=
+Inductive dc : Term -> Term -> Prop :=
   | dc_compat
       (t t'     : Term)
       (H_compat : Compat dc t t')

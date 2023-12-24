@@ -15,7 +15,7 @@ Import NamedTerm.
 Section Compatibility.
 
   Context
-    (R : Term -> Term -> Type)
+    (R : Term -> Term -> Prop)
     (dec_R : Term -> Term -> bool)
   .
 

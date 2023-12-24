@@ -326,6 +326,19 @@ Definition P_binding_well_formed Delta Gamma b : Prop :=
   P_bindings_well_formed_rec
   P_binding_well_formed : core.
 
+Ltac inv_CNR :=
+  match goal with
+  | H : CNR_Term _ _ |- _ => inversion H; subst
+  | H : CNR_Bindings _ _ |- _ => inversion H; subst
+  | H : CNR_Binding _ _ |- _ => inversion H; subst
+  end.
+
+Ltac inv_Compat :=
+  match goal with
+    | H : Compat.Compat _ _ _ |- _ => inversion H; subst
+    | H : Compat.Compat_Bindings _ _ _ |- _ => inversion H; subst
+  end.
+
 (** ** The main theorem *)
 
 Theorem CNR_Term__DSP : forall Delta Gamma e T,
@@ -340,32 +353,22 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
     (P3 := P_binding_well_formed).
 
   all : intros; autounfold; intros; subst.
-  all : try solve [
-    inversion X; subst;
-    inversion X0; subst;
-    eauto with DSP_compatibility_lemmas typing
-  ].
-  all : try solve [
-    inversion X0; subst;
-    inversion X1; subst;
-    eauto with DSP_compatibility_lemmas typing
-  ].
-  all : try solve [
-    eauto with typing
-  ].
+  all: try solve [ inv_CNR; inv_Compat ; eauto with DSP_compatibility_lemmas typing].
+  all : try solve [eauto with typing].
   - (* T_Let *)
-    inversion X; subst.
+    inv_CNR.
     + eapply H3...
-    + inversion X0; subst.
+    + inv_Compat.
       eapply H3...
 
   - (* W_NilB_NonRec *)
     split. all: intros. all: subst.
-    + inversion X. subst.
+    + inv_Compat.
       inversion H0...
-    + inversion X. subst.
-      inversion H0. subst.
-      simpl in H2.
+    + inv_CNR.
+      match goal with
+        | H : map_normalise _ _ |- _ => inversion H; subst; simpl in H
+      end.
       eapply compatibility_LetNonRec_Nil'...
   - (* W_ConsB_NonRec *)
     split. all: intros. all: subst.
@@ -412,14 +415,18 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
       * rewrite app_assoc.
         rewrite app_assoc.
         rewrite <- flatten_app...
-    + rewrite flatten_app in H5.
-      apply map_normalise__app in H5.
-      destruct H5 as [l1n [l2n [Hmn__l1n [Hmn__l2n Heq]]]].
+    + 
+      match goal with
+      | H : map_normalise _ _ |- _ =>
+          rewrite flatten_app in H;
+          apply map_normalise__app in H;
+          destruct H as [l1n [l2n [Hmn__l1n [Hmn__l2n Heq]]]]
+      end.
       subst.
       eapply map_normalise__deterministic in H1...
       subst.
 
-      inversion X. subst.
+      inversion H4. subst.
 
       eapply H0...
       eapply H3...
@@ -433,9 +440,9 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
             ++ eapply eqb_eq in Heqb as Heq.
                 subst.
                 assert (appears_bound_in_ann x (Let NonRec (TypeBind (TyVarDecl x k) t1 :: bs) t)) by eauto.
-                eapply uniqueness' in H4.
-                rewrite H4 in H1.
-                inversion H4.
+                eapply uniqueness' in H5.
+                rewrite H5 in H1.
+                inversion H5.
             ++ apply eqb_neq in Heqb as Hneq.
                simpl. rewrite Heqb...
         -- destruct d.
@@ -447,9 +454,9 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
             ++ eapply eqb_eq in Heqb as Heq.
                 subst.
                 assert (appears_bound_in_ann x (Let NonRec (DatatypeBind (Datatype (TyVarDecl x k) l s l0) :: bs) t)) by eauto.
-                eapply uniqueness' in H4.
-                rewrite H4 in H1.
-                inversion H4.
+                eapply uniqueness' in H5.
+                rewrite H5 in H1.
+                inversion H5.
             ++ apply eqb_neq in Heqb as Hneq.
                simpl. rewrite Heqb...
       * rewrite app_assoc.
@@ -459,14 +466,14 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
   - (* W_Term *)
     split. all: intros. all: subst.
     + inversion X...
-    + inversion X. subst.
+    + inv_CNR.
       eapply compatibility_TermBind__desugar...
   - (* W_Type *)
     split. all: intros. all: subst.
     + inversion X0...
-    + inversion X0.
+    + inv_CNR.
   - (* W_Data *)
     split. all: intros. all: subst.
     + inversion X0...
-    + inversion X0...
+    + inv_CNR...
 Qed.

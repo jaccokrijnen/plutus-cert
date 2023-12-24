@@ -12,7 +12,7 @@ Import NamedTerm.
    currently desugares only a let-nonrec with only type bindings
 *)
 
-Inductive ty_let : Term -> Term -> Type :=
+Inductive ty_let : Term -> Term -> Prop :=
 
   | tl_Let : forall bs t_body t_body' f_bs,
       ty_let t_body t_body' ->
@@ -24,7 +24,7 @@ Inductive ty_let : Term -> Term -> Type :=
       ty_let t t'
 
 
-with ty_let_Bindings : list Binding -> list (Term -> Term) -> Type :=
+with ty_let_Bindings : list Binding -> list (Term -> Term) -> Prop :=
 
   | tl_Nil  :
       ty_let_Bindings nil nil
@@ -34,7 +34,7 @@ with ty_let_Bindings : list Binding -> list (Term -> Term) -> Type :=
       ty_let_Bindings       bs  f_bs ->
       ty_let_Bindings (b :: bs) (f_b :: f_bs)
 
-with ty_let_Binding : Binding -> (Term -> Term) -> Type :=
+with ty_let_Binding : Binding -> (Term -> Term) -> Prop :=
   | tl_Desugar : forall α k τ,
       ty_let_Binding
         (TypeBind (TyVarDecl α k) τ)

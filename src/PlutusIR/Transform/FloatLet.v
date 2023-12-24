@@ -120,7 +120,7 @@ Inductive Bindings_NonRec_Commute : Binding -> Binding -> Type :=
 
 
 (* Reorder bindings within a non-recursive binding group*)
-Inductive LetReorder : Term -> Term -> Type :=
+Inductive LetReorder : Term -> Term -> Prop :=
   | LR_Let  : forall t t' bs bs' bs'', LetReorder t t' ->
                  Compat_Bindings LetReorder bs bs' ->
                  SwapsIn Bindings_NonRec_Commute bs' bs'' ->

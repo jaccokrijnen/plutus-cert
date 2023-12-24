@@ -67,6 +67,17 @@ Definition P_binding_well_formed Delta Gamma b1 : Prop :=
   P_binding_well_formed
   : core.
 
+Ltac inv_CNR :=
+  match goal with
+  | H : CNR_Term _ _ |- _ => inversion H; subst
+  | H : CNR_Bindings _ _ |- _ => inversion H; subst
+  end.
+
+Ltac inv_Compat :=
+  match goal with
+    | H : Compat.Compat _ _ _ |- _ => inversion H; subst
+  end.
+
 Theorem CNR_Term__SSP : forall Delta Gamma t1 T,
     Delta ,, Gamma |-+ t1 : T ->
     P_has_type Delta Gamma t1 T.
@@ -79,21 +90,20 @@ Proof with (eauto with typing).
     (P3 := P_binding_well_formed).
   all: intros; autounfold; intros.
   all: try solve [eauto with typing].
-  all: try solve [inversion X; subst; inversion X0; subst; eauto with typing].
-  all: try solve [inversion X0; subst; inversion X1; subst; eauto with typing].
+  all: try solve [ inv_CNR; inv_Compat ; eauto with typing].
 
   - (* T_Let *)
-    inversion X; subst.
+    inv_CNR.
     + eapply H3...
-    + inversion X0; subst...
+    + inv_Compat.
       unfold P_bindings_well_formed_nonrec in H3.
       edestruct H3 as [[IHH [Heq Heq']] _]...
       eapply T_Let...
       * rewrite Heq'...
       * rewrite Heq...
   - (* T_LetRec *)
-    inversion X. subst.
-    inversion X0. subst.
+    inv_CNR.
+    inv_Compat.
     unfold P_bindings_well_formed_rec in H3.
     edestruct H3 as [IHH [Heq Heq']]...
     eapply T_LetRec...
@@ -104,8 +114,8 @@ Proof with (eauto with typing).
   - (* W_NilB_NonRec *)
     split. all: intros.
     + inversion X...
-    + inversion X.
-      inversion H0.
+    + inv_CNR.
+      inversion H1.
       subst...
   - (* W_ConsB_NonRec *)
     split. all: intros.
@@ -120,42 +130,42 @@ Proof with (eauto with typing).
         f_equal. eapply H3...
       * simpl. rewrite Heq'...
         f_equal. eapply H3...
-    + inversion X. subst.
-      inversion X0. subst.
+    + inv_CNR.
+      inversion H10. subst.
       destruct H0 as [_ IH1]...
       destruct H3 as [_ IH2]...
       simpl.
 
       simpl in H5.
-      unfold flatten in H5.
-      simpl in H5.
-      rewrite concat_app in H5.
-      simpl in H5.
-      apply map_normalise__app in H5 as H7.
-      destruct H7 as [l1n [l2n [Hn__l1n [Hn__l2n Heql]]]].
+      unfold flatten in H6.
+      simpl in H6.
+      rewrite concat_app in H6.
+      simpl in H6.
+      apply map_normalise__app in H6 as H9.
+      destruct H9 as [l1n [l2n [Hn__l1n [Hn__l2n Heql]]]].
       simpl in Hn__l2n.
       inversion Hn__l2n. subst.
-      inversion H9. subst.
+      inversion H13. subst.
 
       simpl in H1.
       inversion H1. subst.
-      inversion H11. subst.
+      inversion H15. subst.
 
-      eapply normalisation__deterministic in H10...
+      eapply normalisation__deterministic in H14...
       subst.
 
       eapply IH1...
       eapply IH2...
 
       simpl in H6.
-      rewrite <- app_assoc in H6.
-      unfold flatten in H6.
-      simpl in H6.
-      rewrite concat_app in H6.
-      simpl in H6.
-      rewrite app_nil_r in H6.
+      rewrite <- app_assoc in H7.
+      unfold flatten in H7.
+      simpl in H7.
+      rewrite concat_app in H7.
+      simpl in H7.
+      rewrite app_nil_r in H7.
 
-      eapply H6.
+      eapply H7.
 
   - (* W_NilB_Rec *)
     inversion X. subst.
@@ -175,18 +185,18 @@ Proof with (eauto with typing).
   - (* W_Term *)
     split. all: intros.
     + inversion X. subst...
-    + inversion X. subst...
-      simpl in H4.
-      inversion H4. subst.
-      inversion H10. subst.
+    + inversion H4. subst...
+      simpl in H5.
+      inversion H5. subst.
+      inversion H11. subst.
       eapply normalisation__deterministic in H0...
       subst...
   - (* W_Type *)
     split. all: intros.
     + inversion X0. subst...
-    + inversion X0.
+    + inversion H1.
   - (* W_Data *)
     split. all: intros.
     + inversion X0. subst...
-    + inversion X0.
+    + inversion H3.
 Qed.
