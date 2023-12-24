@@ -226,7 +226,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
   (* W_NilB_NonRec *)
   - split.
     + intros.
-      inversion X;subst.
+      inversion H;subst.
       eauto with DSP_compatibility_lemmas.
     + intros.
       inversion H.
@@ -234,7 +234,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
   (* W_ConsB_NonRec *)
   - split.
     + intros.
-      inversion X. subst.
+      inversion H4. subst.
       admit.
     + intros. subst.
     (* TODO, change P_bindings_well_formed_nonrec ? *)

@@ -76,6 +76,8 @@ Ltac inv_CNR :=
 Ltac inv_Compat :=
   match goal with
     | H : Compat.Compat _ _ _ |- _ => inversion H; subst
+    | H : Compat.Compat_Bindings _ _ _ |- _ => inversion H; subst
+    | H : Compat.Compat_Binding _ _ _ |- _ => inversion H; subst
   end.
 
 Theorem CNR_Term__SSP : forall Delta Gamma t1 T,
@@ -113,13 +115,13 @@ Proof with (eauto with typing).
 
   - (* W_NilB_NonRec *)
     split. all: intros.
-    + inversion X...
+    + inv_Compat...
     + inv_CNR.
       inversion H1.
       subst...
   - (* W_ConsB_NonRec *)
     split. all: intros.
-    + inversion X. subst.
+    + inv_Compat.
       unfold P_binding_well_formed in H0.
       edestruct H0 as [[IH [Heq Heq']] _]...
       split; try split.
@@ -168,10 +170,10 @@ Proof with (eauto with typing).
       eapply H7.
 
   - (* W_NilB_Rec *)
-    inversion X. subst.
+    inv_Compat.
     eauto.
   - (* W_ConsB_Rec*)
-    inversion X. subst.
+    inv_Compat.
     unfold P_binding_well_formed in H0.
     edestruct H0 as [[IH [Heq Heq']] _]...
     split; try split.
@@ -184,7 +186,7 @@ Proof with (eauto with typing).
 
   - (* W_Term *)
     split. all: intros.
-    + inversion X. subst...
+    + inv_Compat...
     + inversion H4. subst...
       simpl in H5.
       inversion H5. subst.
@@ -193,10 +195,10 @@ Proof with (eauto with typing).
       subst...
   - (* W_Type *)
     split. all: intros.
-    + inversion X0. subst...
+    + inv_Compat...
     + inversion H1.
   - (* W_Data *)
     split. all: intros.
-    + inversion X0. subst...
+    + inv_Compat...
     + inversion H3.
 Qed.

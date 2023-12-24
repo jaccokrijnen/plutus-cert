@@ -19,7 +19,7 @@ Section Compatibility.
     (dec_R : Term -> Term -> bool)
   .
 
-  Inductive Compat_Binding : Binding -> Binding -> Type :=
+  Inductive Compat_Binding : Binding -> Binding -> Prop :=
     | C_TermBind     : ∀ s v t t',
         R t t' -> Compat_Binding (TermBind s v t) (TermBind s v t')
 
@@ -30,14 +30,14 @@ Section Compatibility.
         Compat_Binding (DatatypeBind d) (DatatypeBind d)
     .
 
-  Inductive Compat_Bindings : list Binding -> list Binding -> Type :=
+  Inductive Compat_Bindings : list Binding -> list Binding -> Prop :=
     | Compat_Bindings_Cons : ∀ {b b' bs bs'},
         Compat_Binding b b' -> Compat_Bindings bs bs' -> Compat_Bindings (b :: bs) (b' :: bs')
 
     | Compat_Bindings_Nil :
         Compat_Bindings nil nil.
 
-  Inductive Compat : Term -> Term -> Type :=
+  Inductive Compat : Term -> Term -> Prop :=
     | C_Let : ∀ bs bs' r t t',
         Compat_Bindings bs bs' -> R t t' -> Compat (Let r bs t) (Let r bs' t')
 

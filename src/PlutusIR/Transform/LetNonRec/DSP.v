@@ -337,6 +337,7 @@ Ltac inv_Compat :=
   match goal with
     | H : Compat.Compat _ _ _ |- _ => inversion H; subst
     | H : Compat.Compat_Bindings _ _ _ |- _ => inversion H; subst
+    | H : Compat.Compat_Binding _ _ _ |- _ => inversion H; subst
   end.
 
 (** ** The main theorem *)
@@ -364,7 +365,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
   - (* W_NilB_NonRec *)
     split. all: intros. all: subst.
     + inv_Compat.
-      inversion H0...
+      inversion H1...
     + inv_CNR.
       match goal with
         | H : map_normalise _ _ |- _ => inversion H; subst; simpl in H
@@ -372,14 +373,18 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
       eapply compatibility_LetNonRec_Nil'...
   - (* W_ConsB_NonRec *)
     split. all: intros. all: subst.
-    + rewrite flatten_app in H5.
-      apply map_normalise__app in H5.
-      destruct H5 as [l1n [l2n [Hmn__l1n [Hmn__l2n Heq]]]].
-      subst.
+    +
+      match goal with
+        | H : map_normalise _ _ |- _ =>
+            rewrite flatten_app in H;
+            apply map_normalise__app in H;
+            destruct H as [l1n [l2n [Hmn__l1n [Hmn__l2n Heq]]]];
+            subst
+      end.
       eapply map_normalise__deterministic in H1...
       subst.
 
-      inversion X. subst.
+      inv_Compat.
 
       eapply H0...
       eapply H3...
@@ -393,9 +398,9 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
             ++ eapply eqb_eq in Heqb as Heq.
                 subst.
                 assert (appears_bound_in_ann x (Let NonRec (TypeBind (TyVarDecl x k) t1 :: bs) t)) by eauto.
-                eapply uniqueness' in H4.
-                rewrite H4 in H1.
-                inversion H4.
+                eapply uniqueness' in H5.
+                rewrite H5 in H1.
+                inversion H5.
             ++ apply eqb_neq in Heqb as Hneq.
               simpl. rewrite Heqb...
         -- destruct d.
@@ -407,9 +412,9 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
             ++ eapply eqb_eq in Heqb as Heq.
                 subst.
                 assert (appears_bound_in_ann x (Let NonRec (DatatypeBind (Datatype (TyVarDecl x k) l s l0) :: bs) t)) by eauto.
-                eapply uniqueness' in H4.
-                rewrite H4 in H1.
-                inversion H4.
+                eapply uniqueness' in H5.
+                rewrite H5 in H1.
+                inversion H5.
             ++ apply eqb_neq in Heqb as Hneq.
                simpl. rewrite Heqb...
       * rewrite app_assoc.
@@ -465,15 +470,15 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
 
   - (* W_Term *)
     split. all: intros. all: subst.
-    + inversion X...
+    + inv_Compat...
     + inv_CNR.
       eapply compatibility_TermBind__desugar...
   - (* W_Type *)
     split. all: intros. all: subst.
-    + inversion X0...
+    + inv_Compat...
     + inv_CNR.
   - (* W_Data *)
     split. all: intros. all: subst.
-    + inversion X0...
+    + inv_Compat...
     + inv_CNR...
 Qed.
