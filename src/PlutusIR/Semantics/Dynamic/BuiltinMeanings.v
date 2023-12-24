@@ -70,219 +70,85 @@ Definition drop (x : Z) (s : string) : string := substring (Z.to_nat x) (length 
     Note that not all default functions have sensible implementations, such
     as SHA2, SHA3 and VerifySignature. This is bound to change in the future.
 *)
+
+Notation IntConstant y := (Constant (@Some' _ DefaultUniInteger (ValueOf _  y))) (only parsing).
+Notation BSConstant y := (Constant (@Some' _ DefaultUniByteString (ValueOf _  y))) (only parsing).
+Notation StringConstant y := (Constant (@Some' _ DefaultUniString (ValueOf _  y))) (only parsing).
+Notation BoolConstant y := (Constant (@Some' _ DefaultUniBool (ValueOf _  y))) (only parsing).
+Notation CharConstant c := (Constant (@Some' _ DefaultUniChar (ValueOf _ c))) (only parsing).
+
 Definition compute_defaultfun (t : Term) : option Term :=
   match t with
   (** Binary operators on integers *)
   (* AddInteger *)
-  | (Apply
-      (Apply
-        (Builtin AddInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _  y)))
-    ) => Some (constInt (x + y))
+  | Builtin AddInteger [] [IntConstant x; IntConstant y] => Some (constInt (x + y))
   (* SubtractInteger *)
-  | (Apply
-      (Apply
-        (Builtin SubtractInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constInt (x - y))
+  | Builtin SubtractInteger [] [IntConstant x; IntConstant y] => Some (constInt (x - y))
   (* MultiplyInteger *)
-  | (Apply
-      (Apply
-        (Builtin MultiplyInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constInt (x * y))
+  | Builtin MultiplyInteger [] [IntConstant x; IntConstant y] => Some (constInt (x * y))
   (* DivideInteger *)
-  | (Apply
-      (Apply
-        (Builtin DivideInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constInt (x / y))
+  | Builtin DivideInteger [] [IntConstant x; IntConstant y] => Some (constInt (x / y))
   (* QuotientInteger *)
-  | (Apply
-      (Apply
-        (Builtin QuotientInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constInt (x ÷ y))
+  | Builtin QuotientInteger [] [IntConstant x; IntConstant y] => Some (constInt (x ÷ y))
   (* RemainderInteger *)
-  | (Apply
-      (Apply
-        (Builtin RemainderInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constInt (Z.rem x y))
+  | Builtin RemainderInteger [] [IntConstant x; IntConstant y] => Some (constInt (Z.rem x y))
   (* ModInteger *)
-  | (Apply
-      (Apply
-        (Builtin ModInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constInt (x mod y))
+  | Builtin ModInteger [] [IntConstant x; IntConstant y] => Some (constInt (x mod y))
   (** Binary predicates on integers *)
   (* LessThanInteger*)
-  | (Apply
-      (Apply
-        (Builtin LessThanInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constBool (x <? y))
+  | Builtin LessThanInteger [] [IntConstant x; IntConstant y] => Some (constBool (x <? y))
   (* LessThanEqInteger *)
-  | (Apply
-      (Apply
-        (Builtin LessThanEqInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constBool (x <=? y))
+  | Builtin LessThanEqInteger [] [IntConstant x; IntConstant y] => Some (constBool (x <=? y))
   (* GreaterThanInteger *)
-  | (Apply
-      (Apply
-        (Builtin GreaterThanInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constBool (x >? y))
+  | Builtin GreaterThanInteger [] [IntConstant x; IntConstant y] => Some (constBool (x >? y))
   (* GreaterThanEqInteger *)
-  | (Apply
-      (Apply
-        (Builtin GreaterThanEqInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constBool (x >=? y))
+  | Builtin GreaterThanEqInteger [] [IntConstant x; IntConstant y] => Some (constBool (x >=? y))
   (* EqInteger *)
-  | (Apply
-      (Apply
-        (Builtin EqInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constBool (x =? y))
+  | Builtin EqInteger [] [IntConstant x; IntConstant y] => Some (constBool (x =? y))
   (** Bytestring operations *)
   (* Concatenate *)
-  | (Apply
-      (Apply
-        (Builtin Concatenate)
-        (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs1)))
-      )
-      (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs2)))
-    ) => Some (constBS (bs1 ++ bs2))
+  | Builtin Concatenate [] [BSConstant bs1; BSConstant bs2] => Some (constBS (bs1 ++ bs2))
   (* TakeByteString *)
-  | (Apply
-      (Apply
-        (Builtin TakeByteString)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs)))
-    ) => Some (constBS (take x bs))
+  | Builtin TakeByteString [] [IntConstant x; BSConstant bs] => Some (constBS (take x bs))
   (* DropByteString *)
-  | (Apply
-      (Apply
-        (Builtin DropByteString)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs)))
-    ) => Some (constBS (drop x bs))
+  | Builtin DropByteString [] [IntConstant x; BSConstant bs] => Some (constBS (drop x bs))
   (** Bytestring hashing
 
       Note: We model hashing by identity. Comparing hashes now becomes a straightforward equality check.
       We believe modelling hash function as such is sufficient, because the dynamic semantics is not meant to
       be used as a basis for a real-world evaluator.
   *)
-  | (Apply
-      (Builtin SHA2)
-      (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs)))
-    ) => Some (constBS bs)
-  | (Apply
-      (Builtin SHA3)
-      (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs)))
-    ) => Some (constBS bs)
+  | Builtin SHA2 [] [BSConstant bs] => Some (constBS bs)
+  | Builtin SHA3 [] [BSConstant bs] => Some (constBS bs)
   (** Signature verification
 
       TODO: Obviously, this should evaluate to true. However, how can we model the verification of signatures?
       Implementation of signature verification:
       https://input-output-hk.github.io/ouroboros-network/cardano-crypto/Crypto-ECC-Ed25519Donna.html
   *)
-  | (Apply
-      (Apply
-        (Apply
-          (Builtin VerifySignature)
-          (Constant (@Some' _ DefaultUniByteString (ValueOf _ publicKey)))
-        )
-        (Constant (@Some' _ DefaultUniByteString (ValueOf _ message)))
-      )
-      (Constant (@Some' _ DefaultUniByteString (ValueOf _ signature)))
-    ) => Some (constBool true)
+  | Builtin VerifySignature [] [BSConstant publicKey; BSConstant message; BSConstant signature] =>
+      Some (constBool true)
   (** Binary predicates on bytestrings *)
   (* EqByteString *)
-  | (Apply
-      (Apply
-        (Builtin EqByteString)
-        (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs1)))
-      )
-      (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs2)))
-    ) => Some (constBool (bs1 =? bs2)%string)
+  | Builtin EqByteString [] [BSConstant bs1; BSConstant bs2] => Some (constBool (bs1 =? bs2)%string)
   (* LtByteString *)
-  | (Apply
-      (Apply
-        (Builtin LtByteString)
-        (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs1)))
-      )
-      (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs2)))
-    ) => Some (constBool (to_Z bs1 <? to_Z bs2))
+  | Builtin LtByteString [] [BSConstant bs1; BSConstant bs2] => Some (constBool (to_Z bs1 <? to_Z bs2))
   (* GtByteString *)
-  | (Apply
-      (Apply
-        (Builtin GtByteString)
-        (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs1)))
-      )
-      (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs2)))
-    ) => Some (constBool (to_Z bs1 >? to_Z bs2))
-  (** If-Then-Else *)
-  | (Apply
-      (Apply
-        (Apply
-          (TyInst
-            (Builtin IfThenElse)
-            T
-          )
-          (Constant (@Some' _ DefaultUniBool (ValueOf _ cond)))
-        )
-        thenBranch
-      )
-      elseBranch
-    ) => Some (if cond then thenBranch else elseBranch)
+  | Builtin GtByteString [] [BSConstant bs1; BSConstant bs2] => Some (constBool (to_Z bs1 >? to_Z bs2))
+  (** If-Then-Else
+
+      TODO: The builtin If-Then-Else is strict in its branches, so they can only be constants.
+      (Surface level if-then-else is translated to a case).
+  *)
+
+  | Builtin IfThenElse [_] [BoolConstant cond; thenBranch; elseBranch] => Some (if cond then thenBranch else elseBranch)
   (* String operations *)
   (* CharToString *)
-  | (Apply
-      (Builtin CharToString)
-      (Constant (@Some' _ DefaultUniChar (ValueOf _ ch)))
-    ) => Some (constString (String ch EmptyString))
+  | Builtin CharToString [] [CharConstant ch] => Some (constString (String ch EmptyString))
   (* Append *)
-  | (Apply
-      (Apply
-        (Builtin Append)
-        (Constant (@Some' _ DefaultUniString (ValueOf _ s1)))
-      )
-      (Constant (@Some' _ DefaultUniString (ValueOf _ s2)))
-    ) => Some (constString (s1 ++ s2))
+  | Builtin Append [] [StringConstant s1; StringConstant s2] => Some (constString (s1 ++ s2))
   (* Trace *)
-  | (Apply
-      (Builtin Trace)
-      (Constant (@Some' _ DefaultUniString (ValueOf _ s)))
-    ) => Some (constUnit tt)
+  | Builtin Trace [] [StringConstant s] => Some (constUnit tt)
   (* Catch-all: The argument term is not a fully applied builtin *)
   | _ => None
   end.

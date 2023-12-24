@@ -89,8 +89,10 @@ Inductive well_scoped (Δ Γ: ctx) : Term -> Prop :=
       Δ ,, Γ |-+ (Unwrap M)
   | WS_Constant : forall u (x : valueOf u),
       Δ ,, Γ |-+ (Constant (Some' x))
-  | WS_Builtin : forall f,
-      Δ ,, Γ |-+ (Builtin f)
+  | WS_Builtin : forall f tys ts,
+      Forall (well_scoped Δ Γ) ts ->
+      Forall (well_scoped_Ty Δ) tys ->
+      Δ ,, Γ |-+ (Builtin f tys ts)
   | WS_Error : forall S,
       Δ |-* S ->
       Δ ,, Γ |-+ (Error S)

@@ -56,9 +56,9 @@ Section Compatibility.
     | C_Constant : ∀ v,
         Compat (Constant v) (Constant v)
 
-    | C_Builtin : ∀ f args args',
-        Forall2 R args args' ->
-        Compat (Builtin f args) (Builtin f args')
+    | C_Builtin : ∀ f tys ts ts',
+        Forall2 R ts ts' ->
+        Compat (Builtin f tys ts) (Builtin f tys ts')
 
     | C_TyInst : ∀ t t' T,
         R t t' -> Compat (TyInst t T) (TyInst t' T)
@@ -91,7 +91,7 @@ Section Compatibility.
       | (LamAbs n T t), (LamAbs n' T' t')  => String.eqb n n'&& Ty_eqb T T' && dec_R t t'
       | (Apply s t), (Apply s' t')         => dec_R s s' && dec_R t t'
       | (Constant v), (Constant v')        => some_valueOf_eqb v v'
-      | (Builtin f args), (Builtin f' args') => func_eqb f f' && forall2b dec_R args args'
+      | (Builtin f tys ts), (Builtin f' tys' ts') => func_eqb f f' && list_eqb Ty_eqb tys tys' && forall2b dec_R ts ts'
       | (TyInst t T), (TyInst t' T')       => Ty_eqb T T' && dec_R t t'
       | (Error T), (Error T')              => Ty_eqb T T'
       | (IWrap T1 T2 t), (IWrap T1' T2' t') => Ty_eqb T1 T1' && Ty_eqb T2 T2' && dec_R t t'
@@ -194,7 +194,14 @@ Section Compatibility.
       subst.
       apply C_Constant.
     - assert (d = d0)... subst.
-      apply C_Builtin.
+      assert (l = l1).
+      + apply list_eqb_eq_proj_l2r with (a_eqb := Ty_eqb).
+        apply Ty_eqb_eq.
+        assumption.
+      +
+        subst.
+        apply C_Builtin.
+        eauto using forall2b_Forall2.
     - assert (t0 = t1)... subst.
       apply C_TyInst...
     - assert (t = t0)... subst.

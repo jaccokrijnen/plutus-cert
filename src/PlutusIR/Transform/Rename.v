@@ -34,7 +34,7 @@ Definition no_ty_capture α (Δ : ctx) τ :=
   forall β, In (β, α) Δ -> ~ AFI.Ty.appears_free_in β τ.
 
 
-Inductive rename_tvs (Δ : ctx) (cs : list constructor) : list TVDecl -> list TVDecl -> ctx -> Type :=
+Inductive rename_tvs (Δ : ctx) (cs : list constructor) : list TVDecl -> list TVDecl -> ctx -> Prop :=
 
   | rn_tvs_nil :
       rename_tvs Δ cs [] [] []
@@ -47,7 +47,7 @@ Inductive rename_tvs (Δ : ctx) (cs : list constructor) : list TVDecl -> list TV
       rename_tvs Δ cs (TyVarDecl α k :: tvs) (TyVarDecl β k :: tvs') ((α, β) :: Δ_tvs)
 .
 
-Inductive rename_ty (Δ : ctx) : Ty -> Ty -> Type :=
+Inductive rename_ty (Δ : ctx) : Ty -> Ty -> Prop :=
 
    | rn_Ty_Var : forall α α',
       lookup α Δ = Some α' ->
@@ -82,7 +82,7 @@ Inductive rename_ty (Δ : ctx) : Ty -> Ty -> Type :=
       rename_ty Δ (Ty_App σ τ) (Ty_App σ' τ')
 .
 
-Inductive rename (Γ Δ : ctx) : Term -> Term -> Type :=
+Inductive rename (Γ Δ : ctx) : Term -> Term -> Prop :=
   | rn_Var : forall x y,
       lookup x Γ = Some y ->
       rename Γ Δ  (Var x) (Var y)
@@ -143,8 +143,10 @@ Inductive rename (Γ Δ : ctx) : Term -> Term -> Type :=
   | rn_Constant : forall c,
       rename Γ Δ (Constant c) (Constant c)
 
-  | rn_Builtin : forall b,
-      rename Γ Δ (Builtin b) (Builtin b)
+  | rn_Builtin : forall b tys tys' ts ts',
+      Forall2 (rename_ty Δ) tys tys' ->
+      Forall2 (rename Γ Δ) ts ts' ->
+      rename Γ Δ (Builtin b tys ts) (Builtin b tys' ts')
 
   | rn_TyInst : forall t t' τ τ',
       rename Γ Δ t t' ->
@@ -165,7 +167,7 @@ Inductive rename (Γ Δ : ctx) : Term -> Term -> Type :=
       rename Γ Δ t t' ->
       rename Γ Δ (Unwrap t) (Unwrap t')
 
-with rename_binding (Γ Δ : ctx) : ctx -> ctx -> Binding -> Binding -> Type :=
+with rename_binding (Γ Δ : ctx) : ctx -> ctx -> Binding -> Binding -> Prop :=
 
   | rn_TermBind : forall s x x' τ τ' t t',
       rename_ty Δ τ τ' ->
@@ -197,7 +199,7 @@ with rename_binding (Γ Δ : ctx) : ctx -> ctx -> Binding -> Binding -> Type :=
   rename_Bindings_Rec is also indexed over contexts Γ_bs, Δ_bs, which are respectively
   the bound term and type variables of the recursive bindings.
 *)
-with rename_Bindings_Rec (Γ Δ : ctx) : ctx -> ctx -> list Binding -> list Binding -> Type :=
+with rename_Bindings_Rec (Γ Δ : ctx) : ctx -> ctx -> list Binding -> list Binding -> Prop :=
 
   | rn_Bindings_Rec_nil :
       rename_Bindings_Rec Γ Δ [] [] [] []
@@ -212,7 +214,7 @@ with rename_Bindings_Rec (Γ Δ : ctx) : ctx -> ctx -> list Binding -> list Bind
   rename_constrs is also indexed over context Γ_cs, which are
   the renamings of the constructors
 *)
-with rename_constrs (Γ Δ : ctx) : list constructor -> list constructor -> ctx -> Type :=
+with rename_constrs (Γ Δ : ctx) : list constructor -> list constructor -> ctx -> Prop :=
 
   | rn_constrs_nil :
       rename_constrs Γ Δ [] [] []

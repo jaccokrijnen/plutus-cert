@@ -55,30 +55,30 @@ Inductive appears_bound_in_ty (X : string) : Ty -> Prop :=
 
 Module Ty.
 
-  Section btv.
+  Section bound_tyvars.
     Context
       {tyvar : Set}
       (tyvar_dec : forall x y : tyvar, {x = y} + {x <> y})
       .
 
-    Fixpoint btv (T : ty tyvar tyvar) : list tyvar :=
+    Fixpoint bound_tyvars (T : ty tyvar tyvar) : list tyvar :=
       match T with
       | Ty_Var X =>
           []
       | Ty_Fun T1 T2 =>
-          btv T1 ++ btv T2
+          bound_tyvars T1 ++ bound_tyvars T2
       | Ty_IFix F T =>
-          btv F ++ btv T
+          bound_tyvars F ++ bound_tyvars T
       | Ty_Forall X K T' =>
-          X :: (btv T')
+          X :: (bound_tyvars T')
       | Ty_Builtin u =>
           []
       | Ty_Lam X K1 T' =>
-          X :: btv T'
+          X :: bound_tyvars T'
       | Ty_App T1 T2 =>
-          btv T1 ++ btv T2
+          bound_tyvars T1 ++ bound_tyvars T2
       end.
-  End btv.
+  End bound_tyvars.
 
 End Ty.
 
@@ -116,6 +116,14 @@ Inductive appears_bound_in_tm (x : string) : Term -> Prop :=
   | ABI_Tm_Unwrap : forall t,
       appears_bound_in_tm x t ->
       appears_bound_in_tm x (Unwrap t)
+
+
+  | ABI_Tm_DefaultFun_Cons_Head : forall f t tys ts,
+        appears_bound_in_tm x t ->
+        appears_bound_in_tm x (Builtin f tys (t :: ts))
+  | ABI_Tm_DefaultFun_Cons_Tail : forall f t tys ts,
+        appears_bound_in_tm x (Builtin f tys ts) ->
+        appears_bound_in_tm x (Builtin f tys (t :: ts))
 
   | ABI_Tm_Constr_Cons_Head : forall i t ts,
         appears_bound_in_tm x t ->
@@ -191,6 +199,13 @@ Inductive appears_bound_in_ann (X : string) : Term -> Prop :=
   | ABI_Ann_Unwrap : forall t,
       appears_bound_in_ann X t ->
       appears_bound_in_ann X (Unwrap t)
+
+  | ABI_Ann_DefaultFun_Cons_Head : forall f ty tys ts,
+        appears_bound_in_ty X ty ->
+        appears_bound_in_ann X (Builtin f (ty :: tys) ts)
+  | ABI_Ann_DefaultFun_Cons_Tail : forall f ty tys ts,
+        appears_bound_in_ann X (Builtin f tys ts) ->
+        appears_bound_in_ann X (Builtin f (ty :: tys) ts)
 
   | ABI_Ann_Constr_Nil : forall i t,
       appears_bound_in_ann X t ->
@@ -304,7 +319,7 @@ Function bound_vars (t : term') : list var :=
    | (Unwrap t)        => bound_vars t
    | (Error ty)        => []
    | (Constant v)      => []
-   | (Builtin f)       => []
+   | (Builtin f tys ts) => concat (map bound_vars ts)
    | (Constr i ts)     => concat (map bound_vars ts)
    | (Case t ts)       => bound_vars t ++ concat (map bound_vars ts)
    end
@@ -318,40 +333,62 @@ Definition bound_vars_bindings := @concat _ ∘ map bound_vars_binding.
 
 Definition btvc (c : constructor') : list tyvar :=
   match c with
-    | Constructor (VarDecl v ty) _ => Ty.btv ty
+    | Constructor (VarDecl v ty) _ => Ty.bound_tyvars ty
   end.
 
-Fixpoint btv (t : term') : list tyvar :=
+Fixpoint bound_tyvars (t : term') : list tyvar :=
  match t with
-   | Let rec bs t    => concat (map btv_binding bs) ++ btv t
-   | LamAbs n ty t   => Ty.btv ty ++ btv t
+   | Let rec bs t    => concat (map bound_tyvars_binding bs) ++ bound_tyvars t
+   | LamAbs n ty t   => Ty.bound_tyvars ty ++ bound_tyvars t
    | Var n           => []
-   | TyAbs n k t     => n :: btv t
-   | Apply s t       => btv s ++ btv t
-   | TyInst t ty     => btv t ++ Ty.btv ty
-   | IWrap ty1 ty2 t => Ty.btv ty1 ++ Ty.btv ty2 ++ btv t
-   | Unwrap t        => btv t
-   | Error ty        => Ty.btv ty
+   | TyAbs n k t     => n :: bound_tyvars t
+   | Apply s t       => bound_tyvars s ++ bound_tyvars t
+   | TyInst t ty     => bound_tyvars t ++ Ty.bound_tyvars ty
+   | IWrap ty1 ty2 t => Ty.bound_tyvars ty1 ++ Ty.bound_tyvars ty2 ++ bound_tyvars t
+   | Unwrap t        => bound_tyvars t
+   | Error ty        => Ty.bound_tyvars ty
    | Constant v      => []
-   | Builtin f       => []
-   | (Constr i ts)   => concat (map btv ts)
-   | (Case t ts)     => btv t ++ concat (map btv ts)
+   | Builtin f tys ts  => concat (map Ty.bound_tyvars tys) ++ concat (map bound_tyvars ts)
+   | (Constr i ts)   => concat (map bound_tyvars ts)
+   | (Case t ts)     => bound_tyvars t ++ concat (map bound_tyvars ts)
    end
-with btv_binding (b : binding') : list tyvar := match b with
+with bound_tyvars_binding (b : binding') : list tyvar := match b with
   | TermBind s (VarDecl v ty) t =>
-      Ty.btv ty ++ btv t
+      Ty.bound_tyvars ty ++ bound_tyvars t
 
   | DatatypeBind (Datatype (TyVarDecl t k) tvs matchf constructors ) =>
       [t] ++ map TyVarDeclVar tvs
-          ++ concat (map (Ty.btv ∘ constructorType) constructors)
+          ++ concat (map (Ty.bound_tyvars ∘ constructorType) constructors)
 
-  | TypeBind (TyVarDecl v k) ty => [v] ++ Ty.btv ty
+  | TypeBind (TyVarDecl v k) ty => [v] ++ Ty.bound_tyvars ty
   end.
 
 End BoundVars.
 
 Definition P_Term (t : Term) : Prop := Forall (fun v => appears_bound_in_tm v t) (bound_vars t).
 Definition P_Binding (b : Binding) := Forall (fun v => forall t bs recty, appears_bound_in_tm v (Let recty (b :: bs) t)) (bound_vars_binding b).
+
+
+Lemma Forall_Forall {A B} f (g : A -> list B) xs :
+  Forall (fun x => Forall f (g x)) xs <->
+  Forall f (concat (map g xs)).
+Proof.
+  split.
+  - induction xs.
+    + auto using Forall.
+    + intros H.
+      inversion H; subst.
+      simpl.
+      rewrite Forall_app; auto using Forall.
+  -
+    induction xs.
+    + auto.
+    + intros H.
+      simpl in H.
+      rewrite Forall_app in H.
+      destruct H.
+      auto using Forall.
+Qed.
 
 Lemma bound_vars_appears_bound_in_tm : (forall t, P_Term t) /\ (forall b, P_Binding b).
 Proof with eauto using appears_bound_in_tm.
@@ -408,6 +445,8 @@ Proof with eauto using appears_bound_in_tm.
     apply Forall_app. split.
       + tac ABI_Tm_Apply1.
       + tac ABI_Tm_Apply2.
+  - (* DefaultFun *)
+    admit. (* TODO *)
   - (* TyInst *)
     intros.
     rewrite bound_vars_equation.

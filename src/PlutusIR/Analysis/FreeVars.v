@@ -72,7 +72,7 @@ Module Term.
      | Unwrap t        => fv t
      | Error ty        => []
      | Constant v      => []
-     | Builtin f       => []
+     | Builtin f tys ts => concat (map fv ts)
      | Constr i ts     => concat (map fv ts)
      | Case t ts       => fv t ++ concat (map fv ts)
    end
@@ -157,7 +157,7 @@ Module Term.
      | Unwrap t        => ftv t
      | Error τ         => Ty.ftv τ
      | Constant v      => []
-     | Builtin f       => []
+     | Builtin f tys ts => concat (map Ty.ftv tys) ++ concat (map ftv ts)
      | (Constr i ts)   => concat (map ftv ts)
      | (Case t ts)    => ftv t ++ concat (map ftv ts)
      end

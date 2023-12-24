@@ -24,7 +24,7 @@ Inductive AlgTerm: Type := mkTermAlg
   ; a_LamAbs   : string -> Ty -> rTerm -> rTerm
   ; a_Apply    : rTerm -> rTerm -> rTerm
   ; a_Constant : @some valueOf -> rTerm
-  ; a_Builtin  : DefaultFun -> rTerm
+  ; a_Builtin  : DefaultFun -> list Ty -> list rTerm -> rTerm
   ; a_TyInst   : rTerm -> Ty -> rTerm
   ; a_Error    : Ty -> rTerm
   ; a_IWrap    : Ty -> Ty -> rTerm -> rTerm
@@ -80,7 +80,7 @@ Section Folds.
     | (LamAbs n ty t)   => a_LamAbs algTerm n ty (foldTerm t)
     | (Apply s t)       => a_Apply algTerm (foldTerm s) (foldTerm t)
     | (Constant v)      => a_Constant algTerm v
-    | (Builtin f)       => a_Builtin algTerm f
+    | (Builtin f tys ts)  => a_Builtin algTerm f tys (map foldTerm ts)
     | (TyInst t ty)     => a_TyInst algTerm (foldTerm t) ty
     | (Error ty)        => a_Error algTerm ty
     | (IWrap ty1 ty2 t) => a_IWrap algTerm ty1 ty2 (foldTerm t)
@@ -276,7 +276,7 @@ Section Use. (* name comes from "use" rules in attribute grammars *)
     a_LamAbs := fun (_ : string) (_ : Ty) (X : a) => f [X];
     a_Apply := fun X X0 : a => f [X; X0];
     a_Constant := fun _ : @some valueOf => f [];
-    a_Builtin := fun _ : DefaultFun => f [];
+    a_Builtin := fun (_ : DefaultFun) tys rs => f rs;
     a_TyInst := fun (X : a) (_ : Ty) => f [X];
     a_Error := fun _ : Ty => f [];
     a_IWrap := fun (_ _ : Ty) (X : a) => f [X];
@@ -377,7 +377,7 @@ Definition con_type (v v' b b': Set) P Q : con_term -> Type :=
     | con_LamAbs    => forall (s : b) (t : ty v' b') (t0 : term v v' b b'), P t0 -> P (LamAbs s t t0)
     | con_Apply     => forall t : term v v' b b', P t -> forall t0 : term v v' b b', P t0 -> P (Apply t t0)
     | con_Constant  => forall s : @some valueOf, P (Constant s)
-    | con_Builtin   => forall d : DefaultFun, P (Builtin d)
+    | con_Builtin   => forall (d : DefaultFun) tys ts, P (Builtin d tys ts)
     | con_TyInst    => forall t : term v v' b b', P t -> forall t0 : ty v' b', P (TyInst t t0)
     | con_Error     => forall t : ty v' b', P (Error t)
     | con_IWrap     => forall (t t0 : ty v' b') (t1 : term v v' b b'), P t1 -> P (IWrap t t0 t1)

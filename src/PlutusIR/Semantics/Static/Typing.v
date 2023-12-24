@@ -120,10 +120,15 @@ Inductive has_type : list (string * Kind) -> list (string * Ty) -> Term -> Ty ->
   (* Additional constructs *)
   | T_Constant : forall Δ Γ u a,
       Δ ,, Γ |-+ (Constant (Some' (ValueOf u a))) : (Ty_Builtin (Some' (TypeIn u)))
-  | T_Builtin : forall Δ Γ f T Tn,
-      T = lookupBuiltinTy f ->
+
+  | T_Builtin : forall Δ Γ f tys ts T_args T_argsn T Tn,
+      Forall (fun ty => Δ |-* ty : Kind_Base) tys ->
+      (T_args, T) = splitTy (lookupBuiltinTy f) ->
+      Forall2 normalise T_args T_argsn ->
+      Forall2 (has_type Δ Γ) ts T_argsn ->
       normalise T Tn ->
-      Δ ,, Γ |-+ (Builtin f) : Tn
+      Δ ,, Γ |-+ (Builtin f tys ts) : Tn
+
   | T_Error : forall Δ Γ S T Tn,
       Δ |-* T : Kind_Base ->
       normalise T Tn ->

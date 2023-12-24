@@ -135,6 +135,30 @@ Inductive ty :=
   in each constructor (have to add types for the possible values that can occur when dumping)
 *)
 
+(*
+Note [Builtin representation]
+~~~
+
+We represent builtins as fully-applied (and type-applied, e.g. if-then-else)
+contrary to the Plutus compiler. When parsing the dumped AST, we eta-expand any
+builtin. For example
+
+Apply
+  (Builtin AddInteger)
+  (Constant 3)
+
+====>
+
+Apply
+  (\x y -> Builtin AddInteger [] [x; y])
+  (Constant 3)
+
+This simplifies the big-step semantics, as we don't need a notion of "neutral
+values" anymore (partially applied builtins). Particularly, there is no special
+rule required for Builtin application.
+
+*)
+
 (** Declarations *)
 Inductive vdecl := VarDecl : binderName -> ty -> vdecl.
 Inductive tvdecl := TyVarDecl : binderTyname -> kind -> tvdecl.
@@ -152,7 +176,7 @@ Inductive term :=
   | LamAbs   : binderName -> ty -> term -> term
   | Apply    : term -> term -> term
   | Constant : @some valueOf -> term
-  | Builtin  : DefaultFun -> list term -> term (* Fully saturated built-in functions *)
+  | Builtin  : DefaultFun -> list ty -> list term -> term (* Note [Builtin representation] *)
   | TyInst   : term -> ty -> term
   | Error    : ty -> term
   | IWrap    : ty -> ty -> term -> term
@@ -426,7 +450,7 @@ Section Term_rect.
     (H_LamAbs   : forall (s : string) (t : Ty) (t0 : Term), P t0 -> P (LamAbs s t t0))
     (H_Apply    : forall t : Term, P t -> forall t0 : Term, P t0 -> P (Apply t t0))
     (H_Constant : forall s : some valueOf, P (Constant s))
-    (H_Builtin  : forall (d : DefaultFun) (args : list Term), P (Builtin d args))
+    (H_Builtin  : forall (d : DefaultFun) (tys : list Ty) (ts : list Term), ForallT P ts -> P (Builtin d tys ts))
     (H_TyInst   : forall t : Term, P t -> forall t0 : Ty, P (TyInst t t0))
     (H_Error    : forall t : Ty, P (Error t))
     (H_IWrap    : forall (t t0 : Ty) (t1 : Term), P t1 -> P (IWrap t t0 t1))
@@ -466,7 +490,7 @@ Section Term_rect.
       | Unwrap t        => H_Unwrap t (Term_rect' t)
       | Error ty        => H_Error ty
       | Constant v      => H_Constant v
-      | Builtin f args  => H_Builtin f args
+      | Builtin f tys ts => H_Builtin f tys ts (Terms_rect' Term_rect' ts)
       | Constr i ts     => H_Constr i ts (Terms_rect' Term_rect' ts)
       | Case t ts       => H_Case t (Term_rect' t) ts (Terms_rect' Term_rect' ts)
     end
@@ -493,7 +517,7 @@ Section Term__ind.
     (H_LamAbs   : forall (s : string) (t : Ty) (t0 : Term), P t0 -> P (LamAbs s t t0))
     (H_Apply    : forall t : Term, P t -> forall t0 : Term, P t0 -> P (Apply t t0))
     (H_Constant : forall s : some valueOf, P (Constant s))
-    (H_Builtin  : forall (d : DefaultFun) (args : list Term), P (Builtin d args))
+    (H_Builtin  : forall (d : DefaultFun) (tys : list Ty) (ts : list Term), ForallP P ts -> P (Builtin d tys ts))
     (H_TyInst   : forall t : Term, P t -> forall t0 : Ty, P (TyInst t t0))
     (H_Error    : forall t : Ty, P (Error t))
     (H_IWrap    : forall (t t0 : Ty) (t1 : Term), P t1 -> P (IWrap t t0 t1))
@@ -535,7 +559,7 @@ Section Term__ind.
       | Unwrap t        => H_Unwrap t (Term__ind t)
       | Error ty        => H_Error ty
       | Constant v      => H_Constant v
-      | Builtin f args  => H_Builtin f args
+      | Builtin f tys ts => H_Builtin f tys ts (Terms__ind Term__ind ts)
       | Constr i ts     => H_Constr i ts (Terms__ind Term__ind ts)
       | Case t ts      => H_Case t (Term__ind t) ts (Terms__ind Term__ind ts)
     end
@@ -564,7 +588,7 @@ Section term_rect.
     (H_LamAbs   : forall (s : b) (t : ty v' b') (t0 : term v v' b b'), P t0 -> P (LamAbs s t t0))
     (H_Apply    : forall t : term v v' b b', P t -> forall t0 : term v v' b b', P t0 -> P (Apply t t0))
     (H_Constant : forall s : some valueOf, P (Constant s))
-    (H_Builtin  : forall (d : DefaultFun) args, P (Builtin d args))
+    (H_Builtin  : forall (d : DefaultFun) tys ts, ForallT P ts -> P (Builtin d tys ts))
     (H_TyInst   : forall t : term v v' b b', P t -> forall t0 : ty v' b', P (TyInst t t0))
     (H_Error    : forall t : ty v' b', P (Error t))
     (H_IWrap    : forall (t t0 : ty v' b') (t1 : term v v' b b'), P t1 -> P (IWrap t t0 t1))
@@ -607,7 +631,7 @@ Section term_rect.
       | Unwrap t        => @H_Unwrap t (term_rect' t)
       | Error ty        => @H_Error ty
       | Constant v      => @H_Constant v
-      | Builtin f args  => @H_Builtin f args
+      | Builtin f tys ts  => @H_Builtin f tys ts (terms_rect' term_rect' ts)
       | Constr i ts     => @H_Constr i ts (terms_rect' term_rect' ts)
       | Case t ts      => @H_Case t (term_rect' t) ts (terms_rect' term_rect' ts)
     end
