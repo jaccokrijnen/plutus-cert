@@ -79,6 +79,15 @@ Module Typing.
       (forall x, Term.appears_free_in__binding x b -> lookup x Gamma = lookup x Gamma') ->
       Delta ,, Gamma' |-ok_b b.
 
+  Definition P_Forall2_has_type Δ Γ ts Ts :=
+    forall Γ',
+    Forall2
+      (fun t T =>
+        forall x, Term.appears_free_in x t -> lookup x Γ = lookup x Γ' ->
+        Δ ,, Γ' |-+ t : T
+      )
+      ts Ts.
+
   #[export] Hint Unfold
     P_has_type
     P_constructor_well_formed
@@ -91,14 +100,16 @@ Module Typing.
     (forall Delta Gamma t T, Delta ,, Gamma |-+ t : T -> P_has_type Delta Gamma t T) /\
     (forall Delta Gamma bs, Delta ,, Gamma |-oks_nr bs -> P_bindings_well_formed_nonrec Delta Gamma bs) /\
     (forall Delta Gamma bs, Delta ,, Gamma |-oks_r bs -> P_bindings_well_formed_rec Delta Gamma bs) /\
-    (forall Delta Gamma b, Delta ,, Gamma |-ok_b b -> P_binding_well_formed Delta Gamma b).
+    (forall Delta Gamma b, Delta ,, Gamma |-ok_b b -> P_binding_well_formed Delta Gamma b) /\
+    (forall Delta Gamma ts Ts, Forall2_has_type Delta Gamma ts Ts -> P_Forall2_has_type Delta Gamma ts Ts).
   Proof with eauto.
     apply has_type__multind with
       (P := P_has_type)
       (P0 := P_constructor_well_formed)
       (P1 := P_bindings_well_formed_nonrec)
       (P2 := P_bindings_well_formed_rec)
-      (P3 := P_binding_well_formed).
+      (P3 := P_binding_well_formed)
+      (P4 := P_Forall2_has_type).
     all: intros; autounfold; intros.
     all: try solve [econstructor; eauto].
 
@@ -118,6 +129,10 @@ Module Typing.
       + apply eqb_neq in Heqb.
         rewrite lookup_neq; auto.
         rewrite lookup_neq; auto.
+    - (* T_Builtin *)
+      eapply T_Builtin...
+      unfold P_Forall2_has_type in *.
+      specialize (H4 Gamma').
     - (* T_Let *)
       subst.
       eapply T_Let...

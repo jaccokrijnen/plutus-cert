@@ -62,6 +62,12 @@ Fixpoint splitTy (T : Ty) : list Ty * Ty :=
   | Tr => (nil, Tr)
   end.
 
+Fixpoint splitForalls (T : Ty) : list (string * Kind) * Ty :=
+  match T with
+  | Ty_Forall α K T' => ((α, K) :: fst (splitForalls T'), snd (splitForalls T'))
+  | _ => (nil, T)
+  end.
+
 Definition fromDecl (tvd : tvdecl string) : string * Kind :=
   match tvd with
   | TyVarDecl v K => (v, K)
@@ -121,13 +127,21 @@ Inductive has_type : list (string * Kind) -> list (string * Ty) -> Term -> Ty ->
   | T_Constant : forall Δ Γ u a,
       Δ ,, Γ |-+ (Constant (Some' (ValueOf u a))) : (Ty_Builtin (Some' (TypeIn u)))
 
-  | T_Builtin : forall Δ Γ f tys ts T_args T_argsn T Tn,
-      Forall (fun ty => Δ |-* ty : Kind_Base) tys ->
-      (T_args, T) = splitTy (lookupBuiltinTy f) ->
-      Forall2 normalise T_args T_argsn ->
-      Forall2 (has_type Δ Γ) ts T_argsn ->
-      normalise T Tn ->
-      Δ ,, Γ |-+ (Builtin f tys ts) : Tn
+  | T_Builtin : forall Δ foralls Δ' Γ f ty_args args T params T' T'' Tn,
+      Δ |-* T : Kind_Base ->
+
+      (* Builtin types should be in prenex normal form, i.e.
+
+           ∀ α_1 .. α_n. T_1 -> ... -> T_n
+      *)
+      (foralls, T') = splitForalls (lookupBuiltinTy f) ->
+      (params, T'') = splitTy T' ->
+      Δ' = rev foralls ++ Δ ->
+      Forall2_has_type Δ' Γ args params ->
+      Forall2 (fun ty_arg '(_, K) => has_kind Δ ty_arg K) ty_args foralls ->
+
+      normalise T'' Tn ->
+      Δ ,, Γ |-+ (Builtin f ty_args args) : Tn
 
   | T_Error : forall Δ Γ S T Tn,
       Δ |-* T : Kind_Base ->
@@ -155,6 +169,18 @@ Inductive has_type : list (string * Kind) -> list (string * Ty) -> Term -> Ty ->
       Δ' ,, Γ' |-+ t : Tn ->
       Δ |-* Tn : Kind_Base ->
       Δ ,, Γ |-+ (Let Rec bs t) : Tn
+
+(* isomorphic to Forall2 (has_type Δ Γ) ts tys, but works well with generating the
+   induction scheme *)
+
+with Forall2_has_type : list (string * Kind) -> list (string * Ty) -> list Term -> list Ty -> Prop :=
+  | T_nil : forall Δ Γ,
+      Forall2_has_type Δ Γ [] []
+
+  | T_cons : forall Δ Γ t ts T Ts,
+      has_type Δ Γ t T ->
+      Forall2_has_type Δ Γ ts Ts ->
+      Forall2_has_type Δ Γ (t :: ts) (T :: Ts)
 
 with constructor_well_formed : list (string * Kind) -> constructor -> Ty -> Prop :=
   | W_Con : forall Δ x T ar Targs Tr,
@@ -203,13 +229,17 @@ Scheme has_type__ind := Minimality for has_type Sort Prop
   with constructor_well_formed__ind := Minimality for constructor_well_formed Sort Prop
   with bindings_well_formed_nonrec__ind := Minimality for bindings_well_formed_nonrec Sort Prop
   with bindings_well_formed_rec__ind := Minimality for bindings_well_formed_rec Sort Prop
-  with binding_well_formed__ind := Minimality for binding_well_formed Sort Prop.
+  with binding_well_formed__ind := Minimality for binding_well_formed Sort Prop
+  with Forall2_has_type__ind := Minimality for Forall2_has_type Sort Prop
+.
 
 Combined Scheme has_type__multind from
   has_type__ind,
   bindings_well_formed_nonrec__ind,
   bindings_well_formed_rec__ind,
-  binding_well_formed__ind.
+  binding_well_formed__ind,
+  Forall2_has_type__ind
+.
 
 Definition well_typed t := exists T, [] ,, [] |-+ t : T.
 
