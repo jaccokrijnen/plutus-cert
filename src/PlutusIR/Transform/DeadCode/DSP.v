@@ -48,6 +48,7 @@ Definition P_bindings_well_formed_nonrec Δ Γ bs : Prop :=
         Δ_t ,, Γ_t |- t ≤ t' : Tn ->
         Δ   ,, Γ   |- (Let NonRec bs t) ≤ (Let NonRec bs' t') : Tn
   ) /\
+  (* dc_delete_binding case *)
   (
       forall Δ' Γ' b bs' bsGn t Tn,
         bs = b :: bs' ->
@@ -93,11 +94,12 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
     (P1 := P_bindings_well_formed_nonrec)
     (P2 := P_bindings_well_formed_rec)
     (P3 := P_binding_well_formed).
-  all : intros; autounfold; intros; subst.
+  all : intros.
 
 
   (* P_has_type, compatibility cases *)
   all: try (
+    autounfold; intros; subst;
     inversion H_dc;
     match goal with
       | H : Compat.Compat dc _ _ |- _ =>
@@ -111,6 +113,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
 
   (* P_binding_well_formed *)
   all: try (
+    autounfold; intros; subst;
     match goal with
       | H : Compat.Compat_Binding dc _ _ |- _ =>
           inversion H;
@@ -118,8 +121,9 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
     end
     ).
 
-  (* P_has_type, T_Let *)
-  - inversion H_dc; subst.
+  (* P_has_type, T_Let NonRec *)
+  - unfold P_has_type. intros t' H_dc.
+    inversion H_dc; subst.
 
     (* dc_compat *)
     + inversion H_compat; subst.
@@ -130,8 +134,10 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
     +
       destruct H3 as [_ H_bbs].
 
-      assert (bsGn_b : list (string * Ty)). admit.
-      assert (H_norm_b : map_normalise (rev (binds_Gamma b)) bsGn_b). admit.
+      assert (bsGn_b : list (string * Ty)).
+        admit.
+      assert (H_norm_b : map_normalise (rev (binds_Gamma b)) bsGn_b).
+        admit.
       remember (rev (binds_Delta b) ++ Δ) as Δ'.
       remember (bsGn_b ++ Γ) as Γ'.
 
@@ -224,7 +230,8 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
     + admit.
 
   (* W_NilB_NonRec *)
-  - split.
+  - unfold P_bindings_well_formed_nonrec; intros.
+    split.
     + intros.
       inversion H;subst.
       eauto with DSP_compatibility_lemmas.
