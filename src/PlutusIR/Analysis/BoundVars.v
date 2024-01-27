@@ -446,7 +446,7 @@ Proof with eauto using appears_bound_in_tm.
       + tac ABI_Tm_Apply1.
       + tac ABI_Tm_Apply2.
   - (* DefaultFun *)
-    admit. (* TODO *)
+    admit. (* TODO [wip/saturated-builtins] *)
   - (* TyInst *)
     intros.
     rewrite bound_vars_equation.

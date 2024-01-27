@@ -14,13 +14,13 @@ Local Open Scope string_scope.
 
 Module Kinding.
 
-  Lemma context_invariance : forall Delta Delta' T K,
-      Delta |-* T : K ->
-      (forall X, Ty.appears_free_in X T -> lookup X Delta = lookup X Delta') ->
-      Delta' |-* T : K.
+  Lemma context_invariance : forall Δ Δ' T K,
+      Δ |-* T : K ->
+      (forall X, Ty.appears_free_in X T -> lookup X Δ = lookup X Δ') ->
+      Δ' |-* T : K.
   Proof with auto.
-    intros Delta Delta' T K HK.
-    generalize dependent Delta'.
+    intros Δ Δ' T K HK.
+    generalize dependent Δ'.
     induction HK; intros; try solve [econstructor; eauto].
     - apply K_Var.
       rewrite <- H0...
@@ -56,28 +56,28 @@ End Kinding.
 
 Module Typing.
 
-  Definition P_has_type (Delta : list (string * Kind)) (Gamma : list (string * Ty)) (t : Term) (T : Ty) :=
-    forall Gamma',
-      (forall x, Term.appears_free_in x t -> lookup x Gamma = lookup x Gamma') ->
-      Delta ,, Gamma' |-+ t : T.
+  Definition P_has_type (Δ : list (string * Kind)) (Γ : list (string * Ty)) (t : Term) (T : Ty) :=
+    forall Γ',
+      (forall x, Term.appears_free_in x t -> lookup x Γ = lookup x Γ') ->
+      Δ ,, Γ' |-+ t : T.
 
-  Definition P_constructor_well_formed (Delta : list (string * Kind)) (c : constructor) (T : Ty) :=
-    Delta |-ok_c c : T.
+  Definition P_constructor_well_formed (Δ : list (string * Kind)) (c : constructor) (T : Ty) :=
+    Δ |-ok_c c : T.
 
-  Definition P_bindings_well_formed_nonrec (Delta : list (string * Kind)) (Gamma : list (string * Ty)) (bs : list Binding) :=
-    forall Gamma',
-      (forall x, Term.appears_free_in__bindings_nonrec x bs -> lookup x Gamma = lookup x Gamma') ->
-      Delta ,, Gamma' |-oks_nr bs.
+  Definition P_bindings_well_formed_nonrec (Δ : list (string * Kind)) (Γ : list (string * Ty)) (bs : list Binding) :=
+    forall Γ',
+      (forall x, Term.appears_free_in__bindings_nonrec x bs -> lookup x Γ = lookup x Γ') ->
+      Δ ,, Γ' |-oks_nr bs.
 
-  Definition P_bindings_well_formed_rec (Delta : list (string * Kind)) (Gamma : list (string * Ty)) (bs : list Binding) :=
-    forall Gamma',
-      (forall x, Term.appears_free_in__bindings_rec x bs -> lookup x Gamma = lookup x Gamma') ->
-      Delta ,, Gamma' |-oks_r bs.
+  Definition P_bindings_well_formed_rec (Δ : list (string * Kind)) (Γ : list (string * Ty)) (bs : list Binding) :=
+    forall Γ',
+      (forall x, Term.appears_free_in__bindings_rec x bs -> lookup x Γ = lookup x Γ') ->
+      Δ ,, Γ' |-oks_r bs.
 
-  Definition P_binding_well_formed (Delta : list (string * Kind)) (Gamma : list (string * Ty)) (b : Binding) :=
-    forall Gamma',
-      (forall x, Term.appears_free_in__binding x b -> lookup x Gamma = lookup x Gamma') ->
-      Delta ,, Gamma' |-ok_b b.
+  Definition P_binding_well_formed (Δ : list (string * Kind)) (Γ : list (string * Ty)) (b : Binding) :=
+    forall Γ',
+      (forall x, Term.appears_free_in__binding x b -> lookup x Γ = lookup x Γ') ->
+      Δ ,, Γ' |-ok_b b.
 
   Definition P_Forall2_has_type Δ Γ ts Ts :=
     forall Γ',
@@ -97,11 +97,11 @@ Module Typing.
     : core.
 
   Theorem context_invariance :
-    (forall Delta Gamma t T, Delta ,, Gamma |-+ t : T -> P_has_type Delta Gamma t T) /\
-    (forall Delta Gamma bs, Delta ,, Gamma |-oks_nr bs -> P_bindings_well_formed_nonrec Delta Gamma bs) /\
-    (forall Delta Gamma bs, Delta ,, Gamma |-oks_r bs -> P_bindings_well_formed_rec Delta Gamma bs) /\
-    (forall Delta Gamma b, Delta ,, Gamma |-ok_b b -> P_binding_well_formed Delta Gamma b) /\
-    (forall Delta Gamma ts Ts, Forall2_has_type Delta Gamma ts Ts -> P_Forall2_has_type Delta Gamma ts Ts).
+    (forall Δ Γ t T, Δ ,, Γ |-+ t : T -> P_has_type Δ Γ t T) /\
+    (forall Δ Γ bs, Δ ,, Γ |-oks_nr bs -> P_bindings_well_formed_nonrec Δ Γ bs) /\
+    (forall Δ Γ bs, Δ ,, Γ |-oks_r bs -> P_bindings_well_formed_rec Δ Γ bs) /\
+    (forall Δ Γ b, Δ ,, Γ |-ok_b b -> P_binding_well_formed Δ Γ b) /\
+    (forall Δ Γ ts Ts, Forall2_has_type Δ Γ ts Ts -> P_Forall2_has_type Δ Γ ts Ts).
   Proof with eauto.
     apply has_type__multind with
       (P := P_has_type)
@@ -132,7 +132,9 @@ Module Typing.
     - (* T_Builtin *)
       eapply T_Builtin...
       unfold P_Forall2_has_type in *.
-      specialize (H4 Gamma').
+      specialize (H4 Γ').
+      (* TODO [wip/saturated-builtins], use Forall2 hypotheses *)
+      admit.
     - (* T_Let *)
       subst.
       eapply T_Let...
@@ -173,6 +175,6 @@ Module Typing.
         eapply In__map_normalise in i...
         apply In__lookup_append...
       + apply lookup_append_cong...
-  Qed.
+  Admitted.
 
 End Typing.
