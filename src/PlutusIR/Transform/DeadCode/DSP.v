@@ -22,7 +22,77 @@ Import UniqueBinders.
 Import PlutusNotations.
 
 
+(** ** The main theorem *)
 
+Definition P_dc t t' :=
+    forall Δ Γ T,
+    Δ ,, Γ |-+ t : T ->
+    LR_logically_approximate Δ Γ t t' T.
+
+(* Add as general lemma in Static.Typing *)
+Lemma let_nonrec_inv : forall {Δ Γ b bs t T},
+  Δ ,, Γ |-+ (Let NonRec (b :: bs) t) : T ->
+  exists Γ_b,
+  map_normalise (binds_Gamma b) Γ_b /\
+  (((binds_Delta b) ++ Δ) ,, (Γ_b ++ Γ) |-+ (Let NonRec bs t) : T)
+.
+Admitted.
+
+Lemma elim_nonrec_dsp : forall Δ Γ b bs t T t' Γ_b,
+  disjoint (bvb b) (fv t') ->
+  disjoint (btvb b) (ftv t') ->
+  map_normalise (binds_Gamma b) Γ_b ->
+  binds_Delta b ++ Δ,, Γ_b ++ Γ |- (Let NonRec       bs  t) ≤ t' : T ->
+  Δ                 ,, Γ        |- (Let NonRec (b :: bs) t) ≤ t' : T.
+Admitted.
+
+Lemma has_type_NonRec_nil : forall Δ Γ t T,
+  Δ,, Γ |-+ (Let NonRec nil t) : T ->
+  Δ,, Γ |-+ t : T.
+Admitted.
+
+
+Theorem dc__DSP : forall t t',
+    dc t t' ->
+    P_dc t t'.
+Proof.
+  apply dc__ind with (P := P_dc).
+
+  - (* dc_compat *)
+    admit.
+    (* TODO: compatibility lemmas *)
+
+  - (* dc_delete_binding *)
+    intros.
+    unfold P_dc.
+    intros.
+    pose proof (let_nonrec_inv H0) as [ Γ_b [H_norm H_ty_bs]].
+    unfold P_dc in H.
+    apply H in H_ty_bs.
+    eauto using elim_nonrec_dsp.
+
+  - (* dc_keep_binding *)
+    intros.
+    admit.
+    (* TODO: compatibility lemma *)
+
+  - (* dc_delete_nil *)
+    intros.
+    unfold P_dc in *.
+    intros Δ Γ T H_ty.
+    apply has_type_NonRec_nil in H_ty.
+    eauto using compat_nil.
+
+  - (* dc_compat_let_nil_nil *)
+    intros.
+    (* TODO: compatibility lemmas *)
+    admit.
+Admitted.
+
+
+
+(* TODO: remove this old proof structure, above dc__DSP is simpler
+   by doing induction on the translation relation first *)
 
 (** ** Predicates *)
 
@@ -82,9 +152,10 @@ Definition P_binding_well_formed Δ Γ b : Prop :=
   P_bindings_well_formed_rec
   P_binding_well_formed : core.
 
-(** ** The main theorem *)
 
-Theorem dc__DSP : forall Δ Γ e T,
+
+
+Theorem dc__DSP' : forall Δ Γ e T,
     Δ ,, Γ |-+ e : T ->
     P_has_type Δ Γ e T.
 Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).

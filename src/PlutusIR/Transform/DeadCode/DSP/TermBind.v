@@ -8,6 +8,7 @@ From Coq Require Import
 
 From PlutusCert Require Import Semantics.Dynamic.
 From PlutusCert Require Import Semantics.Static.
+From PlutusCert Require Import BaseKindedness.
 From PlutusCert Require Import Transform.DeadCode.
 From PlutusCert Require Import SemanticEquivalence.LogicalRelation.
 From PlutusCert Require Import SemanticEquivalence.CompatibilityLemmas.
@@ -96,11 +97,16 @@ Proof.
 Qed.
 
 Lemma compat_nil Δ Γ T t t' :
-  Δ |-* T : Kind_Base -> (* May not be necessary, see #7 *)
   LR_logically_approximate Δ Γ           t  t' T ->
   LR_logically_approximate Δ Γ (Let NonRec [] t) t' T.
 Proof.
-  apply compatibility_LetNonRec_Nil'.
+  intros.
+  assert (Δ |-* T : Kind_Base). {
+    eapply has_type__basekinded.
+    destruct H as [H _].
+    exact H.
+    }
+  apply compatibility_LetNonRec_Nil'; assumption.
 Qed.
 
 Lemma elim_TermBind_NonRec__approximate Δ Γ t t' Tn b bs x Tb tb :

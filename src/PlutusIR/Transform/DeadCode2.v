@@ -67,6 +67,8 @@ Inductive dc : Term -> Term -> Prop :=
 
   (* TODO: support Let Rec (See #42) *)
 
+Scheme dc__ind := Minimality for dc Sort Prop.
+
 Open Scope type_scope.
 
 Definition dead_code t t' := unique_tm t * dc t t'.
