@@ -38,7 +38,7 @@ Definition Ty_Unit : Ty :=
 Definition t_unit : Term :=
   Constant (PlutusIR.Some' (PlutusIR.ValueOf DefaultUniUnit tt)).
 
-Inductive let_non_strict (Γ : ctx) : Term -> Term -> Type :=
+Inductive let_non_strict (Γ : ctx) : Term -> Term -> Prop :=
 
   (* If the decision procedure becomes problematic because of not structurally smaller terms,
      these two rules should be refactored into a relation similar to rename_Bindings_Rec *)
@@ -85,8 +85,9 @@ Inductive let_non_strict (Γ : ctx) : Term -> Term -> Type :=
   | lns_Constant : forall c,
       let_non_strict Γ (Constant c) (Constant c)
 
-  | lns_Builtin : forall b,
-      let_non_strict Γ (Builtin b) (Builtin b)
+  | lns_Builtin : forall f tys ts ts',
+      Forall2 (let_non_strict Γ) ts ts' ->
+      let_non_strict Γ (Builtin f tys ts) (Builtin f tys ts')
 
   | lns_TyInst : forall t t' τ,
       let_non_strict Γ t t' ->
@@ -103,7 +104,7 @@ Inductive let_non_strict (Γ : ctx) : Term -> Term -> Type :=
       let_non_strict Γ t t' ->
       let_non_strict Γ (Unwrap t) (Unwrap t')
 
-with let_non_strict_binding (Γ : ctx) : Binding -> Binding -> ctx -> Type :=
+with let_non_strict_binding (Γ : ctx) : Binding -> Binding -> ctx -> Prop :=
 
   | lns_TermBind_thunk_Unit : forall x τ τ' t t' y,
       let_non_strict Γ t t' ->
@@ -135,7 +136,7 @@ with let_non_strict_binding (Γ : ctx) : Binding -> Binding -> ctx -> Type :=
       let_non_strict_binding Γ (DatatypeBind d) (DatatypeBind d)
         (map (fun v => (v, None)) (bvb (DatatypeBind d)))
 
-with let_non_strict_Bindings_Rec (Γ : ctx) : list Binding -> list Binding -> ctx -> Type :=
+with let_non_strict_Bindings_Rec (Γ : ctx) : list Binding -> list Binding -> ctx -> Prop :=
 
   | lns_Bindings_Rec_nil :
       let_non_strict_Bindings_Rec Γ [] [] []

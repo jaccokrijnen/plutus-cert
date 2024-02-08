@@ -63,7 +63,7 @@ Fixpoint compile_term (t : Term) : Term := match t with
 
   | Var x           => Var x
   | Constant c      => Constant c
-  | Builtin f       => Builtin f
+  | Builtin f tys ts => Builtin f tys (map compile_term ts)
   | Error τ         => Error τ
   | Constr i ts     => Constr i (map compile_term ts)
   | Case t ts       => Case (compile_term t) (map compile_term ts)
@@ -112,7 +112,9 @@ Definition C_Apply' : forall R (s s' t t' : Term),
 Proof. eq_principle. Qed.
 Definition C_Constant' : forall R (v v' : @some valueOf), v = v' -> Compat R (Constant v) (Constant v').
 Proof. eq_principle. Qed.
-Definition C_Builtin' : forall R (f f' : DefaultFun), f = f' -> Compat R (Builtin f) (Builtin f').
+Definition C_Builtin' : forall R (f f' : DefaultFun) tys tys' ts ts', 
+  Forall2 R ts ts' ->
+  f = f' -> tys = tys' -> ts = ts' -> Compat R (Builtin f tys ts) (Builtin f' tys' ts').
 Proof. eq_principle. Qed.
 Definition C_TyInst' : forall R (t t' : Term) (ty ty' : Ty),
                 ty = ty' -> R t t' -> Compat R (TyInst t ty) (TyInst t' ty').

@@ -166,8 +166,10 @@ Inductive inline (Δ : ty_ctx) (Γ : ctx) : Term -> Term -> Prop :=
       inline Δ Γ (Apply s t) (Apply s' t')
   | inl_Constant : forall c,
       inline Δ Γ (Constant c) (Constant c)
-  | inl_Builtin  : forall f,
-      inline Δ Γ (Builtin f) (Builtin f)
+  | inl_Builtin  : forall f tys ts tys' ts',
+      Forall2 (inline Δ Γ) ts ts' ->
+      Forall2 (inline_Ty Δ) tys tys' ->
+      inline Δ Γ (Builtin f tys ts) (Builtin f tys' ts')
   | inl_Error    : forall τ τ',
       inline Δ Γ (Error τ) (Error τ')
   | inl_IWrap    : forall σ σ' τ τ' t t',

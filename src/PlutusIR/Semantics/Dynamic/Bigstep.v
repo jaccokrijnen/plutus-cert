@@ -44,69 +44,11 @@ Inductive eval : Term -> Term -> nat -> Prop :=
   | E_Constant : forall a,
       Constant a =[0]=> Constant a
   (** Builtins *)
-  | E_NeutralBuiltin : forall f,
-      (* NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity. *)
-      (* f <> IfThenElse -> *)
-      Builtin f =[0]=> Builtin f
-  | E_NeutralApply : forall nv v,
-      neutral (Apply nv v) ->
-      (Apply nv v) =[0]=> (Apply nv v)
-  | E_NeutralTyInst : forall nv T,
-      neutral (TyInst nv T) ->
-      (TyInst nv T) =[0]=> (TyInst nv T)
-  | E_NeutralApplyPartial: forall t1 t2 nv1 v2 v0 j1 j2 j0,
-      ~ neutral (Apply t1 t2) ->
-      t1 =[j1]=> nv1 ->
-      neutral nv1 ->
-      t2 =[j2]=> v2 ->
-      ~ is_error v2 ->
-      Apply nv1 v2 =[j0]=> v0 ->
-      Apply t1 t2 =[j1 + j2 + 1 + j0]=> v0
-  | E_NeutralTyInstPartial : forall t1 T nv1 v0 j1 j0,
-      ~ neutral (TyInst t1 T) ->
-      t1 =[j1]=> nv1 ->
-      neutral nv1 ->
-      TyInst nv1 T =[j0]=> v0 ->
-      TyInst t1 T =[j1 + 1 + j0]=> v0
-  | E_NeutralApplyFull: forall nv1 v2 v,
-      fully_applied (Apply nv1 v2) ->
-      compute_defaultfun (Apply nv1 v2) = Datatypes.Some v ->
-      Apply nv1 v2 =[1]=> v
-  | E_NeutralTyInstFull: forall nv1 v T,
-      fully_applied (TyInst nv1 T) ->
-      compute_defaultfun (TyInst nv1 T) = Datatypes.Some v ->
-      TyInst nv1 T =[1]=> v
-  (** Builtins: If-Then-Else
-
-      We handle this built-in function separately because it has a unique behaviour:
-      The ``then''-branch should only be evaluated when the condition is true,
-      and the opposite is true for the ``else''-branch.
-
-      NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity.
-  *)
-  (* | E_IfBuiltin :
-      Builtin IfThenElse =[0]=> Builtin IfThenElse
-  | E_IfTyInst : forall t1 T j1,
-      t1 =[j1]=> Builtin IfThenElse ->
-      TyInst t1 T =[j1]=> TyInst (Builtin IfThenElse) T
-  | E_IfCondition : forall t1 t2 T j1,
-      t1 =[j1]=> TyInst (Builtin IfThenElse) T ->
-      Apply t1 t2 =[j1]=> Apply (TyInst (Builtin IfThenElse) T) t2
-  | E_IfThenBranch : forall t1 j1 T t2 t3,
-      t1 =[j1]=> Apply (TyInst (Builtin IfThenElse) T) t2 ->
-      Apply t1 t3 =[j1]=> Apply (Apply (TyInst (Builtin IfThenElse) T) t2) t3
-  | E_IfElseBranch : forall t1 j1 T t2 t3 t4 j0 v0,
-      t1 =[j1]=> Apply (Apply (TyInst (Builtin IfThenElse) T) t2) t3 ->
-      Apply (Apply (Apply (TyInst (Builtin IfThenElse) T) t2) t3) t4 =[j0]=> v0 ->
-      Apply t1 t4 =[j1 + j0]=> v0
-  | E_IfTrue : forall T t1 t2 t3 j1 j2 v2,
-      t1 =[j1]=> Constant (Some (ValueOf DefaultUniBool true)) ->
-      t2 =[j2]=> v2 ->
-      Apply (Apply (Apply (TyInst (Builtin IfThenElse) T) t1) t2) t3 =[j1 + 1 + j2]=> v2
-  | E_IfFalse : forall T t1 t2 t3 j1 j3 v3,
-      t1 =[j1]=> Constant (Some (ValueOf DefaultUniBool false)) ->
-      t3 =[j3]=> v3 ->
-      Apply (Apply (Apply (TyInst (Builtin IfThenElse) T) t1) t2) t3 =[j1 + 1 + j3]=> v3 *)
+  | E_Builtin: forall f tys ts v,
+      (* TODO: [wip/saturated-builtins] Add eval_terms relation for list of
+       * terms to list of values (single step index?) *)
+      compute_defaultfun (Builtin f tys ts) = Datatypes.Some v ->
+      Builtin f tys ts =[1]=> v
   (* Errors and their propagation *)
   | E_Error : forall T,
       Error T =[0]=> Error T
@@ -125,6 +67,9 @@ Inductive eval : Term -> Term -> nat -> Prop :=
   | E_Error_Unwrap : forall t0 j0 T,
       t0 =[j0]=> Error T ->
       Unwrap t0 =[j0 + 1]=> Error T
+
+  (* TODO: [wip/saturated-builtins] Add E_Error_Builtin, maybe reuse eval_terms
+  * and get the first error? *)
 
   (** Let-bindings *)
   | E_Let : forall bs t v j,
@@ -182,13 +127,7 @@ Create HintDb hintdb__eval_no_error.
   E_IWrap
   E_Unwrap
   E_Constant
-  E_NeutralBuiltin
-  E_NeutralApply
-  E_NeutralTyInst
-  E_NeutralApplyPartial
-  E_NeutralTyInstPartial
-  E_NeutralApplyFull
-  E_NeutralTyInstFull
+  E_Builtin
   E_Let
   E_LetRec
   E_Let_Nil

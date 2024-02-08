@@ -99,15 +99,6 @@ Proof with eauto_LR.
       auto.
     + destruct temp as [Herr Herr'].
       inversion Herr.
-  - (* E_NeutralApply *)
-    (* ADMIT: See end of proof. *)
-    admit.
-  - (* E_NeutralApplyPartial *)
-    (* ADMIT: See end of proof. *)
-    admit.
-  - (* E_NeutralApplyFull *)
-    (* ADMIT: See end of proof. *)
-    admit.
   - (* E_Error_Apply1 *)
     rename j1 into j_1.
 
@@ -193,5 +184,4 @@ Proof with eauto_LR.
       }
 
       right...
-(* ADMIT: We do not handle built-in functions yet. *)
-Admitted.
+Qed.

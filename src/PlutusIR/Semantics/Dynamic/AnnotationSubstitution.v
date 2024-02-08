@@ -79,8 +79,8 @@ Fixpoint substA (X : string) (U : Ty) (t : Term) {struct t} : Term :=
       Apply (substA X U t1) (substA X U t2)
   | Constant u =>
       Constant u
-  | Builtin d =>
-      Builtin d
+  | Builtin f tys ts=>
+      Builtin f (map (substituteT X U) tys) (map (substA X U) ts)
   | TyInst t0 T =>
       TyInst (substA X U t0) (substituteT X U T)
   | Error T =>

@@ -68,7 +68,7 @@ Definition Binding_to_ctx (b : Binding) : ctx :=
   end
 .
 
-Inductive thunk_rec (Γ : ctx) : Term -> Term -> Type :=
+Inductive thunk_rec (Γ : ctx) : Term -> Term -> Prop :=
 
   | tr_Let_Rec : forall bs bs' t t' Γ_bs bs_new Ω,
       thunk_rec_Bindings_Rec (Γ_bs ++ Γ) bs bs' Ω ->
@@ -97,8 +97,9 @@ Inductive thunk_rec (Γ : ctx) : Term -> Term -> Type :=
       thunk_rec Γ (Apply s t) (Apply s' t')
   | tr_Constant : forall c,
       thunk_rec Γ (Constant c) (Constant c)
-  | tr_Builtin  : forall f,
-      thunk_rec Γ (Builtin f) (Builtin f)
+  | tr_Builtin  : forall f ts tys ts',
+      Forall2 (thunk_rec Γ) ts ts' ->
+      thunk_rec Γ (Builtin f tys ts) (Builtin f tys ts)
   | tr_TyInst   : forall t t' τ,
       thunk_rec Γ t t' ->
       thunk_rec Γ (TyInst t τ) (TyInst t' τ)
@@ -109,7 +110,7 @@ Inductive thunk_rec (Γ : ctx) : Term -> Term -> Type :=
   | tr_Unwrap   : forall t t',
       thunk_rec Γ (Unwrap t) (Unwrap t')
 
-with thunk_rec_Bindings_NonRec (Γ : ctx) : list Binding -> list Binding -> ctx -> Type :=
+with thunk_rec_Bindings_NonRec (Γ : ctx) : list Binding -> list Binding -> ctx -> Prop :=
 
   | tr_Bindings_NonRec_nil :
       thunk_rec_Bindings_NonRec Γ [] [] Γ
@@ -121,7 +122,7 @@ with thunk_rec_Bindings_NonRec (Γ : ctx) : list Binding -> list Binding -> ctx 
         thunk_rec_Bindings_NonRec Γ (b :: bs) (b' :: bs') (Γ_bs ++ Γ_b)
 
 
-with thunk_rec_Bindings_Rec (Γ : ctx) : list Binding -> list Binding -> ctx_unstrictified -> Type :=
+with thunk_rec_Bindings_Rec (Γ : ctx) : list Binding -> list Binding -> ctx_unstrictified -> Prop :=
 
   | tr_Bindings_Rec_nil :
       thunk_rec_Bindings_Rec Γ [] [] []
@@ -132,7 +133,7 @@ with thunk_rec_Bindings_Rec (Γ : ctx) : list Binding -> list Binding -> ctx_uns
       thunk_rec_Bindings_Rec Γ (b :: bs) (b' :: bs') (Ω_bs ++ Ω_b)
 
 (* Also indexed by the unstrictified bindings *)
-with thunk_rec_Binding_NonRec (Γ : ctx) : Binding -> Binding -> Type :=
+with thunk_rec_Binding_NonRec (Γ : ctx) : Binding -> Binding -> Prop :=
 
   | tr_TermBind_NonRec : forall s vd t t',
       thunk_rec Γ t t' ->
@@ -166,7 +167,7 @@ with thunk_rec_Binding_Rec (Γ : ctx) : Binding -> Binding -> ctx_unstrictified 
 
 (* Add let NonRec bindings for unstrictified bindings, except if
    they were definitely pure *)
-with strictify (Γ : ctx) : ctx_unstrictified -> list Binding -> Type :=
+with strictify (Γ : ctx) : ctx_unstrictified -> list Binding -> Prop :=
 
   | str_cons_pure : forall Γ_t t x Ω_bs bs,
      is_pure Γ_t t ->

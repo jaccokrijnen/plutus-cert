@@ -6,6 +6,7 @@ From Coq Require Import
 
 From PlutusCert Require Import
   Util
+  Util.List
   PlutusIR
   PlutusIR.Analysis.Equality
   PlutusIR.Transform.Compat
@@ -71,7 +72,7 @@ Fixpoint Term_desugar (x y : Term) {struct x} : bool := match x, y with
   | LamAbs n ty t  , LamAbs n' ty' t'   => String.eqb n n' && Ty_eqb ty ty' && Term_desugar t t'
   | Apply s t      , Apply s' t'        => Term_desugar s s' && Term_desugar t t'
   | Constant c     , Constant c'        => some_valueOf_eqb c c'
-  | Builtin f      , Builtin f'         => func_eqb f f'
+  | Builtin f tys ts , Builtin f' tys' ts' => func_eqb f f' && forall2b Ty_eqb tys tys' && forall2b Term_desugar ts ts'
   | TyInst t ty    , TyInst t' ty'      => Term_desugar t t' && Ty_eqb ty ty'
   | Error ty       , Error ty'          => Ty_eqb ty ty'
   | IWrap ty1 ty2 t, IWrap ty1' ty2' t' => Ty_eqb ty1 ty1' && Ty_eqb ty2 ty2' && Term_desugar t t'

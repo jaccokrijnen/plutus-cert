@@ -1,5 +1,6 @@
 Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.Util.List.
+Require Import PlutusCert.Util.
 Import NamedTerm.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.Auxiliary.
@@ -52,6 +53,24 @@ Definition lookupBuiltinTy (f : DefaultFun) : Ty :=
   | Append => Ty_Fun Ty_String (Ty_Fun Ty_String Ty_String)
   | Trace => Ty_Fun Ty_String Ty_Unit (* TODO: figure out if it is the correct type*)
   end.
+
+(* η-expanding a DefaultFun: we use its known type to produce
+   the correct abstractions. We use a simple scheme for variable names of the binders, which
+   is sufficient for not causing capturing (although the uniqueness property
+   might have to be refined, this may cause shadowing).
+*)
+Open Scope list_scope.
+Definition builtin_eta_expand (f : DefaultFun) : Term :=
+  let mk_tm := fix mk_tm ty n ty_args args :=
+    let var_name := string_of_nat n in
+    match ty with
+      | Ty_Fun X Y      => LamAbs var_name X (mk_tm Y (1 + n) ty_args (args ++ [Var var_name]))
+      | Ty_Forall α K T => TyAbs α K (mk_tm T (1 + n) (ty_args ++ [Ty_Var α]) args)
+      | _ => Builtin f ty_args args
+    end
+  in mk_tm (lookupBuiltinTy f) 0 [] [].
+
+Eval cbv in builtin_eta_expand Trace.
 
 (** Helper funcitons*)
 Definition flatten {A : Type} (l : list (list A)) := List.concat (rev l).
@@ -137,7 +156,7 @@ Inductive has_type : list (string * Kind) -> list (string * Ty) -> Term -> Ty ->
       (foralls, T') = splitForalls (lookupBuiltinTy f) ->
       (params, T'') = splitTy T' ->
       Δ' = rev foralls ++ Δ ->
-      Forall2_has_type Δ' Γ args params ->
+      terms_has_type Δ' Γ args params ->
       Forall2 (fun ty_arg '(_, K) => has_kind Δ ty_arg K) ty_args foralls ->
 
       normalise T'' Tn ->
@@ -170,17 +189,17 @@ Inductive has_type : list (string * Kind) -> list (string * Ty) -> Term -> Ty ->
       Δ |-* Tn : Kind_Base ->
       Δ ,, Γ |-+ (Let Rec bs t) : Tn
 
-(* isomorphic to Forall2 (has_type Δ Γ) ts tys, but works well with generating the
+(* isomorphic to Forall2 (has_type Δ Γ) ts tys, but works with generating the
    induction scheme *)
 
-with Forall2_has_type : list (string * Kind) -> list (string * Ty) -> list Term -> list Ty -> Prop :=
+with terms_has_type : list (string * Kind) -> list (string * Ty) -> list Term -> list Ty -> Prop :=
   | T_nil : forall Δ Γ,
-      Forall2_has_type Δ Γ [] []
+      terms_has_type Δ Γ [] []
 
   | T_cons : forall Δ Γ t ts T Ts,
       has_type Δ Γ t T ->
-      Forall2_has_type Δ Γ ts Ts ->
-      Forall2_has_type Δ Γ (t :: ts) (T :: Ts)
+      terms_has_type Δ Γ ts Ts ->
+      terms_has_type Δ Γ (t :: ts) (T :: Ts)
 
 with constructor_well_formed : list (string * Kind) -> constructor -> Ty -> Prop :=
   | W_Con : forall Δ x T ar Targs Tr,
@@ -225,21 +244,35 @@ with binding_well_formed : list (string * Kind) -> list (string * Ty) -> Binding
   and "Δ ',,' Γ '|-oks_r' bs" := (bindings_well_formed_rec Δ Γ bs)
   and "Δ ',,' Γ '|-ok_b' b" := (binding_well_formed Δ Γ b).
 
-Scheme has_type__ind := Minimality for has_type Sort Prop
+Scheme has_type__ind_terms := Minimality for has_type Sort Prop
   with constructor_well_formed__ind := Minimality for constructor_well_formed Sort Prop
   with bindings_well_formed_nonrec__ind := Minimality for bindings_well_formed_nonrec Sort Prop
   with bindings_well_formed_rec__ind := Minimality for bindings_well_formed_rec Sort Prop
   with binding_well_formed__ind := Minimality for binding_well_formed Sort Prop
-  with Forall2_has_type__ind := Minimality for Forall2_has_type Sort Prop
+  with terms_has_type__ind := Minimality for terms_has_type Sort Prop
 .
 
-Combined Scheme has_type__multind from
-  has_type__ind,
+Combined Scheme has_type__multind_terms from
+  has_type__ind_terms,
   bindings_well_formed_nonrec__ind,
   bindings_well_formed_rec__ind,
   binding_well_formed__ind,
-  Forall2_has_type__ind
+  terms_has_type__ind
 .
+
+Combined Scheme has_type__multind_no_terms from
+  has_type__ind_terms,
+  bindings_well_formed_nonrec__ind,
+  bindings_well_formed_rec__ind,
+  binding_well_formed__ind
+.
+
+(* Most induction proofs just use boilerplate P4 as below *)
+Definition has_type__ind P P0 P1 P2 P3 :=
+  has_type__ind_terms P P0 P1 P2 P3 (fun Δ Γ ts tys => Forall2 (P Δ Γ) ts tys).
+Definition has_type__multind P P0 P1 P2 P3 :=
+  has_type__multind_no_terms P P0 P1 P2 P3 (fun Δ Γ ts tys => Forall2 (P Δ Γ) ts tys).
+
 
 Definition well_typed t := exists T, [] ,, [] |-+ t : T.
 

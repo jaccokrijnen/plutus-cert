@@ -218,6 +218,8 @@ Module Annotation.
       destruct H7 as [c [HIn__c Hafi__c]].
       erewrite <- notIn__lookup_append...
       eapply H1...
+    - auto.
+    - auto.
   Qed.
 
 End Annotation.

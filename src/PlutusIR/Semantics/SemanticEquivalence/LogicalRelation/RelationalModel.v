@@ -150,12 +150,12 @@ Proof with auto.
       autorewrite with RC in H_RC.
       assert (H_lt : 0 < k - j).
         { lia. }
-      assert (H_eval := eval_value__value _ H_val_e_f).
+      assert (H_eval := eval_value _ H_val_e_f).
       assert (H__ := H_RC 0 H_lt e_f H_eval); clear H_RC.
       destruct H__ as [e'f0 [j'' [H_eval_e'_f HH]]].
 
       (* Since j is e'_f is a value, we should know that e'f0 = e'_f*)
-      assert (H_eval_e'_f_val := eval_value__value _ H_val_e'_f).
+      assert (H_eval_e'_f_val := eval_value _ H_val_e'_f).
       assert (H_eqs := eval__deterministic _ _ _ H_eval_e'_f _ _ H_eval_e'_f_val).
       destruct H_eqs; subst.
 
@@ -178,19 +178,19 @@ Proof.
   destruct temp as [e'_f [j' [Hev__e'_f [Htyp__e_f [Htyp__e'_f H]]]]].
   eexists. eexists.
   split. eauto.
-  split. eauto using eval_value__value, eval_to_value__eval.
-  split. eauto using eval_value__value, eval_to_value__eval.
+  split. eauto using eval_value, eval_to_value__eval.
+  split. eauto using eval_value, eval_to_value__eval.
   autorewrite with RC.
   intros.
   assert (e_f =[0]=> e_f). {
-    eapply eval_value__value.
+    eapply eval_value.
     eapply eval_to_value__eval.
     eauto.
   }
   assert (e_f0 = e_f /\ j0 = 0) by (eapply eval__deterministic; eauto).
   destruct H2. subst.
   eexists. eexists.
-  split. eapply eval_value__value. eapply eval_to_value__eval. eauto.
+  split. eapply eval_value. eapply eval_to_value__eval. eauto.
   rewrite <- minus_n_O.
   eauto.
 Qed.

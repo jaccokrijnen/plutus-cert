@@ -81,8 +81,8 @@ Function subst (x : string) (s : Term) (t : Term) {struct t} : Term :=
       Apply (subst x s t1) (subst x s t2)
   | Constant u =>
       Constant u
-  | Builtin d =>
-      Builtin d
+  | Builtin f tys ts =>
+      Builtin f tys (map (subst x s) ts)
   | TyInst t0 T =>
       TyInst (subst x s t0) T
   | Error T =>
@@ -150,8 +150,8 @@ Lemma subst_unfold x s t : subst x s t =
       Apply (subst x s t1) (subst x s t2)
   | Constant u =>
       Constant u
-  | Builtin d =>
-      Builtin d
+  | Builtin f tys ts =>
+      Builtin f tys (map (subst x s) ts)
   | TyInst t0 T =>
       TyInst (subst x s t0) T
   | Error T =>

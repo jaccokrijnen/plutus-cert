@@ -43,7 +43,6 @@ Hint Constructors
   is_pure
   pure_binding
   value
-  neutral_value
 : hint_dead_code.
 #[global]
 Hint Resolve

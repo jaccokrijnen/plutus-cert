@@ -262,8 +262,14 @@ Arguments zip {A B}%type_scope (_ _)%list_scope.
 Definition unzip := split.
 Arguments unzip {A B}%type_scope (_)%list_scope.
 
-Definition zip_with {A B C} (f : A -> B -> C) : list A -> list B -> list C :=
-  fun xs ys => map (uncurry f) (zip xs ys).
+(* Explicit definition that works well with the termination checker *)
+Definition zip_with {A B C} (f : A -> B -> C) :=
+    fix zipw (xs : list A) (ys : list B) : list C :=
+      match xs, ys with
+        | []       , [] => []
+        | (x :: xs), (y :: ys) => f x y :: zipw xs ys
+        | _, _ => []
+      end.
 
 Notation " g ∘ f " := (compose g f)
   (at level 40, left associativity).

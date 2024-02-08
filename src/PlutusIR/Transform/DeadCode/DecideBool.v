@@ -360,6 +360,8 @@ Proof with eauto with Hints_soundness.
 
   - unfold P_Term; destruct t'; intro H_dec; try discriminate H_dec; simpl in H_dec; split_hypos.
     assert (d = d0)... subst...
+    (* TODO: [wip/saturated-builtins] *)
+    admit.
 
   - unfold P_Term; destruct t', t; intro H_dec; try discriminate H_dec; simpl in H_dec; split_hypos.
     all: admit.

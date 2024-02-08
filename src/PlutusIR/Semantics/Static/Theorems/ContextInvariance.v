@@ -101,9 +101,9 @@ Module Typing.
     (forall Δ Γ bs, Δ ,, Γ |-oks_nr bs -> P_bindings_well_formed_nonrec Δ Γ bs) /\
     (forall Δ Γ bs, Δ ,, Γ |-oks_r bs -> P_bindings_well_formed_rec Δ Γ bs) /\
     (forall Δ Γ b, Δ ,, Γ |-ok_b b -> P_binding_well_formed Δ Γ b) /\
-    (forall Δ Γ ts Ts, Forall2_has_type Δ Γ ts Ts -> P_Forall2_has_type Δ Γ ts Ts).
+    (forall Δ Γ ts Ts, terms_has_type Δ Γ ts Ts -> P_Forall2_has_type Δ Γ ts Ts).
   Proof with eauto.
-    apply has_type__multind with
+    apply has_type__multind_terms with
       (P := P_has_type)
       (P0 := P_constructor_well_formed)
       (P1 := P_bindings_well_formed_nonrec)

@@ -137,11 +137,15 @@ Definition compute_defaultfun (t : Term) : option Term :=
   | Builtin GtByteString [] [BSConstant bs1; BSConstant bs2] => Some (constBool (to_Z bs1 >? to_Z bs2))
   (** If-Then-Else
 
-      TODO: The builtin If-Then-Else is strict in its branches, so they can only be constants.
-      (Surface level if-then-else is translated to a case).
-  *)
+  TODO: The builtin If-Then-Else is strict in its branches, so they can only
+  be constants. (Surface level if-then-else is translated to a case).
 
-  | Builtin IfThenElse [_] [BoolConstant cond; thenBranch; elseBranch] => Some (if cond then thenBranch else elseBranch)
+  The below definition is not strict and therefore breaks the proof of
+  compute_defaultfun__to_value in EvalToValue.v because we don't know that the
+  arguments of IfThenElse are indeed values *)
+
+  (* | Builtin IfThenElse [_] [BoolConstant cond; thenBranch; elseBranch] => Some (if cond then thenBranch else elseBranch) *)
+
   (* String operations *)
   (* CharToString *)
   | Builtin CharToString [] [CharConstant ch] => Some (constString (String ch EmptyString))

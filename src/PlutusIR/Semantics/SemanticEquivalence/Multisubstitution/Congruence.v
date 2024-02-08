@@ -364,20 +364,27 @@ Proof.
   - destruct a. eauto.
 Qed.
 
-Lemma msubst_Builtin : forall ss f,
-    msubst ss (Builtin f) = Builtin f.
+Lemma msubst_Builtin : forall ss f tys ts,
+    msubst ss (Builtin f tys ts) = Builtin f tys (map (msubst ss) ts).
 Proof.
   induction ss; intros.
-  - reflexivity.
-  - destruct a. eauto.
+  - simpl. rewrite map_id. reflexivity.
+  - destruct a. simpl. 
+    rewrite IHss.
+    rewrite map_map.
+    eauto.
 Qed.
 
-Lemma msubstA_Builtin : forall ss f,
-    msubstA ss (Builtin f) = Builtin f.
+Lemma msubstA_Builtin : forall ss f tys ts,
+    msubstA ss (Builtin f tys ts) = Builtin f (map (msubstT ss) tys) (map (msubstA ss) ts).
 Proof.
   induction ss; intros.
-  - reflexivity.
-  - destruct a. eauto.
+  - simpl. rewrite map_id. rewrite map_id. reflexivity.
+  - destruct a. simpl. 
+    rewrite IHss.
+    rewrite map_map.
+    rewrite map_map.
+    eauto.
 Qed.
 
 Lemma msubst_Constant : forall ss sv,

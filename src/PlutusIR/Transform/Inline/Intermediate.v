@@ -92,7 +92,7 @@ Section InlineOnly.
         | LamAbs v τ t      => LamAbs v (inline_uncond_ty Δ τ) (inline_uncond Γ Δ t)
         | Apply t1 t2       => Apply (inline_uncond Γ Δ t1) (inline_uncond Γ Δ t2)
         | Constant c        => Constant c
-        | Builtin f         => Builtin f
+        | Builtin f tys ts  => Builtin f (map (inline_uncond_ty Δ) tys) (map (inline_uncond Γ Δ) ts)
         | TyInst t τ        => TyInst (inline_uncond Γ Δ t) (inline_uncond_ty Δ τ)
         | Error τ           => Error (inline_uncond_ty Δ τ)
         | IWrap τ1 τ2 t     => IWrap (inline_uncond_ty Δ τ1) (inline_uncond_ty Δ τ2) (inline_uncond Γ Δ t)
@@ -119,7 +119,7 @@ Section InlineOnly.
       | LamAbs v ty t     => LamAbs v ty (inline_deadcode t)
       | Apply t1 t2       => Apply (inline_deadcode t1) (inline_deadcode t2)
       | Constant c        => Constant c
-      | Builtin f         => Builtin f
+      | Builtin f tys ts  => Builtin f tys (map inline_deadcode ts)
       | TyInst t ty       => TyInst (inline_deadcode t) ty
       | Error ty          => Error ty
       | IWrap ty1 ty2 t   => IWrap ty1 ty2 (inline_deadcode t)
@@ -146,40 +146,60 @@ Section InlineOnly.
   .
 
 
+
+
   (* Constructs the final term, but without dead-code performed 
      Note: this does result in inlined terms that are α-renamed compared to their
      binding site *)
-  Fixpoint inlined_intermediate (elims : list A) (t : Term) (t' : Term) : option Term
+  Fixpoint intermediate (elims : list A) (t : Term) (t' : Term) : option Term
     := match t, t' with
         (* We can traverse the ASTs in parallel, except when a complete
            Let node was removed (because all of its bindings were eliminated) *)
         | Let rec bs t_body, t' =>
             if let_group_eliminated elims bs
               then
-                Let rec bs <$> inlined_intermediate elims t_body t'
+                Let rec bs <$> intermediate elims t_body t'
               else
                 match t' with
                  | Let _ bs' t_body'  =>
-                     Let rec <$> sequence_options (map (fun b => inlined_intermediate_binding elims b bs') bs)
-                             <*> inlined_intermediate elims t_body t_body'
+                     Let rec <$> sequence_options (map (fun b => intermediate_binding elims b bs') bs)
+                             <*> intermediate elims t_body t_body'
 
                  | _                  => None
                  end
 
         | Var x, t     => pure t (* it must be inlined *)
 
-        | TyAbs v k t, TyAbs _ _ t' => TyAbs v k <$> inlined_intermediate elims t t'
-        | LamAbs v ty t, LamAbs _ _ t' => LamAbs v ty <$> inlined_intermediate elims t t'
-        | Apply t1 t2, Apply t1' t2' => Apply <$> inlined_intermediate elims t1 t1' <*> inlined_intermediate elims t2 t2'
-        | Constant c, _ => pure (Constant c)
-        | Builtin f, _ => pure (Builtin f)
-        | TyInst t ty, TyInst t' _ => TyInst <$> inlined_intermediate elims t t' <*> pure ty
-        | Error ty, _ => pure (Error ty)
-        | IWrap ty1 ty2 t, IWrap _ _ t' => IWrap ty1 ty2 <$> inlined_intermediate elims t t'
-        | Unwrap t, Unwrap t' => Unwrap <$> inlined_intermediate elims t t'
-        | _, _ => None
+        | TyAbs v k t, TyAbs _ _ t' => TyAbs v k <$> intermediate elims t t'
+        | LamAbs v ty t, LamAbs _ _ t' => LamAbs v ty <$> intermediate elims t t'
+        | Apply t1 t2, Apply t1' t2' => Apply <$> intermediate elims t1 t1' <*> intermediate elims t2 t2'
+        | Constant c, Constant _ => pure (Constant c)
+        | Builtin f tys ts , Builtin f' tys' ts' =>
+            Builtin f tys <$> sequence_options (zip_with (intermediate elims) ts ts')
+        | TyInst t ty, TyInst t' _ => TyInst <$> intermediate elims t t' <*> pure ty
+        | Error ty, Error _ => pure (Error ty)
+        | IWrap ty1 ty2 t, IWrap _ _ t' => IWrap ty1 ty2 <$> intermediate elims t t'
+        | Unwrap t, Unwrap t' => Unwrap <$> intermediate elims t t'
+        | Constr i ts, Constr i' ts' =>
+            Constr i <$> sequence_options (zip_with (intermediate elims) ts ts')
+        | Case t ts, Case t' ts' =>
+            Case <$> intermediate elims t t' <*> sequence_options (zip_with (intermediate elims) ts ts')
+
+        | TyAbs _ _ _, _
+        | LamAbs _ _ _, _
+        | Apply _ _, _
+        | Constant _, _
+        | Builtin _ _ _, _
+        | TyInst _ _, _
+        | Error _, _
+        | IWrap _ _ _, _
+        | Unwrap _, _
+        | Constr _ _, _
+        | Case _ _, _
+
+        => None
       end
-  with inlined_intermediate_binding (elims : list A) (b : Binding) (bs_post : list Binding) : option Binding
+  with intermediate_binding (elims : list A) (b : Binding) (bs_post : list Binding) : option Binding
    := match b with
     | TermBind str (VarDecl v ty) t =>
         let b_post := find
@@ -189,7 +209,7 @@ Section InlineOnly.
                 end) bs_post
         in match b_post with
           | Just (TermBind _ _ t') =>
-              TermBind str (VarDecl v ty) <$> inlined_intermediate elims t t'
+              TermBind str (VarDecl v ty) <$> intermediate elims t t'
           | _ => None
           end
     | TypeBind v ty => pure (TypeBind v ty)

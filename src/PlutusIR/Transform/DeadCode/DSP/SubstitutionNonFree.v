@@ -13,6 +13,7 @@ From PlutusCert Require Import
   Analysis.BoundVars
   Analysis.UniqueBinders
   Util.List
+  Util.Tactics
 .
 
 Import ListNotations.
@@ -570,16 +571,6 @@ Section Term.
       inversion H_fv; subst.
       f_equal; auto.
   Qed.
-
-  Ltac destruct_if :=
-        match goal with
-          | |- context[if ?X then _ else _] => destruct X eqn:H_eqb
-        end.
-
-  Ltac destruct_match :=
-        match goal with
-        | |- context[match ?X with | _ => _ end] => destruct X eqn:H_match
-        end.
 
   Lemma subst_not_in_fv : forall t, P_Term t.
   Proof.

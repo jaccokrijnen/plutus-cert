@@ -69,16 +69,8 @@ Ltac error_is_error :=
       exfalso; apply H; constructor
   end.
 
-Ltac invert_neutral :=
-  match goal with
-  | H : neutral ?t |- ?P =>
-      try solve [inversion H]
-  | H : neutral_value ?n ?t |- ?P =>
-      try solve [inversion H]
-  end.
-
 Ltac try_solve :=
-  try solve [repeat (use_IH || error_is_error || invert_neutral || eauto)].
+  try solve [repeat (use_IH || error_is_error || eauto)].
 
 (** ** The main result *)
 Theorem eval__deterministic : forall x y1 j1,
@@ -90,23 +82,32 @@ Proof with eauto.
   all: intros y5 j5 Hev.
   all: unfold_predicates.
   all: try solve [inversion Hev; subst; try_solve].
+  (* E_Builtin *)
   - inversion Hev; subst.
-    all: try_solve.
-    + inversion H10. subst.
-      apply eval_value in H12.
-      autounfold in H12.
-      use_IH.
-      inversion H10. subst.
-      inversion H15.
-    + inversion H8.
+    split; congruence.
+  (* E_Error_Apply1 *)
+  - inversion Hev; subst.
+    + (* E_Apply *)
+      apply H0 in H3 as [H_impossible _].
+      inversion H_impossible.
+    + (* E_Error_Apply1 *) 
+      apply H0 in H5 as [H_eq_error H_eq_j].
+      auto.
+    + (* E_Error_Apply2 *) 
+      (* TODO: [wip/saturated-builtins] 
+        something is wrong here, I don't think eval is deterministic, since
+        both E_Error_Apply1 and E_Error_Apply2 may be used in the case where
+        both the function and its argument evaluate to errors.
+      *)
+      admit.
+
+  (* E_Error_Apply2 *)
+  - inversion Hev; subst.
+    + apply H0 in H4 as [H_imp _].
       subst.
-      eapply fully_applied_neutral__subsumes__neutral_value in H13...
-      eapply eval_value in H13 as H14.
-      autounfold in H14.
-      use_IH.
-      invert_neutral.
-(* ADMIT: Remaining proof cases are technical overhead.
-    Since we have multiple evaluation rules for applications
-    and type instantiations, we need to do tedious work to
-    derive contradictions. *)
+      contradiction H5.
+      constructor.
+    + admit. (* TODO: impossible, see above *)
+    + apply H0 in H5 as [H_err H_j].
+      auto.
 Admitted.

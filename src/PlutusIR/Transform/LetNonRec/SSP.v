@@ -94,6 +94,9 @@ Proof with (eauto with typing).
   all: try solve [eauto with typing].
   all: try solve [ inv_CNR; inv_Compat ; eauto with typing].
 
+  - (* T_Builtin *)
+    (* TODO: [wip/saturated-builtins] *)
+    admit.
   - (* T_Let *)
     inv_CNR.
     + eapply H3...
@@ -201,4 +204,4 @@ Proof with (eauto with typing).
     split. all: intros.
     + inv_Compat...
     + inversion H3.
-Qed.
+Admitted.

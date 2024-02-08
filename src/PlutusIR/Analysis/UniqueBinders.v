@@ -38,6 +38,7 @@ Inductive unique_ty : Ty -> Prop :=
 
 
 Inductive unique_tm : Term -> Prop :=
+  (* TODO: Constr and Case *)
   | UNI_Var : forall x,
       unique_tm (Var x)
   | UNI_LamAbs : forall x T t,
@@ -67,8 +68,16 @@ Inductive unique_tm : Term -> Prop :=
       unique_tm (Unwrap t)
   | UNI_Constant : forall sv,
       unique_tm (Constant sv)
-  | UNI_Builtin : forall f,
-      unique_tm (Builtin f)
+  (* TODO: [wip/saturated-builtins]: Using Forall breaks deriving QuickChick
+  * checkers (UniqueBinders/DecOpt.v).
+  *)
+
+  (*
+  | UNI_Builtin : forall f tys ts,
+      Forall unique_ty tys ->
+      Forall unique_tm ts ->
+      unique_tm (Builtin f tys ts)
+      *)
   | UNI_Error : forall T,
       unique_ty T ->
       unique_tm (Error T)

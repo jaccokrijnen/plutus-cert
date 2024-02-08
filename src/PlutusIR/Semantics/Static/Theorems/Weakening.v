@@ -85,12 +85,14 @@ Module Typing.
     all: try (intros Delta'_0 Gamma'_0 HinclD HinclG).
     all: try (intros Delta'_0 HinclD).
     all: try solve [econstructor; subst; eauto using Kinding.weakening, inclusion_cons, inclusion_append].
+    - (* T_Builtin: TODO [wip/saturated-builtins] *)
+      admit.
     - (* W_Con *)
       econstructor...
       subst.
       intros.
       eapply H1...
-  Qed.
+  Admitted.
 
   Lemma weakening_empty : forall Delta Gamma t T,
       [] ,, [] |-+ t : T ->
