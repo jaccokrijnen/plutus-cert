@@ -7,15 +7,29 @@ Import ListNotations.
 
 Import NamedTerm.
 
+
+Definition Term_Unit : Term :=
+  Constant (@Some' valueOf DefaultUniUnit (@ValueOf DefaultUniUnit tt))
+.
+
+Definition Ty_Unit : Ty :=
+  Ty_Builtin (@Some' typeIn DefaultUniUnit (TypeIn _)).
+
+Definition eval' t v := exists j, eval t v j.
+Notation "t '==>' v" := (eval' t v) (at level 10).
+
 Definition contextually_approximate
   (e e' : Term) Δ Γ T
   :=
   (Δ ,, Γ |-+ e  : T) /\
   (Δ ,, Γ |-+ e' : T) /\
-  forall (C : Context) T₁,
-    ([] ,, [] |-C C : (Δ ,, Γ ▷ T) ↝ T₁) ->
-    context_apply C e  ⇓ ->
-    context_apply C e' ⇓.
+  forall (C : Context),
+    ([] ,, [] |-C C : (Δ ,, Γ ▷ T) ↝ Ty_Unit) ->
+    forall (v : Term),
+      context_apply C e ==> v ->
+      exists v',
+        context_apply C e' ==> v' /\
+        (v = v' \/ (is_error v /\ is_error v')).
 
 Notation "Δ ',,' Γ '|-' e1 ⪯-ctx e2 ':' T" := (contextually_approximate e1 e2 Δ Γ T)
   ( at level 101
@@ -59,6 +73,10 @@ Section contextually_approximate_lemmas.
   Δ ,, Γ |- e ⪯-ctx e : T.
   Proof.
     unfold contextually_approximate.
+    intros.
+    repeat split; auto.
+    intros.
+    exists v.
     auto.
   Qed.
 
@@ -66,11 +84,25 @@ Section contextually_approximate_lemmas.
     Δ ,, Γ |- e1 ⪯-ctx e2 : T ->
     Δ ,, Γ |- e2 ⪯-ctx e3 : T ->
     Δ ,, Γ |- e1 ⪯-ctx e3 : T.
-  Proof.
+  Proof with eauto.
     unfold contextually_approximate.
     intros.
     repeat (match goal with | H : ?x /\ ?y |- _ => destruct H end).
-    eauto.
+    intuition.
+    apply H4 in H6 as [v' [H_eval_C_e2 H_v_v']]...
+    destruct H_v_v'.
+    - (* v = v' *)
+      subst.
+      eauto.
+    - (* is_error v /\ is_error v'*)
+      eauto.
+        destruct H6.
+        apply H2 in H_eval_C_e2 as [v'' [H_eval_v'' H_v'_v'']] ...
+        destruct H_v'_v''.
+        + (* v' = v'' *)
+          subst...
+        + (* is_error /\ is_error v' *)
+          destruct H8...
   Qed.
 
   Lemma contextually_approximate_antisymmetric : forall Δ Γ e1 e2 T,
@@ -104,11 +136,7 @@ Section contextually_equivalent_props.
     Δ ,, Γ |- e1 ≃-ctx e3 : T.
   Proof.
     unfold contextually_equivalent.
-    intros.
-    unfold contextually_approximate in *.
-    repeat (match goal with | H : ?x /\ ?y |- _ => destruct H end).
-    repeat (match goal with |- ?x /\ ?y => split end).
-    all: eauto.
+    intuition; eauto using contextually_approximate_transitive.
   Qed.
 
   Lemma contextually_equivalent_symmetric : forall Δ Γ e1 e2 T,
@@ -116,10 +144,7 @@ Section contextually_equivalent_props.
     Δ ,, Γ |- e2 ≃-ctx e1 : T.
   Proof.
     unfold contextually_equivalent.
-    intros.
-    repeat (match goal with | H : ?x /\ ?y |- _ => destruct H end).
-    repeat (match goal with |- ?x /\ ?y => split end).
-    all: eauto.
+    intuition.
   Qed.
 
 

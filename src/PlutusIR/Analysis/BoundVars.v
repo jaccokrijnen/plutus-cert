@@ -292,6 +292,14 @@ Definition btvb (b : binding') : list tyvar :=
 
 Definition btvbs (bs : list binding') : list tyvar := List.concat (map btvb bs).
 
+Lemma btvbs_cons b bs : btvbs (b :: bs) = btvb b ++ btvbs bs.
+Proof.
+  unfold btvbs.
+  rewrite map_cons.
+  rewrite concat_cons.
+  reflexivity.
+Qed.
+
 Function bound_vars (t : term') : list var :=
  match t with
    | Let rec bs t => concat (map bound_vars_binding bs) ++ bound_vars t

@@ -3,11 +3,11 @@ Require Import Coq.Program.Basics.
 
 Require Import PlutusCert.PlutusIR.Transform.DeadCode2.
 Require Import PlutusCert.PlutusIR.Transform.DeadCode.SSP.
-Require Import PlutusCert.PlutusIR.Transform.DeadCode.DSP.Lemmas.
 Require Import PlutusCert.PlutusIR.Transform.DeadCode.DSP.TermBind.
 Require Import PlutusCert.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.PlutusIR.Semantics.Misc.Axiom.
 Require Import PlutusCert.PlutusIR.Analysis.BoundVars.
+Require Import PlutusCert.PlutusIR.Analysis.Purity.
 Require Import PlutusCert.PlutusIR.Analysis.UniqueBinders.
 Require Import PlutusCert.PlutusIR.Semantics.Static.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.
@@ -29,6 +29,7 @@ Definition P_dc t t' :=
     Δ ,, Γ |-+ t : T ->
     LR_logically_approximate Δ Γ t t' T.
 
+
 (* Add as general lemma in Static.Typing *)
 Lemma let_nonrec_inv : forall {Δ Γ b bs t T},
   Δ ,, Γ |-+ (Let NonRec (b :: bs) t) : T ->
@@ -38,12 +39,71 @@ Lemma let_nonrec_inv : forall {Δ Γ b bs t T},
 .
 Admitted.
 
-Lemma elim_nonrec_dsp : forall Δ Γ b bs t T t' Γ_b,
+Notation "'[' γ ; ρ ']' t" := (msubst γ (msubstA ρ t)) (at level 10).
+Notation "'[' γ ; ρ ']_bnr' t" := (msubst_bnr γ (msubstA_bnr ρ t)) (at level 10).
+Notation "'[' γ ; ρ ']_b' t" := (msubst_b γ (msubstA_b ρ t)) (at level 10).
+
+Lemma elim_nonrec_approx : forall Δ Γ b bs t T t' Γ_b,
   disjoint (bvb b) (fv t') ->
   disjoint (btvb b) (ftv t') ->
   map_normalise (binds_Gamma b) Γ_b ->
   binds_Delta b ++ Δ,, Γ_b ++ Γ |- (Let NonRec       bs  t) ≤ t' : T ->
   Δ                 ,, Γ        |- (Let NonRec (b :: bs) t) ≤ t' : T.
+Proof.
+  intros.
+  unfold LR_logically_approximate.
+  repeat split.
+  1,2:  admit. (* Typing *)
+
+  setoid_rewrite RV_RC.
+  intros.
+
+
+  (* Push substitutions in *)
+  rewrite msubstA_LetNonRec
+        , msubst_LetNonRec
+        , msubstA_BindingsNonRec_cons
+        , msubst_bnr_cons
+  in H5.
+  inversion H5; subst. clear H5.
+  destruct b.
+
+  - destruct v.
+
+    (* Push subistutitions further in *)
+    rewrite msubstA_TermBind
+          , msubst_TermBind
+    in H10.
+    inversion H10; subst. clear H10.
+
+
+    + (* E_Let_TermBind *)
+      Set Diffs "on".
+
+      rewrite btvbs_cons in H16.
+      unfold btvb in H16.
+      rewrite app_nil_l in H16.
+      (* Pull substitutions out *)
+      rewrite <- msubst_LetNonRec in H16.
+      rewrite <- msubstA_LetNonRec in H16.
+
+      (* Simplify disjoint assumptions *)
+      simpl in H0, H.
+      unfold disjoint in *.
+      apply Forall_inv in H.
+      clear H0.
+      simpl in H2.
+      admit.
+
+      
+    + (* E_Error_Let_Termbind*)
+      admit.
+
+  - (* TypeBind *)
+    admit.
+
+  - (* DatatypeBind *)
+    admit.
 Admitted.
 
 Lemma has_type_NonRec_nil : forall Δ Γ t T,
@@ -52,7 +112,7 @@ Lemma has_type_NonRec_nil : forall Δ Γ t T,
 Admitted.
 
 
-Theorem dc__DSP : forall t t',
+Theorem dc__approx : forall t t',
     dc t t' ->
     P_dc t t'.
 Proof.
@@ -69,7 +129,7 @@ Proof.
     pose proof (let_nonrec_inv H0) as [ Γ_b [H_norm H_ty_bs]].
     unfold P_dc in H.
     apply H in H_ty_bs.
-    eauto using elim_nonrec_dsp.
+    eauto using elim_nonrec_approx.
 
   - (* dc_keep_binding *)
     intros.
@@ -89,10 +149,43 @@ Proof.
     admit.
 Admitted.
 
+Definition P_dc_rev t t' :=
+    forall Δ Γ T,
+    Δ ,, Γ |-+ t : T ->
+    LR_logically_approximate Δ Γ t' t T.
+
+Lemma elim_nonrec_approx_rev : forall Δ Γ b bs t T t' Γ_b,
+  disjoint (bvb b) (fv t') ->
+  disjoint (btvb b) (ftv t') ->
+  pure_binding nil b ->
+  map_normalise (binds_Gamma b) Γ_b ->
+  binds_Delta b ++ Δ,, Γ_b ++ Γ |- t' ≤ (Let NonRec       bs  t)  : T ->
+  Δ                 ,, Γ        |- t' ≤ (Let NonRec (b :: bs) t)  : T.
+Admitted.
+
+Theorem dc__approx_rev : forall t t',
+    dc t t' ->
+    P_dc_rev t t'.
+Proof.
+  apply dc__ind with (P := P_dc_rev).
+  - (* dc_compat *)
+    admit.
+    (* TODO: compatibility lemmas *)
+  - (* dc_delete_binding *)
+    intros.
+    unfold P_dc_rev in *.
+    intros Δ Γ T H_ty.
+    pose proof (let_nonrec_inv H_ty) as [ Γ_b [H_norm H_ty_bs]].
+    admit.
+  - admit.
+  - admit.
+  - admit.
+Admitted.
 
 
 (* TODO: remove this old proof structure, above dc__DSP is simpler
    by doing induction on the translation relation first *)
+Require Import PlutusCert.PlutusIR.Transform.DeadCode.DSP.Lemmas.
 
 (** ** Predicates *)
 

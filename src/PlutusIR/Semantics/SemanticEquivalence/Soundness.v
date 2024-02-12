@@ -33,8 +33,8 @@ Proof with eauto.
     auto.
 
 
-  intros C T₁ H_C_Ty H_C_e_terminates.
-  destruct H_C_e_terminates as [v [j H_steps_C_e]].
+  intros C H_C_Ty v H_C_e_terminates.
+  destruct H_C_e_terminates as [j H_steps_C_e].
 
   (* apply fundamental theorem of contexts (reflexivity) *)
   apply LR_reflexivity_context in H_C_Ty as H_approx_C_C.
@@ -56,6 +56,18 @@ Proof with eauto.
 
   unfold terminates.
   destruct_hypos...
+  simpl in H2.
+  intuition.
+  - destruct H7 as [k [k' [H_eq1 [H_eq2 H_eq3]]]].
+    subst.
+    eexists (Constant k').
+    split...
+    eexists x0.
+    eauto.
+  - eexists x.
+    split.
+    + eexists x0...
+    + tauto.
 Qed.
 
 Corollary LR_equivalent_sound : forall Δ Γ e e' T,
@@ -68,6 +80,11 @@ Proof with eauto using LR_sound.
   split...
 Qed.
 
+
+(* Admit these due to new ctx equiv definition *)
+
+
+(*
 Lemma LR_approximate_sound_ciu : forall e e' T,
   normal_Ty T ->
   [],, [] |- e ⪯-ctx e' : T ->
@@ -96,3 +113,4 @@ Proof with eauto using LR_approximate_sound_ciu.
   destruct_hypos.
   repeat split...
 Qed.
+*)
