@@ -33,12 +33,70 @@ Definition unique_open Δ Γ t :=
 
 Section TypingHelpers.
 
-  Lemma strengthen_Γ Δ Γ x t Tx T :
-    ~ In x (fv t) ->
-    Δ,, (x , Tx) :: Γ |-+ t : T ->
-    Δ,, Γ |-+ t : T
-  .
+  Lemma lookup_app_r {A} k (v : A) xs xs' :
+    lookup k xs = Some v -> lookup k (xs ++ xs') = Some v.
   Admitted.
+
+  Lemma lookup_app {A} k (v : A) xs xs' :
+    lookup k (xs ++ xs') = Some v ->
+    lookup k xs = Some v \/ lookup k xs' = Some v.
+  Admitted.
+
+  Definition P_has_type Δ Γ t T :=
+    forall Γ1 Γ2 x Tx,
+      ~ In x (fv t) ->
+      Γ = Γ1 ++ (x, Tx) :: Γ2 ->
+      Δ,, (Γ1 ++ Γ2) |-+ t : T.
+
+  Definition P_bindings_well_formed_nonrec Δ Γ bs :=
+    forall Γ1 Γ2 x Tx,
+      ~ In x (fvbs fvb NonRec bs) ->
+      Γ = Γ1 ++ (x, Tx) :: Γ2 ->
+      Δ,, (Γ1 ++ Γ2) |-oks_nr bs.
+
+  Definition P_bindings_well_formed_rec Δ Γ bs :=
+    forall Γ1 Γ2 x Tx,
+      ~ In x (fvbs fvb NonRec bs) ->
+      Γ = Γ1 ++ (x, Tx) :: Γ2 ->
+      Δ,, (Γ1 ++ Γ2) |-oks_r bs.
+
+  Definition P_binding_well_formed Δ Γ b :=
+    forall Γ1 Γ2 x Tx,
+      ~ In x (fvb NonRec b) ->
+      Γ = Γ1 ++ (x, Tx) :: Γ2 ->
+      Δ,, (Γ1 ++ Γ2) |-ok_b b.
+
+  From PlutusCert Require Import Static.Typing.
+  Lemma strengthen_Γ Δ Γ t T :
+    has_type Δ Γ t T ->
+    forall Γ1 Γ2 x Tx,
+      ~ In x (fv t) ->
+      Γ = Γ1 ++ (x, Tx) :: Γ2 ->
+      Δ,, (Γ1 ++ Γ2) |-+ t : T.
+  Proof.
+    apply (has_type__multind
+      P_has_type
+      constructor_well_formed
+      P_bindings_well_formed_nonrec
+      P_bindings_well_formed_rec
+      P_binding_well_formed).
+
+    - (* Var *)
+      unfold P_has_type.
+      intros.
+      subst.
+  Admitted.
+
+  (* Specialized version of strengthen_Γ *)
+  Lemma strengthen_Γ_cons Δ Γ t T x Tx :
+    ~ In x (fv t) ->
+    Δ,, (x, Tx) :: Γ |-+ t : T ->
+    Δ,, Γ |-+ t : T.
+  Proof.
+    intros.
+    apply strengthen_Γ with (Γ := (x, Tx) :: Γ) (Γ1 := []) (Γ2 := Γ) (x := x) (Tx := Tx).
+    all: auto.
+  Qed.
 
 End TypingHelpers.
 

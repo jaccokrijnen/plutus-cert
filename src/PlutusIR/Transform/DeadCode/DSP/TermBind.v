@@ -173,7 +173,8 @@ Proof.
     all: subst; auto.
 
   (** Typing of post-term in smaller Γ *)
-  - apply strengthen_Γ with (x := x) (Tx := Tbn).   (* need strengthening lemma for removing vars from context that do not occur free *)
+  - 
+    apply strengthen_Γ_cons with (x := x) (Tx := Tbn).   (* need strengthening lemma for removing vars from context that do not occur free *)
     + simpl in H_disjoint_b.
       unfold disjoint in H_disjoint_b.
       inversion H_disjoint_b; subst.

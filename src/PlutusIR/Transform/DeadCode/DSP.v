@@ -129,6 +129,7 @@ Proof.
     pose proof (let_nonrec_inv H0) as [ Γ_b [H_norm H_ty_bs]].
     unfold P_dc in H.
     apply H in H_ty_bs.
+    destruct H_unused as [ H1 H2 ].
     eauto using elim_nonrec_approx.
 
   - (* dc_keep_binding *)
@@ -374,6 +375,8 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
 
         subst b.
 
+        destruct H_unused as [ H_unused1 H_unused2 ].
+
         (* Use elim_TermBind lemma *)
         eauto using elim_TermBind_NonRec__approximate.
 
@@ -392,6 +395,10 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
 
     (* dc_compat_let_nil_nil *)
     + admit.
+
+  (* W_LetRec *)
+  - admit.
+
 
   (* W_NilB_NonRec *)
   - unfold P_bindings_well_formed_nonrec; intros.
