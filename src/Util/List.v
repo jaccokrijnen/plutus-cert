@@ -38,6 +38,11 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma cons_app {A} (x :A) xs : x :: xs = [x] ++ xs.
+Proof.
+  apply app_cons_app_app with (xs := nil).
+Qed.
+
 Lemma lookup_eq {X} k (v : X) kvs : lookup k ((k, v) :: kvs) = Some v.
 Proof.
   simpl.

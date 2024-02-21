@@ -11,6 +11,7 @@ Set Implicit Arguments.
 From PlutusCert Require Import PlutusIR.
 Import NamedTerm.
 From PlutusCert Require Import PlutusIR.Folds.
+From PlutusCert Require Import Util.List.
 
 Local Open Scope string_scope.
 
@@ -45,7 +46,7 @@ Definition bindings_size (bs : list Binding) : nat :=
 Lemmas for showing how `term_size` (defined as a fold) reduces
 *)
 
-Axiom fold_reduce_let : forall r t bs,
+Axiom term_size_let : forall r t bs,
   term_size (Let r bs t)  = 1 + (term_size t) + (bindings_size bs).
 (*
   unfold term_size, bindings_size, foldTermUse, foldBindingsUse.
@@ -54,31 +55,31 @@ Axiom fold_reduce_let : forall r t bs,
 reflexivity. Qed.
 *)
 
-Lemma fold_reduce_apply : forall s t,
+Lemma term_size_apply : forall s t,
   term_size (Apply s t) = 1 + list_sum [term_size s ; term_size t].
 reflexivity. Qed.
 
-Lemma fold_reduce_tyabs : forall n k t,
+Lemma term_size_tyabs : forall n k t,
   term_size (TyAbs n k t) = 1 + list_sum [term_size t].
 reflexivity. Qed.
 
-Lemma fold_reduce_lamabs : forall n k t,
+Lemma term_size_lamabs : forall n k t,
   term_size (LamAbs n k t) = 1 + list_sum [term_size t].
 reflexivity. Qed.
 
-Lemma fold_reduce_tyinst : forall t ty,
+Lemma term_size_tyinst : forall t ty,
   term_size (TyInst t ty) = 1 + list_sum [term_size t].
 reflexivity. Qed.
 
-Lemma fold_reduce_iwrap : forall ty1 ty2 t,
+Lemma term_size_iwrap : forall ty1 ty2 t,
   term_size (IWrap ty1 ty2 t) = 1 + list_sum [term_size t].
 reflexivity. Qed.
 
-Lemma fold_reduce_unwrap : forall t,
+Lemma term_size_unwrap : forall t,
   term_size (Unwrap t) = 1 + list_sum [term_size t].
 reflexivity. Qed.
 
-Lemma fold_reduce_termbind s v t:
+Lemma binding_size_TermBind s v t:
   binding_size (TermBind s v t) = 1 + list_sum [term_size t].
   reflexivity.
 Qed.
@@ -100,35 +101,34 @@ Lemma size_non_zero : forall t, term_size t > 0.
   induction t; compute; intuition.
 Qed.
 
-
 (*Prove that structural subterms are smaller in size*)
 Lemma let_struct : forall r bs t, term_size t < term_size (Let r bs t).
-Proof. intros r bs t. rewrite fold_reduce_let. simpl. intuition. Qed.
+Proof. intros r bs t. rewrite term_size_let. simpl. intuition. Qed.
 
 Lemma app_struct_l : forall s t, term_size s < term_size (Apply s t).
   compute; intuition.
 Qed.
 
 Lemma app_struct_r : forall s t, term_size t < term_size (Apply s t).
-Proof. intros s t. rewrite fold_reduce_apply. simpl. lia. Qed.
+Proof. intros s t. rewrite term_size_apply. simpl. lia. Qed.
 
 Lemma tyabs_struct : forall n k t, term_size t < term_size (TyAbs n k t).
-Proof. intros n k t. rewrite fold_reduce_tyabs. simpl. intuition. Qed.
+Proof. intros n k t. rewrite term_size_tyabs. simpl. intuition. Qed.
 
 Lemma lamabs_struct : forall n ty t, term_size t < term_size (LamAbs n ty t).
-Proof. intros n k t. rewrite fold_reduce_lamabs. simpl. intuition. Qed.
+Proof. intros n k t. rewrite term_size_lamabs. simpl. intuition. Qed.
 
 Lemma tyinst_struct : forall t ty, term_size t < term_size (TyInst t ty).
-Proof. intros t ty. rewrite fold_reduce_tyinst. simpl. intuition. Qed.
+Proof. intros t ty. rewrite term_size_tyinst. simpl. intuition. Qed.
 
 Lemma iwrap_struct : forall ty1 ty2 t, term_size t < term_size (IWrap ty1 ty2 t).
-Proof. intros ty1 ty2 t. rewrite fold_reduce_iwrap. simpl. intuition. Qed.
+Proof. intros ty1 ty2 t. rewrite term_size_iwrap. simpl. intuition. Qed.
 
 Lemma unwrap_struct : forall t, term_size t < term_size (Unwrap t).
-Proof. intros t. rewrite fold_reduce_unwrap. simpl. intuition. Qed.
+Proof. intros t. rewrite term_size_unwrap. simpl. intuition. Qed.
 
 Lemma termbind_struct s v t :  term_size t < binding_size (TermBind s v t).
-Proof. rewrite fold_reduce_termbind. simpl. intuition. Qed.
+Proof. rewrite binding_size_TermBind. simpl. intuition. Qed.
 
 Lemma bind_binds_struct b bs : binding_size b < bindings_size (b :: bs).
 Proof. unfold bindings_size, Folds.foldBindingsUse, Folds.foldBindings. simpl. intuition. Qed.
@@ -143,3 +143,50 @@ Definition plus_lt_l : forall n m p : nat, n < m -> p + n < p + m :=
 
 Definition plus_lt_lr : forall n m p q : nat, n < m -> p < q -> n + p < m + q :=
   Plus.plus_lt_compat.
+
+
+
+
+Section NonFold.
+
+  Definition size_binding (size : Term -> nat) (b : Binding) : nat :=
+    1 + 
+    match b with
+      | TermBind rec (VarDecl _ _) t => size t
+      | DatatypeBind dtd => 0
+      | TypeBind _ _ => 0
+    end
+    .
+
+  Function size (t : Term) : nat :=
+    1 +
+    match t with
+     | Let rec bs t    => list_sum (map (size_binding size) bs) + size t
+     | LamAbs n ty t   => size t
+     | Var n           => 0
+     | TyAbs n k t     => size t
+     | Apply s t       => size s + size t
+     | TyInst t ty     => size t
+     | IWrap ty1 ty2 t => size t
+     | Unwrap t        => size t
+     | Error ty        => 0
+     | Constant v      => 0
+     | Builtin f       => 0
+     | Constr i ts     => list_sum (map size ts)
+     | Case t ts       => size t + list_sum (map size ts)
+   end.
+
+  Lemma size_let_cons rec b bs t :
+    size (Let rec (b :: bs) t) =
+    size_binding size b + size (Let rec bs t).
+  Proof.
+    setoid_rewrite size_equation.
+    rewrite map_cons.
+    rewrite cons_app.
+    rewrite list_sum_app.
+    simpl.
+    lia.
+  Qed.
+
+End NonFold.
+

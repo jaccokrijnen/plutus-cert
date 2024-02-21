@@ -32,84 +32,80 @@ Inductive dc : Term -> Term -> Prop :=
   | dc_compat
       (t t'     : Term)
       (H_compat : Compat dc t t')
-      : dc t t'
+      :
+      dc t t'
 
     (* Note: This compat case includes a case for Let, which are already
     covered by the following four constructors (e.g. there is more than one way
     to prove compatibility with let). If we change this, there should be `compat`
     constructors for each of the other AST constructor *)
 
-  | dc_delete_binding
-      b bs t t'
-      (H_pure : pure_binding [] b)          (* Syntactic approximation of a pure (terminating) binding *)
-      (H_unused : unused_in b t')           (* its bound variables do not occur free in the post-term *)
-      (H_dc_bs : dc (Let NonRec bs  t) t')
-      : dc (Let NonRec (b :: bs) t) t'
-
-  | dc_keep_binding
-      b b' bs bs' t t'
-      (H_dc_b : Compat_Binding dc b b')
-      (H_dc_bs : dc (Let NonRec bs t) (Let NonRec bs'  t'))
-      : dc (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t')
-
-
-  (* This rule allows for deleting the whole binding group *)
-  | dc_delete_let_nil
-      t t'
-      (H_dc_t : dc t t')
-      : dc (Let NonRec [] t) t'
-
-  | dc_compat_let_nil_nil
-      t t'
-      (H_dc_t : dc t t')
-      : dc (Let NonRec [] t) (Let NonRec [] t')
-
-  | dc_letrec
+  | dc_Let_NonRec
       bs bs' t t'
-      (H_dc_rec : dc_rec bs' (Let Rec bs t) (Let Rec bs' t'))
-      : dc (Let Rec bs t) (Let Rec bs' t')
+      (H_dc_NonRec : dc_NonRec t' bs bs' )
+      :
+      dc (Let NonRec bs t) (Let NonRec bs' t')
 
-with dc_rec : list Binding -> Term -> Term -> Prop :=
+  | dc_Let_Rec
+      bs bs' t t'
+      (H_dc_Rec : dc_Rec bs' t' bs bs' )
+      :
+       dc (Let Rec bs t) (Let Rec bs' t')
 
-  (*
-  Note: dc_rec does not include the possibility for the whole group to be
-  removed like for NonRec in dc.
+with dc_NonRec : Term -> list Binding -> list Binding -> Prop :=
+  | dc_NonRec_elim
+      b bs bs' t'
+      (H_pure : pure_binding [] b)          (* Syntactic approximation of a pure (terminating) binding *)
+      (H_unused : unused_in b (Let NonRec bs' t'))  (* its bound variables do not occur free in the post-term *)
+      (H_dc_bs : dc_NonRec t' bs bs')
+      :
+      dc_NonRec t' (b :: bs) bs'
 
-  This is because a rule like dc_rec_delete_binding needs to check if the bound
-  variables are unused in a specific term: Let Rec bs0 t' (where bs0 are the
-  complete set of bindings in the let-rec). In the non-recursive case (where
-  let-scoping is linear), we can just check unusedness in the post-term
-  (regardless of its structure, therefore allowing a term where the complete let
-  was removed).
-  *)
+  | dc_NonRec_keep
+      b b' bs bs' t'
+      (H_dc_b : Compat_Binding dc b b')
+      (H_dc_bs : dc_NonRec t' bs bs')
+      :
+      dc_NonRec t' (b :: bs) (b' :: bs')
 
-  | dc_rec_delete_binding
-      b bs bs' bs'0 t t'
+  | dc_NonRec_compat_let_nil_nil
+      t'
+      : (*------------*)
+      dc_NonRec t' [] []
+
+with dc_Rec : list Binding -> Term -> list Binding -> list Binding -> Prop :=
+
+  | dc_Rec_elim
+      b bs bs' bs'0 t'
       (H_pure : pure_binding [] b)
       (H_unused : unused_in b (Let Rec bs'0 t'))
-      (H_dc_bs : dc_rec bs'0 (Let Rec bs t) (Let Rec bs' t'))
-      : (*-------------------------------------------------*)
-      dc_rec bs'0 (Let Rec (b :: bs) t) (Let Rec bs' t')
+      (H_dc_bs : dc_Rec bs'0 t' bs bs')
+      :
+      dc_Rec bs'0 t' (b :: bs) bs'
 
-  | dc_rec_keep_binding
-      b b' bs bs' bs'0 t t'
+  | dc_Rec_keep_binding
+      b b' bs bs' bs'0 t'
       (H_dc_b : Compat_Binding dc b b')
-      (H_dc_bs : dc_rec bs'0 (Let Rec bs t) (Let Rec bs' t'))
-      : (*-------------------------------------------------*)
-      dc_rec  bs'0 (Let Rec (b :: bs) t) (Let Rec (b' :: bs') t')
+      (H_dc_bs : dc_Rec bs'0 t' bs bs')
+      : (*---------------------------------------*)
+      dc_Rec bs'0 t' (b :: bs) (b' :: bs')
 
-  | dc_rec_compat_let_nil_nil
+  | dc_Rec_compat_let_nil_nil
       t t' bs'0
       (H_dc_t : dc t t')
-      : (*---------------*)
-      dc_rec bs'0 (Let Rec [] t) (Let Rec [] t')
+      : (*------------*)
+      dc_Rec bs'0 t' [] []
 .
 
-Scheme dc__ind := Minimality for dc Sort Prop.
+Scheme dc__ind := Minimality for dc Sort Prop
+  with dc_NonRec__ind := Minimality for dc_NonRec Sort Prop
+  with dc_Rec__ind := Minimality for dc_Rec Sort Prop
+.
 
-Open Scope type_scope.
-
-Definition dead_code t t' := unique_tm t * dc t t'.
+Combined Scheme dc__multind from
+  dc__ind,
+  dc_NonRec__ind,
+  dc_Rec__ind.
 
 Lemma dc_sym : ∀ t, dc t t.
 Admitted.

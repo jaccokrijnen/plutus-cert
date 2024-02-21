@@ -46,7 +46,9 @@ src/PlutusIR/Transform/DeadCode3.v
 src/PlutusIR/Transform/DeadCode/SSP.v
 src/PlutusIR/Transform/DeadCode/DSP.v
 src/PlutusIR/Transform/DeadCode.v
+src/PlutusIR/Transform/DeadCode/Intermediate.v
 src/PlutusIR/Transform/DeadCode/DecideBool.v
+src/PlutusIR/Transform/DeadCode/Decide2.v
 src/PlutusIR/Transform/DeadCode/DSP/SubstitutionNonFree.v
 src/PlutusIR/Transform/DeadCode/DSP/TermBind.v
 src/PlutusIR/Transform/DeadCode/DSP/Lemmas.v

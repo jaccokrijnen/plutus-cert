@@ -29,13 +29,33 @@ Definition P_dc t t' :=
     Δ ,, Γ |-+ t : T ->
     LR_logically_approximate Δ Γ t t' T.
 
+Definition P_dc_NonRec t' bs bs' :=
+    forall Δ Γ T,
+    Δ ,, Γ |-oks_nr bs ->
+    forall t Γ_bs Γ_t Δ_t,
+    Δ_t = flatten (List.map binds_Delta bs) ++ Δ  ->
+    map_normalise (flatten (List.map binds_Gamma bs)) Γ_bs ->
+    Γ_t = Γ_bs ++ Γ ->
+    LR_logically_approximate Δ_t Γ_t t t' T ->
+    LR_logically_approximate Δ Γ (Let NonRec bs t) (Let NonRec bs' t') T
+.
+
+Definition P_dc_Rec (bs'0 : list Binding) t' bs bs' :=
+    (* Note: perhaps bs'0 will be necessary here, e.g. something like
+         exists bs'', bs'0 = bs'' ++ bs'
+    *)
+    forall Δ Γ T,
+    Δ ,, Γ |-oks_r bs ->
+    forall t,
+    LR_logically_approximate Δ Γ t t' T ->
+    LR_logically_approximate Δ Γ (Let Rec bs t) (Let Rec bs' t') T.
 
 (* Add as general lemma in Static.Typing *)
-Lemma let_nonrec_inv : forall {Δ Γ b bs t T},
-  Δ ,, Γ |-+ (Let NonRec (b :: bs) t) : T ->
+Lemma let_nonrec_inv : forall {Δ Γ b bs},
+  Δ ,, Γ |-oks_nr (b :: bs)->
   exists Γ_b,
   map_normalise (binds_Gamma b) Γ_b /\
-  (((binds_Delta b) ++ Δ) ,, (Γ_b ++ Γ) |-+ (Let NonRec bs t) : T)
+  (((binds_Delta b) ++ Δ) ,, (Γ_b ++ Γ) |-oks_nr bs)
 .
 Admitted.
 
@@ -116,38 +136,64 @@ Theorem dc__approx : forall t t',
     dc t t' ->
     P_dc t t'.
 Proof.
-  apply dc__ind with (P := P_dc).
+  apply dc__multind with (P := P_dc) (P0 := P_dc_NonRec) (P1 := P_dc_Rec).
 
   - (* dc_compat *)
     admit.
     (* TODO: compatibility lemmas *)
 
-  - (* dc_delete_binding *)
-    intros.
-    unfold P_dc.
-    intros.
-    pose proof (let_nonrec_inv H0) as [ Γ_b [H_norm H_ty_bs]].
-    unfold P_dc in H.
-    apply H in H_ty_bs.
-    destruct H_unused as [ H1 H2 ].
-    eauto using elim_nonrec_approx.
-
-  - (* dc_keep_binding *)
-    intros.
+  - (* dc_Let_NonRec *)
     admit.
-    (* TODO: compatibility lemma *)
 
-  - (* dc_delete_nil *)
+  - (* dc_Let_Rec *)
+    admit.
+
+  - (* dc_NonRec_elim *)
     intros.
-    unfold P_dc in *.
+    unfold P_dc_NonRec in *.
+    intros.
+    rename Γ_bs into Γ_bbs.
+    inversion H0; subst.
+
+    unfold flatten in H2.
+    simpl in H2.
+    rewrite concat_app in H2.
+    apply map_normalise__app in H2 as [Γ_bs [Γ_b [H_mapnorm_b [H_mapnorm_bs H_eq]]]].
+    simpl in H_mapnorm_bs. rewrite app_nil_r in H_mapnorm_bs.
+
+    pose proof (map_normalise__deterministic _ _ _ H_mapnorm_bs H10); subst.
+
+    apply H with
+      (t := t) (T := T)
+      (Δ := binds_Delta b ++ Δ) (Γ := bsGn ++ Γ)
+      (Γ_bs := Γ_bs) 
+      in H4.
+    destruct H_unused as [ H_unused_bvb H_unused_btvb ].
+    eauto using elim_nonrec_approx.
+    all: try assumption.
+    + rewrite flatten_app, app_assoc. reflexivity.
+    + rewrite app_assoc. reflexivity.
+
+  - (* dc_NonRec_keep *)
+    admit.
+
+  - (* dc_NonRec_nil *)
+    intros.
+    unfold P_dc_NonRec in *.
     intros Δ Γ T H_ty.
+    admit.
+    (*
     apply has_type_NonRec_nil in H_ty.
     eauto using compat_nil.
+    *)
 
-  - (* dc_compat_let_nil_nil *)
-    intros.
-    (* TODO: compatibility lemmas *)
+  - (* dc_Rec_elim *)
     admit.
+
+  - (* dc_Rec_keep *)
+    admit.
+
+  - (* dc_Rec_nil *)
 Admitted.
 
 Definition P_dc_rev t t' :=
@@ -168,253 +214,4 @@ Theorem dc__approx_rev : forall t t',
     dc t t' ->
     P_dc_rev t t'.
 Proof.
-  apply dc__ind with (P := P_dc_rev).
-  - (* dc_compat *)
-    admit.
-    (* TODO: compatibility lemmas *)
-  - (* dc_delete_binding *)
-    intros.
-    unfold P_dc_rev in *.
-    intros Δ Γ T H_ty.
-    pose proof (let_nonrec_inv H_ty) as [ Γ_b [H_norm H_ty_bs]].
-    admit.
-  - admit.
-  - admit.
-  - admit.
-Admitted.
-
-
-(* TODO: remove this old proof structure, above dc__DSP is simpler
-   by doing induction on the translation relation first *)
-Require Import PlutusCert.PlutusIR.Transform.DeadCode.DSP.Lemmas.
-
-(** ** Predicates *)
-
-Definition P_has_type Δ Γ t T : Prop :=
-  forall
-    t'
-    (H_dc : dc t t'),
-    Δ ,, Γ |- t ≤ t' : T.
-
-Definition P_constructor_well_formed Δ c Tr : Prop := Δ |-ok_c c : Tr.
-
-Definition P_bindings_well_formed_nonrec Δ Γ bs : Prop :=
-
-  (* dc_compat case *)
-  (
-    forall bs',
-      Compat.Compat_Bindings dc bs bs' ->
-      forall Δ_t Γ_t bsGn t t' Tn,
-        Δ_t = flatten (List.map binds_Delta bs) ++ Δ  ->
-        map_normalise (flatten (List.map binds_Gamma bs)) bsGn ->
-        Γ_t = bsGn ++ Γ ->
-        Δ |-* Tn : Kind_Base ->
-        Δ_t ,, Γ_t |- t ≤ t' : Tn ->
-        Δ   ,, Γ   |- (Let NonRec bs t) ≤ (Let NonRec bs' t') : Tn
-  ) /\
-  (* dc_delete_binding case *)
-  (
-      forall Δ' Γ' b bs' bsGn t Tn,
-        bs = b :: bs' ->
-        map_normalise (rev (binds_Gamma b)) bsGn ->
-        Γ' = bsGn ++ Γ ->
-        Δ' = (rev (binds_Delta b)) ++ Δ ->
-        Δ |-* Tn : Kind_Base ->
-        P_has_type Δ' Γ' (Let NonRec bs' t) Tn
-  ).
-
-Definition P_bindings_well_formed_rec Δ Γ bs1 : Prop := Δ ,, Γ |-oks_r bs1.
-
-Definition P_binding_well_formed Δ Γ b : Prop :=
-  (
-    forall
-      b'
-      (H_compat : Compat.Compat_Binding dc b b'),
-      forall Δ_t Γ_t bsGn t t' Tn bs bs',
-        Δ_t = binds_Delta b ++ Δ ->
-        map_normalise (binds_Gamma b) bsGn ->
-        Γ_t = bsGn ++ Γ ->
-        Δ |-* Tn : Kind_Base ->
-        Δ_t ,, Γ_t |- (Let NonRec bs t) ≤ (Let NonRec bs' t') : Tn ->
-        Δ   ,, Γ   |- (Let NonRec (b :: bs) t) ≤ (Let NonRec (b' :: bs') t') : Tn
-  ).
-
-#[export] Hint Unfold
-  P_has_type
-  P_constructor_well_formed
-  P_bindings_well_formed_nonrec
-  P_bindings_well_formed_rec
-  P_binding_well_formed : core.
-
-
-
-
-Theorem dc__DSP' : forall Δ Γ e T,
-    Δ ,, Γ |-+ e : T ->
-    P_has_type Δ Γ e T.
-Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
-  apply has_type__ind with
-    (P := P_has_type)
-    (P0 := P_constructor_well_formed)
-    (P1 := P_bindings_well_formed_nonrec)
-    (P2 := P_bindings_well_formed_rec)
-    (P3 := P_binding_well_formed).
-  all : intros.
-
-
-  (* P_has_type, compatibility cases *)
-  all: try (
-    autounfold; intros; subst;
-    inversion H_dc;
-    match goal with
-      | H : Compat.Compat dc _ _ |- _ =>
-          inversion H;
-          eauto with DSP_compatibility_lemmas typing
-    end
-    ).
-
-  (* P_constructor_well_formed *)
-  all: try eauto with typing.
-
-  (* P_binding_well_formed *)
-  all: try (
-    autounfold; intros; subst;
-    match goal with
-      | H : Compat.Compat_Binding dc _ _ |- _ =>
-          inversion H;
-          eauto with DSP_compatibility_lemmas typing
-    end
-    ).
-
-  (* P_has_type, T_Let NonRec *)
-  - unfold P_has_type. intros t' H_dc.
-    inversion H_dc; subst.
-
-    (* dc_compat *)
-    + inversion H_compat; subst.
-      destruct H3 as [H_bs _].
-      subst...
-
-    (* dc_delete_binding *)
-    +
-      destruct H3 as [_ H_bbs].
-
-      assert (bsGn_b : list (string * Ty)).
-        admit.
-      assert (H_norm_b : map_normalise (rev (binds_Gamma b)) bsGn_b).
-        admit.
-      remember (rev (binds_Delta b) ++ Δ) as Δ'.
-      remember (bsGn_b ++ Γ) as Γ'.
-
-      (* Construct the right Induction Hypothesis *)
-      assert (H : P_has_type Δ' Γ'  (Let NonRec bs0 t) Tn). {
-        eauto.
-      }
-
-      (* Use IH *)
-      assert (H_approx_bs : Δ',, Γ' |- (Let NonRec (bs0) t) ≤ t' : Tn). {
-        eauto.
-      }
-
-      assert (H_unique : unique_tm (Let NonRec (b :: bs0) t)).
-        admit. (* Precondition of translation relation, add to P_... *)
-
-      destruct b as [ [] [x Tb] tb | | ].
-
-      (* TermBind NonStrict *)
-      * admit. (* Add non-strict semantics *)
-
-      (* TermBind Strict *)
-      *
-        (* Set up all premises for elim_TermBind__approximate *)
-
-        simpl in H_norm_b.
-        inversion H_norm_b; subst.
-        rename Tn0 into Tbn.
-        inversion H9; subst.
-
-        remember (TermBind Strict (VarDecl x Tb) tb) as b.
-
-        assert (pure_binding Δ Γ b). {
-          subst b.
-          simpl.
-          assert (pure_open Δ Γ tb Tbn). {
-          inversion H_pure.
-          eauto using is_pure_nil_pure_open.
-          }
-          eauto.
-        }
-
-        assert (Δ ,, Γ |-ok_b b ). {
-          inversion H2.
-          auto.
-        }
-
-        assert (H_ty_tb : Δ ,, Γ |-+ tb : Tbn). {
-          clear - H2 H10 Heqb.
-          inversion H2; subst.
-          inversion H1; subst.
-          assert (Tn = Tbn) by eauto using normalisation__deterministic.
-          subst.
-          assumption.
-        }
-
-        assert (H_Tb_wf : Δ |-* Tb : Kind_Base). {
-          clear - H2 H10 Heqb.
-          inversion H2; subst.
-          inversion H1; subst.
-          assumption.
-        }
-
-        assert (H_Γ_b_normal : exists Γn_b, map_normalise (binds_Gamma b) Γn_b). {
-          admit. (* By H0 *)
-        }
-        destruct H_Γ_b_normal.
-
-        simpl in H_approx_bs.
-
-        subst b.
-
-        destruct H_unused as [ H_unused1 H_unused2 ].
-
-        (* Use elim_TermBind lemma *)
-        eauto using elim_TermBind_NonRec__approximate.
-
-      (* TypeBind *)
-      * admit. (* Lemma similar to compat_TermBind *)
-
-      (* DatatypeBind *)
-      * admit. (* Add Datatype semantics, lemma similar to compat_TermBind *)
-
-
-    (* dc_keep_binding *)
-    + admit.
-
-    (* dc_delete_let_nil *)
-    + admit.
-
-    (* dc_compat_let_nil_nil *)
-    + admit.
-
-  (* W_LetRec *)
-  - admit.
-
-
-  (* W_NilB_NonRec *)
-  - unfold P_bindings_well_formed_nonrec; intros.
-    split.
-    + intros.
-      inversion H;subst.
-      eauto with DSP_compatibility_lemmas.
-    + intros.
-      inversion H.
-
-  (* W_ConsB_NonRec *)
-  - split.
-    + intros.
-      inversion H4. subst.
-      admit.
-    + intros. subst.
-    (* TODO, change P_bindings_well_formed_nonrec ? *)
-
 Admitted.
