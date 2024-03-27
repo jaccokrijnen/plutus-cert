@@ -101,10 +101,13 @@ Proof.
     unfold P_Binding in *.
     all: admit. (* should hold from IH's*)
   - admit.
-  - destruct_hypos.
-    + 
-    eauto using dc.
-    constructor.
-    admit.
-  - all: admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
 Admitted.

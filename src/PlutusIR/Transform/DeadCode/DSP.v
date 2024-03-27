@@ -138,9 +138,36 @@ Theorem dc__approx : forall t t',
 Proof.
   apply dc__multind with (P := P_dc) (P0 := P_dc_NonRec) (P1 := P_dc_Rec).
 
-  - (* dc_compat *)
+  - (* Var *)
     admit.
     (* TODO: compatibility lemmas *)
+  - (* TyAbs *)
+    admit.
+  - (* LamAbs *)
+    admit.
+  - (* Apply *)
+    admit.
+  - (* Constant *)
+    admit.
+  - (* Builtin *)
+    admit.
+  - (* TyInst *)
+    admit.
+  - (* Error *)
+    admit.
+  - (* IWrap *)
+    admit.
+  - (* Unwrap *)
+    admit.
+  - (* Constr nil *)
+    admit.
+  - (* Constr cons *)
+    admit.
+  - (* Case nil *)
+    admit.
+  - (* Case cons *)
+    admit.
+
 
   - (* dc_Let_NonRec *)
     admit.

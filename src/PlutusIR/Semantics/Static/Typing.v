@@ -56,6 +56,16 @@ Definition lookupBuiltinTy (f : DefaultFun) : Ty :=
 (** Helper funcitons*)
 Definition flatten {A : Type} (l : list (list A)) := List.concat (rev l).
 
+Open Scope list_scope.
+Lemma flatten_cons {A} x (xs : list (list A)) :
+  flatten (x :: xs) = flatten xs ++ x.
+Proof.
+  unfold flatten. simpl.
+  rewrite concat_app. simpl.
+  rewrite app_nil_r.
+  reflexivity.
+Qed.
+
 Fixpoint splitTy (T : Ty) : list Ty * Ty :=
   match T with
   | Ty_Fun Targ T' => (cons Targ (fst (splitTy T')), snd (splitTy T'))
