@@ -1,4 +1,4 @@
-Require Import PlutusCert.PlutusIR.Transform.LetNonRec.
+Require Import PlutusCert.PlutusIR.Transform.LetNonRec.Spec.
 Require Import PlutusCert.PlutusIR.Transform.LetNonRec.SSP.
 Require Import PlutusCert.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.PlutusIR.Semantics.Misc.Axiom.

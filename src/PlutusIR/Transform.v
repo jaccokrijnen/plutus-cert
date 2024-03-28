@@ -6,7 +6,7 @@ From PlutusCert Require Export
   PlutusIR.Transform.Equal
   PlutusIR.Transform.ThunkRecursions
   PlutusIR.Transform.FloatLet
-  PlutusIR.Transform.LetNonRec
+  PlutusIR.Transform.LetNonRec.Spec
   PlutusIR.Transform.LetNonStrict
   PlutusIR.Transform.LetRec
   PlutusIR.Transform.LetTypes

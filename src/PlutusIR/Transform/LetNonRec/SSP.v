@@ -1,6 +1,6 @@
 Require Import PlutusCert.PlutusIR.
 Import NamedTerm.
-Require Import PlutusCert.PlutusIR.Transform.LetNonRec.
+Require Import PlutusCert.PlutusIR.Transform.LetNonRec.Spec.
 Require Import Coq.Program.Basics.
 Require Import Coq.Lists.List.
 Import ListNotations.

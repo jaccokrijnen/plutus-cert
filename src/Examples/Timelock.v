@@ -9,6 +9,7 @@ From PlutusCert Require Import
   Util
   PlutusIR.Transform
   PlutusIR.Analysis.Purity
+  PlutusIR.Transform.LetNonRec.Spec
   PlutusIR.Transform.LetNonRec.DecideBool
   Semantics.Dynamic
   Examples.TimelockDumps

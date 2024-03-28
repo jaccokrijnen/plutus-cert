@@ -9,7 +9,7 @@ From PlutusCert Require Import
   PlutusIR
   PlutusIR.Analysis.Equality
   PlutusIR.Transform.Compat
-  PlutusIR.Transform.LetNonRec.
+  PlutusIR.Transform.LetNonRec.Spec.
 Import NamedTerm.
 
 (*
