@@ -7,198 +7,198 @@ Import ListNotations.
 
 Require Import PlutusCert.PlutusIR.Semantics.Static.
 
+Import Utf8_core.
+
+Require Import FunctionalExtensionality.
 
 
-Definition P_has_type Delta Gamma t1 T : Prop :=
-  forall t2,
-    CNR_Term t1 t2 ->
-    Delta ,, Gamma |-+ t2 : T.
+Definition P_CNR_Term t t' := ∀ Δ Γ T,
+  has_type Δ Γ t T ->
+  has_type Δ Γ t' T
+.
 
-Definition P_constructor_well_formed Delta c T : Prop :=
-  Delta |-ok_c c : T.
+Definition P_CNR_Bindings bs fs := ∀ Δ Γ t T Γ_bs,
+  Δ ,, Γ |-oks_nr bs ->
+  map_normalise (flatten (map binds_Gamma bs)) Γ_bs ->
+  (flatten (map binds_Delta bs) ++ Δ) ,, (Γ_bs ++ Γ) |-+ t : T ->
+  Δ ,, Γ |-+ (fold_right apply t fs) : T
+.
 
-Definition P_bindings_well_formed_nonrec Delta Gamma bs1 : Prop :=
-  (
-    forall bs2,
-      Delta ,, Gamma |-oks_nr bs1 ->
-      Compat.Compat_Bindings CNR_Term bs1 bs2 ->
-      Delta ,, Gamma |-oks_nr bs2 /\
-      map binds_Delta bs2 = map binds_Delta bs1 /\
-      map binds_Gamma bs2 = map binds_Gamma bs1
-  ) /\ (
-    forall f_bs2 t T bs1Gn,
-      Delta ,, Gamma |-oks_nr bs1 ->
-      CNR_Bindings bs1 f_bs2 ->
-      map_normalise (flatten (map binds_Gamma bs1)) bs1Gn ->
-      (flatten (map binds_Delta bs1) ++ Delta ) ,, (bs1Gn ++ Gamma ) |-+ t : T ->
-      Delta ,, Gamma |-+ (fold_right apply t f_bs2) : T
-  ).
+Definition P_CNR_LetRec_compat bs bs' := ∀ Δ Γ,
+  Δ ,, Γ |-oks_r bs ->
+  Δ ,, Γ |-oks_r bs' /\
+  map binds_Gamma bs = map binds_Gamma bs' /\
+  map binds_Delta bs = map binds_Delta bs'
+  .
 
-Definition P_bindings_well_formed_rec Delta Gamma bs1 : Prop :=
-  forall bs2,
-    Delta ,, Gamma |-oks_r bs1 ->
-    Compat.Compat_Bindings CNR_Term bs1 bs2 ->
-    Delta ,, Gamma |-oks_r bs2 /\
-    map binds_Delta bs2 = map binds_Delta bs1 /\
-    map binds_Gamma bs2 = map binds_Gamma bs1.
+Definition P_CNR_Binding b (f : Term -> Term) := 
+(
+  match b with
+    | TermBind Strict (VarDecl v ty) t_bound => ∀ t_bound',
+      f = (fun t_bs => Apply (LamAbs v ty t_bs) t_bound') ->
+      P_CNR_Term t_bound t_bound'
+      /\
+      (∀ Δ Γ t T Γ_bs,
+          Δ ,, Γ |-ok_b b ->
+          map_normalise (binds_Gamma b) Γ_bs ->
+          binds_Delta b ++ Δ ,, Γ_bs ++ Γ |-+ t : T ->
+          Δ,, Γ |-+ (f t) : T
+      )
+    | _ => True
+  end
+)
+.
 
-Definition P_binding_well_formed Delta Gamma b1 : Prop :=
-  (
-    forall b2,
-      Delta ,, Gamma |-ok_b b1 ->
-      Compat.Compat_Binding CNR_Term b1 b2 ->
-      Delta ,, Gamma |-ok_b b2 /\
-      binds_Delta b2 = binds_Delta b1 /\
-      binds_Gamma b2 = binds_Gamma b1
-  ) /\ (
-    forall f_b2 t T bs1Gn,
-      Delta ,, Gamma |-ok_b b1 ->
-      CNR_Binding b1 f_b2 ->
-      map_normalise (binds_Gamma b1) bs1Gn ->
-      binds_Delta b1 ++ Delta ,, bs1Gn ++ Gamma |-+ t : T ->
-      Delta ,, Gamma |-+ (f_b2 t) : T
-  ).
+Definition P_CNR_Binding_compat b b' := ∀ Δ Γ,
+    Δ ,, Γ |-ok_b b ->
+    Δ ,, Γ |-ok_b b' /\
+    binds_Delta b = binds_Delta b' /\
+    binds_Gamma b = binds_Gamma b'
+.
 
-#[export] Hint Unfold
-  P_has_type
-  P_constructor_well_formed
-  P_bindings_well_formed_nonrec
-  P_bindings_well_formed_rec
-  P_binding_well_formed
-  : core.
-
-Ltac inv_CNR :=
+Ltac inv_typing :=
   match goal with
-  | H : CNR_Term _ _ |- _ => inversion H; subst
-  | H : CNR_Bindings _ _ |- _ => inversion H; subst
+  | H : has_type _ _ _ _ |- _ => inversion H
+  | H : _ ,,  _ |-ok_b _ |- _ => inversion H
+  end
+.
+
+Lemma mn_singleton_deterministic T Tn v Γ :
+  normalise T Tn ->
+  map_normalise [(v, T)] Γ ->
+  Γ = [(v, Tn)].
+Proof.
+  intros H_n H_mn.
+  inversion_clear H_mn.
+  match goal with H : map_normalise [] _ |- _ => inversion_clear H end.
+  f_equal. f_equal.
+  eauto using normalisation__deterministic.
+Qed.
+
+
+Derive Inversion_clear inv_oks_nr_cons with
+  (∀ Δ Γ b bs, Δ,, Γ |-oks_nr (b :: bs)).
+
+Derive Inversion_clear inv_oks_r_cons with
+  (∀ Δ Γ b bs, Δ,, Γ |-oks_r (b :: bs)).
+
+Derive Inversion_clear inv_ok_b with
+  (∀ Δ Γ b, Δ,, Γ |-ok_b b).
+
+Derive Inversion_clear inv_T_Let with
+  (∀ Δ Γ bs t T, Δ,, Γ |-+ (Let NonRec bs t) : T).
+
+Derive Inversion_clear inv_T_LetRec with
+  (∀ Δ Γ bs t T, Δ,, Γ |-+ (Let Rec bs t) : T).
+
+(* Simplifies the pattern where there are two assumptions that normalise the
+   same type *)
+Ltac simplify_norm :=
+  match goal with
+    H : map_normalise [(_, ?ty)] ?Γ,
+    H' : normalise ?ty _
+    |- _ => idtac H H'; pose proof (mn_singleton_deterministic _ _ _ _ H' H); subst Γ
   end.
 
-Ltac inv_Compat :=
-  match goal with
-    | H : Compat.Compat _ _ _ |- _ => inversion H; subst
-    | H : Compat.Compat_Bindings _ _ _ |- _ => inversion H; subst
-    | H : Compat.Compat_Binding _ _ _ |- _ => inversion H; subst
-  end.
+Theorem CNR_Term__SSP : ∀ t t',
+  CNR_Term t t' ->
+  P_CNR_Term t t'.
+  Proof with (eauto with typing).
+  apply CNR__multind with
+    (P := P_CNR_Term)
+    (P0 := P_CNR_Bindings)
+    (P1 := P_CNR_Binding)
+    (P2 := P_CNR_LetRec_compat)
+    (P3 := P_CNR_Binding_compat)
+  .
+  (* Solve compat_ cases of CNR_Term and CNR_Binding_compat *)
+  all: try (unfold P_CNR_Term, P_CNR_Binding_compat; intros; inv_typing ; solve [eauto with typing]).
+  - (* CNR_LetNonRec *)
+    intros ? ? ? ? _ IH_t_body _ IH_bs.
+    unfold P_CNR_Term, P_CNR_Term, P_CNR_Bindings in *.
+    intros Δ Γ T H_typing_let.
 
-Theorem CNR_Term__SSP : forall Delta Gamma t1 T,
-    Delta ,, Gamma |-+ t1 : T ->
-    P_has_type Delta Gamma t1 T.
-Proof with (eauto with typing).
-  apply has_type__ind with
-    (P := P_has_type)
-    (P0 := P_constructor_well_formed)
-    (P1 := P_bindings_well_formed_nonrec)
-    (P2 := P_bindings_well_formed_rec)
-    (P3 := P_binding_well_formed).
-  all: intros; autounfold; intros.
-  all: try solve [eauto with typing].
-  all: try solve [ inv_CNR; inv_Compat ; eauto with typing].
+    inversion H_typing_let using inv_T_Let. intros ? ? ? ? ? ? ? H_t_body ?.
+    apply IH_t_body in H_t_body as H_t_body'; clear H_t_body IH_t_body.
+    subst.
+    apply IH_bs in H_t_body'; assumption.
 
-  - (* T_Let *)
-    inv_CNR.
-    + eapply H3...
-    + inv_Compat.
-      unfold P_bindings_well_formed_nonrec in H3.
-      edestruct H3 as [[IHH [Heq Heq']] _]...
-      eapply T_Let...
-      * rewrite Heq'...
-      * rewrite Heq...
-  - (* T_LetRec *)
-    inv_CNR.
-    inv_Compat.
-    unfold P_bindings_well_formed_rec in H3.
-    edestruct H3 as [IHH [Heq Heq']]...
-    eapply T_LetRec...
-    + rewrite Heq'...
-    + rewrite Heq...
-    + rewrite Heq...
+  - (* CNR_LetRec *)
+    unfold P_CNR_Term, P_CNR_LetRec_compat.
+    intros ? ? ? ? _ IH_t_body _ IH_bs ? ? ? H_typing.
+    inversion H_typing using inv_T_LetRec. intros ? ? ? ? H_mn_bs ? H_bs H_t_body.
+    specialize (IH_bs _ _ H_bs).
+    destruct IH_bs as [H_bs' [H_eq_Gamma H_eq_Delta]].
+    rewrite H_eq_Gamma in H_mn_bs.
+    rewrite H_eq_Delta in *...
 
-  - (* W_NilB_NonRec *)
-    split. all: intros.
-    + inv_Compat...
-    + inv_CNR.
-      inversion H1.
-      subst...
-  - (* W_ConsB_NonRec *)
-    split. all: intros.
-    + inv_Compat.
-      unfold P_binding_well_formed in H0.
-      edestruct H0 as [[IH [Heq Heq']] _]...
-      split; try split.
-      * eapply W_ConsB_NonRec...
-        -- rewrite Heq'...
-        -- rewrite Heq... eapply H3...
-      * simpl. rewrite Heq...
-        f_equal. eapply H3...
-      * simpl. rewrite Heq'...
-        f_equal. eapply H3...
-    + inv_CNR.
-      inversion H10. subst.
-      destruct H0 as [_ IH1]...
-      destruct H3 as [_ IH2]...
-      simpl.
+  - (* CNR_LetRec_nil *)
+    unfold P_CNR_Bindings.
+    intros.
+    unfold flatten in *. simpl in *.
+    match goal with H : map_normalise _ _ |- _ => inversion H; subst end.
+    assumption.
 
-      simpl in H5.
-      unfold flatten in H6.
-      simpl in H6.
-      rewrite concat_app in H6.
-      simpl in H6.
-      apply map_normalise__app in H6 as H9.
-      destruct H9 as [l1n [l2n [Hn__l1n [Hn__l2n Heql]]]].
-      simpl in Hn__l2n.
-      inversion Hn__l2n. subst.
-      inversion H13. subst.
+  - (* P_CNR_Bindings (b :: bs) (f_b :: f_bs) *)
+    intros ? ? ? ? H IH_b _ IH_bs.
+    intros ? ? ? ? Γ_b_bs H_b_bs H_mn_b_bs H_t.
+    simpl.
+    unfold apply at 1.
+    inversion H. subst.
 
-      simpl in H1.
-      inversion H1. subst.
-      inversion H15. subst.
+    inversion H_b_bs using inv_oks_nr_cons. intros ? H_b ? ?.
+    inversion H_b; subst.
 
-      eapply normalisation__deterministic in H14...
-      subst.
+    unfold P_CNR_Bindings, P_CNR_Binding in *.
 
-      eapply IH1...
-      eapply IH2...
+    (* Simplify map_normalise assumptions *)
+    simpl in *.
+    simplify_norm.
 
-      simpl in H6.
-      rewrite <- app_assoc in H7.
-      unfold flatten in H7.
-      simpl in H7.
-      rewrite concat_app in H7.
-      simpl in H7.
-      rewrite app_nil_r in H7.
+    rewrite flatten_cons in H_mn_b_bs.
+    apply map_normalise__app in H_mn_b_bs as [Γ_bs [Γ_b [H_mn_bs [H_mn_b ?]]]].
+    subst Γ_b_bs.
+    simplify_norm.
 
-      eapply H7.
+    rewrite <- app_assoc, flatten_cons, app_nil_r in H_t.
+    simpl in H_t.
 
-  - (* W_NilB_Rec *)
-    inv_Compat.
-    eauto.
-  - (* W_ConsB_Rec*)
-    inv_Compat.
-    unfold P_binding_well_formed in H0.
-    edestruct H0 as [[IH [Heq Heq']] _]...
-    split; try split.
-    + eapply W_ConsB_Rec...
-      eapply H2...
-    + simpl. rewrite Heq...
-      f_equal. eapply H2...
-    + simpl. rewrite Heq'...
-      f_equal. eapply H2...
+    specialize (IH_b _ eq_refl).
+    destruct IH_b as [IH_t_bound _].
+    unfold P_CNR_Term in IH_t_bound...
 
-  - (* W_Term *)
-    split. all: intros.
-    + inv_Compat...
-    + inversion H4. subst...
-      simpl in H5.
-      inversion H5. subst.
-      inversion H11. subst.
-      eapply normalisation__deterministic in H0...
-      subst...
-  - (* W_Type *)
-    split. all: intros.
-    + inv_Compat...
-    + inversion H1.
-  - (* W_Data *)
-    split. all: intros.
-    + inv_Compat...
-    + inversion H3.
+  - (* P_CNR_Binding *)
+    intros ? ? ? ? H_CNR_Term IH_t_bound.
+    unfold P_CNR_Binding.
+    intros t_bound'' H_eq.
+    (* work-around: using FUNEXT to conclude t_bound' = t_bound'' *)
+    apply equal_f with (x := Constr 0 []) in H_eq.
+    inversion H_eq.
+    subst t_bound''.
+    clear H_eq.
+    split.
+    + assumption.
+    + intros ? ? ? ? ? H_b ?.
+      simpl in *.
+      inversion H_b; subst.
+      simplify_norm...
+
+  - (* CNR_LetRec_compat [] *)
+    unfold P_CNR_LetRec_compat.
+    intros.
+    intuition.
+  - (* CNR_LetRec_compat :: *)
+    intros ? ? ? ? _ IH_b _ IH_bs.
+    unfold P_CNR_LetRec_compat.
+    intros ? ? H_oks_b_bs.
+    unfold P_CNR_Binding_compat, P_CNR_LetRec_compat in *.
+    inversion H_oks_b_bs using inv_oks_r_cons. intros H_b H_bs.
+
+    specialize (IH_b _ _ H_b) as [? [H_eq_1 H_eq_2]].
+    specialize (IH_bs _ _ H_bs) as [? [H_eq_3 H_eq_4]].
+
+    repeat split.
+    + eauto with typing.
+    + simpl. rewrite H_eq_2, H_eq_3. reflexivity.
+    + simpl. rewrite H_eq_1, H_eq_4. reflexivity.
 Qed.

@@ -253,6 +253,18 @@ Proof.
     econstructor; eauto.
 Qed.
 
+Lemma MN_app Ts Tsn Ts' Tsn' :
+  map_normalise Ts Tsn ->
+  map_normalise Ts' Tsn' ->
+  map_normalise (Ts ++ Ts') (Tsn ++ Tsn').
+Proof.
+  intros H1 H2.
+  induction H1.
+  - assumption.
+  - simpl.
+    constructor; auto.
+Qed.
+
 
 Lemma map_normalise__app : forall l1 l2 ln,
     map_normalise (l1 ++ l2) ln ->

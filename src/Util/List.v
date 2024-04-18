@@ -558,6 +558,39 @@ Definition forall2b {A} (p : A -> A -> bool) := fix f xs ys :=
     | _        , _         => false
   end.
 
+(* Instead of requiring a general decidable relation dec_R x x' <-> R x x', we require
+   that the elements in the list xs have decidable equality. This makes mutual
+   inductive proofs possible *)
+Definition forall2b_Forall2_Forall
+  a R (dec_R : a -> a -> bool) xs xs'
+  (H_sound_xs : Forall (fun x => forall x', dec_R x x' = true <-> R x x') xs) :
+  forall2b dec_R xs xs' = true <-> Forall2 R xs xs'.
+Proof.
+  revert xs'.
+  induction xs.
+  intros xs'.
+  - simpl.
+    destruct xs'; split; inversion 1. 
+    + constructor.
+    + reflexivity.
+  - simpl.
+    destruct xs'; split; try solve [inversion 1].
+    + intros H_eqb.
+      rewrite andb_true_iff in H_eqb. destruct H_eqb.
+      inversion_clear H_sound_xs.
+      specialize (IHxs H2).
+      rewrite H1 in H. subst.
+      specialize (IHxs xs').
+      destruct IHxs.
+      f_equal.
+      auto.
+    + intros.
+      inversion H; subst.
+      rewrite andb_true_iff.
+      inversion H_sound_xs; subst.
+      rewrite H2.
+      rewrite IHxs; auto.
+Qed.
 
 (* TODO, make this bi-implication *)
 Lemma forall2b_Forall2

@@ -218,6 +218,40 @@ Combined Scheme has_type__multind from
 
 Definition well_typed t := exists T, [] ,, [] |-+ t : T.
 
+Lemma T_Let__cons Δ Γ Γ_b b bs t Tn :
+  Δ ,, Γ |-ok_b b ->
+  Δ |-* Tn : Kind_Base -> (* Tn may not mention types bound in b (escaping) *)
+  map_normalise (binds_Gamma b) Γ_b ->
+  binds_Delta b ++ Δ ,, Γ_b ++ Γ |-+ (Let NonRec bs t) : Tn ->
+  Δ ,, Γ |-+ (Let NonRec (b :: bs) t) : Tn
+.
+Proof.
+  intros H_typing_b H_kind H_mn H_ty.
+  inversion H_ty; subst.
+
+  econstructor.
+  - exact eq_refl.
+  - unfold flatten.
+    simpl.
+    rewrite concat_app.
+    simpl.
+    rewrite app_nil_r.
+    apply MN_app.
+    + eassumption.
+    + eassumption.
+  - exact eq_refl.
+  - econstructor.
+    + assumption.
+    + eassumption.
+    + eassumption.
+  - simpl.
+    rewrite flatten_cons.
+    rewrite <- app_assoc.
+    rewrite <- app_assoc.
+    assumption.
+  - assumption.
+Qed.
+
 Lemma has_type__normal : forall Delta Gamma t T,
     Delta ,, Gamma |-+ t : T ->
     normal_Ty T.

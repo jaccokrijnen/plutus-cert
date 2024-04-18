@@ -196,13 +196,15 @@ Ltac eqb_eq_tac :=
 
 
 Definition Eqb x := x -> x -> bool.
+(*
 Definition Eqb_eq := fun {a} (eqb : Eqb a) => forall (x y : a),
   eqb x y = true <-> x = y.
+  *)
 
 Definition unit_eqb: Eqb unit := fun x y => match x, y with
   | tt, tt => true
   end.
-Definition unit_eqb_eq : Eqb_eq unit_eqb.
+Definition unit_eqb_eq : forall u u', unit_eqb u u' = true <-> u = u'.
    Proof. eqb_eq_tac. Defined.
 
 #[export] Hint Resolve -> unit_eqb_eq : reflection.
@@ -216,7 +218,7 @@ Definition Strictness_eqb: Eqb Strictness := fun x y =>
   | _, _                 => false
   end.
 
-Definition Strictness_eqb_eq : Eqb_eq Strictness_eqb.
+Definition Strictness_eqb_eq : forall s s', Strictness_eqb s s' = true <-> s = s'.
 Proof. eqb_eq_tac. Defined.
 #[export] Hint Resolve -> Strictness_eqb_eq : reflection.
 #[export] Hint Resolve <- Strictness_eqb_eq : reflection.
@@ -227,7 +229,7 @@ Definition Recursivity_eqb : Eqb Recursivity := fun x y => match x, y with
   | _, _ => false
   end.
 
-Definition Recursivity_eqb_eq : Eqb_eq Recursivity_eqb.
+Definition Recursivity_eqb_eq : forall r r', Recursivity_eqb r r' = true <-> r = r'.
 Proof. eqb_eq_tac. Qed.
 #[export] Hint Resolve -> Recursivity_eqb_eq : reflection.
 #[export] Hint Resolve <- Recursivity_eqb_eq : reflection.
@@ -261,7 +263,7 @@ Definition func_eqb : Eqb DefaultFun := fun x y => match x, y with
   | _, _ => false
   end.
 
-Definition func_eqb_eq : Eqb_eq func_eqb.
+Definition func_eqb_eq : forall f f', func_eqb f f' = true <-> f = f'.
 Proof. eqb_eq_tac. Qed.
 #[export] Hint Resolve -> func_eqb_eq : reflection.
 #[export] Hint Resolve <- func_eqb_eq : reflection.
@@ -276,7 +278,7 @@ Definition DefaultUni_eqb : Eqb DefaultUni := fun x y => match x, y with
   | _, _ => false
   end.
 
-Definition DefaultUni_eqb_eq : Eqb_eq DefaultUni_eqb.
+Definition DefaultUni_eqb_eq : forall u u', DefaultUni_eqb u u' = true <-> u = u'.
 Proof. eqb_eq_tac. Qed.
 #[export] Hint Resolve -> DefaultUni_eqb_eq : reflection.
 #[export] Hint Resolve <- DefaultUni_eqb_eq : reflection.
@@ -291,11 +293,10 @@ Definition uniType_eqb : forall t, Eqb (uniType t) := fun ty =>
   | DefaultUniString    => String.eqb
   end.
 
-Definition uniType_eqb_eq : forall t, Eqb_eq (uniType_eqb t).
+Definition uniType_eqb_eq : forall t ty ty', uniType_eqb t ty ty' = true <-> ty = ty'.
 Proof.
   intro t.
   destruct t;
-  unfold Eqb_eq;
   auto using Z.eqb_eq, string_eqb_eq, unit_eqb_eq, Ascii.eqb_eq, Nat.eqb_eq, Bool.eqb_true_iff.
 Qed.
 
@@ -306,7 +307,7 @@ Definition valueOf_eqb : forall t, Eqb (valueOf t) := fun ty x y => match x, y w
   | ValueOf _ x, ValueOf _ y => uniType_eqb ty x y
   end.
 
-Definition valueOf_eqb_eq : forall t, Eqb_eq (@valueOf_eqb t).
+Definition valueOf_eqb_eq : forall t c c', @valueOf_eqb t c c' = true <-> c = c'.
 Proof.
   intros t.
   destruct t;
@@ -323,7 +324,7 @@ Definition some_valueOf_eqb: Eqb (@some valueOf) := fun x y => match x, y with
     end
   end.
 
-Definition some_valueOf_eqb_eq : Eqb_eq (some_valueOf_eqb).
+Definition some_valueOf_eqb_eq : forall v v', some_valueOf_eqb v v' = true <-> v = v'.
 Proof.
   eqb_eq_tac.
   - destruct u, u0;
@@ -343,7 +344,7 @@ Definition typeIn_eqb : forall t, Eqb (typeIn t) := fun ty x y => match x, y wit
   | @TypeIn _, TypeIn _ => true
   end.
 
-Definition typeIn_eqb_eq : forall t, Eqb_eq (@typeIn_eqb t).
+Definition typeIn_eqb_eq : forall t ty ty', @typeIn_eqb t ty ty' = true <-> ty = ty'.
 Proof.
   intros t.
   destruct t;
@@ -360,7 +361,7 @@ Definition some_typeIn_eqb : Eqb (@some typeIn) := fun x y => match x, y with
     end
   end.
 
-Definition some_typeIn_eqb_eq : Eqb_eq (some_typeIn_eqb).
+Definition some_typeIn_eqb_eq : forall ty ty', some_typeIn_eqb ty ty' = true <-> ty = ty'.
 Proof.
   eqb_eq_tac.
   - destruct u, u0;
@@ -382,7 +383,7 @@ Fixpoint Kind_eqb (x y : Kind) : bool := match x, y with
   | _, _ => false
   end.
 
-Definition Kind_eqb_eq : Eqb_eq Kind_eqb.
+Definition Kind_eqb_eq : forall k k', Kind_eqb k k' = true <-> k = k'.
 Proof. eqb_eq_tac. Defined.
 
 #[export] Hint Resolve -> Kind_eqb_eq : reflection.
@@ -401,7 +402,7 @@ Fixpoint Ty_eqb (x y : Ty) : bool := match x, y with
   | _, _ => false
   end.
 
-Definition Ty_eqb_eq : Eqb_eq Ty_eqb.
+Definition Ty_eqb_eq : forall ty ty', Ty_eqb ty ty' = true <-> ty = ty'.
 Proof. Local Open Scope string_scope. eqb_eq_tac; try (inversion H).
   - assert (b =? b = true) by eauto with reflection.
     assert (Kind_eqb k k = true) by eauto with reflection.
@@ -418,7 +419,7 @@ Definition TVDecl_eqb : Eqb TVDecl := fun x y => match x, y with
   | TyVarDecl ty k, TyVarDecl ty' k' => String.eqb ty ty' && Kind_eqb k k'
   end.
 
-Definition TVDecl_eqb_eq : Eqb_eq TVDecl_eqb.
+Definition TVDecl_eqb_eq : forall tvd tvd', TVDecl_eqb tvd tvd' = true <-> tvd = tvd'.
 Proof. eqb_eq_tac. Defined.
 #[export] Hint Resolve -> TVDecl_eqb_eq : reflection.
 #[export] Hint Resolve <- TVDecl_eqb_eq : reflection.
@@ -427,7 +428,7 @@ Proof. eqb_eq_tac. Defined.
 Definition VDecl_eqb: Eqb VDecl := fun x y => match x, y with
   | VarDecl x ty, VarDecl x' ty' => String.eqb x x' && Ty_eqb ty ty'
   end.
-Definition VDecl_eqb_eq : Eqb_eq VDecl_eqb.
+Definition VDecl_eqb_eq : forall vd vd', VDecl_eqb vd vd' = true <-> vd = vd'.
 Proof. eqb_eq_tac. Defined.
 
 #[export] Hint Resolve -> VDecl_eqb_eq : reflection.
@@ -441,7 +442,7 @@ Definition constructor_eqb : Eqb constructor := fun x y => match x, y with
   | Constructor c n, Constructor c' n' => VDecl_eqb c c' && Nat.eqb n n'
   end.
 
-Definition constructor_eqb_eq : Eqb_eq constructor_eqb.
+Definition constructor_eqb_eq : forall c c', constructor_eqb c c' = true <-> c = c'.
 Proof. eqb_eq_tac. Qed.
 #[export] Hint Resolve -> constructor_eqb_eq : reflection.
 #[export] Hint Resolve <- constructor_eqb_eq : reflection.
@@ -453,19 +454,60 @@ Definition list_eqb a (eqb : Eqb a) : Eqb (list a) := fix f xs ys :=
   | _, _                 => false
   end.
 
-Definition list_eqb_eq a (a_eqb : Eqb a) (a_eqb_eq : Eqb_eq a_eqb) : Eqb_eq (list_eqb a_eqb).
+Lemma list_eqb_tl A eqb (x y : A) (xs ys : list A) : list_eqb eqb (x :: xs) (y :: ys) = true -> list_eqb eqb xs ys = true.
 Proof.
-  eqb_eq_tac.
-  (* -> case for:  (x : a) = (y : a) *)
-  - apply a_eqb_eq; assumption.
-  (* <- case for: a_eqb ... && list_eqb ... = true *)
-  - unfold Eqb, Eqb_eq in *.
-    apply andb_true_iff_proj_r2l.
-    constructor.
-    + apply a_eqb_eq.
-      reflexivity.
-    + assumption.
+  simpl. intros. rewrite andb_true_iff in H. intuition.
 Qed.
+
+
+(* Instead of requiring a general decidable equality eqb x x' <-> x = x', we require
+   that the elements in the list xs have decidable equality. This makes mutual
+   inductive proofs possible *)
+Definition list_eqb_eq_Forall a (a_eqb : Eqb a) xs xs' (H_sound_xs : Forall (fun x => forall x', a_eqb x x' = true <-> x = x') xs) :
+  list_eqb a_eqb xs xs' = true <-> xs = xs'.
+Proof.
+  revert xs'.
+  induction xs.
+  intros xs'.
+  - simpl.
+    destruct xs'; split; inversion 1; reflexivity.
+  - simpl.
+    destruct xs'; split; try solve [inversion 1].
+    + intros H_eqb.
+      rewrite andb_true_iff in H_eqb. destruct H_eqb.
+      inversion_clear H_sound_xs.
+      specialize (IHxs H2).
+      rewrite H1 in H. subst.
+      specialize (IHxs xs').
+      destruct IHxs.
+      f_equal.
+      auto.
+    + intros.
+      inversion H; subst.
+      rewrite andb_true_iff.
+      inversion H_sound_xs; subst.
+      rewrite H2.
+      rewrite IHxs; auto.
+Qed.
+
+Arguments list_eqb_eq_Forall {a} _ _ _ _.
+
+(* This is the more specific version that isn't suitable for mutual induction *)
+Definition list_eqb_eq A (A_eqb : Eqb A) (H : forall x x', A_eqb x x' = true <-> x = x') : forall xs xs',
+  list_eqb A_eqb xs xs' = true <-> xs = xs'.
+Proof.
+  intros.
+  assert (H_sound_xs : Forall (fun x => forall x', A_eqb x x' = true <-> x = x') xs).
+  { induction xs.
+    + constructor.
+    + constructor.
+      * specialize (H a).
+        assumption.
+      * assumption.
+  }
+  apply list_eqb_eq_Forall. auto.
+Qed.
+
 
 #[export] Hint Resolve -> list_eqb_eq : reflection.
 #[export] Hint Resolve <- list_eqb_eq : reflection.
@@ -475,19 +517,18 @@ Definition DTDecl_eqb: Eqb DTDecl := fun x y => match x, y with
     TVDecl_eqb tvd tvd' && list_eqb TVDecl_eqb tvds tvds'
       && String.eqb n n' && list_eqb constructor_eqb cs cs'
     end.
-Definition DTDecl_eqb_eq : Eqb_eq DTDecl_eqb.
-
+Definition DTDecl_eqb_eq : forall dtd dtd', DTDecl_eqb dtd dtd' = true <-> dtd = dtd'.
 Proof.
   eqb_eq_tac.
-  - apply (list_eqb_eq TVDecl_eqb_eq).
+  - apply (list_eqb_eq _ TVDecl_eqb_eq ).
     assumption.
-  - apply (list_eqb_eq constructor_eqb_eq).
+  - apply (list_eqb_eq _ constructor_eqb_eq).
     assumption.
   - repeat (apply andb_true_iff_proj_r2l; constructor);
      auto with reflection.
-    + apply (list_eqb_eq TVDecl_eqb_eq).
+    + apply (list_eqb_eq _ TVDecl_eqb_eq).
       reflexivity.
-    + apply (list_eqb_eq constructor_eqb_eq).
+    + apply (list_eqb_eq _ constructor_eqb_eq).
       reflexivity.
 Qed.
 #[export] Hint Resolve -> DTDecl_eqb_eq : reflection.

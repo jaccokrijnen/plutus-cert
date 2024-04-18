@@ -10,7 +10,96 @@ From PlutusCert Require Import
   Analysis.Equality
   .
 
+Import ListNotations.
 Import NamedTerm.
+
+Section Term.
+
+  Context (R : Term -> Term -> Prop).
+  Context (RB : Binding -> Binding -> Prop).
+
+  Definition compat_TermBind := ∀ s v t t',
+    R t t' ->
+    RB (TermBind s v t) (TermBind s v t').
+
+  Definition compat_TypeBind := ∀ tvd T,
+    RB (TypeBind tvd T) (TypeBind tvd T).
+
+  Definition compat_DatatypeBind := ∀ dtd,
+    RB (DatatypeBind dtd) (DatatypeBind dtd).
+
+
+  (* TODO: we cannot have this, since Coq cannot generate nice induction schemes
+   * for the nested recursion that exists between the relation and Forall2 
+   * so instead, we have a separate case for nil and cons.
+
+   * The same applies to Constr and Case
+   *)
+  (*
+  Definition compat_Let := ∀ r bs bs' t t',
+    Forall2 RB bs bs' ->
+    R t t' ->
+    R (Let r bs t) (Let r bs' t').
+  *)
+
+  Definition compat_Let_nil := ∀ r t t',
+    R t t' ->
+    R (Let r [] t) (Let r [] t').
+
+  Definition compat_Let_cons := ∀ r b b' bs bs' t t',
+    RB b b' ->
+    R (Let r bs t) (Let r bs' t') ->
+    R (Let r (b :: bs) t) (Let r (b' :: bs') t').
+
+  Definition compat_Var   := ∀ n, R (Var n) (Var n).
+
+  Definition compat_TyAbs := ∀ X K t t',
+    R t t' ->
+    R (TyAbs X K t) (TyAbs X K t').
+
+  Definition compat_LamAbs := ∀ x T t t',
+    R t t' ->
+    R (LamAbs x T t) (LamAbs x T t').
+
+  Definition compat_Apply := ∀ s s' t t',
+    R s s' ->
+    R t t' ->
+    R (Apply s t) (Apply s' t').
+
+  Definition compat_Constant := ∀ v,
+    R (Constant v) (Constant v).
+
+  Definition compat_Builtin := ∀ f,
+    R (Builtin f) (Builtin f).
+
+  Definition compat_TyInst := ∀ t t' T,
+    R t t' ->
+    R (TyInst t T) (TyInst t' T).
+
+  Definition compat_Error := ∀ T,
+    R (Error T) (Error T).
+
+  Definition compat_IWrap := ∀ T1 T2 t t',
+    R t t' ->
+    R (IWrap T1 T2 t) (IWrap T1 T2 t').
+
+  Definition compat_Unwrap := ∀ t t',
+    R t t' ->
+    R (Unwrap t) (Unwrap t').
+
+  (* TODO: add cons/nil cases for Constr and Case, so
+     correct induction schemes are generated *)
+  Definition compat_Constr := ∀ n ts ts',
+    Forall2 R ts ts' ->
+    R (Constr n ts) (Constr n ts').
+
+  Definition compat_Case := ∀ t t' ts ts',
+    R t t' ->
+    Forall2 R ts ts' ->
+    R (Case t ts) (Case t' ts').
+
+End Term.
+
 
 Section Compatibility.
 

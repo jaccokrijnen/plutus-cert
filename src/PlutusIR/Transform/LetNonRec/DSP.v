@@ -354,13 +354,11 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
     (P3 := P_binding_well_formed).
 
   all : intros; autounfold; intros; subst.
-  all: try solve [ inv_CNR; inv_Compat ; eauto with DSP_compatibility_lemmas typing].
+  all: try solve [ inv_CNR; eauto with DSP_compatibility_lemmas typing].
   all : try solve [eauto with typing].
   - (* T_Let *)
-    inv_CNR.
+    inv_CNR...
     + eapply H3...
-    + inv_Compat.
-      eapply H3...
 
   - (* W_NilB_NonRec *)
     split. all: intros. all: subst.
