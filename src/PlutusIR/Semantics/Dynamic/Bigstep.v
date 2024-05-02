@@ -138,7 +138,7 @@ with eval_bindings_nonrec : Term -> Term -> nat -> Prop :=
   | E_Let_Nil : forall t0 v0 j0,
       t0 =[j0]=> v0 ->
       Let NonRec nil t0 =[ j0 + 1 ]=>nr v0
-  | E_Let_TermBind : forall x T t1 j1 v1 j2 v2 bs t0,
+  | E_Let_TermBind_NonStrict : forall x T t1 j1 v1 j2 v2 bs t0,
       t1 =[j1]=> v1 ->
       ~ is_error v1 ->
       <{ [v1 / x] ({Let NonRec bs t0}) }> =[j2]=>nr v2 ->
@@ -192,7 +192,7 @@ Create HintDb hintdb__eval_no_error.
   E_Let
   E_LetRec
   E_Let_Nil
-  E_Let_TermBind
+  E_Let_TermBind_NonStrict
   E_Let_TypeBind
   E_LetRec_Nil
   E_LetRec_TermBind
