@@ -7,15 +7,18 @@ Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstituti
 Require Import Arith.
 
 
-Lemma compatibility_Builtin: forall Delta Gamma f T Tn,
+Lemma compatibility_Builtin: forall Delta Gamma f targs args T Tn,
     T = lookupBuiltinTy f ->
     normalise T Tn ->
-    LR_logically_approximate Delta Gamma (Builtin f) (Builtin f) Tn.
+    LR_logically_approximate Delta Gamma (Builtin f targs args) (Builtin f targs args) Tn.
 Proof with eauto_LR.
   intros Delta Gamma f Hlu Hnorm__Tn.
   unfold LR_logically_approximate.
 
   split...
+  --------
+    econstructor.
+    all: try eauto_LR.
   split...
 
   intros k rho env env' H_RD H_RG.
