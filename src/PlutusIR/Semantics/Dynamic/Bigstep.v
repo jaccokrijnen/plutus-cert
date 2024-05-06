@@ -3,6 +3,7 @@ Import PlutusNotations.
 Import NamedTerm.
 Require Export PlutusCert.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
 Require Export PlutusCert.PlutusIR.Semantics.Dynamic.AnnotationSubstitution.
+Require Export PlutusCert.PlutusIR.Semantics.Dynamic.Datatypes.
 Require Export PlutusCert.PlutusIR.Semantics.Dynamic.Substitution.
 Require Export PlutusCert.PlutusIR.Semantics.Dynamic.Values.
 
@@ -76,37 +77,7 @@ Inductive eval : Term -> Term -> nat -> Prop :=
       fully_applied (TyInst nv1 T) ->
       compute_defaultfun (TyInst nv1 T) = Datatypes.Some v ->
       TyInst nv1 T =[1]=> v
-  (** Builtins: If-Then-Else
 
-      We handle this built-in function separately because it has a unique behaviour:
-      The ``then''-branch should only be evaluated when the condition is true,
-      and the opposite is true for the ``else''-branch.
-
-      NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity.
-  *)
-  (* | E_IfBuiltin :
-      Builtin IfThenElse =[0]=> Builtin IfThenElse
-  | E_IfTyInst : forall t1 T j1,
-      t1 =[j1]=> Builtin IfThenElse ->
-      TyInst t1 T =[j1]=> TyInst (Builtin IfThenElse) T
-  | E_IfCondition : forall t1 t2 T j1,
-      t1 =[j1]=> TyInst (Builtin IfThenElse) T ->
-      Apply t1 t2 =[j1]=> Apply (TyInst (Builtin IfThenElse) T) t2
-  | E_IfThenBranch : forall t1 j1 T t2 t3,
-      t1 =[j1]=> Apply (TyInst (Builtin IfThenElse) T) t2 ->
-      Apply t1 t3 =[j1]=> Apply (Apply (TyInst (Builtin IfThenElse) T) t2) t3
-  | E_IfElseBranch : forall t1 j1 T t2 t3 t4 j0 v0,
-      t1 =[j1]=> Apply (Apply (TyInst (Builtin IfThenElse) T) t2) t3 ->
-      Apply (Apply (Apply (TyInst (Builtin IfThenElse) T) t2) t3) t4 =[j0]=> v0 ->
-      Apply t1 t4 =[j1 + j0]=> v0
-  | E_IfTrue : forall T t1 t2 t3 j1 j2 v2,
-      t1 =[j1]=> Constant (Some (ValueOf DefaultUniBool true)) ->
-      t2 =[j2]=> v2 ->
-      Apply (Apply (Apply (TyInst (Builtin IfThenElse) T) t1) t2) t3 =[j1 + 1 + j2]=> v2
-  | E_IfFalse : forall T t1 t2 t3 j1 j3 v3,
-      t1 =[j1]=> Constant (Some (ValueOf DefaultUniBool false)) ->
-      t3 =[j3]=> v3 ->
-      Apply (Apply (Apply (TyInst (Builtin IfThenElse) T) t1) t2) t3 =[j1 + 1 + j3]=> v3 *)
   (* Errors and their propagation *)
   | E_Error : forall T,
       Error T =[0]=> Error T
@@ -138,11 +109,22 @@ with eval_bindings_nonrec : Term -> Term -> nat -> Prop :=
   | E_Let_Nil : forall t0 v0 j0,
       t0 =[j0]=> v0 ->
       Let NonRec nil t0 =[ j0 + 1 ]=>nr v0
-  | E_Let_TermBind_NonStrict : forall x T t1 j1 v1 j2 v2 bs t0,
+  | E_Let_TermBind_Strict : forall x T t1 j1 v1 j2 v2 bs t0,
       t1 =[j1]=> v1 ->
       ~ is_error v1 ->
       <{ [v1 / x] ({Let NonRec bs t0}) }> =[j2]=>nr v2 ->
       Let NonRec ((TermBind Strict (VarDecl x T) t1) :: bs) t0 =[j1 + 1 + j2]=>nr v2
+  | E_Let_DatatypeBind : forall dtd X K tvds matchf cs bs t i v,
+
+      dtd = Datatype (TyVarDecl X K) tvds matchf cs ->
+
+      (substA X (dt_to_ty dtd)
+        (msubst (List.map constr_to_subst cs)
+          (subst matchf (match_to_term dtd)
+            (Let NonRec bs t)))) =[i]=> v ->
+      (*-----------------------------------------*)
+      Let NonRec (DatatypeBind dtd :: bs) t =[i + 1]=>nr v
+
   | E_Let_TypeBind : forall X K T bs t0 j1 v1,
       <{ [[T / X] ({Let NonRec bs t0}) }> =[j1]=> v1 ->
       Let NonRec ((TypeBind (TyVarDecl X K) T) :: bs) t0 =[j1 + 1]=>nr v1
@@ -150,6 +132,7 @@ with eval_bindings_nonrec : Term -> Term -> nat -> Prop :=
   | E_Error_Let_TermBind : forall x T t1 j1 T' bs t0,
       t1 =[j1]=> Error T' ->
       Let NonRec ((TermBind Strict (VarDecl x T) t1) :: bs) t0 =[j1 + 1]=>nr Error T'
+
 
 with eval_bindings_rec : list Binding -> Term -> Term -> nat -> Prop :=
   | E_LetRec_Nil : forall bs0 t0 v0 j0,
@@ -192,7 +175,8 @@ Create HintDb hintdb__eval_no_error.
   E_Let
   E_LetRec
   E_Let_Nil
-  E_Let_TermBind_NonStrict
+  E_Let_DatatypeBind
+  E_Let_TermBind_Strict
   E_Let_TypeBind
   E_LetRec_Nil
   E_LetRec_TermBind
