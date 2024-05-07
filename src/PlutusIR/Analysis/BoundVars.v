@@ -318,7 +318,7 @@ Function bound_vars (t : term') : list var :=
    end
 with bound_vars_binding (b : binding') : list var := match b with
   | TermBind _ (VarDecl v _) t => [v] ++ bound_vars t
-  | DatatypeBind (Datatype _ _ matchf constructors ) => [matchf] ++ map constructorName constructors
+  | DatatypeBind (Datatype _ _ matchf constructors ) => [matchf] ++ map vdecl_name constructors
   | _                          => []
   end.
 
@@ -351,7 +351,7 @@ with btv_binding (b : binding') : list tyvar := match b with
 
   | DatatypeBind (Datatype (TyVarDecl t k) tvs matchf constructors ) =>
       [t] ++ map TyVarDeclVar tvs
-          ++ concat (map (Ty.btv ∘ constructorType) constructors)
+          ++ concat (map (Ty.btv ∘ vdecl_ty) constructors)
 
   | TypeBind (TyVarDecl v k) ty => [v] ++ Ty.btv ty
   end.

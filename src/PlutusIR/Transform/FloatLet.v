@@ -81,7 +81,7 @@ Inductive Bindings_NonRec_Commute : Binding -> Binding -> Type :=
          (TermBind NonStrict (VarDecl y T) yt)
 
   | BC_DatatypeL: forall ty args matchf constructors strictness x xt T,
-       Forall (fun v => ~(In v (fv xt))) (matchf :: (map constructorName constructors)) ->
+       Forall (fun v => ~(In v (fv xt))) (matchf :: (map vdecl_name constructors)) ->
        Bindings_NonRec_Commute
          (DatatypeBind (Datatype ty args matchf constructors))
          (TermBind strictness (VarDecl x T) xt)

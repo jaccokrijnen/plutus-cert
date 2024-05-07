@@ -264,13 +264,13 @@ Arguments PassLetNonRec {_}%type_scope.
 Arguments CompilationTrace {name tyname binderName binderTyname}.
 
 
-Definition constructorName {tyname binderName binderTyname} : vdecl tyname binderName binderTyname -> binderName :=
+Definition vdecl_name {tyname binderName binderTyname} : vdecl tyname binderName binderTyname -> binderName :=
   fun c => match c with
   | VarDecl n _ => n
   end
   .
 
-Definition constructorType {tyname binderName binderTyname} :
+Definition vdecl_ty {tyname binderName binderTyname} :
   vdecl tyname binderName binderTyname -> ty tyname binderTyname :=
   fun c => match c with
   | VarDecl _ ty => ty
