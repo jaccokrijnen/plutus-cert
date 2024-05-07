@@ -54,7 +54,7 @@ Definition ty_ctx := list (string * tyvar_info).
 Definition Binding_to_ctx (b : Binding) : ctx :=
   match b with
     | TermBind _ (VarDecl v _) t => [(v, bound_TermBind t)]
-    | DatatypeBind (Datatype _ _ mfunc cs) => (mfunc, bound_match) :: map (fun '(Constructor (VarDecl x _) _) => (x, bound_Constructor)) cs
+    | DatatypeBind (Datatype _ _ mfunc cs) => (mfunc, bound_match) :: map (fun '(Constructor (VarDecl x _)) => (x, bound_Constructor)) cs
     | TypeBind _ _ => []
   end
 .

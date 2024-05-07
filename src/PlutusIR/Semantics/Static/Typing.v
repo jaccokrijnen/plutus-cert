@@ -165,10 +165,10 @@ Inductive has_type : list (string * Kind) -> list (string * Ty) -> Term -> Ty ->
  * datatype (the last index), and all parameter types are well-kinded
 *)
 with constructor_well_formed : list (string * Kind) -> constructor -> Ty -> Prop :=
-  | W_Con : forall Δ x T ar Targs Tr,
+  | W_Con : forall Δ x T Targs Tr,
       (Targs, Tr) = splitTy T ->
       (forall U, In U Targs -> Δ |-* U : Kind_Base) ->
-      Δ |-ok_c (Constructor (VarDecl x T) ar) : Tr
+      Δ |-ok_c (Constructor (VarDecl x T)) : Tr
 
 with bindings_well_formed_nonrec : list (string * Kind) -> list (string * Ty) -> list Binding -> Prop :=
   | W_NilB_NonRec : forall Δ Γ,

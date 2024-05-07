@@ -42,7 +42,7 @@ Inductive rename_tvs (Δ : ctx) (cs : list constructor) : list TVDecl -> list TV
   | rn_tvs_cons : forall α tvs k β tvs' Δ_tvs,
       (* check that the bound tyvar does not capture other renamed vars in the
          type signatures of the constructors *)
-      Forall (fun '(Constructor (VarDecl _ cty) _) => no_ty_capture β Δ cty) cs ->
+      Forall (fun '(Constructor (VarDecl _ cty)) => no_ty_capture β Δ cty) cs ->
       rename_tvs ((α, β) :: Δ) cs tvs tvs' Δ_tvs ->
       rename_tvs Δ cs (TyVarDecl α k :: tvs) (TyVarDecl β k :: tvs') ((α, β) :: Δ_tvs)
 .
@@ -217,12 +217,12 @@ with rename_constrs (Γ Δ : ctx) : list constructor -> list constructor -> ctx 
   | rn_constrs_nil :
       rename_constrs Γ Δ [] [] []
 
-  | rn_constrs_cons : forall x x' τ τ' n cs cs' Γ_cs,
+  | rn_constrs_cons : forall x x' τ τ' cs cs' Γ_cs,
       rename_ty Δ τ τ' ->
       rename_constrs Γ Δ cs cs' Γ_cs ->
       rename_constrs Γ Δ
-        (Constructor (VarDecl x τ) n :: cs)
-        (Constructor (VarDecl x' τ') n :: cs')
+        (Constructor (VarDecl x τ) :: cs)
+        (Constructor (VarDecl x' τ') :: cs')
         ((x, x') :: Γ_cs)
   .
 

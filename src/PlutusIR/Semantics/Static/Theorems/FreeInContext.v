@@ -204,7 +204,7 @@ Module Annotation.
       inversion Hafi. subst.
       rewrite <- H3 in H.
       inversion H. subst.
-      destruct H5 as [U [HIn__U Hafi__U]].
+      destruct H4 as [U [HIn__U Hafi__U]].
       eapply Ty.free_in_context...
     - (* W_ConsB_NonRec *)
       inversion Hafi.

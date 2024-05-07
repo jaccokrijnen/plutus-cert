@@ -88,7 +88,7 @@ End Ty.
 Fixpoint bv_constructors (cs : list constructor) : list string :=
   match cs with
   | [] => []
-  | Constructor (VarDecl x _) _ :: cs' => x :: bv_constructors cs'
+  | Constructor (VarDecl x _) :: cs' => x :: bv_constructors cs'
   end.
 
 Inductive appears_bound_in_tm (x : string) : Term -> Prop :=
@@ -256,7 +256,7 @@ Definition constructor' := constr tyvar var tyvar.
 
 Definition bvc (c : constructor') : var :=
   match c with
-  | Constructor (VarDecl x _) _ => x
+  | Constructor (VarDecl x _) => x
   end.
 
 Definition bvb (b : binding') : list var :=
@@ -326,7 +326,7 @@ Definition bound_vars_bindings := @concat _ ∘ map bound_vars_binding.
 
 Definition btvc (c : constructor') : list tyvar :=
   match c with
-    | Constructor (VarDecl v ty) _ => Ty.btv ty
+    | Constructor (VarDecl v ty) => Ty.btv ty
   end.
 
 Fixpoint btv (t : term') : list tyvar :=

@@ -56,7 +56,7 @@ Definition Ty_Lams (xs : list TVDecl) (t : Ty) : Ty :=
  *)
 Definition branchTy (c : constructor) (R : Ty) : Ty :=
   match c with
-  | Constructor (VarDecl x T) _ =>
+  | Constructor (VarDecl x T) =>
     let
       fix branchTy' S :=
         match S with
@@ -92,7 +92,7 @@ Definition constrLastTyExpected (d : DTDecl) : Ty :=
  *)
 Definition constrTy (d : DTDecl) (c : constructor) : Ty :=
   match d, c with
-  | Datatype _ YKs _ _, Constructor (VarDecl _ T) _ =>
+  | Datatype _ YKs _ _, Constructor (VarDecl _ T) =>
       Ty_Foralls YKs T
   end.
 
@@ -106,7 +106,7 @@ Definition matchTy (d : DTDecl) : Ty :=
 (** Binder functions *)
 Definition constrBind (d : DTDecl) (c : constructor) : string * Ty :=
   match c with
-  | Constructor (VarDecl x _) _ =>
+  | Constructor (VarDecl x _) =>
       (x, constrTy d c)
   end.
 

@@ -43,8 +43,8 @@ Section SubstAConstructors.
 
   Definition substA_c (X : string) (U : Ty) (c : constructor) : constructor :=
     match c with
-    | Constructor (VarDecl bx T) ar =>
-        Constructor (VarDecl bx (substituteT X U T)) ar
+    | Constructor (VarDecl bx T) =>
+        Constructor (VarDecl bx (substituteT X U T))
     end.
 
   Definition substA_cs (X : string) (U : Ty) (cs : list constructor) : list constructor :=

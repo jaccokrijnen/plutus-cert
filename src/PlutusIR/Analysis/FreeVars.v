@@ -142,7 +142,7 @@ Module Term.
 
   Definition ftvc (c : constructor) : list string :=
     match c with
-      | Constructor (VarDecl _ τ) _ => Ty.ftv τ
+      | Constructor (VarDecl _ τ) => Ty.ftv τ
     end.
 
   Function ftv (t : Term) : list string :=

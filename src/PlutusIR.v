@@ -139,9 +139,14 @@ Inductive ty :=
 Inductive vdecl := VarDecl : binderName -> ty -> vdecl.
 Inductive tvdecl := TyVarDecl : binderTyname -> kind -> tvdecl.
 
-(* This is a bit in-between hack of having types in the AST and completely ignoring them*)
-(* Constructor name and arity, needed for Scott encoding *)
-Inductive constr := Constructor : vdecl -> nat -> constr.
+
+(* TODO: get rid of constr type, is here because we used to track some other
+ * data (arity), but it is inconsistent with the Plutus internal representation,
+ * which just has a (list vdecl) in the dtdecl. Also, since Constr is now a term
+ * in the language, the name of this extra type is confusing.
+*)
+
+Inductive constr := Constructor : vdecl -> constr.
 Inductive dtdecl := Datatype : tvdecl -> list tvdecl -> binderName -> list constr -> dtdecl.
 
 (** Terms and bindings *)
@@ -262,14 +267,14 @@ Arguments CompilationTrace {name tyname binderName binderTyname}.
 
 Definition constructorName {tyname binderName binderTyname} : constr tyname binderName binderTyname -> binderName :=
   fun c => match c with
-  | Constructor (VarDecl n _) _ => n
+  | Constructor (VarDecl n _) => n
   end
   .
 
 Definition constructorType {tyname binderName binderTyname} :
   constr tyname binderName binderTyname -> ty tyname binderTyname :=
   fun c => match c with
-  | Constructor (VarDecl _ ty) _ => ty
+  | Constructor (VarDecl _ ty) => ty
   end
   .
 

@@ -439,7 +439,7 @@ issue later on*)
 
 
 Definition constructor_eqb : Eqb constructor := fun x y => match x, y with
-  | Constructor c n, Constructor c' n' => VDecl_eqb c c' && Nat.eqb n n'
+  | Constructor c,  Constructor c' => VDecl_eqb c c'
   end.
 
 Definition constructor_eqb_eq : forall c c', constructor_eqb c c' = true <-> c = c'.
