@@ -6,6 +6,7 @@ From PlutusCert Require Import PlutusIR.Analysis.FreeVars.
 From PlutusCert Require Import PlutusIR.Analysis.BoundVars.
 From PlutusCert Require Import PlutusIR.
 From PlutusCert Require Import PlutusIR.Transform.Inline.Intermediate.
+From PlutusCert Require Import Util.
 
 Import NamedTerm.
 
@@ -14,6 +15,12 @@ Import NamedTerm.
    we use this backwards compatible wrapper
 *)
 Definition Constructor vd (arity : nat) : VDecl := vd.
+
+Definition Unique (n : nat) := n.
+
+Definition Name (s : string) (n : nat) := string_of_nat n.
+
+Definition TyName (s : string) := s.
 
 Local Open Scope string_scope.
 (* Taken from dumps of plutus compiler *)

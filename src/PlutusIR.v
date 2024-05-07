@@ -294,27 +294,6 @@ Definition tvdecl_name (tvd : tvdecl) : binderTyname :=
 Module NamedTerm.
 
 
-
-Definition Unique (n : nat) := n.
-(*
-Inductive unique := Unique : nat -> unique.
-  Definition unique_dec : forall u u' : unique, {u = u'} + {u <> u'}.
-  Proof. decide equality. apply Nat.eq_dec. Defined.
-*)
-
-Definition Name (s : string) (n : nat) := string_of_nat n.
-(*
-Inductive name := Name : string -> unique -> name.
-
-Definition name_dec : forall n1 n2 : name, {n1 = n2} + {n1 <> n2}.
-Proof. decide equality. apply unique_dec. apply string_dec. Defined.
-*)
-
-Definition TyName (s : string) := s.
-(*
-Inductive tyname := TyName : name -> tyname.
-*)
-
 Notation Kind := kind.
 Notation Ty := ty.
 Notation VDecl := vdecl.

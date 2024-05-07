@@ -21,7 +21,7 @@ Import ListNotations.
 
 (* See note [Generating names] *)
 Definition mkName : nat -> string :=
-  fun n => (Name "" n)
+  string_of_nat
 .
 
 (* See constr_to_term *)

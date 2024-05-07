@@ -3,7 +3,9 @@ From Coq Require Import
   Lists.List
   ZArith.BinInt.
 From PlutusCert Require Import
-  PlutusIR.
+  PlutusIR
+  Util
+.
 
 Import NamedTerm.
 
@@ -15,6 +17,9 @@ Local Open Scope string_scope.
    we use this backwards compatible wrapper
 *)
 Definition Constructor vd (arity : nat) : VDecl := vd.
+Definition Name (s : string) (n : nat) := string_of_nat n.
+Definition Unique (n : nat) := n.
+Definition TyName (s : string) := s.
 
 (* Dumped trace *)
 Definition trace :=
