@@ -114,13 +114,14 @@ with eval_bindings_nonrec : Term -> Term -> nat -> Prop :=
       ~ is_error v1 ->
       <{ [v1 / x] ({Let NonRec bs t0}) }> =[j2]=>nr v2 ->
       Let NonRec ((TermBind Strict (VarDecl x T) t1) :: bs) t0 =[j1 + 1 + j2]=>nr v2
-  | E_Let_DatatypeBind : forall dtd X K tvds matchf cs bs t i v,
+  | E_Let_DatatypeBind : forall dtd X K tvds matchf X_ty matchf_term cs_subst cs bs t i v,
 
       dtd = Datatype (TyVarDecl X K) tvds matchf cs ->
+      (X_ty, matchf_term, cs_subst) = dt_subst dtd ->
 
       (substA X (dt_to_ty dtd)
-        (msubst (List.map constr_to_subst cs)
-          (subst matchf (match_to_term dtd)
+        (msubst cs_subst
+          (subst matchf matchf_term
             (Let NonRec bs t)))) =[i]=> v ->
       (*-----------------------------------------*)
       Let NonRec (DatatypeBind dtd :: bs) t =[i + 1]=>nr v

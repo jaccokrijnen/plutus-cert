@@ -262,6 +262,13 @@ Arguments zip {A B}%type_scope (_ _)%list_scope.
 Definition unzip := split.
 Arguments unzip {A B}%type_scope (_)%list_scope.
 
+Function zip_from {A} (n : nat) (xs : list A) : list (nat * A) :=
+  match xs with
+    | [] => []
+    | x :: xs => (n, x) :: zip_from (S n) xs
+  end
+.
+
 
 Definition zip_with {A B C} (f : A -> B -> C) :=
   fix zipw (xs : list A) (ys : list B) : list C :=
