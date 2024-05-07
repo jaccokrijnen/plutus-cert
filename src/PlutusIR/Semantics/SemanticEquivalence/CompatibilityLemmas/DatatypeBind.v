@@ -51,7 +51,7 @@ Qed.
 
 Lemma compatibility_DatatypeBind : forall Delta Gamma X YKs cs matchFunc Delta' b b' bs bs' t t' Tn,
     Delta' = rev (map fromDecl YKs) ++ Delta  ->
-    (forall c, In c cs -> Delta' |-ok_c c : (constrLastTy (Datatype X YKs matchFunc cs))) ->
+    (forall c, In c cs -> Delta' |-ok_c c : (constrLastTyExpected (Datatype X YKs matchFunc cs))) ->
     forall Delta_ih Gamma_ih bsGn,
       b = DatatypeBind (Datatype X YKs matchFunc cs) ->
       b' = DatatypeBind (Datatype X YKs matchFunc cs) ->

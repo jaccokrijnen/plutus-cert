@@ -1,4 +1,5 @@
 Require Import PlutusCert.PlutusIR.
+From PlutusCert Require Import Util.
 Import NamedTerm.
 
 Require Import Coq.Lists.List.
@@ -29,6 +30,30 @@ Definition getKind (tvd : TVDecl) :=
   end.
 
 (** Auxiliary functions *)
+
+(*  Applies a type to multiple arguments 
+      Ty_Apps f [x_1; ... ; x_n] = ((f x_1) ... ) x_n
+*)
+Definition Ty_Apps (f : Ty) (xs : list Ty) : Ty :=
+  fold_left (@Ty_App string string) xs f
+.
+
+(* Polymorphic type over multiple type parameters
+     Ty_Foralls [x_1; ... ; x_n] t = ∀ x_1 ... ∀ x_n . t
+*)
+Definition Ty_Foralls (xs : list TVDecl) (t : Ty) : Ty :=
+  fold_right (fun YK t' => Ty_Forall (getTyname YK) (getKind YK) t') t xs
+.
+
+(* Type lambda over multiple parameters
+ *)
+Definition Ty_Lams (xs : list TVDecl) (t : Ty) : Ty :=
+  fold_right (fun YK t' => Ty_Lam (getTyname YK) (getKind YK) t') t xs
+.
+
+(* Type of a branch in a match. The result type of the constructor is replaced
+ * by some result type.
+ *)
 Definition branchTy (c : constructor) (R : Ty) : Ty :=
   match c with
   | Constructor (VarDecl x T) _ =>
@@ -45,54 +70,56 @@ Definition branchTy (c : constructor) (R : Ty) : Ty :=
 Definition dataTy (d : DTDecl) : Ty :=
   match d with
   | Datatype X YKs matchFunc cs =>
-    let branchTypes : list Ty := map (fun c => branchTy c (Ty_Var "R")) cs in
-    let branchTypesFolded := fold_right (@Ty_Fun string string) (Ty_Var "R") branchTypes in
-    let indexKinds := map (fun YK => Ty_Lam (getTyname YK) (getKind YK)) YKs in
-    fold_right apply (Ty_Forall "R" Kind_Base branchTypesFolded) indexKinds
+      let branchTypes : list Ty := map (fun c => branchTy c (Ty_Var "R")) cs in
+      let branchTypesFolded := fold_right Ty_Fun (Ty_Var "R") branchTypes in
+      Ty_Lams YKs (Ty_Forall "R" Kind_Base branchTypesFolded)
   end.
 
-Definition constrLastTy (d : DTDecl) : Ty :=
+
+(* The expected return type of a constructor, i.e. the Datatype applied to all
+ * its type parameters. For example: Either a b
+ *)
+Definition constrLastTyExpected (d : DTDecl) : Ty :=
   match d with
   | Datatype X YKs matchFunc cs =>
-      let indexTyVars := map (compose (@Ty_Var string string) getTyname) YKs in
-      let indexTyVarsAppliedToX := fold_left (@Ty_App string string) indexTyVars (Ty_Var (getTyname X)) in
-      indexTyVarsAppliedToX
+      let tyParamVars := map (Ty_Var ∘ getTyname) YKs in
+      Ty_Apps (Ty_Var (getTyname X)) tyParamVars
   end.
 
+
+(* The type of a constructor is not just its annotation,
+ * it requires Ty_Forall for all of the datatype's type parameters
+ *)
 Definition constrTy (d : DTDecl) (c : constructor) : Ty :=
   match d, c with
-  | Datatype X YKs matchFunc cs, Constructor (VarDecl x T) _ =>
-    let indexTyVars := map (compose (@Ty_Var string string) getTyname) YKs in
-    let branchType := branchTy c (constrLastTy d) in
-    let indexForalls := map (fun YK => Ty_Forall (getTyname YK) (getKind YK)) YKs in
-    fold_right apply branchType indexForalls
+  | Datatype _ YKs _ _, Constructor (VarDecl _ T) _ =>
+      Ty_Foralls YKs T
   end.
 
 Definition matchTy (d : DTDecl) : Ty :=
   match d with
   | Datatype X YKs matchFunc cs =>
-    let indexTyVars := map (compose (@Ty_Var string string) getTyname) YKs in
-    let indexForalls := map (fun YK => Ty_Forall (getTyname YK) (getKind YK)) YKs in
-    fold_right apply (Ty_Fun (constrLastTy d) (fold_left (@Ty_App string string) indexTyVars (dataTy d))) indexForalls
+      let tyParamVars := map (Ty_Var ∘ getTyname) YKs in
+      Ty_Foralls YKs (Ty_Fun (constrLastTyExpected d) (Ty_Apps (dataTy d) tyParamVars))
   end.
 
 (** Binder functions *)
 Definition constrBind (d : DTDecl) (c : constructor) : string * Ty :=
-  match d, c with
-  | Datatype X YKs matchFunc cs, Constructor (VarDecl x T) _ =>
-    (x, constrTy d c)
+  match c with
+  | Constructor (VarDecl x _) _ =>
+      (x, constrTy d c)
   end.
 
 Definition constrBinds (d : DTDecl) : list (string * Ty) :=
   match d with
   | Datatype X YKs matchFunc cs =>
-    rev (map (constrBind d) cs)
+      rev (map (constrBind d) cs)
   end.
 
 Definition matchBind (d : DTDecl) : string * Ty :=
   match d with
   | Datatype X YKs matchFunc cs =>
-    (matchFunc, matchTy d)
+      (matchFunc, matchTy d)
   end.
 
 Definition binds_Delta (b : Binding) : list (string * Kind) :=

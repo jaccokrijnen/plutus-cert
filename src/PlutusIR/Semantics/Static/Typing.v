@@ -161,6 +161,9 @@ Inductive has_type : list (string * Kind) -> list (string * Ty) -> Term -> Ty ->
       Δ |-* Tn : Kind_Base ->
       Δ ,, Γ |-+ (Let Rec bs t) : Tn
 
+(* Constructors are well-formed if their result type equals the fully applied
+ * datatype (the last index), and all parameter types are well-kinded
+*)
 with constructor_well_formed : list (string * Kind) -> constructor -> Ty -> Prop :=
   | W_Con : forall Δ x T ar Targs Tr,
       (Targs, Tr) = splitTy T ->
@@ -195,7 +198,7 @@ with binding_well_formed : list (string * Kind) -> list (string * Ty) -> Binding
       Δ ,, Γ |-ok_b (TypeBind (TyVarDecl X K) T)
   | W_Data : forall Δ Γ X YKs cs matchFunc Δ',
       Δ' = rev (map fromDecl YKs) ++ Δ ->
-      (forall c, In c cs -> Δ' |-ok_c c : (constrLastTy (Datatype X YKs matchFunc cs))) ->
+      (forall c, In c cs -> Δ' |-ok_c c : (constrLastTyExpected (Datatype X YKs matchFunc cs))) ->
       Δ ,, Γ |-ok_b (DatatypeBind (Datatype X YKs matchFunc cs))
 
   where "Δ ',,' Γ '|-+' t ':' T" := (has_type Δ Γ t T)

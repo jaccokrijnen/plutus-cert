@@ -32,6 +32,8 @@ Fixpoint constr_to_term_mono (ix : nat) (τ : Ty) (n : nat) :=
   end
 .
 
+
+
 (* Given a constructor with tag ix, type parameters α_0 .. α_n and type
  *
  *    σ_0 -> ... -> σ_n -> τ
@@ -47,12 +49,21 @@ Fixpoint constr_to_term (ix : nat) (tyvars : list TVDecl) (τ : Ty) :=
   end
 .
 
+
+(*
+ * TODO compare with what the compiler does: 
+    see https://github.com/IntersectMBO/plutus/blob/16be7da33eacb1991ae0164b9fd65e12c7e4771e/plutus-core/plutus-ir/src/PlutusIR/Compiler/Datatype.hs#L414
+*)
+
+Axiom constr_to_subst : list TVDecl -> nat -> constructor -> string * Term.
+(*
 Definition constr_to_subst (tyvars : list TVDecl) (ix : nat) (c : constructor)
   : string * Term :=
   match c with
     Constructor (VarDecl x τ) _arity => (x, constr_to_term ix tyvars τ)
   end
 .
+  *)
 
 Definition constrs_to_subst (tyvars : list TVDecl) (cs : list constructor)
   : list (string * Term) :=
@@ -60,6 +71,10 @@ Definition constrs_to_subst (tyvars : list TVDecl) (cs : list constructor)
 .
 
 Axiom dt_to_ty : DTDecl -> Ty.
+
+(* TODO compare with compiler implementation:
+ * https://github.com/IntersectMBO/plutus/blob/16be7da33eacb1991ae0164b9fd65e12c7e4771e/plutus-core/plutus-ir/src/PlutusIR/Compiler/Datatype.hs#L486
+ *)
 Axiom match_to_term : DTDecl -> Term.
 
 Definition dt_subst (dtd : DTDecl) : Ty * Term * list (string * Term) :=
