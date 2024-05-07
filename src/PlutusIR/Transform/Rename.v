@@ -13,7 +13,7 @@ From PlutusCert Require
   PlutusIR
   .
 
-Import PlutusIR (term(..), tvdecl(..), vdecl(..), ty(..), dtdecl(..), binding(..), constr(..), Recursivity(..)).
+Import PlutusIR (term(..), tvdecl(..), vdecl(..), ty(..), dtdecl(..), binding(..), Recursivity(..)).
 Import PlutusIR.NamedTerm.
 Import ListNotations.
 Import AFI.
@@ -34,7 +34,7 @@ Definition no_ty_capture α (Δ : ctx) τ :=
   forall β, In (β, α) Δ -> ~ AFI.Ty.appears_free_in β τ.
 
 
-Inductive rename_tvs (Δ : ctx) (cs : list constructor) : list TVDecl -> list TVDecl -> ctx -> Type :=
+Inductive rename_tvs (Δ : ctx) (cs : list VDecl) : list TVDecl -> list TVDecl -> ctx -> Type :=
 
   | rn_tvs_nil :
       rename_tvs Δ cs [] [] []
@@ -42,7 +42,7 @@ Inductive rename_tvs (Δ : ctx) (cs : list constructor) : list TVDecl -> list TV
   | rn_tvs_cons : forall α tvs k β tvs' Δ_tvs,
       (* check that the bound tyvar does not capture other renamed vars in the
          type signatures of the constructors *)
-      Forall (fun '(Constructor (VarDecl _ cty)) => no_ty_capture β Δ cty) cs ->
+      Forall (fun '(VarDecl _ cty) => no_ty_capture β Δ cty) cs ->
       rename_tvs ((α, β) :: Δ) cs tvs tvs' Δ_tvs ->
       rename_tvs Δ cs (TyVarDecl α k :: tvs) (TyVarDecl β k :: tvs') ((α, β) :: Δ_tvs)
 .
@@ -212,7 +212,7 @@ with rename_Bindings_Rec (Γ Δ : ctx) : ctx -> ctx -> list Binding -> list Bind
   rename_constrs is also indexed over context Γ_cs, which are
   the renamings of the constructors
 *)
-with rename_constrs (Γ Δ : ctx) : list constructor -> list constructor -> ctx -> Type :=
+with rename_constrs (Γ Δ : ctx) : list VDecl -> list VDecl -> ctx -> Type :=
 
   | rn_constrs_nil :
       rename_constrs Γ Δ [] [] []
@@ -221,8 +221,8 @@ with rename_constrs (Γ Δ : ctx) : list constructor -> list constructor -> ctx 
       rename_ty Δ τ τ' ->
       rename_constrs Γ Δ cs cs' Γ_cs ->
       rename_constrs Γ Δ
-        (Constructor (VarDecl x τ) :: cs)
-        (Constructor (VarDecl x' τ') :: cs')
+        (VarDecl x τ :: cs)
+        (VarDecl x' τ' :: cs')
         ((x, x') :: Γ_cs)
   .
 

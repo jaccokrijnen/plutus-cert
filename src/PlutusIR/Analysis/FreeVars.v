@@ -140,9 +140,9 @@ Module Term.
   Qed.
   *)
 
-  Definition ftvc (c : constructor) : list string :=
+  Definition ftvc (c : VDecl) : list string :=
     match c with
-      | Constructor (VarDecl _ τ) => Ty.ftv τ
+      | VarDecl _ τ => Ty.ftv τ
     end.
 
   Function ftv (t : Term) : list string :=

@@ -146,8 +146,7 @@ Inductive tvdecl := TyVarDecl : binderTyname -> kind -> tvdecl.
  * in the language, the name of this extra type is confusing.
 *)
 
-Inductive constr := Constructor : vdecl -> constr.
-Inductive dtdecl := Datatype : tvdecl -> list tvdecl -> binderName -> list constr -> dtdecl.
+Inductive dtdecl := Datatype : tvdecl -> list tvdecl -> binderName -> list vdecl -> dtdecl.
 
 (** Terms and bindings *)
 Inductive term :=
@@ -265,16 +264,16 @@ Arguments PassLetNonRec {_}%type_scope.
 Arguments CompilationTrace {name tyname binderName binderTyname}.
 
 
-Definition constructorName {tyname binderName binderTyname} : constr tyname binderName binderTyname -> binderName :=
+Definition constructorName {tyname binderName binderTyname} : vdecl tyname binderName binderTyname -> binderName :=
   fun c => match c with
-  | Constructor (VarDecl n _) => n
+  | VarDecl n _ => n
   end
   .
 
 Definition constructorType {tyname binderName binderTyname} :
-  constr tyname binderName binderTyname -> ty tyname binderTyname :=
+  vdecl tyname binderName binderTyname -> ty tyname binderTyname :=
   fun c => match c with
-  | Constructor (VarDecl _ ty) => ty
+  | VarDecl _ ty => ty
   end
   .
 
@@ -318,7 +317,6 @@ Notation Ty := (ty string string).
 Notation VDecl := (vdecl string string string).
 Notation TVDecl := (tvdecl string).
 Notation DTDecl := (dtdecl string string string).
-Notation constructor := (constr string string string).
 Notation Term := (term string string string string).
 Notation Binding := (binding string string string string).
 
@@ -339,7 +337,6 @@ Notation Ty := (ty nat unit).
 Notation VDecl := (vdecl nat unit unit).
 Notation TVDecl := (tvdecl unit).
 Notation DTDecl := (dtdecl nat unit unit).
-Notation constructor := (constr nat unit unit).
 Notation Term := (term nat nat unit unit).
 Notation Binding := (binding nat nat unit unit).
 
@@ -403,7 +400,6 @@ Notation Ty := (ty tyname binderTyname).
 Notation VDecl := (vdecl name tyname binderName).
 Notation TVDecl := (tvdecl binderTyname).
 Notation DTDecl := (dtdecl name tyname binderTyname).
-Notation constructor := (constr tyname binderName binderTyname).
 Notation Term := (term name tyname binderName binderTyname).
 Notation Binding := (binding name tyname binderName binderTyname).
 

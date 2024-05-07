@@ -85,10 +85,10 @@ End Ty.
 
 
 (* Monomorphic alternative for `map bvc`, for dec procedure generation *)
-Fixpoint bv_constructors (cs : list constructor) : list string :=
+Fixpoint bv_constructors (cs : list VDecl) : list string :=
   match cs with
   | [] => []
-  | Constructor (VarDecl x _) :: cs' => x :: bv_constructors cs'
+  | VarDecl x _ :: cs' => x :: bv_constructors cs'
   end.
 
 Inductive appears_bound_in_tm (x : string) : Term -> Prop :=
@@ -250,13 +250,13 @@ Section BoundVars.
 
 Definition term' := term var tyvar var tyvar.
 Definition binding' := binding var tyvar var tyvar.
-Definition constructor' := constr tyvar var tyvar.
+Definition vdecl' := vdecl tyvar var tyvar.
 
 (** Retrieve bound term variable bindings *)
 
-Definition bvc (c : constructor') : var :=
+Definition bvc (c : vdecl') : var :=
   match c with
-  | Constructor (VarDecl x _) => x
+  | VarDecl x _ => x
   end.
 
 Definition bvb (b : binding') : list var :=
@@ -324,9 +324,9 @@ with bound_vars_binding (b : binding') : list var := match b with
 
 Definition bound_vars_bindings := @concat _ ∘ map bound_vars_binding.
 
-Definition btvc (c : constructor') : list tyvar :=
+Definition btvc (c : vdecl') : list tyvar :=
   match c with
-    | Constructor (VarDecl v ty) => Ty.btv ty
+    | VarDecl v ty => Ty.btv ty
   end.
 
 Fixpoint btv (t : term') : list tyvar :=
@@ -457,7 +457,6 @@ Proof with eauto using appears_bound_in_tm.
       apply in_cons.
       induction l0...
       destruct a.
-      destruct v.
       induction H; subst; simpl...
 Admitted.
 

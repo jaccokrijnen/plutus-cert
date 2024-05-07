@@ -15,7 +15,7 @@ Lemma In_bvc_constrBind : forall cs x d,
 Proof with eauto.
   induction cs. all: intros.
   - simpl in H. simpl...
-  - destruct a as [[y T] ar].
+  - destruct a as [y T].
     destruct d.
     simpl in H.
     destruct H.
@@ -28,7 +28,7 @@ Lemma notIn_bvc_constrBind : forall cs x d,
 Proof with eauto.
   induction cs. all: intros.
   - simpl in H. simpl...
-  - destruct a as [[y T] ar].
+  - destruct a as [y T].
     destruct d.
     simpl in H.
     intros Hcon.

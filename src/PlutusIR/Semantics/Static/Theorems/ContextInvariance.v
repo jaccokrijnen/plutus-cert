@@ -61,7 +61,7 @@ Module Typing.
       (forall x, Term.appears_free_in x t -> lookup x Gamma = lookup x Gamma') ->
       Delta ,, Gamma' |-+ t : T.
 
-  Definition P_constructor_well_formed (Delta : list (string * Kind)) (c : constructor) (T : Ty) :=
+  Definition P_constructor_well_formed (Delta : list (string * Kind)) (c : VDecl) (T : Ty) :=
     Delta |-ok_c c : T.
 
   Definition P_bindings_well_formed_nonrec (Delta : list (string * Kind)) (Gamma : list (string * Ty)) (bs : list Binding) :=

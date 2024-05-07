@@ -402,7 +402,7 @@ Proof.
       econstructor.
       reflexivity.
       intros c H_c_in.
-      destruct c as [[x T] ar] eqn:H_c.
+      destruct c as [x T] eqn:H_c.
       constructor.
       apply (weaken_well_scoped_Ty (ftv_well_scoped_Ty _)).
       unfold ftvc. simpl.
@@ -433,7 +433,7 @@ Proof.
       reflexivity.
 
       intros c H_c_in.
-      destruct c as [[x T] ar] eqn:H_c.
+      destruct c as [x T] eqn:H_c.
       constructor.
 
       apply (weaken_well_scoped_Ty (ftv_well_scoped_Ty _)).

@@ -161,11 +161,11 @@ Module Annotation.
         appears_free_in X t0 ->
         appears_free_in X (Unwrap t0)
 
-  with appears_free_in__constructor (X : string) : constructor -> Prop :=
+  with appears_free_in__constructor (X : string) : VDecl -> Prop :=
     | AFIA_Constructor : forall x T Targs Tr,
         (Targs, Tr) = splitTy T ->
         (exists U, In U Targs /\ Ty.appears_free_in X U) ->
-        appears_free_in__constructor X (Constructor (VarDecl x T))
+        appears_free_in__constructor X (VarDecl x T)
 
   with appears_free_in__bindings_nonrec (X : string) : list Binding -> Prop :=
     | AFIA_ConsB1_NonRec : forall b bs,

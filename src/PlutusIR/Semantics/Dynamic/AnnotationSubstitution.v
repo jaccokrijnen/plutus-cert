@@ -41,13 +41,13 @@ End SubstABindings.
 
 Section SubstAConstructors.
 
-  Definition substA_c (X : string) (U : Ty) (c : constructor) : constructor :=
+  Definition substA_c (X : string) (U : Ty) (c : VDecl) : VDecl :=
     match c with
-    | Constructor (VarDecl bx T) =>
-        Constructor (VarDecl bx (substituteT X U T))
+    | VarDecl bx T =>
+        VarDecl bx (substituteT X U T)
     end.
 
-  Definition substA_cs (X : string) (U : Ty) (cs : list constructor) : list constructor :=
+  Definition substA_cs (X : string) (U : Ty) (cs : list VDecl) : list VDecl :=
     map (substA_c X U) cs.
 
 End SubstAConstructors.
@@ -141,7 +141,7 @@ Fixpoint msubstA_br (ss : list (string * Ty)) (bs : list Binding) : list Binding
   | (X, U) :: ss' => msubstA_br ss' <{ [[U / X][br] bs }>
   end.
 
-Fixpoint msubstA_cs (ss : list (string * Ty)) (cs : list constructor) : list constructor :=
+Fixpoint msubstA_cs (ss : list (string * Ty)) (cs : list VDecl) : list VDecl :=
   match ss with
   | nil => cs
   | (X, U) :: ss' => msubstA_cs ss' <{ [[U / X][cs] cs}>

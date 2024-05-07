@@ -51,10 +51,10 @@ Reserved Notation "Δ ',,' Γ  '|-ws_oks_nr' bs" (at level 101, bs at level 0, n
 Reserved Notation "Δ ',,' Γ '|-ws_oks_r' bs" (at level 101, bs at level 0, no associativity).
 Reserved Notation "Δ ',,' Γ '|-ws_ok_b' b" (at level 101, b at level 0, no associativity).
 
-Inductive constructor_well_formed (Δ : ctx) : constructor -> Prop :=
+Inductive constructor_well_formed (Δ : ctx) : VDecl -> Prop :=
   | W_Con : forall x T,
       Δ |-* T ->
-      Δ |-ws_ok_c (Constructor (VarDecl x T))
+      Δ |-ws_ok_c (VarDecl x T)
   where
     "Δ '|-ws_ok_c' c" := (constructor_well_formed Δ c)
 .

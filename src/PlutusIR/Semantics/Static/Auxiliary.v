@@ -54,9 +54,9 @@ Definition Ty_Lams (xs : list TVDecl) (t : Ty) : Ty :=
 (* Type of a branch in a match. The result type of the constructor is replaced
  * by some result type.
  *)
-Definition branchTy (c : constructor) (R : Ty) : Ty :=
+Definition branchTy (c : VDecl) (R : Ty) : Ty :=
   match c with
-  | Constructor (VarDecl x T) =>
+  | VarDecl x T =>
     let
       fix branchTy' S :=
         match S with
@@ -90,9 +90,9 @@ Definition constrLastTyExpected (d : DTDecl) : Ty :=
 (* The type of a constructor is not just its annotation,
  * it requires Ty_Forall for all of the datatype's type parameters
  *)
-Definition constrTy (d : DTDecl) (c : constructor) : Ty :=
+Definition constrTy (d : DTDecl) (c : VDecl) : Ty :=
   match d, c with
-  | Datatype _ YKs _ _, Constructor (VarDecl _ T) =>
+  | Datatype _ YKs _ _, VarDecl _ T =>
       Ty_Foralls YKs T
   end.
 
@@ -104,9 +104,9 @@ Definition matchTy (d : DTDecl) : Ty :=
   end.
 
 (** Binder functions *)
-Definition constrBind (d : DTDecl) (c : constructor) : string * Ty :=
+Definition constrBind (d : DTDecl) (c : VDecl) : string * Ty :=
   match c with
-  | Constructor (VarDecl x _) =>
+  | VarDecl x _ =>
       (x, constrTy d c)
   end.
 

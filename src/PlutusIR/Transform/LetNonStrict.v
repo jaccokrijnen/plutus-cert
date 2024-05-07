@@ -6,7 +6,7 @@ From PlutusCert Require
 .
 
 Import PlutusIR (term(..), tvdecl(..), vdecl(..), ty(..),
-  dtdecl(..), binding(..), constr(..), Recursivity(..), DefaultUni(..),
+  dtdecl(..), binding(..), Recursivity(..), DefaultUni(..),
   kind(..), Strictness(..)).
 
 From PlutusCert Require Import

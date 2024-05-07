@@ -9,9 +9,11 @@ From PlutusCert Require Import PlutusIR.Transform.Inline.Intermediate.
 
 Import NamedTerm.
 
-(* Backwards compatibility: we used to dump the arity of constructors,
-   so the examples below have that argument. We just ignore it *)
-Definition Constructor vd (arity : nat) : constructor := PlutusIR.Constructor vd.
+(* Backwards compatibility: we used to dump the arity of constructors and have a
+   separate type for constructor definitions. To not regenerate the below dumps,
+   we use this backwards compatible wrapper
+*)
+Definition Constructor vd (arity : nat) : VDecl := vd.
 
 Local Open Scope string_scope.
 (* Taken from dumps of plutus compiler *)

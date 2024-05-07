@@ -95,9 +95,6 @@ Definition VDecl_dec: EqDec VDecl. Proof. solveEq. Defined.
 Definition TVDecl_dec : EqDec TVDecl. Proof. solveEq. Defined.
   #[export] Hint Resolve TVDecl_dec : Eqs.
 
-Definition constructor_dec : EqDec constructor. Proof. solveEq. Defined.
-  #[export] Hint Resolve constructor_dec : Eqs.
-
 Definition DTDecl_dec: EqDec DTDecl. Proof. solveEq. Defined.
   #[export] Hint Resolve DTDecl_dec : Eqs.
 
@@ -436,17 +433,6 @@ Proof. eqb_eq_tac. Defined.
 (* reminder: String.eqb_eq is opaque, perhaps this will be an
 issue later on*)
 
-
-
-Definition constructor_eqb : Eqb constructor := fun x y => match x, y with
-  | Constructor c,  Constructor c' => VDecl_eqb c c'
-  end.
-
-Definition constructor_eqb_eq : forall c c', constructor_eqb c c' = true <-> c = c'.
-Proof. eqb_eq_tac. Qed.
-#[export] Hint Resolve -> constructor_eqb_eq : reflection.
-#[export] Hint Resolve <- constructor_eqb_eq : reflection.
-
 Definition list_eqb a (eqb : Eqb a) : Eqb (list a) := fix f xs ys :=
   match xs, ys with
   | nil, nil             => true
@@ -515,20 +501,20 @@ Qed.
 Definition DTDecl_eqb: Eqb DTDecl := fun x y => match x, y with
   | Datatype tvd tvds n cs, Datatype tvd' tvds' n' cs' =>
     TVDecl_eqb tvd tvd' && list_eqb TVDecl_eqb tvds tvds'
-      && String.eqb n n' && list_eqb constructor_eqb cs cs'
+      && String.eqb n n' && list_eqb VDecl_eqb cs cs'
     end.
 Definition DTDecl_eqb_eq : forall dtd dtd', DTDecl_eqb dtd dtd' = true <-> dtd = dtd'.
 Proof.
   eqb_eq_tac.
   - apply (list_eqb_eq _ TVDecl_eqb_eq ).
     assumption.
-  - apply (list_eqb_eq _ constructor_eqb_eq).
+  - apply (list_eqb_eq _ VDecl_eqb_eq).
     assumption.
   - repeat (apply andb_true_iff_proj_r2l; constructor);
      auto with reflection.
     + apply (list_eqb_eq _ TVDecl_eqb_eq).
       reflexivity.
-    + apply (list_eqb_eq _ constructor_eqb_eq).
+    + apply (list_eqb_eq _ VDecl_eqb_eq).
       reflexivity.
 Qed.
 #[export] Hint Resolve -> DTDecl_eqb_eq : reflection.

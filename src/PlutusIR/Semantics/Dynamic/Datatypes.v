@@ -55,7 +55,7 @@ Fixpoint constr_to_term (ix : nat) (tyvars : list TVDecl) (τ : Ty) :=
     see https://github.com/IntersectMBO/plutus/blob/16be7da33eacb1991ae0164b9fd65e12c7e4771e/plutus-core/plutus-ir/src/PlutusIR/Compiler/Datatype.hs#L414
 *)
 
-Axiom constr_to_subst : list TVDecl -> nat -> constructor -> string * Term.
+Axiom constr_to_subst : list TVDecl -> nat -> VDecl -> string * Term.
 (*
 Definition constr_to_subst (tyvars : list TVDecl) (ix : nat) (c : constructor)
   : string * Term :=
@@ -65,7 +65,7 @@ Definition constr_to_subst (tyvars : list TVDecl) (ix : nat) (c : constructor)
 .
   *)
 
-Definition constrs_to_subst (tyvars : list TVDecl) (cs : list constructor)
+Definition constrs_to_subst (tyvars : list TVDecl) (cs : list VDecl)
   : list (string * Term) :=
   map (uncurry (constr_to_subst tyvars)) (zip_from 0 cs)
 .
