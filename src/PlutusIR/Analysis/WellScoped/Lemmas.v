@@ -145,7 +145,7 @@ Section LetRecLemmas.
   Proof.
   Admitted.
 
-  Lemma btvbs_app {var} x (bs bs' : list (binding var string var string)) :
+  Lemma btvbs_app x (bs bs' : list binding) :
     x ∉ BoundVars.btvbs (bs ++ bs') ->
     x ∉ BoundVars.btvbs (bs' ++ bs).
   Admitted.

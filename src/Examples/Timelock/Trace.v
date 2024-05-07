@@ -5,7 +5,7 @@ From Coq Require Import
 From PlutusCert Require Import
   PlutusIR.
 
-Import UniqueTerm.
+Import NamedTerm.
 
 Local Open Scope Z_scope.
 Local Open Scope string_scope.

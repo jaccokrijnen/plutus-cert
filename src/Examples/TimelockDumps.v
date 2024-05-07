@@ -46,8 +46,8 @@ Definition plc_5_compileNonRecTerms := Apply (Apply (Apply (TyInst (TyAbs (TyNam
 
 (* Construct intermediate terms of inline *)
 Definition inlined := cons (Name ("keep") (Unique (77))) (nil).
-Definition pir_3_1_inlined := inline_uncond String.eqb inlined [] [] pir_3_deadcode.
-Definition pir_3_2_deadcode := inline_deadcode String.eqb inlined pir_3_1_inlined.
+Definition pir_3_1_inlined := inline_uncond inlined [] [] pir_3_deadcode.
+Definition pir_3_2_deadcode := inline_deadcode inlined pir_3_1_inlined.
 
 (* manual test case for recognizing the inliner,
    since plutus does both inline + DBE in one step *)

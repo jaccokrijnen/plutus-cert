@@ -106,8 +106,11 @@ Inductive DefaultFun :=
     | Trace.
 
 Section AST_term.
-Context (name tyname : Set).
-Context (binderName binderTyname : Set).
+
+Definition name := string.
+Definition tyname := string.
+Definition binderName := string.
+Definition binderTyname := string.
 
 (** Kinds *)
 Inductive kind :=
@@ -122,7 +125,9 @@ Inductive ty :=
   | Ty_Forall : binderTyname -> kind -> ty -> ty
   | Ty_Builtin : @some typeIn -> ty
   | Ty_Lam : binderTyname -> kind -> ty -> ty
-  | Ty_App : ty -> ty -> ty.
+  | Ty_App : ty -> ty -> ty
+  (* | Ty_SOP : list (list ty) -> ty *)
+.
 
 (*
   Simplification of attached values in the AST
@@ -149,6 +154,8 @@ Inductive tvdecl := TyVarDecl : binderTyname -> kind -> tvdecl.
 Inductive dtdecl := Datatype : tvdecl -> list tvdecl -> binderName -> list vdecl -> dtdecl.
 
 (** Terms and bindings *)
+(* Perhaps parametrize to mimic original AST in haskell more closely? We really only need one instantiation for now. *)
+(* Context {func : Type} {uni : Type -> Type} {name : Type} {tyname : Type}. *)
 Inductive term :=
   | Let      : Recursivity -> list binding -> term -> term
   | Var      : name -> term
@@ -220,6 +227,7 @@ Inductive compilation_trace :=
 
 End AST_term.
 
+  (*
 Arguments Ty_Var {_ _}.
 Arguments Ty_Fun {_ _}.
 Arguments Ty_IFix {_ _}.
@@ -262,34 +270,29 @@ Arguments PassLetRec {_}%type_scope.
 Arguments PassLetNonRec {_}%type_scope.
 
 Arguments CompilationTrace {name tyname binderName binderTyname}.
+*)
 
 
-Definition vdecl_name {tyname binderName binderTyname} : vdecl tyname binderName binderTyname -> binderName :=
+Definition vdecl_name : vdecl -> binderName :=
   fun c => match c with
   | VarDecl n _ => n
   end
   .
 
-Definition vdecl_ty {tyname binderName binderTyname} :
-  vdecl tyname binderName binderTyname -> ty tyname binderTyname :=
+Definition vdecl_ty : vdecl -> ty :=
   fun c => match c with
   | VarDecl _ ty => ty
   end
   .
 
-Definition TyVarDeclVar {binderTyname} :
-  tvdecl binderTyname -> binderTyname :=
-    fun tvd =>
-      match tvd with
-      | TyVarDecl v ty => v
-      end
-.
+Definition tvdecl_name (tvd : tvdecl) : binderTyname :=
+  match tvd with
+  | TyVarDecl v K => v
+  end.
 
 (** * Named terms (all variables and binders are strings) *)
 Module NamedTerm.
 
-(* Perhaps parametrize to mimic original AST in haskell more closely? We really only need one instantiation for now. *)
-(* Context {func : Type} {uni : Type -> Type} {name : Type} {tyname : Type}. *)
 
 
 Definition Unique (n : nat) := n.
@@ -312,23 +315,23 @@ Definition TyName (s : string) := s.
 Inductive tyname := TyName : name -> tyname.
 *)
 
-Notation Kind := (kind).
-Notation Ty := (ty string string).
-Notation VDecl := (vdecl string string string).
-Notation TVDecl := (tvdecl string).
-Notation DTDecl := (dtdecl string string string).
-Notation Term := (term string string string string).
-Notation Binding := (binding string string string string).
+Notation Kind := kind.
+Notation Ty := ty.
+Notation VDecl := vdecl.
+Notation TVDecl := tvdecl.
+Notation DTDecl := dtdecl.
+Notation Term := term.
+Notation Binding := binding.
 
-Notation Context := (context string string string string).
+Notation Context := context.
 
-Arguments C_Hole { _ _ _ _ }.
-
+(* Arguments C_Hole { _ _ _ _ }. *)
 
 End NamedTerm.
 
 
 
+(*
 (** * De Bruijn terms *)
 Module DeBruijnTerm.
 
@@ -350,7 +353,21 @@ Fixpoint shift_ty' (k c : nat) (T : Ty) : Ty :=
   | Ty_Builtin u => Ty_Builtin u
   | Ty_Lam bX K1 T => Ty_Lam bX K1 (shift_ty' k (S c) T)
   | Ty_App T1 T2 => Ty_App (shift_ty' k c T1) (shift_ty' k c T2)
-  end.
+  (*
+  | Ty_SOP xs => Ty_SOP
+      ((fix f xs := match xs with
+        | ys :: xs' =>
+          (fix g ys :=
+            match ys with
+            | ty :: ys' => shift_ty' k c ty :: g ys'
+            | [] => []
+            end
+          ) ys :: f xs'
+        | [] => []
+      end
+      ) xs) *)
+  end
+.
 
 Definition shift_ty (T : Ty) := shift_ty' 1 0 T.
 
@@ -383,8 +400,10 @@ Definition shift_term (t : Term) := shift_term' 1 0 t.
 *)
 
 End DeBruijnTerm.
+  *)
 
 
+(*
 Module UniqueTerm.
 
 
@@ -410,6 +429,7 @@ Definition TyName name : string * Z := name.
 
 
 End UniqueTerm.
+*)
 
 
 Section Term_rect.
@@ -552,25 +572,24 @@ Section Term__ind.
 End Term__ind.
 
 Section term_rect.
-  Variable (v v' b b': Set).
-  Variable (P : term v v' b b' -> Type).
-  Variable (Q : binding v v' b b' -> Type).
-  Variable (R : list (binding v v' b b') -> Type).
+  Variable (P : term -> Type).
+  Variable (Q : binding -> Type).
+  Variable (R : list binding -> Type).
 
   Context
     (* (H_Let      : forall rec bs t, ForallT Q bs -> P t -> P (Let rec bs t)) *)
     (H_Let      : forall rec bs t, R bs -> P t -> P (Let rec bs t))
-    (H_Var      : forall s : v, P (Var s))
-    (H_TyAbs    : forall (s : b') (k : kind) (t : term v v' b b'), P t -> P (TyAbs s k t))
-    (H_LamAbs   : forall (s : b) (t : ty v' b') (t0 : term v v' b b'), P t0 -> P (LamAbs s t t0))
-    (H_Apply    : forall t : term v v' b b', P t -> forall t0 : term v v' b b', P t0 -> P (Apply t t0))
+    (H_Var      : forall s, P (Var s))
+    (H_TyAbs    : forall s (k : kind) (t : term), P t -> P (TyAbs s k t))
+    (H_LamAbs   : forall s t (t0 : term), P t0 -> P (LamAbs s t t0))
+    (H_Apply    : forall t : term, P t -> forall t0 : term, P t0 -> P (Apply t t0))
     (H_Constant : forall s : some valueOf, P (Constant s))
     (H_Builtin  : forall d : DefaultFun, P (Builtin d))
-    (H_TyInst   : forall t : term v v' b b', P t -> forall t0 : ty v' b', P (TyInst t t0))
-    (H_Error    : forall t : ty v' b', P (Error t))
-    (H_IWrap    : forall (t t0 : ty v' b') (t1 : term v v' b b'), P t1 -> P (IWrap t t0 t1))
-    (H_Unwrap   : forall t : term v v' b b', P t -> P (Unwrap t))
-    (H_Constr   : forall (i : nat) (ts : list (term v v' b b')), ForallT P ts -> P (Constr i ts))
+    (H_TyInst   : forall t : term, P t -> forall t0 : ty, P (TyInst t t0))
+    (H_Error    : forall t : ty, P (Error t))
+    (H_IWrap    : forall (t t0 : ty) (t1 : term), P t1 -> P (IWrap t t0 t1))
+    (H_Unwrap   : forall t : term, P t -> P (Unwrap t))
+    (H_Constr   : forall (i : nat) (ts : list (term)), ForallT P ts -> P (Constr i ts))
     (H_Case    : forall t, P t -> forall ts, ForallT P ts -> P (Case t ts)).
 
   Context
@@ -582,21 +601,21 @@ Section term_rect.
     (H_cons         : forall b bs, Q b -> R bs -> R (b :: bs))
     (H_nil          : R nil).
 
-  Definition bindings_rect' (binding_rect' : forall (b : binding v v' b b'), Q b) :=
+  Definition bindings_rect' (binding_rect' : forall (b : binding), Q b) :=
     fix bindings_rect' bs :=
     match bs return R bs with
       | nil       => @H_nil
       | cons b bs => @H_cons _ bs (binding_rect' b) (bindings_rect' bs)
     end.
 
-  Definition terms_rect' (term_rect : forall (t : term v v' b b'), P t) :=
+  Definition terms_rect' (term_rect : forall (t : term), P t) :=
     fix terms_rect' ts :=
     match ts as p return ForallT P p with
       | nil       => ForallT_nil
       | cons t ts => ForallT_cons (term_rect t) (terms_rect' ts)
     end.
 
-  Fixpoint term_rect' (t : term v v' b b') : P t :=
+  Fixpoint term_rect' (t : term) : P t :=
     match t with
       | Let rec bs t    => @H_Let rec bs t (bindings_rect' binding_rect' bs) (term_rect' t)
       | Var n           => @H_Var n
@@ -612,7 +631,7 @@ Section term_rect.
       | Constr i ts     => @H_Constr i ts (terms_rect' term_rect' ts)
       | Case t ts      => @H_Case t (term_rect' t) ts (terms_rect' term_rect' ts)
     end
-  with binding_rect' (b : binding v v' b b') : Q b :=
+  with binding_rect' (b : binding) : Q b :=
     match b with
       | TermBind s v t   => @H_TermBind s v t (term_rect' t)
       | TypeBind v ty    => @H_TypeBind v ty
@@ -623,46 +642,66 @@ End term_rect.
 Section ty_fold.
 
   Context
-    {V : Set}
-    {B : Set}.
-  Context
     {R : Set}.
 
   Context
-    (f_Var : V -> R)
+    (f_Var : name -> R)
     (f_Fun : R -> R -> R)
     (f_IFix : R -> R -> R)
-    (f_Forall : B -> kind -> R -> R)
+    (f_Forall :  binderName -> kind -> R -> R)
     (f_Builtin : @some typeIn -> R)
-    (f_Lam : B -> kind -> R -> R)
-    (f_App : R -> R -> R).
+    (f_Lam :  binderName -> kind -> R -> R)
+    (f_App : R -> R -> R)
+    (f_SOP_prod_cons : R -> R -> R)
+    (f_SOP_prod_nil : R)
+    (f_SOP_sum_cons : R -> R -> R)
+    (f_SOP_sum_nil : R)
+    .
 
-  Definition ty_fold := fix f ty :=
+  Definition ty_fold := fix fold ty :=
     match ty with
     | Ty_Var v        => f_Var v
-    | Ty_Fun t1 t2    => f_Fun (f t1) (f t2)
-    | Ty_IFix t1 t2   => f_IFix (f t1) (f t2)
-    | Ty_Forall v k t => f_Forall v k (f t)
+    | Ty_Fun t1 t2    => f_Fun (fold t1) (fold t2)
+    | Ty_IFix t1 t2   => f_IFix (fold t1) (fold t2)
+    | Ty_Forall v k t => f_Forall v k (fold t)
     | Ty_Builtin b    => f_Builtin b
-    | Ty_Lam v k t    => f_Lam v k (f t)
-    | Ty_App t1 t2    => f_App (f t1) (f t2)
-    end.
+    | Ty_Lam v k t    => f_Lam v k (fold t)
+    | Ty_App t1 t2    => f_App (fold t1) (fold t2)
+    (*
+    | Ty_SOP xs => 
+      ((fix f xs := match xs with
+        | ys :: xs' =>
+          f_SOP_sum_cons
+            ((fix g ys :=
+              match ys with
+              | ty :: ys' => f_SOP_prod_cons (fold ty) (g ys')
+              | [] => f_SOP_prod_nil
+              end
+            ) ys)
+            (f xs')
+        | [] => f_SOP_sum_nil
+      end
+      ) xs) *)
+    end
+.
 
-  Definition ty_alg (ty : ty V B) : Set := match ty with
-    | Ty_Var v        => V -> R
+  Definition ty_alg (ty : ty) : Set := match ty with
+    | Ty_Var v        => name -> R
     | Ty_Fun t1 t2    => R -> R -> R
     | Ty_IFix t1 t2   => R -> R -> R
-    | Ty_Forall v k t => B -> kind -> R -> R
+    | Ty_Forall v k t =>  binderName -> kind -> R -> R
     | Ty_Builtin b    => @some typeIn -> R
-    | Ty_Lam v k t    => B -> kind -> R -> R
+    | Ty_Lam v k t    =>  binderName -> kind -> R -> R
     | Ty_App t1 t2    => R -> R -> R
+    (* | Ty_SOP tys      => (R -> R -> R * R * R -> R -> R * R) *)
     end.
 
 End ty_fold.
 
-Definition ty_endo {V B} (m_custom : forall τ, option (@ty_alg V B (ty V B) τ)) := fix f τ :=
+
+Definition ty_endo (m_custom : forall τ, option (@ty_alg ty τ)) := fix f τ :=
   match m_custom τ with
-    | Some f_custom => match τ return ty_alg τ -> ty V B with
+    | Some f_custom => match τ return ty_alg τ -> ty with
       | Ty_Var v        => fun f_custom => f_custom v
       | Ty_Fun t1 t2    => fun f_custom => f_custom (f t1) (f t2)
       | Ty_IFix t1 t2   => fun f_custom => f_custom (f t1) (f t2)
@@ -682,7 +721,6 @@ Definition ty_endo {V B} (m_custom : forall τ, option (@ty_alg V B (ty V B) τ)
       | Ty_App t1 t2    => Ty_App (f t1) (f t2)
       end
   end.
-
 
 (*
 Inductive TermF termR bindingR :=

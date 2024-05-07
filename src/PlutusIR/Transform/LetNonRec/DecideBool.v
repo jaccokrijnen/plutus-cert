@@ -253,13 +253,13 @@ Proof.
     simpl in H.
     destruct t; try solve [inversion H].
     destruct t2; try solve [inversion H].
-    destruct ((s =? s0)%string && Ty_eqb t1 t && dec_Term t0 t3); try solve [inversion H].
+    destruct ((b =? b0)%string && Ty_eqb t1 t && dec_Term t0 t3); try solve [inversion H].
     specialize (IHbs _ _ H).
 
     destruct IHbs as [fs H_fs].
 
     exists (
-      desugar_fun s0 t t3
+      desugar_fun b0 t t3
       ::
       fs).
     unfold desugar_fun.
@@ -364,7 +364,7 @@ Proof.
         | H : match ?t with _ => _ end = _ |- _ => destruct t
       end); try solve [inversion H0].
 
-      exists (desugar_fun s0 t0 t0_2).
+      exists (desugar_fun b0 t0 t0_2).
       apply dec_Bindings_exists in H0 as [fs H_fs].
       exists fs.
       split.

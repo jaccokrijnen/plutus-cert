@@ -369,19 +369,19 @@ Inductive con_term :=
   | con_Unwrap
   .
 
-Definition con_type (v v' b b': Set) P Q : con_term -> Type :=
+Definition con_type P Q : con_term -> Type :=
   fun c => match c with
     | con_Let       => forall rec bs t, ForallT Q bs -> P t -> P (Let rec bs t)
-    | con_Var       => forall s : v, P (Var s)
-    | con_TyAbs     => forall (s : b') (k : kind) (t : term v v' b b'), P t -> P (TyAbs s k t)
-    | con_LamAbs    => forall (s : b) (t : ty v' b') (t0 : term v v' b b'), P t0 -> P (LamAbs s t t0)
-    | con_Apply     => forall t : term v v' b b', P t -> forall t0 : term v v' b b', P t0 -> P (Apply t t0)
+    | con_Var       => forall s, P (Var s)
+    | con_TyAbs     => forall s k (t : term), P t -> P (TyAbs s k t)
+    | con_LamAbs    => forall s (t : ty) (t0 : term), P t0 -> P (LamAbs s t t0)
+    | con_Apply     => forall t : term, P t -> forall t0 : term, P t0 -> P (Apply t t0)
     | con_Constant  => forall s : @some valueOf, P (Constant s)
     | con_Builtin   => forall d : DefaultFun, P (Builtin d)
-    | con_TyInst    => forall t : term v v' b b', P t -> forall t0 : ty v' b', P (TyInst t t0)
-    | con_Error     => forall t : ty v' b', P (Error t)
-    | con_IWrap     => forall (t t0 : ty v' b') (t1 : term v v' b b'), P t1 -> P (IWrap t t0 t1)
-    | con_Unwrap    => forall t : term v v' b b', P t -> P (Unwrap t)
+    | con_TyInst    => forall t : term, P t -> forall t0 : ty, P (TyInst t t0)
+    | con_Error     => forall t : ty, P (Error t)
+    | con_IWrap     => forall (t t0 : ty) (t1 : term), P t1 -> P (IWrap t t0 t1)
+    | con_Unwrap    => forall t : term, P t -> P (Unwrap t)
     end.
 
 Inductive con_binding :=
@@ -390,7 +390,7 @@ Inductive con_binding :=
   | con_DatatypeBind
   .
 
-Definition con_type_binding (name string : Set) (P : term name string string string -> Type) (Q : binding name string string string -> Type) : con_binding -> Type :=
+Definition con_type_binding (name string : Set) (P : term -> Type) (Q : binding -> Type) : con_binding -> Type :=
   fun c => match c with
     | con_TermBind => forall s v t, P t -> Q (TermBind s v t)
     | con_TypeBind => forall v ty, Q (TypeBind v ty)

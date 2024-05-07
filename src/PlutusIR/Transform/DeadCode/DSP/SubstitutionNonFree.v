@@ -445,7 +445,7 @@ Section Term.
     rewrite Bool.orb_true_iff in H_in_bvbs.
     destruct H_in_bvbs.
     **
-       rewrite H in H_not_in_bvb.
+       setoid_rewrite H in H_not_in_bvb.
        inversion H_not_in_bvb.
     ** eauto.
   Qed.
@@ -670,7 +670,7 @@ Section Term.
         specialize (H0 eq_refl). (* See Note [Assumption of subst_b] *)
         simpl in H0.
         apply H.
-        assert (s0 ≠ x) by intuition.
+        assert (b ≠ x) by intuition.
         unfold not; intros.
         apply H1.
         apply in_remove.

@@ -88,7 +88,7 @@ Module Term.
     .
 
   (* Write by hand, because somehow it isn't generated for fvb *)
-  Lemma fvb_equation rec (b : binding') :
+  Lemma fvb_equation rec (b : binding) :
     fvb rec b =
     match b with
       | TermBind _ (VarDecl v _) t => match rec with

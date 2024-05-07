@@ -105,7 +105,7 @@ Proof.
   - solveEq.
 Defined.
 
-Definition pass_dec {name : Set} (name_dec : EqDec name) (p1 p2 : pass name) :
+Definition pass_dec (name_dec : EqDec name) (p1 p2 : pass) :
   {p1 = p2} + {p1 <> p2}.
   Proof. solveEq. Defined.
 

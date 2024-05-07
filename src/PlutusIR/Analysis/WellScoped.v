@@ -13,11 +13,6 @@ Import ListNotations.
 
 Definition ctx := list string.
 
-Definition tvd_name (tvd : tvdecl string) : string :=
-  match tvd with
-  | TyVarDecl v K => v
-  end.
-
 Reserved Notation "Δ '|-*' T" (at level 40, T at level 0).
 Inductive well_scoped_Ty (Δ : ctx) : Ty -> Prop :=
   | WST_Var : forall X,
@@ -136,7 +131,7 @@ with binding_well_formed (Δ Γ : ctx) : Binding -> Prop :=
       Δ |-* T ->
       Δ ,, Γ |-ws_ok_b (TypeBind (TyVarDecl X K) T)
   | W_Data : forall X YKs cs matchFunc Δ',
-      Δ' = rev (map tvd_name YKs) ++ Δ  ->
+      Δ' = rev (map tvdecl_name YKs) ++ Δ  ->
       (forall c, In c cs -> Δ' |-ws_ok_c c) ->
       Δ ,, Γ |-ws_ok_b (DatatypeBind (Datatype X YKs matchFunc cs))
 

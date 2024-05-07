@@ -1,6 +1,8 @@
 From Coq Require Import
+  ZArith.BinInt
+  Strings.String (eqb)
   Lists.List
-  ZArith.BinInt.
+.
 
 From PlutusCert Require Import
   PlutusIR
@@ -21,51 +23,44 @@ Import ListNotations.
 
 Section InlineOnly.
 
-  Context {A : Set}.
-  Context (A_eqb : A -> A -> bool).
-
-  Definition Term := term A A A A.
-  Definition Ty := ty A A.
-  Definition Binding := binding A A A A.
-
   (* The variables that were conditionally inlined as dumped by the compiler*)
-  Context (elims : list A).
+  Context (elims : list name).
 
   (* Add a term-binding if it occurs in elims *)
-  Definition bind_to_term_env (b : Binding) : list (A * Term)
+  Definition bind_to_term_env (b : binding) : list (name * term)
    := match b with
-    | TermBind str (VarDecl v ty) t => if elem A_eqb v elims then [(v, t)] else []
+    | TermBind str (VarDecl v ty) t => if elem String.eqb v elims then [(v, t)] else []
     | TypeBind v ty   => []
     | DatatypeBind dt => []
     end.
 
   (* Add a term-binding if it occurs in elims *)
-  Definition bind_to_ty_env (b : Binding) : list (A * Ty)
+  Definition bind_to_ty_env (b : binding) : list (tyname * ty)
    := match b with
     | TermBind str (VarDecl v ty) t => []
-    | TypeBind (TyVarDecl v k) ty   => if elem A_eqb v elims then [(v, ty)] else []
+    | TypeBind (TyVarDecl v k) ty   => if elem String.eqb v elims then [(v, ty)] else []
     | DatatypeBind dt => []
     end.
 
-  Definition binds_to_term_env (bs : list Binding) : list (A * Term) :=
+  Definition binds_to_term_env (bs : list binding) : list (name * term) :=
     concat (map bind_to_term_env bs).
 
-  Definition binds_to_ty_env (bs : list Binding) : list (A * Ty) :=
+  Definition binds_to_ty_env (bs : list binding) : list (tyname * ty) :=
     concat (map bind_to_ty_env bs).
 
   (* Unconditionally inline the variables in elims, by
      collecting let-bound definitions with those names
    *)
 
-  Definition inline_uncond_ty (Δ : list (A * Ty)) : Ty -> Ty :=
+  Definition inline_uncond_ty (Δ : list (tyname * ty)) : ty -> ty :=
     ty_endo
       (fun τ => match τ with
-        | Ty_Var _ => Some (fun v => match lookup' A_eqb v Δ with | Some t => t | None => Ty_Var v end)
+        | Ty_Var _ => Some (fun v => match lookup' String.eqb v Δ with | Some t => t | None => Ty_Var v end)
         | _        => None
       end
       ).
 
-  Fixpoint inline_uncond (Γ : list (A * Term)) (Δ : list (A * Ty)) (t : Term) : Term
+  Fixpoint inline_uncond (Γ : list (name * term)) (Δ : list (name * ty)) (t : term) : term
     := match t with
 
         (* Non-recursive bindings require linear scoping, inlined fixpoint for totality checker *)
@@ -84,7 +79,7 @@ Section InlineOnly.
         | TyInst (TyAbs v k t) τ => TyInst (inline_uncond Γ ((v, τ) :: Δ) t) (inline_uncond_ty Δ τ)
 
         | Var x             =>
-          match lookup' A_eqb x Γ with
+          match lookup' String.eqb x Γ with
           | None   => Var x
           | Some t => t
           end
@@ -101,7 +96,7 @@ Section InlineOnly.
         | Case t ts        => Case (inline_uncond Γ Δ t) (map (inline_uncond Γ Δ) ts)
       end
 
-   with inline_uncond_binding (Γ : list (A * Term)) (Δ : list (A * Ty)) (b : Binding) : Binding
+   with inline_uncond_binding (Γ : list (name * term)) (Δ : list (tyname * ty)) (b : binding) : binding
    := match b with
     | TermBind str (VarDecl v τ) t => TermBind str (VarDecl v (inline_uncond_ty Δ τ)) (inline_uncond Γ Δ t)
     | TypeBind v τ                 => TypeBind v (inline_uncond_ty Δ τ)
@@ -109,10 +104,10 @@ Section InlineOnly.
     end
   .
 
-  Fixpoint inline_deadcode (t : Term) : Term :=
+  Fixpoint inline_deadcode (t : term) : term :=
     match t with
       | Let rec bs t_body => mk_let rec (concat (map inline_deadcode_binding bs)) (inline_deadcode t_body)
-      | TyInst (TyAbs v k t) ty => if elem A_eqb v elims then inline_deadcode t else TyInst (TyAbs v k (inline_deadcode t)) ty
+      | TyInst (TyAbs v k t) ty => if elem String.eqb v elims then inline_deadcode t else TyInst (TyAbs v k (inline_deadcode t)) ty
 
       | Var x             => Var x
       | TyAbs v k t       => TyAbs v k (inline_deadcode t)
@@ -128,10 +123,10 @@ Section InlineOnly.
       | Case t ts         => Case (inline_deadcode t) (map (inline_deadcode) ts)
     end
 
-   with inline_deadcode_binding (b : Binding) : list Binding
+   with inline_deadcode_binding (b : binding) : list binding
    := match b with
-    | TermBind str (VarDecl v ty) t => if elem A_eqb v elims then [] else [TermBind str (VarDecl v ty) (inline_deadcode t)]
-    | TypeBind (TyVarDecl v k) ty   => if elem A_eqb v elims then [] else [TypeBind (TyVarDecl v k) ty]
+    | TermBind str (VarDecl v ty) t => if elem String.eqb v elims then [] else [TermBind str (VarDecl v ty) (inline_deadcode t)]
+    | TypeBind (TyVarDecl v k) ty   => if elem String.eqb v elims then [] else [TypeBind (TyVarDecl v k) ty]
     | DatatypeBind dt               => [DatatypeBind dt]
     end
   .
@@ -139,9 +134,9 @@ Section InlineOnly.
   (* Will the let node be replaced by its body? This happens
      when all bindings have been eliminated *)
   Definition let_group_eliminated
-    (elims : list A) (bs : list Binding) : bool :=
+    (elims : list name) (bs : list binding) : bool :=
     forallb
-      (fun v => elem A_eqb v elims)
+      (fun v => elem String.eqb v elims)
       (bvbs bs)
   .
 
@@ -149,7 +144,7 @@ Section InlineOnly.
   (* Constructs the final term, but without dead-code performed 
      Note: this does result in inlined terms that are α-renamed compared to their
      binding site *)
-  Fixpoint inlined_intermediate (elims : list A) (t : Term) (t' : Term) : option Term
+  Fixpoint inlined_intermediate (elims : list name) (t : term) (t' : term) : option term
     := match t, t' with
         (* We can traverse the ASTs in parallel, except when a complete
            Let node was removed (because all of its bindings were eliminated) *)
@@ -179,12 +174,12 @@ Section InlineOnly.
         | Unwrap t, Unwrap t' => Unwrap <$> inlined_intermediate elims t t'
         | _, _ => None
       end
-  with inlined_intermediate_binding (elims : list A) (b : Binding) (bs_post : list Binding) : option Binding
+  with inlined_intermediate_binding (elims : list name) (b : binding) (bs_post : list binding) : option binding
    := match b with
     | TermBind str (VarDecl v ty) t =>
         let b_post := find
               (fun b' => match b with
-                | TermBind _ (VarDecl v' _) _ => A_eqb v v'
+                | TermBind _ (VarDecl v' _) _ => String.eqb v v'
                 | _ => false
                 end) bs_post
         in match b_post with

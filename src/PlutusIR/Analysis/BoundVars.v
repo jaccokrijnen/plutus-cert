@@ -61,7 +61,7 @@ Module Ty.
       (tyvar_dec : forall x y : tyvar, {x = y} + {x <> y})
       .
 
-    Fixpoint btv (T : ty tyvar tyvar) : list tyvar :=
+    Fixpoint btv (T : ty) : list tyname :=
       match T with
       | Ty_Var X =>
           []
@@ -248,25 +248,21 @@ Section BoundVars.
     (tyvar_dec : forall x y : tyvar, {x = y} + {x <> y})
     .
 
-Definition term' := term var tyvar var tyvar.
-Definition binding' := binding var tyvar var tyvar.
-Definition vdecl' := vdecl tyvar var tyvar.
-
 (** Retrieve bound term variable bindings *)
 
-Definition bvc (c : vdecl') : var :=
+Definition bvc (c : vdecl) : name :=
   match c with
   | VarDecl x _ => x
   end.
 
-Definition bvb (b : binding') : list var :=
+Definition bvb (b : binding) : list binderName :=
   match b with
   | TermBind _ (VarDecl x _) _ => cons x nil
   | TypeBind (TyVarDecl X _) _ => nil
   | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => matchFunc :: (rev (map bvc cs))
   end.
 
-Definition bvbs (bs : list binding') : list var := List.concat (map bvb bs).
+Definition bvbs (bs : list binding) : list name := List.concat (map bvb bs).
 
 Lemma bvbs_cons : forall b bs,
   bvbs (b :: bs) = bvb b ++ bvbs bs.
@@ -275,7 +271,7 @@ Proof with eauto.
   unfold bvbs...
 Qed.
 
-Fixpoint boundTerms_bindings (bs : list binding') : list (var * term var tyvar var tyvar) := match bs with
+Fixpoint boundTerms_bindings (bs : list binding) : list (binderName * term) := match bs with
     | ((TermBind _ (VarDecl v _) t) :: bs) => (v, t) :: boundTerms_bindings bs
     | (_ :: bs) => boundTerms_bindings bs
     | nil       => nil
@@ -283,14 +279,14 @@ Fixpoint boundTerms_bindings (bs : list binding') : list (var * term var tyvar v
 
 (** Retrieve bound type variable bindings *)
 
-Definition btvb (b : binding') : list tyvar :=
+Definition btvb (b : binding) : list tyname :=
   match b with
   | TermBind _ (VarDecl x _) _ => nil
   | TypeBind (TyVarDecl X _) _ => cons X nil
   | DatatypeBind (Datatype (TyVarDecl X _) YKs matchFunc cs) => cons X nil
   end.
 
-Definition btvbs (bs : list binding') : list tyvar := List.concat (map btvb bs).
+Definition btvbs (bs : list binding) : list tyname := List.concat (map btvb bs).
 
 Lemma btvbs_cons b bs : btvbs (b :: bs) = btvb b ++ btvbs bs.
 Proof.
@@ -300,7 +296,7 @@ Proof.
   reflexivity.
 Qed.
 
-Function bound_vars (t : term') : list var :=
+Function bound_vars (t : term) : list name :=
  match t with
    | Let rec bs t => concat (map bound_vars_binding bs) ++ bound_vars t
    | (LamAbs n ty t)   => n :: (bound_vars t)
@@ -316,7 +312,7 @@ Function bound_vars (t : term') : list var :=
    | (Constr i ts)     => concat (map bound_vars ts)
    | (Case t ts)       => bound_vars t ++ concat (map bound_vars ts)
    end
-with bound_vars_binding (b : binding') : list var := match b with
+with bound_vars_binding (b : binding) : list name := match b with
   | TermBind _ (VarDecl v _) t => [v] ++ bound_vars t
   | DatatypeBind (Datatype _ _ matchf constructors ) => [matchf] ++ map vdecl_name constructors
   | _                          => []
@@ -324,12 +320,12 @@ with bound_vars_binding (b : binding') : list var := match b with
 
 Definition bound_vars_bindings := @concat _ ∘ map bound_vars_binding.
 
-Definition btvc (c : vdecl') : list tyvar :=
+Definition btvc (c : vdecl) : list tyname :=
   match c with
     | VarDecl v ty => Ty.btv ty
   end.
 
-Fixpoint btv (t : term') : list tyvar :=
+Fixpoint btv (t : term) : list tyname :=
  match t with
    | Let rec bs t    => concat (map btv_binding bs) ++ btv t
    | LamAbs n ty t   => Ty.btv ty ++ btv t
@@ -345,12 +341,12 @@ Fixpoint btv (t : term') : list tyvar :=
    | (Constr i ts)   => concat (map btv ts)
    | (Case t ts)     => btv t ++ concat (map btv ts)
    end
-with btv_binding (b : binding') : list tyvar := match b with
+with btv_binding (b : binding) : list tyname := match b with
   | TermBind s (VarDecl v ty) t =>
       Ty.btv ty ++ btv t
 
   | DatatypeBind (Datatype (TyVarDecl t k) tvs matchf constructors ) =>
-      [t] ++ map TyVarDeclVar tvs
+      [t] ++ map tvdecl_name tvs
           ++ concat (map (Ty.btv ∘ vdecl_ty) constructors)
 
   | TypeBind (TyVarDecl v k) ty => [v] ++ Ty.btv ty
@@ -439,7 +435,7 @@ Proof with eauto using appears_bound_in_tm.
     eapply Forall_cons.
       + intros...
       + intros. eapply Forall_impl with (P := fun v => appears_bound_in_tm v t)...
-        intros. destruct (string_dec a s0); subst...
+        intros. destruct (string_dec a b); subst...
   - unfold P_Binding.
     intros.
     cbv...

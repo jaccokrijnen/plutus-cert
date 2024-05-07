@@ -35,7 +35,7 @@ Definition getKind (tvd : TVDecl) :=
       Ty_Apps f [x_1; ... ; x_n] = ((f x_1) ... ) x_n
 *)
 Definition Ty_Apps (f : Ty) (xs : list Ty) : Ty :=
-  fold_left (@Ty_App string string) xs f
+  fold_left Ty_App xs f
 .
 
 (* Polymorphic type over multiple type parameters
