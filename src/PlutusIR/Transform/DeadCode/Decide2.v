@@ -14,7 +14,6 @@ From PlutusCert Require Import
   Analysis.BoundVars
 .
 
-Import NamedTerm.
 Import ListNotations.
 
 Require Import

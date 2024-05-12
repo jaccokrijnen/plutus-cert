@@ -14,7 +14,6 @@ Set Equations Transparent.
 From PlutusCert Require Import Util.
 From PlutusCert Require Import PlutusIR.Transform.Inline.
 From PlutusCert Require Import PlutusIR.
-Import NamedTerm.
 From PlutusCert Require Import PlutusIR.Analysis.FreeVars.
 From PlutusCert Require Import PlutusIR.Analysis.Equality.
 From PlutusCert Require Import PlutusIR.Transform.Compat.

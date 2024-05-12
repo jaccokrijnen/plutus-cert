@@ -1,5 +1,4 @@
 Require Import PlutusCert.PlutusIR.
-Import NamedTerm.
 Require Import PlutusCert.PlutusIR.Semantics.Dynamic.Bigstep.
 
 Require Import Coq.ZArith.BinInt.

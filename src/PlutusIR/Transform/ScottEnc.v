@@ -16,7 +16,6 @@ Import Coq.Lists.List.ListNotations.
 
 Open Scope string_scope.
 
-Import NamedTerm.
 
 Fixpoint encode (t : Term) : Term.
 Admitted.

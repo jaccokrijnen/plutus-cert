@@ -13,7 +13,6 @@ From PlutusCert Require Import
   PlutusIR
   .
 
-Import NamedTerm.
 
 (*
 Inlining considers:

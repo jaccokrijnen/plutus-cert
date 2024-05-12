@@ -17,7 +17,6 @@ From PlutusCert Require Export
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
 Import Coq.Lists.List.ListNotations.
-Import NamedTerm.
 
 
 

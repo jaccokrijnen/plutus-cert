@@ -1,6 +1,5 @@
 Require Import PlutusCert.PlutusIR.
 Require Import Strings.String.
-Import NamedTerm.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.TypeSubstitution.
 

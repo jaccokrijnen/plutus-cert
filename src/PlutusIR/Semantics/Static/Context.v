@@ -1,5 +1,4 @@
 Require Import PlutusCert.PlutusIR.
-Import NamedTerm.
 
 Require Export PlutusCert.Util.Map.
 Require Export PlutusCert.Util.Map.Mupdate.

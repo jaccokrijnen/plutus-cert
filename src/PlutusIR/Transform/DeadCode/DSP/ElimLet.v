@@ -30,7 +30,6 @@ From PlutusCert Require Import
   LetNonRec.DSP
 .
 
-Import NamedTerm.
 Import ListNotations.
 Import UniqueBinders.Term.
 

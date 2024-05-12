@@ -1,6 +1,5 @@
 Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.Util.List.
-Import NamedTerm.
 
 Require Import PlutusCert.PlutusIR.Semantics.Static.Theorems.ContextInvariance.AFI.
 Require Import PlutusCert.PlutusIR.Semantics.Static.Theorems.In_Auxiliary.

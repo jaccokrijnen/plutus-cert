@@ -3,7 +3,6 @@ From PlutusCert Require Import
   Util
   Compat
   .
-Import NamedTerm.
 
 From Coq Require Import
   Lists.List

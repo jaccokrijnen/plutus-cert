@@ -9,12 +9,10 @@ From PlutusCert Require Import
   Analysis.FreeVars
   AFI
   .
-From PlutusCert Require
+From PlutusCert Require Import
   PlutusIR
   .
 
-Import PlutusIR (term(..), tvdecl(..), vdecl(..), ty(..), dtdecl(..), binding(..), Recursivity(..)).
-Import PlutusIR.NamedTerm.
 Import ListNotations.
 Import AFI.
 

@@ -14,7 +14,6 @@ From PlutusCert Require Import
   PlutusIR.Transform.Inline
 .
 
-Import NamedTerm.
 Import ListNotations.
 
 (* TODO *)

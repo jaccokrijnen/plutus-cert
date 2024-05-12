@@ -12,7 +12,6 @@ From PlutusCert Require Import
   Analysis.Purity
   .
 
-Import NamedTerm.
 Import ListNotations.
 
 (*

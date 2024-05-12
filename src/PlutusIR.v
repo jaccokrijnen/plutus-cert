@@ -105,8 +105,6 @@ Inductive DefaultFun :=
     | Append
     | Trace.
 
-Section AST_term.
-
 Definition name := string.
 Definition tyname := string.
 Definition binderName := string.
@@ -130,27 +128,17 @@ Inductive ty :=
 .
 
 (*
-  Simplification of attached values in the AST
+  Note [Simplification of AST representation]
 
-  In the Haskell AST, Term is a functor and each constructor may have a field of the type parameter
-  `a`. Since this seems to be used only for storing intermediate compiler data, it is ignored here.
-  (this works because the dumping code is ignoring it)
+  In the Haskell AST, Term is a functor and each constructor may have a field of
+  the type parameter `a`. This seems to be used for internal metadata on the
+  AST. At the moment we don't use it and don't represent it in the AST.
 
-  TODO: perhaps use a similar approach to the simplification of names, by ignoring the argument
-  in each constructor (have to add types for the possible values that can occur when dumping)
 *)
 
 (** Declarations *)
 Inductive vdecl := VarDecl : binderName -> ty -> vdecl.
 Inductive tvdecl := TyVarDecl : binderTyname -> kind -> tvdecl.
-
-
-(* TODO: get rid of constr type, is here because we used to track some other
- * data (arity), but it is inconsistent with the Plutus internal representation,
- * which just has a (list vdecl) in the dtdecl. Also, since Constr is now a term
- * in the language, the name of this extra type is confusing.
-*)
-
 Inductive dtdecl := Datatype : tvdecl -> list tvdecl -> binderName -> list vdecl -> dtdecl.
 
 (** Terms and bindings *)
@@ -219,59 +207,8 @@ Inductive pass :=
 Inductive compilation_trace :=
   | CompilationTrace : term -> list (pass * term) -> compilation_trace.
 
-(* These constructors should treat the type parameter
-   as implicit too
 
-   Using maximally inserted implicits for ease of use with
-   partial application *)
-
-End AST_term.
-
-  (*
-Arguments Ty_Var {_ _}.
-Arguments Ty_Fun {_ _}.
-Arguments Ty_IFix {_ _}.
-Arguments Ty_Forall {_ _}.
-Arguments Ty_Builtin {_ _}.
-Arguments Ty_Lam {_ _}.
-Arguments Ty_App {_ _}.
-
-Arguments Let {_ _ _ _}.
-Arguments Var {_ _ _ _}.
-Arguments TyAbs {_ _ _ _}.
-Arguments LamAbs {_ _ _ _}.
-Arguments Apply {_ _ _ _}.
-Arguments Constant {_ _ _ _}.
-Arguments Builtin {_ _ _ _}.
-Arguments TyInst {_ _ _ _}.
-Arguments Error {_ _ _ _}.
-Arguments IWrap {_ _ _ _}.
-Arguments Unwrap {_ _ _ _}.
-Arguments Constr {_ _ _ _}.
-Arguments Case {_ _ _ _}.
-
-Arguments TermBind {_ _ _ _}.
-Arguments TypeBind {_ _ _ _}.
-Arguments DatatypeBind {_ _ _ _}.
-
-Arguments VarDecl {_ _ _}.
-Arguments TyVarDecl {_}.
-Arguments Datatype {_ _ _}.
-
-Arguments PassRename {_}%type_scope.
-Arguments PassTypeCheck {_}%type_scope.
-Arguments PassInline {_}%type_scope.
-Arguments PassDeadCode {_}%type_scope.
-Arguments PassThunkRec {_}%type_scope.
-Arguments PassFloatTerm {_}%type_scope.
-Arguments PassLetNonStrict {_}%type_scope.
-Arguments PassLetTypes {_}%type_scope.
-Arguments PassLetRec {_}%type_scope.
-Arguments PassLetNonRec {_}%type_scope.
-
-Arguments CompilationTrace {name tyname binderName binderTyname}.
-*)
-
+(* AST Helpers *)
 
 Definition vdecl_name : vdecl -> binderName :=
   fun c => match c with
@@ -291,128 +228,19 @@ Definition tvdecl_name (tvd : tvdecl) : binderTyname :=
   end.
 
 (** * Named terms (all variables and binders are strings) *)
-Module NamedTerm.
 
+Definition Kind := kind.
+Definition Ty := ty.
+Definition VDecl := vdecl.
+Definition TVDecl := tvdecl.
+Definition DTDecl := dtdecl.
+Definition Term := term.
+Definition Binding := binding.
 
-Notation Kind := kind.
-Notation Ty := ty.
-Notation VDecl := vdecl.
-Notation TVDecl := tvdecl.
-Notation DTDecl := dtdecl.
-Notation Term := term.
-Notation Binding := binding.
-
-Notation Context := context.
-
-(* Arguments C_Hole { _ _ _ _ }. *)
-
-End NamedTerm.
-
-
-
-(*
-(** * De Bruijn terms *)
-Module DeBruijnTerm.
-
-Notation Kind := (kind).
-Notation Ty := (ty nat unit).
-Notation VDecl := (vdecl nat unit unit).
-Notation TVDecl := (tvdecl unit).
-Notation DTDecl := (dtdecl nat unit unit).
-Notation Term := (term nat nat unit unit).
-Notation Binding := (binding nat nat unit unit).
-
-
-Fixpoint shift_ty' (k c : nat) (T : Ty) : Ty :=
-  match T with
-  | Ty_Var X => if X <? c then Ty_Var X else Ty_Var (k + X)
-  | Ty_Fun T1 T2 => Ty_Fun (shift_ty' k c T1) (shift_ty' k c T2)
-  | Ty_IFix F T0 => Ty_IFix (shift_ty' k c F) (shift_ty' k c T0)
-  | Ty_Forall bX K T => Ty_Forall bX K (shift_ty' k (S c) T)
-  | Ty_Builtin u => Ty_Builtin u
-  | Ty_Lam bX K1 T => Ty_Lam bX K1 (shift_ty' k (S c) T)
-  | Ty_App T1 T2 => Ty_App (shift_ty' k c T1) (shift_ty' k c T2)
-  (*
-  | Ty_SOP xs => Ty_SOP
-      ((fix f xs := match xs with
-        | ys :: xs' =>
-          (fix g ys :=
-            match ys with
-            | ty :: ys' => shift_ty' k c ty :: g ys'
-            | [] => []
-            end
-          ) ys :: f xs'
-        | [] => []
-      end
-      ) xs) *)
-  end
-.
-
-Definition shift_ty (T : Ty) := shift_ty' 1 0 T.
-
-(*
-Equations shift_term' : nat -> nat -> Term -> Term := {
-  shift_term' k c (Let NonRec bs t0) => Let NonRec (shift_bindings' k c bs) (shift_term' k (length bs + c) t0) ;
-  shift_term' k c (Let Rec bs t0) => Let Rec (shift_bindings' k (length bs + c) bs (* TODO: shift by c or more? *)) (shift_term' k (length bs + c) t0) ;
-  shift_term' k c (Var x) => if x <? c then Var x else Var (k + x) ;
-  shift_term' k c (TyAbs bX K t0) => TyAbs bX K (shift_term' k (S c) t0) ;
-  shift_term' k c (LamAbs bx T t0) => LamAbs bx (shift_ty' k c T) (shift_term' k (S c) t0) ;
-  shift_term' k c (Apply t1 t2) => Apply (shift_term' k c t1) (shift_term' k c t2) ;
-  shift_term' k c (Constant u) => Constant u ;
-  shift_term' k c (Builtin d) => Builtin d ;
-  shift_term' k c (TyInst t0 T) => TyInst (shift_term' k c t0) (shift_ty' k c T) ;
-  shift_term' k c (Error T) => Error (shift_ty' k c T) ;
-  shift_term' k c (IWrap F T t0) => IWrap (shift_ty' k c F) (shift_ty' k c T) (shift_term' k c t0) ;
-  shift_term' k c (Unwrap t0) => Unwrap (shift_term' k c t0) }
-
-where shift_bindings' : nat -> nat -> list Binding -> list Binding := {
-  shift_bindings' k c nil => nil ;
-  shift_bindings' k c (TermBind s (VarDecl bn T) t :: bs) => TermBind s (VarDecl bn (shift_ty' k c T)) (shift_term' k c t) :: shift_bindings' k c bs ;
-  shift_bindings' k c (TypeBind tvd T :: bs) => TypeBind tvd (shift_ty' k c T) :: shift_bindings' k c bs ;
-  shift_bindings' k c (DatatypeBind (Datatype X YKs matchFunc cs) :: bs) => DatatypeBind (Datatype X YKs matchFunc (shift_constructors' k c cs)) :: shift_bindings' k c bs}
-
-where shift_constructors' : nat -> nat -> list constructor -> list constructor := {
-  shift_constructors' k c nil => nil ;
-  shift_constructors' k c (Constructor (VarDecl bn T) ar :: cs) => Constructor (VarDecl bn (shift_ty' k c T)) ar :: shift_constructors' k c cs }.
-
-Definition shift_term (t : Term) := shift_term' 1 0 t.
-*)
-
-End DeBruijnTerm.
-  *)
-
-
-(*
-Module UniqueTerm.
-
-
-Open Scope type_scope.
-Definition name         := string * Z.
-Definition tyname       := string * Z.
-Definition binderName   := string * Z.
-Definition binderTyname := string * Z.
-
-
-Notation Kind := (kind).
-Notation Ty := (ty tyname binderTyname).
-Notation VDecl := (vdecl name tyname binderName).
-Notation TVDecl := (tvdecl binderTyname).
-Notation DTDecl := (dtdecl name tyname binderTyname).
-Notation Term := (term name tyname binderName binderTyname).
-Notation Binding := (binding name tyname binderName binderTyname).
-
-
-Definition Name x y : string * Z := (x, y).
-Definition Unique x : Z := x.
-Definition TyName name : string * Z := name.
-
-
-End UniqueTerm.
-*)
+Definition Context := context.
 
 
 Section Term_rect.
-  Import NamedTerm.
 
   Unset Implicit Arguments.
 
@@ -479,7 +307,6 @@ Section Term_rect.
 End Term_rect.
 
 Section Term__ind.
-  Import NamedTerm.
 
   Unset Implicit Arguments.
 
@@ -523,7 +350,7 @@ Section Term__ind.
       | cons t ts => ForallP_cons (Term_rect t) (Terms_rect' ts)
     end.
 
-  Fixpoint Term__ind (t : Term) : P t :=
+  Fixpoint Term__ind (t : term) : P t :=
     match t with
       | Let rec bs t    => H_Let rec bs t (Bindings__ind Binding__ind bs) (Term__ind t)
       | Var n           => H_Var n
@@ -539,7 +366,7 @@ Section Term__ind.
       | Constr i ts     => H_Constr i ts (Terms__ind Term__ind ts)
       | Case t ts      => H_Case t (Term__ind t) ts (Terms__ind Term__ind ts)
     end
-  with Binding__ind (b : Binding) : Q b :=
+  with Binding__ind (b : binding) : Q b :=
     match b with
       | TermBind s v t  => H_TermBind s v t (Term__ind t)
       | TypeBind v ty   => H_TypeBind v ty
@@ -701,29 +528,9 @@ Definition ty_endo (m_custom : forall τ, option (@ty_alg ty τ)) := fix f τ :=
       end
   end.
 
-(*
-Inductive TermF termR bindingR :=
-  | Let      : Recursivity -> list bindingR -> termR -> TermF
-  | Var      : name -> TermF
-  | TyAbs    : tyname -> Kind -> termR -> TermF
-  | LamAbs   : name -> Ty -> termR -> TermF
-  | Apply    : termR -> termR -> TermF
-  | Constant : some -> TermF
-  | Builtin  : func -> TermF
-  | TyInst   : termR -> Ty -> TermF
-  | Error    : Ty -> TermF
-  | IWrap    : Ty -> Ty -> termR -> TermF
-  | Unwrap   : termR -> TermF
+Definition unitVal : Term := Constant (Some' (ValueOf DefaultUniUnit tt)).
 
-with Binding termR bindingR :=
-  | TermFBind    : Strictness -> VDecl -> termR -> Binding
-  | TypeBind     : TVDecl -> Ty -> Binding
-  | DatatypeBind : DTDecl -> Binding
-.
-Definition Mu (f : Type -> Type) (g : Type -> Type) := forall a, (f a -> a) -> (g a -> a) -> a.
-*)
 
-Definition unitVal : NamedTerm.Term := Constant (Some' (ValueOf DefaultUniUnit tt)).
 
 Declare Scope plutus_scope.
 
@@ -733,19 +540,19 @@ Declare Custom Entry plutus_kind.
 
 Module PlutusNotations.
 
-Notation "<{ e }>" := e (e custom plutus_term at level 99) : plutus_scope.
-Notation "<{{ e }}>" := e (e custom plutus_ty at level 99) : plutus_scope.
-Notation "<{{{ e }}}>" := e (e custom plutus_kind at level 99) : plutus_scope.
-Notation "( x )" := x (in custom plutus_term, x at level 99) : plutus_scope.
-Notation "( x )" := x (in custom plutus_ty, x at level 99) : plutus_scope.
-Notation "( x )" := x (in custom plutus_kind, x at level 99) : plutus_scope.
-Notation "x" := x (in custom plutus_term at level 0, x constr at level 0) : plutus_scope.
-Notation "x" := x (in custom plutus_ty at level 0, x constr at level 0) : plutus_scope.
-Notation "x" := x (in custom plutus_kind at level 0, x constr at level 0) : plutus_scope.
-Notation "{ x }" := x (in custom plutus_term at level 1, x constr) : plutus_scope.
-Notation "{ x }" := x (in custom plutus_ty at level 1, x constr) : plutus_scope.
-Notation "{ x }" := x (in custom plutus_kind at level 1, x constr) : plutus_scope.
+  Notation "<{ e }>" := e (e custom plutus_term at level 99) : plutus_scope.
+  Notation "<{{ e }}>" := e (e custom plutus_ty at level 99) : plutus_scope.
+  Notation "<{{{ e }}}>" := e (e custom plutus_kind at level 99) : plutus_scope.
+  Notation "( x )" := x (in custom plutus_term, x at level 99) : plutus_scope.
+  Notation "( x )" := x (in custom plutus_ty, x at level 99) : plutus_scope.
+  Notation "( x )" := x (in custom plutus_kind, x at level 99) : plutus_scope.
+  Notation "x" := x (in custom plutus_term at level 0, x constr at level 0) : plutus_scope.
+  Notation "x" := x (in custom plutus_ty at level 0, x constr at level 0) : plutus_scope.
+  Notation "x" := x (in custom plutus_kind at level 0, x constr at level 0) : plutus_scope.
+  Notation "{ x }" := x (in custom plutus_term at level 1, x constr) : plutus_scope.
+  Notation "{ x }" := x (in custom plutus_ty at level 1, x constr) : plutus_scope.
+  Notation "{ x }" := x (in custom plutus_kind at level 1, x constr) : plutus_scope.
 
-#[global]
-Open Scope plutus_scope.
+  #[global]
+  Open Scope plutus_scope.
 End PlutusNotations.

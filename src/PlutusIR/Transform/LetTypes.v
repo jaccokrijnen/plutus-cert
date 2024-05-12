@@ -6,7 +6,6 @@ Require Import Coq.Lists.List.
 Require Import Coq.Program.Basics.
 Import Coq.Lists.List.ListNotations.
 
-Import NamedTerm.
 
 (* TODO: Combine this with LetNonRec
    currently desugares only a let-nonrec with only type bindings

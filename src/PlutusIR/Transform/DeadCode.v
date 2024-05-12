@@ -19,7 +19,6 @@ From PlutusCert Require Import
   PlutusIR.Semantics.Dynamic.Values
 .
 
-Import NamedTerm.
 Import UniqueBinders.
 Import ListNotations.
 

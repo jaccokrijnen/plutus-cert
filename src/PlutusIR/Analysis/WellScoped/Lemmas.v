@@ -11,7 +11,6 @@ Import ListNotations.
 
 Import FreeVars.Term.
 
-Import NamedTerm.
 
 Section Weakening.
 
@@ -259,7 +258,7 @@ Proof.
             specialize (IHbs H).
             clear H.
 
-            assert (exists bs_init : list NamedTerm.Binding, bs' = bs_init ++ bs).
+            assert (exists bs_init : list Binding, bs' = bs_init ++ bs).
             {
               destruct H_ex.
               rewrite app_cons_app_app in H.

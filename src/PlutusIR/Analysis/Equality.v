@@ -11,7 +11,6 @@ From PlutusCert Require Import
   Util.List
 .
 
-Import NamedTerm.
 Set Implicit Arguments.
 
 Definition EqDec := fun A : Type => forall x y : A, {x = y} + {x <> y}.

@@ -17,7 +17,6 @@ From PlutusCert Require Import
   Compat
 .
 
-Import NamedTerm.
 Import ListNotations.
 
 Section Bindings.

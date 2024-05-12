@@ -1,7 +1,6 @@
 From PlutusCert Require Import
   PlutusIR
   Analysis.BoundVars.
-Import NamedTerm.
 
 Require Import
   Strings.String

@@ -1,6 +1,5 @@
 Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.Util.List.
-Import NamedTerm.
 Require Import Lists.List.
 Import ListNotations.
 

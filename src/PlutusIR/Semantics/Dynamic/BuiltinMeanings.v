@@ -7,8 +7,6 @@ Require Import Coq.Strings.BinaryString.
 From Equations Require Import Equations.
 Import ListNotations.
 
-Import NamedTerm.
-
 Local Open Scope string_scope.
 Local Open Scope Z_scope.
 

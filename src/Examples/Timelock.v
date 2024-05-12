@@ -15,7 +15,6 @@ From PlutusCert Require Import
   Examples.TimelockDumps
 .
 
-Import NamedTerm.
 
 Set Implicit Arguments.
 Set Printing Universes.

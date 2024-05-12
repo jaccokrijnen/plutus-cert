@@ -1,5 +1,4 @@
 Require Import PlutusCert.PlutusIR.
-Import NamedTerm.
 Require Import PlutusCert.PlutusIR.Transform.DeadCode2.
 Require Import Coq.Program.Basics.
 Require Import Coq.Lists.List.

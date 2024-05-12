@@ -1,5 +1,4 @@
 From PlutusCert Require Import PlutusIR.
-Import NamedTerm.
 From PlutusCert Require Import PlutusIR.Transform.Compat.
 From PlutusCert Require Import PlutusIR.Analysis.FreeVars.
 Require Import Coq.Strings.String.

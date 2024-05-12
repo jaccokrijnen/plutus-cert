@@ -5,8 +5,6 @@ From PlutusCert Require Import
   Util
   PlutusIR.
 
-Import NamedTerm.
-
 Set Implicit Arguments.
 
 

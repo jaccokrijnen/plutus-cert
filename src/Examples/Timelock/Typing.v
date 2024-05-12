@@ -1,5 +1,4 @@
 From PlutusCert Require Import PlutusIR.
-Import NamedTerm.
 From PlutusCert Require Import PlutusIR.Semantics.Static.
 From PlutusCert Require Import Util.
 

@@ -9,7 +9,6 @@ From PlutusCert Require Import
   Util.List
   .
 
-Import NamedTerm.
 Import ListNotations.
 
 Open Scope bool_scope.

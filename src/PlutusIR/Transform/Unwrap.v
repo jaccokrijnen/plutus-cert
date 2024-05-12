@@ -3,7 +3,6 @@ From PlutusCert Require Import
   Transform.Compat
 .
 
-Import NamedTerm.
 
 Reserved Notation "t₁ ▷-unwrap t₂" (at level 30).
 

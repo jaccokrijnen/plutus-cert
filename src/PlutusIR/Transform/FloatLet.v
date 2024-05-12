@@ -10,8 +10,7 @@ From PlutusCert Require Import
   Analysis.Purity
   Analysis.WellScoped
   Transform.SplitRec
-  .
-Import NamedTerm.
+.
 
 
 Definition fv : Term -> list string := Term.fv.

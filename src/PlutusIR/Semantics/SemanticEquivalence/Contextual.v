@@ -5,7 +5,6 @@ From PlutusCert Require Import PlutusIR.Semantics.Dynamic.Bigstep.
 Require Import Lists.List.
 Import ListNotations.
 
-Import NamedTerm.
 
 
 Definition Term_Unit : Term :=

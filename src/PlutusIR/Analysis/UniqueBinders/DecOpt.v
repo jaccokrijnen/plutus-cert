@@ -23,6 +23,7 @@ Proof. (* derive_mon. Qed. *) idtac "Admitted: unique_ty_DecOpt_mon". Admitted.
 
 
 
+(*
 QCDerive DecOpt for (unique_tm ty).
 
 Instance unique_tm_DecOpt_sound ty: DecOptSoundPos (unique_ty ty).
@@ -37,3 +38,4 @@ Proof. (* derive_mon. Qed. *) idtac "Admitted: unique_tm_DecOpt_mon". Admitted.
 
 Definition dec_unique (t : NamedTerm.Term) : nat -> option bool :=
   @decOpt (unique_tm t) (DecOptunique_tm t).
+  *)

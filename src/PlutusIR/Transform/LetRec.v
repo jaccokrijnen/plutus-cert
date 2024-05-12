@@ -4,7 +4,6 @@ From Coq Require Import
 From PlutusCert Require Import
   PlutusIR
   .
-Import NamedTerm.
 Import ListNotations.
 Open Scope string_scope.
 

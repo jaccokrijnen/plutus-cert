@@ -1,6 +1,5 @@
 Require Import PlutusCert.PlutusIR.
 Import PlutusNotations.
-Import NamedTerm.
 
 Require Export PlutusCert.PlutusIR.Analysis.BoundVars.
 

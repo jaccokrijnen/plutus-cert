@@ -1,5 +1,4 @@
 Require Import PlutusCert.PlutusIR.
-Import NamedTerm.
 
 Require Export PlutusCert.PlutusIR.Analysis.BoundVars.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Typing.

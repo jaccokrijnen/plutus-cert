@@ -1,5 +1,4 @@
 Require Import PlutusCert.PlutusIR.
-Import NamedTerm.
 Require Import PlutusCert.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
 From Coq Require Import Bool.Bool Arith.PeanoNat.
 Import PeanoNat.Nat.

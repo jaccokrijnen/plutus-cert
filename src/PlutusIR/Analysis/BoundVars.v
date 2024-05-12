@@ -18,7 +18,6 @@ From PlutusCert Require Import
 
 Require Import Utf8_core.
 
-Import NamedTerm.
 
 
 Inductive appears_bound_in_ty (X : string) : Ty -> Prop :=

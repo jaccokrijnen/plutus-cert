@@ -1,7 +1,6 @@
 (* Has to be exported, otherwise notation in the following modules
    can not be exported (depend on custom entry plutus_term) *)
 Require Export PlutusCert.PlutusIR.
-Export NamedTerm.
 
 (** ** Definition of big-step semantics *)
 Require Export PlutusCert.PlutusIR.Semantics.Dynamic.Bigstep.

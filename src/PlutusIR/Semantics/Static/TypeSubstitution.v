@@ -2,7 +2,6 @@ From Equations Require Import Equations.
 From PlutusCert Require Import PlutusIR.
 From PlutusCert Require Import Analysis.FreeVars.
 Import Ty.
-Import NamedTerm.
 
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.

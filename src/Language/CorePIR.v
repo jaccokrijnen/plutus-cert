@@ -7,7 +7,6 @@ From PlutusCert Require Import
   .
 
 Require Import Utf8_core.
-Import NamedTerm.
 Require Import Strings.String.
 
 

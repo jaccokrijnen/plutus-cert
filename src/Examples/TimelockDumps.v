@@ -8,7 +8,6 @@ From PlutusCert Require Import PlutusIR.
 From PlutusCert Require Import PlutusIR.Transform.Inline.Intermediate.
 From PlutusCert Require Import Util.
 
-Import NamedTerm.
 
 (* Backwards compatibility: we used to dump the arity of constructors and have a
    separate type for constructor definitions. To not regenerate the below dumps,

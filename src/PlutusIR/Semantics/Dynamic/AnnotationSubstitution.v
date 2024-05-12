@@ -1,6 +1,5 @@
 Require Import PlutusCert.PlutusIR.
 Import PlutusNotations.
-Import NamedTerm.
 
 Require Import PlutusCert.PlutusIR.Semantics.Static.TypeSubstitution.
 Require Import PlutusCert.PlutusIR.Analysis.BoundVars.

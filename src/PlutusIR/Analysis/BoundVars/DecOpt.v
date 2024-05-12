@@ -26,6 +26,7 @@ Proof. (* derive_mon. Qed. *) idtac "Admitted: appears_bound_in_ty_DecOpt_mon". 
 
 (* appears_bound_in_tm *)
 
+(*
 QCDerive DecOpt for (appears_bound_in_tm x tm).
 
 Instance appears_bound_in_tm_DecOpt_sound x tm: DecOptSoundPos (appears_bound_in_tm x tm).
@@ -51,3 +52,4 @@ Proof. (* derive_complete. Qed. *) idtac "Admitted: appears_bound_in_ann_DecOpt_
 
 Instance appears_bound_in_ann_DecOpt_mon x ann: DecOptSizeMonotonic (appears_bound_in_ann x ann).
 Proof. (* derive_mon. Qed. *) idtac "Admitted: appears_bound_in_ann_DecOpt_mon". Admitted.
+*)

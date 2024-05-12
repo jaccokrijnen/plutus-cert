@@ -7,7 +7,6 @@ From PlutusCert Require Import
   Util
 .
 
-Import NamedTerm.
 Import ListNotations.
 
 

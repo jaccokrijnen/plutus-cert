@@ -1,5 +1,4 @@
 Require Import PlutusCert.PlutusIR.
-Import NamedTerm.
 
 Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.
 Require Import PlutusCert.Util.List.

@@ -6,7 +6,6 @@ From PlutusCert Require Import
   Analysis.WellScoped
   Transform.Compat
   .
-Import NamedTerm.
 
 From Coq Require Import
   Strings.String

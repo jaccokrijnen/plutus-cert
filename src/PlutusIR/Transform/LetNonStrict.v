@@ -5,16 +5,13 @@ From PlutusCert Require
   PlutusIR
 .
 
-Import PlutusIR (term(..), tvdecl(..), vdecl(..), ty(..),
-  dtdecl(..), binding(..), Recursivity(..), DefaultUni(..),
-  kind(..), Strictness(..)).
+Import PlutusIR.
 
 From PlutusCert Require Import
   Util.List
   Analysis.BoundVars
 .
 Import ListNotations.
-Import PlutusIR.NamedTerm.
 
 
 (*

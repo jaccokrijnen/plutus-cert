@@ -2,7 +2,6 @@ From PlutusCert Require Import Language.
 From PlutusCert Require Import PlutusIR.
 From PlutusCert Require Import Semantics.Dynamic.Bigstep.
 
-Import NamedTerm.
 
 Definition PIRLang : Language :=
   {|

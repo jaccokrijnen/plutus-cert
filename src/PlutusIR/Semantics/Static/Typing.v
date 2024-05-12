@@ -1,6 +1,5 @@
 Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.Util.List.
-Import NamedTerm.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.Auxiliary.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Context.

@@ -5,7 +5,6 @@ From PlutusCert Require Import Semantics.Dynamic.AnnotationSubstitution.
 From PlutusCert Require Import Multisubstitution.Congruence.
 From PlutusCert Require Import Util.List.
 
-Import NamedTerm.
 
 Import UniqueBinders.
 

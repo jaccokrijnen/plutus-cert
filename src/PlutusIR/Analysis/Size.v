@@ -9,7 +9,6 @@ From Equations Require Import Equations.
 Set Implicit Arguments.
 
 From PlutusCert Require Import PlutusIR.
-Import NamedTerm.
 From PlutusCert Require Import PlutusIR.Folds.
 From PlutusCert Require Import Util.List.
 
@@ -149,7 +148,7 @@ Definition plus_lt_lr : forall n m p q : nat, n < m -> p < q -> n + p < m + q :=
 
 Section NonFold.
 
-  Definition size_binding (size : Term -> nat) (b : Binding) : nat :=
+  Definition size_binding (size : term -> nat) (b : binding) : nat :=
     1 + 
     match b with
       | TermBind rec (VarDecl _ _) t => size t
@@ -158,7 +157,7 @@ Section NonFold.
     end
     .
 
-  Function size (t : Term) : nat :=
+  Function size (t : term) : nat :=
     1 +
     match t with
      | Let rec bs t    => list_sum (map (size_binding size) bs) + size t

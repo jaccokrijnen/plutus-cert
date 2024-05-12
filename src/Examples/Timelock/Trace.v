@@ -7,7 +7,6 @@ From PlutusCert Require Import
   Util
 .
 
-Import NamedTerm.
 
 Local Open Scope Z_scope.
 Local Open Scope string_scope.

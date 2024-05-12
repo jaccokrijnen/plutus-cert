@@ -14,7 +14,6 @@ From PlutusCert Require Import
   Util
 .
 
-Import NamedTerm.
 Import UniqueBinders.
 Import ListNotations.
 

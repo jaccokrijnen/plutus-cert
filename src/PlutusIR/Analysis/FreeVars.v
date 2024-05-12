@@ -4,16 +4,13 @@ Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Ascii.
 
-
-
 From PlutusCert Require Import PlutusIR.
- From PlutusCert Require Import  PlutusIR.Folds.
- From PlutusCert Require Import  Analysis.BoundVars.
- From PlutusCert Require Import  Util.
- From PlutusCert Require Import  Util.List.
+From PlutusCert Require Import  PlutusIR.Folds.
+From PlutusCert Require Import  Analysis.BoundVars.
+From PlutusCert Require Import  Util.
+From PlutusCert Require Import  Util.List.
 
 Set Implicit Arguments.
-Import NamedTerm.
 
 Module Ty.
 

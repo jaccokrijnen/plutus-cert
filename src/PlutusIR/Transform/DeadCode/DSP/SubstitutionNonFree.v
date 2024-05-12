@@ -21,7 +21,6 @@ Import UniqueBinders.
 Import Utf8_core.
 
 
-Import NamedTerm.
 
 Section Term.
 

@@ -11,7 +11,6 @@ From PlutusCert Require Import
   .
 
 Import ListNotations.
-Import NamedTerm.
 
 Section Term.
 
