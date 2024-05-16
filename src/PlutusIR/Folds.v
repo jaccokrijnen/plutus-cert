@@ -19,22 +19,22 @@ Inductive AlgTerm: Type := mkTermAlg
   { a_Let      : recursivity -> rBindings -> rTerm -> rTerm
   ; a_Var      : string -> rTerm
   ; a_TyAbs    : string -> kind -> rTerm -> rTerm
-  ; a_LamAbs   : string -> Ty -> rTerm -> rTerm
+  ; a_LamAbs   : string -> ty -> rTerm -> rTerm
   ; a_Apply    : rTerm -> rTerm -> rTerm
   ; a_Constant : @some valueOf -> rTerm
   ; a_Builtin  : DefaultFun -> rTerm
-  ; a_TyInst   : rTerm -> Ty -> rTerm
-  ; a_Error    : Ty -> rTerm
-  ; a_IWrap    : Ty -> Ty -> rTerm -> rTerm
+  ; a_TyInst   : rTerm -> ty -> rTerm
+  ; a_Error    : ty -> rTerm
+  ; a_IWrap    : ty -> ty -> rTerm -> rTerm
   ; a_Unwrap   : rTerm -> rTerm
   ; a_Constr   : nat -> list rTerm -> rTerm
   ; a_Case    : rTerm -> list rTerm -> rTerm
   }
 
 with AlgBinding : Type := mkBindingAlg
-  { a_TermBind     : strictness -> VDecl -> rTerm -> rBinding
-  ; a_TypeBind     : TVDecl -> Ty -> rBinding
-  ; a_DatatypeBind : DTDecl -> rBinding
+  { a_TermBind     : strictness -> vdecl -> rTerm -> rBinding
+  ; a_TypeBind     : tvdecl -> ty -> rBinding
+  ; a_DatatypeBind : dtdecl -> rBinding
   }
 
 with AlgBindings : Type := mkBindingsAlg
@@ -67,11 +67,11 @@ Section Folds.
 
 
   (* See note [Structural Recursion Checker] *)
-  Definition foldBindings (foldBinding : Binding -> rb) (bs : list Binding) : rbs :=
+  Definition foldBindings (foldBinding : binding -> rb) (bs : list binding) : rbs :=
     fold_right (a_cons algBindings) (a_nil algBindings) (map foldBinding bs)
   .
 
-  Fixpoint foldTerm (t : Term) : rt := match t with
+  Fixpoint foldTerm (t : term) : rt := match t with
     | (Let rec bs t)    => a_Let algTerm rec (foldBindings foldBinding bs) (foldTerm t)
     | (Var n)           => a_Var algTerm n
     | (TyAbs n k t)     => a_TyAbs algTerm n k (foldTerm t)
@@ -87,7 +87,7 @@ Section Folds.
     | (Case t ts)      => a_Case algTerm (foldTerm t) (map foldTerm ts)
   end
 
-  with foldBinding (b : Binding) : rb := match b with
+  with foldBinding (b : binding) : rb := match b with
     | (TermBind s v t)  => a_TermBind algBinding s v (foldTerm t)
     | (TypeBind tv ty)  => a_TypeBind algBinding tv ty
     | (DatatypeBind dt) => a_DatatypeBind algBinding dt
@@ -271,13 +271,13 @@ Section Use. (* name comes from "use" rules in attribute grammars *)
     a_Let := fun (_ : recursivity) (rBs : a) (r : a) => f [rBs; r];
     a_Var := fun _ : string => f nil ;
     a_TyAbs := fun (_ : string) (_ : kind) (X : a) => f [X];
-    a_LamAbs := fun (_ : string) (_ : Ty) (X : a) => f [X];
+    a_LamAbs := fun (_ : string) (_ : ty) (X : a) => f [X];
     a_Apply := fun X X0 : a => f [X; X0];
     a_Constant := fun _ : @some valueOf => f [];
     a_Builtin := fun _ : DefaultFun => f [];
-    a_TyInst := fun (X : a) (_ : Ty) => f [X];
-    a_Error := fun _ : Ty => f [];
-    a_IWrap := fun (_ _ : Ty) (X : a) => f [X];
+    a_TyInst := fun (X : a) (_ : ty) => f [X];
+    a_Error := fun _ : ty => f [];
+    a_IWrap := fun (_ _ : ty) (X : a) => f [X];
     a_Unwrap := fun X : a => f [X];
     a_Constr := fun i XS => f XS;
     a_Case := fun X XS => f (X :: XS)
@@ -287,9 +287,9 @@ Section Use. (* name comes from "use" rules in attribute grammars *)
 
   Definition useAlgBinding : AlgBinding a a a :=
     {|
-    a_TermBind := fun (_ : strictness) (_ : VDecl) (X : a) => f [X];
-    a_TypeBind := fun (_ : TVDecl) (_ : Ty) => f [];
-    a_DatatypeBind := fun _ : DTDecl => f []
+    a_TermBind := fun (_ : strictness) (_ : vdecl) (X : a) => f [X];
+    a_TypeBind := fun (_ : tvdecl) (_ : ty) => f [];
+    a_DatatypeBind := fun _ : dtdecl => f []
     |}
     .
 
@@ -299,13 +299,13 @@ Section Use. (* name comes from "use" rules in attribute grammars *)
     a_cons := fun rx rxs => f [rx; rxs]
     |}.
 
-  Definition foldTermUse (t : Term) : a :=
+  Definition foldTermUse (t : term) : a :=
     foldTerm useAlg useAlgBinding useAlgBindings t.
 
-  Definition foldBindingUse (b : Binding) : a :=
+  Definition foldBindingUse (b : binding) : a :=
     foldBinding useAlg useAlgBinding useAlgBindings b.
 
-  Definition foldBindingsUse (bs : list Binding) : a :=
+  Definition foldBindingsUse (bs : list binding) : a :=
     foldBindings useAlgBindings foldBindingUse bs.
 End Use.
 

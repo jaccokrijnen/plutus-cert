@@ -24,7 +24,7 @@ Definition mkName : nat -> string :=
 .
 
 (* See constr_to_term *)
-Fixpoint constr_to_term_mono (ix : nat) (τ : Ty) (n : nat) :=
+Fixpoint constr_to_term_mono (ix : nat) (τ : ty) (n : nat) :=
   match τ with
     | Ty_Fun σ τ => LamAbs (mkName n) σ (constr_to_term_mono ix τ (S n))
     | _          => Constr ix (map (Var ∘ mkName) (seq 0 n))
@@ -41,7 +41,7 @@ Fixpoint constr_to_term_mono (ix : nat) (τ : Ty) (n : nat) :=
  *
  *    Λ α_0. ... Λ α_1. λ0. ... λ n. Constr ix [0, ... n]
  *)
-Fixpoint constr_to_term (ix : nat) (tyvars : list TVDecl) (τ : Ty) :=
+Fixpoint constr_to_term (ix : nat) (tyvars : list tvdecl) (τ : ty) :=
   match tyvars with
     | []                      => constr_to_term_mono ix τ 0
     | TyVarDecl α K :: tyvars => TyAbs α K (constr_to_term ix tyvars τ)
@@ -54,7 +54,7 @@ Fixpoint constr_to_term (ix : nat) (tyvars : list TVDecl) (τ : Ty) :=
     see https://github.com/IntersectMBO/plutus/blob/16be7da33eacb1991ae0164b9fd65e12c7e4771e/plutus-core/plutus-ir/src/PlutusIR/Compiler/Datatype.hs#L414
 *)
 
-Axiom constr_to_subst : list TVDecl -> nat -> VDecl -> string * Term.
+Axiom constr_to_subst : list tvdecl -> nat -> vdecl -> string * term.
 (*
 Definition constr_to_subst (tyvars : list TVDecl) (ix : nat) (c : constructor)
   : string * Term :=
@@ -64,19 +64,19 @@ Definition constr_to_subst (tyvars : list TVDecl) (ix : nat) (c : constructor)
 .
   *)
 
-Definition constrs_to_subst (tyvars : list TVDecl) (cs : list VDecl)
-  : list (string * Term) :=
+Definition constrs_to_subst (tyvars : list tvdecl) (cs : list vdecl)
+  : list (string * term) :=
   map (uncurry (constr_to_subst tyvars)) (zip_from 0 cs)
 .
 
-Axiom dt_to_ty : DTDecl -> Ty.
+Axiom dt_to_ty : dtdecl -> ty.
 
 (* TODO compare with compiler implementation:
  * https://github.com/IntersectMBO/plutus/blob/16be7da33eacb1991ae0164b9fd65e12c7e4771e/plutus-core/plutus-ir/src/PlutusIR/Compiler/Datatype.hs#L486
  *)
-Axiom match_to_term : DTDecl -> Term.
+Axiom match_to_term : dtdecl -> term.
 
-Definition dt_subst (dtd : DTDecl) : Ty * Term * list (string * Term) :=
+Definition dt_subst (dtd : dtdecl) : ty * term * list (string * term) :=
   match dtd with
     | Datatype tvd tyvars matchf cs =>
        ( dt_to_ty dtd

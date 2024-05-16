@@ -3,11 +3,11 @@ Require Import PlutusCert.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
 From Coq Require Import Bool.Bool Arith.PeanoNat.
 Import PeanoNat.Nat.
 
-Inductive is_error : Term -> Prop :=
+Inductive is_error : term -> Prop :=
   | IsError : forall T,
       is_error (Error T).
 
-Inductive value : Term -> Prop :=
+Inductive value : term -> Prop :=
   | V_LamAbs : forall x T t0,
       value (LamAbs x T t0)
   | V_TyAbs : forall X K t,
@@ -37,7 +37,7 @@ Inductive value : Term -> Prop :=
   | V_If3 : forall T cond t,
       value (Apply (Apply (TyInst (Builtin IfThenElse) T) cond) t) *)
 
-with neutral_value : nat -> Term -> Prop :=
+with neutral_value : nat -> term -> Prop :=
   | NV_Builtin : forall n f,
       (* NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity. *)
       (* f <> IfThenElse -> *)
@@ -63,11 +63,11 @@ Combined Scheme value__multind from
   value__ind,
   neutral_value__ind.
 
-Definition neutral (t : Term) := neutral_value 0 t.
+Definition neutral (t : term) := neutral_value 0 t.
 
 #[export] Hint Unfold neutral : core.
 
-Inductive fully_applied_neutral : nat -> Term -> Prop :=
+Inductive fully_applied_neutral : nat -> term -> Prop :=
   | FA_Builtin : forall n f,
       (* NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity. *)
       (* f <> IfThenElse -> *)
@@ -85,7 +85,7 @@ Inductive fully_applied_neutral : nat -> Term -> Prop :=
 
 #[export] Hint Constructors fully_applied_neutral : core.
 
-Definition fully_applied (t : Term) := fully_applied_neutral 0 t.
+Definition fully_applied (t : term) := fully_applied_neutral 0 t.
 
 #[export] Hint Unfold fully_applied : core.
 
@@ -123,7 +123,7 @@ Proof with (eauto || (try lia)).
 Qed.
 
 
-Definition is_error_b (t : Term) :=
+Definition is_error_b (t : term) :=
   match t with
     | Error T => true
     | _       => false
@@ -137,7 +137,7 @@ Proof.
 Qed.
 
 Fixpoint
-  dec_value' (n : nat) (t : Term) {struct t} :=
+  dec_value' (n : nat) (t : term) {struct t} :=
   match t with
     | LamAbs x T t0 => true
     | TyAbs X K t   => true
@@ -156,7 +156,7 @@ Fixpoint
 
 Definition dec_value := dec_value' 0.
 
-Definition dec_neutral_value (n : nat) (t : Term) :=
+Definition dec_neutral_value (n : nat) (t : term) :=
   match t with
     | Builtin f   => dec_value' n t
     | Apply nv v  => dec_value' n t

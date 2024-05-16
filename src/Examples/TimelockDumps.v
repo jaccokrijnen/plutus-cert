@@ -13,7 +13,7 @@ From PlutusCert Require Import Util.
    separate type for constructor definitions. To not regenerate the below dumps,
    we use this backwards compatible wrapper
 *)
-Definition Constructor vd (arity : nat) : VDecl := vd.
+Definition Constructor vd (arity : nat) : vdecl := vd.
 
 Definition Unique (n : nat) := n.
 

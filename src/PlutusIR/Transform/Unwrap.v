@@ -6,7 +6,7 @@ From PlutusCert Require Import
 
 Reserved Notation "t₁ ▷-unwrap t₂" (at level 30).
 
-Inductive unwrap_cancel : Term -> Term -> Prop :=
+Inductive unwrap_cancel : term -> term -> Prop :=
 
   | uc_cancel : forall ty1 ty2 t t',
       t ▷-unwrap t' ->

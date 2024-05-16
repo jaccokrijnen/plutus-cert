@@ -5,7 +5,7 @@ Require Export PlutusCert.PlutusIR.Semantics.Static.TypeSubstitution.
 
 (** Type equality *)
 Reserved Notation "T1 '=b' T2" (at level 40).
-Inductive EqT : Ty -> Ty -> Prop :=
+Inductive EqT : ty -> ty -> Prop :=
   (* Beta-reduction *)
   | Q_Beta : forall X K T1 T2 T1',
       substituteTCA X T2 T1 = T1' ->
@@ -44,7 +44,7 @@ where "T1 '=b' T2" := (EqT T1 T2).
 #[export] Hint Constructors EqT : core.
 
 (** Normal types *)
-Inductive normal_Ty : Ty -> Prop :=
+Inductive normal_Ty : ty -> Prop :=
   | NO_TyLam : forall bX K T,
       normal_Ty T ->
       normal_Ty (Ty_Lam bX K T)
@@ -65,7 +65,7 @@ Inductive normal_Ty : Ty -> Prop :=
   | NO_TyBuiltin : forall st,
       normal_Ty (Ty_Builtin st)
 
-with neutral_Ty : Ty -> Prop :=
+with neutral_Ty : ty -> Prop :=
   | NE_TyVar : forall X,
       neutral_Ty (Ty_Var X)
   | NE_TyApp : forall T1 T2,
@@ -83,7 +83,7 @@ Combined Scheme normal_Ty__multind from
 #[export] Hint Constructors normal_Ty neutral_Ty : core.
 
 (** Type normalisation *)
-Inductive normalise : Ty -> Ty -> Prop :=
+Inductive normalise : ty -> ty -> Prop :=
   | N_BetaReduce : forall bX K T1 T2 T1n T2n T,
       normalise T1 (Ty_Lam bX K T1n) ->
       normalise T2 T2n ->
@@ -221,7 +221,7 @@ Lemma normalisation__complete : forall S T Sn,
 Proof. Abort.
 
 (** Normalisation of lists of types*)
-Inductive map_normalise : list (string * Ty) -> list (string * Ty) -> Prop :=
+Inductive map_normalise : list (string * ty) -> list (string * ty) -> Prop :=
   | MN_nil :
       map_normalise nil nil
   | MN_cons : forall X T Ts Tn Tsn,
@@ -300,8 +300,8 @@ Proof with eauto.
     + eauto.
 Qed.
 
-Axiom norm : Ty -> Ty.
+Axiom norm : ty -> ty.
 Axiom norm_normalise : forall ty, normalise ty (norm ty).
 
-Axiom map_norm : list (string * Ty) -> list (string * Ty).
+Axiom map_norm : list (string * ty) -> list (string * ty).
 Axiom map_norm_map_normalise : forall Ts, map_normalise Ts (map_norm Ts).

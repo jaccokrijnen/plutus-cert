@@ -15,7 +15,7 @@ Local Open Scope string_scope.
    separate type for constructor definitions. To not regenerate the below dumps,
    we use this backwards compatible wrapper
 *)
-Definition Constructor vd (arity : nat) : VDecl := vd.
+Definition Constructor vd (arity : nat) : vdecl := vd.
 Definition Name (s : string) (n : nat) := string_of_nat n.
 Definition Unique (n : nat) := n.
 Definition TyName (s : string) := s.

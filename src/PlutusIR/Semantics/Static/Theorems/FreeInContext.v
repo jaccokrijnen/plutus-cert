@@ -41,25 +41,25 @@ End Ty.
 
 Module Term.
 
-  Definition P_has_type (Delta : list (string * kind)) (Gamma : list (string * Ty)) (t : Term) (T : Ty) :=
+  Definition P_has_type (Delta : list (string * kind)) (Gamma : list (string * ty)) (t : term) (T : ty) :=
     forall x,
       Term.appears_free_in x t ->
       exists T', lookup x Gamma = Datatypes.Some T'.
 
-  Definition P_constructor_well_formed (Delta : list (string * kind)) (c : VDecl) (T : Ty) :=
+  Definition P_constructor_well_formed (Delta : list (string * kind)) (c : vdecl) (T : ty) :=
     Delta |-ok_c c : T.
 
-  Definition P_bindings_well_formed_nonrec (Delta : list (string * kind)) (Gamma : list (string * Ty)) (bs : list Binding) :=
+  Definition P_bindings_well_formed_nonrec (Delta : list (string * kind)) (Gamma : list (string * ty)) (bs : list binding) :=
     forall x,
       Term.appears_free_in__bindings_nonrec x bs ->
       exists T', lookup x Gamma = Datatypes.Some T'.
 
-  Definition P_bindings_well_formed_rec  (Delta : list (string * kind)) (Gamma : list (string * Ty)) (bs : list Binding) :=
+  Definition P_bindings_well_formed_rec  (Delta : list (string * kind)) (Gamma : list (string * ty)) (bs : list binding) :=
     forall x,
       Term.appears_free_in__bindings_rec x bs ->
       exists T', lookup x Gamma = Datatypes.Some T'.
 
-  Definition P_binding_well_formed (Delta : list (string * kind)) (Gamma : list (string * Ty)) (b : Binding) :=
+  Definition P_binding_well_formed (Delta : list (string * kind)) (Gamma : list (string * ty)) (b : binding) :=
     forall x,
       Term.appears_free_in__binding x b ->
       exists T', lookup x Gamma = Datatypes.Some T'.
@@ -127,27 +127,27 @@ End Term.
 
 Module Annotation.
 
-  Definition P_has_type (Delta : list (string * kind)) (Gamma : list (string * Ty)) (t : Term) (T : Ty) :=
+  Definition P_has_type (Delta : list (string * kind)) (Gamma : list (string * ty)) (t : term) (T : ty) :=
     forall X,
       Annotation.appears_free_in X t ->
       exists K', lookup X Delta = Datatypes.Some K'.
 
-  Definition P_constructor_well_formed (Delta : list (string * kind)) (c : VDecl) (T : Ty) :=
+  Definition P_constructor_well_formed (Delta : list (string * kind)) (c : vdecl) (T : ty) :=
     forall X,
       Annotation.appears_free_in__constructor X c ->
       exists K', lookup X Delta = Datatypes.Some K'.
 
-  Definition P_bindings_well_formed_nonrec (Delta : list (string * kind)) (Gamma : list (string * Ty)) (bs : list Binding) :=
+  Definition P_bindings_well_formed_nonrec (Delta : list (string * kind)) (Gamma : list (string * ty)) (bs : list binding) :=
     forall X,
       Annotation.appears_free_in__bindings_nonrec X bs ->
       exists K', lookup X Delta = Datatypes.Some K'.
 
-  Definition P_bindings_well_formed_rec (Delta : list (string * kind)) (Gamma : list (string * Ty)) (bs : list Binding) :=
+  Definition P_bindings_well_formed_rec (Delta : list (string * kind)) (Gamma : list (string * ty)) (bs : list binding) :=
     forall X,
       Annotation.appears_free_in__bindings_rec X bs ->
       exists K', lookup X Delta = Datatypes.Some K'.
 
-  Definition P_binding_well_formed (Delta : list (string * kind)) (Gamma : list (string * Ty)) (b : Binding) :=
+  Definition P_binding_well_formed (Delta : list (string * kind)) (Gamma : list (string * ty)) (b : binding) :=
     forall X,
       Annotation.appears_free_in__binding X b ->
       exists K', lookup X Delta = Datatypes.Some K'.

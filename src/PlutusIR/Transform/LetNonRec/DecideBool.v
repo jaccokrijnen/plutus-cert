@@ -39,9 +39,9 @@ Import ListNotations.
 
 Section Bindings.
 
-  Context (dec_Term : Term -> Term -> bool).
+  Context (dec_Term : term -> term -> bool).
 
-  Fixpoint bindings_to_apps (bs : list Binding) : option (list (Term -> Term)) :=
+  Fixpoint bindings_to_apps (bs : list binding) : option (list (term -> term)) :=
     match bs with
       | []        => Just []
       | TermBind Strict (VarDecl v ty) rhs :: bs =>
@@ -51,7 +51,7 @@ Section Bindings.
       |  _ => None
     end.
 
-  Fixpoint dec_Bindings' (bs : list Binding) (t : Term) {struct bs} : option Term :=
+  Fixpoint dec_Bindings' (bs : list binding) (t : term) {struct bs} : option term :=
     match bs with
       | nil       => Just t
       | cons b bs => match b, t with
@@ -68,7 +68,7 @@ End Bindings.
 (*
   Returns true if the term was desugared correctly.
 *)
-Fixpoint dec_Term (x y : Term) {struct x} : bool := match x, y with
+Fixpoint dec_Term (x y : term) {struct x} : bool := match x, y with
 
   (* non-recursive bindings should be desugared *)
   | Let NonRec bs body, t =>
@@ -95,7 +95,7 @@ Fixpoint dec_Term (x y : Term) {struct x} : bool := match x, y with
 
   | _, _ => false
   end
-with dec_Binding_compat (b b' : Binding) : bool := match b, b' with
+with dec_Binding_compat (b b' : binding) : bool := match b, b' with
   (* These cases are only used for recursive let-bindings, i.e.
      equal and recursive Terms should be desugared *)
   | TermBind s vdecl t, TermBind s' vdecl' t' => strictness_eqb s s' && VDecl_eqb vdecl vdecl' && dec_Term t t'
@@ -106,7 +106,7 @@ with dec_Binding_compat (b b' : Binding) : bool := match b, b' with
 .
 
 (* See comment of dec_Bindings' *)
-Definition dec_Bindings : list Binding -> Term -> option Term := 
+Definition dec_Bindings : list binding -> term -> option term := 
   dec_Bindings' dec_Term.
 
 
@@ -229,11 +229,11 @@ Ltac dec_tac :=
   intros;
 
   (* Split cases, solve impossible ones *)
-  match goal with t' : Term |- _ =>
+  match goal with t' : term |- _ =>
     destruct t'; split; try solve [inversion 1]
   end; [> tac_fwd | tac_bwd].
 
-Definition desugar_fun v ty t_bound : Term -> Term :=
+Definition desugar_fun v ty t_bound : term -> term :=
   fun t_inner => Apply (LamAbs v ty t_inner) t_bound.
 
 Lemma dec_Bindings_exists : ∀ bs t t_inner,
@@ -289,7 +289,7 @@ Proof.
       intros;
 
       (* Split cases, solve impossible ones *)
-      match goal with t' : Term |- _ =>
+      match goal with t' : term |- _ =>
         destruct t'; split; try solve [inversion 1]
       end.
       * (*fwd *) 

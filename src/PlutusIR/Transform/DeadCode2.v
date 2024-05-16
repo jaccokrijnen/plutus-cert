@@ -17,13 +17,13 @@ From PlutusCert Require Import
 Import UniqueBinders.
 Import ListNotations.
 
-Definition fv : Term -> list string := Term.fv.
-Definition ftv : Term -> list string := Term.ftv.
+Definition fv : term -> list string := Term.fv.
+Definition ftv : term -> list string := Term.ftv.
 
 Definition disjoint {A} (xs ys : list A) : Prop :=
   Forall (fun v => ~ In v ys) xs.
 
-Definition unused_in (b : Binding) (t : Term) : Prop :=
+Definition unused_in (b : binding) (t : term) : Prop :=
   disjoint (bvb b) (fv t) /\
   disjoint (btvb b) (ftv t)
 .
@@ -50,7 +50,7 @@ Section Compatibility.
 
 End Compatibility.
 
-Inductive dc : Term -> Term -> Prop :=
+Inductive dc : term -> term -> Prop :=
   | dc_Var n :
       R_refl dc (Var n)
   | dc_TyAbs X k :
@@ -102,7 +102,7 @@ Inductive dc : Term -> Term -> Prop :=
       (H_dc_Rec : dc_Rec bs' t' bs bs' )
       :
        dc (Let Rec bs t) (Let Rec bs' t')
-with dc_Binding : Binding -> Binding -> Prop :=
+with dc_Binding : binding -> binding -> Prop :=
   | dc_refl_TermBind s v t :
       R_refl dc_Binding (TermBind s v t)
   | dc_refl_TypeBind tvd T :
@@ -111,7 +111,7 @@ with dc_Binding : Binding -> Binding -> Prop :=
       R_refl dc_Binding (DatatypeBind dtd)
   (* TODO: DatatypeBind with unused constructors/destructor *)
 
-with dc_NonRec : Term -> list Binding -> list Binding -> Prop :=
+with dc_NonRec : term -> list binding -> list binding -> Prop :=
   | dc_NonRec_elim
       b bs bs' t'
       (H_pure : pure_binding [] b)          (* Syntactic approximation of a pure (terminating) binding *)
@@ -132,7 +132,7 @@ with dc_NonRec : Term -> list Binding -> list Binding -> Prop :=
       : (*------------*)
       dc_NonRec t' [] []
 
-with dc_Rec : list Binding -> Term -> list Binding -> list Binding -> Prop :=
+with dc_Rec : list binding -> term -> list binding -> list binding -> Prop :=
 
   | dc_Rec_elim
       b bs bs' bs'0 t'

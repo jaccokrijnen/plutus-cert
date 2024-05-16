@@ -30,7 +30,7 @@ Definition P_CNR_LetRec_compat bs bs' := ∀ Δ Γ,
   map binds_Delta bs = map binds_Delta bs'
   .
 
-Definition P_CNR_Binding b (f : Term -> Term) := 
+Definition P_CNR_Binding b (f : term -> term) := 
 (
   match b with
     | TermBind Strict (VarDecl v ty) t_bound => ∀ t_bound',

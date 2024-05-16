@@ -225,7 +225,7 @@ Proof. auto. Qed.
 
 (** ** Multi-substitutions preserve typing *)
 
-Fixpoint mgsubst (xts : tass) (Gamma : list (string * Ty)) : list (string * Ty) :=
+Fixpoint mgsubst (xts : tass) (Gamma : list (string * ty)) : list (string * ty) :=
   match xts with
   | nil => Gamma
   | ((a, T) :: xts') => mgsubst xts' (gsubst a T Gamma)

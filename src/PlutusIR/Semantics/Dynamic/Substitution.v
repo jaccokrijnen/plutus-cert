@@ -27,9 +27,9 @@ Local Open Scope string_scope.
 (** Substitution of terms *)
 
 Section SubstBindings.
-  Context {subst_b : string -> Term -> Binding -> Binding}.
+  Context {subst_b : string -> term -> binding -> binding}.
 
-  Function subst_bnr' (x : string) (s : Term) (bs : list Binding) : list Binding :=
+  Function subst_bnr' (x : string) (s : term) (bs : list binding) : list binding :=
     match bs with
     | nil =>
         nil
@@ -42,7 +42,7 @@ Section SubstBindings.
     end.
 
   (* See note [Assumption of subst_b and subst_br] *)
-  Function subst_br' (x : string) (s : Term) (bs : list Binding) : list Binding :=
+  Function subst_br' (x : string) (s : term) (bs : list binding) : list binding :=
     match bs with
     | nil =>
         nil
@@ -52,7 +52,7 @@ Section SubstBindings.
 
 End SubstBindings.
 
-Function subst (x : string) (s : Term) (t : Term) {struct t} : Term :=
+Function subst (x : string) (s : term) (t : term) {struct t} : term :=
   match t with
   | Let NonRec bs t0 =>
       Let NonRec (@subst_bnr' subst_b x s bs)
@@ -99,7 +99,7 @@ Function subst (x : string) (s : Term) (t : Term) {struct t} : Term :=
 with
 
   (* See note [Assumption of subst_b and subst_br] *)
-  subst_b (x : string) (s : Term) (b : Binding) {struct b} : Binding :=
+  subst_b (x : string) (s : term) (b : binding) {struct b} : binding :=
   match b with
   | TermBind stricty (VarDecl y T) tb =>
       TermBind stricty (VarDecl y T) (subst x s tb)
@@ -180,19 +180,19 @@ Proof.
 Qed.
 
 (** Multi-substitutions of terms *)
-Fixpoint msubst (ss : list (string * Term)) (t : Term) : Term :=
+Fixpoint msubst (ss : list (string * term)) (t : term) : term :=
   match ss with
   | nil => t
   | (x, s) :: ss' => msubst ss' <{ [s / x] t }>
   end.
 
-Fixpoint msubst_b (ss : list (string * Term)) (b : Binding) : Binding :=
+Fixpoint msubst_b (ss : list (string * term)) (b : binding) : binding :=
   match ss with
   | nil => b
   | (x, s) :: ss' => msubst_b ss' <{ [s / x][b] b }>
   end.
 
-Fixpoint msubst_bnr (ss : list (string * Term)) (bs : list Binding) : list Binding :=
+Fixpoint msubst_bnr (ss : list (string * term)) (bs : list binding) : list binding :=
   match ss with
   | nil => bs
   | (x, s) :: ss' => msubst_bnr ss' <{ [s / x][bnr] bs }>

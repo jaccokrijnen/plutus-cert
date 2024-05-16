@@ -32,13 +32,13 @@ Section list_size.
 End list_size.
 Transparent list_size.
 
-Definition term_size (t : Term) : nat :=
+Definition term_size (t : term) : nat :=
   foldTermUse (fun xs => 1 + list_sum xs) t.
 
-Definition binding_size (b : Binding) : nat :=
+Definition binding_size (b : binding) : nat :=
   foldBindingUse (fun xs => 1 + list_sum xs) b.
 
-Definition bindings_size (bs : list Binding) : nat :=
+Definition bindings_size (bs : list binding) : nat :=
   foldBindingsUse (fun xs => 1 + list_sum xs) bs.
 
 (*
@@ -84,16 +84,16 @@ Lemma binding_size_TermBind s v t:
 Qed.
 
 (* Shorthand types for size comparison between terms *)
-Definition Smaller (s s' t t' : Term) : Prop :=
+Definition Smaller (s s' t t' : term) : Prop :=
   term_size s + term_size s' < term_size t + term_size t'.
 
-Definition Smaller_bs (cs cs' bs bs': list Binding) : Prop :=
+Definition Smaller_bs (cs cs' bs bs': list binding) : Prop :=
   length cs + length cs' < length bs + length bs'.
 
-Definition Smaller_t_bs (t t' : Term) (bs bs' : list Binding) :=
+Definition Smaller_t_bs (t t' : term) (bs bs' : list binding) :=
   term_size t + term_size t' < bindings_size bs + bindings_size bs'.
 
-Definition Smaller_t_b (t t' : Term) (b b' : Binding) :=
+Definition Smaller_t_b (t t' : term) (b b' : binding) :=
   term_size t + term_size t' < binding_size b + binding_size b'.
 
 Lemma size_non_zero : forall t, term_size t > 0.

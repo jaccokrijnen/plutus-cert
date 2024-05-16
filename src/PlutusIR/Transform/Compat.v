@@ -14,8 +14,8 @@ Import ListNotations.
 
 Section Term.
 
-  Context (R : Term -> Term -> Prop).
-  Context (RB : Binding -> Binding -> Prop).
+  Context (R : term -> term -> Prop).
+  Context (RB : binding -> binding -> Prop).
 
   Definition compat_TermBind := ∀ s v t t',
     R t t' ->
@@ -103,11 +103,11 @@ End Term.
 Section Compatibility.
 
   Context
-    (R : Term -> Term -> Prop)
-    (dec_R : Term -> Term -> bool)
+    (R : term -> term -> Prop)
+    (dec_R : term -> term -> bool)
   .
 
-  Inductive Compat_Binding : Binding -> Binding -> Prop :=
+  Inductive Compat_Binding : binding -> binding -> Prop :=
     | C_TermBind     : ∀ s v t t',
         R t t' -> Compat_Binding (TermBind s v t) (TermBind s v t')
 
@@ -118,14 +118,14 @@ Section Compatibility.
         Compat_Binding (DatatypeBind d) (DatatypeBind d)
     .
 
-  Inductive Compat_Bindings : list Binding -> list Binding -> Prop :=
+  Inductive Compat_Bindings : list binding -> list binding -> Prop :=
     | Compat_Bindings_Cons : ∀ {b b' bs bs'},
         Compat_Binding b b' -> Compat_Bindings bs bs' -> Compat_Bindings (b :: bs) (b' :: bs')
 
     | Compat_Bindings_Nil :
         Compat_Bindings nil nil.
 
-  Inductive Compat : Term -> Term -> Prop :=
+  Inductive Compat : term -> term -> Prop :=
     | C_Let : ∀ bs bs' r t t',
         Compat_Bindings bs bs' -> R t t' -> Compat (Let r bs t) (Let r bs' t')
 
@@ -160,7 +160,7 @@ Section Compatibility.
         R t t' -> Compat (Unwrap t) (Unwrap t')
   .
 
-  Definition dec_compat_binding  (b b' : Binding) : bool :=
+  Definition dec_compat_binding  (b b' : binding) : bool :=
     match b, b' with
       | (TermBind s v t), (TermBind s' v' t') => strictness_eqb s s' && VDecl_eqb v v' && dec_R t t'
       | (TypeBind v T), (TypeBind v' T') => TVDecl_eqb v v'  && Ty_eqb T T'
@@ -170,7 +170,7 @@ Section Compatibility.
   .
 
 
-  Definition dec_compat (t t' : Term) : bool :=
+  Definition dec_compat (t t' : term) : bool :=
     match t, t' with
       | (Let r bs t), (Let r' bs' t')      => recursivity_eqb r r' && forall2b dec_compat_binding bs bs' && dec_R t t'
       | (Var n), (Var n')                  => String.eqb n n'

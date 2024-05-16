@@ -32,7 +32,7 @@ t_body
 
 *)
 
-Inductive lams : Term -> list Term -> list Binding -> Term -> Prop :=
+Inductive lams : term -> list term -> list binding -> term -> Prop :=
 
   | Lams_1 : forall t vdecls v ty t_inner arg args,
       lams              t          args                                         vdecls  t_inner ->
@@ -44,7 +44,7 @@ Inductive lams : Term -> list Term -> list Binding -> Term -> Prop :=
 .
 
 (* accumulating param *)
-Inductive betas  : Term -> list Term -> list Binding -> Term -> Prop :=
+Inductive betas  : term -> list term -> list binding -> term -> Prop :=
 
   | Betas_1 : forall s t args bs t_inner,
       betas        s    (t :: args) bs t_inner ->
@@ -68,7 +68,7 @@ repeat apply Lams_1.
 apply Lams_2.
 Qed.
 
-Inductive beta : Term -> Term -> Prop :=
+Inductive beta : term -> term -> Prop :=
 
   | beta_multi : forall t bs bs' t_inner t_inner',
       betas t [] bs t_inner ->
@@ -87,7 +87,7 @@ Inductive beta : Term -> Term -> Prop :=
 .
 
 
-Definition is_beta : Term -> Term -> bool.
+Definition is_beta : term -> term -> bool.
 Admitted.
 
 Lemma is_beta_sound : forall t₁ t₂,

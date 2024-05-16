@@ -8,7 +8,7 @@ Require Import Coq.Strings.String.
 
 Module Ty.
 
-  Inductive appears_free_in : string -> Ty -> Prop :=
+  Inductive appears_free_in : string -> ty -> Prop :=
     | AFI_TyVar : forall X,
         appears_free_in X (Ty_Var X)
     | AFI_TyFun1 : forall X T1 T2,
@@ -39,14 +39,14 @@ Module Ty.
         appears_free_in X (Ty_App T1 T2)
     .
 
-  Definition closed (T : Ty) :=
+  Definition closed (T : ty) :=
     forall X, ~(appears_free_in X T).
 
 End Ty.
 
 Module Term.
 
-  Inductive appears_free_in : string -> Term -> Prop :=
+  Inductive appears_free_in : string -> term -> Prop :=
     | AFIT_Let : forall x r bs t,
         ~(In x (bvbs bs)) ->
         appears_free_in x t ->
@@ -83,7 +83,7 @@ Module Term.
         appears_free_in x t0 ->
         appears_free_in x (Unwrap t0)
 
-  with appears_free_in__bindings_nonrec : string -> list Binding -> Prop :=
+  with appears_free_in__bindings_nonrec : string -> list binding -> Prop :=
     | AFIT_ConsB1_NonRec : forall x b bs,
         appears_free_in__binding x b ->
         appears_free_in__bindings_nonrec x (b :: bs)
@@ -92,7 +92,7 @@ Module Term.
         appears_free_in__bindings_nonrec x bs ->
         appears_free_in__bindings_nonrec x (b :: bs)
 
-  with appears_free_in__bindings_rec : string -> list Binding -> Prop :=
+  with appears_free_in__bindings_rec : string -> list binding -> Prop :=
     | AFIT_ConsB1_Rec : forall x b bs,
         appears_free_in__binding x b ->
         appears_free_in__bindings_rec x (b :: bs)
@@ -100,20 +100,20 @@ Module Term.
         appears_free_in__bindings_rec x bs ->
         appears_free_in__bindings_rec x (b :: bs)
 
-  with appears_free_in__binding : string -> Binding -> Prop :=
+  with appears_free_in__binding : string -> binding -> Prop :=
     | AFIT_TermBind : forall x s vd t0,
         appears_free_in x t0 ->
         appears_free_in__binding x (TermBind s vd t0)
     .
 
-  Definition closed (t : Term) :=
+  Definition closed (t : term) :=
     forall x, ~(appears_free_in x t).
 
 End Term.
 
 Module Annotation.
 
-  Inductive appears_free_in (X : string) : Term -> Prop :=
+  Inductive appears_free_in (X : string) : term -> Prop :=
     | AFIA_Let : forall r bs t,
         ~(In X (btvbs bs)) ->
         appears_free_in X t ->
@@ -160,13 +160,13 @@ Module Annotation.
         appears_free_in X t0 ->
         appears_free_in X (Unwrap t0)
 
-  with appears_free_in__constructor (X : string) : VDecl -> Prop :=
+  with appears_free_in__constructor (X : string) : vdecl -> Prop :=
     | AFIA_Constructor : forall x T Targs Tr,
         (Targs, Tr) = splitTy T ->
         (exists U, In U Targs /\ Ty.appears_free_in X U) ->
         appears_free_in__constructor X (VarDecl x T)
 
-  with appears_free_in__bindings_nonrec (X : string) : list Binding -> Prop :=
+  with appears_free_in__bindings_nonrec (X : string) : list binding -> Prop :=
     | AFIA_ConsB1_NonRec : forall b bs,
         appears_free_in__binding X b ->
         appears_free_in__bindings_nonrec X (b :: bs)
@@ -175,7 +175,7 @@ Module Annotation.
         appears_free_in__bindings_nonrec X bs ->
         appears_free_in__bindings_nonrec X (b :: bs)
 
-  with appears_free_in__bindings_rec (X : string) : list Binding -> Prop :=
+  with appears_free_in__bindings_rec (X : string) : list binding -> Prop :=
     | AFIA_ConsB1_Rec : forall b bs,
         appears_free_in__binding X b ->
         appears_free_in__bindings_rec X (b :: bs)
@@ -183,7 +183,7 @@ Module Annotation.
         appears_free_in__bindings_rec X bs ->
         appears_free_in__bindings_rec X (b :: bs)
 
-  with appears_free_in__binding (X: string) : Binding -> Prop :=
+  with appears_free_in__binding (X: string) : binding -> Prop :=
     | AFIA_TermBind1 : forall s x T t0,
         Ty.appears_free_in X T ->
         appears_free_in__binding X (TermBind s (VarDecl x T) t0)
@@ -199,7 +199,7 @@ Module Annotation.
         appears_free_in__binding X (DatatypeBind (Datatype (TyVarDecl Y K) ZKs matchFunc cs))
   .
 
-  Definition closed (t : Term) :=
+  Definition closed (t : term) :=
     forall x, ~(appears_free_in x t).
 
 End Annotation.
@@ -223,5 +223,5 @@ End Annotation.
   Annotation.appears_free_in__binding : core.
 
 (** Full closedness of terms (and type annotations) *)
-Definition closed (t : Term) :=
+Definition closed (t : term) :=
   (forall x, ~(Term.appears_free_in x t)) /\ (forall X, ~(Annotation.appears_free_in X t)).

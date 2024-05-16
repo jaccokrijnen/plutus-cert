@@ -19,18 +19,18 @@ Import ListNotations.
 Require Import
   Arith.
 
-Definition dec_unused_in (b : Binding) (t' : Term) : bool :=
+Definition dec_unused_in (b : binding) (t' : term) : bool :=
   forallb (fun x => negb (existsb (String.eqb x) (fv t'))) (bvb b) &&
   forallb (fun x => negb (existsb (String.eqb x) (ftv t'))) (btvb b)
 .
 
 Section Bindings.
 
-  Context (dec_Term : Term -> Term -> bool).
+  Context (dec_Term : term -> term -> bool).
 
 
   (* t' is the post-term let body *)
-  Function dec_Bindings_NonRec (bs bs' : list Binding) (t' : Term) : bool :=
+  Function dec_Bindings_NonRec (bs bs' : list binding) (t' : term) : bool :=
     match bs, bs' with
     | b :: bs, b' :: bs' =>
         if dec_compat_binding dec_Term b b'
@@ -50,7 +50,7 @@ Section Bindings.
 
 End Bindings.
 
-Function dec_Term (t t' : Term) {struct t} :=
+Function dec_Term (t t' : term) {struct t} :=
   match t, t' with
   | Let NonRec bs t, Let NonRec bs' t' =>
       if dec_Bindings_NonRec dec_Term bs bs' t'
@@ -83,7 +83,7 @@ Proof.
 
   (* First do all the Term cases *)
   all: match goal with
-    | |- (forall (_ : Binding), _) => shelve
+    | |- (forall (_ : binding), _) => shelve
     | _ => idtac
     end.
   all: intros t'; destruct t'.

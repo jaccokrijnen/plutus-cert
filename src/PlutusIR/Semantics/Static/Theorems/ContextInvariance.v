@@ -55,25 +55,25 @@ End Kinding.
 
 Module Typing.
 
-  Definition P_has_type (Delta : list (string * kind)) (Gamma : list (string * Ty)) (t : Term) (T : Ty) :=
+  Definition P_has_type (Delta : list (string * kind)) (Gamma : list (string * ty)) (t : term) (T : ty) :=
     forall Gamma',
       (forall x, Term.appears_free_in x t -> lookup x Gamma = lookup x Gamma') ->
       Delta ,, Gamma' |-+ t : T.
 
-  Definition P_constructor_well_formed (Delta : list (string * kind)) (c : VDecl) (T : Ty) :=
+  Definition P_constructor_well_formed (Delta : list (string * kind)) (c : vdecl) (T : ty) :=
     Delta |-ok_c c : T.
 
-  Definition P_bindings_well_formed_nonrec (Delta : list (string * kind)) (Gamma : list (string * Ty)) (bs : list Binding) :=
+  Definition P_bindings_well_formed_nonrec (Delta : list (string * kind)) (Gamma : list (string * ty)) (bs : list binding) :=
     forall Gamma',
       (forall x, Term.appears_free_in__bindings_nonrec x bs -> lookup x Gamma = lookup x Gamma') ->
       Delta ,, Gamma' |-oks_nr bs.
 
-  Definition P_bindings_well_formed_rec (Delta : list (string * kind)) (Gamma : list (string * Ty)) (bs : list Binding) :=
+  Definition P_bindings_well_formed_rec (Delta : list (string * kind)) (Gamma : list (string * ty)) (bs : list binding) :=
     forall Gamma',
       (forall x, Term.appears_free_in__bindings_rec x bs -> lookup x Gamma = lookup x Gamma') ->
       Delta ,, Gamma' |-oks_r bs.
 
-  Definition P_binding_well_formed (Delta : list (string * kind)) (Gamma : list (string * Ty)) (b : Binding) :=
+  Definition P_binding_well_formed (Delta : list (string * kind)) (Gamma : list (string * ty)) (b : binding) :=
     forall Gamma',
       (forall x, Term.appears_free_in__binding x b -> lookup x Gamma = lookup x Gamma') ->
       Delta ,, Gamma' |-ok_b b.

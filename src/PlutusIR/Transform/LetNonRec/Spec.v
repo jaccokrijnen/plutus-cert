@@ -10,7 +10,7 @@ Import Coq.Lists.List.ListNotations.
 (* CNR = Compile Non-Recursive
    Desugaring strict, non-recursive lets into lambda-applications
 *)
-Inductive CNR_Term : Term -> Term -> Prop :=
+Inductive CNR_Term : term -> term -> Prop :=
   | CNR_LetNonRec : forall {bs t_body t_body' f_bs},
       CNR_Term t_body t_body' ->
       CNR_Bindings bs f_bs ->
@@ -46,7 +46,7 @@ Inductive CNR_Term : Term -> Term -> Prop :=
    where t_bs is of the form
      Apply (LamAbs (Apply (LamAbs ... t ...) t_1)) t_0
 *)
-with CNR_Bindings : list Binding -> list (Term -> Term) -> Prop :=
+with CNR_Bindings : list binding -> list (term -> term) -> Prop :=
   | CNR_Nil  :
       CNR_Bindings nil nil
   | CNR_Cons : forall {b bs f_b f_bs},
@@ -60,20 +60,20 @@ with CNR_Bindings : list Binding -> list (Term -> Term) -> Prop :=
       (\v -> t) t_bound
     for any term `t`
 *)
-with CNR_Binding : Binding -> (Term -> Term) -> Prop :=
+with CNR_Binding : binding -> (term -> term) -> Prop :=
   | CNR_Desugar : forall {v t_bound t_bound' ty},
       CNR_Term t_bound t_bound' ->
       CNR_Binding
         (TermBind Strict (VarDecl v ty) t_bound)
         (fun t_bs => Apply (LamAbs v ty t_bs) t_bound')
-with CNR_LetRec_compat : list Binding -> list Binding -> Prop :=
+with CNR_LetRec_compat : list binding -> list binding -> Prop :=
   | CNR_LetRec_nil :
       CNR_LetRec_compat [] []
   | CNR_LetRec_cons : forall b b' bs bs',
       CNR_Binding_compat b b' ->
       CNR_LetRec_compat bs bs' ->
       CNR_LetRec_compat (b::bs) (b'::bs')
-with CNR_Binding_compat : Binding -> Binding -> Prop :=
+with CNR_Binding_compat : binding -> binding -> Prop :=
   | CNR_TermBind : compat_TermBind CNR_Term CNR_Binding_compat
   | CNR_DatatypeBind : compat_DatatypeBind CNR_Binding_compat
   | CNR_TypeBind : compat_TypeBind CNR_Binding_compat

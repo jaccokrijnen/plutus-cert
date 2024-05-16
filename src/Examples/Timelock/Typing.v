@@ -11,7 +11,7 @@ Open Scope string_scope.
    separate type for constructor definitions. To not regenerate the below dumps,
    we use this backwards compatible wrapper
 *)
-Definition Constructor vd (arity : nat) : VDecl := vd.
+Definition Constructor vd (arity : nat) : vdecl := vd.
 Definition Name (s : string) (n : nat) := string_of_nat n.
 Definition Unique (n : nat) := n.
 Definition TyName (s : string) := s.
@@ -51,7 +51,7 @@ Ltac solve__constructor :=
 
 Ltac solve__constructors :=
   match goal with
-  | |- forall c : VDecl, List.In c ?cs -> ?Delta |-ok_c c : ?Tr =>
+  | |- forall c : vdecl, List.In c ?cs -> ?Delta |-ok_c c : ?Tr =>
       let H := fresh in
       intros c H; simpl; repeat solve__constructor
   end.

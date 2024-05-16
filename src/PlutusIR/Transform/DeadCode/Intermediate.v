@@ -20,9 +20,9 @@ Require Import
 
 
 Section Bindings.
-  Context (mk : Term -> Term -> option Term).
+  Context (mk : term -> term -> option term).
 
-  Definition mk_Binding  (b b' : Binding) : option Binding :=
+  Definition mk_Binding  (b b' : binding) : option binding :=
     match b, b' with
       | TermBind s vd t, TermBind s' vd' t' =>
           if strictness_eqb s s' &&
@@ -43,7 +43,7 @@ Section Bindings.
   .
 
   Fixpoint match_Bindings
-    (bs bs' : list Binding)
+    (bs bs' : list binding)
     : bool :=
       match bs, bs' with
 
@@ -62,7 +62,7 @@ Section Bindings.
   .
   End Bindings.
 
-  Fixpoint mk (t t' : Term) {struct t} : option Term :=
+  Fixpoint mk (t t' : term) {struct t} : option term :=
     match t, t' with
     | Let rec bs t
     , Let rec' bs' t' =>

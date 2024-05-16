@@ -5,7 +5,7 @@ From PlutusCert Require Import Semantics.Dynamic.Bigstep.
 
 Definition PIRLang : Language :=
   {|
-    expr  := Term
+    expr  := term
   ; bigstep := fun t t' => exists n, eval t t' n
   ; app   := Apply
   ; const := fun i => Constant (Some' (ValueOf DefaultUniInteger i))

@@ -21,7 +21,7 @@ Inductive binder_info :=
 Definition ctx := list (string * binder_info).
 
 (* Pure terms include values or variables that are known to be bound to values *)
-Inductive is_pure (Γ : ctx) : Term -> Type :=
+Inductive is_pure (Γ : ctx) : term -> Type :=
 
   | is_pure_value : forall t,
       value t ->
@@ -37,7 +37,7 @@ Inductive is_pure (Γ : ctx) : Term -> Type :=
       is_pure Γ (Var x)
 .
 
-Definition dec_is_error (t : Term) : bool :=
+Definition dec_is_error (t : term) : bool :=
   match t with
     | Error _ => true
     | _       => false
@@ -52,7 +52,7 @@ Proof.
 Qed.
 
 
-Definition is_pureb (Γ : ctx) (t : Term) : bool :=
+Definition is_pureb (Γ : ctx) (t : term) : bool :=
   match t with
   | Var x =>
     match lookup x Γ with
@@ -66,7 +66,7 @@ Definition is_pureb (Γ : ctx) (t : Term) : bool :=
 .
 
 (* An approximation of bindings that are pure, they will not diverge when evaluated *)
-Inductive pure_binding (Γ : ctx) : Binding -> Prop :=
+Inductive pure_binding (Γ : ctx) : binding -> Prop :=
 
   | pb_term_non_strict : forall vd t,
       pure_binding Γ (TermBind NonStrict vd t)
@@ -82,7 +82,7 @@ Inductive pure_binding (Γ : ctx) : Binding -> Prop :=
       pure_binding Γ (TypeBind tvd ty)
 .
 
-Definition dec_pure_binding (Γ : ctx) (b : Binding) : bool :=
+Definition dec_pure_binding (Γ : ctx) (b : binding) : bool :=
     match b with
       | TermBind NonStrict vd t => true
       | TermBind Strict vd t    => dec_value t

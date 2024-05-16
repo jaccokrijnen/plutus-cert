@@ -40,7 +40,7 @@ Definition P_dc_NonRec t' bs bs' :=
     LR_logically_approximate Δ Γ (Let NonRec bs t) (Let NonRec bs' t') T
 .
 
-Definition P_dc_Rec (bs'0 : list Binding) t' bs bs' :=
+Definition P_dc_Rec (bs'0 : list binding) t' bs bs' :=
     (* Note: perhaps bs'0 will be necessary here, e.g. something like
          exists bs'', bs'0 = bs'' ++ bs'
     *)

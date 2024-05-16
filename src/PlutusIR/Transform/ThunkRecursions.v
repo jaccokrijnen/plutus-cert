@@ -58,16 +58,16 @@ equivalent term (there will be no new binder names).
 (* Records each binder in the Let Rec that was unstrictified *)
 
 
-Definition ctx_unstrictified := list (string * (Term * ctx)).
+Definition ctx_unstrictified := list (string * (term * ctx)).
 
-Definition Binding_to_ctx (b : Binding) : ctx :=
+Definition Binding_to_ctx (b : binding) : ctx :=
   match b with
     | TermBind s (VarDecl x τ) t => [(x, let_bound s)]
     | _ => []
   end
 .
 
-Inductive thunk_rec (Γ : ctx) : Term -> Term -> Type :=
+Inductive thunk_rec (Γ : ctx) : term -> term -> Type :=
 
   | tr_Let_Rec : forall bs bs' t t' Γ_bs bs_new Ω,
       thunk_rec_Bindings_Rec (Γ_bs ++ Γ) bs bs' Ω ->
@@ -108,7 +108,7 @@ Inductive thunk_rec (Γ : ctx) : Term -> Term -> Type :=
   | tr_Unwrap   : forall t t',
       thunk_rec Γ (Unwrap t) (Unwrap t')
 
-with thunk_rec_Bindings_NonRec (Γ : ctx) : list Binding -> list Binding -> ctx -> Type :=
+with thunk_rec_Bindings_NonRec (Γ : ctx) : list binding -> list binding -> ctx -> Type :=
 
   | tr_Bindings_NonRec_nil :
       thunk_rec_Bindings_NonRec Γ [] [] Γ
@@ -120,7 +120,7 @@ with thunk_rec_Bindings_NonRec (Γ : ctx) : list Binding -> list Binding -> ctx 
         thunk_rec_Bindings_NonRec Γ (b :: bs) (b' :: bs') (Γ_bs ++ Γ_b)
 
 
-with thunk_rec_Bindings_Rec (Γ : ctx) : list Binding -> list Binding -> ctx_unstrictified -> Type :=
+with thunk_rec_Bindings_Rec (Γ : ctx) : list binding -> list binding -> ctx_unstrictified -> Type :=
 
   | tr_Bindings_Rec_nil :
       thunk_rec_Bindings_Rec Γ [] [] []
@@ -131,7 +131,7 @@ with thunk_rec_Bindings_Rec (Γ : ctx) : list Binding -> list Binding -> ctx_uns
       thunk_rec_Bindings_Rec Γ (b :: bs) (b' :: bs') (Ω_bs ++ Ω_b)
 
 (* Also indexed by the unstrictified bindings *)
-with thunk_rec_Binding_NonRec (Γ : ctx) : Binding -> Binding -> Type :=
+with thunk_rec_Binding_NonRec (Γ : ctx) : binding -> binding -> Type :=
 
   | tr_TermBind_NonRec : forall s vd t t',
       thunk_rec Γ t t' ->
@@ -144,7 +144,7 @@ with thunk_rec_Binding_NonRec (Γ : ctx) : Binding -> Binding -> Type :=
       thunk_rec_Binding_NonRec Γ (TypeBind tvd τ) (TypeBind tvd τ)
 
 (* Also indexed by the unstrictified bindings *)
-with thunk_rec_Binding_Rec (Γ : ctx) : Binding -> Binding -> ctx_unstrictified -> Type :=
+with thunk_rec_Binding_Rec (Γ : ctx) : binding -> binding -> ctx_unstrictified -> Type :=
 
   (* The actual implementation only unstrictifies non-function type bindings, but
      it is a sound transformation for any strict recursive binding *)
@@ -165,7 +165,7 @@ with thunk_rec_Binding_Rec (Γ : ctx) : Binding -> Binding -> ctx_unstrictified 
 
 (* Add let NonRec bindings for unstrictified bindings, except if
    they were definitely pure *)
-with strictify (Γ : ctx) : ctx_unstrictified -> list Binding -> Type :=
+with strictify (Γ : ctx) : ctx_unstrictified -> list binding -> Type :=
 
   | str_cons_pure : forall Γ_t t x Ω_bs bs,
      is_pure Γ_t t ->

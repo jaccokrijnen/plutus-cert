@@ -7,24 +7,24 @@ Import ListNotations.
 
 
 
-Definition Term_Unit : Term :=
+Definition Term_Unit : term :=
   Constant (@Some' valueOf DefaultUniUnit (@ValueOf DefaultUniUnit tt))
 .
 
-Definition Ty_Unit : Ty :=
+Definition Ty_Unit : ty :=
   Ty_Builtin (@Some' typeIn DefaultUniUnit (TypeIn _)).
 
 Definition eval' t v := exists j, eval t v j.
 Notation "t '==>' v" := (eval' t v) (at level 10).
 
 Definition contextually_approximate
-  (e e' : Term) Δ Γ T
+  (e e' : term) Δ Γ T
   :=
   (Δ ,, Γ |-+ e  : T) /\
   (Δ ,, Γ |-+ e' : T) /\
-  forall (C : Context),
+  forall (C : context),
     ([] ,, [] |-C C : (Δ ,, Γ ▷ T) ↝ Ty_Unit) ->
-    forall (v : Term),
+    forall (v : term),
       context_apply C e ==> v ->
       exists v',
         context_apply C e' ==> v' /\
@@ -38,7 +38,7 @@ Notation "Δ ',,' Γ '|-' e1 ⪯-ctx e2 ':' T" := (contextually_approximate e1 e
   , no associativity).
 
 Definition contextually_equivalent
-  (e e' : Term) Δ Γ T
+  (e e' : term) Δ Γ T
   :=
   (Δ ,, Γ |- e ⪯-ctx e' : T )
   /\ (Δ ,, Γ |- e'⪯-ctx e  : T)

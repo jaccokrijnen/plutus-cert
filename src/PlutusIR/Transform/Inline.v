@@ -34,11 +34,11 @@ Inductive var_info :=
   | bound_LamAbs : var_info
   | bound_Constructor : var_info
   | bound_match : var_info
-  | bound_TermBind : Term -> var_info
+  | bound_TermBind : term -> var_info
 .
 
 Inductive tyvar_info :=
-  | bound_TypeBind : Ty -> tyvar_info
+  | bound_TypeBind : ty -> tyvar_info
   | bound_TyAbs : tyvar_info
 
   | bound_Datatype_TyVar : tyvar_info
@@ -50,14 +50,14 @@ Inductive tyvar_info :=
 Definition ctx := list (string * var_info).
 Definition ty_ctx := list (string * tyvar_info).
 
-Definition Binding_to_ctx (b : Binding) : ctx :=
+Definition Binding_to_ctx (b : binding) : ctx :=
   match b with
     | TermBind _ (VarDecl v _) t => [(v, bound_TermBind t)]
     | DatatypeBind (Datatype _ _ mfunc cs) => (mfunc, bound_match) :: map (fun '(VarDecl x _) => (x, bound_Constructor)) cs
     | TypeBind _ _ => []
   end
 .
-Definition Binding_to_ty_ctx (b : Binding) : ty_ctx :=
+Definition Binding_to_ty_ctx (b : binding) : ty_ctx :=
   match b with
     | TypeBind (TyVarDecl α _) τ => [(α, bound_TypeBind τ)]
     | TermBind _ _ _ => []
@@ -65,15 +65,15 @@ Definition Binding_to_ty_ctx (b : Binding) : ty_ctx :=
   end
 .
 
-Definition Bindings_to_ctx (bs : list Binding) : ctx :=
+Definition Bindings_to_ctx (bs : list binding) : ctx :=
   rev (concat (map Binding_to_ctx bs)).
 
-Definition Bindings_to_ty_ctx (bs : list Binding) : ty_ctx :=
+Definition Bindings_to_ty_ctx (bs : list binding) : ty_ctx :=
   rev (concat (map Binding_to_ty_ctx bs)).
 
 Local Open Scope list_scope.
 
-Inductive inline_Ty (Δ : ty_ctx) : Ty -> Ty -> Prop :=
+Inductive inline_Ty (Δ : ty_ctx) : ty -> ty -> Prop :=
 
    | inl_Ty_Var_1 : forall α τ τ',
       Lookup α (bound_TypeBind τ) Δ ->
@@ -128,7 +128,7 @@ This makes it easier to prove semantics preservation: we need to reuse that fact
 that substitution on a closed term is the identity.
 
 *)
-Inductive inline (Δ : ty_ctx) (Γ : ctx) : Term -> Term -> Prop :=
+Inductive inline (Δ : ty_ctx) (Γ : ctx) : term -> term -> Prop :=
   | inl_Var_1 : forall v t_v,
       Lookup v (bound_TermBind t_v) Γ ->
       inline Δ Γ (Var v) t_v
@@ -178,7 +178,7 @@ Inductive inline (Δ : ty_ctx) (Γ : ctx) : Term -> Term -> Prop :=
 
   (* We closely follow the structure of eval so the semantic proof lines up
      more easily *)
-  with inline_Bindings_NonRec (Δ : ty_ctx) (Γ : ctx) : Term -> Term -> Prop :=
+  with inline_Bindings_NonRec (Δ : ty_ctx) (Γ : ctx) : term -> term -> Prop :=
 
   | inl_Binding_NonRec_cons : forall b b' bs bs' t t',
       inline_Binding Δ Γ b b' ->
@@ -193,7 +193,7 @@ Inductive inline (Δ : ty_ctx) (Γ : ctx) : Term -> Term -> Prop :=
       inline Δ Γ t t' ->
       inline_Bindings_NonRec Δ Γ (Let NonRec [] t) (Let NonRec [] t')
 
-  with inline_Bindings_Rec (Δ : ty_ctx) (Γ : ctx) : Term -> Term -> Prop :=
+  with inline_Bindings_Rec (Δ : ty_ctx) (Γ : ctx) : term -> term -> Prop :=
 
     | inl_Binding_Rec_cons : forall b b' bs bs' t t',
         inline_Binding Δ Γ b b' ->
@@ -204,7 +204,7 @@ Inductive inline (Δ : ty_ctx) (Γ : ctx) : Term -> Term -> Prop :=
         inline Δ Γ t t' ->
         inline_Bindings_Rec Δ Γ (Let Rec [] t) (Let Rec [] t')
 
-with inline_Binding (Δ : ty_ctx) (Γ : ctx) : Binding -> Binding -> Prop :=
+with inline_Binding (Δ : ty_ctx) (Γ : ctx) : binding -> binding -> Prop :=
 
   | inl_TermBind  : forall s x τ τ' tb tb',
       inline Δ Γ tb tb' -> (* Δ and Γ need not be extended, in case of LetRec, x is already in Γ, otherwise it is not in scope *)

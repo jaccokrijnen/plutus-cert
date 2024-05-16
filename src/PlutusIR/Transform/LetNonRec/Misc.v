@@ -9,7 +9,7 @@ Import Coq.Lists.List.ListNotations.
 From PlutusCert Require Import LetNonRec.Spec.
 
 (* Functional specification of the pass *)
-Fixpoint compile_term (t : Term) : Term := match t with
+Fixpoint compile_term (t : term) : term := match t with
   | Let NonRec bs t => fold_right apply t (map compile_NonRec_Binding bs)
   | Let Rec bs t    => Let Rec (map compile_Rec_Binding bs) (compile_term t)
 
@@ -28,13 +28,13 @@ Fixpoint compile_term (t : Term) : Term := match t with
   | Case t ts       => Case (compile_term t) (map compile_term ts)
   end
 
-with compile_NonRec_Binding (b : Binding) : Term -> Term :=
+with compile_NonRec_Binding (b : binding) : term -> term :=
   match b with
   | TermBind Strict (VarDecl v ty) t_bound => fun t_bs => Apply (LamAbs v ty t_bs) (compile_term t_bound)
   | _ => id
   end
 
-with compile_Rec_Binding (b : Binding) : Binding := match b with
+with compile_Rec_Binding (b : binding) : binding := match b with
   | TermBind Strict vd t_bound => TermBind Strict vd (compile_term t_bound)
   | b => b
   end
@@ -48,42 +48,42 @@ Ltac eq_principle :=
   constructor;
   assumption.
 
-Definition C_TyAbs' : forall R (t t' : Term) (n n' : string) (k k' : kind),
+Definition C_TyAbs' : forall R (t t' : term) (n n' : string) (k k' : kind),
               n = n' -> k = k'
               -> R t t' -> Compat R (TyAbs n k t) (TyAbs n' k' t').
 Proof. eq_principle. Qed.
 
-Definition C_LamAbs' : forall R (t t' : Term) (n n' : string) (ty ty': Ty),
+Definition C_LamAbs' : forall R (t t' : term) (n n' : string) (ty ty': ty),
                 n = n' -> ty = ty' -> R t t' -> Compat R (LamAbs n ty t) (LamAbs n' ty' t').
 Proof. eq_principle. Qed.
 
 Definition C_Var' : forall R (n n' : string), (n = n') -> Compat R (Var n) (Var n').
 Proof. eq_principle. Qed.
 
-Definition C_Let' : forall R (bs bs' : list Binding) (t t' : Term) (r r' : recursivity),
+Definition C_Let' : forall R (bs bs' : list binding) (t t' : term) (r r' : recursivity),
              r = r' ->
              Compat_Bindings R bs bs' ->
              R t t' -> Compat R (Let r bs t) (Let r' bs' t').
 Proof. eq_principle. Qed.
 
-Definition C_Apply' : forall R (s s' t t' : Term),
+Definition C_Apply' : forall R (s s' t t' : term),
                R s s' -> R t t' -> Compat R (Apply s t) (Apply s' t').
 Proof. eq_principle. Qed.
 Definition C_Constant' : forall R (v v' : @some valueOf), v = v' -> Compat R (Constant v) (Constant v').
 Proof. eq_principle. Qed.
 Definition C_Builtin' : forall R (f f' : DefaultFun), f = f' -> Compat R (Builtin f) (Builtin f').
 Proof. eq_principle. Qed.
-Definition C_TyInst' : forall R (t t' : Term) (ty ty' : Ty),
+Definition C_TyInst' : forall R (t t' : term) (ty ty' : ty),
                 ty = ty' -> R t t' -> Compat R (TyInst t ty) (TyInst t' ty').
 Proof. eq_principle. Qed.
 
-Definition C_Error' : forall R (ty ty' : Ty), ty = ty' -> Compat R (Error ty) (Error ty').
+Definition C_Error' : forall R (ty ty' : ty), ty = ty' -> Compat R (Error ty) (Error ty').
 Proof. eq_principle. Qed.
 
-Definition C_IWrap' : forall R (t t' : Term) (ty1 ty1' ty2 ty2' : Ty),
+Definition C_IWrap' : forall R (t t' : term) (ty1 ty1' ty2 ty2' : ty),
                ty1 = ty1' -> ty2 = ty2' -> R t t' -> Compat R (IWrap ty1 ty2 t) (IWrap ty1' ty2' t').
 Proof. eq_principle. Qed.
-Definition C_Unwrap' : forall R (t t' : Term), R t t' -> Compat R (Unwrap t) (Unwrap t').
+Definition C_Unwrap' : forall R (t t' : term), R t t' -> Compat R (Unwrap t) (Unwrap t').
 Proof. eq_principle. Qed.
 
 Create HintDb eq_principles.

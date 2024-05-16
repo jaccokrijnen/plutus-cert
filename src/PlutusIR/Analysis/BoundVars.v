@@ -20,7 +20,7 @@ Require Import Utf8_core.
 
 
 
-Inductive appears_bound_in_ty (X : string) : Ty -> Prop :=
+Inductive appears_bound_in_ty (X : string) : ty -> Prop :=
   | ABI_Ty_TyFun1 : forall T1 T2,
       appears_bound_in_ty X T1 ->
       appears_bound_in_ty X (Ty_Fun T1 T2)
@@ -84,13 +84,13 @@ End Ty.
 
 
 (* Monomorphic alternative for `map bvc`, for dec procedure generation *)
-Fixpoint bv_constructors (cs : list VDecl) : list string :=
+Fixpoint bv_constructors (cs : list vdecl) : list string :=
   match cs with
   | [] => []
   | VarDecl x _ :: cs' => x :: bv_constructors cs'
   end.
 
-Inductive appears_bound_in_tm (x : string) : Term -> Prop :=
+Inductive appears_bound_in_tm (x : string) : term -> Prop :=
   | ABI_Tm_LamAbs1 : forall T t,
       appears_bound_in_tm x (LamAbs x T t)
   | ABI_Tm_LamAbs2 : forall y T t,
@@ -153,7 +153,7 @@ Inductive appears_bound_in_tm (x : string) : Term -> Prop :=
       appears_bound_in_tm x (Let recty (DatatypeBind (Datatype XK YKs mfunc cs) :: bs) t0) 
       .
 
-Inductive appears_bound_in_ann (X : string) : Term -> Prop :=
+Inductive appears_bound_in_ann (X : string) : term -> Prop :=
   | ABI_Ann_LamAbs1 : forall x T t,
       appears_bound_in_ty X T ->
       appears_bound_in_ann X (LamAbs x T t)
@@ -353,8 +353,8 @@ with btv_binding (b : binding) : list tyname := match b with
 
 End BoundVars.
 
-Definition P_Term (t : Term) : Prop := Forall (fun v => appears_bound_in_tm v t) (bound_vars t).
-Definition P_Binding (b : Binding) := Forall (fun v => forall t bs recty, appears_bound_in_tm v (Let recty (b :: bs) t)) (bound_vars_binding b).
+Definition P_Term (t : term) : Prop := Forall (fun v => appears_bound_in_tm v t) (bound_vars t).
+Definition P_Binding (b : binding) := Forall (fun v => forall t bs recty, appears_bound_in_tm v (Let recty (b :: bs) t)) (bound_vars_binding b).
 
 Lemma bound_vars_appears_bound_in_tm : (forall t, P_Term t) /\ (forall b, P_Binding b).
 Proof with eauto using appears_bound_in_tm.

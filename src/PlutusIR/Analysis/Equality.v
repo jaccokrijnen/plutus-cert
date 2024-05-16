@@ -85,20 +85,20 @@ Definition some_typeIn_dec := @some_dec typeIn typeIn_dec.
 Definition Kind_dec : EqDec kind. solveEq. Defined.
   #[export] Hint Resolve Kind_dec : Eqs.
 
-Definition Ty_dec: EqDec Ty. solveEq. Defined.
+Definition Ty_dec: EqDec ty. solveEq. Defined.
   #[export] Hint Resolve Ty_dec : Eqs.
 
-Definition VDecl_dec: EqDec VDecl. Proof. solveEq. Defined.
+Definition VDecl_dec: EqDec vdecl. Proof. solveEq. Defined.
   #[export] Hint Resolve VDecl_dec : Eqs.
 
-Definition TVDecl_dec : EqDec TVDecl. Proof. solveEq. Defined.
+Definition TVDecl_dec : EqDec tvdecl. Proof. solveEq. Defined.
   #[export] Hint Resolve TVDecl_dec : Eqs.
 
-Definition DTDecl_dec: EqDec DTDecl. Proof. solveEq. Defined.
+Definition DTDecl_dec: EqDec dtdecl. Proof. solveEq. Defined.
   #[export] Hint Resolve DTDecl_dec : Eqs.
 
-Lemma Term_dec : forall (x y : Term), {x = y} + {x <> y}
-  with binding_dec: forall (x y : Binding), {x = y} + {x <> y}.
+Lemma term_dec : forall (x y : term), {x = y} + {x <> y}
+  with binding_dec: forall (x y : binding), {x = y} + {x <> y}.
 Proof.
   - solveEq.
   - solveEq.
@@ -387,7 +387,7 @@ Proof. eqb_eq_tac. Defined.
 
 (* TODO: This is not correct yet. Because we have computation in types, we can not merely rely
   on syntactic equality checking. *)
-Fixpoint Ty_eqb (x y : Ty) : bool := match x, y with
+Fixpoint Ty_eqb (x y : ty) : bool := match x, y with
   | Ty_Var X, Ty_Var Y => String.eqb X Y
   | Ty_Fun T1 T2, Ty_Fun T3 T4 => Ty_eqb T1 T3 && Ty_eqb T2 T4
   | Ty_IFix T1 U1, Ty_IFix T2 U2 => Ty_eqb T1 T2 && Ty_eqb U1 U2
@@ -411,7 +411,7 @@ Defined.
 #[export] Hint Resolve <- Ty_eqb_eq : reflection.
 
 
-Definition TVDecl_eqb : Eqb TVDecl := fun x y => match x, y with
+Definition TVDecl_eqb : Eqb tvdecl := fun x y => match x, y with
   | TyVarDecl ty k, TyVarDecl ty' k' => String.eqb ty ty' && Kind_eqb k k'
   end.
 
@@ -421,7 +421,7 @@ Proof. eqb_eq_tac. Defined.
 #[export] Hint Resolve <- TVDecl_eqb_eq : reflection.
 
 
-Definition VDecl_eqb: Eqb VDecl := fun x y => match x, y with
+Definition VDecl_eqb: Eqb vdecl := fun x y => match x, y with
   | VarDecl x ty, VarDecl x' ty' => String.eqb x x' && Ty_eqb ty ty'
   end.
 Definition VDecl_eqb_eq : forall vd vd', VDecl_eqb vd vd' = true <-> vd = vd'.
@@ -497,7 +497,7 @@ Qed.
 #[export] Hint Resolve -> list_eqb_eq : reflection.
 #[export] Hint Resolve <- list_eqb_eq : reflection.
 
-Definition DTDecl_eqb: Eqb DTDecl := fun x y => match x, y with
+Definition DTDecl_eqb: Eqb dtdecl := fun x y => match x, y with
   | Datatype tvd tvds n cs, Datatype tvd' tvds' n' cs' =>
     TVDecl_eqb tvd tvd' && list_eqb TVDecl_eqb tvds tvds'
       && String.eqb n n' && list_eqb VDecl_eqb cs cs'
@@ -525,7 +525,7 @@ Qed.
 
 
 
-Fixpoint Term_eqb (x y : Term) {struct x} : bool := match x, y with
+Fixpoint Term_eqb (x y : term) {struct x} : bool := match x, y with
   | Let rec bs t, Let rec' bs' t' => recursivity_eqb rec rec'
       && list_eqb Binding_eqb bs bs'
         && Term_eqb t t'
@@ -555,7 +555,7 @@ Fixpoint Term_eqb (x y : Term) {struct x} : bool := match x, y with
   | Case t ts, Case t' ts' => Term_eqb t t' && forall2b Term_eqb ts ts'
   | Case _ _, _ => false
   end
-with Binding_eqb (x y : Binding) {struct x} : bool := match x, y with
+with Binding_eqb (x y : binding) {struct x} : bool := match x, y with
   | TermBind s vd t, TermBind s' vd' t' => strictness_eqb s s' && VDecl_eqb vd vd' && Term_eqb t t'
   | TermBind _ _ _, _ => false
   | TypeBind tvd ty, TypeBind tvd' ty' => TVDecl_eqb tvd tvd' && Ty_eqb ty ty'

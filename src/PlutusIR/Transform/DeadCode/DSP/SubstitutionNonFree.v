@@ -26,10 +26,10 @@ Section Term.
 
   Import FreeVars.Term.
 
-  Definition fv : Term -> list string := Term.fv.
-  Definition ftv : Term -> list string := Term.ftv.
-  Definition fv_binding : recursivity -> Binding -> list string := Term.fvb.
-  Definition fv_bindings : recursivity -> list Binding -> list string := Term.fvbs fv_binding.
+  Definition fv : term -> list string := Term.fv.
+  Definition ftv : term -> list string := Term.ftv.
+  Definition fv_binding : recursivity -> binding -> list string := Term.fvb.
+  Definition fv_bindings : recursivity -> list binding -> list string := Term.fvbs fv_binding.
 
   Lemma remove_unfold {A} eq_dec (x : A) xs :
     remove eq_dec x xs =
@@ -48,7 +48,7 @@ Section Term.
   Qed.
 
 
-  Lemma bvbs_app (xs ys : list Binding) :
+  Lemma bvbs_app (xs ys : list binding) :
     bvbs (xs ++ ys) = bvbs xs ++ bvbs ys.
   Proof.
     unfold bvbs.
@@ -58,7 +58,7 @@ Section Term.
   Qed.
 
 
-  Lemma not_in_bvbs_cons (x : string) (b : Binding) bs :
+  Lemma not_in_bvbs_cons (x : string) (b : binding) bs :
     x ∉ bvbs (b :: bs) ->
     x ∉ bvb b /\ x ∉ bvbs bs.
   Proof.
@@ -72,7 +72,7 @@ Section Term.
     auto.
   Qed.
 
-  Lemma not_in_bvbs_hd (x : string) (b : Binding) bs :
+  Lemma not_in_bvbs_hd (x : string) (b : binding) bs :
     x ∉ bvbs (b :: bs) ->
     x ∉ bvb b.
   Proof.
@@ -83,7 +83,7 @@ Section Term.
     intuition.
   Qed.
 
-  Lemma not_in_bvbs_tl (x : string) (b : Binding) bs :
+  Lemma not_in_bvbs_tl (x : string) (b : binding) bs :
     x ∉ bvbs (b :: bs) ->
     x ∉ bvbs bs.
   Proof.
@@ -432,7 +432,7 @@ Section Term.
     x ∉ fvb r b ->
     subst_b x t' b = b.
 
-  Lemma existsb_bvbs_bs x (b : Binding) bs :
+  Lemma existsb_bvbs_bs x (b : binding) bs :
     existsb (eqb x) (bvbs (b :: bs)) = true ->
     existsb (eqb x) (bvb b) = false ->
     existsb (eqb x) (bvbs bs) = true.

@@ -261,8 +261,8 @@ Definition pir6_plc0 : pir_6_floatTerm = plc_0_compileNS.
 Proof. reflexivity. Qed.
 
 
-Definition Scott (s t : Term) := True.
-Definition DBE (s t : Term) := True.
+Definition Scott (s t : term) := True.
+Definition DBE (s t : term) := True.
 
 
 Definition plc_0_1 : Scott plc_0_compileNS plc_1_compileTys.

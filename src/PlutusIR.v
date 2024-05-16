@@ -229,19 +229,6 @@ Definition tvdecl_name (tvd : tvdecl) : binderTyname :=
   | TyVarDecl v K => v
   end.
 
-(** * Named terms (all variables and binders are strings) *)
-
-(* Definition Kind := kind. *)
-Definition Ty := ty.
-Definition VDecl := vdecl.
-Definition TVDecl := tvdecl.
-Definition DTDecl := dtdecl.
-Definition Term := term.
-Definition Binding := binding.
-
-Definition Context := context.
-
-
 Section term__ind.
 
   Unset Implicit Arguments.

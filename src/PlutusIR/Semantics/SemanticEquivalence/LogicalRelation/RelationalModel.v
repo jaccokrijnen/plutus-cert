@@ -17,7 +17,7 @@ Local Open Scope list_scope.
 Local Open Scope string_scope.
 
 
-Definition Rel (T T' : Ty) (Chi : nat -> Term -> Term -> Prop) : Prop :=
+Definition Rel (T T' : ty) (Chi : nat -> term -> term -> Prop) : Prop :=
   forall j v v',
     Chi j v v' -> 0 < j ->
       value v /\ value v' /\
@@ -32,7 +32,7 @@ Definition Rel (T T' : Ty) (Chi : nat -> Term -> Term -> Prop) : Prop :=
     RV = Relational interpretation for values
     RC = Relation interpretation for computations
 *)
-Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k :=
+Equations? RC (k : nat) (T : ty) (rho : tymapping) (e e' : term) : Prop by wf k :=
   RC k T rho e e' =>
     (* RC *)
     forall j (Hlt_j : j < k) e_f,
@@ -121,7 +121,7 @@ Equations? RC (k : nat) (T : Ty) (rho : tymapping) (e e' : Term) : Prop by wf k 
       ).
 Proof. all: lia. Qed.
 
-Definition RV (k : nat) (T : Ty) (rho : tymapping) (v v' : Term) : Prop :=
+Definition RV (k : nat) (T : ty) (rho : tymapping) (v v' : term) : Prop :=
   value v /\ value v' /\ RC k T rho v v'.
 
 (** Converting from RC to RV and vice versa *)
@@ -138,7 +138,7 @@ Proof with auto.
   intros.
 
   assert (
-    exists (e'_f : Term) (j' : nat),
+    exists (e'_f : term) (j' : nat),
       e' =[ j' ]=> e'_f /\ RV (k - j) T rho e_f e'_f
       )...
   destruct H1 as [e'_f [j' [H_e'_runs H_RV_e_f_e'_f]]].
@@ -231,9 +231,9 @@ Inductive RD : kass -> tymapping -> Prop :=
       RD ((X, K) :: ck) ((X, (Chi, T1, T2)) :: rho).
 
 (** Term environment *)
-Definition env := list (string * Term).
+Definition env := list (string * term).
 (** Type assignments *)
-Definition tass := list (string * Ty).
+Definition tass := list (string * ty).
 
 (** RG = Interpretation of type contexts as logically related term environments *)
 Inductive RG (rho : tymapping) (k : nat) : tass -> env -> env -> Prop :=
@@ -260,7 +260,7 @@ Fixpoint closed_env (env : env) :=
     values that are lated for $k$ steps at $\Gamma$, then $\gamma(e)$ and
     $\gamma(e')$ are related for $k$ steps as computations of type $\tau$.
 *)
-Definition LR_logically_approximate (Δ : list (string * kind)) (Γ : list (string * Ty)) (e e' : Term) (T : Ty) :=
+Definition LR_logically_approximate (Δ : list (string * kind)) (Γ : list (string * ty)) (e e' : term) (T : ty) :=
     (Δ ,, Γ |-+ e : T) /\
     (Δ ,, Γ |-+ e' : T) /\
     forall k ρ γ γ',
@@ -282,7 +282,7 @@ Notation "Δ ',,' Γ '|-' e1 ≤ e2 ':' T" := (LR_logically_approximate Δ Γ e1
     another.
 *)
 
-Definition LR_logically_equivalent (Δ : list (string * kind)) (Γ : list (string * Ty)) (e e' : Term) (T : Ty) :=
+Definition LR_logically_equivalent (Δ : list (string * kind)) (Γ : list (string * ty)) (e e' : term) (T : ty) :=
   LR_logically_approximate Δ Γ e e' T /\ LR_logically_approximate Δ Γ e' e T.
 
 

@@ -33,7 +33,7 @@ Set Equations Transparent.
    DatatypeBind binds more names, but this  suffices for detecting whether
    a binding is removed
 *)
-Definition name (b : Binding) :=
+Definition name (b : binding) :=
   match b with
     | TermBind s (VarDecl x _) t => x
     | TypeBind (TyVarDecl x _) ty => x
@@ -45,7 +45,7 @@ Definition name (b : Binding) :=
 Definition name_removed b bs : Prop :=
   ¬ (In (name b) (map name bs)).
 
-Inductive elim : Term -> Term -> Prop :=
+Inductive elim : term -> term -> Prop :=
   | elim_compat : forall t t',
       Compat elim t t' ->
       elim t t'
@@ -60,7 +60,7 @@ Inductive elim : Term -> Term -> Prop :=
       elim_bindings bs bs' ->
       elim (Let rec bs t) (Let rec bs' t')
 
-with elim_bindings : list Binding -> list Binding -> Prop :=
+with elim_bindings : list binding -> list binding -> Prop :=
   | elim_bindings_pure : forall bs bs',
 
       (* any removed binding is a pure binding *)
@@ -76,7 +76,7 @@ with elim_bindings : list Binding -> list Binding -> Prop :=
       ) ->
       elim_bindings bs bs'
 
-with elim_binding : Binding -> Binding -> Prop :=
+with elim_binding : binding -> binding -> Prop :=
 
   | elim_term_bind_compat : forall s vd t t',
       elim t t' ->

@@ -13,7 +13,7 @@ Import ListNotations.
 Definition ctx := list string.
 
 Reserved Notation "Δ '|-*' T" (at level 40, T at level 0).
-Inductive well_scoped_Ty (Δ : ctx) : Ty -> Prop :=
+Inductive well_scoped_Ty (Δ : ctx) : ty -> Prop :=
   | WST_Var : forall X,
       In X Δ ->
       Δ |-* (Ty_Var X)
@@ -45,7 +45,7 @@ Reserved Notation "Δ ',,' Γ  '|-ws_oks_nr' bs" (at level 101, bs at level 0, n
 Reserved Notation "Δ ',,' Γ '|-ws_oks_r' bs" (at level 101, bs at level 0, no associativity).
 Reserved Notation "Δ ',,' Γ '|-ws_ok_b' b" (at level 101, b at level 0, no associativity).
 
-Inductive constructor_well_formed (Δ : ctx) : VDecl -> Prop :=
+Inductive constructor_well_formed (Δ : ctx) : vdecl -> Prop :=
   | W_Con : forall x T,
       Δ |-* T ->
       Δ |-ws_ok_c (VarDecl x T)
@@ -53,7 +53,7 @@ Inductive constructor_well_formed (Δ : ctx) : VDecl -> Prop :=
     "Δ '|-ws_ok_c' c" := (constructor_well_formed Δ c)
 .
 
-Inductive well_scoped (Δ Γ: ctx) : Term -> Prop :=
+Inductive well_scoped (Δ Γ: ctx) : term -> Prop :=
   | WS_Var : forall x,
       In x Γ ->
       Δ ,, Γ |-+ (Var x)
@@ -102,7 +102,7 @@ Inductive well_scoped (Δ Γ: ctx) : Term -> Prop :=
       Δ ,, Γ |-+ (Let Rec bs t)
 
 
-with bindings_well_formed_nonrec (Δ Γ : ctx) : list Binding -> Prop :=
+with bindings_well_formed_nonrec (Δ Γ : ctx) : list binding -> Prop :=
 
   | W_NilB_NonRec :
     Δ ,, Γ |-ws_oks_nr nil
@@ -112,7 +112,7 @@ with bindings_well_formed_nonrec (Δ Γ : ctx) : list Binding -> Prop :=
       (btvb b ++ Δ) ,, (bvb b ++ Γ) |-ws_oks_nr bs ->
       Δ ,, Γ |-ws_oks_nr (b :: bs)
 
-with bindings_well_formed_rec (Δ Γ : ctx) : list Binding -> Prop :=
+with bindings_well_formed_rec (Δ Γ : ctx) : list binding -> Prop :=
 
   | W_NilB_Rec :
       Δ ,, Γ |-ws_oks_r nil
@@ -121,7 +121,7 @@ with bindings_well_formed_rec (Δ Γ : ctx) : list Binding -> Prop :=
       Δ ,, Γ |-ws_oks_r bs ->
       Δ ,, Γ |-ws_oks_r (b :: bs)
 
-with binding_well_formed (Δ Γ : ctx) : Binding -> Prop :=
+with binding_well_formed (Δ Γ : ctx) : binding -> Prop :=
   | W_Term : forall s x T t,
       Δ |-* T ->
       Δ ,, Γ |-+ t ->

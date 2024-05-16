@@ -75,14 +75,14 @@ Qed.
 
 (** * Propositions *)
 
-Definition P_Term (t : Term) :=
+Definition P_Term (t : term) :=
   forall Delta Gamma x U Un v T,
     Delta ,, ((x, U) :: Gamma) |-+ t : T ->
     normalise U Un ->
     [] ,, [] |-+ v : Un ->
     Delta ,, Gamma |-+ <{ [v / x] t }> : T.
 
-Definition P_Binding (b : Binding) : Prop :=
+Definition P_Binding (b : binding) : Prop :=
   forall Delta Gamma x U Un v,
     Delta ,, ((x, U) :: Gamma) |-ok_b b ->
     normalise U Un ->

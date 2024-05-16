@@ -182,7 +182,7 @@ Definition P_dc_NonRec t' bs bs' :=
       Δ' ,, Γ' |-oks_r bs ->
       *)
 
-Definition P_dc_Rec (bs0' : list Binding) (t' : Term) (bs bs' : list Binding) :=
+Definition P_dc_Rec (bs0' : list binding) (t' : term) (bs bs' : list binding) :=
     forall Δ Γ,
     Δ ,, Γ |-oks_r bs ->
     Δ ,, Γ |-oks_r bs'
@@ -205,7 +205,7 @@ Ltac inversion_typing :=
     | H : has_type _ _ _ _ |- _ => inversion H; subst
   end.
 
-Lemma dc_Rec__map_normalise bs0' bs bs' t' (bsGn bsGn' : list (string * Ty)):
+Lemma dc_Rec__map_normalise bs0' bs bs' t' (bsGn bsGn' : list (string * ty)):
   dc_Rec bs0' t' bs bs' ->
   map_normalise (flatten (map binds_Gamma bs)) bsGn ->
   exists bsGn',

@@ -8,13 +8,13 @@ Import ListNotations.
 Open Scope string_scope.
 
 
-Definition lams (binds : list VDecl) (body : Term) : Term :=
+Definition lams (binds : list vdecl) (body : term) : term :=
   fold_right (fun '(VarDecl x τ) t => LamAbs x τ t) body binds.
 
-Definition FuncTy : Type := Ty * Ty.
-Definition FuncDef : Type := string * FuncTy * Term .
+Definition FuncTy : Type := ty * ty.
+Definition FuncDef : Type := string * FuncTy * term .
 
-Inductive Binding_Term_def : Binding -> FuncDef -> Prop :=
+Inductive Binding_Term_def : binding -> FuncDef -> Prop :=
   | btb : forall x σ τ t,
       Binding_Term_def (TermBind Strict (VarDecl x (Ty_Fun σ τ)) t) (x, (σ, τ), t)
   .

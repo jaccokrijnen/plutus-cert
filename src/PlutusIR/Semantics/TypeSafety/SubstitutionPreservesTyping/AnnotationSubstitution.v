@@ -11,7 +11,7 @@ Import ListNotations.
 
 Require Import Coq.Logic.FunctionalExtensionality.
 
-Definition gsubst (a : string) (T' : Ty ) (Gamma : list (string * Ty)) :=
+Definition gsubst (a : string) (T' : ty ) (Gamma : list (string * ty)) :=
   map (fun '(x, T) => (x, substituteT a T' T)) Gamma.
 
 Lemma gsubst_empty : forall X U,
@@ -51,14 +51,14 @@ Proof.
 Qed.
 
 (** ** Predicates *)
-Definition P_Term (t : Term) :=
+Definition P_Term (t : term) :=
   forall Delta Gamma X K U T Tn,
     ((X, K) :: Delta) ,, Gamma |-+ t : T ->
     [] |-* U : K ->
     normalise (substituteT X U T) Tn ->
     Delta ,, (gsubst X U Gamma) |-+ <{ [[U / X] t }> : Tn.
 
-Definition P_Binding (b : Binding) : Prop :=
+Definition P_Binding (b : binding) : Prop :=
   forall Delta Gamma X K U,
     ((X, K) :: Delta) ,, Gamma |-ok_b b ->
     [] |-* U : K ->

@@ -42,12 +42,12 @@ Definition arity (df : DefaultFun) : nat :=
 
 (** ** Meanings of built-in functions *)
 
-Definition constInt (a : Z) : Term := (Constant (@Some' valueOf DefaultUniInteger (ValueOf DefaultUniInteger a))).
-Definition constBool (a : bool) : Term := Constant (Some' (ValueOf DefaultUniBool a)).
-Definition constBS (a : string) : Term := Constant (Some' (ValueOf DefaultUniByteString a)).
-Definition constChar (a : ascii) : Term := Constant (Some' (ValueOf DefaultUniChar a)).
-Definition constString (a : string) : Term := Constant (Some' (ValueOf DefaultUniString a)).
-Definition constUnit (a : unit) : Term := Constant (Some' (ValueOf DefaultUniUnit a)).
+Definition constInt (a : Z) : term := (Constant (@Some' valueOf DefaultUniInteger (ValueOf DefaultUniInteger a))).
+Definition constBool (a : bool) : term := Constant (Some' (ValueOf DefaultUniBool a)).
+Definition constBS (a : string) : term := Constant (Some' (ValueOf DefaultUniByteString a)).
+Definition constChar (a : ascii) : term := Constant (Some' (ValueOf DefaultUniChar a)).
+Definition constString (a : string) : term := Constant (Some' (ValueOf DefaultUniString a)).
+Definition constUnit (a : unit) : term := Constant (Some' (ValueOf DefaultUniUnit a)).
 
 Definition take (x : Z) (s : string) : string := substring 0 (Z.to_nat x) s.
 Definition drop (x : Z) (s : string) : string := substring (Z.to_nat x) (length s) s.
@@ -68,7 +68,7 @@ Definition drop (x : Z) (s : string) : string := substring (Z.to_nat x) (length 
     Note that not all default functions have sensible implementations, such
     as SHA2, SHA3 and VerifySignature. This is bound to change in the future.
 *)
-Definition compute_defaultfun (t : Term) : option Term :=
+Definition compute_defaultfun (t : term) : option term :=
   match t with
   (** Binary operators on integers *)
   (* AddInteger *)

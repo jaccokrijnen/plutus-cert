@@ -7,7 +7,7 @@ Require Import PlutusCert.Util.
 Require Import Coq.Lists.List.
 
 
-Inductive unique_ty : Ty -> Prop :=
+Inductive unique_ty : ty -> Prop :=
   | UNI_TyFun : forall T1 T2,
       unique_ty T1 ->
       unique_ty T2 ->
@@ -36,7 +36,7 @@ Inductive unique_ty : Ty -> Prop :=
 
 
 
-Inductive unique_tm : Term -> Prop :=
+Inductive unique_tm : term -> Prop :=
   | UNI_Var : forall x,
       unique_tm (Var x)
   | UNI_LamAbs : forall x T t,

@@ -17,7 +17,7 @@ Definition P_has_type Δ Γ e T :=
 
 Definition P_constructor_well_formed Δ c Tr := Δ |-ok_c c : Tr.
 
-Definition P_bindings_well_formed_nonrec Δ Γ (bs : list Binding) :=
+Definition P_bindings_well_formed_nonrec Δ Γ (bs : list binding) :=
   forall Δ_t Γ_t bsGn t t' Tn,
     Δ_t = flatten (List.map binds_Delta bs) ++ Δ ->
     map_normalise (flatten (List.map binds_Gamma bs)) bsGn ->

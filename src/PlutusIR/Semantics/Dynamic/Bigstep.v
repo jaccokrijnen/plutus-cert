@@ -16,7 +16,7 @@ Reserved Notation "t '=[' j ']=>' v"(at level 40).
 Reserved Notation "t '=[' j ']=>nr' v"(at level 40).
 Reserved Notation "t '=[' j ']=>r' v 'WITH' bs0"(at level 40).
 
-Inductive eval : Term -> Term -> nat -> Prop :=
+Inductive eval : term -> term -> nat -> Prop :=
   | E_LamAbs : forall x T t,
       LamAbs x T t =[0]=> LamAbs x T t
   | E_Apply : forall t1 t2 x T t0 v2 v0 j1 j2 j0,
@@ -104,7 +104,7 @@ Inductive eval : Term -> Term -> nat -> Prop :=
       Let Rec bs t =[j]=>r v WITH bs ->
       Let Rec bs t =[j]=> v
 
-with eval_bindings_nonrec : Term -> Term -> nat -> Prop :=
+with eval_bindings_nonrec : term -> term -> nat -> Prop :=
   | E_Let_Nil : forall t0 v0 j0,
       t0 =[j0]=> v0 ->
       Let NonRec nil t0 =[ j0 + 1 ]=>nr v0
@@ -134,7 +134,7 @@ with eval_bindings_nonrec : Term -> Term -> nat -> Prop :=
       Let NonRec ((TermBind Strict (VarDecl x T) t1) :: bs) t0 =[j1 + 1]=>nr Error T'
 
 
-with eval_bindings_rec : list Binding -> Term -> Term -> nat -> Prop :=
+with eval_bindings_rec : list binding -> term -> term -> nat -> Prop :=
   | E_LetRec_Nil : forall bs0 t0 v0 j0,
       t0 =[j0]=> v0 ->
       Let Rec nil t0 =[j0 + 1]=>r v0 WITH bs0

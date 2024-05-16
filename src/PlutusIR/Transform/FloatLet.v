@@ -13,9 +13,9 @@ From PlutusCert Require Import
 .
 
 
-Definition fv : Term -> list string := Term.fv.
+Definition fv : term -> list string := Term.fv.
 
-Inductive let_merge : Term -> Term -> Prop :=
+Inductive let_merge : term -> term -> Prop :=
   | LM_lets : forall t_inner t_inner' t bs bs' min_rec,
       let_merge t_inner t_inner' ->
       Compat_Bindings let_merge bs bs' ->
@@ -66,7 +66,7 @@ Inductive SwapsIn {a : Type} (R : a -> a -> Type) : list a -> list a -> Type :=
     { y = yt; x = xt}
  ?
 *)
-Inductive Bindings_NonRec_Commute : Binding -> Binding -> Type :=
+Inductive Bindings_NonRec_Commute : binding -> binding -> Type :=
   | BC_NonStrict:  forall x y xt yt T,
        ~ (x = y)         -> (* They can't bind the same name.
                                Although this could be allowed in specific cases,
@@ -119,7 +119,7 @@ Inductive Bindings_NonRec_Commute : Binding -> Binding -> Type :=
 
 
 (* Reorder bindings within a non-recursive binding group*)
-Inductive LetReorder : Term -> Term -> Prop :=
+Inductive LetReorder : term -> term -> Prop :=
   | LR_Let  : forall t t' bs bs' bs'', LetReorder t t' ->
                  Compat_Bindings LetReorder bs bs' ->
                  SwapsIn Bindings_NonRec_Commute bs' bs'' ->
@@ -131,7 +131,7 @@ Inductive LetReorder : Term -> Term -> Prop :=
 
 
 (* This definition assumes global uniqueness *)
-Inductive let_reorder : Term -> Term -> Prop :=
+Inductive let_reorder : term -> term -> Prop :=
 
   | lr_Let : forall r bs bs' t t',
       let_reorder_Bindings bs bs' ->
@@ -143,7 +143,7 @@ Inductive let_reorder : Term -> Term -> Prop :=
       Compat let_reorder t t' ->
       let_reorder t t'
 
-with let_reorder_Bindings : list Binding -> list Binding -> Prop :=
+with let_reorder_Bindings : list binding -> list binding -> Prop :=
 
   (* Relate pre- and post-bindings one-to-one,
      i.e. there exists a bijection between the pre and post bindings *)
@@ -157,7 +157,7 @@ with let_reorder_Bindings : list Binding -> list Binding -> Prop :=
 
 
 (* Finds a related binding in the list, and returns the other bindings of that list *)
-with let_reorder_Binding : Binding -> list Binding -> list Binding -> Prop :=
+with let_reorder_Binding : binding -> list binding -> list binding -> Prop :=
 
   | lr_There : forall b b' bs bs',
       let_reorder_Binding b        bs  bs' ->
@@ -169,7 +169,7 @@ with let_reorder_Binding : Binding -> list Binding -> list Binding -> Prop :=
   .
 
 
-Inductive let_float_step : Term -> Term -> Prop :=
+Inductive let_float_step : term -> term -> Prop :=
 
   (* Binding constructs *)
   | lfs_LamAbs : forall x τ r bs t,
@@ -216,7 +216,7 @@ Inductive let_float_step : Term -> Term -> Prop :=
       Compat let_float_step t t' ->
       let_float_step t t'
 
-with let_float_step_Binding : list Binding -> recursivity -> list Binding -> list Binding -> Prop :=
+with let_float_step_Binding : list binding -> recursivity -> list binding -> list binding -> Prop :=
 
   | lfs_Here : forall s vd bs r bs_rhs t,
       (s = NonStrict -> Forall (pure_binding []) bs_rhs) ->
@@ -227,7 +227,7 @@ with let_float_step_Binding : list Binding -> recursivity -> list Binding -> lis
       let_float_step_Binding (b :: bs) r bs_rhs (b :: bs)
 .
 
-Inductive transitive_closure (R : Term -> Term -> Prop) : Term -> Term -> Prop :=
+Inductive transitive_closure (R : term -> term -> Prop) : term -> term -> Prop :=
   | tc_id : forall t t',
       R t t' ->
       transitive_closure R t t'

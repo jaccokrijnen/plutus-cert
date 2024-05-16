@@ -8,7 +8,7 @@ Import ListNotations.
 Require Import Coq.Strings.String.
 Local Open Scope string_scope.
 
-Definition fact_term (n : Z) : Term :=
+Definition fact_term (n : Z) : term :=
   Let
     Rec
     [ TermBind

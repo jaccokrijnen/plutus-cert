@@ -21,9 +21,9 @@ Import ListNotations.
 
 Section Bindings.
 
-  Context (dec_Term : Term -> Term -> bool).
+  Context (dec_Term : term -> term -> bool).
 
-  Definition dec_Binding (b b' : Binding) : bool := match b, b' with
+  Definition dec_Binding (b b' : binding) : bool := match b, b' with
     | TermBind s vd t, TermBind s' vd' t' => strictness_eqb s s' && VDecl_eqb vd vd' && dec_Term t t'
     | b, b' => Binding_eqb b b'
     end.
@@ -42,7 +42,7 @@ Section Bindings.
 
   (* inlined and specialized `find` for termination checking *)
   Definition find_Binding b' :=
-  fix find (bs : list Binding) : bool :=
+  fix find (bs : list binding) : bool :=
     match bs with
     | []      => false
     | b :: bs => if String.eqb (name b) (name b') then dec_Binding b b' else find bs
@@ -59,7 +59,7 @@ Section Bindings.
     end.
 
 
-  Definition dec_Bindings (bs bs' : list Binding) : bool :=
+  Definition dec_Bindings (bs bs' : list binding) : bool :=
     let bsn := map name bs in
     let bs'n := map name bs' in
     forallb (fun b => dec_removed b bs'n) bs &&
@@ -76,7 +76,7 @@ Section Bindings.
    *)
 End Bindings.
 
-Fixpoint dec_Term (x y : Term) {struct x} : bool := match x, y with
+Fixpoint dec_Term (x y : term) {struct x} : bool := match x, y with
 
   | Let r bs t   , Let r' bs' t' =>
       if dec_Bindings dec_Term bs bs'
@@ -140,7 +140,7 @@ Ltac split_hypos :=
 
 Lemma H_dec_removed bs bs':
     forallb (fun b => dec_removed b (map name bs')) bs = true ->
-    ∀ b : Binding, In b bs → name_removed b bs' → pure_binding [] b.
+    ∀ b : binding, In b bs → name_removed b bs' → pure_binding [] b.
 Proof with eauto with Hints_soundness.
   intros H_dec.
   intros b H_In H_removed.

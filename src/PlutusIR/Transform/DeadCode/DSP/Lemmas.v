@@ -264,11 +264,11 @@ Section ScopingLemmas.
       inversion H_ws; subst;
      eauto.
 
-  Definition P_Term (t : Term) : Prop :=
+  Definition P_Term (t : term) : Prop :=
     ∀ Δ Γ (H_ws : well_scoped Δ Γ t),
     fv t ⊆ Γ.
 
-  Definition P_Binding (b : Binding) :=
+  Definition P_Binding (b : binding) :=
     ∀ Δ Γ rec (H_ws_bs : binding_well_formed Δ Γ b),
     fv_binding rec b ⊆ Γ.
 

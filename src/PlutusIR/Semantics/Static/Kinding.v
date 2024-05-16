@@ -16,7 +16,7 @@ Definition lookupBuiltinKind (u : DefaultUni) : kind :=
 
 (** Kinding of types *)
 Reserved Notation "Δ '|-*' T ':' K" (at level 40, T at level 0, K at level 0).
-Inductive has_kind : list (string * kind) -> Ty -> kind -> Prop :=
+Inductive has_kind : list (string * kind) -> ty -> kind -> Prop :=
   | K_Var : forall Δ X K,
       lookup X Δ = Some K ->
       Δ |-* (Ty_Var X) : K

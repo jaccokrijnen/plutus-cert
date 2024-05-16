@@ -138,7 +138,7 @@ Qed.
 
 Section LetRecLemmas.
 
-  Lemma ftvbs_app (bs bs' : list Binding) :
+  Lemma ftvbs_app (bs bs' : list binding) :
     ftvbs ftvb Rec (bs ++ bs')
     ⊆ ftvbs ftvb Rec (bs' ++ bs).
   Proof.
@@ -258,7 +258,7 @@ Proof.
             specialize (IHbs H).
             clear H.
 
-            assert (exists bs_init : list Binding, bs' = bs_init ++ bs).
+            assert (exists bs_init : list binding, bs' = bs_init ++ bs).
             {
               destruct H_ex.
               rewrite app_cons_app_app in H.

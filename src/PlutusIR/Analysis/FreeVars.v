@@ -14,7 +14,7 @@ Set Implicit Arguments.
 
 Module Ty.
 
-  Function ftv (T : Ty) : list string :=
+  Function ftv (T : ty) : list string :=
     match T with
     | Ty_Var X =>
         [X]
@@ -41,9 +41,9 @@ Module Term.
 
     (* It becomes a parameter to both fvbs and the generated
        fvbs_equation *)
-    Context (fvb : recursivity -> Binding -> list string).
+    Context (fvb : recursivity -> binding -> list string).
 
-    Function fvbs  rec (bs : list Binding) : list string :=
+    Function fvbs  rec (bs : list binding) : list string :=
       match bs with
        | nil     => []
         | b :: bs =>
@@ -57,7 +57,7 @@ Module Term.
 
   End Bindings.
 
-  Function fv (t : Term) : list string :=
+  Function fv (t : term) : list string :=
     match t with
      | Let rec bs t    => fvbs fvb rec bs ++ remove_many string_dec (bvbs bs) (fv t)
      | LamAbs n ty t   => remove string_dec n (fv t)
@@ -74,7 +74,7 @@ Module Term.
      | Case t ts       => fv t ++ concat (map fv ts)
    end
 
-  with fvb rec (b : Binding) : list string :=
+  with fvb rec (b : binding) : list string :=
     match b with
       | TermBind _ (VarDecl v _) t => match rec with
         | Rec    => remove string_dec v (fv t)
@@ -102,7 +102,7 @@ Module Term.
 
 
   Section Bindings.
-  Context (ftvb : recursivity -> Binding -> list string).
+  Context (ftvb : recursivity -> binding -> list string).
 
   Function ftvbs rec bs : list string :=
     match bs with
@@ -137,12 +137,12 @@ Module Term.
   Qed.
   *)
 
-  Definition ftvc (c : VDecl) : list string :=
+  Definition ftvc (c : vdecl) : list string :=
     match c with
       | VarDecl _ τ => Ty.ftv τ
     end.
 
-  Function ftv (t : Term) : list string :=
+  Function ftv (t : term) : list string :=
    match t with
      | Let rec bs t    => ftvbs ftvb rec bs ++ remove_many string_dec (btvbs bs) (ftv t)
      | LamAbs n τ t    => Ty.ftv τ ++ ftv t
@@ -159,7 +159,7 @@ Module Term.
      | (Case t ts)    => ftv t ++ concat (map ftv ts)
      end
 
-  with ftvb rec (b : Binding) : list string :=
+  with ftvb rec (b : binding) : list string :=
     match b with
       | TermBind s (VarDecl _ τ) t => Ty.ftv τ ++ ftv t
       | TypeBind (TyVarDecl α k) τ  => Ty.ftv τ

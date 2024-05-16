@@ -32,7 +32,7 @@ Definition no_ty_capture α (Δ : ctx) τ :=
   forall β, In (β, α) Δ -> ~ AFI.Ty.appears_free_in β τ.
 
 
-Inductive rename_tvs (Δ : ctx) (cs : list VDecl) : list TVDecl -> list TVDecl -> ctx -> Type :=
+Inductive rename_tvs (Δ : ctx) (cs : list vdecl) : list tvdecl -> list tvdecl -> ctx -> Type :=
 
   | rn_tvs_nil :
       rename_tvs Δ cs [] [] []
@@ -45,7 +45,7 @@ Inductive rename_tvs (Δ : ctx) (cs : list VDecl) : list TVDecl -> list TVDecl -
       rename_tvs Δ cs (TyVarDecl α k :: tvs) (TyVarDecl β k :: tvs') ((α, β) :: Δ_tvs)
 .
 
-Inductive rename_ty (Δ : ctx) : Ty -> Ty -> Type :=
+Inductive rename_ty (Δ : ctx) : ty -> ty -> Type :=
 
    | rn_Ty_Var : forall α α',
       lookup α Δ = Some α' ->
@@ -80,7 +80,7 @@ Inductive rename_ty (Δ : ctx) : Ty -> Ty -> Type :=
       rename_ty Δ (Ty_App σ τ) (Ty_App σ' τ')
 .
 
-Inductive rename (Γ Δ : ctx) : Term -> Term -> Type :=
+Inductive rename (Γ Δ : ctx) : term -> term -> Type :=
   | rn_Var : forall x y,
       lookup x Γ = Some y ->
       rename Γ Δ  (Var x) (Var y)
@@ -163,7 +163,7 @@ Inductive rename (Γ Δ : ctx) : Term -> Term -> Type :=
       rename Γ Δ t t' ->
       rename Γ Δ (Unwrap t) (Unwrap t')
 
-with rename_binding (Γ Δ : ctx) : ctx -> ctx -> Binding -> Binding -> Type :=
+with rename_binding (Γ Δ : ctx) : ctx -> ctx -> binding -> binding -> Type :=
 
   | rn_TermBind : forall s x x' τ τ' t t',
       rename_ty Δ τ τ' ->
@@ -195,7 +195,7 @@ with rename_binding (Γ Δ : ctx) : ctx -> ctx -> Binding -> Binding -> Type :=
   rename_Bindings_Rec is also indexed over contexts Γ_bs, Δ_bs, which are respectively
   the bound term and type variables of the recursive bindings.
 *)
-with rename_Bindings_Rec (Γ Δ : ctx) : ctx -> ctx -> list Binding -> list Binding -> Type :=
+with rename_Bindings_Rec (Γ Δ : ctx) : ctx -> ctx -> list binding -> list binding -> Type :=
 
   | rn_Bindings_Rec_nil :
       rename_Bindings_Rec Γ Δ [] [] [] []
@@ -210,7 +210,7 @@ with rename_Bindings_Rec (Γ Δ : ctx) : ctx -> ctx -> list Binding -> list Bind
   rename_constrs is also indexed over context Γ_cs, which are
   the renamings of the constructors
 *)
-with rename_constrs (Γ Δ : ctx) : list VDecl -> list VDecl -> ctx -> Type :=
+with rename_constrs (Γ Δ : ctx) : list vdecl -> list vdecl -> ctx -> Type :=
 
   | rn_constrs_nil :
       rename_constrs Γ Δ [] [] []
