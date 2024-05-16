@@ -121,7 +121,7 @@ Definition matchBind (d : DTDecl) : string * Ty :=
       (matchFunc, matchTy d)
   end.
 
-Definition binds_Delta (b : Binding) : list (string * Kind) :=
+Definition binds_Delta (b : Binding) : list (string * kind) :=
   match b with
   | TermBind _ _ _ => nil
   | TypeBind (TyVarDecl X K) ty => (X, K) :: nil

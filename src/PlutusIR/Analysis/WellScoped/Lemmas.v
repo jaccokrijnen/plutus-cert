@@ -155,7 +155,7 @@ End LetRecLemmas.
 Lemma free_vars_well_scoped :
   (forall t, P_Term t) /\ (forall b, P_Binding b).
 Proof.
-  apply Term__multind with (P := P_Term) (Q := P_Binding).
+  apply term__multind with (P := P_Term) (Q := P_Binding).
 
   (* Let *)
   {

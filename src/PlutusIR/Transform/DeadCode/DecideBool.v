@@ -24,7 +24,7 @@ Section Bindings.
   Context (dec_Term : Term -> Term -> bool).
 
   Definition dec_Binding (b b' : Binding) : bool := match b, b' with
-    | TermBind s vd t, TermBind s' vd' t' => Strictness_eqb s s' && VDecl_eqb vd vd' && dec_Term t t'
+    | TermBind s vd t, TermBind s' vd' t' => strictness_eqb s s' && VDecl_eqb vd vd' && dec_Term t t'
     | b, b' => Binding_eqb b b'
     end.
 
@@ -81,7 +81,7 @@ Fixpoint dec_Term (x y : Term) {struct x} : bool := match x, y with
   | Let r bs t   , Let r' bs' t' =>
       if dec_Bindings dec_Term bs bs'
       then (* same let block, but bindings were removed *)
-        Recursivity_eqb r r' && dec_Term t t'
+        recursivity_eqb r r' && dec_Term t t'
       else (* t' is another let block, the whole block in the pre-term was removed *)
         forallb (dec_pure_binding []) bs && dec_Term t y (* Check whether the whole let was removed *)
   | Let _ bs t   , _ =>
@@ -101,8 +101,8 @@ Definition P_Term t := forall t', dec_Term t t' = true -> elim t t'.
 Definition P_Binding b := forall b', dec_Binding dec_Term b b' = true -> elim_binding b b'.
 
 Axiom (String_eqb_eq       : ∀ x y, String.eqb x y = true -> x = y).
-Axiom (Recursivity_eqb_eq  : ∀ x y, Recursivity_eqb x y = true -> x = y).
-Axiom (Strictness_eqb_eq   : ∀ x y, Strictness_eqb x y = true -> x = y).
+Axiom (recursivity_eqb_eq  : ∀ x y, recursivity_eqb x y = true -> x = y).
+Axiom (strictness_eqb_eq   : ∀ x y, strictness_eqb x y = true -> x = y).
 Axiom (Kind_eqb_eq         : ∀ x y, Kind_eqb x y = true -> x = y).
 Axiom (Ty_eqb_eq           : ∀ x y, Ty_eqb x y = true -> x = y).
 Axiom (some_valueOf_eqb_eq : ∀ x y, some_valueOf_eqb x y = true -> x = y).
@@ -115,8 +115,8 @@ Create HintDb Hints_soundness.
 #[local]
 Hint Resolve
   String_eqb_eq
-  Recursivity_eqb_eq
-  Strictness_eqb_eq
+  recursivity_eqb_eq
+  strictness_eqb_eq
   Kind_eqb_eq
   Ty_eqb_eq
   some_valueOf_eqb_eq
@@ -309,7 +309,7 @@ Hint Constructors Compat : Hints_soundness.
 Theorem dec_Term_Binding_sound :
   (∀ t, P_Term t) /\ (∀ b, P_Binding b).
 Proof with eauto with Hints_soundness.
-  apply Term__multind with (P := P_Term) (Q := P_Binding).
+  apply term__multind with (P := P_Term) (Q := P_Binding).
   all: intros.
 
   (* P_Term (Let rec bs t) *)

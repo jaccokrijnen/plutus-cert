@@ -217,7 +217,7 @@ Lemma RV_to_RC : forall k T rho v v',
 Proof. intros. apply H. Qed.
 
 (** Kind assignments *)
-Definition kass := list (string * Kind).
+Definition kass := list (string * kind).
 
 (** RD = Interpretation of kind contexts as type mappings *)
 Inductive RD : kass -> tymapping -> Prop :=
@@ -260,7 +260,7 @@ Fixpoint closed_env (env : env) :=
     values that are lated for $k$ steps at $\Gamma$, then $\gamma(e)$ and
     $\gamma(e')$ are related for $k$ steps as computations of type $\tau$.
 *)
-Definition LR_logically_approximate (Δ : list (string * Kind)) (Γ : list (string * Ty)) (e e' : Term) (T : Ty) :=
+Definition LR_logically_approximate (Δ : list (string * kind)) (Γ : list (string * Ty)) (e e' : Term) (T : Ty) :=
     (Δ ,, Γ |-+ e : T) /\
     (Δ ,, Γ |-+ e' : T) /\
     forall k ρ γ γ',
@@ -282,7 +282,7 @@ Notation "Δ ',,' Γ '|-' e1 ≤ e2 ':' T" := (LR_logically_approximate Δ Γ e1
     another.
 *)
 
-Definition LR_logically_equivalent (Δ : list (string * Kind)) (Γ : list (string * Ty)) (e e' : Term) (T : Ty) :=
+Definition LR_logically_equivalent (Δ : list (string * kind)) (Γ : list (string * Ty)) (e e' : Term) (T : Ty) :=
   LR_logically_approximate Δ Γ e e' T /\ LR_logically_approximate Δ Γ e' e T.
 
 

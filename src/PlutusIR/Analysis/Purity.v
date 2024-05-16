@@ -14,7 +14,7 @@ Import ListNotations.
 Open Scope bool_scope.
 
 Inductive binder_info :=
-  | let_bound : Strictness -> binder_info
+  | let_bound : strictness -> binder_info
   | lambda_bound
 .
 

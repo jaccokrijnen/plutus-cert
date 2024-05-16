@@ -72,7 +72,7 @@ Definition P_Binding (b : Binding) : Prop :=
 Theorem substA_preserves_typing :
   forall t, P_Term t.
 Proof with (eauto using substituteT_preserves_kinding with typing).
-  apply Term__ind with P_Binding.
+  apply term__ind with P_Binding.
   all: intros.
   all: unfold P_Term.
   all: try (intros Delta Gamma X K U T Tn Htyp__t Hkind__U Hnorm__Tn).

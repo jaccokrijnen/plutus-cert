@@ -35,10 +35,10 @@ From QuickChick Require Import QuickChick.
 
 *)
 
-(** Recursivity and strictness *)
-Inductive Recursivity := NonRec | Rec.
+(** recursivity and strictness *)
+Inductive recursivity := NonRec | Rec.
 
-Inductive Strictness := NonStrict | Strict.
+Inductive strictness := NonStrict | Strict.
 
 (** Universes *)
 Inductive DefaultUni : Type :=
@@ -110,7 +110,7 @@ Definition tyname := string.
 Definition binderName := string.
 Definition binderTyname := string.
 
-(** Kinds *)
+(** kinds *)
 Inductive kind :=
   | Kind_Base : kind
   | Kind_Arrow : kind -> kind -> kind.
@@ -130,7 +130,7 @@ Inductive ty :=
 (*
   Note [Simplification of AST representation]
 
-  In the Haskell AST, Term is a functor and each constructor may have a field of
+  In the Haskell AST, term is a functor and each constructor may have a field of
   the type parameter `a`. This seems to be used for internal metadata on the
   AST. At the moment we don't use it and don't represent it in the AST.
 
@@ -141,11 +141,13 @@ Inductive vdecl := VarDecl : binderName -> ty -> vdecl.
 Inductive tvdecl := TyVarDecl : binderTyname -> kind -> tvdecl.
 Inductive dtdecl := Datatype : tvdecl -> list tvdecl -> binderName -> list vdecl -> dtdecl.
 
-(** Terms and bindings *)
+
+
+(** terms and bindings *)
 (* Perhaps parametrize to mimic original AST in haskell more closely? We really only need one instantiation for now. *)
 (* Context {func : Type} {uni : Type -> Type} {name : Type} {tyname : Type}. *)
 Inductive term :=
-  | Let      : Recursivity -> list binding -> term -> term
+  | Let      : recursivity -> list binding -> term -> term
   | Var      : name -> term
   | TyAbs    : binderTyname -> kind -> term -> term
   | LamAbs   : binderName -> ty -> term -> term
@@ -160,7 +162,7 @@ Inductive term :=
   | Case     : term -> list term -> term
 
 with binding :=
-  | TermBind : Strictness -> vdecl -> term -> binding
+  | TermBind : strictness -> vdecl -> term -> binding
   | TypeBind : tvdecl -> ty -> binding
   | DatatypeBind : dtdecl -> binding
 .
@@ -175,7 +177,7 @@ Inductive context :=
 
 (* Similar to mkLet in Plutus: for an empty list of bindings it is the identity, otherwise
    it constructs a let with a non-empty list of bindings *)
-Definition mk_let (r : Recursivity) (bs : list binding) (t : term) : term :=
+Definition mk_let (r : recursivity) (bs : list binding) (t : term) : term :=
   match bs with
     | [] => t
     | _  => Let r bs t
@@ -229,7 +231,7 @@ Definition tvdecl_name (tvd : tvdecl) : binderTyname :=
 
 (** * Named terms (all variables and binders are strings) *)
 
-Definition Kind := kind.
+(* Definition Kind := kind. *)
 Definition Ty := ty.
 Definition VDecl := vdecl.
 Definition TVDecl := tvdecl.
@@ -240,93 +242,27 @@ Definition Binding := binding.
 Definition Context := context.
 
 
-Section Term_rect.
+Section term__ind.
 
   Unset Implicit Arguments.
 
-  Variable (P : Term -> Type).
-  Variable (Q : Binding -> Type).
+  Variable (P : term -> Prop).
+  Variable (Q : binding -> Prop).
 
   Context
-    (H_Let      : forall rec bs t, ForallT Q bs -> P t -> P (Let rec bs t))
-    (H_Var      : forall s : string, P (Var s))
-    (H_TyAbs    : forall (s : string) (k : Kind) (t : Term), P t -> P (TyAbs s k t))
-    (H_LamAbs   : forall (s : string) (t : Ty) (t0 : Term), P t0 -> P (LamAbs s t t0))
-    (H_Apply    : forall t : Term, P t -> forall t0 : Term, P t0 -> P (Apply t t0))
+    (H_Let     : forall rec bs t, ForallP Q bs -> P t -> P (Let rec bs t))
+    (H_Var     : forall s : string, P (Var s))
+    (H_TyAbs   : forall (s : string) (k : kind) (t : term), P t -> P (TyAbs s k t))
+    (H_LamAbs  : forall (s : string) (t : ty) (t0 : term), P t0 -> P (LamAbs s t t0))
+    (H_Apply   : forall t : term, P t -> forall t0 : term, P t0 -> P (Apply t t0))
     (H_Constant : forall s : some valueOf, P (Constant s))
-    (H_Builtin  : forall d : DefaultFun, P (Builtin d))
-    (H_TyInst   : forall t : Term, P t -> forall t0 : Ty, P (TyInst t t0))
-    (H_Error    : forall t : Ty, P (Error t))
-    (H_IWrap    : forall (t t0 : Ty) (t1 : Term), P t1 -> P (IWrap t t0 t1))
-    (H_Unwrap   : forall t : Term, P t -> P (Unwrap t))
-    (H_Constr   : forall (i : nat) (ts : list Term), ForallT P ts -> P (Constr i ts))
-    (H_Case     : forall (t : Term), P t -> forall ts, ForallT P ts -> P (Case t ts))
-    .
-
-  Context
-    (H_TermBind : forall s v t, P t -> Q (TermBind s v t))
-    (H_TypeBind : forall v ty, Q (TypeBind v ty))
-    (H_DatatypeBind : forall dtd, Q (DatatypeBind dtd)).
-
-  Definition Bindings_rect' (Binding_rect' : forall (b : Binding), Q b) :=
-    fix Bindings_rect' bs :=
-    match bs as p return ForallT Q p with
-      | nil       => ForallT_nil
-      | cons b bs => ForallT_cons (Binding_rect' b) (Bindings_rect' bs)
-    end.
-
-  Definition Terms_rect' (Term_rect : forall (t : Term), P t) :=
-    fix Terms_rect' ts :=
-    match ts as p return ForallT P p with
-      | nil       => ForallT_nil
-      | cons t ts => ForallT_cons (Term_rect t) (Terms_rect' ts)
-    end.
-
-  Fixpoint Term_rect' (t : Term) : P t :=
-    match t with
-      | Let rec bs t    => H_Let rec bs t (Bindings_rect' Binding_rect' bs) (Term_rect' t)
-      | Var n           => H_Var n
-      | TyAbs n k t     => H_TyAbs n k t (Term_rect' t)
-      | LamAbs n ty t   => H_LamAbs n ty t (Term_rect' t)
-      | Apply s t       => H_Apply s (Term_rect' s) t (Term_rect' t)
-      | TyInst t ty     => H_TyInst t (Term_rect' t) ty
-      | IWrap ty1 ty2 t => H_IWrap ty1 ty2 t (Term_rect' t)
-      | Unwrap t        => H_Unwrap t (Term_rect' t)
-      | Error ty        => H_Error ty
-      | Constant v      => H_Constant v
-      | Builtin f       => H_Builtin f
-      | Constr i ts     => H_Constr i ts (Terms_rect' Term_rect' ts)
-      | Case t ts       => H_Case t (Term_rect' t) ts (Terms_rect' Term_rect' ts)
-    end
-  with Binding_rect' (b : Binding) : Q b :=
-    match b with
-      | TermBind s v t  => H_TermBind s v t (Term_rect' t)
-      | TypeBind v ty   => H_TypeBind v ty
-      | DatatypeBind dtd => H_DatatypeBind dtd
-    end.
-End Term_rect.
-
-Section Term__ind.
-
-  Unset Implicit Arguments.
-
-  Variable (P : Term -> Prop).
-  Variable (Q : Binding -> Prop).
-
-  Context
-    (H_Let      : forall rec bs t, ForallP Q bs -> P t -> P (Let rec bs t))
-    (H_Var      : forall s : string, P (Var s))
-    (H_TyAbs    : forall (s : string) (k : Kind) (t : Term), P t -> P (TyAbs s k t))
-    (H_LamAbs   : forall (s : string) (t : Ty) (t0 : Term), P t0 -> P (LamAbs s t t0))
-    (H_Apply    : forall t : Term, P t -> forall t0 : Term, P t0 -> P (Apply t t0))
-    (H_Constant : forall s : some valueOf, P (Constant s))
-    (H_Builtin  : forall d : DefaultFun, P (Builtin d))
-    (H_TyInst   : forall t : Term, P t -> forall t0 : Ty, P (TyInst t t0))
-    (H_Error    : forall t : Ty, P (Error t))
-    (H_IWrap    : forall (t t0 : Ty) (t1 : Term), P t1 -> P (IWrap t t0 t1))
-    (H_Unwrap   : forall t : Term, P t -> P (Unwrap t))
-    (H_Constr   : forall (i : nat) (ts : list Term), ForallP P ts -> P (Constr i ts))
-    (H_Case    : forall (t : Term), P t -> forall ts, ForallP P ts -> P (Case t ts))
+    (H_Builtin : forall d : DefaultFun, P (Builtin d))
+    (H_TyInst  : forall t : term, P t -> forall t0 : ty, P (TyInst t t0))
+    (H_Error   : forall t : ty, P (Error t))
+    (H_IWrap   : forall (t t0 : ty) (t1 : term), P t1 -> P (IWrap t t0 t1))
+    (H_Unwrap  : forall t : term, P t -> P (Unwrap t))
+    (H_Constr  : forall (i : nat) (ts : list term), ForallP P ts -> P (Constr i ts))
+    (H_Case   : forall (t : term), P t -> forall ts, ForallP P ts -> P (Case t ts))
     .
 
 
@@ -336,46 +272,46 @@ Section Term__ind.
     (H_TypeBind : forall v ty, Q (TypeBind v ty))
     (H_DatatypeBind : forall dtd, Q (DatatypeBind dtd)).
 
-  Definition Bindings__ind (Binding__ind : forall (b : Binding), Q b) :=
-    fix Bindings__ind bs :=
+  Definition bindings__ind (binding__ind : forall (b : binding), Q b) :=
+    fix bindings__ind bs :=
     match bs as p return ForallP Q p with
       | nil       => ForallP_nil
-      | cons b bs => ForallP_cons (Binding__ind b) (Bindings__ind bs)
+      | cons b bs => ForallP_cons (binding__ind b) (bindings__ind bs)
     end.
 
-  Definition Terms__ind (Term_rect : forall (t : Term), P t) :=
-    fix Terms_rect' ts :=
+  Definition terms__ind (term_rect : forall (t : term), P t) :=
+    fix terms_rect' ts :=
     match ts as p return ForallP P p with
       | nil       => ForallP_nil
-      | cons t ts => ForallP_cons (Term_rect t) (Terms_rect' ts)
+      | cons t ts => ForallP_cons (term_rect t) (terms_rect' ts)
     end.
 
-  Fixpoint Term__ind (t : term) : P t :=
+  Fixpoint term__ind (t : term) : P t :=
     match t with
-      | Let rec bs t    => H_Let rec bs t (Bindings__ind Binding__ind bs) (Term__ind t)
+      | Let rec bs t    => H_Let rec bs t (bindings__ind binding__ind bs) (term__ind t)
       | Var n           => H_Var n
-      | TyAbs n k t     => H_TyAbs n k t (Term__ind t)
-      | LamAbs n ty t   => H_LamAbs n ty t (Term__ind t)
-      | Apply s t       => H_Apply s (Term__ind s) t (Term__ind t)
-      | TyInst t ty     => H_TyInst t (Term__ind t) ty
-      | IWrap ty1 ty2 t => H_IWrap ty1 ty2 t (Term__ind t)
-      | Unwrap t        => H_Unwrap t (Term__ind t)
+      | TyAbs n k t     => H_TyAbs n k t (term__ind t)
+      | LamAbs n ty t   => H_LamAbs n ty t (term__ind t)
+      | Apply s t       => H_Apply s (term__ind s) t (term__ind t)
+      | TyInst t ty     => H_TyInst t (term__ind t) ty
+      | IWrap ty1 ty2 t => H_IWrap ty1 ty2 t (term__ind t)
+      | Unwrap t        => H_Unwrap t (term__ind t)
       | Error ty        => H_Error ty
       | Constant v      => H_Constant v
       | Builtin f       => H_Builtin f
-      | Constr i ts     => H_Constr i ts (Terms__ind Term__ind ts)
-      | Case t ts      => H_Case t (Term__ind t) ts (Terms__ind Term__ind ts)
+      | Constr i ts     => H_Constr i ts (terms__ind term__ind ts)
+      | Case t ts      => H_Case t (term__ind t) ts (terms__ind term__ind ts)
     end
-  with Binding__ind (b : binding) : Q b :=
+  with binding__ind (b : binding) : Q b :=
     match b with
-      | TermBind s v t  => H_TermBind s v t (Term__ind t)
+      | TermBind s v t  => H_TermBind s v t (term__ind t)
       | TypeBind v ty   => H_TypeBind v ty
       | DatatypeBind dtd => H_DatatypeBind dtd
     end.
 
-  Combined Scheme Term__multind from Term__ind, Binding__ind.
+  Combined Scheme term__multind from term__ind, binding__ind.
 
-End Term__ind.
+End term__ind.
 
 Section term_rect.
   Variable (P : term -> Type).
@@ -383,29 +319,29 @@ Section term_rect.
   Variable (R : list binding -> Type).
 
   Context
-    (* (H_Let      : forall rec bs t, ForallT Q bs -> P t -> P (Let rec bs t)) *)
-    (H_Let      : forall rec bs t, R bs -> P t -> P (Let rec bs t))
-    (H_Var      : forall s, P (Var s))
-    (H_TyAbs    : forall s (k : kind) (t : term), P t -> P (TyAbs s k t))
-    (H_LamAbs   : forall s t (t0 : term), P t0 -> P (LamAbs s t t0))
-    (H_Apply    : forall t : term, P t -> forall t0 : term, P t0 -> P (Apply t t0))
+    (* (H_Let     : forall rec bs t, ForallT Q bs -> P t -> P (Let rec bs t)) *)
+    (H_Let     : forall rec bs t, R bs -> P t -> P (Let rec bs t))
+    (H_Var     : forall s, P (Var s))
+    (H_TyAbs   : forall s (k : kind) (t : term), P t -> P (TyAbs s k t))
+    (H_LamAbs  : forall s t (t0 : term), P t0 -> P (LamAbs s t t0))
+    (H_Apply   : forall t : term, P t -> forall t0 : term, P t0 -> P (Apply t t0))
     (H_Constant : forall s : some valueOf, P (Constant s))
-    (H_Builtin  : forall d : DefaultFun, P (Builtin d))
-    (H_TyInst   : forall t : term, P t -> forall t0 : ty, P (TyInst t t0))
-    (H_Error    : forall t : ty, P (Error t))
-    (H_IWrap    : forall (t t0 : ty) (t1 : term), P t1 -> P (IWrap t t0 t1))
-    (H_Unwrap   : forall t : term, P t -> P (Unwrap t))
-    (H_Constr   : forall (i : nat) (ts : list (term)), ForallT P ts -> P (Constr i ts))
-    (H_Case    : forall t, P t -> forall ts, ForallT P ts -> P (Case t ts)).
+    (H_Builtin : forall d : DefaultFun, P (Builtin d))
+    (H_TyInst  : forall t : term, P t -> forall t0 : ty, P (TyInst t t0))
+    (H_Error   : forall t : ty, P (Error t))
+    (H_IWrap   : forall (t t0 : ty) (t1 : term), P t1 -> P (IWrap t t0 t1))
+    (H_Unwrap  : forall t : term, P t -> P (Unwrap t))
+    (H_Constr  : forall (i : nat) (ts : list (term)), ForallT P ts -> P (Constr i ts))
+    (H_Case   : forall t, P t -> forall ts, ForallT P ts -> P (Case t ts)).
 
   Context
-    (H_TermBind     : forall s v t, P t -> Q (TermBind s v t))
-    (H_TypeBind     : forall v ty, Q (TypeBind v ty))
+    (H_TermBind    : forall s v t, P t -> Q (TermBind s v t))
+    (H_TypeBind    : forall v ty, Q (TypeBind v ty))
     (H_DatatypeBind : forall dtd, Q (DatatypeBind dtd)).
 
   Context
-    (H_cons         : forall b bs, Q b -> R bs -> R (b :: bs))
-    (H_nil          : R nil).
+    (H_cons        : forall b bs, Q b -> R bs -> R (b :: bs))
+    (H_nil         : R nil).
 
   Definition bindings_rect' (binding_rect' : forall (b : binding), Q b) :=
     fix bindings_rect' bs :=
@@ -528,7 +464,7 @@ Definition ty_endo (m_custom : forall τ, option (@ty_alg ty τ)) := fix f τ :=
       end
   end.
 
-Definition unitVal : Term := Constant (Some' (ValueOf DefaultUniUnit tt)).
+Definition unitVal : term := Constant (Some' (ValueOf DefaultUniUnit tt)).
 
 
 

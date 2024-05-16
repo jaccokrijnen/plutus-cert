@@ -170,7 +170,7 @@ Hint Unfold R_refl.
 
 Lemma dc_sym : ∀ t, dc t t.
 Proof.
-  apply Term__multind with
+  apply term__multind with
     (P := fun t => dc t t)
     (Q := fun b => dc_Binding b b)
   .

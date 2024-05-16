@@ -71,12 +71,12 @@ Fixpoint splitTy (T : Ty) : list Ty * Ty :=
   | Tr => (nil, Tr)
   end.
 
-Definition fromDecl (tvd : tvdecl) : string * Kind :=
+Definition fromDecl (tvd : tvdecl) : string * kind :=
   match tvd with
   | TyVarDecl v K => (v, K)
   end.
 
-Definition unwrapIFix (F : Ty) (K : Kind) (T : Ty) : Ty := (Ty_App (Ty_App F (Ty_Lam "X" K (Ty_IFix F (Ty_Var "X")))) T).
+Definition unwrapIFix (F : Ty) (K : kind) (T : Ty) : Ty := (Ty_App (Ty_App F (Ty_Lam "X" K (Ty_IFix F (Ty_Var "X")))) T).
 
 (** Typing of terms *)
 Reserved Notation "Delta ',,' Gamma '|-+' t ':' T" (at level 101, t at level 0, T at level 0, no associativity).
@@ -87,7 +87,7 @@ Reserved Notation "Delta ',,' Gamma '|-ok_b' b" (at level 101, b at level 0, no 
 
 Local Open Scope list_scope.
 
-Inductive has_type : list (string * Kind) -> list (string * Ty) -> Term -> Ty -> Prop :=
+Inductive has_type : list (string * kind) -> list (string * Ty) -> Term -> Ty -> Prop :=
   (* Simply typed lambda caclulus *)
   | T_Var : forall Γ Δ x T Tn,
       lookup x Γ = Coq.Init.Datatypes.Some T ->
@@ -163,13 +163,13 @@ Inductive has_type : list (string * Kind) -> list (string * Ty) -> Term -> Ty ->
 (* Constructors are well-formed if their result type equals the fully applied
  * datatype (the last index), and all parameter types are well-kinded
 *)
-with constructor_well_formed : list (string * Kind) -> VDecl -> Ty -> Prop :=
+with constructor_well_formed : list (string * kind) -> VDecl -> Ty -> Prop :=
   | W_Con : forall Δ x T Targs Tr,
       (Targs, Tr) = splitTy T ->
       (forall U, In U Targs -> Δ |-* U : Kind_Base) ->
       Δ |-ok_c (VarDecl x T) : Tr
 
-with bindings_well_formed_nonrec : list (string * Kind) -> list (string * Ty) -> list Binding -> Prop :=
+with bindings_well_formed_nonrec : list (string * kind) -> list (string * Ty) -> list Binding -> Prop :=
   | W_NilB_NonRec : forall Δ Γ,
       Δ ,, Γ |-oks_nr nil
   | W_ConsB_NonRec : forall Δ Γ b bs bsGn,
@@ -178,7 +178,7 @@ with bindings_well_formed_nonrec : list (string * Kind) -> list (string * Ty) ->
       ((binds_Delta b) ++ Δ) ,, (bsGn ++ Γ) |-oks_nr bs ->
       Δ ,, Γ |-oks_nr (b :: bs)
 
-with bindings_well_formed_rec : list (string * Kind) -> list (string * Ty) -> list Binding -> Prop :=
+with bindings_well_formed_rec : list (string * kind) -> list (string * Ty) -> list Binding -> Prop :=
   | W_NilB_Rec : forall Δ Γ,
       Δ ,, Γ |-oks_r nil
   | W_ConsB_Rec : forall Δ Γ b bs,
@@ -186,7 +186,7 @@ with bindings_well_formed_rec : list (string * Kind) -> list (string * Ty) -> li
       Δ ,, Γ |-oks_r bs ->
       Δ ,, Γ |-oks_r (b :: bs)
 
-with binding_well_formed : list (string * Kind) -> list (string * Ty) -> Binding -> Prop :=
+with binding_well_formed : list (string * kind) -> list (string * Ty) -> Binding -> Prop :=
   | W_Term : forall Δ Γ s x T t Tn,
       Δ |-* T : Kind_Base ->
       normalise T Tn ->
@@ -271,7 +271,7 @@ Notation "Δ ',,' Γ '▷' T" := (Δ, Γ, T) (at level 101).
 Reserved Notation "Δ₁ ',,' Γ₁ '|-C' C ':' HTy ↝ T₁" (at level 101, C at level 0, T₁ at level 0, no associativity).
 
 (* Typing rules for one-hole contexts *)
-Inductive context_has_type : list (string * Kind) -> list (string * Ty) -> Context -> ((list (string * Kind)) * list (string * Ty) * Ty) -> Ty -> Prop :=
+Inductive context_has_type : list (string * kind) -> list (string * Ty) -> Context -> ((list (string * kind)) * list (string * Ty) * Ty) -> Ty -> Prop :=
 
   | T_C_Hole : forall Δ Γ Tn,
       normal_Ty Tn ->

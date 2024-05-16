@@ -4,7 +4,7 @@ Require Import PlutusCert.Util.List.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
 
 (** Kinds of built-in types *)
-Definition lookupBuiltinKind (u : DefaultUni) : Kind :=
+Definition lookupBuiltinKind (u : DefaultUni) : kind :=
   match u with
   | DefaultUniInteger    => Kind_Base
   | DefaultUniByteString => Kind_Base
@@ -16,7 +16,7 @@ Definition lookupBuiltinKind (u : DefaultUni) : Kind :=
 
 (** Kinding of types *)
 Reserved Notation "Δ '|-*' T ':' K" (at level 40, T at level 0, K at level 0).
-Inductive has_kind : list (string * Kind) -> Ty -> Kind -> Prop :=
+Inductive has_kind : list (string * kind) -> Ty -> kind -> Prop :=
   | K_Var : forall Δ X K,
       lookup X Δ = Some K ->
       Δ |-* (Ty_Var X) : K

@@ -41,7 +41,7 @@ Module Term.
 
     (* It becomes a parameter to both fvbs and the generated
        fvbs_equation *)
-    Context (fvb : Recursivity -> Binding -> list string).
+    Context (fvb : recursivity -> Binding -> list string).
 
     Function fvbs  rec (bs : list Binding) : list string :=
       match bs with
@@ -102,7 +102,7 @@ Module Term.
 
 
   Section Bindings.
-  Context (ftvb : Recursivity -> Binding -> list string).
+  Context (ftvb : recursivity -> Binding -> list string).
 
   Function ftvbs rec bs : list string :=
     match bs with

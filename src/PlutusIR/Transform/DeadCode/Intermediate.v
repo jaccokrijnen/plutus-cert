@@ -25,7 +25,7 @@ Section Bindings.
   Definition mk_Binding  (b b' : Binding) : option Binding :=
     match b, b' with
       | TermBind s vd t, TermBind s' vd' t' =>
-          if Strictness_eqb s s' &&
+          if strictness_eqb s s' &&
             VDecl_eqb vd vd'
           then TermBind s vd <$> mk t t'
           else None
@@ -66,7 +66,7 @@ Section Bindings.
     match t, t' with
     | Let rec bs t
     , Let rec' bs' t' =>
-        if Recursivity_eqb rec rec'
+        if recursivity_eqb rec rec'
           then
             if match_Bindings mk bs bs'
               then Let rec bs' <$> mk t t'

@@ -24,12 +24,12 @@ Section Bindings.
 
   Context (dec_Term : ctx -> Term -> Term -> bool).
   Context (dec_Term_sound : ∀ Γ s t, dec_Term Γ s t = true -> inline Γ s t).
-  Context (Strictness_eqb_eq : ∀ s s0, Strictness_eqb s s0 = true -> s = s0).
+  Context (strictness_eqb_eq : ∀ s s0, strictness_eqb s s0 = true -> s = s0).
   Context (VDecl_eqb_eq : ∀ v v0, VDecl_eqb v v0 = true -> v = v0).
 
   Fixpoint dec_Bindings_Rec (Γ : ctx) (bs bs' : list Binding) : bool := match bs, bs' with
     | (TermBind s vdecl t :: bs), (TermBind s' vdecl' t' :: bs') =>
-           Strictness_eqb s s'
+           strictness_eqb s s'
         && VDecl_eqb vdecl vdecl'
         && dec_Term Γ t t'
         && dec_Bindings_Rec Γ bs bs'
@@ -92,7 +92,7 @@ Section Bindings.
         dec_Bindings_NonRec (Binding_to_ctx b ++ Γ) bs bs' &&
         match b, b' with
         | (TermBind s vdecl t), (TermBind s' vdecl' t') =>
-             Strictness_eqb s s'
+             strictness_eqb s s'
           && VDecl_eqb vdecl vdecl'
           && dec_Term Γ t t'
 

@@ -16,9 +16,9 @@ Section Algebras.
   Context (rTerm rBinding rBindings : Type).
 
 Inductive AlgTerm: Type := mkTermAlg
-  { a_Let      : Recursivity -> rBindings -> rTerm -> rTerm
+  { a_Let      : recursivity -> rBindings -> rTerm -> rTerm
   ; a_Var      : string -> rTerm
-  ; a_TyAbs    : string -> Kind -> rTerm -> rTerm
+  ; a_TyAbs    : string -> kind -> rTerm -> rTerm
   ; a_LamAbs   : string -> Ty -> rTerm -> rTerm
   ; a_Apply    : rTerm -> rTerm -> rTerm
   ; a_Constant : @some valueOf -> rTerm
@@ -32,7 +32,7 @@ Inductive AlgTerm: Type := mkTermAlg
   }
 
 with AlgBinding : Type := mkBindingAlg
-  { a_TermBind     : Strictness -> VDecl -> rTerm -> rBinding
+  { a_TermBind     : strictness -> VDecl -> rTerm -> rBinding
   ; a_TypeBind     : TVDecl -> Ty -> rBinding
   ; a_DatatypeBind : DTDecl -> rBinding
   }
@@ -268,9 +268,9 @@ Section Use. (* name comes from "use" rules in attribute grammars *)
   Definition useAlg : AlgTerm a a a.
   refine (
     {|
-    a_Let := fun (_ : Recursivity) (rBs : a) (r : a) => f [rBs; r];
+    a_Let := fun (_ : recursivity) (rBs : a) (r : a) => f [rBs; r];
     a_Var := fun _ : string => f nil ;
-    a_TyAbs := fun (_ : string) (_ : Kind) (X : a) => f [X];
+    a_TyAbs := fun (_ : string) (_ : kind) (X : a) => f [X];
     a_LamAbs := fun (_ : string) (_ : Ty) (X : a) => f [X];
     a_Apply := fun X X0 : a => f [X; X0];
     a_Constant := fun _ : @some valueOf => f [];
@@ -287,7 +287,7 @@ Section Use. (* name comes from "use" rules in attribute grammars *)
 
   Definition useAlgBinding : AlgBinding a a a :=
     {|
-    a_TermBind := fun (_ : Strictness) (_ : VDecl) (X : a) => f [X];
+    a_TermBind := fun (_ : strictness) (_ : VDecl) (X : a) => f [X];
     a_TypeBind := fun (_ : TVDecl) (_ : Ty) => f [];
     a_DatatypeBind := fun _ : DTDecl => f []
     |}
@@ -332,7 +332,7 @@ End Attributes.
       | _ => _
     end.
       | Var      => name -> Term
-      | TyAbs    => string -> Kind -> Term -> Term
+      | TyAbs    => string -> kind -> Term -> Term
       | LamAbs   =>  name -> Ty -> Term -> Term
       | Apply    =>  Term -> Term -> Term
       | Constant =>  some -> Term

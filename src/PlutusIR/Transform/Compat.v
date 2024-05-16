@@ -162,7 +162,7 @@ Section Compatibility.
 
   Definition dec_compat_binding  (b b' : Binding) : bool :=
     match b, b' with
-      | (TermBind s v t), (TermBind s' v' t') => Strictness_eqb s s' && VDecl_eqb v v' && dec_R t t'
+      | (TermBind s v t), (TermBind s' v' t') => strictness_eqb s s' && VDecl_eqb v v' && dec_R t t'
       | (TypeBind v T), (TypeBind v' T') => TVDecl_eqb v v'  && Ty_eqb T T'
       | (DatatypeBind d), (DatatypeBind d') => DTDecl_eqb d d'
       | _, _                               => false
@@ -172,7 +172,7 @@ Section Compatibility.
 
   Definition dec_compat (t t' : Term) : bool :=
     match t, t' with
-      | (Let r bs t), (Let r' bs' t')      => Recursivity_eqb r r' && forall2b dec_compat_binding bs bs' && dec_R t t'
+      | (Let r bs t), (Let r' bs' t')      => recursivity_eqb r r' && forall2b dec_compat_binding bs bs' && dec_R t t'
       | (Var n), (Var n')                  => String.eqb n n'
       | (TyAbs n k t), (TyAbs n' k' t')    => String.eqb n n' && Kind_eqb k k' && dec_R t t'
       | (LamAbs n T t), (LamAbs n' T' t')  => String.eqb n n'&& Ty_eqb T T' && dec_R t t'
@@ -196,8 +196,8 @@ Section Compatibility.
   Create HintDb Hints_soundness.
   Hint Resolve
     string_eqb_eq
-    Recursivity_eqb_eq
-    Strictness_eqb_eq
+    recursivity_eqb_eq
+    strictness_eqb_eq
     Kind_eqb_eq
     Ty_eqb_eq
     some_valueOf_eqb_eq
@@ -261,7 +261,7 @@ Section Compatibility.
     all: try discriminate H_dec.
     all: split_hypos.
     - apply H_sound_R in H0.
-      apply Recursivity_eqb_eq in H.
+      apply recursivity_eqb_eq in H.
       subst.
       eapply C_Let...
       apply dec_compat_Bindings_Compat_Bindings...

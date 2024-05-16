@@ -15,7 +15,7 @@ From Coq Require Import
 Import ListNotations.
 
 (* A binding group (Let without a body) *)
-Definition binding_group := (Recursivity * list Binding)%type.
+Definition binding_group := (recursivity * list Binding)%type.
 
 (*
 Assuming globally unique_tm variables, the new binding groups much satisfy:
@@ -31,7 +31,7 @@ Definition list_eq_elems {A} xs ys : Prop :=
   forall (x : A), In x xs <-> In x ys.
 
 
-Definition min_Rec (r1 r2 : Recursivity) : Recursivity :=
+Definition min_Rec (r1 r2 : recursivity) : recursivity :=
   match r1, r2 with
     | NonRec, NonRec => NonRec
     | _ , _ => Rec
@@ -39,7 +39,7 @@ Definition min_Rec (r1 r2 : Recursivity) : Recursivity :=
 
 (* Collect subsequent binding groups, together with the "inner" term and
    minimum recursivity *)
-Inductive outer_binds : Term -> list Binding -> Term -> Recursivity -> Prop :=
+Inductive outer_binds : Term -> list Binding -> Term -> recursivity -> Prop :=
 
   | cv_Let : forall t_body lets t_inner r bs r_body,
       outer_binds t_body lets t_inner r_body ->

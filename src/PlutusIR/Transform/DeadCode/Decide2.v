@@ -77,7 +77,7 @@ Definition P_Binding := fun b => forall b', dec_compat_binding dec_Term b b' = t
 
 Lemma dec_Term_sound : forall t, P_Term t.
 Proof.
-  apply Term__ind with (P := P_Term) (Q := P_Binding).
+  apply term__ind with (P := P_Term) (Q := P_Binding).
   all: intros.
   all: unfold P_Term, P_Binding.
 

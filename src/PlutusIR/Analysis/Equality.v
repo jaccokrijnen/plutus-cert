@@ -27,11 +27,11 @@ Ltac solveEq :=
 Definition unit_dec: EqDec unit. Proof. solveEq. Defined.
   #[export] Hint Resolve unit_dec : Eqs.
 
-Definition Strictness_dec: EqDec Strictness. solveEq. Defined.
-  #[export] Hint Resolve Strictness_dec : Eqs.
+Definition strictness_dec: EqDec strictness. solveEq. Defined.
+  #[export] Hint Resolve strictness_dec : Eqs.
 
-  Definition Recursivity_dec : EqDec Recursivity. Proof. solveEq. Defined.
-  #[export] Hint Resolve Recursivity_dec : Eqs.
+  Definition recursivity_dec : EqDec recursivity. Proof. solveEq. Defined.
+  #[export] Hint Resolve recursivity_dec : Eqs.
 
 Definition func_dec : EqDec DefaultFun. Proof. solveEq. Defined.
   #[export] Hint Resolve func_dec: Eqs.
@@ -82,7 +82,7 @@ Definition some_valueOf_dec := @some_dec valueOf valueOf_dec.
 Definition some_typeIn_dec := @some_dec typeIn typeIn_dec.
 #[export] Hint Resolve some_typeIn_dec : Eqs.
 
-Definition Kind_dec : EqDec Kind. solveEq. Defined.
+Definition Kind_dec : EqDec kind. solveEq. Defined.
   #[export] Hint Resolve Kind_dec : Eqs.
 
 Definition Ty_dec: EqDec Ty. solveEq. Defined.
@@ -207,28 +207,28 @@ Definition unit_eqb_eq : forall u u', unit_eqb u u' = true <-> u = u'.
 #[export] Hint Resolve <- unit_eqb_eq : reflection.
 
 
-Definition Strictness_eqb: Eqb Strictness := fun x y =>
+Definition strictness_eqb: Eqb strictness := fun x y =>
   match x, y with
   | NonStrict, NonStrict => true
   | Strict   , Strict    => true
   | _, _                 => false
   end.
 
-Definition Strictness_eqb_eq : forall s s', Strictness_eqb s s' = true <-> s = s'.
+Definition strictness_eqb_eq : forall s s', strictness_eqb s s' = true <-> s = s'.
 Proof. eqb_eq_tac. Defined.
-#[export] Hint Resolve -> Strictness_eqb_eq : reflection.
-#[export] Hint Resolve <- Strictness_eqb_eq : reflection.
+#[export] Hint Resolve -> strictness_eqb_eq : reflection.
+#[export] Hint Resolve <- strictness_eqb_eq : reflection.
 
-Definition Recursivity_eqb : Eqb Recursivity := fun x y => match x, y with
+Definition recursivity_eqb : Eqb recursivity := fun x y => match x, y with
   | NonRec, NonRec => true
   | Rec, Rec => true
   | _, _ => false
   end.
 
-Definition Recursivity_eqb_eq : forall r r', Recursivity_eqb r r' = true <-> r = r'.
+Definition recursivity_eqb_eq : forall r r', recursivity_eqb r r' = true <-> r = r'.
 Proof. eqb_eq_tac. Qed.
-#[export] Hint Resolve -> Recursivity_eqb_eq : reflection.
-#[export] Hint Resolve <- Recursivity_eqb_eq : reflection.
+#[export] Hint Resolve -> recursivity_eqb_eq : reflection.
+#[export] Hint Resolve <- recursivity_eqb_eq : reflection.
 
 Definition func_eqb : Eqb DefaultFun := fun x y => match x, y with
   | AddInteger , AddInteger => true
@@ -373,7 +373,7 @@ Qed.
 #[export] Hint Resolve -> some_typeIn_eqb_eq : reflection.
 #[export] Hint Resolve <- some_typeIn_eqb_eq : reflection.
 
-Fixpoint Kind_eqb (x y : Kind) : bool := match x, y with
+Fixpoint Kind_eqb (x y : kind) : bool := match x, y with
   | Kind_Base, Kind_Base => true
   | Kind_Arrow K1 K2, Kind_Arrow K3 K4 => Kind_eqb K1 K3 && Kind_eqb K2 K4
   | _, _ => false
@@ -526,7 +526,7 @@ Qed.
 
 
 Fixpoint Term_eqb (x y : Term) {struct x} : bool := match x, y with
-  | Let rec bs t, Let rec' bs' t' => Recursivity_eqb rec rec'
+  | Let rec bs t, Let rec' bs' t' => recursivity_eqb rec rec'
       && list_eqb Binding_eqb bs bs'
         && Term_eqb t t'
   | Let _ _ _, _ => false
@@ -556,7 +556,7 @@ Fixpoint Term_eqb (x y : Term) {struct x} : bool := match x, y with
   | Case _ _, _ => false
   end
 with Binding_eqb (x y : Binding) {struct x} : bool := match x, y with
-  | TermBind s vd t, TermBind s' vd' t' => Strictness_eqb s s' && VDecl_eqb vd vd' && Term_eqb t t'
+  | TermBind s vd t, TermBind s' vd' t' => strictness_eqb s s' && VDecl_eqb vd vd' && Term_eqb t t'
   | TermBind _ _ _, _ => false
   | TypeBind tvd ty, TypeBind tvd' ty' => TVDecl_eqb tvd tvd' && Ty_eqb ty ty'
   | TypeBind _ _, _ => false

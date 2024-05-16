@@ -28,8 +28,8 @@ Section Term.
 
   Definition fv : Term -> list string := Term.fv.
   Definition ftv : Term -> list string := Term.ftv.
-  Definition fv_binding : Recursivity -> Binding -> list string := Term.fvb.
-  Definition fv_bindings : Recursivity -> list Binding -> list string := Term.fvbs fv_binding.
+  Definition fv_binding : recursivity -> Binding -> list string := Term.fvb.
+  Definition fv_bindings : recursivity -> list Binding -> list string := Term.fvbs fv_binding.
 
   Lemma remove_unfold {A} eq_dec (x : A) xs :
     remove eq_dec x xs =
@@ -573,7 +573,7 @@ Section Term.
 
   Lemma subst_not_in_fv : forall t, P_Term t.
   Proof.
-    apply Term__multind with (P := P_Term) (Q := P_Binding).
+    apply term__multind with (P := P_Term) (Q := P_Binding).
     all: unfold P_Term, P_Binding in *; intros.
     all: try rewrite Util.ForallP_Forall in *.
     all: try rewrite subst_unfold.

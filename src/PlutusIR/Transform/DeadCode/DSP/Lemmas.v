@@ -275,7 +275,7 @@ Section ScopingLemmas.
   (* The free variables of a well-scoped term appear in Γ *)
   Lemma well_scoped_fv : (∀ t, P_Term t) /\ (∀ b, P_Binding b).
   Proof.
-    apply Term__multind with (P := P_Term) (Q := P_Binding).
+    apply term__multind with (P := P_Term) (Q := P_Binding).
     all: simpl; unfold P_Term; unfold P_Binding.
     - (* Let *)
       intros rec bs t IH_bs IH_t Δ Γ H_ws.

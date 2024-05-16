@@ -98,7 +98,7 @@ Fixpoint dec_Term (x y : Term) {struct x} : bool := match x, y with
 with dec_Binding_compat (b b' : Binding) : bool := match b, b' with
   (* These cases are only used for recursive let-bindings, i.e.
      equal and recursive Terms should be desugared *)
-  | TermBind s vdecl t, TermBind s' vdecl' t' => Strictness_eqb s s' && VDecl_eqb vdecl vdecl' && dec_Term t t'
+  | TermBind s vdecl t, TermBind s' vdecl' t' => strictness_eqb s s' && VDecl_eqb vdecl vdecl' && dec_Term t t'
   | TypeBind tvdecl ty, TypeBind tvdecl' ty'  => TVDecl_eqb tvdecl tvdecl' && Ty_eqb ty ty'
   | DatatypeBind dtd  , DatatypeBind dtd'     => DTDecl_eqb dtd dtd'
   | _, _ => false
@@ -174,7 +174,7 @@ Ltac rewrite_reflection :=
     | H : some_valueOf_eqb _ _ = true |- _ => rewrite some_valueOf_eqb_eq in H
     | H : func_eqb _ _ = true |- _ => rewrite func_eqb_eq in H
     | H : Nat.eqb _ _ = true |- _ => rewrite Nat.eqb_eq in H
-    | H : Strictness_eqb _ _ = true |- _ => rewrite Strictness_eqb_eq in H
+    | H : strictness_eqb _ _ = true |- _ => rewrite strictness_eqb_eq in H
     | H : VDecl_eqb _ _ = true |- _ => rewrite VDecl_eqb_eq in H
     | H : list_eqb ?eqb ?xs _ = true,
       H_elems : ForallP _ ?xs |- _
@@ -207,7 +207,7 @@ Ltac bwd_reflection :=
     | |- some_valueOf_eqb _ _ = true => rewrite some_valueOf_eqb_eq; reflexivity
     | |- func_eqb _ _ = true => rewrite func_eqb_eq; reflexivity
     | |- Nat.eqb _ _ = true => rewrite Nat.eqb_eq; reflexivity
-    | |- Strictness_eqb _ _ = true => rewrite Strictness_eqb_eq; reflexivity
+    | |- strictness_eqb _ _ = true => rewrite strictness_eqb_eq; reflexivity
     | |- VDecl_eqb _ _ = true => rewrite VDecl_eqb_eq; reflexivity
 
     |
@@ -278,7 +278,7 @@ Admitted.
 
 Definition dec_Term_equiv : ∀ t, P_Term t.
 Proof.
-  apply Term__multind with (P := P_Term) (Q := P_Binding).
+  apply term__multind with (P := P_Term) (Q := P_Binding).
   all: try solve [dec_tac].
   - (* P_Term Let *)
     destruct rec.

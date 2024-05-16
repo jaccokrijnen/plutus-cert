@@ -216,7 +216,7 @@ Inductive let_float_step : Term -> Term -> Prop :=
       Compat let_float_step t t' ->
       let_float_step t t'
 
-with let_float_step_Binding : list Binding -> Recursivity -> list Binding -> list Binding -> Prop :=
+with let_float_step_Binding : list Binding -> recursivity -> list Binding -> list Binding -> Prop :=
 
   | lfs_Here : forall s vd bs r bs_rhs t,
       (s = NonStrict -> Forall (pure_binding []) bs_rhs) ->

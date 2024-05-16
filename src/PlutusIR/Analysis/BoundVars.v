@@ -358,7 +358,7 @@ Definition P_Binding (b : Binding) := Forall (fun v => forall t bs recty, appear
 
 Lemma bound_vars_appears_bound_in_tm : (forall t, P_Term t) /\ (forall b, P_Binding b).
 Proof with eauto using appears_bound_in_tm.
-  apply Term__multind with (P := P_Term) (Q := P_Binding).
+  apply term__multind with (P := P_Term) (Q := P_Binding).
   all: unfold P_Term...
   - intros.
     unfold P_Term.

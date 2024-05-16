@@ -170,7 +170,7 @@ Qed.
 Lemma substitution_preserves_typing :
   (forall t, P_Term t) /\ (forall b, P_Binding b).
 Proof with eauto.
-  apply Term__multind with
+  apply term__multind with
     (P := P_Term)
     (Q := P_Binding).
   all: intros; autounfold; intros.

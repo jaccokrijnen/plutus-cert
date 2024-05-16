@@ -48,7 +48,7 @@ Ltac eq_principle :=
   constructor;
   assumption.
 
-Definition C_TyAbs' : forall R (t t' : Term) (n n' : string) (k k' : Kind),
+Definition C_TyAbs' : forall R (t t' : Term) (n n' : string) (k k' : kind),
               n = n' -> k = k'
               -> R t t' -> Compat R (TyAbs n k t) (TyAbs n' k' t').
 Proof. eq_principle. Qed.
@@ -60,7 +60,7 @@ Proof. eq_principle. Qed.
 Definition C_Var' : forall R (n n' : string), (n = n') -> Compat R (Var n) (Var n').
 Proof. eq_principle. Qed.
 
-Definition C_Let' : forall R (bs bs' : list Binding) (t t' : Term) (r r' : Recursivity),
+Definition C_Let' : forall R (bs bs' : list Binding) (t t' : Term) (r r' : recursivity),
              r = r' ->
              Compat_Bindings R bs bs' ->
              R t t' -> Compat R (Let r bs t) (Let r' bs' t').
