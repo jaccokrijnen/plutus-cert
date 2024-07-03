@@ -1,5 +1,6 @@
 Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.Util.List.
+Require Import Coq.Bool.Bool.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
 
@@ -68,25 +69,135 @@ Inductive has_kind : list (string * kind) -> ty -> kind -> Prop :=
       Δ |-* (Ty_App T1 T2) : K2
 where "Δ '|-*' T ':' K" := (has_kind Δ T K).
 
+Fixpoint eqb_kind (K1 K2:kind) : bool :=
+    match K1,K2 with
+    | Kind_Base, Kind_Base => true
+    | Kind_Arrow K11 K12, Kind_Arrow K21 K22 =>
+        andb (eqb_kind K11 K21) (eqb_kind K12 K22)
+    | _, _ => false
+    end.
+
+(* Based on Software Foundation's eqb_type_refl *)
+Lemma eqb_kind_refl : forall kind,
+    eqb_kind kind kind = true.
+Proof.
+    intros kind.
+    induction kind.
+    - simpl. reflexivity.
+    - simpl. rewrite -> IHkind1. rewrite -> IHkind2. simpl. reflexivity.
+Qed.
+
+(* Based on Software Foundation's eqb_type_eq*)
+Lemma eqb_kind_eq : forall K1 K2,
+    eqb_kind K1 K2 = true -> K1 = K2.
+Proof with auto.
+    intros K1. induction K1; intros K2 HBeq; destruct K2; inversion HBeq.
+    - reflexivity.
+    - rewrite andb_true_iff in H0. 
+      inversion H0 as [Hbeq1 Hbeq2].
+      apply IHK1_1 in Hbeq1.
+      apply IHK1_2 in Hbeq2.
+      subst...
+Qed.
 
 Fixpoint kind_check (Gamma : list (string * kind)) (ty : ty) : (option kind) :=
     match ty with
-    | Ty_Var X => None
-    | Ty_Fun T1 T2 => None
-    | Ty_IFix F T => None
-    | Ty_Forall X K T=> None
-    | Ty_Builtin (Some' (TypeIn _)) => None (*TODO: I don't know that syntax*)
-    | Ty_Lam X K1 T => None
-    | Ty_App T1 T2 => None
+    | Ty_Var X => (* Based on Software Foundations and has_kind *)
+        lookup X Gamma
+    | Ty_Fun T1 T2 => (* TODO: I don't understand what this datatype does*)
+        match (kind_check Gamma T1, kind_check Gamma T2) with
+        | (Some Kind_Base, Some Kind_base) => Some Kind_Base
+        | (_, _) => None
+        end
+    | Ty_IFix F T => (* Note: Purely based on structure of has_kind *)
+        match kind_check Gamma T with
+        | Some K => match kind_check Gamma F with
+            | Some (Kind_Arrow (Kind_Arrow K1 Kind_Base) (Kind_Arrow K2 Kind_Base)) =>
+                if andb (eqb_kind K K1) (eqb_kind K K2) then Some Kind_Base else None
+            | _ => None
+            end
+        | _ => None
+        end
+    | Ty_Forall X K T => None (* UNIMPLEMENTED *)
+    | Ty_Builtin (Some' (TypeIn _)) => None (* UNIMPLEMENTED, TODO: I don't know that syntax*)
+    | Ty_Lam X K1 T => (* Note: Copied from Software Foundations *)
+        match kind_check ((X, K1) :: Gamma) T with
+        | Some K2 => Some (Kind_Arrow K1 K2)
+        | _ => None
+        end
+    | Ty_App T1 T2 => (* TODO: Check, because: Made up myself!*)
+        match (kind_check Gamma T1, kind_check Gamma T2) with
+        | (Some (Kind_Arrow K11 K2), Some K12) =>
+            if eqb_kind K11 K12 then Some K12 else None
+        | (_, _) => None
+        end
     end.
 
 Theorem kind_checking_sound : forall Gamma ty kind,
     kind_check Gamma ty = Some kind -> has_kind Gamma ty kind.
 Proof.
+    intros Gamma ty. generalize dependent Gamma.
+    induction ty; intros Gamma kind Htc; inversion Htc.
+    - (* Var *) 
+      destruct (lookup t Gamma) eqn:H.
+      + apply K_Var with (K := kind). 
+        rewrite H0 in H.
+        apply H.
+      + discriminate.
+    - (* Ty_Fun *) shelve.
+    - (* Ty_IFix *) shelve.
+    - (* Ty_Builtin *) shelve.
+    - (* Ty_Lam *) shelve.
+    - (* Ty_App *)
+      shelve.
 Abort.
 
 
 Theorem kind_checking_complete : forall Gamma ty kind,
     has_kind Gamma ty kind -> kind_check Gamma ty = Some kind.
 Proof.
+    intros Gamma ty kind Hkind.
+    induction Hkind. simpl.
+    - (* Var *) apply H.
+    - (* Ty_Fun *) shelve.
+    - shelve.
+    - shelve.
+    - shelve.
+    - shelve.
+    - shelve.
 Abort.
+(* 
+Theorem type_checking_complete : forall Gamma t T,
+  has_type Gamma t T -> type_check Gamma t = Some T.
+Proof with auto.
+  intros Gamma t T Hty.
+  induction Hty; simpl.
+  - (* T_Var *) destruct (Gamma _) eqn:H0; assumption.
+  - (* T_Abs *) rewrite IHHty...
+  - (* T_App *)
+    rewrite IHHty1. rewrite IHHty2.
+    rewrite (eqb_ty_refl T2)...
+  - (* T_True *) eauto.
+  - (* T_False *) eauto.
+  - (* T_If *) rewrite IHHty1. rewrite IHHty2.
+    rewrite IHHty3. rewrite (eqb_ty_refl T1)...
+Qed. *)
+
+
+(* Ltac solve_by_inverts n :=
+  match goal with
+  | H: ?T |- _ =>
+    match type of T with
+    | Prop =>
+      inversion H;
+      subst;
+      match n with
+      | 0 => idtac
+      | S ?n' => solve_by_inverts n'
+      end
+    end
+  end.
+  
+
+Ltac solve_by_invert :=
+  solve_by_inverts 1. *)
