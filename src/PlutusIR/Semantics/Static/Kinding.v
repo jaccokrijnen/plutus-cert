@@ -67,3 +67,26 @@ Inductive has_kind : list (string * kind) -> ty -> kind -> Prop :=
       Δ |-* T2 : K1 ->
       Δ |-* (Ty_App T1 T2) : K2
 where "Δ '|-*' T ':' K" := (has_kind Δ T K).
+
+
+Fixpoint kind_check (Gamma : list (string * kind)) (ty : ty) : (option kind) :=
+    match ty with
+    | Ty_Var X => None
+    | Ty_Fun T1 T2 => None
+    | Ty_IFix F T => None
+    | Ty_Forall X K T=> None
+    | Ty_Builtin (Some' (TypeIn _)) => None (*TODO: I don't know that syntax*)
+    | Ty_Lam X K1 T => None
+    | Ty_App T1 T2 => None
+    end.
+
+Theorem kind_checking_sound : forall Gamma ty kind,
+    kind_check Gamma ty = Some kind -> has_kind Gamma ty kind.
+Proof.
+Abort.
+
+
+Theorem kind_checking_complete : forall Gamma ty kind,
+    has_kind Gamma ty kind -> kind_check Gamma ty = Some kind.
+Proof.
+Abort.
