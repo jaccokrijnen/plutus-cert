@@ -40,9 +40,14 @@ Inductive has_kind_uni : DefaultUni -> kind -> Prop :=
   where "'|-*_uni' T ':' K" := (has_kind_uni T K)
 .
 
+Definition extractDefaultUni {d : DefaultUni} (t : typeIn d) : DefaultUni :=
+  match t with
+  | TypeIn _ => d
+  end.
+
 (** Kinding of types *)
 Reserved Notation "Δ '|-*' T ':' K" (at level 40, T at level 0, K at level 0).
-Inductive has_kind : list (string * kind) -> ty -> kind -> Prop :=
+Inductive has_kind : list (binderTyname * kind) -> ty -> kind -> Prop :=
   | K_Var : forall Δ X K,
       lookup X Δ = Some K ->
       Δ |-* (Ty_Var X) : K
@@ -100,35 +105,41 @@ Proof with auto.
       subst...
 Qed.
 
-Fixpoint kind_check (Gamma : list (string * kind)) (ty : ty) : (option kind) :=
+Fixpoint kind_check (gamma : list (binderTyname * kind)) (ty : ty) : (option kind) :=
     match ty with
     | Ty_Var X => (* Based on Software Foundations and has_kind *)
-        lookup X Gamma
+        lookup X gamma
     | Ty_Fun T1 T2 => (* TODO: I don't understand what this datatype does*)
-        match (kind_check Gamma T1, kind_check Gamma T2) with
+        match (kind_check gamma T1, kind_check gamma T2) with
         | (Some Kind_Base, Some Kind_base) => Some Kind_Base
         | (_, _) => None
         end
     | Ty_IFix F T => (* Note: Purely based on structure of has_kind *)
-        match kind_check Gamma T with
-        | Some K => match kind_check Gamma F with
+        match kind_check gamma T with
+        | Some K => match kind_check gamma F with
             | Some (Kind_Arrow (Kind_Arrow K1 Kind_Base) (Kind_Arrow K2 Kind_Base)) =>
                 if andb (eqb_kind K K1) (eqb_kind K K2) then Some Kind_Base else None
             | _ => None
             end
         | _ => None
         end
-    | Ty_Forall X K T => None (* UNIMPLEMENTED *)
-    | Ty_Builtin (Some' (TypeIn _)) => None (* UNIMPLEMENTED, TODO: I don't know that syntax*)
+    | Ty_Forall X K T =>
+        match kind_check ((X, K) :: gamma) T with
+        | Some Kind_Base => Some Kind_Base
+        | _ => None
+        end
+    | Ty_Builtin (Some' typeIn) =>
+        let d := extractDefaultUni typeIn in
+        Some (lookupBuiltinKind d)
     | Ty_Lam X K1 T => (* Note: Copied from Software Foundations *)
-        match kind_check ((X, K1) :: Gamma) T with
+        match kind_check ((X, K1) :: gamma) T with
         | Some K2 => Some (Kind_Arrow K1 K2)
         | _ => None
         end
     | Ty_App T1 T2 => (* TODO: Check, because: Made up myself!*)
-        match (kind_check Gamma T1, kind_check Gamma T2) with
+        match (kind_check gamma T1, kind_check gamma T2) with
         | (Some (Kind_Arrow K11 K2), Some K12) =>
-            if eqb_kind K11 K12 then Some K12 else None
+            if eqb_kind K11 K12 then Some K2 else None
         | (_, _) => None
         end
     end.
@@ -146,42 +157,61 @@ Proof.
       + discriminate.
     - (* Ty_Fun *) shelve.
     - (* Ty_IFix *) shelve.
+    - (* Ty_Forall *) shelve.
     - (* Ty_Builtin *) shelve.
     - (* Ty_Lam *) shelve.
-    - (* Ty_App *)
-      shelve.
-Abort.
+    - (* Ty_App *) 
+      (* TODO: Attempt stuck*)
+      remember (kind_check Gamma ty1) as K1.
+      remember (kind_check Gamma ty2) as K2.
+      destruct K1 as [k1|] eqn:HK1; [ | discriminate]. (* Successfully extract k1 *)
+      destruct K2 as [k2|] eqn:HK2. (* Successfully extract k2 *)
+      + apply K_App with (K1 := k1).
+        * shelve.
+        * shelve.
+      + shelve.      
+(* Abort. *)
 
 
-Theorem kind_checking_complete : forall Gamma ty kind,
-    has_kind Gamma ty kind -> kind_check Gamma ty = Some kind.
+Theorem kind_checking_complete : forall (gamma : list (binderTyname * kind)) (ty : ty) (kind : kind),
+    has_kind gamma ty kind -> kind_check gamma ty = Some kind.
 Proof.
-    intros Gamma ty kind Hkind.
+    intros gamma ty kind Hkind.
     induction Hkind. simpl.
-    - (* Var *) apply H.
-    - (* Ty_Fun *) shelve.
-    - shelve.
-    - shelve.
-    - shelve.
-    - shelve.
-    - shelve.
+    - (* Var *)
+      apply H.
+    - (* Ty_Fun *)
+      simpl.
+      rewrite -> IHHkind1.
+      rewrite -> IHHkind2.
+      reflexivity.
+    - (* Ty_IFix *)
+      simpl.
+      rewrite -> IHHkind1.
+      rewrite -> IHHkind2.
+      rewrite -> eqb_kind_refl.
+      simpl.
+      reflexivity.
+    - (* Ty_Forall *)
+      simpl.
+      rewrite -> IHHkind.
+      reflexivity.
+    - (* Ty_Builtin *)
+      simpl.
+      rewrite -> H.
+      reflexivity.
+    - (* Ty_Lam *)
+      simpl.
+      rewrite -> IHHkind.
+      reflexivity.
+    - (* Ty_App *) 
+      simpl.
+      rewrite -> IHHkind1. 
+      rewrite -> IHHkind2. 
+      rewrite -> eqb_kind_refl. 
+      reflexivity.
 Abort.
-(* 
-Theorem type_checking_complete : forall Gamma t T,
-  has_type Gamma t T -> type_check Gamma t = Some T.
-Proof with auto.
-  intros Gamma t T Hty.
-  induction Hty; simpl.
-  - (* T_Var *) destruct (Gamma _) eqn:H0; assumption.
-  - (* T_Abs *) rewrite IHHty...
-  - (* T_App *)
-    rewrite IHHty1. rewrite IHHty2.
-    rewrite (eqb_ty_refl T2)...
-  - (* T_True *) eauto.
-  - (* T_False *) eauto.
-  - (* T_If *) rewrite IHHty1. rewrite IHHty2.
-    rewrite IHHty3. rewrite (eqb_ty_refl T1)...
-Qed. *)
+
 
 
 (* Ltac solve_by_inverts n :=
