@@ -3,6 +3,8 @@ Require Import PlutusCert.Util.List.
 Require Import Coq.Bool.Bool.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
+Require Import List.
+Import ListNotations.
 
 Import PlutusNotations.
 
@@ -136,7 +138,7 @@ Fixpoint kind_check (gamma : list (binderTyname * kind)) (ty : ty) : (option kin
         | Some K2 => Some (Kind_Arrow K1 K2)
         | _ => None
         end
-    | Ty_App T1 T2 => (* TODO: Check, because: Made up myself!*)
+    | Ty_App T1 T2 => 
         match (kind_check gamma T1, kind_check gamma T2) with
         | (Some (Kind_Arrow K11 K2), Some K12) =>
             if eqb_kind K11 K12 then Some K2 else None
@@ -150,26 +152,49 @@ Proof.
     intros Gamma ty. generalize dependent Gamma.
     induction ty; intros Gamma kind Htc; inversion Htc.
     - (* Var *) 
-      destruct (lookup t Gamma) eqn:H.
-      + apply K_Var with (K := kind). 
-        rewrite H0 in H.
-        apply H.
-      + discriminate.
-    - (* Ty_Fun *) shelve.
+      destruct (lookup t Gamma) eqn:H; [|discriminate].
+      apply K_Var.
+      rewrite H0 in H.
+      apply H.
+    - (* Ty_Fun *) 
+      shelve.
     - (* Ty_IFix *) shelve.
-    - (* Ty_Forall *) shelve.
-    - (* Ty_Builtin *) shelve.
-    - (* Ty_Lam *) shelve.
+    - (* Ty_Forall *)
+      assert (kind = Kind_Base) as Hkind_base.
+      {
+        destruct (kind_check ((b, k) :: Gamma) ty); [|discriminate].
+        destruct k0; [|discriminate].
+        inversion H0.
+        reflexivity.
+      }
+      rewrite Hkind_base. 
+      (* The result of the K_Forall case matches and thus we can apply it!*)
+      apply K_Forall.
+      (* Now this is in the form of our induction hypothesis*)
+      apply IHty.
+      (* Final steps, use H0, which derives from the definition of kind_check*)
+      destruct (kind_check ((b, k) :: Gamma) ty) as [k0|]; [|discriminate].
+      destruct k0; [|discriminate];
+      rewrite -> H0.
+      reflexivity.
+    - (* Ty_Builtin *)
+      destruct s as [u typeIn] eqn:Hs.
+      rewrite -> typeIn.
+      apply K_Builtin.
+      inversion H0.
+      f_equal.
+      rewrite -> typeIn.
+      simpl.
+      reflexivity.
+    - (* Ty_Lam *)
+      (* prove that kind = Kind_Arrow _ _*)
+      destruct (kind_check ((b, k) :: Gamma) ty) eqn:Hkc; [|discriminate].
+      inversion H0.
+      apply K_Lam. (* Apply has_kind structure*)
+      apply IHty.
+      apply Hkc. (* Apply kind_check structure*)
     - (* Ty_App *) 
-      (* TODO: Attempt stuck*)
-      remember (kind_check Gamma ty1) as K1.
-      remember (kind_check Gamma ty2) as K2.
-      destruct K1 as [k1|] eqn:HK1; [ | discriminate]. (* Successfully extract k1 *)
-      destruct K2 as [k2|] eqn:HK2. (* Successfully extract k2 *)
-      + apply K_App with (K1 := k1).
-        * shelve.
-        * shelve.
-      + shelve.      
+      shelve.    
 (* Abort. *)
 
 
