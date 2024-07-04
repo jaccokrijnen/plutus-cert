@@ -16,6 +16,8 @@ Import PlutusNotations.
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Basics.
 
+Import Utf8_core.
+
 
 
 
@@ -480,3 +482,11 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
     + inv_Compat...
     + inv_CNR...
 Qed.
+
+
+From PlutusCert Require Import Contextual.
+
+Theorem CNR_Term__sem : ∀ t t',
+    CNR_Term t t' ->
+    ∀ Δ Γ T, Δ ,, Γ |- t ≃-ctx t' : T.
+Admitted.

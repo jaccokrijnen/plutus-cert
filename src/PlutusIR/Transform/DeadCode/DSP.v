@@ -242,3 +242,9 @@ Theorem dc__approx_rev : forall t t',
     P_dc_rev t t'.
 Proof.
 Admitted.
+
+
+Corollary dc__logical_equiv Δ Γ t t' T:
+  dc t t' ->
+  LR_logically_equivalent Δ Γ t t' T.
+Admitted.

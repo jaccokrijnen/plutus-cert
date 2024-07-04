@@ -391,3 +391,13 @@ Proof.
   apply dec_Term_Binding_sound.
 Qed.
 
+Theorem dec_Term_complete : ∀ t t', elim t t' -> dec_Term t t' = true.
+(* TODO *)
+Admitted.
+
+Corollary dec_Term_equiv (t t' : term) : dec_Term t t' = true <-> elim t t'.
+Proof.
+  constructor.
+  - apply dec_Term_sound.
+  - apply dec_Term_complete.
+Qed.

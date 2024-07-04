@@ -167,6 +167,39 @@ with binding :=
   | DatatypeBind : dtdecl -> binding
 .
 
+
+(* AST Annotations *)
+Inductive datatype_component :=
+  | Constructor
+  | ConstructorType
+  | Destructor
+  | DestructorType
+  | DatatypeType
+  | PatternFunctor
+.
+
+Inductive provenance a :=
+  | Original          : a -> provenance a
+  | LetBinding        : recursivity -> provenance a -> provenance a
+  | TermBinding       : list ascii -> provenance a -> provenance a
+  | TypeBinding       : list ascii -> provenance a -> provenance a
+  | DatatypeComponent : datatype_component -> provenance a -> provenance a
+  | MultipleSources   : list (provenance a) -> provenance a
+.
+
+Inductive inline_annot :=
+  | AlwaysInline
+  | MayInline
+.
+
+Inductive src_span :=
+  | SrcSpan : list ascii -> nat -> nat -> nat -> nat -> src_span
+.
+
+Inductive ann :=
+  | Ann : inline_annot -> list src_span -> ann
+.
+
 Inductive context :=
   | C_Hole     : context
 
