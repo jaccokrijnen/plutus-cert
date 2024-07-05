@@ -113,7 +113,7 @@ Fixpoint kind_check (gamma : list (binderTyname * kind)) (ty : ty) : (option kin
         lookup X gamma
     | Ty_Fun T1 T2 => (* TODO: I don't understand what this datatype does*)
         match (kind_check gamma T1, kind_check gamma T2) with
-        | (Some Kind_Base, Some Kind_base) => Some Kind_Base
+        | (Some Kind_Base, Some Kind_Base) => Some Kind_Base
         | (_, _) => None
         end
     | Ty_IFix F T => (* Note: Purely based on structure of has_kind *)
@@ -157,8 +157,63 @@ Proof.
       rewrite H0 in H.
       apply H.
     - (* Ty_Fun *) 
-      shelve.
-    - (* Ty_IFix *) shelve.
+      assert (kind = Kind_Base) as Hkind_base.
+      {
+        destruct (kind_check Gamma ty1); [|discriminate].
+        destruct k; [|discriminate].
+        destruct (kind_check Gamma ty2); [|discriminate].
+        destruct k; [|discriminate].
+        inversion H0.
+        reflexivity.
+      }
+      subst kind.
+      apply K_Fun.
+      + apply IHty1.
+        destruct (kind_check Gamma ty1) eqn:Hkc; [|discriminate].
+        destruct k; [|discriminate].
+        reflexivity.        
+      + apply IHty2.
+        destruct (kind_check Gamma ty1); [|discriminate].
+        destruct k; [|discriminate].
+        destruct (kind_check Gamma ty2); [|discriminate].
+        destruct k; [|discriminate].
+        reflexivity.
+    - (* Ty_IFix *) (* TODO: How do I make ty1 and ty2 resemble F and T as in the formualtion of has_kind?*)
+      assert (kind = Kind_Base) as Hkind_base.
+      {
+        (* TODO: Code duplication with after apply IHty1*)
+        destruct (kind_check Gamma ty2); [|discriminate].
+        destruct (kind_check Gamma ty1); [|discriminate].
+        destruct k0; [discriminate|].
+        destruct k0_1; [discriminate|].
+        destruct k0_1_2; [|discriminate].
+        destruct k0_2; [discriminate|].
+        destruct k0_2_2; [|discriminate].
+        destruct (eqb_kind k k0_1_1 && eqb_kind k k0_2_1) eqn:eqbs; [|discriminate].
+        inversion H0.
+        reflexivity.
+      }
+      subst kind.
+      remember (kind_check Gamma ty2) as K.
+      destruct K as [k|]; [|discriminate].
+      apply K_IFix with (K := k). 
+      + apply IHty2.
+        rewrite HeqK.
+        reflexivity. 
+      + apply IHty1.
+        destruct (kind_check Gamma ty1); [|discriminate].
+        destruct k0; [discriminate|].
+        destruct k0_1; [discriminate|].
+        destruct k0_1_2; [|discriminate].
+        destruct k0_2; [discriminate|].
+        destruct k0_2_2; [|discriminate].
+        destruct (eqb_kind k k0_1_1 && eqb_kind k k0_2_1) eqn:eqbs; [|discriminate].
+        apply andb_true_iff in eqbs.
+        destruct eqbs as [eqb1 eqb2].
+        apply eqb_kind_eq in eqb1.
+        apply eqb_kind_eq in eqb2.
+        subst...
+        reflexivity.
     - (* Ty_Forall *)
       assert (kind = Kind_Base) as Hkind_base.
       {
@@ -194,48 +249,56 @@ Proof.
       apply IHty.
       apply Hkc. (* Apply kind_check structure*)
     - (* Ty_App *) 
-      shelve.    
-(* Abort. *)
+      remember (kind_check Gamma ty2) as K1.
+      destruct K1 as [k1|].
+      + apply K_App with (K1 := k1).  
+        * apply IHty1.
+          destruct (kind_check Gamma ty1); [|discriminate].
+          destruct k; [discriminate|].
+          destruct (eqb_kind k2 k1) eqn:eqb ; [|discriminate].
+          inversion H0.
+          apply eqb_kind_eq in eqb.
+          rewrite eqb.
+          reflexivity.
+        * apply IHty2.
+          rewrite HeqK1.
+          reflexivity. 
+      + destruct (kind_check Gamma ty1); [|discriminate].
+        destruct k; [discriminate|discriminate].
+Qed.
 
 
 Theorem kind_checking_complete : forall (gamma : list (binderTyname * kind)) (ty : ty) (kind : kind),
     has_kind gamma ty kind -> kind_check gamma ty = Some kind.
 Proof.
     intros gamma ty kind Hkind.
-    induction Hkind. simpl.
+    induction Hkind; simpl.
     - (* Var *)
       apply H.
     - (* Ty_Fun *)
-      simpl.
       rewrite -> IHHkind1.
       rewrite -> IHHkind2.
       reflexivity.
     - (* Ty_IFix *)
-      simpl.
       rewrite -> IHHkind1.
       rewrite -> IHHkind2.
       rewrite -> eqb_kind_refl.
-      simpl.
       reflexivity.
     - (* Ty_Forall *)
-      simpl.
       rewrite -> IHHkind.
       reflexivity.
     - (* Ty_Builtin *)
-      simpl.
       rewrite -> H.
       reflexivity.
     - (* Ty_Lam *)
-      simpl.
       rewrite -> IHHkind.
       reflexivity.
     - (* Ty_App *) 
-      simpl.
       rewrite -> IHHkind1. 
       rewrite -> IHHkind2. 
       rewrite -> eqb_kind_refl. 
       reflexivity.
-Abort.
+Qed.
 
 
 
