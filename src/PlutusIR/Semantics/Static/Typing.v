@@ -296,6 +296,90 @@ Combined Scheme has_type__multind from
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
 
+Fixpoint eqb_ty (T1 T2:ty) : bool :=
+  match T1,T2 with
+  | Ty_Var x, Ty_Var y => false
+  | Ty_Fun T11 T12, Ty_Fun T21 T22 =>
+    andb (eqb_ty T11 T21) (eqb_ty T12 T22)
+  | Ty_IFix _ _, Ty_IFix _ _ => false
+  | Ty_Forall _ _ _, Ty_Forall _ _ _ => false
+  | Ty_Builtin _, Ty_Builtin _ => false
+  | Ty_Lam _ _ _, Ty_Lam _ _ _ => false
+  | Ty_App _ _, Ty_App _ _ => false
+  | _, _ => false
+  end.
+
+Lemma eqb_ty_refl : forall ty,
+  eqb_ty ty ty = true.
+Proof.
+Admitted.
+
+Lemma eqb_ty_eq : forall T1 T2,
+  eqb_ty T1 T2 = true -> T1 = T2.
+Proof.
+Admitted.
+
+Fixpoint type_check (Delta : list (string * kind)) (Gamma : list (string * PlutusIR.ty)) (term : term) : (option PlutusIR.ty) :=
+  match term with
+  | Let _ _ _ => None
+  | Var _ => None
+  | TyAbs _ _ _ => None
+  | LamAbs _ _ _ => None
+  | Apply t1 t2 =>
+    match (type_check Delta Gamma t1, type_check Delta Gamma t2) with
+    | (Some (Ty_Fun T11 T2), Some T12) =>
+        if eqb_ty T11 T12 then Some T2 else None
+    | (_, _) => None
+    end
+  | Constant _ => None
+  | Builtin _ => None
+  | TyInst _ _ => None
+  | Error _ => None
+  | IWrap _ _ _ => None
+  | Unwrap _ => None
+  | Constr _ _ => None
+  | Case _ _ => None
+end.
+
+Theorem type_checking_sound : forall Delta Gamma term ty,
+  type_check Delta Gamma term = Some ty -> has_type Delta Gamma term ty.
+Proof.
+Abort.
+
+Theorem type_checking_complete : forall Delta Gamma term ty,
+  has_type Delta Gamma term ty -> type_check Delta Gamma term = Some ty.
+Proof.
+  intros Delta Gamma term ty Hty.
+  induction Hty; simpl.
+  - (* T_Var *) 
+    shelve.
+  - (* T_LamAbs *)
+    shelve.
+  - (* T_Apply *)
+    rewrite -> IHHty1.
+    rewrite -> IHHty2.
+    rewrite -> eqb_ty_refl.
+    reflexivity.
+  - (* T_TyAbs *)
+    shelve.
+  - (* T_TyInst *)
+    shelve.
+  - (* T_IWrap *)
+    shelve.
+  - (* T_Unwrap *)
+    shelve.
+  - (* T_Constant *)
+    shelve.
+  - (* T_Builtin *)
+    shelve.
+  - (* T_Error *)
+    shelve.
+  - (* T_Let *)
+    shelve.
+  - (* T_LetRec *)
+    shelve.
+Abort.
+
 Definition well_typed t := exists T, [] ,, [] |-+ t : T.
 
 Lemma T_Let__cons Δ Γ Γ_b b bs t Tn :
@@ -409,4 +493,5 @@ Lemma context_has_type__apply : forall C t Δ₁ Γ₁ Δ Γ T T₁,
   (Δ₁ ,, Γ₁ |-C C : (Δ ,, Γ ▷ T) ↝ T₁) ->
   (Δ ,, Γ |-+ t : T) ->
   (Δ₁ ,, Γ₁ |-+ (context_apply C t) : T₁).
+Proof.
 Admitted.
