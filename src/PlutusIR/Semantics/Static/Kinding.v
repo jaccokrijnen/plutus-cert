@@ -107,18 +107,18 @@ Proof with auto.
       subst...
 Qed.
 
-Fixpoint kind_check (gamma : list (binderTyname * kind)) (ty : ty) : (option kind) :=
+Fixpoint kind_check (Delta : list (binderTyname * kind)) (ty : ty) : (option kind) :=
     match ty with
     | Ty_Var X => (* Based on Software Foundations and has_kind *)
-        lookup X gamma
+        lookup X Delta
     | Ty_Fun T1 T2 => (* TODO: I don't understand what this datatype does*)
-        match (kind_check gamma T1, kind_check gamma T2) with
+        match (kind_check Delta T1, kind_check Delta T2) with
         | (Some Kind_Base, Some Kind_Base) => Some Kind_Base
         | (_, _) => None
         end
     | Ty_IFix F T => (* Note: Purely based on structure of has_kind *)
-        match kind_check gamma T with
-        | Some K => match kind_check gamma F with
+        match kind_check Delta T with
+        | Some K => match kind_check Delta F with
             | Some (Kind_Arrow (Kind_Arrow K1 Kind_Base) (Kind_Arrow K2 Kind_Base)) =>
                 if andb (eqb_kind K K1) (eqb_kind K K2) then Some Kind_Base else None
             | _ => None
@@ -126,7 +126,7 @@ Fixpoint kind_check (gamma : list (binderTyname * kind)) (ty : ty) : (option kin
         | _ => None
         end
     | Ty_Forall X K T =>
-        match kind_check ((X, K) :: gamma) T with
+        match kind_check ((X, K) :: Delta) T with
         | Some Kind_Base => Some Kind_Base
         | _ => None
         end
@@ -134,34 +134,34 @@ Fixpoint kind_check (gamma : list (binderTyname * kind)) (ty : ty) : (option kin
         let d := extractDefaultUni typeIn in
         Some (lookupBuiltinKind d)
     | Ty_Lam X K1 T => (* Note: Copied from Software Foundations *)
-        match kind_check ((X, K1) :: gamma) T with
+        match kind_check ((X, K1) :: Delta) T with
         | Some K2 => Some (Kind_Arrow K1 K2)
         | _ => None
         end
     | Ty_App T1 T2 => 
-        match (kind_check gamma T1, kind_check gamma T2) with
+        match (kind_check Delta T1, kind_check Delta T2) with
         | (Some (Kind_Arrow K11 K2), Some K12) =>
             if eqb_kind K11 K12 then Some K2 else None
         | (_, _) => None
         end
     end.
 
-Theorem kind_checking_sound : forall Gamma ty kind,
-    kind_check Gamma ty = Some kind -> has_kind Gamma ty kind.
+Theorem kind_checking_sound : forall Delta ty kind,
+    kind_check Delta ty = Some kind -> has_kind Delta ty kind.
 Proof.
-    intros Gamma ty. generalize dependent Gamma.
-    induction ty; intros Gamma kind Htc; inversion Htc.
+    intros Delta ty. generalize dependent Delta.
+    induction ty; intros Delta kind Htc; inversion Htc.
     - (* Var *) 
-      destruct (lookup t Gamma) eqn:H; [|discriminate].
+      destruct (lookup t Delta) eqn:H; [|discriminate].
       apply K_Var.
       rewrite H0 in H.
       apply H.
     - (* Ty_Fun *) 
       assert (kind = Kind_Base) as Hkind_base.
       {
-        destruct (kind_check Gamma ty1); [|discriminate].
+        destruct (kind_check Delta ty1); [|discriminate].
         destruct k; [|discriminate].
-        destruct (kind_check Gamma ty2); [|discriminate].
+        destruct (kind_check Delta ty2); [|discriminate].
         destruct k; [|discriminate].
         inversion H0.
         reflexivity.
@@ -169,39 +169,39 @@ Proof.
       subst kind.
       apply K_Fun.
       + apply IHty1.
-        destruct (kind_check Gamma ty1) eqn:Hkc; [|discriminate].
+        destruct (kind_check Delta ty1) eqn:Hkc; [|discriminate].
         destruct k; [|discriminate].
         reflexivity.        
       + apply IHty2.
-        destruct (kind_check Gamma ty1); [|discriminate].
+        destruct (kind_check Delta ty1); [|discriminate].
         destruct k; [|discriminate].
-        destruct (kind_check Gamma ty2); [|discriminate].
+        destruct (kind_check Delta ty2); [|discriminate].
         destruct k; [|discriminate].
         reflexivity.
     - (* Ty_IFix *) (* TODO: How do I make ty1 and ty2 resemble F and T as in the formualtion of has_kind?*)
       assert (kind = Kind_Base) as Hkind_base.
       {
         (* TODO: Code duplication with after apply IHty1*)
-        destruct (kind_check Gamma ty2); [|discriminate].
-        destruct (kind_check Gamma ty1); [|discriminate].
+        destruct (kind_check Delta ty2); [|discriminate].
+        destruct (kind_check Delta ty1); [|discriminate].
         destruct k0; [discriminate|].
         destruct k0_1; [discriminate|].
         destruct k0_1_2; [|discriminate].
         destruct k0_2; [discriminate|].
         destruct k0_2_2; [|discriminate].
-        destruct (eqb_kind k k0_1_1 && eqb_kind k k0_2_1) eqn:eqbs; [|discriminate].
+        destruct (eqb_kind k k0_1_1 && eqb_kind k k0_2_1); [|discriminate].
         inversion H0.
         reflexivity.
       }
       subst kind.
-      remember (kind_check Gamma ty2) as K.
+      remember (kind_check Delta ty2) as K.
       destruct K as [k|]; [|discriminate].
       apply K_IFix with (K := k). 
       + apply IHty2.
         rewrite HeqK.
         reflexivity. 
       + apply IHty1.
-        destruct (kind_check Gamma ty1); [|discriminate].
+        destruct (kind_check Delta ty1); [|discriminate].
         destruct k0; [discriminate|].
         destruct k0_1; [discriminate|].
         destruct k0_1_2; [|discriminate].
@@ -217,7 +217,7 @@ Proof.
     - (* Ty_Forall *)
       assert (kind = Kind_Base) as Hkind_base.
       {
-        destruct (kind_check ((b, k) :: Gamma) ty); [|discriminate].
+        destruct (kind_check ((b, k) :: Delta) ty); [|discriminate].
         destruct k0; [|discriminate].
         inversion H0.
         reflexivity.
@@ -228,7 +228,7 @@ Proof.
       (* Now this is in the form of our induction hypothesis*)
       apply IHty.
       (* Final steps, use H0, which derives from the definition of kind_check*)
-      destruct (kind_check ((b, k) :: Gamma) ty) as [k0|]; [|discriminate].
+      destruct (kind_check ((b, k) :: Delta) ty) as [k0|]; [|discriminate].
       destruct k0; [|discriminate];
       rewrite -> H0.
       reflexivity.
@@ -243,17 +243,17 @@ Proof.
       reflexivity.
     - (* Ty_Lam *)
       (* prove that kind = Kind_Arrow _ _*)
-      destruct (kind_check ((b, k) :: Gamma) ty) eqn:Hkc; [|discriminate].
+      destruct (kind_check ((b, k) :: Delta) ty) eqn:Hkc; [|discriminate].
       inversion H0.
       apply K_Lam. (* Apply has_kind structure*)
       apply IHty.
       apply Hkc. (* Apply kind_check structure*)
     - (* Ty_App *) 
-      remember (kind_check Gamma ty2) as K1.
+      remember (kind_check Delta ty2) as K1.
       destruct K1 as [k1|].
       + apply K_App with (K1 := k1).  
         * apply IHty1.
-          destruct (kind_check Gamma ty1); [|discriminate].
+          destruct (kind_check Delta ty1); [|discriminate].
           destruct k; [discriminate|].
           destruct (eqb_kind k2 k1) eqn:eqb ; [|discriminate].
           inversion H0.
@@ -263,15 +263,15 @@ Proof.
         * apply IHty2.
           rewrite HeqK1.
           reflexivity. 
-      + destruct (kind_check Gamma ty1); [|discriminate].
+      + destruct (kind_check Delta ty1); [|discriminate].
         destruct k; [discriminate|discriminate].
 Qed.
 
 
-Theorem kind_checking_complete : forall (gamma : list (binderTyname * kind)) (ty : ty) (kind : kind),
-    has_kind gamma ty kind -> kind_check gamma ty = Some kind.
+Theorem kind_checking_complete : forall (Delta : list (binderTyname * kind)) (ty : ty) (kind : kind),
+    has_kind Delta ty kind -> kind_check Delta ty = Some kind.
 Proof.
-    intros gamma ty kind Hkind.
+    intros Delta ty kind Hkind.
     induction Hkind; simpl.
     - (* Var *)
       apply H.
@@ -299,23 +299,3 @@ Proof.
       rewrite -> eqb_kind_refl. 
       reflexivity.
 Qed.
-
-
-
-(* Ltac solve_by_inverts n :=
-  match goal with
-  | H: ?T |- _ =>
-    match type of T with
-    | Prop =>
-      inversion H;
-      subst;
-      match n with
-      | 0 => idtac
-      | S ?n' => solve_by_inverts n'
-      end
-    end
-  end.
-  
-
-Ltac solve_by_invert :=
-  solve_by_inverts 1. *)
