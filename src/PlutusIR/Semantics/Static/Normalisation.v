@@ -116,6 +116,23 @@ Inductive normalise : ty -> ty -> Prop :=
 
 #[export] Hint Constructors normalise : core.
 
+(* TODO: Implement*)
+Fixpoint normalise_check (ty : PlutusIR.ty) : (option PlutusIR.ty) :=
+  match ty with
+  | Ty_Var x => Some (Ty_Var x)
+  | _ => None
+  end.
+
+Theorem normalise_checking_sound : forall ty tyn,
+  normalise_check ty = Some tyn -> normalise ty tyn.
+Proof.
+Admitted.
+
+Theorem normalise_checking_complete : forall ty tyn,
+  normalise ty tyn -> normalise_check ty = Some tyn.
+Proof.
+Admitted.
+
 (** Properties of type normalisation *)
 Lemma normalise_to_normal : forall T Tn,
     normalise T Tn ->

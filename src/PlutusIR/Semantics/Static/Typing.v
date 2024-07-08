@@ -296,6 +296,8 @@ Combined Scheme has_type__multind from
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
 
+(* TODO: All false cases todo*)
+(* TODO: in Normalisation.v we also have Inductive EqT, maybe that's enough*)
 Fixpoint eqb_ty (T1 T2:ty) : bool :=
   match T1,T2 with
   | Ty_Var x, Ty_Var y => false
@@ -322,7 +324,11 @@ Admitted.
 Fixpoint type_check (Delta : list (string * kind)) (Gamma : list (string * PlutusIR.ty)) (term : term) : (option PlutusIR.ty) :=
   match term with
   | Let _ _ _ => None
-  | Var _ => None
+  | Var x =>
+    match lookup x Gamma with
+    | Some T => normalise_check T
+    | None => None
+    end
   | TyAbs _ _ _ => None
   | LamAbs _ _ _ => None
   | Apply t1 t2 =>
@@ -344,7 +350,40 @@ end.
 Theorem type_checking_sound : forall Delta Gamma term ty,
   type_check Delta Gamma term = Some ty -> has_type Delta Gamma term ty.
 Proof.
-Abort.
+  intros Delta Gamma term ty.
+  induction term; intros Htc.
+  - (* Let *) 
+    shelve.
+  - (* Var *) 
+    simpl in Htc.
+    destruct (lookup n Gamma) eqn:H; [|discriminate].
+    apply normalise_checking_sound in Htc.
+    apply T_Var with (T := t); assumption.
+  - (* TyAbs *) 
+    shelve.
+  - (* LamAbs *) 
+    shelve.
+  - (* Apply *) 
+    shelve.
+  - (* Constant *)
+    shelve.
+  - (* Builtin *)
+    shelve.
+  - (* TyInst *)
+    shelve.
+  - (* Error *)
+    shelve.
+  - (* IWrap *)
+    shelve.
+  - (* Unwrap *)
+    shelve.
+  - (* Constr *)
+    shelve.
+  - (* Case *)
+    shelve.
+Admitted.
+
+
 
 Theorem type_checking_complete : forall Delta Gamma term ty,
   has_type Delta Gamma term ty -> type_check Delta Gamma term = Some ty.
@@ -352,7 +391,9 @@ Proof.
   intros Delta Gamma term ty Hty.
   induction Hty; simpl.
   - (* T_Var *) 
-    shelve.
+    rewrite -> H.
+    apply normalise_checking_complete in H0.
+    apply H0.
   - (* T_LamAbs *)
     shelve.
   - (* T_Apply *)
