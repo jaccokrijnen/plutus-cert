@@ -7,6 +7,13 @@ Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyp
 Ltac solver := try solve [repeat (econstructor; eauto)].
 
 
+Lemma uniType__basekinded : forall t A,
+  uniType_option t = Some A ->
+  |-*_uni t : Kind_Base
+.
+(* TODO: should hold, property of uniType_option *)
+Admitted.
+
 Lemma has_type__basekinded : forall Delta Gamma t T,
     Delta ,, Gamma |-+ t : T ->
     Delta |-* T : Kind_Base.
@@ -34,6 +41,8 @@ Proof with (eauto || solver).
     econstructor...
     econstructor...
     (* ADMIT: Should follow from uniqnuess property. *)
+    admit.
+  - (* TODO: keep typing derivation around during induction and use uniType__basekinded *)
     admit.
   - destruct f...
     (* TODO: implement lookupBuiltinType *)

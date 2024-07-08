@@ -5,6 +5,40 @@ Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
 
 Import PlutusNotations.
 
+Reserved Notation "'|-*_uni' T ':' K" (at level 40, T at level 0, K at level 0).
+Inductive has_kind_uni : DefaultUni -> kind -> Prop :=
+  | K_DefaultUniInteger :
+      |-*_uni DefaultUniInteger : Kind_Base
+  | K_DefaultUniByteString :
+      |-*_uni DefaultUniByteString : Kind_Base
+  | K_DefaultUniString :
+      |-*_uni DefaultUniString : Kind_Base
+  | K_DefaultUniUnit :
+      |-*_uni DefaultUniUnit : Kind_Base
+  | K_DefaultUniBool :
+      |-*_uni DefaultUniBool : Kind_Base
+  | K_DefaultUniData :
+      |-*_uni DefaultUniData : Kind_Base
+  | K_DefaultUniBLS12_381_G1_Element :
+      |-*_uni DefaultUniBLS12_381_G1_Element : Kind_Base
+  | K_DefaultUniBLS12_381_G2_Element :
+      |-*_uni DefaultUniBLS12_381_G2_Element : Kind_Base
+  | K_DefaultUniBLS12_381_MlResult :
+      |-*_uni DefaultUniBLS12_381_MlResult : Kind_Base
+  | K_DefaultUniApply k k' t t' :
+      |-*_uni t : (Kind_Arrow k k') ->
+      |-*_uni t' : k ->
+      |-*_uni (DefaultUniApply t t') : k'
+
+  | K_DefaultUniProtoPair :
+      |-*_uni DefaultUniProtoPair : (Kind_Arrow Kind_Base Kind_Base)
+
+  | K_DefaultUniProtoList :
+      |-*_uni DefaultUniProtoList : (Kind_Arrow Kind_Base Kind_Base)
+
+  where "'|-*_uni' T ':' K" := (has_kind_uni T K)
+.
+
 (** Kinding of types *)
 Reserved Notation "Δ '|-*' T ':' K" (at level 40, T at level 0, K at level 0).
 Inductive has_kind : list (string * kind) -> ty -> kind -> Prop :=
@@ -23,6 +57,7 @@ Inductive has_kind : list (string * kind) -> ty -> kind -> Prop :=
       ((X, K) :: Δ) |-* T : Kind_Base ->
       Δ |-* (Ty_Forall X K T) : Kind_Base
   | K_Builtin : forall Δ u,
+      |-*_uni u : Kind_Base ->
       Δ |-* (Ty_Builtin (Some' (TypeIn u))) : Kind_Base
   | K_Lam : forall Δ X K1 T K2,
       ((X, K1) :: Δ) |-* T : K2 ->

@@ -71,7 +71,7 @@ only construct values of plutus types with the right kind.
 
 In our Coq encoding, we don't use indexed types, as Coq doesn't always have the same
 conveniences for pattern matching, and automatisation such as deriving. Instead we can
-have dependently typed functions that compute the right types for constructing values 
+have dependently typed functions that compute the right types for constructing values
 (see uniType and Constant).
 *)
 Inductive DefaultUni : Type :=
@@ -151,7 +151,8 @@ Functional Scheme uniType_option_rect := Induction for uniType_option Sort Type.
 
 
 (** Coq interpretation of plutus built-in types of base kind. Used for constructing
-constants (See term.Constant)
+constants (See term.Constant). Types that are ill-kinded or do not have base kind are
+mapped to the empty type, ensuring that Constants of such type can be constructed.
 *)
 Definition uniType (x : DefaultUni) : Type :=
   match uniType_option x with
