@@ -8,74 +8,6 @@ Import ListNotations.
 
 Import PlutusNotations.
 
-Reserved Notation "'|-*_uni' T ':' K" (at level 40, T at level 0, K at level 0).
-Inductive has_kind_uni : DefaultUni -> kind -> Prop :=
-  | K_DefaultUniInteger :
-      |-*_uni DefaultUniInteger : Kind_Base
-  | K_DefaultUniByteString :
-      |-*_uni DefaultUniByteString : Kind_Base
-  | K_DefaultUniString :
-      |-*_uni DefaultUniString : Kind_Base
-  | K_DefaultUniUnit :
-      |-*_uni DefaultUniUnit : Kind_Base
-  | K_DefaultUniBool :
-      |-*_uni DefaultUniBool : Kind_Base
-  | K_DefaultUniData :
-      |-*_uni DefaultUniData : Kind_Base
-  | K_DefaultUniBLS12_381_G1_Element :
-      |-*_uni DefaultUniBLS12_381_G1_Element : Kind_Base
-  | K_DefaultUniBLS12_381_G2_Element :
-      |-*_uni DefaultUniBLS12_381_G2_Element : Kind_Base
-  | K_DefaultUniBLS12_381_MlResult :
-      |-*_uni DefaultUniBLS12_381_MlResult : Kind_Base
-  | K_DefaultUniApply k k' t t' :
-      |-*_uni t : (Kind_Arrow k k') ->
-      |-*_uni t' : k ->
-      |-*_uni (DefaultUniApply t t') : k'
-
-  | K_DefaultUniProtoPair :
-      |-*_uni DefaultUniProtoPair : (Kind_Arrow Kind_Base Kind_Base)
-
-  | K_DefaultUniProtoList :
-      |-*_uni DefaultUniProtoList : (Kind_Arrow Kind_Base Kind_Base)
-
-  where "'|-*_uni' T ':' K" := (has_kind_uni T K)
-.
-
-Definition extractDefaultUni {d : DefaultUni} (t : typeIn d) : DefaultUni :=
-  match t with
-  | TypeIn _ => d
-  end.
-
-(** Kinding of types *)
-Reserved Notation "Δ '|-*' T ':' K" (at level 40, T at level 0, K at level 0).
-Inductive has_kind : list (binderTyname * kind) -> ty -> kind -> Prop :=
-  | K_Var : forall Δ X K,
-      lookup X Δ = Some K ->
-      Δ |-* (Ty_Var X) : K
-  | K_Fun : forall Δ T1 T2,
-      Δ |-* T1 : Kind_Base ->
-      Δ |-* T2 : Kind_Base ->
-      Δ |-* (Ty_Fun T1 T2) : Kind_Base
-  | K_IFix  : forall Δ F T K,
-      Δ |-* T : K ->
-      Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
-      Δ |-* (Ty_IFix F T) : Kind_Base
-  | K_Forall : forall Δ X K T,
-      ((X, K) :: Δ) |-* T : Kind_Base ->
-      Δ |-* (Ty_Forall X K T) : Kind_Base
-  | K_Builtin : forall Δ u,
-      |-*_uni u : Kind_Base ->
-      Δ |-* (Ty_Builtin (Some' (TypeIn u))) : Kind_Base
-  | K_Lam : forall Δ X K1 T K2,
-      ((X, K1) :: Δ) |-* T : K2 ->
-      Δ |-* (Ty_Lam X K1 T) : (Kind_Arrow K1 K2)
-  | K_App : forall Δ T1 T2 K1 K2,
-      Δ |-* T1 : (Kind_Arrow K1 K2) ->
-      Δ |-* T2 : K1 ->
-      Δ |-* (Ty_App T1 T2) : K2
-where "Δ '|-*' T ':' K" := (has_kind Δ T K).
-
 Fixpoint eqb_kind (K1 K2:kind) : bool :=
     match K1,K2 with
     | Kind_Base, Kind_Base => true
@@ -107,6 +39,146 @@ Proof with auto.
       subst...
 Qed.
 
+Reserved Notation "'|-*_uni' T ':' K" (at level 40, T at level 0, K at level 0).
+Inductive has_kind_uni : DefaultUni -> kind -> Prop :=
+  | K_DefaultUniInteger :
+      |-*_uni DefaultUniInteger : Kind_Base
+  | K_DefaultUniByteString :
+      |-*_uni DefaultUniByteString : Kind_Base
+  | K_DefaultUniString :
+      |-*_uni DefaultUniString : Kind_Base
+  | K_DefaultUniUnit :
+      |-*_uni DefaultUniUnit : Kind_Base
+  | K_DefaultUniBool :
+      |-*_uni DefaultUniBool : Kind_Base
+  | K_DefaultUniData :
+      |-*_uni DefaultUniData : Kind_Base
+  | K_DefaultUniBLS12_381_G1_Element :
+      |-*_uni DefaultUniBLS12_381_G1_Element : Kind_Base
+  | K_DefaultUniBLS12_381_G2_Element :
+      |-*_uni DefaultUniBLS12_381_G2_Element : Kind_Base
+  | K_DefaultUniBLS12_381_MlResult :
+      |-*_uni DefaultUniBLS12_381_MlResult : Kind_Base
+  | K_DefaultUniApply : forall k k' t t',
+      |-*_uni t : (Kind_Arrow k k') ->
+      |-*_uni t' : k ->
+      |-*_uni (DefaultUniApply t t') : k'
+  | K_DefaultUniProtoPair :
+      |-*_uni DefaultUniProtoPair : (Kind_Arrow Kind_Base Kind_Base)
+  | K_DefaultUniProtoList :
+      |-*_uni DefaultUniProtoList : (Kind_Arrow Kind_Base Kind_Base)
+  where "'|-*_uni' T ':' K" := (has_kind_uni T K)
+.
+
+Fixpoint kind_check_default_uni (d : DefaultUni) : option kind :=
+  match d with
+  | DefaultUniInteger => Some Kind_Base
+  | DefaultUniByteString => Some Kind_Base
+  | DefaultUniString => Some Kind_Base
+  | DefaultUniUnit => Some Kind_Base
+  | DefaultUniBool => Some Kind_Base
+  | DefaultUniData => Some Kind_Base
+  | DefaultUniBLS12_381_G1_Element => Some Kind_Base
+  | DefaultUniBLS12_381_G2_Element => Some Kind_Base
+  | DefaultUniBLS12_381_MlResult => Some Kind_Base
+  | DefaultUniApply t t' =>
+      match (kind_check_default_uni t, kind_check_default_uni t') with
+      | (Some (Kind_Arrow k k'), Some k'') => if eqb_kind k'' k then Some k' else None
+      | _ => None
+      end
+  | DefaultUniProtoPair => Some (Kind_Arrow Kind_Base Kind_Base)
+  | DefaultUniProtoList => Some (Kind_Arrow Kind_Base Kind_Base)
+  end.
+
+Lemma kind_checking_default_uni_sound : forall d k,
+    kind_check_default_uni d = Some k -> |-*_uni d : k.
+Proof.
+  intros d k H. generalize dependent k.
+  induction d; intros k H; inversion H.
+  - apply K_DefaultUniInteger.
+  - apply K_DefaultUniByteString.
+  - apply K_DefaultUniString.
+  - apply K_DefaultUniUnit.
+  - apply K_DefaultUniBool.
+  (* TODO: has_kind_uni does not have same order of constructors as DefaultUni, really confusing*)
+  - apply K_DefaultUniProtoList.
+  - apply K_DefaultUniProtoPair.
+  - apply K_DefaultUniData.
+  - apply K_DefaultUniBLS12_381_G1_Element.
+  - apply K_DefaultUniBLS12_381_G2_Element.
+  - apply K_DefaultUniBLS12_381_MlResult.
+  - destruct (kind_check_default_uni d1) eqn:Hd1; [|discriminate].
+    destruct k0 eqn:Hk0; [discriminate|].
+    destruct (kind_check_default_uni d2) eqn:Hd2; [|discriminate].
+    destruct (eqb_kind k1 k1_1) eqn:Heqb; [|discriminate].
+    apply eqb_kind_eq in Heqb.
+    subst.
+    apply K_DefaultUniApply with (k := k1_1).
+    + apply IHd1.
+      inversion H1.
+      reflexivity.
+    + apply IHd2.
+      inversion H1.
+      reflexivity. 
+Qed.
+
+Lemma kind_checking_default_uni_complete : forall d k,
+    |-*_uni d : k -> kind_check_default_uni d = Some k.
+Proof.
+  intros d k H.
+  induction H; simpl.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - rewrite -> IHhas_kind_uni1.
+    rewrite -> IHhas_kind_uni2.
+    rewrite eqb_kind_refl.
+    reflexivity.
+  - reflexivity.
+  - reflexivity.
+Qed.
+      
+
+Definition extractDefaultUni {d : DefaultUni} (t : typeIn d) : DefaultUni :=
+  match t with
+  | TypeIn _ => d
+  end.
+
+(** Kinding of types *)
+Reserved Notation "Δ '|-*' T ':' K" (at level 40, T at level 0, K at level 0).
+Inductive has_kind : list (binderTyname * kind) -> ty -> kind -> Prop :=
+  | K_Var : forall Δ X K,
+      lookup X Δ = Some K ->
+      Δ |-* (Ty_Var X) : K
+  | K_Fun : forall Δ T1 T2,
+      Δ |-* T1 : Kind_Base ->
+      Δ |-* T2 : Kind_Base ->
+      Δ |-* (Ty_Fun T1 T2) : Kind_Base
+  | K_IFix  : forall Δ F T K,
+      Δ |-* T : K ->
+      Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
+      Δ |-* (Ty_IFix F T) : Kind_Base
+  | K_Forall : forall Δ X K T,
+      ((X, K) :: Δ) |-* T : Kind_Base ->
+      Δ |-* (Ty_Forall X K T) : Kind_Base
+  | K_Builtin : forall Δ u K,
+      |-*_uni u : K ->
+      Δ |-* (Ty_Builtin (Some' (TypeIn u))) : K
+  | K_Lam : forall Δ X K1 T K2,
+      ((X, K1) :: Δ) |-* T : K2 ->
+      Δ |-* (Ty_Lam X K1 T) : (Kind_Arrow K1 K2)
+  | K_App : forall Δ T1 T2 K1 K2,
+      Δ |-* T1 : (Kind_Arrow K1 K2) ->
+      Δ |-* T2 : K1 ->
+      Δ |-* (Ty_App T1 T2) : K2
+where "Δ '|-*' T ':' K" := (has_kind Δ T K).
+
 Fixpoint kind_check (Delta : list (binderTyname * kind)) (ty : ty) : (option kind) :=
     match ty with
     | Ty_Var X => (* Based on Software Foundations and has_kind *)
@@ -132,7 +204,7 @@ Fixpoint kind_check (Delta : list (binderTyname * kind)) (ty : ty) : (option kin
         end
     | Ty_Builtin (Some' typeIn) =>
         let d := extractDefaultUni typeIn in
-        Some (lookupBuiltinKind d)
+        kind_check_default_uni d
     | Ty_Lam X K1 T => (* Note: Copied from Software Foundations *)
         match kind_check ((X, K1) :: Delta) T with
         | Some K2 => Some (Kind_Arrow K1 K2)
@@ -236,11 +308,10 @@ Proof.
       destruct s as [u typeIn] eqn:Hs.
       rewrite -> typeIn.
       apply K_Builtin.
-      inversion H0.
-      f_equal.
-      rewrite -> typeIn.
-      simpl.
-      reflexivity.
+      rewrite typeIn in H0.
+      simpl in H0.
+      apply kind_checking_default_uni_sound in H0.
+      assumption.
     - (* Ty_Lam *)
       (* prove that kind = Kind_Arrow _ _*)
       destruct (kind_check ((b, k) :: Delta) ty) eqn:Hkc; [|discriminate].
@@ -288,8 +359,8 @@ Proof.
       rewrite -> IHHkind.
       reflexivity.
     - (* Ty_Builtin *)
-      rewrite -> H.
-      reflexivity.
+      apply kind_checking_default_uni_complete in H.
+      assumption.
     - (* Ty_Lam *)
       rewrite -> IHHkind.
       reflexivity.

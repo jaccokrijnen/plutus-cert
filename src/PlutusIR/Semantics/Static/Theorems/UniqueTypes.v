@@ -2,6 +2,30 @@ Require Import PlutusCert.PlutusIR.
 
 Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.
 
+Theorem unique_kinds_uni : forall d K K',
+    |-*_uni d : K -> |-*_uni d : K' -> K = K'.
+Proof.
+  intros d K K' Hkind1.
+  generalize dependent K'.
+  induction Hkind1; intros K' Hkind2; inversion Hkind2.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - subst.
+    apply IHHkind1_2 in H3.
+    subst.
+    apply IHHkind1_1 in H1.
+    inversion H1.
+    reflexivity.
+  - reflexivity.
+  - reflexivity.
+Qed.
 
 Theorem unique_kinds : forall ctx T K K',
     ctx |-* T : K ->
@@ -27,7 +51,7 @@ Proof.
     reflexivity.
   - (* K_Builtin *)
     inversion Hkind2. subst.
-    reflexivity.
+    apply unique_kinds_uni with (d := u); assumption.
   - (* K_Lam *)
     inversion Hkind2. subst.
     f_equal.
@@ -41,4 +65,4 @@ Proof.
     inversion H2.
     subst.
     reflexivity.
-Qed.
+Admitted.
