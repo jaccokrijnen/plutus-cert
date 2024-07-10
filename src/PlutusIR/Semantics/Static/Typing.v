@@ -206,7 +206,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ ,, Γ |-+ (Unwrap M) : T0n
   (* Additional constructs *)
   | T_Constant : forall Δ Γ T a,
-      Δ ,, Γ |-+ (Constant (Some' (ValueOf T a))) : (Ty_Builtin T)
+      Δ ,, Γ |-+ (Constant (ValueOf T a)) : (Ty_Builtin T)
   | T_Builtin : forall Δ Γ f T Tn,
       T = lookupBuiltinTy f ->
       normalise T Tn ->

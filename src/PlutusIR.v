@@ -160,9 +160,10 @@ Definition uniType (x : DefaultUni) : Type :=
     | Some ty => ty
   end.
 
-Inductive valueOf (u : DefaultUni) :=
-  ValueOf : uniType u -> valueOf u.
-Arguments ValueOf _ _ : clear implicits.
+(* Constants are coq values of the interpretation of some type in
+   DefaultUni *)
+Inductive constant :=
+  ValueOf : forall (T : DefaultUni), uniType T -> constant.
 
 (** Built-in functions*)
 Inductive DefaultFun :=
@@ -302,7 +303,7 @@ Inductive term :=
   | TyAbs    : binderTyname -> kind -> term -> term
   | LamAbs   : binderName -> ty -> term -> term
   | Apply    : term -> term -> term
-  | Constant : @some valueOf -> term
+  | Constant : constant -> term
   | Builtin  : DefaultFun -> term
   | TyInst   : term -> ty -> term
   | Error    : ty -> term
@@ -425,7 +426,7 @@ Section term__ind.
     (H_TyAbs   : forall (s : string) (k : kind) (t : term), P t -> P (TyAbs s k t))
     (H_LamAbs  : forall (s : string) (t : ty) (t0 : term), P t0 -> P (LamAbs s t t0))
     (H_Apply   : forall t : term, P t -> forall t0 : term, P t0 -> P (Apply t t0))
-    (H_Constant : forall s : some valueOf, P (Constant s))
+    (H_Constant : forall (c : constant), P (Constant c))
     (H_Builtin : forall d : DefaultFun, P (Builtin d))
     (H_TyInst  : forall t : term, P t -> forall t0 : ty, P (TyInst t t0))
     (H_Error   : forall t : ty, P (Error t))
@@ -467,7 +468,7 @@ Section term__ind.
       | IWrap ty1 ty2 t => H_IWrap ty1 ty2 t (term__ind t)
       | Unwrap t        => H_Unwrap t (term__ind t)
       | Error ty        => H_Error ty
-      | Constant v      => H_Constant v
+      | Constant c      => H_Constant c
       | Builtin f       => H_Builtin f
       | Constr i ts     => H_Constr i ts (terms__ind term__ind ts)
       | Case t ts      => H_Case t (term__ind t) ts (terms__ind term__ind ts)
@@ -495,7 +496,7 @@ Section term_rect.
     (H_TyAbs   : forall s (k : kind) (t : term), P t -> P (TyAbs s k t))
     (H_LamAbs  : forall s t (t0 : term), P t0 -> P (LamAbs s t t0))
     (H_Apply   : forall t : term, P t -> forall t0 : term, P t0 -> P (Apply t t0))
-    (H_Constant : forall s : some valueOf, P (Constant s))
+    (H_Constant : forall (c : constant), P (Constant c))
     (H_Builtin : forall d : DefaultFun, P (Builtin d))
     (H_TyInst  : forall t : term, P t -> forall t0 : ty, P (TyInst t t0))
     (H_Error   : forall t : ty, P (Error t))
@@ -538,7 +539,7 @@ Section term_rect.
       | IWrap ty1 ty2 t => @H_IWrap ty1 ty2 t (term_rect' t)
       | Unwrap t        => @H_Unwrap t (term_rect' t)
       | Error ty        => @H_Error ty
-      | Constant v      => @H_Constant v
+      | Constant c      => @H_Constant c
       | Builtin f       => @H_Builtin f
       | Constr i ts     => @H_Constr i ts (terms_rect' term_rect' ts)
       | Case t ts      => @H_Case t (term_rect' t) ts (terms_rect' term_rect' ts)
@@ -634,7 +635,7 @@ Definition ty_endo (m_custom : forall τ, option (@ty_alg ty τ)) := fix f τ :=
       end
   end.
 
-Definition unitVal : term := Constant (Some' (ValueOf DefaultUniUnit tt)).
+Definition unitVal : term := Constant (ValueOf DefaultUniUnit tt).
 
 
 

@@ -84,9 +84,34 @@ Definition uniType_dec : forall (t : DefaultUni), EqDec (uniType t).
 Defined.
 #[export] Hint Resolve uniType_dec : Eqs.
 
-Definition valueOf_dec : forall t, EqDec (valueOf t). solveEq.
-Defined.
-  #[export] Hint Resolve valueOf_dec : Eqs.
+Definition dec_uniType : forall (t : DefaultUni), EqDec (uniType t).
+Proof.
+  destruct t; auto with Eqs.
+Qed.
+
+Definition constant_dec  : EqDec constant.
+Proof.
+  intros x y.
+  destruct x as [T v].
+  destruct y as [T' v'].
+  destruct (DefaultUni_dec T T').
+  - subst.
+    destruct (dec_uniType _ v v').
+    + apply left. congruence.
+    + apply right. intros H.
+      injection H.
+      intro H_sigma_eq.
+      inversion_sigma.
+      (* eq_rect can only be reduced by invoking UIP on H_sigma_eq1 *)
+      assert (H_sigma_eq1 = eq_refl) by apply UIP_refl.
+      subst H_sigma_eq1; simpl in H_sigma_eq2.
+      tauto.
+  - apply right.
+    intros H.
+    inversion H.
+    contradiction.
+Qed.
+  #[export] Hint Resolve constant_dec : Eqs.
 
 Definition typeIn_dec : forall t, EqDec (typeIn t). solveEq. Defined.
   #[export] Hint Resolve typeIn_dec : Eqs.
@@ -119,9 +144,6 @@ Proof.
     inversion H. contradiction.
 Defined.
 
-Definition some_valueOf_dec := @some_dec valueOf valueOf_dec.
-#[export] Hint Resolve some_valueOf_dec : Eqs.
-
 Definition some_typeIn_dec := @some_dec typeIn typeIn_dec.
 #[export] Hint Resolve some_typeIn_dec : Eqs.
 
@@ -139,6 +161,9 @@ Definition TVDecl_dec : EqDec tvdecl. Proof. solveEq. Defined.
 
 Definition DTDecl_dec: EqDec dtdecl. Proof. solveEq. Defined.
   #[export] Hint Resolve DTDecl_dec : Eqs.
+
+
+
 
 Lemma term_dec : forall (x y : term), {x = y} + {x <> y}
   with binding_dec: forall (x y : binding), {x = y} + {x <> y}.
@@ -180,8 +205,7 @@ Section Derived_Eqb.
   Definition recursivity_eqb : Eqb recursivity := eq_dec_to_eqb recursivity_dec.
   Definition DefaultUni_eqb : Eqb DefaultUni := eq_dec_to_eqb DefaultUni_dec.
   Definition uniType_eqb : forall t, Eqb (uniType t) := fun t => eq_dec_to_eqb (uniType_dec t).
-  Definition valueOf_eqb : forall t, Eqb (valueOf t) := fun t => eq_dec_to_eqb (valueOf_dec t).
-  Definition some_valueOf_eqb: Eqb (@some valueOf) := eq_dec_to_eqb (some_valueOf_dec).
+  Definition constant_eqb : Eqb constant := eq_dec_to_eqb constant_dec.
   Definition typeIn_eqb : forall t, Eqb (typeIn t) := fun t => eq_dec_to_eqb (typeIn_dec t).
   Definition some_typeIn_eqb : Eqb (@some typeIn) := eq_dec_to_eqb (some_typeIn_dec).
   Definition Kind_eqb : Eqb kind := eq_dec_to_eqb Kind_dec.
@@ -209,8 +233,7 @@ Section Derived_Eqb.
   Definition recursivity_eqb_eq := eq_dec_to_eqb__sound recursivity_dec.
   Definition DefaultUni_eqb_eq := eq_dec_to_eqb__sound DefaultUni_dec.
   Definition uniType_eqb_eq := fun t => eq_dec_to_eqb__sound (uniType_dec t).
-  Definition valueOf_eqb_eq := fun t => eq_dec_to_eqb__sound (valueOf_dec t).
-  Definition some_valueOf_eqb_eq := eq_dec_to_eqb__sound (some_valueOf_dec).
+  Definition constant_eqb_eq := eq_dec_to_eqb__sound constant_dec.
   Definition typeIn_eqb_eq := fun t => eq_dec_to_eqb__sound (typeIn_dec t).
   Definition some_typeIn_eqb_eq := eq_dec_to_eqb__sound (some_typeIn_dec).
   Definition Kind_eqb_eq := eq_dec_to_eqb__sound Kind_dec.
@@ -243,8 +266,7 @@ Create HintDb reflection.
   recursivity_eqb_eq
   DefaultUni_eqb_eq
   uniType_eqb_eq
-  valueOf_eqb_eq
-  some_valueOf_eqb_eq
+  constant_eqb_eq
   typeIn_eqb_eq
   some_typeIn_eqb_eq
   Kind_eqb_eq
@@ -264,8 +286,7 @@ Create HintDb reflection.
   recursivity_eqb_eq
   DefaultUni_eqb_eq
   uniType_eqb_eq
-  valueOf_eqb_eq
-  some_valueOf_eqb_eq
+  constant_eqb_eq
   typeIn_eqb_eq
   some_typeIn_eqb_eq
   Kind_eqb_eq
