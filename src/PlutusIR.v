@@ -92,20 +92,6 @@ Inductive DefaultUni : Type :=
 
 QCDerive EnumSized for DefaultUni.
 
-(** Existentials as a datype *)
-Inductive some {f : DefaultUni -> Type} :=
-  Some' : forall {u : DefaultUni}, f u -> some.
-Arguments some _ : clear implicits.
-
-(** Builtin types *)
-Inductive typeIn (u : DefaultUni) :=
-  TypeIn : typeIn u.
-Arguments TypeIn _ : clear implicits.
-
-(* This synonym exists since the Haskell plutus implementation cannot reuse
-   the Some type. In Coq we can. *)
-   Definition SomeTypeIn (ty : DefaultUni) := @Some' typeIn ty (TypeIn ty).
-
 
 Inductive Data :=
   | DataConstr : Z -> list Data -> Data

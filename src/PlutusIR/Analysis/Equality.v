@@ -113,40 +113,6 @@ Proof.
 Qed.
   #[export] Hint Resolve constant_dec : Eqs.
 
-Definition typeIn_dec : forall t, EqDec (typeIn t). solveEq. Defined.
-  #[export] Hint Resolve typeIn_dec : Eqs.
-
-
-(* Somewhat cumbersome, cannot use "decide equality" tactic *)
-Definition some_dec f (dec : forall (t : DefaultUni), EqDec (f t)) :
-  forall (x y : @some f), {x = y} + {x <> y}.
-Proof.
-  intros x y.
-  refine (
-    match x, y with | @Some' _ u  v, @Some' _ u' v' =>
-    match DefaultUni_dec u u' with
-    | left eq   => _
-    | right neq => _
-    end end
-  ).
-  - subst.
-    destruct (dec _ v v').
-    + apply left. congruence.
-    + apply right. intros H.
-      injection H.
-      intro H_sigma_eq.
-      inversion_sigma.
-      (* eq_rect can only be reduced by invoking UIP on H_sigma_eq1 *)
-      assert (H_sigma_eq1 = eq_refl) by apply UIP_refl.
-      subst H_sigma_eq1; simpl in H_sigma_eq2.
-      tauto.
-  - apply right. intros H.
-    inversion H. contradiction.
-Defined.
-
-Definition some_typeIn_dec := @some_dec typeIn typeIn_dec.
-#[export] Hint Resolve some_typeIn_dec : Eqs.
-
 Definition Kind_dec : EqDec kind. solveEq. Defined.
   #[export] Hint Resolve Kind_dec : Eqs.
 
@@ -206,8 +172,6 @@ Section Derived_Eqb.
   Definition DefaultUni_eqb : Eqb DefaultUni := eq_dec_to_eqb DefaultUni_dec.
   Definition uniType_eqb : forall t, Eqb (uniType t) := fun t => eq_dec_to_eqb (uniType_dec t).
   Definition constant_eqb : Eqb constant := eq_dec_to_eqb constant_dec.
-  Definition typeIn_eqb : forall t, Eqb (typeIn t) := fun t => eq_dec_to_eqb (typeIn_dec t).
-  Definition some_typeIn_eqb : Eqb (@some typeIn) := eq_dec_to_eqb (some_typeIn_dec).
   Definition Kind_eqb : Eqb kind := eq_dec_to_eqb Kind_dec.
   Definition Ty_eqb : Eqb ty := eq_dec_to_eqb Ty_dec.
   Definition TVDecl_eqb : Eqb tvdecl := eq_dec_to_eqb TVDecl_dec.
@@ -234,8 +198,6 @@ Section Derived_Eqb.
   Definition DefaultUni_eqb_eq := eq_dec_to_eqb__sound DefaultUni_dec.
   Definition uniType_eqb_eq := fun t => eq_dec_to_eqb__sound (uniType_dec t).
   Definition constant_eqb_eq := eq_dec_to_eqb__sound constant_dec.
-  Definition typeIn_eqb_eq := fun t => eq_dec_to_eqb__sound (typeIn_dec t).
-  Definition some_typeIn_eqb_eq := eq_dec_to_eqb__sound (some_typeIn_dec).
   Definition Kind_eqb_eq := eq_dec_to_eqb__sound Kind_dec.
   Definition Ty_eqb_eq := eq_dec_to_eqb__sound Ty_dec.
   Definition TVDecl_eqb_eq := eq_dec_to_eqb__sound TVDecl_dec.
@@ -267,8 +229,6 @@ Create HintDb reflection.
   DefaultUni_eqb_eq
   uniType_eqb_eq
   constant_eqb_eq
-  typeIn_eqb_eq
-  some_typeIn_eqb_eq
   Kind_eqb_eq
   Ty_eqb_eq
   TVDecl_eqb_eq
@@ -287,8 +247,6 @@ Create HintDb reflection.
   DefaultUni_eqb_eq
   uniType_eqb_eq
   constant_eqb_eq
-  typeIn_eqb_eq
-  some_typeIn_eqb_eq
   Kind_eqb_eq
   Ty_eqb_eq
   TVDecl_eqb_eq
