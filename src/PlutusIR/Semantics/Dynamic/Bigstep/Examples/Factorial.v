@@ -16,19 +16,19 @@ Definition fact_term (n : Z) : term :=
         (VarDecl
           "fact"
           (Ty_Fun
-            (Ty_Builtin (Some' (TypeIn DefaultUniInteger)))
-            (Ty_Builtin (Some' (TypeIn DefaultUniInteger)))
+            (Ty_Builtin DefaultUniInteger)
+            (Ty_Builtin DefaultUniInteger)
           )
         )
         (LamAbs
           "x"
-          (Ty_Builtin (Some' (TypeIn DefaultUniInteger)))
+          (Ty_Builtin DefaultUniInteger)
           (Apply
             (Apply
               (Apply
                 (TyInst
                   (Builtin IfThenElse)
-                  (Ty_Builtin (Some' (TypeIn DefaultUniInteger)))
+                  (Ty_Builtin DefaultUniInteger)
                 )
                 (Apply
                   (Apply

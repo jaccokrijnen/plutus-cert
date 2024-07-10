@@ -104,7 +104,7 @@ Arguments TypeIn _ : clear implicits.
 
 (* This synonym exists since the Haskell plutus implementation cannot reuse
    the Some type. In Coq we can. *)
-Definition SomeTypeIn (ty : DefaultUni) := @Some' typeIn ty (TypeIn ty).
+   Definition SomeTypeIn (ty : DefaultUni) := @Some' typeIn ty (TypeIn ty).
 
 
 Inductive Data :=
@@ -273,7 +273,7 @@ Inductive ty :=
   | Ty_Fun : ty -> ty -> ty
   | Ty_IFix : ty -> ty -> ty
   | Ty_Forall : binderTyname -> kind -> ty -> ty
-  | Ty_Builtin : @some typeIn -> ty
+  | Ty_Builtin : DefaultUni -> ty
   | Ty_Lam : binderTyname -> kind -> ty -> ty
   | Ty_App : ty -> ty -> ty
   (* | Ty_SOP : list (list ty) -> ty *)
@@ -561,7 +561,7 @@ Section ty_fold.
     (f_Fun : R -> R -> R)
     (f_IFix : R -> R -> R)
     (f_Forall :  binderName -> kind -> R -> R)
-    (f_Builtin : @some typeIn -> R)
+    (f_Builtin : DefaultUni -> R)
     (f_Lam :  binderName -> kind -> R -> R)
     (f_App : R -> R -> R)
     (f_SOP_prod_cons : R -> R -> R)
@@ -601,9 +601,9 @@ Section ty_fold.
     | Ty_Var v        => name -> R
     | Ty_Fun t1 t2    => R -> R -> R
     | Ty_IFix t1 t2   => R -> R -> R
-    | Ty_Forall v k t =>  binderName -> kind -> R -> R
-    | Ty_Builtin b    => @some typeIn -> R
-    | Ty_Lam v k t    =>  binderName -> kind -> R -> R
+    | Ty_Forall v k t => binderName -> kind -> R -> R
+    | Ty_Builtin b    => DefaultUni -> R
+    | Ty_Lam v k t    => binderName -> kind -> R -> R
     | Ty_App t1 t2    => R -> R -> R
     (* | Ty_SOP tys      => (R -> R -> R * R * R -> R -> R * R) *)
     end.

@@ -31,7 +31,7 @@ Definition Name (s : string) (n : nat) := string_of_nat n.
 Definition TyName (s : string) := s.
 Definition Unique (n : nat) := n.
 
-Definition SomeTypeIn u := Some' (TypeIn u).
+Definition SomeTypeIn (T : DefaultUni) := T.
 Definition DefaultUniData := DefaultUniBool. (* update DefaultUni *)
 
 
@@ -105,11 +105,11 @@ Section Computing_asts.
          (DatatypeBind
             (Datatype (TyVarDecl "158100" Kind_Base) nil "158103"
                (VarDecl "158101"
-                  (Ty_Fun (Ty_Builtin (Some' (TypeIn DefaultUniByteString)))
+                  (Ty_Fun (Ty_Builtin DefaultUniByteString)
                      (Ty_Var "158100"))
                 :: VarDecl "158102"
                      (Ty_Fun
-                        (Ty_Builtin (Some' (TypeIn DefaultUniByteString)))
+                        (Ty_Builtin DefaultUniByteString)
                         (Ty_Var "158100")) :: nil))
           :: DatatypeBind
                (Datatype (TyVarDecl "158104" Kind_Base) nil "158107"
@@ -117,12 +117,12 @@ Section Computing_asts.
                      (Ty_Fun (Ty_Var "158100") (Ty_Var "158104"))
                    :: VarDecl "158106"
                         (Ty_Fun
-                           (Ty_Builtin (Some' (TypeIn DefaultUniInteger)))
+                           (Ty_Builtin DefaultUniInteger)
                            (Ty_Fun
-                              (Ty_Builtin (Some' (TypeIn DefaultUniInteger)))
+                              (Ty_Builtin DefaultUniInteger)
                               (Ty_Fun
                                  (Ty_Builtin
-                                    (Some' (TypeIn DefaultUniInteger)))
+                                    DefaultUniInteger)
                                  (Ty_Var "158104")))) :: nil))
              :: DatatypeBind
                   (Datatype
@@ -147,13 +147,12 @@ Section Computing_asts.
                             :: VarDecl "158097"
                                  (Ty_Fun
                                     (Ty_Builtin
-                                       (Some' (TypeIn DefaultUniBool)))
+                                       DefaultUniBool)
                                     (Ty_Var "158095"))
                                :: VarDecl "158098"
                                     (Ty_Fun
                                        (Ty_Builtin
-                                          (Some'
-                                             (TypeIn DefaultUniByteString)))
+                                          DefaultUniByteString)
                                        (Ty_Var "158095")) :: nil))
                       :: DatatypeBind
                            (Datatype

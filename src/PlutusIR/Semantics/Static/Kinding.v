@@ -56,9 +56,9 @@ Inductive has_kind : list (string * kind) -> ty -> kind -> Prop :=
   | K_Forall : forall Δ X K T,
       ((X, K) :: Δ) |-* T : Kind_Base ->
       Δ |-* (Ty_Forall X K T) : Kind_Base
-  | K_Builtin : forall Δ u,
-      |-*_uni u : Kind_Base ->
-      Δ |-* (Ty_Builtin (Some' (TypeIn u))) : Kind_Base
+  | K_Builtin : forall Δ T,
+      |-*_uni T : Kind_Base ->
+      Δ |-* (Ty_Builtin T) : Kind_Base
   | K_Lam : forall Δ X K1 T K2,
       ((X, K1) :: Δ) |-* T : K2 ->
       Δ |-* (Ty_Lam X K1 T) : (Kind_Arrow K1 K2)

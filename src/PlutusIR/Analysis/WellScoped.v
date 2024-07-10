@@ -28,8 +28,8 @@ Inductive well_scoped_Ty (Δ : ctx) : ty -> Prop :=
   | WST_Forall : forall X K T,
       (X :: Δ) |-* T ->
       Δ |-* (Ty_Forall X K T)
-  | WST_Builtin : forall u (x : typeIn u),
-      Δ |-* (Ty_Builtin (Some' x))
+  | WST_Builtin : forall T,
+      Δ |-* (Ty_Builtin T)
   | WST_Lam : forall X K1 T,
       (X :: Δ) |-* T ->
       Δ |-* (Ty_Lam X K1 T)
