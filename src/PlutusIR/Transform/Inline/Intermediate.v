@@ -53,7 +53,7 @@ Section InlineOnly.
    *)
 
   Definition inline_uncond_ty (Δ : list (tyname * ty)) : ty -> ty :=
-    ty_endo
+    ty_transform
       (fun τ => match τ with
         | Ty_Var _ => Some (fun v => match lookup' String.eqb v Δ with | Some t => t | None => Ty_Var v end)
         | _        => None

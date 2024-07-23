@@ -2,6 +2,7 @@ Require Import PlutusCert.PlutusIR.
 Import ZArith.BinInt.
 Import Coq.Lists.List.
 Import Coq.Strings.String.
+Import Coq.Strings.Byte.
 Import Ascii.
 Require Import Coq.Strings.BinaryString.
 From Equations Require Import Equations.
@@ -50,7 +51,7 @@ Definition arity (df : DefaultFun) : nat :=
 
 Definition constInt (a : Z) : term := (Constant (ValueOf DefaultUniInteger a)).
 Definition constBool (a : bool) : term := Constant (ValueOf DefaultUniBool a).
-Definition constBS (a : string) : term := Constant (ValueOf DefaultUniByteString a).
+Definition constBS (a : list byte) : term := Constant (ValueOf DefaultUniByteString a).
 (* Definition constChar (a : ascii) : term := Constant (Some' (ValueOf DefaultUniChar a)). *)
 Definition constString (a : string) : term := Constant (ValueOf DefaultUniString a).
 Definition constUnit (a : unit) : term := Constant (ValueOf DefaultUniUnit a).

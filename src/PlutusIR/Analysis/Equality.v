@@ -2,6 +2,7 @@ Require Import Coq.Strings.String.
 Require Import Coq.Arith.PeanoNat.
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.Bool.BoolEq.
+Require Import Coq.Strings.Byte.
 Require Import Coq.Lists.List.
 Require Import Ascii.
 Require Import Eqdep.
@@ -18,7 +19,7 @@ Definition Z_eq_dec := Z.eq_dec.
 Create HintDb Eqs.
 #[export] Hint Resolve
   Nat.eq_dec Z.eq_dec ascii_dec bool_dec string_dec list_eq_dec
-  Pos.eq_dec
+  Pos.eq_dec Byte.byte_eq_dec
   : Eqs
 .
 
@@ -73,7 +74,8 @@ Definition uniType_dec : forall (t : DefaultUni), EqDec (uniType t).
   intro t.
   apply uniType_option_rect.
   all: intros; try solveEq.
-  - rewrite e1 in *. clear e1.
+  -
+    rewrite e1 in *. clear e1.
     intuition.
   - rewrite e2 in *.
     rewrite e3 in *.
