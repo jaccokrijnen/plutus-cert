@@ -92,22 +92,11 @@ Fixpoint kind_check_default_uni (d : DefaultUni) : option kind :=
 
 Lemma kind_checking_default_uni_sound : forall d k,
     kind_check_default_uni d = Some k -> |-*_uni d : k.
-Proof.
+Proof with eauto.
   intros d k H. generalize dependent k.
-  induction d; intros k H; inversion H.
-  - apply K_DefaultUniInteger.
-  - apply K_DefaultUniByteString.
-  - apply K_DefaultUniString.
-  - apply K_DefaultUniUnit.
-  - apply K_DefaultUniBool.
-  (* TODO: has_kind_uni does not have same order of constructors as DefaultUni, really confusing*)
-  - apply K_DefaultUniProtoList.
-  - apply K_DefaultUniProtoPair.
-  - apply K_DefaultUniData.
-  - apply K_DefaultUniBLS12_381_G1_Element.
-  - apply K_DefaultUniBLS12_381_G2_Element.
-  - apply K_DefaultUniBLS12_381_MlResult.
-  - destruct (kind_check_default_uni d1) eqn:Hd1; [|discriminate].
+  induction d; intros k H; inversion H; try constructor.
+  - (* DefaultUniApply*) 
+    destruct (kind_check_default_uni d1) eqn:Hd1; [|discriminate].
     destruct k0 eqn:Hk0; [discriminate|].
     destruct (kind_check_default_uni d2) eqn:Hd2; [|discriminate].
     destruct (eqb_kind k1 k1_1) eqn:Heqb; [|discriminate].
@@ -126,22 +115,12 @@ Lemma kind_checking_default_uni_complete : forall d k,
     |-*_uni d : k -> kind_check_default_uni d = Some k.
 Proof.
   intros d k H.
-  induction H; simpl.
-  - reflexivity.
-  - reflexivity.
-  - reflexivity.
-  - reflexivity.
-  - reflexivity.
-  - reflexivity.
-  - reflexivity.
-  - reflexivity.
-  - reflexivity.
-  - rewrite -> IHhas_kind_uni1.
+  induction H; simpl; try reflexivity.
+  - (* DefaultUniApply *) 
+    rewrite -> IHhas_kind_uni1.
     rewrite -> IHhas_kind_uni2.
     rewrite eqb_kind_refl.
     reflexivity.
-  - reflexivity.
-  - reflexivity.
 Qed.
 
 (** Kinding of types *)
@@ -198,7 +177,7 @@ Fixpoint kind_check (Delta : list (binderTyname * kind)) (ty : ty) : (option kin
         end
     | Ty_Builtin d =>
         kind_check_default_uni d
-    | Ty_Lam X K1 T => (* Note: Copied from Software Foundations *)
+    | Ty_Lam X K1 T => 
         match kind_check ((X, K1) :: Delta) T with
         | Some K2 => Some (Kind_Arrow K1 K2)
         | _ => None
@@ -243,7 +222,7 @@ Proof.
         destruct (kind_check Delta ty2); [|discriminate].
         destruct k; [|discriminate].
         reflexivity.
-    - (* Ty_IFix *) (* TODO: How do I make ty1 and ty2 resemble F and T as in the formualtion of has_kind?*)
+    - (* Ty_IFix *) 
       assert (kind = Kind_Base) as Hkind_base.
       {
         (* TODO: Code duplication with after apply IHty1*)
@@ -302,7 +281,6 @@ Proof.
       apply K_Builtin.
       assumption.
     - (* Ty_Lam *)
-      (* prove that kind = Kind_Arrow _ _*)
       destruct (kind_check ((b, k) :: Delta) ty) eqn:Hkc; [|discriminate].
       inversion H0.
       apply K_Lam. (* Apply has_kind structure*)
