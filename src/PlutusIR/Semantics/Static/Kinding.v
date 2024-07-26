@@ -167,9 +167,9 @@ Inductive has_kind : list (binderTyname * kind) -> ty -> kind -> Prop :=
   | K_Forall : forall Δ X K T,
       ((X, K) :: Δ) |-* T : Kind_Base ->
       Δ |-* (Ty_Forall X K T) : Kind_Base
-  | K_Builtin : forall Δ u K,
-      |-*_uni u : K ->
-      Δ |-* (Ty_Builtin (Some' (TypeIn u))) : K
+  | K_Builtin : forall Δ T K,
+      |-*_uni T : K ->
+      Δ |-* (Ty_Builtin T) : K
   | K_Lam : forall Δ X K1 T K2,
       ((X, K1) :: Δ) |-* T : K2 ->
       Δ |-* (Ty_Lam X K1 T) : (Kind_Arrow K1 K2)
