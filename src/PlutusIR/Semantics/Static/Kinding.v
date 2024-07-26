@@ -143,12 +143,6 @@ Proof.
   - reflexivity.
   - reflexivity.
 Qed.
-      
-
-Definition extractDefaultUni {d : DefaultUni} (t : typeIn d) : DefaultUni :=
-  match t with
-  | TypeIn _ => d
-  end.
 
 (** Kinding of types *)
 Reserved Notation "Δ '|-*' T ':' K" (at level 40, T at level 0, K at level 0).
@@ -202,8 +196,7 @@ Fixpoint kind_check (Delta : list (binderTyname * kind)) (ty : ty) : (option kin
         | Some Kind_Base => Some Kind_Base
         | _ => None
         end
-    | Ty_Builtin (Some' typeIn) =>
-        let d := extractDefaultUni typeIn in
+    | Ty_Builtin d =>
         kind_check_default_uni d
     | Ty_Lam X K1 T => (* Note: Copied from Software Foundations *)
         match kind_check ((X, K1) :: Delta) T with
@@ -305,12 +298,8 @@ Proof.
       rewrite -> H0.
       reflexivity.
     - (* Ty_Builtin *)
-      destruct s as [u typeIn] eqn:Hs.
-      rewrite -> typeIn.
-      apply K_Builtin.
-      rewrite typeIn in H0.
-      simpl in H0.
       apply kind_checking_default_uni_sound in H0.
+      apply K_Builtin.
       assumption.
     - (* Ty_Lam *)
       (* prove that kind = Kind_Arrow _ _*)
