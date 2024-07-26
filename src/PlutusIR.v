@@ -154,7 +154,7 @@ Inductive constant :=
 
 (** Built-in functions*)
 Inductive DefaultFun :=
-    (* Integers *)
+
     | AddInteger
     | SubtractInteger
     | MultiplyInteger

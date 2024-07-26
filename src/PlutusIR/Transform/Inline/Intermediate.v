@@ -183,7 +183,7 @@ Section InlineOnly.
                 | _ => false
                 end) bs_post
         in match b_post with
-          | Just (TermBind _ _ t') =>
+          | Some (TermBind _ _ t') =>
               TermBind str (VarDecl v ty) <$> inlined_intermediate elims t t'
           | _ => None
           end

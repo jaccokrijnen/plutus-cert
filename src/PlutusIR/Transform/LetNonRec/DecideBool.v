@@ -20,7 +20,7 @@ From PlutusCert Require Import
 Import ListNotations.
 
 (*
-   Returns `Just t'` if bindings were desugared correctly, where t' is the rest
+   Returns `Some t'` if bindings were desugared correctly, where t' is the rest
    of the desugared term.
 
    Note that dec_Term has to be passed manually. In this form, the
@@ -43,7 +43,7 @@ Section Bindings.
 
   Fixpoint bindings_to_apps (bs : list binding) : option (list (term -> term)) :=
     match bs with
-      | []        => Just []
+      | []        => Some []
       | TermBind Strict (VarDecl v ty) rhs :: bs =>
           option_map
             (cons (fun t => Apply (LamAbs v ty t) rhs))
@@ -53,7 +53,7 @@ Section Bindings.
 
   Fixpoint dec_Bindings' (bs : list binding) (t : term) {struct bs} : option term :=
     match bs with
-      | nil       => Just t
+      | nil       => Some t
       | cons b bs => match b, t with
         | TermBind Strict (VarDecl v ty) rhs, Apply (LamAbs v' ty' body') rhs' =>
           if (String.eqb v v' && Ty_eqb ty ty' && dec_Term rhs rhs')
@@ -73,7 +73,7 @@ Fixpoint dec_Term (x y : term) {struct x} : bool := match x, y with
   (* non-recursive bindings should be desugared *)
   | Let NonRec bs body, t =>
        match dec_Bindings' dec_Term bs t with
-        | Just body' => dec_Term body body'
+        | Some body' => dec_Term body body'
         | Nothing    => false
        end
 
