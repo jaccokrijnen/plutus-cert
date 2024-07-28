@@ -28,9 +28,9 @@ Module DumpNotations.
 
   Definition KindArrow := const Kind_Arrow.
 
-  Definition Name (s : string) (n : nat) := string_of_nat n.
+  Definition Name (s : string) (n : Z) := Show.show_Z n.
   Definition TyName (s : string) := s.
-  Definition Unique (n : nat) := n.
+  Definition Unique (n : Z) := n.
 
   Definition SomeTypeIn (T : DefaultUni) := T.
   Definition DefaultUniData := DefaultUniBool. (* update DefaultUni *)
@@ -97,7 +97,7 @@ End DumpNotations.
 
 
 
-
+(*
 Section Parsing_examples.
 
   Import DumpNotations.
@@ -219,3 +219,4 @@ Section Computing_asts.
   *)
 
 End Computing_asts.
+  *)
