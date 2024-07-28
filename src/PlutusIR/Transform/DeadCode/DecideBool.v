@@ -14,7 +14,7 @@ From PlutusCert Require Import
   PlutusIR
   PlutusIR.Analysis.Equality
   PlutusIR.Transform.Compat
-  DeadCode
+  Transform.DeadCode
   Compat
 .
 
