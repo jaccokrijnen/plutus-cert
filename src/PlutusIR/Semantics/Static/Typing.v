@@ -13,11 +13,11 @@ Import Coq.Strings.String.
 Local Open Scope string_scope.
 
 (* Common built-in types *)
-Definition Ty_Int := Ty_Builtin (Some' (TypeIn DefaultUniInteger)).
-Definition Ty_Bool := Ty_Builtin (Some' (TypeIn DefaultUniBool)).
-Definition Ty_String := Ty_Builtin (Some' (TypeIn DefaultUniString)).
-Definition Ty_Unit := Ty_Builtin (Some' (TypeIn DefaultUniUnit)).
-Definition Ty_BS := Ty_Builtin (Some' (TypeIn DefaultUniByteString)).
+Definition Ty_Int := Ty_Builtin DefaultUniInteger.
+Definition Ty_Bool := Ty_Builtin DefaultUniBool.
+Definition Ty_String := Ty_Builtin DefaultUniString.
+Definition Ty_Unit := Ty_Builtin DefaultUniUnit.
+Definition Ty_BS := Ty_Builtin DefaultUniByteString.
 
 Definition Ty_BinOp t := Ty_Fun t (Ty_Fun t t).
 Definition Ty_BinPred t := Ty_Fun t (Ty_Fun t Ty_Bool).
@@ -205,8 +205,8 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       normalise (unwrapIFix Fn K Tn) T0n ->
       Δ ,, Γ |-+ (Unwrap M) : T0n
   (* Additional constructs *)
-  | T_Constant : forall Δ Γ u a,
-      Δ ,, Γ |-+ (Constant (Some' (ValueOf u a))) : (Ty_Builtin (Some' (TypeIn u)))
+  | T_Constant : forall Δ Γ T a,
+      Δ ,, Γ |-+ (Constant (ValueOf T a)) : (Ty_Builtin T)
   | T_Builtin : forall Δ Γ f T Tn,
       T = lookupBuiltinTy f ->
       normalise T Tn ->
@@ -295,131 +295,6 @@ Combined Scheme has_type__multind from
   bindings_well_formed_nonrec__ind,
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
-
-(* TODO: All false cases todo*)
-(* TODO: in Normalisation.v we also have Inductive EqT, maybe that's enough*)
-Fixpoint eqb_ty (T1 T2:ty) : bool :=
-  match T1,T2 with
-  | Ty_Var x, Ty_Var y => false
-  | Ty_Fun T11 T12, Ty_Fun T21 T22 =>
-    andb (eqb_ty T11 T21) (eqb_ty T12 T22)
-  | Ty_IFix _ _, Ty_IFix _ _ => false
-  | Ty_Forall _ _ _, Ty_Forall _ _ _ => false
-  | Ty_Builtin _, Ty_Builtin _ => false
-  | Ty_Lam _ _ _, Ty_Lam _ _ _ => false
-  | Ty_App _ _, Ty_App _ _ => false
-  | _, _ => false
-  end.
-
-Lemma eqb_ty_refl : forall ty,
-  eqb_ty ty ty = true.
-Proof.
-Admitted.
-
-Lemma eqb_ty_eq : forall T1 T2,
-  eqb_ty T1 T2 = true -> T1 = T2.
-Proof.
-Admitted.
-
-Fixpoint type_check (Delta : list (string * kind)) (Gamma : list (string * PlutusIR.ty)) (term : term) : (option PlutusIR.ty) :=
-  match term with
-  | Let _ _ _ => None
-  | Var x =>
-    match lookup x Gamma with
-    | Some T => normalise_check T
-    | None => None
-    end
-  | TyAbs _ _ _ => None
-  | LamAbs _ _ _ => None
-  | Apply t1 t2 =>
-    match (type_check Delta Gamma t1, type_check Delta Gamma t2) with
-    | (Some (Ty_Fun T11 T2), Some T12) =>
-        if eqb_ty T11 T12 then Some T2 else None
-    | (_, _) => None
-    end
-  | Constant _ => None
-  | Builtin _ => None
-  | TyInst _ _ => None
-  | Error _ => None
-  | IWrap _ _ _ => None
-  | Unwrap _ => None
-  | Constr _ _ => None
-  | Case _ _ => None
-end.
-
-Theorem type_checking_sound : forall Delta Gamma term ty,
-  type_check Delta Gamma term = Some ty -> has_type Delta Gamma term ty.
-Proof.
-  intros Delta Gamma term ty.
-  induction term; intros Htc.
-  - (* Let *) 
-    shelve.
-  - (* Var *) 
-    simpl in Htc.
-    destruct (lookup n Gamma) eqn:H; [|discriminate].
-    apply normalise_checking_sound in Htc.
-    apply T_Var with (T := t); assumption.
-  - (* TyAbs *) 
-    shelve.
-  - (* LamAbs *) 
-    shelve.
-  - (* Apply *) 
-    shelve.
-  - (* Constant *)
-    shelve.
-  - (* Builtin *)
-    shelve.
-  - (* TyInst *)
-    shelve.
-  - (* Error *)
-    shelve.
-  - (* IWrap *)
-    shelve.
-  - (* Unwrap *)
-    shelve.
-  - (* Constr *)
-    shelve.
-  - (* Case *)
-    shelve.
-Admitted.
-
-
-
-Theorem type_checking_complete : forall Delta Gamma term ty,
-  has_type Delta Gamma term ty -> type_check Delta Gamma term = Some ty.
-Proof.
-  intros Delta Gamma term ty Hty.
-  induction Hty; simpl.
-  - (* T_Var *) 
-    rewrite -> H.
-    apply normalise_checking_complete in H0.
-    apply H0.
-  - (* T_LamAbs *)
-    shelve.
-  - (* T_Apply *)
-    rewrite -> IHHty1.
-    rewrite -> IHHty2.
-    rewrite -> eqb_ty_refl.
-    reflexivity.
-  - (* T_TyAbs *)
-    shelve.
-  - (* T_TyInst *)
-    shelve.
-  - (* T_IWrap *)
-    shelve.
-  - (* T_Unwrap *)
-    shelve.
-  - (* T_Constant *)
-    shelve.
-  - (* T_Builtin *)
-    shelve.
-  - (* T_Error *)
-    shelve.
-  - (* T_Let *)
-    shelve.
-  - (* T_LetRec *)
-    shelve.
-Abort.
 
 Definition well_typed t := exists T, [] ,, [] |-+ t : T.
 
@@ -534,5 +409,4 @@ Lemma context_has_type__apply : forall C t Δ₁ Γ₁ Δ Γ T T₁,
   (Δ₁ ,, Γ₁ |-C C : (Δ ,, Γ ▷ T) ↝ T₁) ->
   (Δ ,, Γ |-+ t : T) ->
   (Δ₁ ,, Γ₁ |-+ (context_apply C t) : T₁).
-Proof.
 Admitted.
