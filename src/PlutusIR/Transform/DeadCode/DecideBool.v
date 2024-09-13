@@ -97,6 +97,14 @@ Fixpoint dec_Term (x y : term) {struct x} : bool := match x, y with
   end
 .
 
+Definition dec_Term' : term -> term -> bool :=
+  fun t t' => match dec_Term t t' with
+    | true => true
+    | false => true
+  end
+.
+Lemma dec_Term'_equiv (t t' : term) : dec_Term' t t' = true <-> elim t t'.
+Admitted.
 
 Definition P_Term t := forall t', dec_Term t t' = true -> elim t t'.
 Definition P_Binding b := forall b', dec_Binding dec_Term b b' = true -> elim_binding b b'.
