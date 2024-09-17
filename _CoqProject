@@ -88,12 +88,12 @@ src/PlutusIR/Semantics/Static/Normalisation.v
 src/PlutusIR/Semantics/Static/normaliser/named_DB_iso.v
 src/PlutusIR/Semantics/Static/normaliser/STLC_DB_typing.v
 src/PlutusIR/Semantics/Static/normaliser/STLC_named_typing.v
-src/PlutusIR/Semantics/Static/normaliser/SN_STLC_DB_nd.v
 src/PlutusIR/Semantics/Static/normaliser/STLC_DB.v
 src/PlutusIR/Semantics/Static/normaliser/Normalisation_STLC_DB.v
 src/PlutusIR/Semantics/Static/normaliser/STLC_named.v
 src/PlutusIR/Semantics/Static/normaliser/Normalisation_STLC_named.v
 src/PlutusIR/Semantics/Static/normaliser/Normalizer_STLC_DB.v
+src/PlutusIR/Semantics/Static/normaliser/Normalizer_STLC_DB2.v
 src/PlutusIR/Semantics/Static/normaliser/Normalizer_STLC_named.v
 src/PlutusIR/Semantics/Static/normaliser/Normalisation_STLC_DB_sound.v
 src/PlutusIR/Semantics/Static/normaliser/Normalisation_STLC_named_sound.v

@@ -1,7 +1,7 @@
 From PlutusCert Require Import Normalisation_STLC_DB.
 From PlutusCert Require Import Normalizer_STLC_DB.
 From PlutusCert Require Import STLC_DB_typing.
-From PlutusCert Require Import SN_STLC_DB_nd.
+From PlutusCert Require Import SN_F.
 
 Require Import Coq.Lists.List.
 Import ListNotations.

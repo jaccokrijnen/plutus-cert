@@ -112,4 +112,4 @@ Proof.
     [ lia
     || replace T' with (rename Y Y' T); eauto; rewrite <- rename_preserves_size; eauto
     ].
-Qed.
+Defined.

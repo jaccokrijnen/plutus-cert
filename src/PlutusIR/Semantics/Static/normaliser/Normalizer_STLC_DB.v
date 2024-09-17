@@ -1,6 +1,7 @@
 From PlutusCert Require Import STLC_DB.
 From PlutusCert Require Import Normalisation_STLC_DB.
-From PlutusCert Require Import SN_STLC_DB_nd.
+From PlutusCert Require Import SN_F.
+From PlutusCert Require Import ARS.
 
 (* Monad maybe*)
 (* Define the bind function for option type *)
@@ -13,20 +14,7 @@ Definition bind {A B : Type} (xx : option A) (f : A -> option B) : option B :=
 (* Define an infix operator for bind *)
 Infix ">>=" := bind (at level 50, left associativity).
 
-(* Inductive step : term -> term -> Prop :=
-    | step_beta (A : type) (s t : term) :
-        normal_Ty s ->
-        normal_Ty t ->
-        step (tmapp (tmlam A s) t) s.[t/]
-    | step_appL s1 s2 t :
-        step s1 s2 -> step (tmapp s1 t) (tmapp s2 t)
-    | step_appR s t1 t2 :
-        normal_Ty t1 ->
-        step t1 t2 -> step (tmapp s t1) (tmapp s t2)
-    | step_abs A s1 s2 :
-        step s1 s2 -> step (tmlam A s1) (tmlam A s2). *)
-
-Fixpoint step' (t : term) : option term :=
+Fixpoint step' (t : STLC_DB.term) : option STLC_DB.term :=
     match t with
     | tmvar i => None
     | tmapp s t => 
@@ -43,10 +31,10 @@ Fixpoint step' (t : term) : option term :=
     end.
 
 Lemma step'_implies_step_nd : forall t t',
-  step' t = Some t' -> SN_STLC_DB_nd.step_nd t t'.
+  step' t = Some t' -> SN_F.step t t'.
 Proof. Admitted.
 
-Definition step_with_proof (t : term) : option {t' : term | SN_STLC_DB_nd.step_nd t t'} :=
+Definition step_with_proof (t : term) : option {t' : term | SN_F.step t t'} :=
   match step' t with
   | None => fun _ => None
   | Some t' => fun Heq => (* Doing this function syntax thing to be able to use the equality hypothesis *)
@@ -54,11 +42,11 @@ Definition step_with_proof (t : term) : option {t' : term | SN_STLC_DB_nd.step_n
       Some (exist _ t' H_step)
   end eq_refl.
 
-Fixpoint normalizer' (t : term) (H_sn : SN t) : (forall t, option {t' | SN_STLC_DB_nd.step_nd t t'}) -> term :=
+Fixpoint normalizer' (t : term) (H_sn : SN t) : (forall t, option {t' | SN_F.step t t'}) -> term :=
     fun stepper => match stepper t with
     | None => t
-    | Some (exist _ t' H_step) => match H_sn with
-        | SNI _ f => normalizer' t' (f _ H_step) stepper
+    | Some (exist t' H_step) => match H_sn with
+        | SNI f => normalizer' t' (f t' H_step) stepper
         end
 end.
 

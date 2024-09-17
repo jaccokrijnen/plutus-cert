@@ -26,6 +26,20 @@ Combined Scheme normal_Ty__multind from
 
 #[export] Hint Constructors normal_Ty neutral_Ty : core.
 
+Fixpoint is_normal (t : term) : bool :=
+  match t with
+  | tmlam X K T => is_normal T
+  | tmvar X => true
+  | tmapp T1 T2 => is_neutral T1 && is_normal T2
+  end
+
+with is_neutral (t : term) : bool :=
+  match t with
+  | tmvar X => true
+  | tmapp T1 T2 => is_neutral T1 && is_normal T2
+  | _ => false
+  end.
+
 (** Type normalisation *)
 Inductive normalise : term -> term -> Prop :=
   | N_BetaReduce : forall bX K T1 T2 T1n T2n T,
