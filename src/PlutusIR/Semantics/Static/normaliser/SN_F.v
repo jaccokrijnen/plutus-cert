@@ -80,9 +80,6 @@ Proof. apply: star_hom => x y. exact: step_subst. Qed.
 Lemma sred_up sigma tau : sred sigma tau -> sred (up sigma) (up tau).
 Proof. move=> A [|n] //=. asimpl. apply/red_subst/A. Qed.
 
-(* Lemma sred_hup sigma tau theta :
-  sred sigma tau -> sred (sigma >>| theta) (tau >>| theta).
-Proof. move=> A n /=. apply/red_hsubst/A. Qed. *)
 
 Global Hint Resolve red_app red_abs sred_up 
 (* sred_hup  *)
