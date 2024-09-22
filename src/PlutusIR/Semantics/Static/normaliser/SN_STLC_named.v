@@ -8,34 +8,48 @@ From PlutusCert Require Import List AutosubstSsr.
 Import ListNotations.
 Local Open Scope string_scope.
 Local Open Scope list_scope.
+Require Import Lia.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 From PlutusCert Require Import STLC_named STLC_named_typing ARS.
 
-(** **** Notations *)
-Fixpoint multiSubstituteT (sigma : list (string * term)) (T : term) : term :=
+(** Capture avoiding parallel multi-substitutions *)
+    (* We always rename in the lambda, which has two advantages:
+      1. We don't have to check if Y a key in sigma, 
+      since Y won't exist in T_body after renaming, 
+      so the subst will be irrelevant. Hence no "dropping"
+      2. We don't have to check if Y in a value of sigma,
+         because we will simply always rename.
+
+      We need a new fresh function, since we have multisubstitutions
+      fresh' sigma T_body := variable not in
+                            - any key of sigma
+                            - any value of sigma
+                            - T_body
+      *)
+Program Fixpoint capms (sigma : list (string * term)) (T : term) {measure (size T)} : term :=
   match T with
   | tmvar Y =>
     match lookup Y sigma with
     | Some t => t
     | None => tmvar Y
     end
-  | tmlam Y K1 T' => 
-  (* TODO: We are currently assuming global uniqueness
-    without this assumption, we need:
-    1. Remove Y from sigma to get sigma'
-    2. Apply sigma' on lambda body*)
-    tmlam Y K1 (multiSubstituteT sigma T')
+  | tmlam Y K1 T_body =>
+      let Y' := fresh' sigma T_body in
+      let T_body' := rename Y Y' T_body in
+      tmlam Y' K1 (capms sigma T_body')
   | tmapp T1 T2 =>
-    tmapp (multiSubstituteT sigma T1) (multiSubstituteT sigma T2)
+    tmapp (capms sigma T1) (capms sigma T2)
   end.
+Admit Obligations.
 
+(** **** Notations *)
 (* Notation for substitution *)
-Notation "'[' x ':=' s ']' t" := (multiSubstituteT [(x, s)] t) (at level 20).
+Notation "'[' x ':=' s ']' t" := (capms [(x, s)] t) (at level 20).
 
-Notation "sigma [[ t ]]" := (multiSubstituteT sigma t) (at level 20).
+Notation "sigma [[ t ]]" := (capms sigma t) (at level 20).
 
 (** **** One-Step Reduction *)
 
@@ -242,40 +256,17 @@ Proof with eauto using L_sn.
     intros HlookupGamma sigma HEL.
     unfold EL in HEL.
     specialize (HEL X A HlookupGamma).
-    unfold multiSubstituteT.
     destruct HEL as [t [HlookupSigma LAt] ].
-    rewrite HlookupSigma.
-    assumption.
+    
+    admit. (* lookup X sigma = Some t means that sigma applied to termvar X gives t, and we know L A t *)
   - move=> t h.
+    specialize (ih ((X, t)::sigma) (extend_EL EL h)).
+
+    (* Get sigma inside of lam*)
+
     apply: beta_expansion...
     
-    fold multiSubstituteT.
-    specialize (ih ((X, t)::sigma) (extend_EL EL h)).
-        (* Note: When sigma goes under the lambda, X is 
-        removed from sigma to yield sigma' 
-        (if we implement capture avoidance)
-        So then when is [X := t] (sigma' [[s]])
-          equal to
-          (X, t)::sigma [[s]]?
-
-          I guess when we implement lookup in substitutions 
-          to start looking from the left,
-          or if we replace :: by an "add" operation which 
-          overrides or shadows.
-          CHECK: lookup is defined this way!
-
-          So we need lemma?:
-          - [X := t] ((drop X sigma) [[s]])) = 
-              ((X, t)::sigma) [[s]]
-
-          But that is not true, since sigma can e.g. have
-          'Y' that maps to 'X'.
-          So this is only part of the problem.
-
-
-        *)
-    admit. (* TODO: Where we always got into trouble*)
-    (* Note: Directly true in the case of global uniqueness*)
+    admit.
   - specialize (ih1 _ HEL). specialize (ih2 _ HEL).
     unfold L in ih1. fold L in ih1. apply ih1. apply ih2.
 Admitted.

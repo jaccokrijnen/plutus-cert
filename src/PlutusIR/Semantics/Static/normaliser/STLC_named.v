@@ -5,6 +5,7 @@ Local Open Scope list_scope.
 
 Require Import Lia.
 
+Require Import Coq.Program.Basics.
 Require Import Coq.Strings.String.
 Local Open Scope string_scope.
 Require Import Coq.Arith.PeanoNat.
@@ -50,6 +51,12 @@ Fixpoint substituteT (X : string) (U T : term) : term :=
   end.
 
 (** * Capture-avoiding substitution of types *)
+
+Definition fresh' (sigma : list (string * term)) (T : term) : string :=
+  "a" (* new*)
+   ++ (String.concat EmptyString (map fst sigma)) (* keys *)
+   ++ (String.concat EmptyString (List.flat_map (compose ftv snd) sigma)) (* values *)
+   ++ (String.concat EmptyString (ftv T)). (* term *)
 
 Definition fresh (X : string) (U T : term) : string :=
   "a" ++ X ++ (String.concat EmptyString (ftv U)) ++ (String.concat EmptyString (ftv T)).
