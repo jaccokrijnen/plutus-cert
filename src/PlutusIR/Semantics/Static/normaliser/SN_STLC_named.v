@@ -32,7 +32,7 @@ From PlutusCert Require Import STLC_named STLC_named_typing ARS.
 Program Fixpoint capms (sigma : list (string * term)) (T : term) {measure (size T)} : term :=
   match T with
   | tmvar Y =>
-    match lookup Y sigma with
+    match lookup Y sigma with (* Always picks leftmost occurence in list *)
     | Some t => t
     | None => tmvar Y
     end
@@ -43,7 +43,17 @@ Program Fixpoint capms (sigma : list (string * term)) (T : term) {measure (size 
   | tmapp T1 T2 =>
     tmapp (capms sigma T1) (capms sigma T2)
   end.
-Admit Obligations.
+Admit Obligations. (* TODO, proof like proof of substituteTCA*)
+
+(* Why can't I prove this?*)
+Lemma capms_app sigma T1 T2 :
+  capms sigma (tmapp T1 T2) = tmapp (capms sigma T1) (capms sigma T2).
+Proof. Admitted.
+
+(* see above... *)
+Lemma capms_var sigma X t:
+  lookup X sigma = Some t -> capms sigma (tmvar X) = t.
+Proof. Admitted.
 
 (** **** Notations *)
 (* Notation for substitution *)
@@ -244,6 +254,12 @@ Proof with eauto.
   - apply: ih2 => //. apply: L_cl_star h _. exact: red_beta.
 Qed.
 
+(* Ask Richard's pen and paper notes*)
+Lemma beta_expansion_subst X t sigma s A B :
+  SN t -> L A (((X, t)::sigma) [[s]]) -> L A (tmapp (sigma [[tmlam X B s]]) t).
+Proof.
+Admitted.
+
 (* The fundamental theorem. *)
 
 (* TODO *)
@@ -257,19 +273,17 @@ Proof with eauto using L_sn.
     unfold EL in HEL.
     specialize (HEL X A HlookupGamma).
     destruct HEL as [t [HlookupSigma LAt] ].
-    
-    admit. (* lookup X sigma = Some t means that sigma applied to termvar X gives t, and we know L A t *)
+    apply capms_var in HlookupSigma.
+    rewrite HlookupSigma.
+    assumption.
   - move=> t h.
     specialize (ih ((X, t)::sigma) (extend_EL EL h)).
-
-    (* Get sigma inside of lam*)
-
-    apply: beta_expansion...
-    
-    admit.
+    apply: beta_expansion_subst...
   - specialize (ih1 _ HEL). specialize (ih2 _ HEL).
-    unfold L in ih1. fold L in ih1. apply ih1. apply ih2.
-Admitted.
+    unfold L in ih1. fold L in ih1. specialize (ih1 (sigma [[t]]) ih2).
+    rewrite capms_app.
+    assumption.
+Qed.
 
 Corollary type_L E s T : has_type E s T -> L T s.
 Proof.
