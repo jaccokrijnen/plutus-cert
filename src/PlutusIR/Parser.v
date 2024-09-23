@@ -5,7 +5,6 @@ From PlutusCert Require Import
 
 From PlutusCert Require Import Equality.
 
-
 Module DumpNotations.
   Require Export Coq.Strings.String.
   Require Export Coq.Strings.Byte.
@@ -18,60 +17,60 @@ Module DumpNotations.
 
   Definition const {A} (x : A) (y : unit) : A := x.
 
-  Definition TyFun := const Ty_Fun.
-  Definition TyApp := const Ty_App.
-  Definition TyVar := const Ty_Var.
-  Definition TyForall := const Ty_Forall.
-  Definition TyBuiltin := const Ty_Builtin.
-  Definition TyLam := const Ty_Lam.
-  Definition TyIFix := const Ty_IFix.
+  Notation TyFun x y z := (Ty_Fun y z).
+  Notation TyApp x y z := (Ty_App y z).
+  Notation TyVar x y := (Ty_Var y).
+  Notation TyForall x y z w := (Ty_Forall y z w).
+  Notation TyBuiltin x y := (Ty_Builtin y).
+  Notation TyLam x y z w := (Ty_Lam y z w).
+  Notation TyIFix x y z := (Ty_IFix y z).
 
-  Definition KindArrow := const Kind_Arrow.
+  Notation KindArrow x y z := (Kind_Arrow y z).
 
-  Definition Name (s : string) (n : Z) := Show.show_Z n.
-  Definition TyName (s : string) := s.
-  Definition Unique (n : Z) := n.
+  Notation Name s n := (Show.show_Z n).
+  Notation TyName s := s.
+  Notation Unique n := n.
 
-  Definition SomeTypeIn (T : DefaultUni) := T.
-  Definition DefaultUniData := DefaultUniBool. (* update DefaultUni *)
+  Notation SomeTypeIn T := T.
+  Notation DefaultUniData := DefaultUniBool. (* update DefaultUni *)
 
 
-  Definition Datatype := const PlutusIR.Datatype.
+  Notation Datatype x y z w v := (PlutusIR.Datatype y  z w v).
 
-  Definition TyVarDecl := const TyVarDecl.
-  Definition VarDecl := const VarDecl.
+  Notation TyVarDecl x y z := (TyVarDecl y z).
+  Notation VarDecl x y z := (VarDecl  y z).
 
-  Definition Let := const Let.
-  Definition Var := const Var.
-  Definition TyAbs := const TyAbs.
-  Definition LamAbs := const LamAbs.
-  Definition Apply := const Apply.
-  Definition Constant := const Constant.
-  Definition Builtin := const Builtin.
-  Definition TyInst := const TyInst.
-  Definition Error := const Error.
-  Definition IWrap := const IWrap.
-  Definition Unwrap := const Unwrap.
-  Definition Constr := const Constr.
-  Definition Case := const Case.
-  Definition TermBind := const TermBind.
-  Definition TypeBind := const TypeBind.
-  Definition DatatypeBind := const DatatypeBind.
+  Notation Let x y z w := (Let y z w).
+  Notation Var x y := (Var y).
+  Notation TyAbs x y z w := (TyAbs y z w).
+  Notation LamAbs x y z w := (LamAbs y z w).
+  Notation Apply x y z := (Apply y z).
+  Notation Constant x y := (Constant y).
+  Notation Builtin x y := (Builtin y).
+  Notation TyInst x y z := (TyInst y z).
+  Notation Error x y := (Error y).
+  Notation IWrap x y z w := (IWrap y z w).
+  Notation Unwrap x y := (Unwrap y).
+  Notation Constr x y z := (Constr y z).
+  Notation Case x y z := (Case y z).
+  Notation TermBind x y z w := (TermBind y z w).
+  Notation TypeBind x y z := (TypeBind y z).
+  Notation DatatypeBind x y := (DatatypeBind y).
 
-  Definition True := true.
-  Definition False := false.
+  Notation True := true.
+  Notation False := false.
 
-  Definition Kind_Base := const Kind_Base.
+  Notation Kind_Base x y := Kind_Base.
   Definition Some {A} (x : A) := x.
 
-  Definition SrcSpans (x : list src_span) := x.
+  Notation SrcSpans x := x.
 
   Definition Word8 (b : byte) := b.
 
   #[global]
   Notation "'Set' x" := (x) (at level 10).
   #[global]
-  Notation "'Type'" := (Kind_Base).
+  Notation "'Type' x" := (PlutusIR.Kind_Base) (at level 10).
 
   (* Set Warnings "-abstract-large-number". *)
 
@@ -93,6 +92,7 @@ Module DumpNotations.
   Set Warnings "-abstract-large-number".
 
 End DumpNotations.
+
 
 
 
