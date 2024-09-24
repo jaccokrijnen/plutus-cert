@@ -52,7 +52,7 @@ Fixpoint substituteT (X : string) (U T : term) : term :=
 
 (** * Capture-avoiding substitution of types *)
 
-Definition fresh' (sigma : list (string * term)) (T : term) : string :=
+Definition fresh2 (sigma : list (string * term)) (T : term) : string :=
   "a" (* new*)
    ++ (String.concat EmptyString (map fst sigma)) (* keys *)
    ++ (String.concat EmptyString (List.flat_map (compose ftv snd) sigma)) (* values *)

@@ -9,6 +9,7 @@ Import ListNotations.
 Local Open Scope string_scope.
 Local Open Scope list_scope.
 Require Import Lia.
+Require Import Coq.Program.Basics.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -37,7 +38,7 @@ Program Fixpoint capms (sigma : list (string * term)) (T : term) {measure (size 
     | None => tmvar Y
     end
   | tmlam Y K1 T_body =>
-      let Y' := fresh' sigma T_body in
+      let Y' := fresh2 sigma T_body in (* TODO: Should this contain a Y as well?*)
       let T_body' := rename Y Y' T_body in
       tmlam Y' K1 (capms sigma T_body')
   | tmapp T1 T2 =>
@@ -45,7 +46,9 @@ Program Fixpoint capms (sigma : list (string * term)) (T : term) {measure (size 
   end.
 Admit Obligations. (* TODO, proof like proof of substituteTCA*)
 
-(* Why can't I prove this?*)
+(* Why can't I prove this? Is it because of Program Fixpoint? 
+  We get a weird capms_func ?
+  What if we use Equations? like in substituteTCA *)
 Lemma capms_app sigma T1 T2 :
   capms sigma (tmapp T1 T2) = tmapp (capms sigma T1) (capms sigma T2).
 Proof. Admitted.
@@ -54,6 +57,12 @@ Proof. Admitted.
 Lemma capms_var sigma X t:
   lookup X sigma = Some t -> capms sigma (tmvar X) = t.
 Proof. Admitted.
+
+Lemma capms_lam X B sigma s :
+  capms sigma (tmlam X B s) = 
+    tmlam (fresh2 sigma s) B (capms sigma (rename X (fresh2 sigma s) s)).
+Proof.
+Admitted.
 
 (** **** Notations *)
 (* Notation for substitution *)
@@ -133,7 +142,7 @@ Proof.
   elim: s sigma tau; intros; asimpl; eauto with red_congr.
 Qed. *)
 
-(* NOTE: A little pen and paper study concludes that this is still true for named. *)
+(* NOTE: A little pen and paper study strongly suggests that this is still true for named. *)
 Lemma red_beta x s t1 t2 : step t1 t2 -> red ([x := t1] s) ([x := t2] s).
 Proof. 
   (* move=> h. apply: red_compat => -[|n]/=; [exact: star1|exact: starR].  *)
@@ -178,6 +187,7 @@ Definition EL (Gamma : list (string * type))
   forall x T, lookup x Gamma = Some T ->
     exists t, lookup x sigma = Some t /\ L T t.
 
+(* is true! *)
 Lemma extend_EL (Gamma : list (string * type)) (sigma : list (string * term)) x T t :
   EL Gamma sigma -> L T t -> EL ((x, T) :: Gamma) ((x, t) :: sigma).
 Proof.
@@ -242,7 +252,6 @@ Proof.
 Qed.
 
 (* Closure under beta expansion. *)
-
 Lemma beta_expansion A B x s t :
   SN t -> L A ([x := t] s) ->
   L A (tmapp (tmlam x B s) t).
@@ -255,21 +264,63 @@ Proof with eauto.
 Qed.
 
 (* Ask Richard's pen and paper notes*)
-Lemma beta_expansion_subst X t sigma s A B :
-  SN t -> L A (((X, t)::sigma) [[s]]) -> L A (tmapp (sigma [[tmlam X B s]]) t).
+Lemma capmsRename x x' t sigma s :
+  ((x', t)::sigma) [[rename x x' s]] = ((x, t)::sigma) [[s]].
+Proof. Admitted.
+
+Definition notKeyIn X (sigma : list (string * term)) : Prop :=
+  ~ exists t, lookup X sigma = Some t.
+
+Definition varNotIn X (sigma : list (string * term)) : Prop :=
+  notKeyIn X sigma /\ (* X does not appear in the free type variables of any of the values  of tau*)
+  ~ In X (List.flat_map (compose ftv snd) sigma).
+
+(* Would also work for bigger substs, but not necessary*)
+Lemma composeCapms X t sigma s :
+  varNotIn X sigma -> [X := t] (sigma [[s]]) = ((X, t) :: sigma) [[s]].
 Proof.
 Admitted.
 
-(* The fundamental theorem. *)
+(* Definitionally, 
+  fresh2 creates a fresh variable that is not in 
+    any of the keys or values of sigma *)
+Lemma freshLemma sigma s :
+  varNotIn (fresh2 sigma s) sigma.
+Proof. Admitted.
 
-(* TODO *)
+Lemma beta_expansion_subst X t sigma s A B :
+  SN t -> L A (((X, t)::sigma) [[s]]) -> L A (tmapp (sigma [[tmlam X B s]]) t).
+Proof.
+  intros snt H.
+  remember (fresh2 sigma s) as X'.
+  assert (L A ([X' := t] (sigma [[(rename X X' s)]])) -> L A (tmapp (tmlam X' B (sigma [[rename X X' s]])) t)).
+  {
+    apply beta_expansion; assumption.
+  }
+
+  (* Now we use H to show the assumption of H0 holds. Then we rewrite the conclusion into the goal*)
+  assert (HsigIntoLam: tmapp (tmlam X' B (sigma [[rename X X' s]])) t = tmapp (sigma [[tmlam X B s]]) t).
+  {
+    rewrite capms_lam.
+    rewrite HeqX'.
+    reflexivity.
+  }
+  rewrite <- HsigIntoLam.
+  apply H0.
+  rewrite composeCapms.
+  - rewrite capmsRename.
+    assumption.
+  - rewrite -> HeqX'.
+    apply freshLemma.
+Qed.
+
+(* The fundamental theorem. *)
 Theorem soundness Gamma s A :
   has_type Gamma s A -> forall sigma,
     EL Gamma sigma -> L A (sigma [[s]]).
 Proof with eauto using L_sn. 
   elim=> {Gamma s A} [Gamma X A |Gamma X A s B _ ih sigma EL|Gamma s t A B _ ih1 _ ih2 sigma HEL].
-  - (* TODO: My own proof, make it more insightful/to the point*)
-    intros HlookupGamma sigma HEL.
+  - intros HlookupGamma sigma HEL.
     unfold EL in HEL.
     specialize (HEL X A HlookupGamma).
     destruct HEL as [t [HlookupSigma LAt] ].
