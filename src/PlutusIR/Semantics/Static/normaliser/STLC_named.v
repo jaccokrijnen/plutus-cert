@@ -96,6 +96,37 @@ Proof.
   - destruct (X =? s); simpl; eauto.
 Qed.
 
+(** Capture avoiding parallel multi-substitutions *)
+    (* We always rename in the lambda, which has two advantages:
+      1. We don't have to check if Y a key in sigma, 
+      since Y won't exist in T_body after renaming, 
+      so the subst will be irrelevant. Hence no "dropping"
+      2. We don't have to check if Y in a value of sigma,
+         because we will simply always rename.
+
+      We need a new fresh function, since we have multisubstitutions
+      fresh' sigma T_body := variable not in
+                            - any key of sigma
+                            - any value of sigma
+                            - T_body
+      *)
+Equations? capms (sigma : list (string * term)) (T : term) : term by wf (size T) :=
+  capms sigma (tmvar Y) := match lookup Y sigma with
+                          | Some t => t
+                          | None => tmvar Y
+                          end;
+  capms sigma (tmlam Y K1 T_body) := let Y' := fresh2 sigma T_body in
+                                    let T_body' := rename Y Y' T_body in
+                                    tmlam Y' K1 (capms sigma T_body');
+  capms sigma (tmapp T1 T2) := tmapp (capms sigma T1) (capms sigma T2).
+Proof.
+  all: try solve
+    [ lia
+    || replace T_body' with (rename Y Y' T_body); eauto; rewrite <- rename_preserves_size; eauto
+    ].
+Defined.
+
+(* Deprecated. Superseded by capms *)
 Equations? substituteTCA (X : string) (U T : term) : term by wf (size T) :=
   substituteTCA X U (tmvar Y) =>
       if X =? Y then U else tmvar Y ;

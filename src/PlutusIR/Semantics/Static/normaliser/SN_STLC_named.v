@@ -16,53 +16,36 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 From PlutusCert Require Import STLC_named STLC_named_typing ARS.
 
-(** Capture avoiding parallel multi-substitutions *)
-    (* We always rename in the lambda, which has two advantages:
-      1. We don't have to check if Y a key in sigma, 
-      since Y won't exist in T_body after renaming, 
-      so the subst will be irrelevant. Hence no "dropping"
-      2. We don't have to check if Y in a value of sigma,
-         because we will simply always rename.
 
-      We need a new fresh function, since we have multisubstitutions
-      fresh' sigma T_body := variable not in
-                            - any key of sigma
-                            - any value of sigma
-                            - T_body
-      *)
-Program Fixpoint capms (sigma : list (string * term)) (T : term) {measure (size T)} : term :=
-  match T with
-  | tmvar Y =>
-    match lookup Y sigma with (* Always picks leftmost occurence in list *)
-    | Some t => t
-    | None => tmvar Y
-    end
-  | tmlam Y K1 T_body =>
-      let Y' := fresh2 sigma T_body in (* TODO: Should this contain a Y as well?*)
-      let T_body' := rename Y Y' T_body in
-      tmlam Y' K1 (capms sigma T_body')
-  | tmapp T1 T2 =>
-    tmapp (capms sigma T1) (capms sigma T2)
-  end.
-Admit Obligations. (* TODO, proof like proof of substituteTCA*)
+(** **** Capms lemmas *)
+(*
 
-(* Why can't I prove this? Is it because of Program Fixpoint? 
-  We get a weird capms_func ?
-  What if we use Equations? like in substituteTCA *)
-Lemma capms_app sigma T1 T2 :
-  capms sigma (tmapp T1 T2) = tmapp (capms sigma T1) (capms sigma T2).
-Proof. Admitted.
-
-(* see above... *)
+TODO: alternatief
+Jacco:
+Het is misschien wat makkelijker om Equations te gebruiken in ipv Program Fixpoint, equations is wat uitgebreider en meer onderhouden (https://github.com/mattam82/Coq-Equations?tab=readme-ov-file#documentation)
+GitHub - mattam82/Coq-Equations: A function definition package for Coq
+A function definition package for Coq. Contribute to mattam82/Coq-Equations development by creating an account on GitHub.
+ 
+die genereert de unfold lemmas sowieso
+ 
+al die lemmas komen dan in een hintdb genaamd capms, die je dan met autorewrite with capms kan gebruiken.
+ 
+dat is dan je alternatief voor wat je bij een niet-recursieve functie zou doen met simpl
+ *)
 Lemma capms_var sigma X t:
   lookup X sigma = Some t -> capms sigma (tmvar X) = t.
-Proof. Admitted.
+Proof. 
+  rewrite capms_equation_1. 
+  by move=> ->. (* TODO: this is copilot stuff, I dont understand that*)
+Qed.
 
 Lemma capms_lam X B sigma s :
   capms sigma (tmlam X B s) = 
     tmlam (fresh2 sigma s) B (capms sigma (rename X (fresh2 sigma s) s)).
 Proof.
-Admitted.
+  rewrite capms_equation_2.
+  reflexivity.
+Qed.
 
 (** **** Notations *)
 (* Notation for substitution *)
@@ -332,7 +315,7 @@ Proof with eauto using L_sn.
     apply: beta_expansion_subst...
   - specialize (ih1 _ HEL). specialize (ih2 _ HEL).
     unfold L in ih1. fold L in ih1. specialize (ih1 (sigma [[t]]) ih2).
-    rewrite capms_app.
+    rewrite capms_equation_3.
     assumption.
 Qed.
 
