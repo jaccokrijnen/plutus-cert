@@ -60,16 +60,18 @@ Fixpoint kind_check_default_uni (d : DefaultUni) : option kind :=
   | DefaultUniProtoList => Some (Kind_Arrow Kind_Base Kind_Base)
   end.
 
+Ltac destruct_match :=
+  match goal with
+  | H : (match ?X with _ => _ end = _ ) |- _ => destruct X eqn:?; try discriminate
+  end.
+
 Lemma kind_checking_default_uni_sound : forall d k,
     kind_check_default_uni d = Some k -> |-*_uni d : k.
 Proof with eauto.
   intros d k H. generalize dependent k.
   induction d; intros k H; inversion H; try constructor.
   - (* DefaultUniApply*) 
-    destruct (kind_check_default_uni d1) eqn:Hd1; [|discriminate].
-    destruct k0 eqn:Hk0; [discriminate|].
-    destruct (kind_check_default_uni d2) eqn:Hd2; [|discriminate].
-    destruct (Kind_eqb k1 k1_1) eqn:Heqb; [|discriminate].
+    repeat destruct_match.
     apply Kind_eqb_eq in Heqb.
     subst.
     apply K_DefaultUniApply with (k := k1_1).
@@ -166,113 +168,60 @@ Proof.
     intros Delta ty. generalize dependent Delta.
     induction ty; intros Delta kind Htc; inversion Htc.
     - (* Var *) 
-      destruct (lookup t Delta) eqn:H; [|discriminate].
       apply K_Var.
-      rewrite H0 in H.
-      apply H.
+      assumption.
     - (* Ty_Fun *) 
-      assert (kind = Kind_Base) as Hkind_base.
-      {
-        destruct (kind_check Delta ty1); [|discriminate].
-        destruct k; [|discriminate].
-        destruct (kind_check Delta ty2); [|discriminate].
-        destruct k; [|discriminate].
-        inversion H0.
-        reflexivity.
-      }
+      repeat destruct_match.
+      inversion H0.
       subst kind.
-      apply K_Fun.
-      + apply IHty1.
-        destruct (kind_check Delta ty1) eqn:Hkc; [|discriminate].
-        destruct k; [|discriminate].
-        reflexivity.        
-      + apply IHty2.
-        destruct (kind_check Delta ty1); [|discriminate].
-        destruct k; [|discriminate].
-        destruct (kind_check Delta ty2); [|discriminate].
-        destruct k; [|discriminate].
-        reflexivity.
+      apply K_Fun; 
+      [apply IHty1| apply IHty2]; 
+      assumption.
     - (* Ty_IFix *) 
-      assert (kind = Kind_Base) as Hkind_base.
-      {
-        (* TODO: Code duplication with after apply IHty1*)
-        destruct (kind_check Delta ty2); [|discriminate].
-        destruct (kind_check Delta ty1); [|discriminate].
-        destruct k0; [discriminate|].
-        destruct k0_1; [discriminate|].
-        destruct k0_1_2; [|discriminate].
-        destruct k0_2; [discriminate|].
-        destruct k0_2_2; [|discriminate].
-        destruct (Kind_eqb k k0_1_1 && Kind_eqb k k0_2_1); [|discriminate].
-        inversion H0.
-        reflexivity.
-      }
+      repeat destruct_match.
+      inversion H0.
       subst kind.
       remember (kind_check Delta ty2) as K.
-      destruct K as [k|]; [|discriminate].
       apply K_IFix with (K := k). 
       + apply IHty2.
-        rewrite HeqK.
-        reflexivity. 
+        rewrite <- HeqK.
+        assumption.
       + apply IHty1.
-        destruct (kind_check Delta ty1); [|discriminate].
-        destruct k0; [discriminate|].
-        destruct k0_1; [discriminate|].
-        destruct k0_1_2; [|discriminate].
-        destruct k0_2; [discriminate|].
-        destruct k0_2_2; [|discriminate].
-        destruct (Kind_eqb k k0_1_1 && Kind_eqb k k0_2_1) eqn:eqbs; [|discriminate].
-        apply andb_true_iff in eqbs.
-        destruct eqbs as [eqb1 eqb2].
+        apply andb_true_iff in Heqb.
+        destruct Heqb as [eqb1 eqb2].
         apply Kind_eqb_eq in eqb1.
         apply Kind_eqb_eq in eqb2.
         subst...
-        reflexivity.
+        assumption.
     - (* Ty_Forall *)
-      assert (kind = Kind_Base) as Hkind_base.
-      {
-        destruct (kind_check ((b, k) :: Delta) ty); [|discriminate].
-        destruct k0; [|discriminate].
-        inversion H0.
-        reflexivity.
-      }
-      rewrite Hkind_base. 
-      (* The result of the K_Forall case matches and thus we can apply it!*)
+      repeat destruct_match.
+      inversion H0.
+      
       apply K_Forall.
-      (* Now this is in the form of our induction hypothesis*)
       apply IHty.
-      (* Final steps, use H0, which derives from the definition of kind_check*)
-      destruct (kind_check ((b, k) :: Delta) ty) as [k0|]; [|discriminate].
-      destruct k0; [|discriminate];
-      rewrite -> H0.
-      reflexivity.
+      assumption.
     - (* Ty_Builtin *)
       apply kind_checking_default_uni_sound in H0.
       apply K_Builtin.
       assumption.
     - (* Ty_Lam *)
-      destruct (kind_check ((b, k) :: Delta) ty) eqn:Hkc; [|discriminate].
+      destruct_match.
       inversion H0.
-      apply K_Lam. (* Apply has_kind structure*)
+      apply K_Lam. 
       apply IHty.
-      apply Hkc. (* Apply kind_check structure*)
+      assumption.
     - (* Ty_App *) 
       remember (kind_check Delta ty2) as K1.
-      destruct K1 as [k1|].
-      + apply K_App with (K1 := k1).  
-        * apply IHty1.
-          destruct (kind_check Delta ty1); [|discriminate].
-          destruct k; [discriminate|].
-          destruct (Kind_eqb k2 k1) eqn:eqb ; [|discriminate].
+      destruct K1 as [k1|]; repeat destruct_match.
+      apply K_App with (K1 := k1).  
+        + apply IHty1.
           inversion H0.
-          apply Kind_eqb_eq in eqb.
-          rewrite eqb.
-          reflexivity.
-        * apply IHty2.
+          apply Kind_eqb_eq in Heqb.
+          subst.
+          assumption.
+        + apply IHty2.
           rewrite HeqK1.
           reflexivity. 
-      + destruct (kind_check Delta ty1); [|discriminate].
-        destruct k; [discriminate|discriminate].
 Qed.
 
 
