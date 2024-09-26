@@ -3,41 +3,11 @@ Require Import PlutusCert.Util.List.
 Require Import Coq.Bool.Bool.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
+Require Import PlutusCert.PlutusIR.Analysis.Equality.
 Require Import List.
 Import ListNotations.
 
 Import PlutusNotations.
-
-Fixpoint eqb_kind (K1 K2:kind) : bool :=
-    match K1,K2 with
-    | Kind_Base, Kind_Base => true
-    | Kind_Arrow K11 K12, Kind_Arrow K21 K22 =>
-        andb (eqb_kind K11 K21) (eqb_kind K12 K22)
-    | _, _ => false
-    end.
-
-(* Based on Software Foundation's eqb_type_refl *)
-Lemma eqb_kind_refl : forall kind,
-    eqb_kind kind kind = true.
-Proof.
-    intros kind.
-    induction kind.
-    - simpl. reflexivity.
-    - simpl. rewrite -> IHkind1. rewrite -> IHkind2. simpl. reflexivity.
-Qed.
-
-(* Based on Software Foundation's eqb_type_eq*)
-Lemma eqb_kind_eq : forall K1 K2,
-    eqb_kind K1 K2 = true -> K1 = K2.
-Proof with auto.
-    intros K1. induction K1; intros K2 HBeq; destruct K2; inversion HBeq.
-    - reflexivity.
-    - rewrite andb_true_iff in H0. 
-      inversion H0 as [Hbeq1 Hbeq2].
-      apply IHK1_1 in Hbeq1.
-      apply IHK1_2 in Hbeq2.
-      subst...
-Qed.
 
 Reserved Notation "'|-*_uni' T ':' K" (at level 40, T at level 0, K at level 0).
 Inductive has_kind_uni : DefaultUni -> kind -> Prop :=
@@ -72,21 +42,21 @@ Inductive has_kind_uni : DefaultUni -> kind -> Prop :=
 
 Fixpoint kind_check_default_uni (d : DefaultUni) : option kind :=
   match d with
-  | DefaultUniInteger => Some Kind_Base
-  | DefaultUniByteString => Some Kind_Base
-  | DefaultUniString => Some Kind_Base
-  | DefaultUniUnit => Some Kind_Base
-  | DefaultUniBool => Some Kind_Base
-  | DefaultUniData => Some Kind_Base
-  | DefaultUniBLS12_381_G1_Element => Some Kind_Base
-  | DefaultUniBLS12_381_G2_Element => Some Kind_Base
+  | DefaultUniInteger 
+  | DefaultUniByteString 
+  | DefaultUniString 
+  | DefaultUniUnit 
+  | DefaultUniBool 
+  | DefaultUniData 
+  | DefaultUniBLS12_381_G1_Element 
+  | DefaultUniBLS12_381_G2_Element 
   | DefaultUniBLS12_381_MlResult => Some Kind_Base
   | DefaultUniApply t t' =>
       match (kind_check_default_uni t, kind_check_default_uni t') with
-      | (Some (Kind_Arrow k k'), Some k'') => if eqb_kind k'' k then Some k' else None
+      | (Some (Kind_Arrow k k'), Some k'') => if Kind_eqb k'' k then Some k' else None
       | _ => None
       end
-  | DefaultUniProtoPair => Some (Kind_Arrow Kind_Base Kind_Base)
+  | DefaultUniProtoPair
   | DefaultUniProtoList => Some (Kind_Arrow Kind_Base Kind_Base)
   end.
 
@@ -99,8 +69,8 @@ Proof with eauto.
     destruct (kind_check_default_uni d1) eqn:Hd1; [|discriminate].
     destruct k0 eqn:Hk0; [discriminate|].
     destruct (kind_check_default_uni d2) eqn:Hd2; [|discriminate].
-    destruct (eqb_kind k1 k1_1) eqn:Heqb; [|discriminate].
-    apply eqb_kind_eq in Heqb.
+    destruct (Kind_eqb k1 k1_1) eqn:Heqb; [|discriminate].
+    apply Kind_eqb_eq in Heqb.
     subst.
     apply K_DefaultUniApply with (k := k1_1).
     + apply IHd1.
@@ -119,7 +89,7 @@ Proof.
   - (* DefaultUniApply *) 
     rewrite -> IHhas_kind_uni1.
     rewrite -> IHhas_kind_uni2.
-    rewrite eqb_kind_refl.
+    rewrite -> Kind_eqb_refl.
     reflexivity.
 Qed.
 
@@ -154,18 +124,18 @@ where "Δ '|-*' T ':' K" := (has_kind Δ T K).
 
 Fixpoint kind_check (Delta : list (binderTyname * kind)) (ty : ty) : (option kind) :=
     match ty with
-    | Ty_Var X => (* Based on Software Foundations and has_kind *)
+    | Ty_Var X => 
         lookup X Delta
-    | Ty_Fun T1 T2 => (* TODO: I don't understand what this datatype does*)
+    | Ty_Fun T1 T2 => 
         match (kind_check Delta T1, kind_check Delta T2) with
         | (Some Kind_Base, Some Kind_Base) => Some Kind_Base
         | (_, _) => None
         end
-    | Ty_IFix F T => (* Note: Purely based on structure of has_kind *)
+    | Ty_IFix F T => 
         match kind_check Delta T with
         | Some K => match kind_check Delta F with
             | Some (Kind_Arrow (Kind_Arrow K1 Kind_Base) (Kind_Arrow K2 Kind_Base)) =>
-                if andb (eqb_kind K K1) (eqb_kind K K2) then Some Kind_Base else None
+                if andb (Kind_eqb K K1) (Kind_eqb K K2) then Some Kind_Base else None
             | _ => None
             end
         | _ => None
@@ -185,7 +155,7 @@ Fixpoint kind_check (Delta : list (binderTyname * kind)) (ty : ty) : (option kin
     | Ty_App T1 T2 => 
         match (kind_check Delta T1, kind_check Delta T2) with
         | (Some (Kind_Arrow K11 K2), Some K12) =>
-            if eqb_kind K11 K12 then Some K2 else None
+            if Kind_eqb K11 K12 then Some K2 else None
         | (_, _) => None
         end
     end.
@@ -233,7 +203,7 @@ Proof.
         destruct k0_1_2; [|discriminate].
         destruct k0_2; [discriminate|].
         destruct k0_2_2; [|discriminate].
-        destruct (eqb_kind k k0_1_1 && eqb_kind k k0_2_1); [|discriminate].
+        destruct (Kind_eqb k k0_1_1 && Kind_eqb k k0_2_1); [|discriminate].
         inversion H0.
         reflexivity.
       }
@@ -251,11 +221,11 @@ Proof.
         destruct k0_1_2; [|discriminate].
         destruct k0_2; [discriminate|].
         destruct k0_2_2; [|discriminate].
-        destruct (eqb_kind k k0_1_1 && eqb_kind k k0_2_1) eqn:eqbs; [|discriminate].
+        destruct (Kind_eqb k k0_1_1 && Kind_eqb k k0_2_1) eqn:eqbs; [|discriminate].
         apply andb_true_iff in eqbs.
         destruct eqbs as [eqb1 eqb2].
-        apply eqb_kind_eq in eqb1.
-        apply eqb_kind_eq in eqb2.
+        apply Kind_eqb_eq in eqb1.
+        apply Kind_eqb_eq in eqb2.
         subst...
         reflexivity.
     - (* Ty_Forall *)
@@ -293,9 +263,9 @@ Proof.
         * apply IHty1.
           destruct (kind_check Delta ty1); [|discriminate].
           destruct k; [discriminate|].
-          destruct (eqb_kind k2 k1) eqn:eqb ; [|discriminate].
+          destruct (Kind_eqb k2 k1) eqn:eqb ; [|discriminate].
           inversion H0.
-          apply eqb_kind_eq in eqb.
+          apply Kind_eqb_eq in eqb.
           rewrite eqb.
           reflexivity.
         * apply IHty2.
@@ -320,7 +290,7 @@ Proof.
     - (* Ty_IFix *)
       rewrite -> IHHkind1.
       rewrite -> IHHkind2.
-      rewrite -> eqb_kind_refl.
+      rewrite -> Kind_eqb_refl.
       reflexivity.
     - (* Ty_Forall *)
       rewrite -> IHHkind.
@@ -334,6 +304,6 @@ Proof.
     - (* Ty_App *) 
       rewrite -> IHHkind1. 
       rewrite -> IHHkind2. 
-      rewrite -> eqb_kind_refl. 
+      rewrite -> Kind_eqb_refl. 
       reflexivity.
 Qed.
