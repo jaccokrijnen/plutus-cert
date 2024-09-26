@@ -76,16 +76,118 @@ Lemma step_ebeta x A s t u :
   u = ([x := t] s) -> step (tmapp (tmlam x A s) t) u.
 Proof. move->. exact: step_beta. Qed.
 
+(* See Barendregt 1984*)
+
+(* Ask Richard's pen and paper notes*)
+Lemma capmsRename x x' t sigma s :
+  ((x', t)::sigma) [[rename x x' s]] = ((x, t)::sigma) [[s]].
+Proof. 
+  
+Admitted.
+
+Definition notKeyIn X (sigma : list (string * term)) : Prop :=
+  ~ exists t, lookup X sigma = Some t.
+
+Definition varNotIn X (sigma : list (string * term)) : Prop :=
+  notKeyIn X sigma /\ (* X does not appear in the free type variables of any of the values  of tau*)
+  ~ In X (List.flat_map (compose ftv snd) sigma).
+
+(* Definitionally, 
+  fresh2 creates a fresh variable that is not in 
+    any of the keys or values of sigma *)
+Lemma freshLemma sigma s :
+  varNotIn (fresh2 sigma s) sigma.
+Proof. Admitted.
+
+(* TODO: why cant i use list syntax?*)
+Lemma composeCapms' X t X' t' s :
+  varNotIn X [(X', t')] -> [X := t] ([X' := t'] s) = ((X, t):: cons (X', t') nil) [[s]].
+Proof.
+  intros HnotIn.
+  (* Induction on s?*)
+Admitted.
+
+(* Would also work for bigger substs, but not necessary*)
+Lemma composeCapms X t sigma s :
+  varNotIn X sigma -> [X := t] (sigma [[s]]) = ((X, t) :: sigma) [[s]].
+Proof.
+Admitted.
+
+(*
+  But what if sigma contains x.
+  Then RHS will replace this by sigma(x)
+  while LHS will replace it by t.
+*)
+Lemma commute_subst s t sigma x :
+  sigma [[ [x := t] s]] = ((x, sigma [[t]])::sigma) [[s]].
+Proof.
+Admitted.
+
+
 (* Note: Study: After replacing a variable with something in sigma
   we can still do the same step as we previously could by red s t, hence: true
   Not true in non-deterministic setting.
 *)
-Lemma step_subst sigma s t :
-  step s t -> step (sigma [[ s ]]) (sigma [[ t ]]).
+
+Lemma step_subst s t : 
+  step s t -> forall sigma, step (sigma [[ s ]]) (sigma [[ t ]]).
 Proof.
-  (* move=> st. elim: st sigma => {s t}; asimpl; eauto using step.
-  move=> A s t sigma. apply: step_ebeta. by autosubst.
-Qed. *)
+  move => h.
+  induction h; intros sigma.
+  - rewrite capms_equation_3.
+    rewrite capms_equation_2.
+    simpl.
+    remember (fresh2 sigma s) as x'.
+    apply step_ebeta.
+    rewrite -> composeCapms.
+    + rewrite -> capmsRename.
+      rewrite commute_subst.
+      reflexivity.
+    + rewrite Heqx'.
+      apply freshLemma.
+  - rewrite capms_equation_3.
+    rewrite capms_equation_3.
+    apply step_appL.
+    specialize (IHh sigma).
+    assumption.
+  - rewrite capms_equation_3.
+    rewrite capms_equation_3.
+    apply step_appR.
+    specialize (IHh sigma).
+    assumption.
+  - rewrite capms_equation_2.
+    rewrite capms_equation_2.
+    simpl.
+    remember (fresh2 sigma s1) as x_s1.
+    remember (fresh2 sigma s2) as x_s2.
+    assert (H_xeq: x_s1 = x_s2). {
+      (* Problem: Fresh variables get out of sync.
+      or maybe not: the ftv in s1 and s2 are the same.
+      Stepping does not remove free vars, ftv s1 = ftv s2!
+      So fresh2 sigma s1 =?= fresh2 sigma s2:
+      I think so, if we have a good fresh2 function
+      *)
+      admit.
+    }
+    rewrite H_xeq.
+    rename x_s2 into x'.
+    apply step_abs.
+    assert (sigma [[rename x x' s1]] = ((x, tmvar x')::sigma) [[s1]]).
+    {
+      (* This is not exactly true, since rename does not create fresh vars and stuff
+        But it is "kind of true" , lol.
+
+        So I guess we have to change capms to not unnecessarily rename?
+        I would rather not ;) Maybe we can strengthen IHh to include this case.
+        Or we change rename to do fresh?
+      *)
+      admit.
+    }
+    assert (sigma [[rename x x' s2]] = ((x, tmvar x')::sigma) [[s2]]) by admit.
+    specialize (IHh ((x, tmvar x')::sigma)).
+    rewrite -> H.
+    rewrite -> H0.
+    apply IHh.
 Admitted.
 
 (** **** Many-Step Reduction *)
@@ -126,8 +228,20 @@ Proof.
 Qed. *)
 
 (* NOTE: A little pen and paper study strongly suggests that this is still true for named. *)
+(* NOTE: At first I would expect that it would step on the right hand side (instead of multistep=red)
+    but it doesnt because of the following example:
+    Let t1 = (\x.x)w and t2 = w (which steps by step_beta)
+    Let s = \y. (\z. x) x
+    Then [x := t1] s = \y. (\z. t1) t1 = \y. (\z. (\x.x) w) ((\x.x) w)
+    And [x := t2] s = \y. (\z. t2) t2 = \y. (\z. w) w
+
+    there is no single step from the first to the second, since we have to perform
+    step_beta in two different places.
+    *)
 Lemma red_beta x s t1 t2 : step t1 t2 -> red ([x := t1] s) ([x := t2] s).
 Proof. 
+  intros Hstep.
+  induction s.
   (* move=> h. apply: red_compat => -[|n]/=; [exact: star1|exact: starR].  *)
 Admitted.
 
@@ -245,31 +359,6 @@ Proof with eauto.
   - inv H2. apply: ih1 => //. apply: L_cl h _. exact: step_subst.
   - apply: ih2 => //. apply: L_cl_star h _. exact: red_beta.
 Qed.
-
-(* Ask Richard's pen and paper notes*)
-Lemma capmsRename x x' t sigma s :
-  ((x', t)::sigma) [[rename x x' s]] = ((x, t)::sigma) [[s]].
-Proof. Admitted.
-
-Definition notKeyIn X (sigma : list (string * term)) : Prop :=
-  ~ exists t, lookup X sigma = Some t.
-
-Definition varNotIn X (sigma : list (string * term)) : Prop :=
-  notKeyIn X sigma /\ (* X does not appear in the free type variables of any of the values  of tau*)
-  ~ In X (List.flat_map (compose ftv snd) sigma).
-
-(* Would also work for bigger substs, but not necessary*)
-Lemma composeCapms X t sigma s :
-  varNotIn X sigma -> [X := t] (sigma [[s]]) = ((X, t) :: sigma) [[s]].
-Proof.
-Admitted.
-
-(* Definitionally, 
-  fresh2 creates a fresh variable that is not in 
-    any of the keys or values of sigma *)
-Lemma freshLemma sigma s :
-  varNotIn (fresh2 sigma s) sigma.
-Proof. Admitted.
 
 Lemma beta_expansion_subst X t sigma s A B :
   SN t -> L A (((X, t)::sigma) [[s]]) -> L A (tmapp (sigma [[tmlam X B s]]) t).
