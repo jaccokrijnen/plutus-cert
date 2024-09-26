@@ -1,185 +1,11 @@
 From PlutusCert Require Import
-  Equality
   PlutusIR
-  Contextual
+  Cert.Relation
+  Cert.Claim
 .
-
-Import Utf8_core.
-
-Record rel_decidable : Type :=
-  mk_rel_decidable {
-    rd_rel : term -> term -> Prop;
-    rd_decb : term -> term -> bool;
-    rd_equiv : ∀ s t,
-      rd_decb s t = true <-> rd_rel s t;
-  }
-.
-
-Definition rd_dec (rd : rel_decidable) (t t' : term) : option (rd_rel rd t t') :=
-  match rd_decb rd t t' as b return rd_decb rd t t' = b -> option (rd_rel rd t t') with
-    | true  => fun H => Some (proj1 (rd_equiv rd t t') H)
-    | false => fun _ => None
-  end eq_refl.
-
-Record rel_verified : Type :=
-  mk_rel_verified {
-    rv_rd : rel_decidable;
-    rv_correct : ∀ s t,
-      rv_rd.(rd_rel) s t -> ∀ Δ Γ T, Δ ,, Γ |- s ≃-ctx t : T
-  }
-.
-
-Definition rv_dec (rv : rel_verified) (t t' : term) 
-: option (∀ Δ Γ T, Δ ,, Γ |- t ≃-ctx t' : T) :=
-  match rd_dec (rv_rd rv) t t' with
-    | Some deriv => Some (rv_correct rv t t' deriv)
-    | None => None
-  end
-.
-
-(* RELATIONS *)
-From PlutusCert Require Import
-  LetNonRec.Spec
-  LetNonRec.DecideBool
-  LetNonRec.DSP
-.
-
-Definition let_nonrec : rel_verified :=
-  mk_rel_verified
-    ( mk_rel_decidable
-        CNR_Term
-        dec_Term
-        dec_Term_equiv
-    )
-    CNR_Term__sem
-.
-
-From PlutusCert Require Import DeadCode DeadCode.DecideBool.
-Definition rd_deadcode : rel_decidable :=
-  mk_rel_decidable
-    elim
-    dec_Term
-    dec_Term_equiv
-.
-
-Definition rv_equal : rel_verified.
-Admitted.
 
 Require Import Bool.
 
-
-Definition dec_correct (rd : rel_verified) t t' :
-  rd_decb (rv_rd rd) t t' = true ->
-  ∀ Δ Γ T, Δ ,, Γ |- t ≃-ctx t' : T :=
-  fun H =>
-        let deriv := proj1 (rd_equiv (rv_rd rd) _ _) H in
-        let ctx_equiv := (rv_correct rd) _ _ deriv in
-        ctx_equiv.
-
-Definition dec_rel (rd : rel_decidable) t t' :
-  rd_decb rd t t' = true -> rd_rel rd t t' :=
-  fun H => proj1 (rd_equiv rd _ _) H.
-
-From PlutusCert Require
-  Dump1
-.
-
-Fail Check (dec_correct let_nonrec Dump1.term Dump1.term eq_refl).
-
-From PlutusCert Require TimelockDumps.
-
-Check (dec_correct let_nonrec TimelockDumps.plc_4_inlined TimelockDumps.plc_5_compileNonRecTerms eq_refl).
-
-
-(* CLAIMS *)
-
-Inductive claim :=
-  | Verified : rel_verified -> claim
-  | Related  : rel_decidable -> claim
-  | Unknown  : claim
-.
-
-Definition claim_prop : claim -> (term -> term -> Prop) := fun c =>
-  match c with
-  | Verified rv => fun t t' => ∀ Δ Γ T, Δ ,, Γ |- t ≃-ctx t' : T
-  | Related rd  => rd_rel rd
-  | Unknown     => fun t t' => True
-  end
-.
-
-Definition claim_decb : claim -> (term -> term -> bool) := fun c =>
-  match c with
-  | Verified rv => rd_decb (rv_rd rv)
-  | Related rd  => rd_decb rd
-  | Unknown     => fun t t' => true
-  end
-.
-
-Definition claim_decb_eq (c : claim) (t t' : term) : option (claim_decb c t t' = true)
-  := match claim_decb c t t' with
-    | true  => Some eq_refl
-    | false => None
-  end.
-
-Definition claim_dec (c : claim) (t t' : term) : option (claim_prop c t t') :=
-  match c return option (claim_prop c t t') with
-    | Verified rv => rv_dec rv t t'
-    | Related rd  => rd_dec rd t t'
-    | Unknown     => Some I
-  end
-.
-
-(* CERTIFICATE *)
-Require Import Lists.List.
-Import ListNotations.
-
-(* Deciding trace claims *)
-
-Fixpoint trace_prop' (ps : list (pass * term)) : forall (claims : pass -> claim) (t : term), Prop :=
-    fun claims t => match ps with
-      | [] => True
-      | (p, t') :: ps => claim_prop (claims p) t t' ∧ trace_prop' ps claims t'
-    end.
-
-Definition trace_prop : (pass -> claim) -> compilation_trace -> Prop :=
-  fun claims ct =>
-  match ct with
-  | CompilationTrace t0 ps => trace_prop' ps claims t0
-  end.
-
-Fixpoint trace_dec' (claims : pass -> claim) (t : term) (ps : list (pass * term))
-  : option (trace_prop' ps claims t) :=
-  match ps return option (trace_prop' ps claims t) with
-  | [] => Some I
-  | (p, t') :: ps =>
-    match claim_dec (claims p) t t' with
-    | Some proof =>
-      match trace_dec' claims t' ps with
-      | Some proofs => Some (conj proof proofs)
-      | None => None
-      end
-    | None => None
-    end
-  end
-.
-
-Definition trace_dec (claims : pass -> claim) (ct : compilation_trace)
-  : option (trace_prop claims ct) :=
-  match ct with
-  | CompilationTrace t0 ps => trace_dec' claims t0 ps
-  end
-.
-
-  (*
-Definition cert_claims : pass -> claim := fun p =>
-  match p with
-  | PassLetNonRec => Verified let_nonrec
-  | PassDeadCode  => Related rd_deadcode
-  | PassTypeCheck => Verified rv_equal
-  | _             => Unknown
-  end
-.
-  *)
 
 Definition cert_claims : pass -> claim := fun p =>
   match p with
@@ -295,7 +121,7 @@ Eval vm_compute in Dump1.term.
 
 
 
-Theorem dump1_let_nonrec : ∀ Δ Γ T,
+Theorem dump1_let_nonrec : forall Δ Γ T,
   Δ ,, Γ |- Dump1.term ≃-ctx Dump1.term : T.
 Proof.
 
