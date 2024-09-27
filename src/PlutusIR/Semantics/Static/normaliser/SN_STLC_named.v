@@ -211,7 +211,7 @@ Proof. apply: star_hom => x' y'. exact: step_abs. Qed.
 
 Lemma red_subst sigma s t : 
   red s t -> red (sigma [[s]]) (sigma [[t]]).
-Proof. apply: star_hom => x' y'. exact: step_subst. Qed.
+Proof. apply: star_hom => x' y'. intros Hstep. exact: step_subst. Qed.
 
 (* Lemma sred_up sigma tau : 
   sred sigma tau -> sred (up sigma) (up tau).
@@ -238,12 +238,94 @@ Qed. *)
     there is no single step from the first to the second, since we have to perform
     step_beta in two different places.
     *)
+
+(* Should we add the assumption that we are always substing in fresh stuff? *)
+(* Fresh with respect to what? *)
+Fixpoint mren (rho : list (string * string)) (T : term) : term :=
+  match T with
+  | tmvar Y => match lookup Y rho with
+              | Some Z => tmvar Z
+              | None => tmvar Y
+              end
+  | tmlam Y K1 T_body => let rho' := drop Y rho in (* What if Y in rhs of rho*)
+                        tmlam Y K1 (mren rho' T_body)
+  | tmapp T1 T2 => tmapp (mren rho T1) (mren rho T2)
+end.
+
+Lemma ren_id s : mren nil s = s.
+Proof. Admitted.
+
+Lemma red_beta_ren x s t1 t2 rho : step t1 t2 -> red ([x := t1] (mren rho s)) ([x := t2] (mren rho s)).
+Proof.
+  elim: s rho t1 t2 => [Y|Y K1 T_body IH|T1 IH1 T2 IH2] rho t1 t2 Hstep.
+  - unfold mren.
+    destruct (lookup Y rho) eqn: Hlookup.
+    all: rewrite capms_equation_1.
+    all: rewrite capms_equation_1.
+    all: simpl.
+    (* TODO: The two cases below are identical except for s vs Y*)
+    + destruct (string_dec x s).
+      * rewrite e.
+        unfold lookup.
+        rewrite eqb_refl.
+        apply star1.
+        assumption.
+      * unfold lookup.
+        destruct (x =? s).
+        -- apply star1.
+           assumption.
+        -- apply starR.
+    + destruct (string_dec x Y).
+      * rewrite e.
+        unfold lookup.
+        rewrite eqb_refl.
+        apply star1.
+        assumption.
+      * unfold lookup.
+        destruct (x =? Y).
+        -- apply star1.
+           assumption.
+        -- apply starR.
+  - simpl.
+    rewrite capms_equation_2.
+    rewrite capms_equation_2.
+    simpl.
+    remember (fresh2 [(x, t1)] (mren (drop Y rho) T_body)) as x'.
+    remember (fresh2 [(x, t2)] (mren (drop Y rho) T_body)) as x2.
+    assert (H_xeq: x' = x2). {
+      (* by reduction does not change ftv *)
+      admit.
+    }
+    rewrite <- H_xeq.
+    remember (drop Y rho) as rho'.
+    apply red_abs.
+    assert (rename Y x' (mren rho' T_body) = mren ((Y, x')::rho') T_body).
+    {
+      (* Only true if Y not in rhs of rho'?
+      I think it shouldnt be by some freshness criterium, but even if it is, we can
+      do something else. *)
+      admit.
+    }
+    rewrite H.
+    apply IH.
+    assumption.
+  - rewrite capms_equation_3.
+    rewrite capms_equation_3.
+    apply red_app.
+    + apply IH1.
+      assumption.
+    + apply IH2.
+      assumption.
+Admitted.
+
 Lemma red_beta x s t1 t2 : step t1 t2 -> red ([x := t1] s) ([x := t2] s).
 Proof. 
-  intros Hstep.
-  induction s.
-  (* move=> h. apply: red_compat => -[|n]/=; [exact: star1|exact: starR].  *)
-Admitted.
+  move=> h. 
+  (* apply red_beta_ren with empty rho*)
+  apply red_beta_ren with (rho := nil) (x := x) (s := s) in h.
+  rewrite ren_id in h.
+  assumption.
+Qed.
 
 (* Strong Normalization *)
 
@@ -253,7 +335,7 @@ Lemma sn_closed t s : SN (tmapp s t) -> SN s.
 Proof. apply: (sn_preimage (h := tmapp^~t)) => x y. exact: step_appL. Qed.
 
 Lemma sn_subst sigma s : SN (sigma [[s]]) -> SN s.
-Proof. apply: sn_preimage => x' y'. exact: step_subst. Qed.
+Proof. apply: sn_preimage => x' y'. intros Hstep. exact: step_subst. Qed.
 
 (* The Reducibility Candidates/Logical Predicate*)
 
