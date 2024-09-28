@@ -82,7 +82,6 @@ Proof. move->. exact: step_beta. Qed.
 Lemma capmsRename x x' t sigma s :
   ((x', t)::sigma) [[rename x x' s]] = ((x, t)::sigma) [[s]].
 Proof. 
-  
 Admitted.
 
 Definition notKeyIn X (sigma : list (string * term)) : Prop :=
@@ -123,6 +122,44 @@ Lemma commute_subst s t sigma x :
 Proof.
 Admitted.
 
+(* Stepping does not change free vars*)
+Lemma step_preserves_fresh_sigma s t1 t2 x : step t1 t2 -> fresh2 [(x, t1)] s = fresh2 [(x, t2)] s.
+Proof.
+Admitted.
+
+Lemma step_preserves_fresh sigma t1 t2 : 
+  step t1 t2 -> fresh2 sigma t1 = fresh2 sigma t2.
+Proof.
+Admitted.
+
+(* TODO: Not true because of fresh, what conditions do we need? *)
+(* e.g. rename X Y (tmlam Y A (tmvar X)) = tmlam Y A (tmvar Y). 
+  that case shouldnt be possible. But Y is not in ftv (tmlam Y A (tmvar X))
+  should we consider all type variables, not only the free ones for ftv?
+
+*)
+Lemma ren_is_subst : forall X X' s,
+  rename X X' s = [X := tmvar X'] s.
+Proof.
+Abort.
+
+(* TODO: some conditions necessary like X'  not in sigma*)
+Lemma ren_sub_compose : forall sigma X X' s,
+  sigma [[rename X X' s]] = ((X, tmvar X')::sigma) [[s]].
+Proof.
+  (* This is not exactly true, since rename does not create fresh vars and stuff
+        But it is "kind of true" , lol.
+
+        So I guess we have to change capms to not unnecessarily rename?
+        I would rather not ;) Maybe we can strengthen IHh to include this case.
+        Or we change rename to do fresh?
+
+        But it should be true, the fact that x' is fresh is key. that will mean that
+        capms and rename should behave the same in the tylam case
+        SO: TODO: We have to change capms to not freshen if not necessary
+      *)
+      
+Admitted.
 
 (* Note: Study: After replacing a variable with something in sigma
   we can still do the same step as we previously could by red s t, hence: true
@@ -158,37 +195,13 @@ Proof.
   - rewrite capms_equation_2.
     rewrite capms_equation_2.
     simpl.
-    remember (fresh2 sigma s1) as x_s1.
-    remember (fresh2 sigma s2) as x_s2.
-    assert (H_xeq: x_s1 = x_s2). {
-      (* Problem: Fresh variables get out of sync.
-      or maybe not: the ftv in s1 and s2 are the same.
-      Stepping does not remove free vars, ftv s1 = ftv s2!
-      So fresh2 sigma s1 =?= fresh2 sigma s2:
-      I think so, if we have a good fresh2 function
-      *)
-      admit.
-    }
-    rewrite H_xeq.
-    rename x_s2 into x'.
+    rewrite (step_preserves_fresh sigma h).
+    remember (fresh2 sigma s2) as x'.
     apply step_abs.
-    assert (sigma [[rename x x' s1]] = ((x, tmvar x')::sigma) [[s1]]).
-    {
-      (* This is not exactly true, since rename does not create fresh vars and stuff
-        But it is "kind of true" , lol.
-
-        So I guess we have to change capms to not unnecessarily rename?
-        I would rather not ;) Maybe we can strengthen IHh to include this case.
-        Or we change rename to do fresh?
-      *)
-      admit.
-    }
-    assert (sigma [[rename x x' s2]] = ((x, tmvar x')::sigma) [[s2]]) by admit.
-    specialize (IHh ((x, tmvar x')::sigma)).
-    rewrite -> H.
-    rewrite -> H0.
+    rewrite ren_sub_compose.
+    rewrite ren_sub_compose.
     apply IHh.
-Admitted.
+Qed.
 
 (** **** Many-Step Reduction *)
 
@@ -227,6 +240,7 @@ Proof.
   elim: s sigma tau; intros; asimpl; eauto with red_congr.
 Qed. *)
 
+
 (* NOTE: A little pen and paper study strongly suggests that this is still true for named. *)
 (* NOTE: At first I would expect that it would step on the right hand side (instead of multistep=red)
     but it doesnt because of the following example:
@@ -239,22 +253,13 @@ Qed. *)
     step_beta in two different places.
     *)
 
-(* Should we add the assumption that we are always substing in fresh stuff? *)
-(* Fresh with respect to what? *)
-Fixpoint mren (rho : list (string * string)) (T : term) : term :=
-  match T with
-  | tmvar Y => match lookup Y rho with
-              | Some Z => tmvar Z
-              | None => tmvar Y
-              end
-  | tmlam Y K1 T_body => let rho' := drop Y rho in (* What if Y in rhs of rho*)
-                        tmlam Y K1 (mren rho' T_body)
-  | tmapp T1 T2 => tmapp (mren rho T1) (mren rho T2)
-end.
+(* TODO: cant we make it a relation? mren rho1 (mren rho2 s) in Mren s*)
+Lemma ren_comp rho1 rho2 s : exists rho', mren rho1 (mren rho2 s) = mren rho' s.
+Proof.
+  (* TODO: Figure out on pen and paper first.*)
+Admitted.
 
-Lemma ren_id s : mren nil s = s.
-Proof. Admitted.
-
+(* Strengthen IH for red_beta*)
 Lemma red_beta_ren x s t1 t2 rho : step t1 t2 -> red ([x := t1] (mren rho s)) ([x := t2] (mren rho s)).
 Proof.
   elim: s rho t1 t2 => [Y|Y K1 T_body IH|T1 IH1 T2 IH2] rho t1 t2 Hstep.
@@ -286,27 +291,26 @@ Proof.
         -- apply star1.
            assumption.
         -- apply starR.
-  - simpl.
+  - (* lambda abstraction *)
+    simpl.
     rewrite capms_equation_2.
     rewrite capms_equation_2.
     simpl.
     remember (fresh2 [(x, t1)] (mren (drop Y rho) T_body)) as x'.
     remember (fresh2 [(x, t2)] (mren (drop Y rho) T_body)) as x2.
-    assert (H_xeq: x' = x2). {
-      (* by reduction does not change ftv *)
-      admit.
-    }
-    rewrite <- H_xeq.
+    rewrite (step_preserves_fresh_sigma (mren (drop Y rho) T_body) x Hstep) in Heqx'.
+    rewrite <- Heqx2 in Heqx'.
+    rewrite <- Heqx'.
     remember (drop Y rho) as rho'.
     apply red_abs.
-    assert (rename Y x' (mren rho' T_body) = mren ((Y, x')::rho') T_body).
+    
+    assert (exists rho'', rename Y x' (mren rho' T_body) = mren rho'' T_body).
     {
-      (* Only true if Y not in rhs of rho'?
-      I think it shouldnt be by some freshness criterium, but even if it is, we can
-      do something else. *)
-      admit.
+      apply ren_comp.
     }
+    destruct H as [rho'' H].
     rewrite H.
+    
     apply IH.
     assumption.
   - rewrite capms_equation_3.
@@ -316,14 +320,13 @@ Proof.
       assumption.
     + apply IH2.
       assumption.
-Admitted.
+Qed.
 
 Lemma red_beta x s t1 t2 : step t1 t2 -> red ([x := t1] s) ([x := t2] s).
 Proof. 
   move=> h. 
-  (* apply red_beta_ren with empty rho*)
   apply red_beta_ren with (rho := nil) (x := x) (s := s) in h.
-  rewrite ren_id in h.
+  rewrite mren_id in h.
   assumption.
 Qed.
 

@@ -78,7 +78,22 @@ Lemma fresh__T : forall X U T,
     ~ In (fresh X U T) (ftv T).
 Proof. Abort.
 
-Definition rename (X Y : string) (T : term) := substituteT X (tmvar Y) T.
+(* TODO: Should we add the assumption that we are always substing in fresh stuff? *)
+(* TODO: Fresh with respect to what? *)
+Fixpoint mren (rho : list (string * string)) (T : term) : term :=
+  match T with
+  | tmvar Y => match lookup Y rho with
+              | Some Z => tmvar Z
+              | None => tmvar Y
+              end
+  | tmlam Y K1 T_body => let rho' := drop Y rho in (* What if Y in rhs of rho*)
+                        tmlam Y K1 (mren rho' T_body)
+  | tmapp T1 T2 => tmapp (mren rho T1) (mren rho T2)
+end.
+
+Definition rename (X Y : string) (T : term) := mren [(X, Y)] T.
+
+(* Size of a term *)
 
 Fixpoint size (T : term) : nat :=
   match T with
@@ -87,6 +102,15 @@ Fixpoint size (T : term) : nat :=
   | tmapp T1 T2 => 1 + size T1 + size T2
   end.
 
+Lemma mren_id s : mren nil s = s.
+Proof. 
+  induction s; simpl; eauto.
+  - rewrite IHs.
+    reflexivity.
+  - rewrite IHs1, IHs2.
+    reflexivity.
+Qed.
+
 Lemma rename_preserves_size : forall T X Y,
     size T = size (rename X Y T).
 Proof.
@@ -94,6 +118,8 @@ Proof.
   induction T; intros; simpl; eauto.
   - destruct (X =? s); eauto.
   - destruct (X =? s); simpl; eauto.
+    rewrite mren_id.
+    reflexivity.
 Qed.
 
 (** Capture avoiding parallel multi-substitutions *)
@@ -115,7 +141,7 @@ Equations? capms (sigma : list (string * term)) (T : term) : term by wf (size T)
                           | Some t => t
                           | None => tmvar Y
                           end;
-  capms sigma (tmlam Y K1 T_body) := let Y' := fresh2 sigma T_body in
+  capms sigma (tmlam Y K1 T_body) := let Y' := fresh2 sigma T_body in (* TODO: should include Y! *)
                                     let T_body' := rename Y Y' T_body in
                                     tmlam Y' K1 (capms sigma T_body');
   capms sigma (tmapp T1 T2) := tmapp (capms sigma T1) (capms sigma T2).
