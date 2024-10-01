@@ -33,7 +33,7 @@ Proof with eauto.
     auto.
 
 
-  intros C H_C_Ty v H_C_e_terminates.
+  intros C H_C_Ty H_C_e_terminates.
   destruct H_C_e_terminates as [j H_steps_C_e].
 
   (* apply fundamental theorem of contexts (reflexivity) *)
@@ -60,14 +60,10 @@ Proof with eauto.
   intuition.
   - destruct H7 as [k [k' [H_eq1 [H_eq2 H_eq3]]]].
     subst.
-    eexists (Constant k').
-    split...
+    rewrite <- H_eq3 in H.
     eexists x0.
     eauto.
-  - eexists x.
-    split.
-    + eexists x0...
-    + tauto.
+  - inversion H2.
 Qed.
 
 Corollary LR_equivalent_sound : forall Δ Γ e e' T,
@@ -80,11 +76,18 @@ Proof with eauto using LR_sound.
   split...
 Qed.
 
+(*
+Due to new ctx equiv definition these are admitted, unclear if they can be
+easily proven, but it doesn't seem necessary for proving validator equivalence.
 
-(* Admit these due to new ctx equiv definition *)
-
+The current version of contextual equivalence imply the old version of
+contextual equivalence: if either C[e] terminates with an error, the other will
+also terminate with an error (when t has type unit, and t ⇓ v , then v can only
+be unit constant or an error).
+*)
 
 (*
+
 Lemma LR_approximate_sound_ciu : forall e e' T,
   normal_Ty T ->
   [],, [] |- e ⪯-ctx e' : T ->
@@ -94,9 +97,12 @@ Proof.
   intros e e' T H_norm_T H_approx_e_e' e_terminates.
   unfold contextually_approximate in *.
   destruct H_approx_e_e' as [H_ty_e [H_ty_e' H_steps]].
-  assert (H := H_steps C_Hole T).
+  assert (H := H_steps C_Hole).
+  eexists val_unit.
+  eexists.
   eauto using context_has_type.
 Qed.
+
 
 
 Corollary LR_equivalent_sound_ciu : forall e e' T,

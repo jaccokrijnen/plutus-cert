@@ -7,11 +7,11 @@ Import ListNotations.
 
 
 
-Definition Term_Unit : term :=
+Definition val_unit : term :=
   Constant (ValueOf DefaultUniUnit tt)
 .
 
-Definition Ty_Unit : ty :=
+Definition ty_unit : ty :=
   Ty_Builtin DefaultUniUnit.
 
 Definition eval' t v := exists j, eval t v j.
@@ -23,12 +23,10 @@ Definition contextually_approximate
   (Δ ,, Γ |-+ e  : T) /\
   (Δ ,, Γ |-+ e' : T) /\
   forall (C : context),
-    ([] ,, [] |-C C : (Δ ,, Γ ▷ T) ↝ Ty_Unit) ->
-    forall (v : term),
-      context_apply C e ==> v ->
-      exists v',
-        context_apply C e' ==> v' /\
-        (v = v' \/ (is_error v /\ is_error v')).
+    ([] ,, [] |-C C : (Δ ,, Γ ▷ T) ↝ ty_unit) ->
+      context_apply C e ==> val_unit ->
+      context_apply C e' ==> val_unit
+.
 
 Notation "Δ ',,' Γ '|-' e1 ⪯-ctx e2 ':' T" := (contextually_approximate e1 e2 Δ Γ T)
   ( at level 101
@@ -74,9 +72,6 @@ Section contextually_approximate_lemmas.
     unfold contextually_approximate.
     intros.
     repeat split; auto.
-    intros.
-    exists v.
-    auto.
   Qed.
 
   Lemma contextually_approximate_transitive : forall Δ Γ e1 e2 e3 T,
@@ -88,20 +83,6 @@ Section contextually_approximate_lemmas.
     intros.
     repeat (match goal with | H : ?x /\ ?y |- _ => destruct H end).
     intuition.
-    apply H4 in H6 as [v' [H_eval_C_e2 H_v_v']]...
-    destruct H_v_v'.
-    - (* v = v' *)
-      subst.
-      eauto.
-    - (* is_error v /\ is_error v'*)
-      eauto.
-        destruct H6.
-        apply H2 in H_eval_C_e2 as [v'' [H_eval_v'' H_v'_v'']] ...
-        destruct H_v'_v''.
-        + (* v' = v'' *)
-          subst...
-        + (* is_error /\ is_error v' *)
-          destruct H8...
   Qed.
 
   Lemma contextually_approximate_antisymmetric : forall Δ Γ e1 e2 T,
