@@ -1,6 +1,9 @@
 Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
-From Coq Require Import Bool.Bool Arith.PeanoNat.
+From Coq Require Import
+  Lists.List
+  Bool.Bool
+  Arith.PeanoNat.
 Import PeanoNat.Nat.
 
 Inductive is_error : term -> Prop :=
@@ -20,6 +23,9 @@ Inductive value : term -> Prop :=
       value (Constant u)
   | V_Error : forall T,
       value (Error T)
+  | V_Constr : forall i vs,
+      Forall value vs ->
+      value (Constr i vs)
   (** Builtins *)
   | V_Neutral : forall nv,
       neutral_value 0 nv ->
@@ -62,6 +68,53 @@ Scheme value__ind := Minimality for value Sort Prop
 Combined Scheme value__multind from
   value__ind,
   neutral_value__ind.
+
+Section value_multind.
+Context
+  (P : term -> Prop)
+  (Q : nat -> term -> Prop).
+Context
+  (H_LamAbs : forall (x : String.string) (T : ty) (t0 : term), P (LamAbs x T t0))
+  (H_TyAbs : forall (X : String.string) (K : kind) (t : term), P (TyAbs X K t))
+  (H_IWrap : forall (F T : ty) (v : term), value v -> P v -> ~ is_error v -> P (IWrap F T v))
+  (H_Constant : forall c : constant, P (Constant c))
+  (H_Error : forall T : ty, P (Error T))
+  (H_Constr : forall (i : nat) (vs : list term), Forall value vs -> Forall P vs -> P (Constr i vs))
+  (H_Neutral : forall nv : term, neutral_value 0 nv -> Q 0 nv -> P nv)
+  (H_Builtin : forall (n : nat) (f6 : DefaultFun), n < arity f6 -> Q n (Builtin f6))
+  (H_Apply : forall (n : nat) (nv v : term), value v -> P v -> ~ is_error v ->
+        neutral_value (S n) nv -> Q (S n) nv -> Q n (Apply nv v))
+  (H_TyInst : forall (n : nat) (nv : term) (T : ty),
+        neutral_value (S n) nv -> Q (S n) nv -> Q n (TyInst nv T)).
+Fixpoint values__ind (H_value : forall (t : term), value t -> P t) (ts : list term) (vs : Forall value ts): Forall P ts :=
+  match vs as vs in Forall _ ts return Forall P ts with
+    | Forall_nil _ => Forall_nil _
+    | @Forall_cons _ _ x xs vx vxs => @Forall_cons _ _ x xs (H_value x vx) (values__ind H_value xs vxs)
+  end.
+Fixpoint value___ind (t : term) (v : value t) {struct v} : P t :=
+  match v in (value t0) return (P t0) with
+  | V_LamAbs x T t0 => H_LamAbs x T t0
+  | V_TyAbs X K t0 => H_TyAbs X K t0
+  | V_IWrap F1 T v0 v1 n => H_IWrap F1 T v0 v1 (value___ind v0 v1) n
+  | V_Constant u => H_Constant u
+  | V_Error T => H_Error T
+  | V_Constr i ts vs => H_Constr i ts vs
+      ((fix F ts vs := match vs as vs in Forall _ ts return Forall P ts with
+        | Forall_nil _ => Forall_nil _
+        | @Forall_cons _ _ t ts vt vts => @Forall_cons _ _ t ts (value___ind t vt) (F ts vts)
+      end) ts vs)
+  | V_Neutral nv n => H_Neutral nv n (neutral___ind 0 nv n)
+  end
+with neutral___ind (n : nat) (t : term) (n0 : neutral_value n t) {struct n0} : Q n t :=
+  match n0 in (neutral_value n1 t0) return (Q n1 t0) with
+  | NV_Builtin n1 f9 l => H_Builtin n1 f9 l
+  | NV_Apply n1 nv v v0 n2 n3 =>
+      H_Apply n1 nv v v0 (value___ind v v0) n2 n3 (neutral___ind (S n1) nv n3)
+  | NV_TyInst n1 nv T n2 => H_TyInst n1 nv T n2 (neutral___ind (S n1) nv n2)
+  end
+.
+Combined Scheme value___multind from value___ind, neutral___ind.
+End value_multind.
 
 Definition neutral (t : term) := neutral_value 0 t.
 
