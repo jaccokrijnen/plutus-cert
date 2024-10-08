@@ -44,12 +44,12 @@ Inductive eval : term -> term -> nat -> Prop :=
   | E_Constant : forall a,
       Constant a =[0]=> Constant a
   (** Constructors *)
-  | E_Constr_nil : forall i,
-      Constr i nil =[0]=> Constr i nil
-  | E_Constr_cons : forall i k_t k_ts t ts v vs,
+  | E_Constr_nil : forall i T,
+      Constr i T nil =[0]=> Constr i T nil
+  | E_Constr_cons : forall i T k_t k_ts t ts v vs,
       t =[k_t]=> v ->
-      Constr i ts =[k_ts]=> Constr i vs ->
-      Constr i (t :: ts) =[k_t + k_ts]=> Constr i (v :: vs)
+      Constr i T ts =[k_ts]=> Constr i T vs ->
+      Constr i T (t :: ts) =[k_t + k_ts]=> Constr i T (v :: vs)
   (** Builtins *)
   | E_NeutralBuiltin : forall f,
       (* NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity. *)

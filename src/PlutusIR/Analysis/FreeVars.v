@@ -70,8 +70,8 @@ Module Term.
      | Error ty        => []
      | Constant v      => []
      | Builtin f       => []
-     | Constr i ts     => concat (map fv ts)
-     | Case t ts       => fv t ++ concat (map fv ts)
+     | Constr i T ts   => concat (map fv ts)
+     | Case T t ts     => fv t ++ concat (map fv ts)
    end
 
   with fvb rec (b : binding) : list string :=
@@ -155,8 +155,8 @@ Module Term.
      | Error τ         => Ty.ftv τ
      | Constant v      => []
      | Builtin f       => []
-     | (Constr i ts)   => concat (map ftv ts)
-     | (Case t ts)    => ftv t ++ concat (map ftv ts)
+     | Constr i T ts   => Ty.ftv T ++ concat (map ftv ts)
+     | Case T t ts     => Ty.ftv T ++ ftv t ++ concat (map ftv ts)
      end
 
   with ftvb rec (b : binding) : list string :=

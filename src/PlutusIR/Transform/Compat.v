@@ -88,14 +88,14 @@ Section Term.
 
   (* TODO: add cons/nil cases for Constr and Case, so
      correct induction schemes are generated *)
-  Definition compat_Constr := ∀ n ts ts',
+  Definition compat_Constr := ∀ n T ts ts',
     Forall2 R ts ts' ->
-    R (Constr n ts) (Constr n ts').
+    R (Constr n T ts) (Constr n T ts').
 
-  Definition compat_Case := ∀ t t' ts ts',
+  Definition compat_Case := ∀ t t' ts ts' T,
     R t t' ->
     Forall2 R ts ts' ->
-    R (Case t ts) (Case t' ts').
+    R (Case T t ts) (Case T t' ts').
 
 End Term.
 

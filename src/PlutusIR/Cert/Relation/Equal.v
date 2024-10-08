@@ -1,5 +1,7 @@
 Require Import
-  Bool.Bool.
+  Bool.Bool
+  Arith.PeanoNat
+.
 
 From PlutusCert Require Import
   PlutusIR
@@ -96,22 +98,31 @@ Hint Resolve constant_beq_eq : reflect_eq.
 Require Import Strings.String.
 Require Import Lists.List.
 Import ListNotations.
-Definition string_beq_stub : string -> string -> bool := String.eqb.
+
+Definition string_beq : string -> string -> bool := String.eqb.
+Definition string_beq_eq := String.eqb_eq.
+Hint Rewrite string_beq_eq : reflect_eq.
+Hint Resolve string_beq_eq : reflect_eq.
+
+Definition nat_beq := Nat.eqb.
+Definition nat_beq_eq := Nat.eqb_eq.
+Hint Rewrite nat_beq_eq : reflect_eq.
+Hint Resolve nat_beq_eq : reflect_eq.
 
 Function term_beq (x y : term) {struct x} : bool := match x, y with
   | (Let r bs t), (Let r' bs' t')      => recursivity_beq r r' && forall2b binding_beq bs bs' && term_beq t t'
-  | (TyInst t T), (TyInst t' T')       => ty_beq T T' && term_beq t t'
-  | (Var n), (Var n')                  => string_beq_stub n n'
-  | (TyAbs n k t), (TyAbs n' k' t')    => string_beq_stub n n' && kind_beq k k' && term_beq t t'
-  | (LamAbs n T t), (LamAbs n' T' t')  => string_beq_stub n n'&& ty_beq T T' && term_beq t t'
+  | (TyInst t T), (TyInst t' T')       => term_beq t t' && ty_beq T T'
+  | (Var n), (Var n')                  => string_beq n n'
+  | (TyAbs n k t), (TyAbs n' k' t')    => string_beq n n' && kind_beq k k' && term_beq t t'
+  | (LamAbs n T t), (LamAbs n' T' t')  => string_beq n n'&& ty_beq T T' && term_beq t t'
   | (Apply s t), (Apply s' t')         => term_beq s s' && term_beq t t'
   | (Constant c), (Constant c')        => constant_beq c c'
   | (Builtin f), (Builtin f')          => DefaultFun_beq f f'
   | (Error T), (Error T')              => ty_beq T T'
   | (IWrap T1 T2 t), (IWrap T1' T2' t') => ty_beq T1 T1' && ty_beq T2 T2' && term_beq t t'
   | (Unwrap t), (Unwrap t')            => term_beq t t'
-  | (Constr n ts), (Constr n' ts')     => Nat.eqb n n' && forall2b term_beq ts ts'
-  | (Case t ts), (Case t' ts')         => term_beq t t' && forall2b term_beq ts ts'
+  | (Constr n T ts), (Constr n' T' ts') => Nat.eqb n n' && ty_beq T T' && forall2b term_beq ts ts'
+  | (Case T t ts), (Case T' t' ts')     => term_beq t t' && ty_beq T T' && forall2b term_beq ts ts'
 
   | (Let r bs t), _ => false
   | (TyInst t T), _ => false
@@ -124,8 +135,8 @@ Function term_beq (x y : term) {struct x} : bool := match x, y with
   | (Error T), _ => false
   | (IWrap T1 T2 t), _ => false
   | (Unwrap t), _ => false
-  | (Constr n ts), _ => false
-  | (Case t ts), _ => false
+  | (Constr n _ ts), _ => false
+  | (Case _ t ts), _ => false
   end
 with
    binding_beq  (b b' : binding) : bool :=
@@ -187,6 +198,18 @@ eq_Case
 : term_eq .
 
 
+Axiom eq_TermBind : forall s s' vd vd' t t',
+  s = s' /\ vd = vd' /\ t = t' <-> TermBind s vd t = TermBind s' vd' t'.
+Axiom eq_TypeBind : forall tvd tvd' ty ty',
+  tvd = tvd' /\ ty = ty' <-> TypeBind tvd ty = TypeBind tvd' ty'.
+Axiom eq_DatatypeBind : forall dtd dtd',
+  dtd = dtd' <-> DatatypeBind dtd = DatatypeBind dtd'.
+Hint Rewrite <-
+  eq_TermBind
+  eq_TypeBind
+  eq_DatatypeBind
+: term_eq.
+
 Axiom beq_eq__refl : forall T beq, beq_eq T beq -> forall x, beq x x = true.
 
 Axiom beq_eq__forall2b : forall T f,
@@ -205,25 +228,49 @@ Ltac split_goal :=
     | |- _ <-> _ => idtac
   end.
 
+
+Ltac prove_term beq_equation :=
+  destruct 0;
+  try solve [simpl; split; inversion 1];
+  (* LHS *)
+  rewrite beq_equation;
+  repeat rewrite andb_true_iff ;
+  repeat rewrite and_assoc;
+  (* RHS *)
+  autorewrite with term_eq;
+  (* point-wise *)
+  repeat rewrite and_iff;
+  split_goal; auto with reflect_eq
+.
+
 Lemma term_beq_eq : forall t, P_term t.
 Proof.
-apply term_rect' with (P := P_term) (Q := P_binding) (R := P_bindings).
-  + intros.
-    unfold P_term, P_binding in *.
-    intro t'.
-    destruct t'.
-    - (* equal *)
-      (* LHS *)
-      rewrite term_beq_equation.
-      repeat rewrite andb_true_iff .
-      repeat rewrite and_assoc.
-      (* RHS *)
-      autorewrite with term_eq.
+  apply term_rect' with (P := P_term) (Q := P_binding) (R := P_bindings).
+  all: intros; unfold P_term, P_binding, P_bindings in *.
+  + prove_term term_beq_equation.
+  + prove_term term_beq_equation.
+  + prove_term term_beq_equation.
+  + prove_term term_beq_equation.
+  + prove_term term_beq_equation.
+  + prove_term term_beq_equation.
+  + prove_term term_beq_equation.
+  + prove_term term_beq_equation.
+  + prove_term term_beq_equation.
+  + prove_term term_beq_equation.
+  + prove_term term_beq_equation.
+  + prove_term term_beq_equation.
+    admit.
+  + prove_term term_beq_equation.
+    admit.
 
-      repeat rewrite and_iff.
-      split_goal; auto with reflect_eq.
-    - simpl.
-      split; inversion 1.
+  + prove_term binding_beq_equation.
+  + prove_term binding_beq_equation.
+  + prove_term binding_beq_equation.
+
+  + intro bs'.
+    assert (exists b2 bs2, bs' = b2 :: bs2). admit.
+    destruct H1 as [b2 [bs2 ?]]. subst.
+    admit.
 
 Admitted.
 

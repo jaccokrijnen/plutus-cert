@@ -171,8 +171,8 @@ Section NonFold.
      | Error ty        => 0
      | Constant v      => 0
      | Builtin f       => 0
-     | Constr i ts     => list_sum (map size ts)
-     | Case t ts       => size t + list_sum (map size ts)
+     | Constr i T ts   => list_sum (map size ts)
+     | Case T t ts     => size t + list_sum (map size ts)
    end.
 
   Lemma size_let_cons rec b bs t :

@@ -356,8 +356,8 @@ Section Term.
       intuition.
   Qed.
 
-  Lemma not_in_fv_Constr x i ts :
-    x ∉ fv (Constr i ts) ->
+  Lemma not_in_fv_Constr x i T ts :
+    x ∉ fv (Constr i T ts) ->
     Forall (fun t => x ∉ fv t) ts.
   Proof.
     intros H.
@@ -367,8 +367,8 @@ Section Term.
     constructor; intuition.
   Qed.
 
-  Lemma not_in_fv_Case_1 x t ts :
-    x ∉ fv (Case t ts) ->
+  Lemma not_in_fv_Case_1 x T t ts :
+    x ∉ fv (Case T t ts) ->
     Forall (fun t => x ∉ fv t) ts.
   Proof.
     intros.
@@ -390,8 +390,8 @@ Section Term.
       auto.
   Qed.
 
-  Lemma not_in_fv_Case_2 x t ts :
-    x ∉ fv (Case t ts) ->
+  Lemma not_in_fv_Case_2 x T t ts :
+    x ∉ fv (Case T t ts) ->
     x ∉ fv t.
   Proof.
     intros.
@@ -655,8 +655,11 @@ Section Term.
       + eauto using not_in_fv_Constr.
 
     - (* Case *)
-      f_equal.  eauto with not_in.
-      eapply  subst_terms_not_in_fv;
+      f_equal. 
+        + apply H.
+          eapply not_in_fv_Case_2.
+          apply H1.
+        + eapply  subst_terms_not_in_fv;
       eauto with not_in.
 
     - (* TermBind *)

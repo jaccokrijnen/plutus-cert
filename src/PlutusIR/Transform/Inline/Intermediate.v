@@ -92,8 +92,8 @@ Section InlineOnly.
         | Error τ           => Error (inline_uncond_ty Δ τ)
         | IWrap τ1 τ2 t     => IWrap (inline_uncond_ty Δ τ1) (inline_uncond_ty Δ τ2) (inline_uncond Γ Δ t)
         | Unwrap t          => Unwrap (inline_uncond Γ Δ t)
-        | Constr i ts       => Constr i (map (inline_uncond Γ Δ) ts)
-        | Case t ts        => Case (inline_uncond Γ Δ t) (map (inline_uncond Γ Δ) ts)
+        | Constr i T ts     => Constr i (inline_uncond_ty Δ T) (map (inline_uncond Γ Δ) ts)
+        | Case T t ts       => Case (inline_uncond_ty Δ T) (inline_uncond Γ Δ t) (map (inline_uncond Γ Δ) ts)
       end
 
    with inline_uncond_binding (Γ : list (name * term)) (Δ : list (tyname * ty)) (b : binding) : binding
@@ -119,8 +119,8 @@ Section InlineOnly.
       | Error ty          => Error ty
       | IWrap ty1 ty2 t   => IWrap ty1 ty2 (inline_deadcode t)
       | Unwrap t          => Unwrap (inline_deadcode t)
-      | Constr i ts       => Constr i (map inline_deadcode ts)
-      | Case t ts         => Case (inline_deadcode t) (map (inline_deadcode) ts)
+      | Constr i T ts     => Constr i T (map inline_deadcode ts)
+      | Case T t ts       => Case T (inline_deadcode t) (map (inline_deadcode) ts)
     end
 
    with inline_deadcode_binding (b : binding) : list binding
@@ -164,15 +164,27 @@ Section InlineOnly.
         | Var x, t     => pure t (* it must be inlined *)
 
         | TyAbs v k t, TyAbs _ _ t' => TyAbs v k <$> inlined_intermediate elims t t'
+        | TyAbs _ _ _, _ => None
         | LamAbs v ty t, LamAbs _ _ t' => LamAbs v ty <$> inlined_intermediate elims t t'
+        | LamAbs _ _ _, _ => None
         | Apply t1 t2, Apply t1' t2' => Apply <$> inlined_intermediate elims t1 t1' <*> inlined_intermediate elims t2 t2'
-        | Constant c, _ => pure (Constant c)
-        | Builtin f, _ => pure (Builtin f)
+        | Apply _ _, _ => None
+        | Constant c, Constant _ => pure (Constant c)
+        | Constant _, _ => None
+        | Builtin f, Builtin _ => pure (Builtin f)
+        | Builtin _, _ => None
         | TyInst t ty, TyInst t' _ => TyInst <$> inlined_intermediate elims t t' <*> pure ty
-        | Error ty, _ => pure (Error ty)
+        | TyInst _ _, _ => None
+        | Error ty, Error _ => pure (Error ty)
+        | Error _, _ => None
         | IWrap ty1 ty2 t, IWrap _ _ t' => IWrap ty1 ty2 <$> inlined_intermediate elims t t'
+        | IWrap _ _ _ , _ => None
         | Unwrap t, Unwrap t' => Unwrap <$> inlined_intermediate elims t t'
-        | _, _ => None
+        | Unwrap _, _ => None
+        | Constr i T ts, Constr _ _ ts' => Constr i T <$> sequence_options (zip_with (inlined_intermediate elims) ts ts')
+        | Constr _ _ _, _ => None
+        | Case T t ts, Case _ t' ts' => Case T <$> inlined_intermediate elims t t' <*> sequence_options (zip_with (inlined_intermediate elims) ts ts')
+        | Case _ _ _, _ => None
       end
   with inlined_intermediate_binding (elims : list name) (b : binding) (bs_post : list binding) : option binding
    := match b with

@@ -493,15 +493,15 @@ Lemma msubstA_Unwrap : forall ss M ,
     msubstA ss (Unwrap M) = Unwrap (msubstA ss M).
 Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
-Lemma msubstA_Constr : forall ss n ts ,
-    msubstA ss (Constr n ts) = Constr n (map (msubstA ss) ts).
+Lemma msubstA_Constr : forall ss n T ts ,
+    msubstA ss (Constr n T ts) = Constr n (msubstT ss T) (map (msubstA ss) ts).
 Proof. induction ss; intros.
   - simpl. rewrite map_id. reflexivity.
   - destruct a. simpl. rewrite IHss. rewrite map_map. reflexivity.
 Qed.
 
-Lemma msubstA_Case : forall ss t ts,
-    msubstA ss (Case t ts) = Case (msubstA ss t) (map (msubstA ss) ts).
+Lemma msubstA_Case : forall ss T t ts,
+    msubstA ss (Case T t ts) = Case (msubstT ss T) (msubstA ss t) (map (msubstA ss) ts).
 Proof.
   induction ss; intros. 
   - simpl. rewrite map_id. reflexivity.

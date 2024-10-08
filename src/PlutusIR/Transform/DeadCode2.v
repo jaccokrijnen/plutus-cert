@@ -71,18 +71,18 @@ Inductive dc : term -> term -> Prop :=
       compat_1 dc (IWrap F T)
   | dc_Unwrap :
       compat_1 dc (Unwrap)
-  | dc_Constr_nil n :
-      dc (Constr n nil) (Constr n nil)
-  | dc_Constr_cons n t t' ts ts' :
+  | dc_Constr_nil n T :
+      dc (Constr n T nil) (Constr n T nil)
+  | dc_Constr_cons n T t t' ts ts' :
       dc t t' ->
-      dc (Constr n ts) (Constr n ts') ->
-      dc (Constr n (t :: ts)) (Constr n (t' :: ts'))
-  | dc_Case_nil d d':
+      dc (Constr n T ts) (Constr n T ts') ->
+      dc (Constr n T (t :: ts)) (Constr n T (t' :: ts'))
+  | dc_Case_nil T d d':
       dc d d' ->
-      dc (Case d []) (Case d' [])
-  | dc_Case_cons d d' t t' ts ts' :
-      dc (Case d ts) (Case d' ts) ->
-      dc (Case d (t :: ts)) (Case d' (t' :: ts'))
+      dc (Case T d []) (Case T d' [])
+  | dc_Case_cons T d d' t t' ts ts' :
+      dc (Case T d ts) (Case T d' ts) ->
+      dc (Case T d (t :: ts)) (Case T d' (t' :: ts'))
 
     (* Note: This compat case includes a case for Let, which are already
     covered by the following four constructors (e.g. there is more than one way

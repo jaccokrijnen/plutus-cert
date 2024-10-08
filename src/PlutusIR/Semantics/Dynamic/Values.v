@@ -23,9 +23,9 @@ Inductive value : term -> Prop :=
       value (Constant u)
   | V_Error : forall T,
       value (Error T)
-  | V_Constr : forall i vs,
+  | V_Constr : forall i T vs,
       Forall value vs ->
-      value (Constr i vs)
+      value (Constr i T vs)
   (** Builtins *)
   | V_Neutral : forall nv,
       neutral_value 0 nv ->
@@ -79,7 +79,7 @@ Context
   (H_IWrap : forall (F T : ty) (v : term), value v -> P v -> ~ is_error v -> P (IWrap F T v))
   (H_Constant : forall c : constant, P (Constant c))
   (H_Error : forall T : ty, P (Error T))
-  (H_Constr : forall (i : nat) (vs : list term), Forall value vs -> Forall P vs -> P (Constr i vs))
+  (H_Constr : forall (i : nat) (T : ty) (vs : list term), Forall value vs -> Forall P vs -> P (Constr i T vs))
   (H_Neutral : forall nv : term, neutral_value 0 nv -> Q 0 nv -> P nv)
   (H_Builtin : forall (n : nat) (f6 : DefaultFun), n < arity f6 -> Q n (Builtin f6))
   (H_Apply : forall (n : nat) (nv v : term), value v -> P v -> ~ is_error v ->
@@ -98,7 +98,7 @@ Fixpoint value___ind (t : term) (v : value t) {struct v} : P t :=
   | V_IWrap F1 T v0 v1 n => H_IWrap F1 T v0 v1 (value___ind v0 v1) n
   | V_Constant u => H_Constant u
   | V_Error T => H_Error T
-  | V_Constr i ts vs => H_Constr i ts vs
+  | V_Constr i T ts vs => H_Constr i T ts vs
       ((fix F ts vs := match vs as vs in Forall _ ts return Forall P ts with
         | Forall_nil _ => Forall_nil _
         | @Forall_cons _ _ t ts vt vts => @Forall_cons _ _ t ts (value___ind t vt) (F ts vts)

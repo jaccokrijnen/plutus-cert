@@ -299,8 +299,8 @@ Inductive term :=
   | Error    : ty -> term
   | IWrap    : ty -> ty -> term -> term
   | Unwrap   : term -> term
-  | Constr   : nat -> list term -> term
-  | Case     : term -> list term -> term
+  | Constr   : nat -> ty -> list term -> term
+  | Case     : ty -> term -> list term -> term
 
 with binding :=
   | TermBind : strictness -> vdecl -> term -> binding
@@ -438,8 +438,8 @@ Section term__ind.
     (H_Error   : forall t : ty, P (Error t))
     (H_IWrap   : forall (t t0 : ty) (t1 : term), P t1 -> P (IWrap t t0 t1))
     (H_Unwrap  : forall t : term, P t -> P (Unwrap t))
-    (H_Constr  : forall (i : nat) (ts : list term), ForallP P ts -> P (Constr i ts))
-    (H_Case   : forall (t : term), P t -> forall ts, ForallP P ts -> P (Case t ts))
+    (H_Constr  : forall (i : nat) T (ts : list term), ForallP P ts -> P (Constr i T ts))
+    (H_Case   : forall T (t : term), P t -> forall ts, ForallP P ts -> P (Case T t ts))
     .
 
 
@@ -476,8 +476,8 @@ Section term__ind.
       | Error ty        => H_Error ty
       | Constant c      => H_Constant c
       | Builtin f       => H_Builtin f
-      | Constr i ts     => H_Constr i ts (terms__ind term__ind ts)
-      | Case t ts      => H_Case t (term__ind t) ts (terms__ind term__ind ts)
+      | Constr i T ts     => H_Constr i T ts (terms__ind term__ind ts)
+      | Case T t ts      => H_Case T t (term__ind t) ts (terms__ind term__ind ts)
     end
   with binding__ind (b : binding) : Q b :=
     match b with
@@ -508,8 +508,8 @@ Section term_rect.
     (H_Error   : forall t : ty, P (Error t))
     (H_IWrap   : forall (t t0 : ty) (t1 : term), P t1 -> P (IWrap t t0 t1))
     (H_Unwrap  : forall t : term, P t -> P (Unwrap t))
-    (H_Constr  : forall (i : nat) (ts : list (term)), ForallT P ts -> P (Constr i ts))
-    (H_Case   : forall t, P t -> forall ts, ForallT P ts -> P (Case t ts)).
+    (H_Constr  : forall (i : nat) T (ts : list (term)), ForallT P ts -> P (Constr i T ts))
+    (H_Case   : forall T t, P t -> forall ts, ForallT P ts -> P (Case T t ts)).
 
   Context
     (H_TermBind    : forall s v t, P t -> Q (TermBind s v t))
@@ -547,8 +547,8 @@ Section term_rect.
       | Error ty        => @H_Error ty
       | Constant c      => @H_Constant c
       | Builtin f       => @H_Builtin f
-      | Constr i ts     => @H_Constr i ts (terms_rect' term_rect' ts)
-      | Case t ts      => @H_Case t (term_rect' t) ts (terms_rect' term_rect' ts)
+      | Constr i T ts     => @H_Constr i T ts (terms_rect' term_rect' ts)
+      | Case T t ts      => @H_Case T t (term_rect' t) ts (terms_rect' term_rect' ts)
     end
   with binding_rect' (b : binding) : Q b :=
     match b with
