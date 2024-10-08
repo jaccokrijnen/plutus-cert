@@ -1,4 +1,5 @@
 Require Import PlutusCert.PlutusIR.
+Import PlutusNotations.
 Require Import PlutusCert.PlutusIR.Semantics.Dynamic.Bigstep.
 
 Require Import Coq.ZArith.BinInt.
@@ -7,8 +8,6 @@ Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Strings.String.
 Local Open Scope string_scope.
-
-
 
 Definition Ty_int : ty := Ty_Builtin DefaultUniInteger.
 Definition int_to_int : ty := Ty_Fun Ty_int Ty_int.
@@ -22,12 +21,12 @@ Proof with (autounfold; eauto with hintdb__eval_no_error || (try solve [intros H
   eexists.
   eapply E_Apply...
   - eapply E_NeutralApply...
-    eapply NV_Apply...
+    eapply U_Apply...
   - intros Hcon.
     inversion Hcon.
   - simpl.
     rewrite eqb_refl.
     eapply E_NeutralApplyFull...
-    eapply FA_Apply...
-    eapply FA_Apply...
+    eapply S_Apply...
+    eapply S_Apply...
 Qed.

@@ -4,7 +4,7 @@ Require Import PlutusCert.PlutusIR.Semantics.Dynamic.Bigstep.
 
 
 Lemma compute_defaultfun__to_value : forall t v,
-    fully_applied t ->
+    saturated t ->
     compute_defaultfun t = Datatypes.Some v ->
     value v.
 Proof with (try discriminate).

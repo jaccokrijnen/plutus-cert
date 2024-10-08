@@ -68,16 +68,16 @@ Ltac error_is_error :=
       exfalso; apply H; constructor
   end.
 
-Ltac invert_neutral :=
+Ltac invert_unsaturated :=
   match goal with
-  | H : neutral ?t |- ?P =>
+  | H : unsaturated ?t |- ?P =>
       try solve [inversion H]
-  | H : neutral_value ?n ?t |- ?P =>
+  | H : unsaturated_with ?n ?t |- ?P =>
       try solve [inversion H]
   end.
 
 Ltac try_solve :=
-  try solve [repeat (use_IH || error_is_error || invert_neutral || eauto)].
+  try solve [repeat (use_IH || error_is_error || invert_unsaturated || eauto)].
 
 (** ** The main result *)
 Theorem eval__deterministic : forall x y1 j1,
@@ -99,11 +99,11 @@ Proof with eauto.
       inversion H15.
     + inversion H8.
       subst.
-      eapply fully_applied_neutral__subsumes__neutral_value in H13...
+      eapply saturated_with__subsumes__unsaturated_with in H13...
       eapply eval_value in H13 as H14.
       autounfold in H14.
       use_IH.
-      invert_neutral.
+      invert_unsaturated.
 (* ADMIT: Remaining proof cases are technical overhead.
     Since we have multiple evaluation rules for applications
     and type instantiations, we need to do tedious work to

@@ -16,6 +16,9 @@ Definition arity (df : DefaultFun) : nat :=
   match df with
   | AddInteger => 2
   | IfThenElse => 4
+  | MultiplyInteger => 2
+  | SubtractInteger => 2
+  | EqualsInteger => 2
   | _ => 0 (* TODO: implement lookupBuiltinTy, then this can be calculated from the type *)
   end
   (*
@@ -101,28 +104,39 @@ Definition compute_defaultfun (t : term) : option term :=
       )
       elseBranch
     ) => Some (if cond then thenBranch else elseBranch)
+  (* MultiplyInteger *)
+  | (Apply
+      (Apply
+        (Builtin MultiplyInteger)
+        (Constant (ValueOf DefaultUniInteger x))
+      )
+      (Constant (ValueOf DefaultUniInteger y))
+    )
+    => Some (constInt (x * y))
+
+  (* EqInteger *)
+  | (Apply
+      (Apply
+        (Builtin EqualsInteger)
+        (Constant (ValueOf DefaultUniInteger x))
+      )
+      (Constant (ValueOf DefaultUniInteger y))
+    ) => Some (constBool (x =? y))
+
+  (* SubtractInteger *)
+  | (Apply
+      (Apply
+        (Builtin SubtractInteger)
+        (Constant (ValueOf DefaultUniInteger x))
+      )
+      (Constant ((ValueOf DefaultUniInteger y)))
+    ) => Some (constInt (x - y))
 
   | _ => None
   end
   (*
 None (* TODO: update to new built-ins set *)
 
-  (* SubtractInteger *)
-  | (Apply
-      (Apply
-        (Builtin SubtractInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constInt (x - y))
-  (* MultiplyInteger *)
-  | (Apply
-      (Apply
-        (Builtin MultiplyInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constInt (x * y))
   (* DivideInteger *)
   | (Apply
       (Apply
@@ -188,14 +202,6 @@ None (* TODO: update to new built-ins set *)
       )
       (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
     ) => Some (constBool (x >=? y))
-  (* EqInteger *)
-  | (Apply
-      (Apply
-        (Builtin EqInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constBool (x =? y))
   (** Bytestring operations *)
   (* Concatenate *)
   | (Apply

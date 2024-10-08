@@ -8,6 +8,26 @@ Import ListNotations.
 Require Import Coq.Strings.String.
 Local Open Scope string_scope.
 
+Import PlutusNotations.
+
+
+(* Build lazy if-then-else using thunking *)
+
+Definition thunk t :=
+  <{ λ "unit" :: unit, t }>
+.
+
+Definition force t :=
+  <{ t ⋅ () }>
+.
+
+Definition lazy_if T b t1 t2 :=
+force
+  <{
+    ifthenelse @ (unit → T) ⋅ b ⋅ {thunk t1} ⋅ {thunk t2}
+  }>
+.
+
 Definition fact_term (n : Z) : term :=
   Let
     Rec
@@ -23,39 +43,10 @@ Definition fact_term (n : Z) : term :=
         (LamAbs
           "x"
           (Ty_Builtin DefaultUniInteger)
-          (Apply
-            (Apply
-              (Apply
-                (TyInst
-                  (Builtin IfThenElse)
-                  (Ty_Builtin DefaultUniInteger)
-                )
-                (Apply
-                  (Apply
-                    (Builtin EqualsInteger)
-                    (Var "x")
-                  )
-                  (Constant (ValueOf DefaultUniInteger 0))
-                )
-              )
-              (Constant (ValueOf DefaultUniInteger 1))
-            )
-            (Apply
-              (Apply
-                (Builtin MultiplyInteger)
-                (Var "x")
-              )
-              (Apply
-                (Var "fact")
-                (Apply
-                  (Apply
-                    (Builtin SubtractInteger)
-                    (Var "x")
-                  )
-                  (Constant (ValueOf DefaultUniInteger 1))
-                )
-              )
-            )
+          (lazy_if <{ ℤ }>
+            <{ {Builtin EqualsInteger} ⋅ {Var "x"} ⋅ (Int 0) }>
+            <{ Int 1 }>
+            <{ {Var "x"} × ({Var "fact"} ⋅ ({Var "x"} - (Int 1)))}>
           )
         )
     ]
@@ -69,29 +60,40 @@ Ltac destruct_invert_contra := let Hcon := fresh "Hcon" in intros Hcon; destruct
 Ltac solve_substitute := repeat (econstructor || eauto || invert_contra || destruct_invert_contra).
 Ltac solve_value_builtin := repeat econstructor.
 
-Ltac invert_neutrals :=
+Ltac invert_unsaturated :=
   match goal with
-  | H : neutral_value ?n ?t |- False =>
-      inversion H; clear H; subst; try invert_neutrals
-  | H : neutral ?t |- False =>
-      inversion H; clear H; subst; try invert_neutrals
+  | H : unsaturated_with ?n ?t |- False =>
+      inversion H; clear H; subst; try invert_unsaturated
+  | H : unsaturated ?t |- False =>
+      inversion H; clear H; subst; try invert_unsaturated
   end.
 
-Ltac decide_neutral :=
+Ltac decide_unsaturated :=
   match goal with
-  | |- neutral_value ?n ?nv =>
-      econstructor; eauto; try decide_neutral
+  | |- unsaturated_with ?n ?nv =>
+      econstructor; eauto; try decide_unsaturated
   | |- ?f <> ?f' =>
       let Hcon := fresh "Hcon" in
       try solve [intros Hcon; inversion Hcon]
   end.
 
+Lemma eval_ifthenelse_true : forall T t1 t2 t3 v2 v3 k1 k2 k3,
+    t1 =[ k1 ]=> <{ true }> ->
+    t2 =[ k2 ]=> v2 ->
+    t3 =[ k3 ]=> v3 ->
+    <{ ifthenelse @ T ⋅ t1 ⋅ t2 ⋅ t3 }> =[ k2 ]=> v2.
+Admitted.
+
+Lemma eval_ifthenelse_false : forall T t1 t2 t3 v2 v3 k1 k2 k3,
+    t1 =[ k1 ]=> <{ false }> ->
+    t2 =[ k2 ]=> v2 ->
+    t3 =[ k3 ]=> v3 ->
+    <{ ifthenelse @ T ⋅ t1 ⋅ t2 ⋅ t3 }> =[ k2 ]=> v3.
+Admitted.
+
 Example fact_term_evaluates : exists k,
   fact_term 2 =[k]=> Constant (ValueOf DefaultUniInteger 2).
 Proof with (autounfold; simpl; eauto || (try reflexivity) || (try solve [intros Hcon; inversion Hcon])).
-(* ADMIT: Factorial should use non-strict term bindings, but we do not model them yet. *)
-Admitted.
-  (*
   unfold fact_term.
   eexists.
   apply E_LetRec.
@@ -103,91 +105,114 @@ Admitted.
     eapply E_LetRec_TermBind.
     simpl.
     eapply E_LetRec_Nil...
+    constructor.
   } {
-    simpl.
-    eapply E_IfFalse... {
-      eapply E_NeutralApplyFull...
-      eapply FA_Apply...
-      eapply FA_Apply...
-      eapply FA_Builtin...
+    constructor.
     } {
-      eapply E_NeutralApplyPartial. {
-        intros Hcon.
-        invert_neutrals.
-        simpl in H5.
-        apply PeanoNat.Nat.lt_irrefl in H5...
+    inversion 1.
+    } {
+    simpl.
+
+    eapply E_Apply. {
+      eapply eval_ifthenelse_false.
+      - eapply E_NeutralApplyFull...
+        eapply S_Apply...
+        eapply S_Apply...
+      - constructor.
+      - constructor.
       } {
-        eapply E_NeutralApply...
-        decide_neutral...
-      } {
-        simpl...
-        decide_neutral...
-      } {
-        eapply E_Apply... {
-          eapply E_LetRec...
-          eapply E_LetRec_TermBind...
-        } {
-          eapply E_NeutralApplyFull...
-          eapply FA_Apply...
-          eapply FA_Apply...
-          eapply FA_Builtin...
-        } {
-          simpl...
-        } {
-          simpl...
-          eapply E_IfFalse... {
-            eapply E_NeutralApplyFull...
-            eapply FA_Apply...
-            eapply FA_Apply...
-            eapply FA_Builtin...
-          }
-          eapply E_NeutralApplyPartial. {
-            intros Hcon.
-            invert_neutrals...
-            simpl in H5.
-            apply PeanoNat.Nat.lt_irrefl in H5...
-          } {
-            eapply E_NeutralApply...
-            decide_neutral...
-          } {
-            unfold constInt...
-            decide_neutral...
-          } {
-            eapply E_Apply... {
-              eapply E_LetRec...
-              eapply E_LetRec_TermBind...
-            } {
-              eapply E_NeutralApplyFull...
-              eapply FA_Apply...
-              eapply FA_Apply...
-              eapply FA_Builtin...
-            } {
-              intros Hcon. inversion Hcon.
-            } {
-              simpl...
-              eapply E_IfTrue...
-              eapply E_NeutralApplyFull...
-              eapply FA_Apply...
-              eapply FA_Apply...
-              eapply FA_Builtin...
-            }
-          } {
-            simpl...
-          } {
-            eapply E_NeutralApplyFull...
-            eapply FA_Apply...
-            eapply FA_Apply...
-            eapply FA_Builtin...
-          }
-        }
-      } {
-        simpl...
-      } {
-        eapply E_NeutralApplyFull...
-        eapply FA_Apply...
-        eapply FA_Apply...
-        eapply FA_Builtin...
+      constructor. } {
+        inversion 1.
       }
-    }
-  }
-Qed. *)
+
+      simpl.
+
+      eapply E_NeutralApplyPartial...
+      - intros.
+        invert_unsaturated.
+        simpl in H3.
+        inversion H3.
+        inversion H0.
+        inversion H7.
+      - constructor.
+        constructor...
+      - constructor...
+      - eapply E_Apply.
+        + eapply E_LetRec.
+          constructor.
+          simpl.
+          eapply E_LetRec_Nil.
+          constructor.
+        + eapply E_NeutralApplyFull.
+          * constructor...
+            constructor...
+          * reflexivity.
+        + inversion 1.
+        + simpl.
+          eapply E_Apply.
+          eapply eval_ifthenelse_false.
+          { constructor...
+            constructor...
+            constructor...
+          } {
+            constructor.
+          } {
+            constructor.
+          } {
+            constructor.
+          } {
+            inversion 1.
+          } {
+            simpl.
+            eapply E_NeutralApplyPartial.
+            { intro.
+              invert_unsaturated.
+              inversion H3.
+              inversion H0.
+              inversion  H7.
+            } {
+              constructor...
+              constructor...
+            } {
+              constructor...
+            } {
+              eapply E_Apply.
+              { eapply E_LetRec.
+                constructor.
+                simpl.
+                eapply E_LetRec_Nil.
+                constructor.
+            } {
+              eapply E_NeutralApplyFull...
+              constructor...
+              constructor...
+            } {
+              inversion 1.
+            } {
+              simpl.
+              eapply E_Apply.
+              { eapply eval_ifthenelse_true...
+              { eapply E_NeutralApplyFull...
+                constructor...
+                constructor...
+              } {
+                constructor...
+              } {
+                constructor...
+              } }
+              { constructor... }
+              { inversion 1. }
+              { constructor... } }
+              }
+              { inversion 1. }
+              { eapply E_NeutralApplyFull...
+                constructor...
+                constructor...
+              }
+              }
+        - inversion 1.
+        - eapply E_NeutralApplyFull...
+          constructor...
+          constructor...
+          }
+Qed.

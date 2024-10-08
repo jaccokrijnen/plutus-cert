@@ -26,48 +26,35 @@ Inductive value : term -> Prop :=
   | V_Constr : forall i T vs,
       Forall value vs ->
       value (Constr i T vs)
-  (** Builtins *)
-  | V_Neutral : forall nv,
-      neutral_value 0 nv ->
+  (** Unsaturated (partially applied) builtins *)
+  | V_Unsaturated : forall nv,
+      unsaturated_with 0 nv ->
       value nv
-  (** If-Then-Else constructs
 
-      NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity.
-  *)
-  (* | V_If :
-      value (Builtin IfThenElse)
-  | V_If1 : forall T,
-      value (TyInst (Builtin IfThenElse) T)
-  | V_If2 : forall T cond,
-      value (Apply (TyInst (Builtin IfThenElse) T) cond)
-  | V_If3 : forall T cond t,
-      value (Apply (Apply (TyInst (Builtin IfThenElse) T) cond) t) *)
-
-with neutral_value : nat -> term -> Prop :=
-  | NV_Builtin : forall n f,
-      (* NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity. *)
-      (* f <> IfThenElse -> *)
+(* Applications of builtins that are unsaturated with n more arguments *)
+with unsaturated_with : nat -> term -> Prop :=
+  | U_Builtin : forall n f,
       n < arity f ->
-      neutral_value n (Builtin f)
-  | NV_Apply : forall n nv v,
+      unsaturated_with n (Builtin f)
+  | U_Apply : forall n nv v,
       value v ->
       ~ is_error v ->
-      neutral_value (S n) nv ->
-      neutral_value n (Apply nv v)
-  | NV_TyInst : forall n nv T,
-      neutral_value (S n) nv ->
-      neutral_value n (TyInst nv T)
+      unsaturated_with (S n) nv ->
+      unsaturated_with n (Apply nv v)
+  | U_TyInst : forall n nv T,
+      unsaturated_with (S n) nv ->
+      unsaturated_with n (TyInst nv T)
   .
 
 #[export] Hint Constructors value : core.
-#[export] Hint Constructors neutral_value : core.
+#[export] Hint Constructors unsaturated_with : core.
 
 Scheme value__ind := Minimality for value Sort Prop
-  with neutral_value__ind := Minimality for neutral_value Sort Prop.
+  with unsaturated_with__ind := Minimality for unsaturated_with Sort Prop.
 
 Combined Scheme value__multind from
   value__ind,
-  neutral_value__ind.
+  unsaturated_with__ind.
 
 Section value_multind.
 Context
@@ -80,12 +67,12 @@ Context
   (H_Constant : forall c : constant, P (Constant c))
   (H_Error : forall T : ty, P (Error T))
   (H_Constr : forall (i : nat) (T : ty) (vs : list term), Forall value vs -> Forall P vs -> P (Constr i T vs))
-  (H_Neutral : forall nv : term, neutral_value 0 nv -> Q 0 nv -> P nv)
+  (H_unsaturated_with : forall nv : term, unsaturated_with 0 nv -> Q 0 nv -> P nv)
   (H_Builtin : forall (n : nat) (f6 : DefaultFun), n < arity f6 -> Q n (Builtin f6))
   (H_Apply : forall (n : nat) (nv v : term), value v -> P v -> ~ is_error v ->
-        neutral_value (S n) nv -> Q (S n) nv -> Q n (Apply nv v))
+        unsaturated_with (S n) nv -> Q (S n) nv -> Q n (Apply nv v))
   (H_TyInst : forall (n : nat) (nv : term) (T : ty),
-        neutral_value (S n) nv -> Q (S n) nv -> Q n (TyInst nv T)).
+        unsaturated_with (S n) nv -> Q (S n) nv -> Q n (TyInst nv T)).
 Fixpoint values__ind (H_value : forall (t : term), value t -> P t) (ts : list term) (vs : Forall value ts): Forall P ts :=
   match vs as vs in Forall _ ts return Forall P ts with
     | Forall_nil _ => Forall_nil _
@@ -103,51 +90,50 @@ Fixpoint value___ind (t : term) (v : value t) {struct v} : P t :=
         | Forall_nil _ => Forall_nil _
         | @Forall_cons _ _ t ts vt vts => @Forall_cons _ _ t ts (value___ind t vt) (F ts vts)
       end) ts vs)
-  | V_Neutral nv n => H_Neutral nv n (neutral___ind 0 nv n)
+  | V_Unsaturated nv n => H_unsaturated_with nv n (unsaturated_with___ind 0 nv n)
   end
-with neutral___ind (n : nat) (t : term) (n0 : neutral_value n t) {struct n0} : Q n t :=
-  match n0 in (neutral_value n1 t0) return (Q n1 t0) with
-  | NV_Builtin n1 f9 l => H_Builtin n1 f9 l
-  | NV_Apply n1 nv v v0 n2 n3 =>
-      H_Apply n1 nv v v0 (value___ind v v0) n2 n3 (neutral___ind (S n1) nv n3)
-  | NV_TyInst n1 nv T n2 => H_TyInst n1 nv T n2 (neutral___ind (S n1) nv n2)
+with unsaturated_with___ind (n : nat) (t : term) (n0 : unsaturated_with n t) {struct n0} : Q n t :=
+  match n0 in (unsaturated_with n1 t0) return (Q n1 t0) with
+  | U_Builtin n1 f9 l => H_Builtin n1 f9 l
+  | U_Apply n1 nv v v0 n2 n3 =>
+      H_Apply n1 nv v v0 (value___ind v v0) n2 n3 (unsaturated_with___ind (S n1) nv n3)
+  | U_TyInst n1 nv T n2 => H_TyInst n1 nv T n2 (unsaturated_with___ind (S n1) nv n2)
   end
 .
-Combined Scheme value___multind from value___ind, neutral___ind.
+Combined Scheme value___multind from value___ind, unsaturated_with___ind.
 End value_multind.
 
-Definition neutral (t : term) := neutral_value 0 t.
+Definition unsaturated (t : term) := unsaturated_with 0 t.
 
-#[export] Hint Unfold neutral : core.
+#[export] Hint Unfold unsaturated : core.
 
-Inductive fully_applied_neutral : nat -> term -> Prop :=
-  | FA_Builtin : forall n f,
-      (* NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity. *)
-      (* f <> IfThenElse -> *)
+(* Applied builtin that is saturated with n more arguments *)
+Inductive saturated_with : nat -> term -> Prop :=
+  | S_Builtin : forall n f,
       n = arity f ->
-      fully_applied_neutral n (Builtin f)
-  | FA_Apply : forall n nv v,
+      saturated_with n (Builtin f)
+  | S_Apply : forall n nv v,
       value v ->
       ~ is_error v ->
-      fully_applied_neutral (S n) nv ->
-      fully_applied_neutral n (Apply nv v)
-  | FA_TyInst : forall n nv T,
-      fully_applied_neutral (S n) nv ->
-      fully_applied_neutral n (TyInst nv T)
+      saturated_with (S n) nv ->
+      saturated_with n (Apply nv v)
+  | S_TyInst : forall n nv T,
+      saturated_with (S n) nv ->
+      saturated_with n (TyInst nv T)
   .
 
-#[export] Hint Constructors fully_applied_neutral : core.
+#[export] Hint Constructors saturated_with : core.
 
-Definition fully_applied (t : term) := fully_applied_neutral 0 t.
+Definition saturated (t : term) := saturated_with 0 t.
 
-#[export] Hint Unfold fully_applied : core.
+#[export] Hint Unfold saturated : core.
 
 Require Import Lia.
 
-Lemma neutral_value__monotone : forall n m nv,
-    neutral_value n nv ->
+Lemma unsaturated_with__monotone : forall n m nv,
+    unsaturated_with n nv ->
     m <= n ->
-    neutral_value m nv.
+    unsaturated_with m nv.
 Proof with (eauto || (try lia)).
   intros.
   generalize dependent m.
@@ -155,24 +141,24 @@ Proof with (eauto || (try lia)).
   - destruct f...
     all: econstructor...
   - econstructor...
-    eapply IHneutral_value...
+    eapply IHunsaturated_with...
   - econstructor...
-    eapply IHneutral_value...
+    eapply IHunsaturated_with...
 Qed.
 
-Lemma fully_applied_neutral__subsumes__neutral_value : forall m n nv,
-  fully_applied_neutral n nv ->
+Lemma saturated_with__subsumes__unsaturated_with : forall m n nv,
+  saturated_with n nv ->
   m < n ->
-  neutral_value m nv.
+  unsaturated_with m nv.
 Proof with (eauto || (try lia)).
   intros.
   generalize dependent m.
   induction H; intros...
   - subst...
   - econstructor...
-    eapply IHfully_applied_neutral...
+    eapply IHsaturated_with...
   - econstructor...
-    eapply IHfully_applied_neutral...
+    eapply IHsaturated_with...
 Qed.
 
 
@@ -209,7 +195,7 @@ Fixpoint
 
 Definition dec_value := dec_value' 0.
 
-Definition dec_neutral_value (n : nat) (t : term) :=
+Definition dec_unsaturated_with (n : nat) (t : term) :=
   match t with
     | Builtin f   => dec_value' n t
     | Apply nv v  => dec_value' n t
@@ -220,5 +206,5 @@ Definition dec_neutral_value (n : nat) (t : term) :=
 Lemma dec_value_value : forall t, dec_value t = true -> value t.
 Admitted.
 
-Lemma dec_neutral_value_neutral_value : forall n t, dec_neutral_value n t = true -> neutral_value n t.
+Lemma dec_unsaturated_with_unsaturated_with : forall n t, dec_unsaturated_with n t = true -> unsaturated_with n t.
 Admitted.

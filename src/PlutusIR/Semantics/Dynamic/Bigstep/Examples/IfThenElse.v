@@ -11,22 +11,22 @@ Local Open Scope string_scope.
 
 Ltac invert_neutrals :=
   match goal with
-  | H : neutral_value ?n ?t |- False =>
+  | H : unsaturated_with ?n ?t |- False =>
       inversion H; clear H; subst; try invert_neutrals
-  | H : neutral ?t |- False =>
+  | H : unsaturated ?t |- False =>
       inversion H; clear H; subst; try invert_neutrals
   end.
 
-Ltac decide_neutral :=
+Ltac decide_unsaturated :=
   match goal with
-  | |- neutral ?nv =>
-      unfold neutral; econstructor; simpl; eauto; try decide_neutral
-  | |- neutral_value ?n ?nv =>
-      econstructor; simpl; eauto; try decide_neutral
+  | |- unsaturated ?nv =>
+      unfold unsaturated; econstructor; simpl; eauto; try decide_unsaturated
+  | |- unsaturated_with ?n ?nv =>
+      econstructor; simpl; eauto; try decide_unsaturated
   | |- ?f <> ?f' =>
       let Hcon := fresh "Hcon" in
       try solve [intros Hcon; inversion Hcon]
-  | |- ~ neutral ?t =>
+  | |- ~ unsaturated ?t =>
       let Hcon := fresh "Hcon" in
       try solve [intros Hcon; invert_neutrals]
   | |- ~ is_error ?t =>
@@ -34,12 +34,18 @@ Ltac decide_neutral :=
       try solve [intros Hcon; inversion Hcon]
   end.
 
+Import PlutusNotations.
+
 Definition Ty_int : ty := Ty_Builtin DefaultUniInteger.
 Definition int_and_int_to_int : ty := Ty_Fun Ty_int (Ty_Fun Ty_int Ty_int).
 
 Example test_ifThenElse : forall x y, exists k,
-  Apply (LamAbs x int_and_int_to_int (Apply (Apply (Var x) (constInt 17)) (constInt 3))) (Apply (TyInst (Apply (LamAbs y Ty_int (Builtin IfThenElse)) (constInt 666)) (Ty_Builtin DefaultUniInteger)) (Constant (ValueOf DefaultUniBool true))) =[k]=> constInt 17.
-Proof with (eauto with hintdb__eval_no_error || (try solve [decide_neutral])).
+  <{
+    (λ x :: ℤ → ℤ → ℤ, {Var x} ⋅ Int 17 ⋅ Int 3)
+      ⋅ ((λ y :: ℤ, ifthenelse) ⋅ Int 666 @ ℤ ⋅ true)
+  }>
+      =[k]=> <{ Int 17 }>.
+Proof with (eauto with hintdb__eval_no_error || (try solve [decide_unsaturated])).
   unfold constInt.
   intros.
   eexists.

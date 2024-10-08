@@ -55,31 +55,31 @@ Inductive eval : term -> term -> nat -> Prop :=
   | E_NeutralBuiltin : forall f,
       Builtin f =[0]=> Builtin f
   | E_NeutralApply : forall nv v,
-      neutral (Apply nv v) ->
+      unsaturated (Apply nv v) ->
       (Apply nv v) =[0]=> (Apply nv v)
   | E_NeutralTyInst : forall nv T,
-      neutral (TyInst nv T) ->
+      unsaturated (TyInst nv T) ->
       (TyInst nv T) =[0]=> (TyInst nv T)
   | E_NeutralApplyPartial: forall t1 t2 nv1 v2 v0 j1 j2 j0,
-      ~ neutral (Apply t1 t2) ->
+      ~ unsaturated (Apply t1 t2) ->
       t1 =[j1]=> nv1 ->
-      neutral nv1 ->
+      unsaturated nv1 ->
       t2 =[j2]=> v2 ->
       ~ is_error v2 ->
       Apply nv1 v2 =[j0]=> v0 ->
       Apply t1 t2 =[j1 + j2 + 1 + j0]=> v0
   | E_NeutralTyInstPartial : forall t1 T nv1 v0 j1 j0,
-      ~ neutral (TyInst t1 T) ->
+      ~ unsaturated (TyInst t1 T) ->
       t1 =[j1]=> nv1 ->
-      neutral nv1 ->
+      unsaturated nv1 ->
       TyInst nv1 T =[j0]=> v0 ->
       TyInst t1 T =[j1 + 1 + j0]=> v0
   | E_NeutralApplyFull: forall nv1 v2 v,
-      fully_applied (Apply nv1 v2) ->
+      saturated (Apply nv1 v2) ->
       compute_defaultfun (Apply nv1 v2) = Datatypes.Some v ->
       Apply nv1 v2 =[1]=> v
   | E_NeutralTyInstFull: forall nv1 v T,
-      fully_applied (TyInst nv1 T) ->
+      saturated (TyInst nv1 T) ->
       compute_defaultfun (TyInst nv1 T) = Datatypes.Some v ->
       TyInst nv1 T =[1]=> v
 
