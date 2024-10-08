@@ -50,10 +50,9 @@ Inductive eval : term -> term -> nat -> Prop :=
       t =[k_t]=> v ->
       Constr i T ts =[k_ts]=> Constr i T vs ->
       Constr i T (t :: ts) =[k_t + k_ts]=> Constr i T (v :: vs)
+
   (** Builtins *)
   | E_NeutralBuiltin : forall f,
-      (* NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity. *)
-      (* f <> IfThenElse -> *)
       Builtin f =[0]=> Builtin f
   | E_NeutralApply : forall nv v,
       neutral (Apply nv v) ->
