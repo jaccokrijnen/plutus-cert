@@ -62,6 +62,111 @@ Unset Printing Implicit Defensive.
 Delimit Scope prop_scope with PROP.
 Open Scope prop_scope. *)
 
+(* Alpha reduction based on Andrej Bauer (Computer Science stack exchange)*)
+(* Inductive relation for:
+
+equalVar :: [(Var,Var)] -> Var -> Var -> Bool
+equalVar [] x y = (x == y)
+equalVar ((x,y):bound) z w = (x == z && y == w) || (x /= z && y /= w && equalVar bound z w)
+
+equal' :: [(Var, Var)] -> Term -> Term -> Bool
+equal' bound (Belong x1 y1) (Belong x2 y2) = (equalVar bound x1 x2 && equalVar bound y1 y2)
+equal' bound Bot Bot = True
+equal' bound (Imply u1 v1) (Imply u2 v2) = equal' bound u1 u2 && equal' bound v1 v2
+equal' bound (Forall x u) (Forall y v) = equal' ((x,y):bound) u v
+equal' _ _ _ = False
+
+*)
+Inductive AlphaVar : list (string * string) -> string -> string -> Prop :=
+| alpha_var_refl x : AlphaVar [] x x
+| alpha_var_cons x y z w sigma :
+    x = z ->
+    y = w ->
+    AlphaVar ((x, y) :: sigma) z w
+| alpha_var_diff x y z w sigma :
+    x <> z -> 
+    y <> w -> 
+    AlphaVar sigma z w -> 
+    AlphaVar ((x, y) :: sigma) z w.
+
+Inductive Alpha : list (string * string) -> term -> term -> Prop :=
+| alpha_var x y sigma : 
+    AlphaVar sigma x y -> 
+    Alpha sigma (tmvar x) (tmvar y)
+| alpha_lam x y A s1 s2 sigma :
+    Alpha ((x, y) :: sigma) s1 s2 -> 
+    Alpha sigma (tmlam x A s1) (tmlam y A s2)
+| alpha_app s1 s2 t1 t2 sigma :
+    Alpha sigma s1 s2 -> 
+    Alpha sigma t1 t2 -> 
+    Alpha sigma (tmapp s1 t1) (tmapp s2 t2).
+
+(* Contextual alpha equivalence: kinding contexts that match alpha contexts*)
+Inductive CAlpha : list (string * string) -> list (string * type) -> list (string * type) -> Prop :=
+  | calpha_nil : CAlpha [] [] []
+  | calpha_cons sigma Gamma Gamma' x y K :
+    CAlpha sigma Gamma Gamma' ->
+    CAlpha ((x, y)::sigma) ((x, K)::Gamma) ((y, K)::Gamma').
+
+(* Exercise and possibly useful *)
+Lemma alpha_preserves_typing sigma s t A Gamma Gamma' :
+  Alpha sigma s t -> CAlpha sigma Gamma Gamma' -> Gamma |-* s : A -> Gamma' |-* t : A.
+Proof.
+  intros HAlpha Htype.
+  generalize dependent A.
+  generalize dependent Gamma.
+  generalize dependent Gamma'.
+  induction HAlpha.
+  - intros Gamma' Gamma HCAlpha A HType.
+    inversion HType.
+    apply K_Var; subst...
+    generalize dependent Gamma.
+    generalize dependent Gamma'.
+    induction H; subst...
+    + intros.
+      inversion HCAlpha; subst...
+      inversion H2.
+    + intros Gamma' Gamma HCAlpha HType Hlookup.
+      inversion HCAlpha; subst...
+      inversion Hlookup.
+      simpl.
+      repeat rewrite Coq.Strings.String.eqb_refl.
+      reflexivity.
+    + intros Gamma' Gamma HCAlpha HType Hlookup.
+      inversion HCAlpha; subst...
+      simpl.
+      destruct (y =? w) eqn:yw.
+      * apply String.eqb_eq in yw.
+        apply H0 in yw.
+        contradiction yw.
+      * specialize (IHAlphaVar Gamma'0 Gamma0 H7).
+        unfold lookup in Hlookup.
+        destruct (x =? z) eqn:xz.
+        -- apply String.eqb_eq in xz.
+           apply H in xz.
+           contradiction xz.
+        -- fold (lookup z Gamma0) in Hlookup.
+          assert (Gamma0 |-* (tmvar z) : A).
+          {
+            (* Strengthening typing*)
+            apply K_Var.
+            assumption.
+          }
+           specialize (IHAlphaVar H2 Hlookup).
+           assumption.
+  - intros Gamma' Gamma HCAlpha A0 HType.
+    inversion HType.
+    specialize (IHHAlpha ((y, A)::Gamma') ((x, A)::Gamma)
+      (calpha_cons x y A HCAlpha) K2 H4).
+    apply K_Lam.
+    assumption.
+  - intros Gamma' Gamma HCAlpha A HType. 
+    inversion HType.
+    specialize (IHHAlpha1 Gamma' Gamma HCAlpha (tp_arrow K1 A) H2).
+    specialize (IHHAlpha2 Gamma' Gamma HCAlpha K1 H4).
+    apply K_App with (K1 := K1); assumption.
+Qed.
+
 Inductive step : term -> term -> Prop :=
 | step_beta (x : string) (A : type) (s t : term) :
     step (tmapp (tmlam x A s) t) ([x := t] s)
