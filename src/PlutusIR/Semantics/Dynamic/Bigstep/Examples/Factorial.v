@@ -32,7 +32,7 @@ Definition fact_term (n : Z) : term :=
   Let
     Rec
     [ TermBind
-        Strict
+        NonStrict
         (VarDecl
           "fact"
           (Ty_Fun
@@ -97,12 +97,12 @@ Proof with (autounfold; simpl; eauto || (try reflexivity) || (try solve [intros 
   unfold fact_term.
   eexists.
   apply E_LetRec.
-  eapply E_LetRec_TermBind.
+  eapply E_LetRec_TermBind_NonStrict.
   simpl.
   eapply E_LetRec_Nil.
   eapply E_Apply... {
     eapply E_LetRec.
-    eapply E_LetRec_TermBind.
+    eapply E_LetRec_TermBind_NonStrict.
     simpl.
     eapply E_LetRec_Nil...
     constructor.

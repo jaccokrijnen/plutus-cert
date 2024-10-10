@@ -144,9 +144,16 @@ with eval_bindings_rec : list binding -> term -> term -> nat -> Prop :=
   | E_LetRec_Nil : forall bs0 t0 v0 j0,
       t0 =[j0]=> v0 ->
       Let Rec nil t0 =[j0 + 1]=>r v0 WITH bs0
-  | E_LetRec_TermBind : forall bs0 s x T bs t0 t1 v1 j1,
+
+  | E_LetRec_TermBind_NonStrict : forall bs0 x T bs t0 t1 v1 j1,
       <{ [ {Let Rec bs0 t1} / x] {Let Rec bs t0} }> =[j1]=>r v1 WITH bs0 ->
-      Let Rec ((TermBind s (VarDecl x T) t1) :: bs) t0 =[j1 + 1]=>r v1 WITH bs0
+      Let Rec ((TermBind NonStrict (VarDecl x T) t1) :: bs) t0 =[j1 + 1]=>r v1 WITH bs0
+
+  | E_LetRec_TermBind_Strict : forall bs0 x T bs t0 t1 v1 v2 j1 j2,
+      t1 =[j1]=> v1 ->
+      ~ is_error v1 ->
+      <{ [ {Let Rec bs0 v1} / x] {Let Rec bs t0} }> =[j2]=>r v2 WITH bs0 ->
+      Let Rec ((TermBind Strict (VarDecl x T) t1) :: bs) t0 =[j2 + 1]=>r v2 WITH bs0
 
 where "t '=[' j ']=>' v" := (eval t v j)
 and "t '=[' j ']=>nr' v" := (eval_bindings_nonrec t v j)
@@ -185,7 +192,7 @@ Create HintDb hintdb__eval_no_error.
   E_Let_TermBind_Strict
   E_Let_TypeBind
   E_LetRec_Nil
-  E_LetRec_TermBind
+  E_LetRec_TermBind_NonStrict
   : hintdb__eval_no_error.
 
 Create HintDb hintdb__eval_with_error.
