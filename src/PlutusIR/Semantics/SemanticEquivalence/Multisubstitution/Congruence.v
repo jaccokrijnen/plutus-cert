@@ -544,6 +544,8 @@ Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
 (* TODO move this into separate module*)
 
+Create HintDb multi_subst.
+
 Hint Rewrite
   msubstA_LetRec
   msubstA_LetNonRec
@@ -566,16 +568,37 @@ Hint Rewrite
   msubstA_Var
   msubstA_Constr
   msubstA_Case
-  : msubstA_cong.
+  (* msubst_LetRec *)
+  msubst_LetNonRec
+  (* msubst_bnr__bvbs *)
+  msubst_LetNonRec_nil
+  msubst_LetNonRec
+  (* msubst_LetRec *)
+  msubst_TermBind
+  (* msubst_BindingsNonRec_cons *)
+  msubst_LamAbs
+  msubst_Apply
+  msubst_Builtin
+  msubst_Constant
+  msubst_DatatypeBind
+  msubst_Error
+  msubst_IWrap
+  msubst_TyAbs
+  msubst_TyInst
+  msubst_Unwrap
+  msubst_Var
+  (* msubst_Constr *)
+  (* msubst_Case *)
+  : multi_subst.
 
 Lemma not_is_error_msubstA : forall v ss, ~ is_error v -> ~ is_error (msubstA ss v).
   intros v ss H_not_err H_err.
   destruct v; simpl in H_err.
-  all: try (autorewrite with msubstA_cong in H_err; inversion H_err).
+  all: try (autorewrite with multi_subst in H_err; inversion H_err).
 
   (* Let r bs t *)
   - destruct r.
-    + autorewrite with msubstA_cong in H_err.
+    + autorewrite with multi_subst in H_err.
        inversion H_err.
     + rewrite msubstA_LetRec in H_err.
        inversion H_err.

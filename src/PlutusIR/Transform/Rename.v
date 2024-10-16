@@ -495,6 +495,7 @@ Proof.
     rename v2 into t_v.
     inversion H_ren; subst.
     rename t'0 into t'.
+    (*
     specialize (IHH_eval1 _ H2) as [s'_v [ eval_s' H_ren_s_v]]. clear H2.
     inversion H_ren_s_v; subst.
     rename τ' into T', t'0 into u'.
@@ -520,4 +521,5 @@ Proof.
       contradiction.
     + eauto.
   - (* TyAbs *)
+  *)
 Admitted.

@@ -38,6 +38,10 @@ From PlutusCert Require Import PlutusIR.Semantics.Dynamic.Bigstep.
 Module PIR := Dynamic.Bigstep.
 
 
+(* ctp does not create fully applied builtins *)
+Lemma no_builtins t t' : ctp t t' -> ~ (fully_applied t').
+Admitted.
+
 Lemma subst_preserves_ctp : ∀ t1 t1' t2 t2' x,
   t1 ▷ t1' ->
   t2 ▷ t2' ->
@@ -93,7 +97,7 @@ Proof.
     eexists.
     eexists.
     split.
-    + econstructor. all: try eauto.
+    + econstructor. all: try eauto using no_builtins.
     + assumption.
 
   (* Literal *)

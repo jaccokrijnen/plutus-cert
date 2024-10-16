@@ -12,21 +12,31 @@ Local Open Scope string_scope.
 Definition Ty_int : ty := Ty_Builtin DefaultUniInteger.
 Definition int_to_int : ty := Ty_Fun Ty_int Ty_int.
 
+
 Example test_addInteger : forall x, exists k,
-  Apply (LamAbs x int_to_int (Apply (Var x) (constInt 17))) (Apply (Builtin AddInteger) (constInt 3))
-  =[k]=> constInt 20.
+  <{ (λ x :: (ℤ → ℤ), {Var x} ⋅ CInt 17) ⋅ ({Builtin AddInteger} ⋅ CInt 3) }>
+  =[k]=> <{ CInt 20}>.
 Proof with (autounfold; eauto with hintdb__eval_no_error || (try solve [intros Hcon; inversion Hcon])).
-  unfold constInt.
   intros.
   eexists.
   eapply E_Apply...
-  - eapply E_NeutralApply...
-    eapply U_Apply...
+  - not_fully_applied.
+  - eapply E_Apply...
+    + not_fully_applied.
+    + apply E_Builtin_Eta with (f := AddInteger).
+    + cbv.
+      constructor.
   - intros Hcon.
     inversion Hcon.
   - simpl.
     rewrite eqb_refl.
-    eapply E_NeutralApplyFull...
-    eapply S_Apply...
-    eapply S_Apply...
+    eapply E_Apply...
+    not_fully_applied.
+    simpl.
+    eapply E_Builtin_Apply...
+    unfold fully_applied.
+    exists AddInteger.
+    apply FA_Apply...
+    apply FA_Apply...
+    apply FA_Builtin...
 Qed.

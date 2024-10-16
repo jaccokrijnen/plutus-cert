@@ -1,308 +1,287 @@
 Require Import PlutusCert.PlutusIR.
+From PlutusCert Require Import 
+  Util
+.
 Import ZArith.BinInt.
 Import Coq.Lists.List.
 Import Coq.Strings.String.
+Import Coq.Bool.Bool.
 Import Coq.Strings.Byte.
 Import Ascii.
 Require Import Coq.Strings.BinaryString.
 From Equations Require Import Equations.
 Import ListNotations.
+Import PlutusNotations.
 
-Local Open Scope string_scope.
 Local Open Scope Z_scope.
 
-(** ** Arity of built-in functions *)
-Definition arity (df : DefaultFun) : nat :=
-  match df with
-  | AddInteger => 2
-  | IfThenElse => 4
-  | MultiplyInteger => 2
-  | SubtractInteger => 2
-  | EqualsInteger => 2
-  | _ => 0 (* TODO: implement lookupBuiltinTy, then this can be calculated from the type *)
-  end
+Section Signatures.
+
   (*
-  match df with
-  | SubtractInteger => 2
-  | MultiplyInteger => 2
-  | DivideInteger => 2
-  | QuotientInteger => 2
-  | RemainderInteger => 2
-  | ModInteger => 2
-  | LessThanInteger => 2
-  | LessThanEqInteger => 2
-  | GreaterThanInteger => 2
-  | GreaterThanEqInteger => 2
-  | EqInteger => 2
-  | Concatenate => 2
-  | TakeByteString => 2
-  | DropByteString => 2
-  | SHA2 => 1
-  | SHA3 => 1
-  | VerifySignature => 3
-  | EqByteString => 2
-  | LtByteString => 2
-  | GtByteString => 2
-  | CharToString => 1
-  | Append => 2
-  | Trace => 1
-  end
+  This is based on the Plutus Core spec, which has the same built-ins and
+  defines their types and semantics (See Plutus Core Specification at
+  https://github.com/IntersectMBO/plutus#specifications-and-design
+
+  We don't model semantic variants of the ledger language yet. Builtins like
+  cons_bytestring have different meaning depending on the ledger language.
   *)
-.
 
-(** ** Meanings of built-in functions *)
+  (*
+  Signatures of built-in functions: allows to determine the arity and their
+  type.
+  *)
+  Inductive builtin_sig :=
+    | BS_Forall : string -> kind -> builtin_sig -> builtin_sig
+    | BS_Fun : ty -> builtin_sig -> builtin_sig
+    | BS_Result : ty -> builtin_sig
+  .
 
-Definition constInt (a : Z) : term := (Constant (ValueOf DefaultUniInteger a)).
-Definition constBool (a : bool) : term := Constant (ValueOf DefaultUniBool a).
-Definition constBS (a : list byte) : term := Constant (ValueOf DefaultUniByteString a).
-(* Definition constChar (a : ascii) : term := Constant (Some' (ValueOf DefaultUniChar a)). *)
-Definition constString (a : string) : term := Constant (ValueOf DefaultUniString a).
-Definition constUnit (a : unit) : term := Constant (ValueOf DefaultUniUnit a).
+  #[local]
+  Notation "A '→' B" := (BS_Fun A B) (at level 49, right associativity).
 
-Definition take (x : Z) (s : string) : string := substring 0 (Z.to_nat x) s.
-Definition drop (x : Z) (s : string) : string := substring (Z.to_nat x) (length s) s.
+  Fixpoint to_ty (s : builtin_sig) : ty :=
+    match s with
+    | T → s => <{ T → {to_ty s} }>
+    | BS_Forall X K s => Ty_Forall X K (to_ty s)
+    | BS_Result T => T
+    end
+  .
 
-#[export] Hint Unfold
-  constInt
-  constBool
-  constBS
-  (* constChar *)
-  constString
-  constUnit
-  take
-  drop
-  : core.
+  Fixpoint sig_arity (s : builtin_sig) : nat :=
+    match s with
+    | T → s => 1 + sig_arity s
+    | BS_Forall _ _ s => 1 + sig_arity s
+    | BS_Result _ => 0
+    end
+  .
 
-(** Computes results of fully applied default functions where possible.
 
-    Note that not all default functions have sensible implementations, such
-    as SHA2, SHA3 and VerifySignature. This is bound to change in the future.
+  Local Open Scope string_scope.
+  (* Signatures of built-in functions *)
+  Definition to_sig (f : DefaultFun) : builtin_sig :=
+    match f with
+    | AddInteger
+    | SubtractInteger
+    | MultiplyInteger
+    | DivideInteger
+    | QuotientInteger => <{ℤ}> → <{ℤ}> → BS_Result <{ℤ}>
+
+    | EqualsInteger => <{ℤ}> → <{ℤ}> → BS_Result <{bool}>
+
+    | IfThenElse => BS_Forall "A" Kind_Base (<{bool}> → Ty_Var "A" → Ty_Var "A" → BS_Result (Ty_Var "A"))
+
+    | AppendByteString => <{ bytestring }> → <{ bytestring }> → BS_Result <{ bytestring }>
+
+    (* TODO: see Plutus Core Spec *)
+    | _ => <{ℤ}> → BS_Result <{ℤ}> 
+    end
+  .
+
+  (* Arity of built-in functions *)
+  (* TODO: For some reason, this doesn't evaluate fully under simpl *)
+  Definition arity (f : DefaultFun) : nat :=
+    sig_arity (to_sig f)
+  .
+
+End Signatures.
+
+Section Eta.
+  (*
+  Expands e.g.
+    +
+  to
+    λ x y. x + y
+
+  *)
+
+  Definition mk_var : nat -> string :=
+    string_of_nat
+  .
+
+  From PlutusCert Require Import FreeVars.
+
+  Definition fresh_var (t : term) : string :=
+    concat "" (Term.fv t).
+
+  Definition fresh_tyvar (t : term) : string :=
+    concat "" (Term.ftv t).
+
+  Fixpoint apps ( b : term) (args : list (term + ty)) : term :=
+    match args with
+      | [] => b
+      | inl t :: xs => <{ {apps <{b ⋅ t}> xs} }>
+      | inr T :: xs => <{ {apps <{b @ T}> xs} }>
+    end
+  .
+
+  Fixpoint eta_expand_sig (s : builtin_sig) (f : DefaultFun) (args : list (term + ty)) (n : nat) : term :=
+    match s with
+    | BS_Fun T s      => <{ λ {mk_var n} :: T, {eta_expand_sig s f (args ++ [inl (Var (mk_var n))]) (S n)} }>
+    | BS_Forall X K s => <{ Λ {mk_var n} :: K, {eta_expand_sig s f (args ++ [inr (Ty_Var X)]) (S n)} }>
+    | BS_Result T     => apps (Builtin f) args
+    end
+  .
+
+  Definition eta_expand (f : DefaultFun) := eta_expand_sig (to_sig f) f [] 0.
+
+  Compute eta_expand IfThenElse.
+
+End Eta.
+
+
+Section ByteString.
+
+  Local Open Scope Z_scope.
+
+  Definition Z_to_byte (z : Z) : option byte :=
+    if (0 <=? z) && (z <=? 255) then Byte.of_nat (Z.to_nat z) else None.
+
+
+  Definition Z_to_nat (z : Z) : option nat :=
+    if (0 <=? z) then Some (Z.to_nat z) else None
+  .
+
+  (*
+  Returns an Error term if the integer is out of range (Semantic variant 2)
+  *)
+  Definition cons_bytestring (z : Z) (bs : list byte) : term :=
+      match Z_to_byte z with
+      | Some b => Constant (ValueOf DefaultUniByteString (b :: bs))
+      | None   => Error (Ty_Builtin DefaultUniByteString)
+      end
+  .
+
+  Local Open Scope list_scope.
+  Definition slice_list {A} (s k : Z) (bs : list A) : list A :=
+    let i := Z.max s 0 in
+    let j := Z.min (s + k - 1) (Z.of_nat (List.length bs) - 1) in
+    if j <? i
+      then []
+      else
+        let len := (Z.to_nat j - Z.to_nat i + 1)%nat in
+        firstn len (skipn (Z.to_nat i) bs)
+  .
+
+  Definition index_bytestring (bs : list byte) (c : Z) : term :=
+    match Z_to_nat c with
+      | Some n => match nth_error bs n with
+        | Some b => <{ CInt {Z.of_nat (Byte.to_nat b)} }>
+        | None => Error <{ ℤ }>
+        end
+      | None => Error <{ ℤ }>
+      end
+    .
+
+  Axiom verify_Ed25519_signature : list byte -> list byte -> list byte -> bool.
+
+End ByteString.
+
+
+(*
+Computes results of fully applied default functions where possible.
 *)
-Definition compute_defaultfun (t : term) : option term := 
+Definition compute_defaultfun (t : term) : option term :=
   match t with
-  (** Binary operators on integers *)
-  (* AddInteger *)
-  | (Apply
-      (Apply
-        (Builtin AddInteger)
-        (Constant (ValueOf DefaultUniInteger x))
-      )
-      (Constant (ValueOf DefaultUniInteger y))
-    ) => Some (constInt (x + y))
+  (* Integer operations *)
+  | <{ CInt n + CInt m }>  => Some <{ CInt {n + m} }>
+  | <{ CInt n * CInt m }>  => Some <{ CInt {n * m} }>
+  | <{ CInt n - CInt m }>  => Some <{ CInt {n - m} }>
+  | <{ {Builtin DivideInteger} ⋅ CInt n ⋅ CInt m }> => Some <{ CInt {n / m} }>
+  | <{ {Builtin QuotientInteger} ⋅ CInt n ⋅ CInt m }> => Some <{ CInt {n ÷ m} }>
+  | <{ {Builtin RemainderInteger} }> => None
+  | <{ {Builtin ModInteger} }> => None
 
-  (** If-Then-Else *)
-  | (Apply
-      (Apply
-        (Apply
-          (TyInst
-            (Builtin IfThenElse)
-            T
-          )
-          (Constant (ValueOf DefaultUniBool cond))
-        )
-        thenBranch
-      )
-      elseBranch
-    ) => Some (if cond then thenBranch else elseBranch)
-  (* MultiplyInteger *)
-  | (Apply
-      (Apply
-        (Builtin MultiplyInteger)
-        (Constant (ValueOf DefaultUniInteger x))
-      )
-      (Constant (ValueOf DefaultUniInteger y))
-    )
-    => Some (constInt (x * y))
+  | <{ CInt n == CInt m }> => Some <{ CBool {n =? m} }>
+  | <{ {Builtin LessThanInteger} }> => None
+  | <{ {Builtin LessThanEqualsInteger} }> => None
 
-  (* EqInteger *)
-  | (Apply
-      (Apply
-        (Builtin EqualsInteger)
-        (Constant (ValueOf DefaultUniInteger x))
-      )
-      (Constant (ValueOf DefaultUniInteger y))
-    ) => Some (constBool (x =? y))
+  (* ByteString operations *)
+  | <{ {Builtin AppendByteString } ⋅ CBS xs ⋅ CBS ys}> => Some <{ CBS {xs ++ ys} }>
+  | <{ {Builtin ConsByteString } ⋅ CInt n ⋅ CBS xs}> => Some (cons_bytestring n xs)
+  | <{ {Builtin SliceByteString } ⋅ CInt n ⋅ CInt m ⋅ CBS xs}> => Some <{ CBS {slice_list n m xs} }>
+  | <{ {Builtin LengthOfByteString } ⋅ CBS xs}> => Some <{ CInt {Z.of_nat (List.length xs)} }>
+  | <{ {Builtin IndexByteString } ⋅ CBS xs ⋅ CInt n}> => Some (index_bytestring xs n)
+  | <{ {Builtin EqualsByteString} }> => None
+  | <{ {Builtin LessThanByteString} }> => None
+  | <{ {Builtin LessThanEqualsByteString} }> => None
 
-  (* SubtractInteger *)
-  | (Apply
-      (Apply
-        (Builtin SubtractInteger)
-        (Constant (ValueOf DefaultUniInteger x))
-      )
-      (Constant ((ValueOf DefaultUniInteger y)))
-    ) => Some (constInt (x - y))
+  | <{ ifthenelse @ T ⋅ CBool b ⋅ s ⋅ t }> => Some (if b then s else t)
 
-  | _ => None
+  (* Cryptography primitives *)
+  | <{ {Builtin Sha2_256} }> => None
+  | <{ {Builtin Sha3_256} }> => None
+  | <{ {Builtin Blake2b_256} }> => None
+  | <{ {Builtin VerifyEd25519Signature} ⋅ CBS xs ⋅ CBS ys ⋅ CBS zs}> => Some <{ CBool {verify_Ed25519_signature xs ys zs} }>
+  | <{ {Builtin VerifyEcdsaSecp256k1Signature} }> => None
+  | <{ {Builtin VerifySchnorrSecp256k1Signature} }> => None
+
+  (* Strings *)
+  | <{ {Builtin AppendString} }> => None
+  | <{ {Builtin EqualsString} }> => None
+  | <{ {Builtin EncodeUtf8} }> => None
+  | <{ {Builtin DecodeUtf8} }> => None
+
+  (* Unit *)
+  | <{ {Builtin ChooseUnit} }> => None
+  (* Tracing *)
+  | <{ {Builtin Trace} }> => None
+  (* Pairs *)
+  | <{ {Builtin FstPair} }> => None
+  | <{ {Builtin SndPair} }> => None
+  (* Lists *)
+  | <{ {Builtin ChooseList} }> => None
+  | <{ {Builtin MkCons} }> => None
+  | <{ {Builtin HeadList} }> => None
+  | <{ {Builtin TailList} }> => None
+  | <{ {Builtin NullList} }> => None
+  (* Data *)
+  | <{ {Builtin ChooseData} }> => None
+  | <{ {Builtin ConstrData} }> => None
+  | <{ {Builtin MapData} }> => None
+  | <{ {Builtin ListData} }> => None
+  | <{ {Builtin IData} }> => None
+  | <{ {Builtin BData} }> => None
+  | <{ {Builtin UnConstrData} }> => None
+  | <{ {Builtin UnMapData} }> => None
+  | <{ {Builtin UnListData} }> => None
+  | <{ {Builtin UnIData} }> => None
+  | <{ {Builtin UnBData} }> => None
+  | <{ {Builtin EqualsData} }> => None
+  | <{ {Builtin SerialiseData} }> => None
+  (* Misc monomorphized constructors. *)
+  | <{ {Builtin MkPairData} }> => None
+  | <{ {Builtin MkNilData} }> => None
+  | <{ {Builtin MkNilPairData} }> => None
+  (* BLS12_381 operations *)
+  (* G1 *)
+  | <{ {Builtin Bls12_381_G1_add} }> => None
+  | <{ {Builtin Bls12_381_G1_neg} }> => None
+  | <{ {Builtin Bls12_381_G1_scalarMul} }> => None
+  | <{ {Builtin Bls12_381_G1_equal} }> => None
+  | <{ {Builtin Bls12_381_G1_hashToGroup} }> => None
+  | <{ {Builtin Bls12_381_G1_compress} }> => None
+  | <{ {Builtin Bls12_381_G1_uncompress} }> => None
+  (* G2 *)
+  | <{ {Builtin Bls12_381_G2_add} }> => None
+  | <{ {Builtin Bls12_381_G2_neg} }> => None
+  | <{ {Builtin Bls12_381_G2_scalarMul} }> => None
+  | <{ {Builtin Bls12_381_G2_equal} }> => None
+  | <{ {Builtin Bls12_381_G2_hashToGroup} }> => None
+  | <{ {Builtin Bls12_381_G2_compress} }> => None
+  | <{ {Builtin Bls12_381_G2_uncompress} }> => None
+  (* Pairing *)
+  | <{ {Builtin Bls12_381_millerLoop} }> => None
+  | <{ {Builtin Bls12_381_mulMlResult} }> => None
+  | <{ {Builtin Bls12_381_finalVerify} }> => None
+  (* Keccak_256, Blake2b_224 *)
+  | <{ {Builtin Keccak_256} }> => None
+  | <{ {Builtin Blake2b_224} }> => None
+  (* Conversions *)
+  | <{ {Builtin IntegerToByteString} }> => None
+  | <{ {Builtin ByteStringToInteger} }> => None
+
+  | _ => None (* TODO*)
   end
-  (*
-None (* TODO: update to new built-ins set *)
-
-  (* DivideInteger *)
-  | (Apply
-      (Apply
-        (Builtin DivideInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constInt (x / y))
-  (* QuotientInteger *)
-  | (Apply
-      (Apply
-        (Builtin QuotientInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constInt (x ÷ y))
-  (* RemainderInteger *)
-  | (Apply
-      (Apply
-        (Builtin RemainderInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constInt (Z.rem x y))
-  (* ModInteger *)
-  | (Apply
-      (Apply
-        (Builtin ModInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constInt (x mod y))
-  (** Binary predicates on integers *)
-  (* LessThanInteger*)
-  | (Apply
-      (Apply
-        (Builtin LessThanInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constBool (x <? y))
-  (* LessThanEqInteger *)
-  | (Apply
-      (Apply
-        (Builtin LessThanEqInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constBool (x <=? y))
-  (* GreaterThanInteger *)
-  | (Apply
-      (Apply
-        (Builtin GreaterThanInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constBool (x >? y))
-  (* GreaterThanEqInteger *)
-  | (Apply
-      (Apply
-        (Builtin GreaterThanEqInteger)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniInteger (ValueOf _ y)))
-    ) => Some (constBool (x >=? y))
-  (** Bytestring operations *)
-  (* Concatenate *)
-  | (Apply
-      (Apply
-        (Builtin Concatenate)
-        (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs1)))
-      )
-      (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs2)))
-    ) => Some (constBS (bs1 ++ bs2))
-  (* TakeByteString *)
-  | (Apply
-      (Apply
-        (Builtin TakeByteString)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs)))
-    ) => Some (constBS (take x bs))
-  (* DropByteString *)
-  | (Apply
-      (Apply
-        (Builtin DropByteString)
-        (Constant (@Some' _ DefaultUniInteger (ValueOf _ x)))
-      )
-      (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs)))
-    ) => Some (constBS (drop x bs))
-  (** Bytestring hashing
-
-      Note: We model hashing by identity. Comparing hashes now becomes a straightforward equality check.
-      We believe modelling hash function as such is sufficient, because the dynamic semantics is not meant to
-      be used as a basis for a real-world evaluator.
-  *)
-  | (Apply
-      (Builtin SHA2)
-      (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs)))
-    ) => Some (constBS bs)
-  | (Apply
-      (Builtin SHA3)
-      (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs)))
-    ) => Some (constBS bs)
-  (** Signature verification
-
-      TODO: Obviously, this should evaluate to true. However, how can we model the verification of signatures?
-      Implementation of signature verification:
-      https://input-output-hk.github.io/ouroboros-network/cardano-crypto/Crypto-ECC-Ed25519Donna.html
-  *)
-  | (Apply
-      (Apply
-        (Apply
-          (Builtin VerifySignature)
-          (Constant (@Some' _ DefaultUniByteString (ValueOf _ publicKey)))
-        )
-        (Constant (@Some' _ DefaultUniByteString (ValueOf _ message)))
-      )
-      (Constant (@Some' _ DefaultUniByteString (ValueOf _ signature)))
-    ) => Some (constBool true)
-  (** Binary predicates on bytestrings *)
-  (* EqByteString *)
-  | (Apply
-      (Apply
-        (Builtin EqByteString)
-        (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs1)))
-      )
-      (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs2)))
-    ) => Some (constBool (bs1 =? bs2)%string)
-  (* LtByteString *)
-  | (Apply
-      (Apply
-        (Builtin LtByteString)
-        (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs1)))
-      )
-      (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs2)))
-    ) => Some (constBool (to_Z bs1 <? to_Z bs2))
-  (* GtByteString *)
-  | (Apply
-      (Apply
-        (Builtin GtByteString)
-        (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs1)))
-      )
-      (Constant (@Some' _ DefaultUniByteString (ValueOf _ bs2)))
-    ) => Some (constBool (to_Z bs1 >? to_Z bs2))
-  (* String operations *)
-  (* CharToString *)
-  | (Apply
-      (Builtin CharToString)
-      (Constant (@Some' _ DefaultUniChar (ValueOf _ ch)))
-    ) => Some (constString (String ch EmptyString))
-  (* Append *)
-  | (Apply
-      (Apply
-        (Builtin Append)
-        (Constant (@Some' _ DefaultUniString (ValueOf _ s1)))
-      )
-      (Constant (@Some' _ DefaultUniString (ValueOf _ s2)))
-    ) => Some (constString (s1 ++ s2))
-  (* Trace *)
-  | (Apply
-      (Builtin Trace)
-      (Constant (@Some' _ DefaultUniString (ValueOf _ s)))
-    ) => Some (constUnit tt)
-  (* Catch-all: The argument term is not a fully applied builtin *)
-  | _ => None
-  end
-  *)
 .
+
+

@@ -11,7 +11,75 @@ Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstituti
 From Coq Require Import Lia.
 From Coq Require Import Arith.
 From Coq Require Import List.
+Require Import Coq.Program.Equality.
 Import ListNotations.
+Import PlutusNotations.
+
+Lemma fully_applied__arg_value : forall s v,
+  fully_applied (Apply s v) -> v =[0]=> v.
+Admitted.
+
+Lemma eta_expand__LamAbs_TyAbs : forall f,
+  (exists x T t, eta_expand f = LamAbs x T t) \/
+  (exists X K t, eta_expand f = TyAbs X K t).
+Proof.
+  destruct f; cbv;
+    try (solve [left; repeat eexists]).
+  right; repeat eexists.
+Qed.
+
+Lemma fully_applied__Apply t v :
+  fully_applied <{ t ⋅ v }> ->
+    exists i x T s,
+      t =[i]=> LamAbs x T s
+      /\ <{ [v / x] t }> = <{ t ⋅ v }>
+.
+Admitted.
+
+(*
+In a round-about way, a fully applied built-in can also be evaluated by first evaluating its
+partial application without the final argument (which will result in a lambda). And then evaluating
+in the usual way. Compare for example:
+
+  ------------ E_Builtin (direct, using operational semantics)
+  (+) 2 3 => 5
+
+and
+
+  (+) 2 => \x. (+) 2 x
+  3     => 3
+  -------------------- E_Builtin_partial (derived rule)
+  (+) 2 3 => 5
+
+E_Builtin_partial is a "derived" rule, and implemented in terms of a single beta
+reduction and then using the standard E_Builtin rule.
+
+*)
+Lemma E_Builtin_partial : forall s v i x T t w j,
+  fully_applied <{s ⋅ v}>
+  -> s =[i]=> LamAbs x T t
+  -> <{ [v / x] t }> =[j]=> w
+  -> <{ s ⋅ v }> =[i + 1 + j]=> w
+.
+Proof.
+Admitted.
+
+Axiom dec_fully_applied : forall t, {fully_applied t} + {~(fully_applied t)}.
+
+
+(*
+Lemma fully_applied__RC k s t s' t' :
+  RC k <{ T1 → T2 }> rho s s'
+  RC k <{ T1 }> rho t t'
+  fully_applied <{ s ⋅ t }>
+  fully_applied <{ s' ⋅ t' }>
+.
+*)
+
+
+
+(* Notation for closing substitutions *)
+Notation close γ ρ t := (msubst γ (msubstA ρ t)).
 
 Lemma compatibility_Apply : forall Delta Gamma e1 e2 e1' e2' T1n T2n,
     LR_logically_approximate Delta Gamma e1 e1' (Ty_Fun T1n T2n) ->
@@ -31,12 +99,9 @@ Proof with eauto_LR.
   subst.
 
   autorewrite with RC.
-
-  rewrite msubstA_Apply. rewrite msubstA_Apply.
-  rewrite msubst_Apply. rewrite msubst_Apply.
+  autorewrite with multi_subst.
 
   intros j Hlt__j e_f Hev__e_f.
-
   inversion Hev__e_f; subst.
   - (* E_Apply *)
     rename v2 into e_f2.
@@ -52,6 +117,8 @@ Proof with eauto_LR.
 
     apply RC_to_RV with (j := j_1) (e_f := LamAbs x T t0) in HRC1 as temp...
     destruct temp as [e'_f1 [j'_1 [Hev__e'_f1 HRV1]]].
+
+
 
     assert (k - j_1 <= k)...
     assert (HRC2 :
@@ -82,12 +149,36 @@ Proof with eauto_LR.
       apply RC_to_RV with (j := j_3) (e_f := e_f) in HRC0 as temp...
       destruct temp as [e'_f [j'_3 [Hev__e'_f HRV0]]].
 
-      eexists. eexists.
-      split. eapply E_Apply... apply RV_error in HRV2... destruct HRV2 as [ [Hnerr0 Hnerr0'] | [Herr0 Herr0']]...
-
-      split. eapply RV_typable_empty_1...
-      split. eapply RV_typable_empty_2...
-      eapply RV_condition...
+      match goal with | |- exists _ _, eval ?t _ _ /\ _ => destruct (dec_fully_applied t) end.
+      (* TODO: fix duplication in branches *)
+      {
+        eexists. eexists.
+        split.
+        { eapply E_Builtin_partial...
+          apply fully_applied__arg_value in f .
+          assert (H : close env' (msyn2 rho) e2' = e'_f2 /\ 0 = j'_2). {
+            eapply eval__deterministic...
+          }
+          destruct H. subst.
+          eassumption.
+        }
+        {
+          split. eapply RV_typable_empty_1...
+          split. eapply RV_typable_empty_2...
+          eapply RV_condition...
+        }
+      }
+      {
+        {
+          eexists. eexists.
+          split.
+          eapply E_Apply...
+          apply RV_error in HRV2... destruct HRV2 as [ [Hnerr0 Hnerr0'] | [Herr0 Herr0']]...
+          split. eapply RV_typable_empty_1...
+          split. eapply RV_typable_empty_2...
+          eapply RV_condition...
+        }
+      }
 
       assert (~ is_error e'_f2). {
         apply RV_error in HRV2.
@@ -99,15 +190,44 @@ Proof with eauto_LR.
       auto.
     + destruct temp as [Herr Herr'].
       inversion Herr.
-  - (* E_NeutralApply *)
-    (* ADMIT: See end of proof. *)
-    admit.
-  - (* E_NeutralApplyPartial *)
-    (* ADMIT: See end of proof. *)
-    admit.
-  - (* E_NeutralApplyFull *)
-    (* ADMIT: See end of proof. *)
-    admit.
+  - (* E_Builtin *)
+
+    specialize (IH1 _ _ _ _ H_RD H_RG).
+    specialize (IH2 _ _ _ _ H_RD H_RG).
+    clear H_RG H_RD.
+
+    match goal with | |- exists _ _, eval ?t _ _ /\ _ => destruct (dec_fully_applied t) end.
+    { (* fully_applied *)
+      eexists. eexists. 
+      split.
+      {
+      (* 
+        TODO: By lemma full_applied__Apply, close _ _ e1 and close _ _ e2 both evaluate to lambdas (with
+         respectively a property of substituting equality), use
+         IH1 with those lambdas and then rewrite the substitution using those equalities.
+      *)
+      admit.
+      }
+      { admit.
+      (* TODO: typing, similar to E_Apply cases *)
+      }
+    }
+    { (* ~fully_applied *)
+      eexists.
+      eexists.
+      split.
+      {
+        eapply E_Apply... (* TODO: *)
+        { (* from IH1 and fact that fully_applied implies e1 will evaluate to lambda *) admit. }
+        { (* from IH2 and fact that fully_aplied implies e2 will be a value *) admit. }
+        { (* auto, using existential proven above *) admit. }
+        { (* from IH1 *) admit. }
+      }
+      {
+      admit. (* TODO: similar to E_Apply case *)
+      }
+    }
+  
   - (* E_Error_Apply1 *)
     rename j1 into j_1.
 
@@ -193,5 +313,4 @@ Proof with eauto_LR.
       }
 
       right...
-(* ADMIT: We do not handle built-in functions yet. *)
 Admitted.

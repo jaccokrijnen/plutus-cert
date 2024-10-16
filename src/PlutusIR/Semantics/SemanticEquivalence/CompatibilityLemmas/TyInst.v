@@ -90,7 +90,9 @@ Proof with eauto_LR.
 
 
       eexists. eexists.
-      split. eapply E_TyInst...
+      split. 
+      eapply E_TyInst...
+      admit. (* TODO: Similar to Apply compatibility lemma *)
 
       split. {
         (* ADMIT: I had no time to finish this. Should follow from the uniqueness property

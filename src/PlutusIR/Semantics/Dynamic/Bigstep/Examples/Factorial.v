@@ -44,9 +44,9 @@ Definition fact_term (n : Z) : term :=
           "x"
           (Ty_Builtin DefaultUniInteger)
           (lazy_if <{ ℤ }>
-            <{ {Builtin EqualsInteger} ⋅ {Var "x"} ⋅ (Int 0) }>
-            <{ Int 1 }>
-            <{ {Var "x"} × ({Var "fact"} ⋅ ({Var "x"} - (Int 1)))}>
+            <{ {Builtin EqualsInteger} ⋅ {Var "x"} ⋅ (CInt 0) }>
+            <{ CInt 1 }>
+            <{ {Var "x"} * ({Var "fact"} ⋅ ({Var "x"} - (CInt 1)))}>
           )
         )
     ]
@@ -59,23 +59,6 @@ Ltac invert_contra := let Hcon := fresh "Hcon" in intros Hcon; inversion Hcon.
 Ltac destruct_invert_contra := let Hcon := fresh "Hcon" in intros Hcon; destruct Hcon as [Hcon | Hcon]; try solve [inversion Hcon || destruct Hcon].
 Ltac solve_substitute := repeat (econstructor || eauto || invert_contra || destruct_invert_contra).
 Ltac solve_value_builtin := repeat econstructor.
-
-Ltac invert_unsaturated :=
-  match goal with
-  | H : unsaturated_with ?n ?t |- False =>
-      inversion H; clear H; subst; try invert_unsaturated
-  | H : unsaturated ?t |- False =>
-      inversion H; clear H; subst; try invert_unsaturated
-  end.
-
-Ltac decide_unsaturated :=
-  match goal with
-  | |- unsaturated_with ?n ?nv =>
-      econstructor; eauto; try decide_unsaturated
-  | |- ?f <> ?f' =>
-      let Hcon := fresh "Hcon" in
-      try solve [intros Hcon; inversion Hcon]
-  end.
 
 Lemma eval_ifthenelse_true : forall T t1 t2 t3 v2 v3 k1 k2 k3,
     t1 =[ k1 ]=> <{ true }> ->
@@ -101,6 +84,10 @@ Proof with (autounfold; simpl; eauto || (try reflexivity) || (try solve [intros 
   simpl.
   eapply E_LetRec_Nil.
   eapply E_Apply... {
+    not_fully_applied.
+  }
+
+  {
     eapply E_LetRec.
     eapply E_LetRec_TermBind_NonStrict.
     simpl.
@@ -113,11 +100,11 @@ Proof with (autounfold; simpl; eauto || (try reflexivity) || (try solve [intros 
     } {
     simpl.
 
-    eapply E_Apply. {
+    eapply E_Apply. { not_fully_applied. }
+    {
       eapply eval_ifthenelse_false.
-      - eapply E_NeutralApplyFull...
-        eapply S_Apply...
-        eapply S_Apply...
+      - eapply E_Builtin_Apply...
+        admit. (* TODO: decide fully_applied *)
       - constructor.
       - constructor.
       } {
@@ -127,92 +114,21 @@ Proof with (autounfold; simpl; eauto || (try reflexivity) || (try solve [intros 
 
       simpl.
 
-      eapply E_NeutralApplyPartial...
-      - intros.
-        invert_unsaturated.
-        simpl in H3.
-        inversion H3.
-        inversion H0.
-        inversion H7.
-      - constructor.
-        constructor...
-      - constructor...
-      - eapply E_Apply.
+      eapply E_Apply. { admit. }
+      - eapply E_Apply... {admit. }
+        + apply E_Builtin_Eta with (f := MultiplyInteger)...
+        + constructor.
+        + inversion 1.
+        + cbn. constructor.
+      - eapply E_Apply...
+        + admit.
         + eapply E_LetRec.
           constructor.
           simpl.
           eapply E_LetRec_Nil.
           constructor.
-        + eapply E_NeutralApplyFull.
-          * constructor...
-            constructor...
-          * reflexivity.
+        + eapply E_Builtin_Apply...
+          admit.
         + inversion 1.
-        + simpl.
-          eapply E_Apply.
-          eapply eval_ifthenelse_false.
-          { constructor...
-            constructor...
-            constructor...
-          } {
-            constructor.
-          } {
-            constructor.
-          } {
-            constructor.
-          } {
-            inversion 1.
-          } {
-            simpl.
-            eapply E_NeutralApplyPartial.
-            { intro.
-              invert_unsaturated.
-              inversion H3.
-              inversion H0.
-              inversion  H7.
-            } {
-              constructor...
-              constructor...
-            } {
-              constructor...
-            } {
-              eapply E_Apply.
-              { eapply E_LetRec.
-                constructor.
-                simpl.
-                eapply E_LetRec_Nil.
-                constructor.
-            } {
-              eapply E_NeutralApplyFull...
-              constructor...
-              constructor...
-            } {
-              inversion 1.
-            } {
-              simpl.
-              eapply E_Apply.
-              { eapply eval_ifthenelse_true...
-              { eapply E_NeutralApplyFull...
-                constructor...
-                constructor...
-              } {
-                constructor...
-              } {
-                constructor...
-              } }
-              { constructor... }
-              { inversion 1. }
-              { constructor... } }
-              }
-              { inversion 1. }
-              { eapply E_NeutralApplyFull...
-                constructor...
-                constructor...
-              }
-              }
-        - inversion 1.
-        - eapply E_NeutralApplyFull...
-          constructor...
-          constructor...
-          }
-Qed.
+        (* TODO *)
+Admitted.

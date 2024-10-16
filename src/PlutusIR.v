@@ -720,26 +720,44 @@ Module PlutusNotations.
   Open Scope plutus_scope.
 
   (* Term notations *)
-  Notation "t1 ⋅ t2" := (Apply t1 t2) (in custom plutus_term at level 50, left associativity).
   Notation "'λ' x :: ty , body" := (LamAbs x ty body) (in custom plutus_term at level 51, right associativity).
+  Notation "'Λ' X :: K , body" := (TyAbs X K body) (in custom plutus_term at level 51, right associativity).
+  Notation "t1 ⋅ t2" := (Apply t1 t2) (in custom plutus_term at level 50, left associativity).
   Notation "t @ T" := (TyInst t T) (in custom plutus_term at level 50, left associativity).
+
 
   (* Builtin notations *)
   Notation "(+)" := (Builtin AddInteger) (in custom plutus_term).
   Notation "'ifthenelse'" := (Builtin IfThenElse).
+  Notation "t1 '==' t2" := (<{ {Builtin EqualsInteger} ⋅ t1 ⋅ t2 }>)
+    (in custom plutus_term at level 50, no associativity).
+  Notation "t1 '+' t2" := (<{ {Builtin AddInteger} ⋅ t1 ⋅ t2 }>)
+    (in custom plutus_term at level 50, left associativity).
   Notation "t1 '-' t2" := (<{ {Builtin SubtractInteger} ⋅ t1 ⋅ t2 }>)
     (in custom plutus_term at level 50, left associativity).
-  Notation "t1 '×' t2" := (<{ {Builtin MultiplyInteger} ⋅ t1 ⋅ t2 }>)
+  Notation "t1 '*' t2" := (<{ {Builtin MultiplyInteger} ⋅ t1 ⋅ t2 }>)
     (in custom plutus_term at level 50, left associativity).
 
-  Notation "'Int' x" := (Constant (ValueOf DefaultUniInteger x)) (in custom plutus_term at level 49).
-  Notation "'()'" := (Constant (ValueOf DefaultUniUnit tt)).
-  Notation "'true'" := (Constant (ValueOf DefaultUniBool true)).
-  Notation "'false'" := (Constant (ValueOf DefaultUniBool false)).
+  (* / collides with substitution notation *)
+  (*
+  Notation "t1 '/' t2" := (<{ {Builtin DivideInteger} ⋅ t1 ⋅ t2 }>) 
+    (in custom plutus_term at level 50, left associativity).
+      *)
 
+  (* Constants *)
+  Notation "'CInt' x" := (Constant (ValueOf DefaultUniInteger x)) (in custom plutus_term at level 49).
+  Notation "'CBool' x" := (Constant (ValueOf DefaultUniBool x)) (in custom plutus_term at level 49).
+  Notation "'CBS' xs" := (Constant (ValueOf DefaultUniByteString xs)) (in custom plutus_term at level 49).
+  Notation "'()'" := (Constant (ValueOf DefaultUniUnit tt)) (in custom plutus_term).
+  Notation "'true'" := (Constant (ValueOf DefaultUniBool true)) (in custom plutus_term).
+  Notation "'false'" := (Constant (ValueOf DefaultUniBool false)) (in custom plutus_term).
+
+  (* Built-in types *)
   Notation "'ℤ'" := (Ty_Builtin DefaultUniInteger) (in custom plutus_term).
+  Notation "'bool'" := (Ty_Builtin DefaultUniBool) (in custom plutus_term).
   Notation "'unit'" := (Ty_Builtin DefaultUniUnit) (in custom plutus_term).
-  Notation "A '→' B" := (Ty_Fun A B) (in custom plutus_term at level 49, right associativity).
+  Notation "X '→' Y" := (Ty_Fun X Y) (in custom plutus_term at level 49, right associativity).
+  Notation "'bytestring'" := (Ty_Builtin DefaultUniByteString) (in custom plutus_term at level 51, right associativity).
 
 
 End PlutusNotations.

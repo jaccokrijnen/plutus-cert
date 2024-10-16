@@ -4,7 +4,7 @@ Require Import PlutusCert.PlutusIR.Semantics.Dynamic.Bigstep.
 
 
 Lemma compute_defaultfun__to_value : forall t v,
-    saturated t ->
+    fully_applied t ->
     compute_defaultfun t = Datatypes.Some v ->
     value v.
 Proof with (try discriminate).
@@ -64,20 +64,13 @@ Proof with (eauto with hintdb__eval_no_error).
   all: eauto using compute_defaultfun__to_value.
   - (* E_IWrap *)
     inversion H0...
-    subst.
-    inversion H1.
   - (* Constr*)
     inversion H2.
     + apply V_Constr.
       constructor...
-    + inversion H3.
-  - (* E_NeutralBuiltin *)
-    destruct f...
-    all: constructor...
-    all: constructor...
-    all: try solve [intros Hcon; inversion Hcon].
-    admit. (* TODO: implement arity *)
-Admitted.
+  - (* Eta *)
+    destruct f; unfold eta_expand; simpl; constructor.
+Qed.
 
 Corollary eval_to_value__eval : forall t v k,
     t =[k]=> v ->

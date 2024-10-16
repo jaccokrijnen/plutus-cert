@@ -20,6 +20,7 @@ Inductive eval : term -> term -> nat -> Prop :=
   | E_LamAbs : forall x T t,
       LamAbs x T t =[0]=> LamAbs x T t
   | E_Apply : forall t1 t2 x T t0 v2 v0 j1 j2 j0,
+      ~ fully_applied (Apply t1 t2) ->
       t1 =[j1]=> LamAbs x T t0 ->
       t2 =[j2]=> v2 ->
       ~ is_error v2 ->
@@ -29,6 +30,7 @@ Inductive eval : term -> term -> nat -> Prop :=
   | E_TyAbs : forall X K t,
       TyAbs X K t =[0]=> TyAbs X K t
   | E_TyInst : forall t1 T2 X K t0 v0 j1 j0,
+      ~ fully_applied (TyInst t1 T2) ->
       t1 =[j1]=> TyAbs X K t0 ->
       <{ [[T2 / X] t0 }> =[j0]=> v0 ->
       TyInst t1 T2 =[j1 + 1 + j0]=> v0
@@ -52,36 +54,16 @@ Inductive eval : term -> term -> nat -> Prop :=
       Constr i T (t :: ts) =[k_t + k_ts]=> Constr i T (v :: vs)
 
   (** Builtins *)
-  | E_NeutralBuiltin : forall f,
-      Builtin f =[0]=> Builtin f
-  | E_NeutralApply : forall nv v,
-      unsaturated (Apply nv v) ->
-      (Apply nv v) =[0]=> (Apply nv v)
-  | E_NeutralTyInst : forall nv T,
-      unsaturated (TyInst nv T) ->
-      (TyInst nv T) =[0]=> (TyInst nv T)
-  | E_NeutralApplyPartial: forall t1 t2 nv1 v2 v0 j1 j2 j0,
-      ~ unsaturated (Apply t1 t2) ->
-      t1 =[j1]=> nv1 ->
-      unsaturated nv1 ->
-      t2 =[j2]=> v2 ->
-      ~ is_error v2 ->
-      Apply nv1 v2 =[j0]=> v0 ->
-      Apply t1 t2 =[j1 + j2 + 1 + j0]=> v0
-  | E_NeutralTyInstPartial : forall t1 T nv1 v0 j1 j0,
-      ~ unsaturated (TyInst t1 T) ->
-      t1 =[j1]=> nv1 ->
-      unsaturated nv1 ->
-      TyInst nv1 T =[j0]=> v0 ->
-      TyInst t1 T =[j1 + 1 + j0]=> v0
-  | E_NeutralApplyFull: forall nv1 v2 v,
-      saturated (Apply nv1 v2) ->
-      compute_defaultfun (Apply nv1 v2) = Datatypes.Some v ->
-      Apply nv1 v2 =[1]=> v
-  | E_NeutralTyInstFull: forall nv1 v T,
-      saturated (TyInst nv1 T) ->
-      compute_defaultfun (TyInst nv1 T) = Datatypes.Some v ->
-      TyInst nv1 T =[1]=> v
+  | E_Builtin_Eta : forall f,
+      Builtin f =[0]=> eta_expand f
+  | E_Builtin_Apply : forall s t v,
+      fully_applied (Apply s t) ->
+      compute_defaultfun (Apply s t) = Some v ->
+      Apply s t =[1]=> v
+  | E_Builtin_TyInst : forall t T v,
+      fully_applied (TyInst t T) ->
+      compute_defaultfun (TyInst t T) = Some v ->
+      TyInst t T =[1]=> v
 
   (* Errors and their propagation *)
   | E_Error : forall T,
@@ -178,13 +160,6 @@ Create HintDb hintdb__eval_no_error.
   E_IWrap
   E_Unwrap
   E_Constant
-  E_NeutralBuiltin
-  E_NeutralApply
-  E_NeutralTyInst
-  E_NeutralApplyPartial
-  E_NeutralTyInstPartial
-  E_NeutralApplyFull
-  E_NeutralTyInstFull
   E_Let
   E_LetRec
   E_Let_Nil

@@ -109,8 +109,8 @@ Proof with eauto_LR.
 
       eapply RV_condition...
       eapply RV_unfolded_to_RV.
-      split. eapply eval_to_value in Hev'__e_f. inversion Hev'__e_f. subst. assumption. inversion H.
-      split. eapply eval_to_value in Hev__e'_f. inversion Hev__e'_f. subst. assumption. inversion H.
+      split. eapply eval_to_value in Hev'__e_f. inversion Hev'__e_f. assumption.
+      split. eapply eval_to_value in Hev__e'_f. inversion Hev__e'_f. assumption.
       eapply Hunwr...
 
       eapply closing_preserves_kinding_1...
