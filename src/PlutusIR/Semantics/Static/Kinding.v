@@ -1,10 +1,6 @@
 Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.Util.List.
 
-Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
-
-Import PlutusNotations.
-
 Reserved Notation "'|-*_uni' T ':' K" (at level 40, T at level 0, K at level 0).
 Inductive has_kind_uni : DefaultUni -> kind -> Prop :=
   | K_DefaultUniInteger :
@@ -25,23 +21,20 @@ Inductive has_kind_uni : DefaultUni -> kind -> Prop :=
       |-*_uni DefaultUniBLS12_381_G2_Element : Kind_Base
   | K_DefaultUniBLS12_381_MlResult :
       |-*_uni DefaultUniBLS12_381_MlResult : Kind_Base
-  | K_DefaultUniApply k k' t t' :
+  | K_DefaultUniApply : forall k k' t t',
       |-*_uni t : (Kind_Arrow k k') ->
       |-*_uni t' : k ->
       |-*_uni (DefaultUniApply t t') : k'
-
   | K_DefaultUniProtoPair :
       |-*_uni DefaultUniProtoPair : (Kind_Arrow Kind_Base Kind_Base)
-
   | K_DefaultUniProtoList :
       |-*_uni DefaultUniProtoList : (Kind_Arrow Kind_Base Kind_Base)
-
   where "'|-*_uni' T ':' K" := (has_kind_uni T K)
 .
 
 (** Kinding of types *)
 Reserved Notation "Δ '|-*' T ':' K" (at level 40, T at level 0, K at level 0).
-Inductive has_kind : list (string * kind) -> ty -> kind -> Prop :=
+Inductive has_kind : list (binderTyname * kind) -> ty -> kind -> Prop :=
   | K_Var : forall Δ X K,
       lookup X Δ = Some K ->
       Δ |-* (Ty_Var X) : K
@@ -56,9 +49,9 @@ Inductive has_kind : list (string * kind) -> ty -> kind -> Prop :=
   | K_Forall : forall Δ X K T,
       ((X, K) :: Δ) |-* T : Kind_Base ->
       Δ |-* (Ty_Forall X K T) : Kind_Base
-  | K_Builtin : forall Δ T,
-      |-*_uni T : Kind_Base ->
-      Δ |-* (Ty_Builtin T) : Kind_Base
+  | K_Builtin : forall Δ T K,
+      |-*_uni T : K ->
+      Δ |-* (Ty_Builtin T) : K
   | K_Lam : forall Δ X K1 T K2,
       ((X, K1) :: Δ) |-* T : K2 ->
       Δ |-* (Ty_Lam X K1 T) : (Kind_Arrow K1 K2)
