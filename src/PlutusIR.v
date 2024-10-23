@@ -490,6 +490,79 @@ Section term__ind.
 
 End term__ind.
 
+
+Section term__rect.
+
+  Unset Implicit Arguments.
+
+  Variable (P : term -> Type).
+  Variable (Q : binding -> Type).
+
+  Context
+    (H_Let     : forall rec bs t, ForallT Q bs -> P t -> P (Let rec bs t))
+    (H_Var     : forall s : string, P (Var s))
+    (H_TyAbs   : forall (s : string) (k : kind) (t : term), P t -> P (TyAbs s k t))
+    (H_LamAbs  : forall (s : string) (t : ty) (t0 : term), P t0 -> P (LamAbs s t t0))
+    (H_Apply   : forall t : term, P t -> forall t0 : term, P t0 -> P (Apply t t0))
+    (H_Constant : forall (c : constant), P (Constant c))
+    (H_Builtin : forall d : DefaultFun, P (Builtin d))
+    (H_TyInst  : forall t : term, P t -> forall t0 : ty, P (TyInst t t0))
+    (H_Error   : forall t : ty, P (Error t))
+    (H_IWrap   : forall (t t0 : ty) (t1 : term), P t1 -> P (IWrap t t0 t1))
+    (H_Unwrap  : forall t : term, P t -> P (Unwrap t))
+    (H_Constr  : forall (i : nat) T (ts : list term), ForallT P ts -> P (Constr i T ts))
+    (H_Case   : forall T (t : term), P t -> forall ts, ForallT P ts -> P (Case T t ts))
+    .
+
+
+
+  Context
+    (H_TermBind : forall s v t, P t -> Q (TermBind s v t))
+    (H_TypeBind : forall v ty, Q (TypeBind v ty))
+    (H_DatatypeBind : forall dtd, Q (DatatypeBind dtd)).
+
+  Definition bindings__rect (binding__rect : forall (b : binding), Q b) :=
+    fix bindings__rect bs :=
+    match bs as p return ForallT Q p with
+      | nil       => ForallT_nil
+      | cons b bs => ForallT_cons (binding__rect b) (bindings__rect bs)
+    end.
+
+  Definition terms__rect (term_rect : forall (t : term), P t) :=
+    fix terms_rect' ts :=
+    match ts as p return ForallT P p with
+      | nil       => ForallT_nil
+      | cons t ts => ForallT_cons (term_rect t) (terms_rect' ts)
+    end.
+
+  Fixpoint term__rect (t : term) : P t :=
+    match t with
+      | Let rec bs t    => H_Let rec bs t (bindings__rect binding__rect bs) (term__rect t)
+      | Var n           => H_Var n
+      | TyAbs n k t     => H_TyAbs n k t (term__rect t)
+      | LamAbs n ty t   => H_LamAbs n ty t (term__rect t)
+      | Apply s t       => H_Apply s (term__rect s) t (term__rect t)
+      | TyInst t ty     => H_TyInst t (term__rect t) ty
+      | IWrap ty1 ty2 t => H_IWrap ty1 ty2 t (term__rect t)
+      | Unwrap t        => H_Unwrap t (term__rect t)
+      | Error ty        => H_Error ty
+      | Constant c      => H_Constant c
+      | Builtin f       => H_Builtin f
+      | Constr i T ts     => H_Constr i T ts (terms__rect term__rect ts)
+      | Case T t ts      => H_Case T t (term__rect t) ts (terms__rect term__rect ts)
+    end
+  with binding__rect (b : binding) : Q b :=
+    match b with
+      | TermBind s v t  => H_TermBind s v t (term__rect t)
+      | TypeBind v ty   => H_TypeBind v ty
+      | DatatypeBind dtd => H_DatatypeBind dtd
+    end.
+
+  Combined Scheme term__multrect from term__rect, binding__rect.
+
+End term__rect.
+
+
 Section term_rect.
   Variable (P : term -> Type).
   Variable (Q : binding -> Type).

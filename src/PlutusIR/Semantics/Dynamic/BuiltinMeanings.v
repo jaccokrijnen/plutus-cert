@@ -36,6 +36,8 @@ Section Signatures.
     | BS_Result : ty -> builtin_sig
   .
 
+  Scheme Equality for builtin_sig.
+
   #[local]
   Notation "A '→' B" := (BS_Fun A B) (at level 49, right associativity).
 

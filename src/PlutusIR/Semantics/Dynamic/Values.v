@@ -1,9 +1,13 @@
 Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
+From PlutusCert Require Import
+  Equality
+.
 From Coq Require Import
   Lists.List
   Bool.Bool
-  Arith.PeanoNat.
+  Arith.PeanoNat
+.
 Import PeanoNat.Nat.
 
 Inductive is_error : term -> Prop :=
@@ -62,6 +66,51 @@ Fixpoint value__ind (t : term) (v : value t) {struct v} : P t :=
   end
 .
 
+End value_ind.
+
+Lemma dec_is_error t : {is_error t} + {~ is_error t}.
+Proof.
+  destruct t.
+  all: try (solve [right; inversion 1 | left; constructor]).
+Qed.
+
+Lemma ForallT_dec {A} (P : A -> Prop) (xs : list A) :
+ Util.ForallT (fun x => {P x} + {~ P x}) xs ->
+ {Forall P xs} + {~ (Forall P xs)}.
+Proof.
+
+intros H.
+induction H.
+- left. constructor.
+- destruct IHForallT, p.
+  all: try solve [right; inversion 1; contradiction].
+  left. auto.
+Qed.
+
+Lemma value_dec t : {value t} + {~ value t}.
+Proof.
+  apply term__rect with
+    (P := fun t => {value t} + {~value t})
+    (Q := fun b => unit).
+  all: intros.
+  all: try solve
+    [ right; inversion 1
+    | left; constructor
+    | exact tt ].
+  - (* IWrap *)
+    destruct (dec_is_error t2).
+    + right; inversion 1; contradiction.
+    + destruct H.
+      * left. constructor; auto.
+      * right. inversion 1; contradiction.
+  - (* Constr *)
+    apply ForallT_dec in X.
+    destruct X.
+    + left. auto.
+    + right. inversion 1. contradiction .
+Qed.
+
+
 (* built-in that is applied to values/types of which the (type) arguments match
    the signature *)
 Inductive applied_builtin : DefaultFun -> builtin_sig -> term -> Prop :=
@@ -77,7 +126,32 @@ Inductive applied_builtin : DefaultFun -> builtin_sig -> term -> Prop :=
       applied_builtin f (BS_Forall X K sig) (TyInst t T)
   .
 
-End value_ind.
+
+Ltac strategy := match goal with
+  | |- { _ } + { ~ _ } =>
+      try solve [  (right; inversion 1; contradiction)
+                || (left; subst; auto using applied_builtin)
+                ]
+  | _ => idtac
+  end
+.
+
+Lemma applied_builtin_dec f s t : { applied_builtin f s t } + {~ applied_builtin f s t }.
+Proof with strategy.
+  revert f s.
+  induction t.
+  all: intros f s...
+  - (* Apply *)
+    destruct s eqn:H_s...
+    destruct (IHt1 f b), (value_dec t2), (dec_is_error t2)...
+  - (* Builtin *)
+    destruct s...
+    destruct (func_dec f d); subst...
+  - (* TyInst *)
+    destruct s eqn:H_s...
+    destruct (IHt f b)...
+Qed.
+
 
 (* A fully applied built-in is an applied_builtin for the corresponding
    signature of that built-in *)
@@ -107,12 +181,6 @@ Fixpoint
     | IWrap F T v   => dec_value' n v && negb (is_error_b v)
     | Constant u    => true
     | Error T       => true
-
-
-    (* Duplication for the termination checker *)
-    | Builtin f   => ltb n (arity f)
-    | Apply nv v  => dec_value' n v && negb (is_error_b v) && dec_value' (S n) nv
-    | TyInst nv T => dec_value' (S n) nv
     | _ => false
   end
   .
@@ -129,6 +197,7 @@ Definition dec_unsaturated_with (n : nat) (t : term) :=
 
 Lemma dec_value_value : forall t, dec_value t = true -> value t.
 Admitted.
+
 
 (* TODO: replace this by decision procedure for fully_applied *)
 Ltac not_fully_applied :=
