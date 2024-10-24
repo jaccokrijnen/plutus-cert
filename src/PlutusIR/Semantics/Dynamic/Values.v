@@ -7,6 +7,7 @@ From Coq Require Import
   Lists.List
   Bool.Bool
   Arith.PeanoNat
+  Program.Equality
 .
 Import PeanoNat.Nat.
 
@@ -68,11 +69,11 @@ Fixpoint value__ind (t : term) (v : value t) {struct v} : P t :=
 
 End value_ind.
 
-Lemma dec_is_error t : {is_error t} + {~ is_error t}.
+Lemma is_error_dec t : {is_error t} + {~ is_error t}.
 Proof.
   destruct t.
   all: try (solve [right; inversion 1 | left; constructor]).
-Qed.
+Defined.
 
 Lemma ForallT_dec {A} (P : A -> Prop) (xs : list A) :
  Util.ForallT (fun x => {P x} + {~ P x}) xs ->
@@ -85,7 +86,7 @@ induction H.
 - destruct IHForallT, p.
   all: try solve [right; inversion 1; contradiction].
   left. auto.
-Qed.
+Defined.
 
 Lemma value_dec t : {value t} + {~ value t}.
 Proof.
@@ -98,7 +99,7 @@ Proof.
     | left; constructor
     | exact tt ].
   - (* IWrap *)
-    destruct (dec_is_error t2).
+    destruct (is_error_dec t2).
     + right; inversion 1; contradiction.
     + destruct H.
       * left. constructor; auto.
@@ -108,100 +109,151 @@ Proof.
     destruct X.
     + left. auto.
     + right. inversion 1. contradiction .
-Qed.
+Defined.
 
 
 (* built-in that is applied to values/types of which the (type) arguments match
    the signature *)
 Inductive applied_builtin : DefaultFun -> builtin_sig -> term -> Prop :=
-  | FA_Builtin : forall T f,
-      applied_builtin f (BS_Result T) (Builtin f)
-  | FA_Apply : forall f sig t v T,
+  | BA_Builtin : forall f,
+      applied_builtin f (to_sig f) (Builtin f)
+  | BA_Apply : forall f sig t v T,
       value v ->
       ~ is_error v ->
-      applied_builtin f sig t ->
-      applied_builtin f (BS_Fun T sig) (Apply t v)
-  | FA_TyInst : forall f t T X K sig,
-      applied_builtin f sig t ->
-      applied_builtin f (BS_Forall X K sig) (TyInst t T)
+      applied_builtin f (BS_Fun T sig) t ->
+      applied_builtin f sig (Apply t v)
+  | BA_TyInst : forall f t T X K sig,
+      applied_builtin f (BS_Forall X K sig) t ->
+      applied_builtin f sig (TyInst t T)
   .
 
+Lemma applied_builtin__functional f f' s s' t : applied_builtin f s t -> applied_builtin f' s' t -> f = f' /\ s = s'.
+Proof.
+  revert f f' s s'.
+  induction t.
+  all: try solve [intros ? ? ? ?; inversion 1].
+  - clear IHt2.
+    intros ? ? ? ? H H'.
+    inversion H; subst.
+    inversion H'; subst.
+    specialize (IHt1 _ _ _ _ H6 H9) as [H_f H_s].
+    inversion H_s.
+    subst.
+    split; reflexivity.
+  -
+    intros ? ? ? ? H H'.
+    inversion H; subst.
+    inversion H'; subst.
+    split; reflexivity.
+  -
+    intros ? ? ? ? H H'.
+    inversion H; subst.
+    inversion H'; subst.
+    specialize (IHt _ _ _ _ H3 H4) as [H_f H_s].
+    inversion H_s.
+    subst.
+    split; reflexivity.
+Defined.
 
-Ltac strategy := match goal with
-  | |- { _ } + { ~ _ } =>
-      try solve [  (right; inversion 1; contradiction)
-                || (left; subst; auto using applied_builtin)
-                ]
-  | _ => idtac
+Corollary applied_builtin__functional_sig f f' s s' t : applied_builtin f s t -> applied_builtin f' s' t -> s = s'.
+Proof.
+  intros.
+  eapply proj2.
+  eauto using applied_builtin__functional.
+Defined.
+
+Ltac contradiction_exists :=
+  match goal with
+  | H  : { _ & {_ & applied_builtin _ _ ?t}} -> False
+  , H' : applied_builtin _ _ ?t
+  |- _ => apply H; eexists; eexists; apply H'
+  end.
+
+Ltac contradict_diff_sigs :=
+  match goal with
+  | H1 : applied_builtin ?f ?s ?t
+  , H2 : applied_builtin ?f' ?s' ?t
+  |- _ => assert (H_absurd : s = s') by eauto using applied_builtin__functional_sig; inversion H_absurd
+  end.
+
+Ltac fully_strategy := try solve
+  [ right;
+    let H := fresh "H" in
+    destruct 1 as [ ? [? H] ];
+    inversion H;
+    (contradiction || contradiction_exists || contradict_diff_sigs)
+  ]
+.
+
+
+Lemma applied_builtin_dec t :
+   {f & {s & applied_builtin f s t}}  +
+  ({f & {s & applied_builtin f s t}} -> False).
+Proof with fully_strategy.
+  induction t...
+  - destruct IHt1 as [[ f [ s H' ]] | ], (value_dec t2), (is_error_dec t2)...
+    destruct s eqn:H_s...
+    left.
+    eauto using applied_builtin.
+  - left.
+    eauto using applied_builtin.
+  - destruct IHt as [[ f [ s H' ]] | ]...
+    destruct s eqn:H_s...
+    left.
+    eauto using applied_builtin.
+Defined.
+
+Fixpoint result_ty (s : builtin_sig) : ty :=
+  match s with
+  | BS_Forall _ _ s => result_ty s
+  | BS_Fun _ s => result_ty s
+  | BS_Result t => t
   end
 .
 
-Lemma applied_builtin_dec f s t : { applied_builtin f s t } + {~ applied_builtin f s t }.
-Proof with strategy.
-  revert f s.
-  induction t.
-  all: intros f s...
-  - (* Apply *)
-    destruct s eqn:H_s...
-    destruct (IHt1 f b), (value_dec t2), (dec_is_error t2)...
-  - (* Builtin *)
-    destruct s...
-    destruct (func_dec f d); subst...
-  - (* TyInst *)
-    destruct s eqn:H_s...
-    destruct (IHt f b)...
-Qed.
+
+Definition fully_applied t := exists f, applied_builtin f (BS_Result (result_ty (to_sig f))) t.
+
+Lemma fully_applied_dec t : {fully_applied t} + {~fully_applied t}.
+Proof.
+  destruct (applied_builtin_dec t) as [ H | H ] .
+  - destruct H as [ f [ s H_app ]].
+    destruct (builtin_sig_eq_dec s (BS_Result (result_ty (to_sig f)))).
+    + subst. left. unfold fully_applied. eauto.
+    + right. unfold fully_applied. intro H.
+      destruct H as [ ? Hb ].
+      match goal with
+      | H1 : applied_builtin ?f ?s ?t
+      , H2 : applied_builtin ?f' ?s' ?t
+      |- _ => assert (H_absurd : f = f' /\ s = s') by eauto using applied_builtin__functional
+      end.
+      destruct H_absurd.
+      subst.
+      contradiction.
+  - right.
+    destruct 1 as [ f Happ ].
+    apply H.
+    eauto.
+Defined.
 
 
-(* A fully applied built-in is an applied_builtin for the corresponding
-   signature of that built-in *)
-Definition fully_applied t := exists f, applied_builtin f (to_sig f) t.
 
-Require Import Lia.
-
-
-Definition is_error_b (t : term) :=
+Definition is_error_beq (t : term) : bool :=
   match t with
-    | Error T => true
+    | Error _ => true
     | _       => false
   end.
 
-Lemma is_error_is_error_b : forall t, is_error_b t = true -> is_error t.
-Proof.
-  intros t H.
-  destruct t; inversion H.
-  constructor.
-Qed.
-
-Fixpoint
-  dec_value' (n : nat) (t : term) {struct t} :=
+Fixpoint value_beq (t : term) :=
   match t with
     | LamAbs x T t0 => true
     | TyAbs X K t   => true
-    | IWrap F T v   => dec_value' n v && negb (is_error_b v)
+    | IWrap F T v   => value_beq v && negb (is_error_beq v)
     | Constant u    => true
     | Error T       => true
     | _ => false
   end
   .
 
-Definition dec_value := dec_value' 0.
-
-Definition dec_unsaturated_with (n : nat) (t : term) :=
-  match t with
-    | Builtin f   => dec_value' n t
-    | Apply nv v  => dec_value' n t
-    | TyInst nv T => dec_value' n t
-    | _           => false
-  end.
-
-Lemma dec_value_value : forall t, dec_value t = true -> value t.
+Lemma dec_value_value : forall t, value_beq t = true -> value t.
 Admitted.
-
-
-(* TODO: replace this by decision procedure for fully_applied *)
-Ltac not_fully_applied :=
-  inversion 1; 
-  repeat (match goal with H : applied_builtin _ _ _ |- _ => inversion H; clear H; subst end);
-  match goal with H : _ = to_sig _ |- _ => inversion H end
-.

@@ -13,6 +13,7 @@ Definition Ty_int : ty := Ty_Builtin DefaultUniInteger.
 Definition int_to_int : ty := Ty_Fun Ty_int Ty_int.
 
 
+
 Example test_addInteger : forall x, exists k,
   <{ (λ x :: (ℤ → ℤ), {Var x} ⋅ CInt 17) ⋅ ({Builtin AddInteger} ⋅ CInt 3) }>
   =[k]=> <{ CInt 20}>.
@@ -20,7 +21,16 @@ Proof with (autounfold; eauto with hintdb__eval_no_error || (try solve [intros H
   intros.
   eexists.
   eapply E_Apply...
-  - not_fully_applied.
+  -
+  match goal with
+    | |- fully_applied ?t -> False => assert (H := fully_applied_dec t)
+  end.
+  decide H.
+  +
+
+
+
+  not_fully_applied.
   - eapply E_Apply...
     + not_fully_applied.
     + apply E_Builtin_Eta with (f := AddInteger).

@@ -37,14 +37,9 @@ Inductive is_pure (Γ : ctx) : term -> Type :=
       is_pure Γ (Var x)
 .
 
-Definition dec_is_error (t : term) : bool :=
-  match t with
-    | Error _ => true
-    | _       => false
-  end.
 
 Lemma dec_is_error_not_is_error : forall t,
-  dec_is_error t = false -> ~ is_error t.
+  is_error_beq t = false -> ~ is_error t.
 Proof.
   intros t H.
   destruct t; intros H1; inversion H1.
@@ -61,7 +56,7 @@ Definition is_pureb (Γ : ctx) (t : term) : bool :=
       | Datatypes.Some (let_bound NonStrict) => false
       | _ => false
     end
-  | _     => dec_value t && negb (dec_is_error t)
+  | _     => if value_dec t then true else false && negb (is_error_beq t)
   end
 .
 
@@ -85,7 +80,7 @@ Inductive pure_binding (Γ : ctx) : binding -> Prop :=
 Definition dec_pure_binding (Γ : ctx) (b : binding) : bool :=
     match b with
       | TermBind NonStrict vd t => true
-      | TermBind Strict vd t    => dec_value t
+      | TermBind Strict vd t    => value_beq t
       | DatatypeBind dtd        => true
       | TypeBind tvd ty         => true
     end
