@@ -3,7 +3,7 @@ Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.PlutusIR.Semantics.Dynamic.Bigstep.
 
 
-Lemma compute_defaultfun__to_value : forall t v,
+Lemma compute_defaultfun__value : forall t v,
     fully_applied t ->
     compute_defaultfun t = Datatypes.Some v ->
     value v.
@@ -61,7 +61,7 @@ Lemma eval_to_value :
 Proof with (eauto with hintdb__eval_no_error).
   apply eval__multind.
   all: intros.
-  all: eauto using compute_defaultfun__to_value.
+  all: eauto using compute_defaultfun__value.
   - (* E_IWrap *)
     inversion H0...
   - (* Constr*)

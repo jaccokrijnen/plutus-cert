@@ -1,5 +1,11 @@
-Require Import PlutusCert.PlutusIR.
-Require Import PlutusCert.PlutusIR.Semantics.Dynamic.Bigstep.
+From PlutusCert Require Import
+  PlutusIR
+  Bigstep
+  Util
+.
+
+Import PlutusNotations.
+
 
 Require Import Coq.ZArith.BinInt.
 Local Open Scope Z_scope.
@@ -8,7 +14,6 @@ Import ListNotations.
 Require Import Coq.Strings.String.
 Local Open Scope string_scope.
 
-Import PlutusNotations.
 
 
 (* Build lazy if-then-else using thunking *)
@@ -74,6 +79,19 @@ Lemma eval_ifthenelse_false : forall T t1 t2 t3 v2 v3 k1 k2 k3,
     <{ ifthenelse @ T ⋅ t1 ⋅ t2 ⋅ t3 }> =[ k2 ]=> v3.
 Admitted.
 
+Ltac dec_fully_applied :=
+  match goal with
+    | |- ~ fully_applied ?t =>
+           assert (H := sumboolOut (fully_applied_dec t));
+           assumption
+    | |- fully_applied ?t -> False =>
+           assert (H := sumboolOut (fully_applied_dec t));
+           assumption
+    | |- fully_applied ?t =>
+           assert (H := sumboolOut (fully_applied_dec t));
+           assumption
+  end.
+
 Example fact_term_evaluates : exists k,
   fact_term 2 =[k]=> Constant (ValueOf DefaultUniInteger 2).
 Proof with (autounfold; simpl; eauto || (try reflexivity) || (try solve [intros Hcon; inversion Hcon])).
@@ -84,7 +102,7 @@ Proof with (autounfold; simpl; eauto || (try reflexivity) || (try solve [intros 
   simpl.
   eapply E_LetRec_Nil.
   eapply E_Apply... {
-    not_fully_applied.
+     dec_fully_applied.
   }
 
   {
@@ -100,7 +118,7 @@ Proof with (autounfold; simpl; eauto || (try reflexivity) || (try solve [intros 
     } {
     simpl.
 
-    eapply E_Apply. { not_fully_applied. }
+    eapply E_Apply. { dec_fully_applied. }
     {
       eapply eval_ifthenelse_false.
       - eapply E_Builtin_Apply...

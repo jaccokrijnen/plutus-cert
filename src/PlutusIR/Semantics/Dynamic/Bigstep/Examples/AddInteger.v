@@ -1,6 +1,9 @@
-Require Import PlutusCert.PlutusIR.
+From PlutusCert Require Import
+  PlutusIR
+  Bigstep
+  Util.
 Import PlutusNotations.
-Require Import PlutusCert.PlutusIR.Semantics.Dynamic.Bigstep.
+
 
 Require Import Coq.ZArith.BinInt.
 Local Open Scope Z_scope.
@@ -14,39 +17,43 @@ Definition int_to_int : ty := Ty_Fun Ty_int Ty_int.
 
 
 
+Ltac dec_fully_applied :=
+  match goal with
+    | |- ~ fully_applied ?t =>
+           assert (H := sumboolOut (fully_applied_dec t));
+           assumption
+    | |- fully_applied ?t =>
+           assert (H := sumboolOut (fully_applied_dec t));
+           assumption
+  end.
+
 Example test_addInteger : forall x, exists k,
   <{ (λ x :: (ℤ → ℤ), {Var x} ⋅ CInt 17) ⋅ ({Builtin AddInteger} ⋅ CInt 3) }>
   =[k]=> <{ CInt 20}>.
-Proof with (autounfold; eauto with hintdb__eval_no_error || (try solve [intros Hcon; inversion Hcon])).
+Proof.
+(* Proof with (autounfold; eauto with hintdb__eval_no_error || (try solve [intros Hcon; inversion Hcon])). *)
   intros.
   eexists.
   eapply E_Apply...
-  -
-  match goal with
-    | |- fully_applied ?t -> False => assert (H := fully_applied_dec t)
-  end.
-  decide H.
-  +
-
-
-
-  not_fully_applied.
+  - dec_fully_applied.
+  - apply E_LamAbs.
   - eapply E_Apply...
-    + not_fully_applied.
+    + dec_fully_applied.
     + apply E_Builtin_Eta with (f := AddInteger).
-    + cbv.
-      constructor.
-  - intros Hcon.
-    inversion Hcon.
+    + apply E_Constant.
+    + inversion 1.
+    + apply E_LamAbs.
+  - simpl.
+    inversion 1.
   - simpl.
     rewrite eqb_refl.
-    eapply E_Apply...
-    not_fully_applied.
-    simpl.
-    eapply E_Builtin_Apply...
-    unfold fully_applied.
-    exists AddInteger.
-    apply FA_Apply...
-    apply FA_Apply...
-    apply FA_Builtin...
+    eapply E_Apply.
+    + dec_fully_applied.
+    + apply E_LamAbs.
+    + apply E_Constant.
+    + inversion 1.
+    + simpl.
+      apply E_Builtin_Apply.
+      * dec_fully_applied.
+      * reflexivity.
 Qed.

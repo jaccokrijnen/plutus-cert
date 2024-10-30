@@ -285,5 +285,3 @@ Definition compute_defaultfun (t : term) : option term :=
   | _ => None (* TODO*)
   end
 .
-
-
