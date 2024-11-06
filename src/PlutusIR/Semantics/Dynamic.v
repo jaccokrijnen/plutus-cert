@@ -4,7 +4,7 @@ Require Export PlutusCert.PlutusIR.
 
 (** ** Definition of big-step semantics *)
 Require Export PlutusCert.PlutusIR.Semantics.Dynamic.Bigstep.
-Require Export PlutusCert.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
+Require Export PlutusCert.PlutusIR.Semantics.Dynamic.Builtins.
 Require Export PlutusCert.PlutusIR.Semantics.Dynamic.AnnotationSubstitution.
 Require Export PlutusCert.PlutusIR.Semantics.Dynamic.Substitution.
 Require Export PlutusCert.PlutusIR.Semantics.Dynamic.Values.

@@ -1,6 +1,6 @@
 Require Import PlutusCert.PlutusIR.
 Import PlutusNotations.
-Require Export PlutusCert.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
+Require Export PlutusCert.PlutusIR.Semantics.Dynamic.Builtins.
 Require Export PlutusCert.PlutusIR.Semantics.Dynamic.AnnotationSubstitution.
 Require Export PlutusCert.PlutusIR.Semantics.Dynamic.Datatypes.
 Require Export PlutusCert.PlutusIR.Semantics.Dynamic.Substitution.
