@@ -136,12 +136,18 @@ Qed.
                             - any value of sigma
                             - T_body
       *)
+
+      (* Idea/problem: Because of the above, identity substitutions refresh variables.
+        we could solve this by wrapping this in capms' and removing identity substitutions.
+
+        Not well thought out! TODO
+        *)
 Equations? capms (sigma : list (string * term)) (T : term) : term by wf (size T) :=
   capms sigma (tmvar Y) := match lookup Y sigma with
                           | Some t => t
                           | None => tmvar Y
                           end;
-  capms sigma (tmlam Y K1 T_body) := let Y' := fresh2 sigma T_body in (* TODO: should include Y! *)
+  capms sigma (tmlam Y K1 T_body) := let Y' := fresh2 ((Y, tmvar Y)::sigma) T_body in (* TODO: should include Y! *)
                                     let T_body' := rename Y Y' T_body in
                                     tmlam Y' K1 (capms sigma T_body');
   capms sigma (tmapp T1 T2) := tmapp (capms sigma T1) (capms sigma T2).
@@ -152,7 +158,77 @@ Proof.
     ].
 Defined.
 
-(* Deprecated. Superseded by capms *)
+Require Import Coq.Program.Equality.
+
+(* Equations? capmsfr_rename X X' T : term by wf (size T) :=
+  capmsfr_rename X X' (tmvar Y) := if X =? Y then tmvar X' else tmvar Y;
+  capmsfr_rename X X' (tmlam Y K1 T_body) := let Y' := fresh2 [(X, tmvar X')] T_body in
+                                        let T_body' := capmsfr_rename Y Y' T_body in
+                                        tmlam Y' K1 (capmsfr_rename X X' T_body');
+  capmsfr_rename X X' (tmapp T1 T2) := tmapp (capmsfr_rename X X' T1) (capmsfr_rename X X' T2).
+Proof.
+  all: try solve
+    [ lia
+    || replace T_body' with (capmsfr_rename Y Y' T_body); eauto; rewrite <- rename_preserves_size; eauto
+    ].
+    (* still to prove: size T_body' < S (size T_body)
+    *) *)
+
+(* 
+Lemma capmsfr_rename_preserves_size : forall T X X',
+    size T = size (capmsfr_rename X X' T).
+Proof.
+  intros T X X'.
+  induction T; simpl; eauto.
+  - destruct (X =? s) eqn:xs; eauto.
+    + rewrite capmsfr_rename_equation_1.
+      rewrite xs.
+      reflexivity.
+    + rewrite capmsfr_rename_equation_1.
+      rewrite xs.
+      reflexivity.
+  - rewrite capmsfr_rename_equation_2. simpl.
+    rewrite IHT.
+    reflexivity.
+  - rewrite capmsfr_rename_equation_3. simpl.
+    rewrite IHT1, IHT2.
+    reflexivity.
+Qed. *)
+
+(* 
+Since we are working up to alhpa equivalence, why not also freshen the lambda again?
+
+Idea: [x to x'] (\x.\x.x) in the previous definition became
+  Y' is fresh.
+  T_body' = rename x Y' (\x.x) = \x.x
+  ->   \Y'. [x to x'] (\x.x) = \Y'.\Y''.Y''
+
+  but also 
+
+  [x to x'] (\x.\y.y)
+  Y' is fresh
+  T_body' = rename x Y' (\y.y) = (\y. (rename x Y' y)) = \y. y
+  ->    \Y'. [x to x'] (\y. y) = \Y' . \Y''. Y''
+
+  In the new definition:
+
+  [x to x'] (\x.\y.y)
+  Y' is fresh
+  \Y'. [x to Y', x to x'] (\y.y) = \Y' . \Y''. [y to Y'', x to Y', x to x'] y = \Y'. \Y''. Y''
+
+  
+
+*)
+Equations capmsfr (sigma : list (string * term)) (T : term) : term :=
+  capmsfr sigma (tmvar Y) := match lookup Y sigma with
+                          | Some t => t
+                          | None => tmvar Y
+                          end;
+  capmsfr sigma (tmlam Y K1 T_body) := let Y' := fresh2 sigma T_body in
+                                    tmlam Y' K1 (capmsfr ((Y, tmvar Y')::sigma) T_body); 
+  capmsfr sigma (tmapp T1 T2) := tmapp (capmsfr sigma T1) (capmsfr sigma T2).
+
+
 Equations? substituteTCA (X : string) (U T : term) : term by wf (size T) :=
   substituteTCA X U (tmvar Y) =>
       if X =? Y then U else tmvar Y ;
@@ -176,4 +252,4 @@ Proof.
     [ lia
     || replace T' with (rename Y Y' T); eauto; rewrite <- rename_preserves_size; eauto
     ].
-Defined.
+Qed.

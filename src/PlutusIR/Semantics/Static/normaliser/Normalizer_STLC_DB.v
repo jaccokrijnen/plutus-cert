@@ -34,6 +34,8 @@ Lemma step'_implies_step_nd : forall t t',
   step' t = Some t' -> SN_F.step t t'.
 Proof. Admitted.
 
+Lemma uhm : forall t, (ARS.sn (SN_F.step)) t -> (ARS.sn ()).
+
 Definition step_with_proof (t : term) : option {t' : term | SN_F.step t t'} :=
   match step' t with
   | None => fun _ => None
@@ -42,13 +44,15 @@ Definition step_with_proof (t : term) : option {t' : term | SN_F.step t t'} :=
       Some (exist _ t' H_step)
   end eq_refl.
 
-Fixpoint normalizer' (t : term) (H_sn : SN t) : (forall t, option {t' | SN_F.step t t'}) -> term :=
+Fixpoint normalizer' (t : term) (H_sn : SN t) : (forall s, option {s' | SN_F.step s s'}) -> term :=
     fun stepper => match stepper t with
     | None => t
     | Some (exist t' H_step) => match H_sn with
         | SNI f => normalizer' t' (f t' H_step) stepper
         end
 end.
+
+
 
 (* Step t according to step' until we reach a value, i.e. normalise it*)
 Definition normalizer (t : term) (H_sn : SN t) : term :=
