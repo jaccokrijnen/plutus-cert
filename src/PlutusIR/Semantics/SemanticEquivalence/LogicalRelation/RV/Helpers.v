@@ -26,11 +26,11 @@ Proof.
   unfold RV in H.
   destruct H as [Hval__v [Hval__v' HRC]].
   autorewrite with RC in HRC.
-  apply eval_value in Hval__v as Hev__v.
+  apply eval_result in Hval__v as Hev__v.
   apply HRC in Hev__v; auto.
   clear HRC.
   destruct Hev__v as [e'_f [j' [Hev__e'_f [Htyp__v [Htyp__v' _]]]]].
-  apply eval_value in Hval__v'.
+  apply eval_result in Hval__v'.
   assert (e'_f = v' /\ j' = 0) by (eapply eval__deterministic; eauto).
   destruct H. subst.
   auto.
@@ -93,8 +93,8 @@ Lemma RV_error : forall k T rho v v',
 Proof.
   intros.
   destruct H as [Hval__v [Hval__v' HRC]].
-  apply eval_value__value in Hval__v as Hev__v.
-  apply eval_value__value in Hval__v' as Hev__v'.
+  apply eval_result__result in Hval__v as Hev__v.
+  apply eval_result__result in Hval__v' as Hev__v'.
   autorewrite with RC in HRC.
   apply HRC in Hev__v as temp; eauto.
   clear HRC.
@@ -185,8 +185,8 @@ Lemma RV_condition : forall k T rho v v',
 Proof.
   intros.
   destruct H as [Hval__v [Hval__v' HRC]].
-  apply eval_value__value in Hval__v as Hev__v.
-  apply eval_value__value in Hval__v' as Hev__v'.
+  apply eval_result__result in Hval__v as Hev__v.
+  apply eval_result__result in Hval__v' as Hev__v'.
   autorewrite with RC in HRC.
   apply HRC in Hev__v as temp; eauto.
   clear HRC.
@@ -295,14 +295,14 @@ Proof with eauto.
   remember H as H0.
   clear HeqH0.
   destruct H0 as [Hval__v [Hval__v' HRC]].
-  apply eval_value__value in Hval__v as Hev__v.
+  apply eval_result__result in Hval__v as Hev__v.
   unfold RV.
   split... split...
   autorewrite with RC.
   intros j Hlt__j e_f Hev__e_f.
   assert (e_f = v /\ j = 0) by (eapply eval__deterministic; eauto).
   destruct H0. subst.
-  exists v', 0. split. eapply eval_value__value...
+  exists v', 0. split. eapply eval_result__result...
   apply RV_condition in H...
 (* ADMIT: We admit this, but this is not entirely correct. This lemma
    is only correct if X does not appear

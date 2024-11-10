@@ -4,6 +4,7 @@ Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RV.Helpers.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RD.Helpers.
 
+Import PlutusNotations.
 
 Require Import Arith.
 From Coq Require Import Lia.

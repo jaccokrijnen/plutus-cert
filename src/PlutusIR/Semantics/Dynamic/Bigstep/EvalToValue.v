@@ -3,10 +3,10 @@ Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.PlutusIR.Semantics.Dynamic.Bigstep.
 
 
-Lemma compute_defaultfun__value : forall t v,
+Lemma compute_defaultfun__result : forall t v,
     fully_applied t ->
     compute_defaultfun t = Datatypes.Some v ->
-    value v.
+    result v.
 Proof with (try discriminate).
   intros.
   destruct t...
@@ -54,35 +54,35 @@ Proof with (try discriminate).
   *)
 Admitted.
 
-Lemma eval_to_value :
-    (forall t v k, t =[k]=> v -> value v) /\
-    (forall t v k, t =[k]=>nr v -> value v) /\
-    (forall bs0 t v k, t =[k]=>r v WITH bs0 -> value v).
+Lemma eval_to_result :
+    (forall t v k, t =[k]=> v -> result v) /\
+    (forall t v k, t =[k]=>nr v -> result v) /\
+    (forall bs0 t v k, t =[k]=>r v WITH bs0 -> result v).
 Proof with (eauto with hintdb__eval_no_error).
   apply eval__multind.
   all: intros.
-  all: eauto using compute_defaultfun__value.
+  all: eauto using compute_defaultfun__result...
   - (* E_IWrap *)
     inversion H0...
   - (* Constr*)
     inversion H2.
-    + apply V_Constr.
+    + apply R_Constr.
       constructor...
   - (* Eta *)
     destruct f; unfold eta_expand; simpl; constructor.
 Qed.
 
-Corollary eval_to_value__eval : forall t v k,
+Corollary eval_to_result__eval : forall t v k,
     t =[k]=> v ->
-    value v.
-Proof. apply eval_to_value. Qed.
+    result v.
+Proof. apply eval_to_result. Qed.
 
-Corollary eval_to_value__eval_bindings_nonrec : forall t v k,
+Corollary eval_to_result__eval_bindings_nonrec : forall t v k,
     t =[k]=>nr v ->
-    value v.
-Proof. apply eval_to_value. Qed.
+    result v.
+Proof. apply eval_to_result. Qed.
 
-Corollary eval_to_value__eval_bindings_rec : forall bs0 t v k,
+Corollary eval_to_result__eval_bindings_rec : forall bs0 t v k,
     t =[k]=>r v WITH bs0 ->
-    value v.
-Proof. apply eval_to_value. Qed.
+    result v.
+Proof. apply eval_to_result. Qed.

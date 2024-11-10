@@ -20,7 +20,7 @@ Local Open Scope string_scope.
 Definition Rel (T T' : ty) (Chi : nat -> term -> term -> Prop) : Prop :=
   forall j v v',
     Chi j v v' -> 0 < j ->
-      value v /\ value v' /\
+      result v /\ result v' /\
       (exists Tn, normalise T Tn /\ ([] ,, [] |-+ v : Tn)) /\
       (exists Tn', normalise T' Tn' /\ ([] ,, [] |-+ v' : Tn')) /\
       forall i,
@@ -82,7 +82,7 @@ Equations? RC (k : nat) (T : ty) (rho : tymapping) (e e' : term) : Prop by wf k 
                   (* Extensional equivalence *)
                   forall i (Hlt_i : i < k - j) v_0 v'_0,
                     ~ is_error v_0 /\ ~ is_error v'_0 ->
-                    value v_0 /\ value v'_0 /\
+                    result v_0 /\ result v'_0 /\
                     RC i T1n rho v_0 v'_0 ->
                     RC i T2n rho <{ [v_0 / x] e_body }> <{ [v'_0 / x] e'_body }>
 
@@ -122,7 +122,7 @@ Equations? RC (k : nat) (T : ty) (rho : tymapping) (e e' : term) : Prop by wf k 
 Proof. all: lia. Qed.
 
 Definition RV (k : nat) (T : ty) (rho : tymapping) (v v' : term) : Prop :=
-  value v /\ value v' /\ RC k T rho v v'.
+  result v /\ result v' /\ RC k T rho v v'.
 
 (** Converting from RC to RV and vice versa *)
 
@@ -150,12 +150,12 @@ Proof with auto.
       autorewrite with RC in H_RC.
       assert (H_lt : 0 < k - j).
         { lia. }
-      assert (H_eval := eval_value__value _ H_val_e_f).
+      assert (H_eval := eval_result__result _ H_val_e_f).
       assert (H__ := H_RC 0 H_lt e_f H_eval); clear H_RC.
       destruct H__ as [e'f0 [j'' [H_eval_e'_f HH]]].
 
       (* Since j is e'_f is a value, we should know that e'f0 = e'_f*)
-      assert (H_eval_e'_f_val := eval_value__value _ H_val_e'_f).
+      assert (H_eval_e'_f_val := eval_result__result _ H_val_e'_f).
       assert (H_eqs := eval__deterministic _ _ _ H_eval_e'_f _ _ H_eval_e'_f_val).
       destruct H_eqs; subst.
 
@@ -178,19 +178,19 @@ Proof.
   destruct temp as [e'_f [j' [Hev__e'_f [Htyp__e_f [Htyp__e'_f H]]]]].
   eexists. eexists.
   split. eauto.
-  split. eauto using eval_value__value, eval_to_value__eval.
-  split. eauto using eval_value__value, eval_to_value__eval.
+  split. eauto using eval_result__result, eval_to_result__eval.
+  split. eauto using eval_result__result, eval_to_result__eval.
   autorewrite with RC.
   intros.
   assert (e_f =[0]=> e_f). {
-    eapply eval_value__value.
-    eapply eval_to_value__eval.
+    eapply eval_result__result.
+    eapply eval_to_result__eval.
     eauto.
   }
   assert (e_f0 = e_f /\ j0 = 0) by (eapply eval__deterministic; eauto).
   destruct H2. subst.
   eexists. eexists.
-  split. eapply eval_value__value. eapply eval_to_value__eval. eauto.
+  split. eapply eval_result__result. eapply eval_to_result__eval. eauto.
   rewrite <- minus_n_O.
   eauto.
 Qed.
@@ -207,7 +207,7 @@ eauto using make_RC, RC_to_RV.
 Qed.
 
 Corollary RV_unfolded_to_RV : forall k T rho v v',
-    value v /\ value v' /\ RC k T rho v v' ->
+    result v /\ result v' /\ RC k T rho v v' ->
     RV k T rho v v'.
 Proof. intros. auto. Qed.
 

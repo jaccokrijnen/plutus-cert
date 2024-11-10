@@ -23,8 +23,8 @@ Definition ctx := list (string * binder_info).
 (* Pure terms include values or variables that are known to be bound to values *)
 Inductive is_pure (Γ : ctx) : term -> Type :=
 
-  | is_pure_value : forall t,
-      value t ->
+  | is_pure_result : forall t,
+      result t ->
       ~(is_error t) ->
       is_pure Γ t
 
@@ -56,7 +56,7 @@ Definition is_pureb (Γ : ctx) (t : term) : bool :=
       | Datatypes.Some (let_bound NonStrict) => false
       | _ => false
     end
-  | _     => if value_dec t then true else false && negb (is_error_beq t)
+  | _     => if result_dec t then true else false && negb (is_error_beq t)
   end
 .
 
@@ -80,7 +80,7 @@ Inductive pure_binding (Γ : ctx) : binding -> Prop :=
 Definition dec_pure_binding (Γ : ctx) (b : binding) : bool :=
     match b with
       | TermBind NonStrict vd t => true
-      | TermBind Strict vd t    => value_beq t
+      | TermBind Strict vd t    => result_beq t
       | DatatypeBind dtd        => true
       | TypeBind tvd ty         => true
     end

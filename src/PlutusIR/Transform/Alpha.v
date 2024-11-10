@@ -80,7 +80,14 @@ Lemma alpha__compute_defaultfun {t t' v} :
   compute_defaultfun t' = Some v' /\ alpha [] v v'
 .
 Admitted.
-  
+
+Lemma alpha__value v v' :
+  alpha [] v v' ->
+  value v ->
+  value v'
+.
+Admitted.
+
 Lemma alpha__is_error t t' :
   alpha [] t t' ->
   is_error t ->

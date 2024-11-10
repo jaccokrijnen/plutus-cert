@@ -14,7 +14,7 @@ Inductive applied_builtin : DefaultFun -> builtin_sig -> term -> Prop :=
   | BA_Builtin : forall f,
       applied_builtin f (to_sig f) (Builtin f)
   | BA_Apply : forall f sig t v T,
-      value v ->
+      result v ->
       ~ is_error v ->
       applied_builtin f (BS_Fun T sig) t ->
       applied_builtin f sig (Apply t v)
@@ -87,7 +87,7 @@ Lemma applied_builtin_dec t :
   ({f & {s & applied_builtin f s t}} -> False).
 Proof with fully_strategy.
   induction t...
-  - destruct IHt1 as [[ f [ s H' ]] | ], (value_dec t2), (is_error_dec t2)...
+  - destruct IHt1 as [[ f [ s H' ]] | ], (result_dec t2), (is_error_dec t2)...
     destruct s eqn:H_s...
     left.
     eauto using applied_builtin.

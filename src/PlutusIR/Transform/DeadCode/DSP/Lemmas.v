@@ -154,17 +154,17 @@ Section SubstitutionLemmas.
     <{ [ tx / x ][bnr] (/[ γ /][bnr] bs) }> = <{ /[ (x, tx) :: γ /][bnr] bs }>.
   Admitted.
 
-  Lemma value_msubstA_value v δ :
-    value v ->
-    value <{/[[ δ /] v}>.
+  Lemma result_msubstA_result v δ :
+    result v ->
+    result <{/[[ δ /] v}>.
   Proof.
   (** Should hold: only substitutes in types *)
   Admitted.
 
 
-  Lemma value_msubst_value v γ :
-    value v ->
-    value <{/[ γ /] v}>.
+  Lemma result_msubst_result v γ :
+    result v ->
+    result <{/[ γ /] v}>.
   Proof.
   (** Should hold: only substitute under lambdas etc *)
   Admitted.
@@ -467,7 +467,7 @@ Section Purity.
     - constructor.
     - constructor.
       destruct H.
-      assert (v1 =[0]=> v1). { apply eval_value__value. assumption. }
+      assert (v1 =[0]=> v1). { apply eval_result__result. assumption. }
       + repeat eexists.
         all: eassumption.
       + assumption.
@@ -501,9 +501,9 @@ Section Purity.
     end.
 
 
-  Lemma msubst_value t γ ρ:
-    value t /\ ~ is_error t ->
-    value (msubst γ (msubstA ρ t)) /\ ~ is_error (msubst γ (msubstA ρ t)).
+  Lemma msubst_result t γ ρ:
+    result t /\ ~ is_error t ->
+    result (msubst γ (msubstA ρ t)) /\ ~ is_error (msubst γ (msubstA ρ t)).
   Admitted.
 
   Lemma is_pure_nil_pure_open Δ Γ t τ:
@@ -514,12 +514,12 @@ Section Purity.
     inversion H_is_pure.
     - unfold pure, close.
       remember (msubst γ (msubstA ρ t)) as t'.
-      assert (H_t' : value t' /\ ~ is_error t').
-      { subst. auto using msubst_value. }
+      assert (H_t' : result t' /\ ~ is_error t').
+      { subst. auto using msubst_result. }
       destruct H_t'.
       exists 0, t'.
       split.
-      + apply eval_value. assumption.
+      + apply eval_result. assumption.
       + assumption.
     - inversion H.
     - inversion H.
