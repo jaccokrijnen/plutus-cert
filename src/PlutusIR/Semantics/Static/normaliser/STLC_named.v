@@ -40,6 +40,14 @@ Function ftv (T : term) : list string :=
         ftv T1 ++ ftv T2
     end.
 
+(* Bound and free type variables *)
+Fixpoint tv (s : term) : list string :=
+  match s with
+  | tmvar x => x::nil
+  | tmlam x A s => x :: tv s
+  | tmapp s t => tv s ++ tv t
+  end.
+
 Fixpoint substituteT (X : string) (U T : term) : term :=
   match T with
   | tmvar Y =>
@@ -55,8 +63,8 @@ Fixpoint substituteT (X : string) (U T : term) : term :=
 Definition fresh2 (sigma : list (string * term)) (T : term) : string :=
   "a" (* new*)
    ++ (String.concat EmptyString (map fst sigma)) (* keys *)
-   ++ (String.concat EmptyString (List.flat_map (compose ftv snd) sigma)) (* values *)
-   ++ (String.concat EmptyString (ftv T)). (* term *)
+   ++ (String.concat EmptyString (List.flat_map (compose tv snd) sigma)) (* values *)
+   ++ (String.concat EmptyString (tv T)). (* term *)
 
 Definition fresh (X : string) (U T : term) : string :=
   "a" ++ X ++ (String.concat EmptyString (ftv U)) ++ (String.concat EmptyString (ftv T)).

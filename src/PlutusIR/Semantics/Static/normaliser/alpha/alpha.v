@@ -81,7 +81,7 @@ equal' bound (Forall x u) (Forall y v) = equal' ((x,y):bound) u v
 equal' _ _ _ = False
 
 *)
-Inductive AlphaVar : list (string * string) -> string -> string -> Prop :=
+Inductive AlphaVar : list (string * string) -> string -> string -> Set :=
 | alpha_var_refl x : AlphaVar [] x x
 | alpha_var_cons x y z w sigma :
     x = z ->
@@ -95,7 +95,7 @@ Inductive AlphaVar : list (string * string) -> string -> string -> Prop :=
 
 
 
-Inductive Alpha : list (string * string) -> term -> term -> Prop :=
+Inductive Alpha : list (string * string) -> term -> term -> Set :=
 | alpha_var x y sigma : 
     AlphaVar sigma x y -> 
     Alpha sigma (tmvar x) (tmvar y)
@@ -135,7 +135,8 @@ Qed.
 (* Showcasing shadowing behaviour is right *)
 Lemma alpha_counterexample x y z A :
   x <> y -> x <> z -> y <> z -> 
-  ~ Alpha [] (tmlam x A (tmlam y A (tmapp (tmvar x) (tmvar y)))) (tmlam z A (tmlam z A (tmapp (tmvar z) (tmvar z)))).
+  (Alpha [] (tmlam x A (tmlam y A (tmapp (tmvar x) (tmvar y)))) 
+    (tmlam z A (tmlam z A (tmapp (tmvar z) (tmvar z)))) -> False).
 Proof.
   intros Hxy Hxz Hyz Halpha.
   inversion Halpha; subst.
@@ -166,7 +167,7 @@ Require Import Coq.Program.Equality.
 (* ******
   Alpha is a contextual equivalence relation *)
 
-Inductive AlphaCtxRefl : list (string * string) -> Prop :=
+Inductive AlphaCtxRefl : list (string * string) -> Set :=
 | alpha_refl_nil : AlphaCtxRefl []
 | alpha_refl_cons x ren :
     AlphaCtxRefl ren -> 
@@ -176,7 +177,8 @@ Inductive AlphaCtxRefl : list (string * string) -> Prop :=
 Lemma alphavar_refl {s ren }:
   AlphaCtxRefl ren -> AlphaVar ren s s.
 Proof.
-  induction 1.
+  intros Halphactx.
+  induction Halphactx.
   - constructor.
   - destr_eqb_eq x s;
     now constructor.
@@ -194,7 +196,7 @@ Proof.
     now apply alpha_refl_cons.
 Qed.
 
-Inductive AlphaCtxSym : list (string * string) -> list (string * string) -> Prop :=
+Inductive AlphaCtxSym : list (string * string) -> list (string * string) -> Set :=
 | alpha_sym_nil : AlphaCtxSym [] []
 | alpha_sym_cons x y ren ren' :
     AlphaCtxSym ren ren' -> 
@@ -220,7 +222,7 @@ Proof with auto.
     now apply alpha_sym_cons.
 Qed.
 
-Inductive AlphaCtxTrans : list (string * string) -> list (string * string) -> list (string * string) -> Prop :=
+Inductive AlphaCtxTrans : list (string * string) -> list (string * string) -> list (string * string) -> Set :=
 | alpha_trans_nil : AlphaCtxTrans [] [] []
 | alpha_trans_cons x y z ren ren' ren'' :
     AlphaCtxTrans ren ren' ren'' -> 
@@ -243,15 +245,25 @@ Proof with auto.
   inversion Halpha2; subst;
   constructor.
   - induction Htrans.
-    + inversion H.
-      inversion H2.
-      apply alpha_var_refl.
-    + inversion H;
+    + inversion H1.
+      subst.
+      assumption.
+      
+    + inversion H1;
       inversion H2; subst; try contradiction.
-      * apply alpha_var_cons; reflexivity.
-      * apply alpha_var_diff; auto.
-        apply (IHHtrans H8)...
-        apply alpha_var...
+      * apply alpha_var_cons.
+        inversion a. subst. reflexivity.
+        contradiction. reflexivity.
+      * apply alpha_var_diff.
+        -- inversion a. subst. contradiction. assumption.
+        -- assumption.
+        -- apply IHHtrans.
+           inversion a.
+           ++ contradiction.
+           ++ assumption.
+           ++ apply alpha_var.
+              assumption.
+           ++ assumption.
   - apply (IHHalpha1 s3 ((x, y0)::ren'') ((y, y0)::ren')).
     + now apply alpha_trans_cons.
     + now inversion Halpha2.
@@ -272,7 +284,7 @@ Proof.
   assumption.
 Qed.
 
-Inductive IdCtx : list (string * string) -> Prop :=
+Inductive IdCtx : list (string * string) -> Set :=
 | id_ctx_nil : IdCtx []
 | id_ctx_cons x ren :
     IdCtx ren -> 
@@ -297,7 +309,7 @@ Proof with subst; auto.
 Qed.
 
 (* Predicate that a variable is neither a key nor value in a variable mapping *)
-Inductive NotShadowing : string -> list (string * string) -> Prop :=
+Inductive NotShadowing : string -> list (string * string) -> Set :=
 | not_shadow_nil x : NotShadowing x []
 | not_shadow_cons z x x' ren :
     z <> x -> 
@@ -312,7 +324,7 @@ Inductive NotShadowing : string -> list (string * string) -> Prop :=
   pairs that "break" shadowing (i.e., they shadow),
   e.g. if we have (x,x);(x, y),
   We can add (x,x) to the front without adding any more "breaking", it behaves the same. *)
-Inductive NotBreakShadowing : string -> list (string * string) -> Prop :=
+Inductive NotBreakShadowing : string -> list (string * string) -> Set :=
 | not_break_shadow_nil x : NotBreakShadowing x []
 | not_break_shadow_cons z x x' ren :
     z <> x -> 
@@ -338,22 +350,20 @@ Proof.
 Qed.
 
 (* Substitutions that only do renamings. *)
-Inductive RenamingSubst : list (string * term) -> Prop :=
+Inductive RenamingSubst : list (string * term) -> Set :=
 | rs_nil : RenamingSubst []
 | rs_cons x x' sigma :
     RenamingSubst sigma -> 
     RenamingSubst ((x, tmvar x') :: sigma).
 
 (* A ren swap is legal if we swap a pair where their elements are not equal *)
-Inductive LegalRenSwap : list (string * string) -> list (string * string) -> Prop :=
+Inductive LegalRenSwap : list (string * string) -> list (string * string) -> Set :=
 | lrs_nil : LegalRenSwap [] []
 | lrs_cons x y ren1 ren1' :
     LegalRenSwap ren1 ren1' ->
     LegalRenSwap ((x, y)::ren1) (((x, y)::ren1'))
 | lrs_start x y v w ren1 ren1' :
     x <> v ->
-    x <> w ->
-    y <> v ->
     y <> w ->
     LegalRenSwap ren1 ren1' -> (* Not important whether x, y, v, w in this, because the two were before them and they still are*)
     LegalRenSwap ((x, y) :: (v, w) :: ren1) ((v, w) :: (x, y) :: ren1').
@@ -431,15 +441,16 @@ Proof.
         subst.
         apply alpha_var_cons; reflexivity.
       * assert (v <> z). { apply String.eqb_neq in vz. assumption. }
+
         assert (w0 <> w). {
-          apply (alphavar_diff_helper H5) in Halpha.
+          apply (alphavar_diff_helper H) in Halpha.
           subst.
           assumption.
         }
         apply alpha_var_diff; try auto.
         apply alpha_var_diff; try auto.
         specialize (IHHalpha ((v, w0)::ren1') (lrs_cons v w0 Hswap)).
-        exact (alphavar_weaken H5 H6 IHHalpha).
+        exact (alphavar_weaken H H0 IHHalpha).
 Qed.
 
 Lemma alpha_swap {s t ren'} ren :
@@ -450,7 +461,7 @@ Proof.
   generalize dependent ren'.
   induction Halpha; intros ren'; intros lrs.
   - apply alpha_var.
-    apply (alphavar_swap lrs H).
+    apply (alphavar_swap lrs a).
   - apply alpha_lam.
     assert (LegalRenSwap ((x, y)::sigma) ((x, y)::ren')) as Hlrs_xy.
     {
@@ -543,8 +554,8 @@ Qed.
 
 Lemma cons_split_helper {x y ren1 ren2} (sigma : list (string * string)) :
   ((x, y):: sigma) = ren1 ++ ren2 -> 
-    (exists ren1', ren1 = ((x, y)::ren1')) \/ 
-    (ren1 = nil /\ ren2 = ((x, y)::sigma)).
+    sum ( {ren1' & ren1 = ((x, y)::ren1')}) (
+    (prod (ren1 = nil) (ren2 = ((x, y)::sigma)))).
 Proof.
   intros HrenAdd.
   destruct ren1.
@@ -559,8 +570,8 @@ Proof.
 Qed.
 
 Lemma shadow_helper_not_break {z x y ren } :
-  NotBreakShadowing z ((x, y)::ren) ->
-  ((z = x /\ z = y) \/ (z <> x /\ z <> y)).
+  NotBreakShadowing z ((x, y)::ren) -> sum 
+  (prod (z = x) (z = y)) (prod(z <> x) (z <> y)).
 Proof.
   intros Hshadow.
   inversion Hshadow; subst.
@@ -569,19 +580,21 @@ Proof.
 Qed.
 
 Lemma alphaVar_then_no_shadow {x y ren} :
-  x <> y -> AlphaVar ren x y -> (~ NotBreakShadowing x ren /\ ~ NotBreakShadowing y ren).
+  x <> y -> AlphaVar ren x y -> prod (NotBreakShadowing x ren -> False) (NotBreakShadowing y ren -> False).
 Proof.
   intros Hxy Halpha.
   split; induction Halpha; intros Hshadow; inversion Hshadow; subst; try contradiction.
   - specialize (IHHalpha Hxy). contradiction.
-  - contradiction H0. specialize (IHHalpha Hxy). contradiction.
+  - specialize (IHHalpha Hxy H5). contradiction.
 Qed.
+
+Require Import Coq.Init.Specif.
 
 (* If we remove a pair from a NotBreakingShadowing environment, it could be an identity pair
   then by not_break_shadow_id we do not necessarily have that 
   ren is a notbreakingshadowing environemnt anymore*)
 Lemma weaken_not_break_shadowing {x y z ren} :
-  NotBreakShadowing z ((x, y)::ren) -> (NotBreakShadowing z ren \/ (x = z /\ y = z)).
+  NotBreakShadowing z ((x, y)::ren) -> sum (NotBreakShadowing z ren) (prod (x = z) (y = z)).
 Proof.
   intros Hshadow.
   inversion Hshadow; subst.
@@ -637,8 +650,8 @@ Proof.
         apply alpha_var_cons; reflexivity.
   - remember (HrenAdd) as HrenAdd'. clear HeqHrenAdd'.
     apply cons_split_helper in HrenAdd.
-    destruct HrenAdd.
-    + destruct H1 as [ren1' H1].
+    destruct HrenAdd as [ [ren1' H1] | [ Hren1Empty Hren2Full] ].
+    + 
       subst.
       simpl in HrenAdd'.
       apply alpha_var_diff; [assumption|assumption|].
@@ -649,7 +662,7 @@ Proof.
         reflexivity.
       }
       apply (IHHalpha ren1' ren2 Hsigmaren1'ren2 Hshadow).
-    + destruct H1 as [Hren1Empty Hren2Full].
+    + 
       subst.
       rewrite app_nil_l.
       destruct (z =? z0) eqn:Hzx, (z =? w) eqn:Hzw.
@@ -665,7 +678,7 @@ Proof.
         apply (weaken_not_break_shadowing) in Hshadow.
         destruct Hshadow.
         -- contradiction.
-        -- destruct H1 as [H1 _].
+        -- destruct p as [H1 _].
            contradiction.
       * exfalso.
         apply String.eqb_eq in Hzw. subst.
@@ -676,7 +689,7 @@ Proof.
         apply (weaken_not_break_shadowing) in Hshadow.
         destruct Hshadow.
         -- contradiction.
-        -- destruct H1 as [_ H1].
+        -- destruct p as [_ H1].
            contradiction.
       * apply String.eqb_neq in Hzx.
         apply String.eqb_neq in Hzw.
@@ -694,7 +707,7 @@ Proof.
   intros Halpha.
   dependent induction Halpha; intros ren1 ren2 HrenAdd Hshadow.
   - apply alpha_var.
-    apply (alphavar_extend_id_split H) with (ren1 := ren1) (ren2 := ren2); eauto.
+    apply (alphavar_extend_id_split a) with (ren1 := ren1) (ren2 := ren2); eauto.
   - apply alpha_lam.
     assert (HxySum: (x, y) :: sigma = ((x, y)::ren1) ++ ren2).
     {
@@ -780,15 +793,6 @@ Proof.
   - assumption.
   - apply not_break_shadow_nil.
 Qed.   
-
-
-(* Bound and free type variables *)
-Fixpoint tv (s : term) : list string :=
-  match s with
-  | tmvar x => x::nil
-  | tmlam x A s => x :: tv s
-  | tmapp s t => tv s ++ tv t
-  end.
 
 (*
   Suppose x in tv s.
@@ -965,186 +969,3 @@ Proof.
     + apply ctx_id_right_is_id.
     + now apply alphaRename.
 Qed.
-
-(** **** Proving up to alpha equivalence restores identity substitution behaviour 
-      Since we always freshen, this is not longer syntactically true, e.g.
-      [x := tmvar x] (tmlam y A (tmvar y)) 
-        = tmlam y' A ([x := tmvar x] (tmvar y'))
-        = tmlam y' A (tmvar y')
-
-      But we don't seem to have the machinery yet.
-  *)
-Lemma id_subst_alpha' {t x ren} :
-  Alpha ren t t -> Alpha ren t (capms((x, tmvar x)::nil) t).
-Proof.
-  intros Halpha.
-  dependent induction Halpha.
-  - admit.
-  - rewrite capms_equation_2. simpl.
-    remember (fresh2 ((x, tmvar x)::nil) s1) as s1'.
-    apply alpha_lam.
-    (*
-    From 
-      Alpha ((x0, x0)::sigma) s1  ([x := tmvar x] s1)
-    we should try to get
-      Alpha ((x0, s')::(x0, x0)::sigma) s1 (rename x0 s' ([x := tmvar x] s1))
-
-    We would then need a more generic alphaRename for Alpha ren s s', instead of s=s
-    And we need
-      [x := tmvar x] (rename x0 s' s1) = rename x0 s' ([x := tmvar x] s1)
-    Which is not true because of freshenings... But it is true up to alpha
-    
-    *)
-    admit.   
-Admitted.
-
-Lemma id_subst_alpha {t x}:
-  Alpha [] t ([x := tmvar x] t).
-Proof.
-  induction t.
-  - rewrite capms_equation_1.
-    unfold lookup.
-    destruct (x =? s) eqn:xs.
-    + apply String.eqb_eq in xs.
-      subst.
-      apply alpha_var.
-      apply alpha_var_refl.
-    + apply alpha_var.
-      apply alpha_var_refl.
-  - rewrite capms_equation_2.
-    simpl.
-    remember (fresh2 [(x, tmvar x)] t0) as s'.
-    destruct (x =? s) eqn:xs.
-    + assert (Hsx: s = x).
-      {
-        apply String.eqb_eq in xs.
-        symmetry.
-        assumption. 
-      }
-      rewrite Hsx.
-      apply alpha_lam.
-      admit.
-    + apply alpha_lam.
-      (* apply IHt. *)
-  (* - unfold subst.
-    apply alpha_app.
-    + apply IHt1.
-    + apply IHt2. *)
-  
-Admitted.
-
-
-
-(* TODO USEFUL LEMMA BY JACCO:
-    If Gamma |- s alpha t
-    then
-    [] |- Gamma(s) alpha t
-
-
-    Useful lemma by Wouter:
-    Gamma |- t alpha s
-    then
-    [] |- rename x z t alpha rename y z s
-*)
-
-(* Alpha necessary because redundant substitutions are still used in fresh variable generation *)
-(* Need strenghtened induction over renamings in lambda case *)
-(* IDEA: The complexities are not really the substitutions, but rather the renamings. Reformulate this lemma: alphaRenameBinder.*)
-Lemma capmsOverwrite x t t' :
-  forall s s', forall ren,  (Alpha ren s s') -> Alpha ren (((x, t)::(x, t')::nil) [[s]]) (((x, t)::nil) [[s']]).
-Proof.
-  induction s; intros s' ren HAlpha. 
-  - admit.
-  - inversion HAlpha; subst...
-    rewrite capms_equation_2. simpl.
-    rewrite capms_equation_2. simpl.
-    remember (fresh2 ((x, t)::(x, t')::nil) s0) as fr1.
-    remember (fresh2 ((x, t)::nil) s2) as fr2.
-    apply alpha_lam.
-    (*
-      From H4
-        Alpha ((s, y) :: ren) s0 s2
-
-      We should get
-        Alpha ((fr1, fr2) :: ren) (rename s fr1 s0) (rename y fr2 s2).
-
-      From that with IHs we almost get
-
-        Alpha ((fr1, fr2) :: ren) )[(x, t); (x, t')] [[rename s fr1 s0]]) ([x := rename s fr2 s2])
-
-      Except that s0 is not forall, hence we cannot use the hypothesis with a renamed s0.
-    *)
-
-    (* s' on the first will become fresh2 [(x, t); (x, t')] s0*)
-    (* s''  on the second will beomce fresh2 [(x, t)] s0  
-    
-      Hence we should have (s', s'') inside of ren in the recursion.
-      How do we get an induction hypothesis with this fact?
-
-      Maybe solved by Alpha ren s s' condition.
-    
-    *)
-
-    (* *)
-
-    admit.
-  - admit.
-Admitted.
-
-Lemma capmsRenameAlpha x x' t s s' :
-  Alpha ((x, x')::nil) s s' -> Alpha [] ([x := t] s) ([x' := t] s').
-Proof.
-Admitted. 
-
-(* Kind of follows from the above I think, by alphaRename*)
-Lemma capmsRename' x x' t s : 
-  [x' := t] (rename x x' s) = [x := t] s.
-Proof.
-
-Admitted.
-
-(* Ask Richard's pen and paper notes*)
-Lemma capmsRename x x' t sigma s :
-  ((x', t)::sigma) [[rename x x' s]] = ((x, t)::sigma) [[s]].
-Proof. 
-Admitted.
-
-Definition notKeyIn X (sigma : list (string * term)) : Prop :=
-  ~ exists t, lookup X sigma = Some t.
-
-Definition varNotIn X (sigma : list (string * term)) : Prop :=
-  notKeyIn X sigma /\ (* X does not appear in the free type variables of any of the values  of tau*)
-  ~ In X (List.flat_map (compose ftv snd) sigma).
-
-(* Definitionally, 
-  fresh2 creates a fresh variable that is not in 
-    any of the keys or values of sigma *)
-Lemma freshLemma sigma s :
-  varNotIn (fresh2 sigma s) sigma.
-Proof. Admitted.
-
-(* TODO: why cant i use list syntax?*)
-Lemma composeCapms' X t X' t' s :
-  varNotIn X [(X', t')] -> [X := t] ([X' := t'] s) = ((X, t):: cons (X', t') nil) [[s]].
-Proof.
-  intros HnotIn.
-  (* Induction on s?*)
-Admitted.
-
-(* Would also work for bigger substs, but not necessary*)
-Lemma composeCapms X t sigma s :
-  varNotIn X sigma -> [X := t] (sigma [[s]]) = ((X, t) :: sigma) [[s]].
-Proof.
-Admitted.
-
-(*
-  But what if sigma contains x.
-  Then RHS will replace this by sigma(x)
-  while LHS will replace it by t.
-*)
-Lemma commute_subst s t sigma x :
-  sigma [[ [x := t] s]] = ((x, sigma [[t]])::sigma) [[s]].
-Proof.
-Admitted.
-
-

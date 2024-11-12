@@ -82,11 +82,9 @@ src/PlutusIR/Semantics/Static/Typing.v
 src/PlutusIR/Semantics/Static/normaliser/AutosubstSsr.v
 src/PlutusIR/Semantics/Static/normaliser/ARS.v
 src/PlutusIR/Semantics/Static/normaliser/Context.v
-src/PlutusIR/Semantics/Static/normaliser/SN_F.v
 
 src/PlutusIR/Semantics/Static/Normalisation.v
 src/PlutusIR/Semantics/Static/normaliser/STLC_named_typing.v
-src/PlutusIR/Semantics/Static/normaliser/Normalisation_STLC_DB.v
 src/PlutusIR/Semantics/Static/normaliser/STLC_named.v
 src/PlutusIR/Semantics/Static/normaliser/SN_STLC_named.v
 src/PlutusIR/Semantics/Static/normaliser/alpha/alpha.v
