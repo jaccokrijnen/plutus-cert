@@ -59,6 +59,14 @@ Proof with (try solve [eauto || lia]).
     intros. eapply Hie...
 Qed.
 
+
+Lemma R_C_monotone : forall k rho T i e e' ck,
+    RD ck rho ->
+    R_C k T rho e e' ->
+    i <= k ->
+    R_C i T rho e e'.
+Admitted.
+
 Lemma RV_monotone : forall k rho T i v v' ck,
     RD ck rho ->
     RV k T rho v v' ->
@@ -71,6 +79,14 @@ Proof.
   split. auto.
   eapply RC_monotone. eauto. eauto. eauto.
 Qed.
+
+Lemma R_V_monotone : forall k rho T i v v' ck,
+    RD ck rho ->
+    R_V k T rho v v' ->
+    i <= k ->
+    R_V i T rho v v'.
+Admitted.
+
 
 Lemma RG_monotone : forall c ck rho i k env env',
     RD ck rho ->
@@ -89,3 +105,11 @@ Proof.
     eapply RG_cons; eauto.
     eapply RV_monotone; eauto.
 Qed.
+
+
+Lemma R_G_monotone : forall c ck rho i k env env',
+    RD ck rho ->
+    R_G rho k c env env' ->
+    i <= k ->
+    R_G rho i c env env'.
+Admitted.
