@@ -81,6 +81,9 @@ Lemma alpha__compute_defaultfun {t t' v} :
 .
 Admitted.
 
+Lemma alpha__applied_args t t' : alpha [] t t' -> applied_args t = applied_args t'.
+Admitted.
+
 Lemma alpha__value v v' :
   alpha [] v v' ->
   value v ->
@@ -153,8 +156,13 @@ Proof.
   - (* E_Builtin_Apply *)
     inversion H_alpha; subst.
     specialize (alpha__compute_defaultfun H_alpha H0) as [ r' [H_compute H_alpha_r]].
-    exists r';
-    eauto using alpha__fully_applied, eval.
+    exists r'.
+    split.
+    + assert (H_eq : applied_args (Apply s t) = applied_args (Apply t1' t2'))
+        by eauto using alpha__applied_args.
+      rewrite H_eq.
+      eauto using alpha__fully_applied, eval.
+    + eauto.
   - (* E_Error_Apply1 *)
     inversion H_alpha; subst.
     specialize (IHH_eval t1' H2) as [r' [H_eval_t' H_alpha_r']].

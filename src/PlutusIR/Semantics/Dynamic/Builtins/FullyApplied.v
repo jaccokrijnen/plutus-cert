@@ -7,6 +7,7 @@ From PlutusCert Require Import
   Static.Builtins.Signatures
 .
 Import PlutusNotations.
+From Equations Require Import Equations.
 
 (* built-in function that is applied to values/types of which the (type) arguments match
    the signature *)
@@ -22,6 +23,12 @@ Inductive applied_builtin : DefaultFun -> builtin_sig -> term -> Prop :=
       applied_builtin f (BS_Forall X K sig) t ->
       applied_builtin f sig (TyInst t T)
   .
+
+Equations applied_args : term -> nat :=
+  applied_args (Apply s t) := 1 + applied_args s;
+  applied_args (TyInst s T) := 1 + applied_args s;
+  applied_args _ := 0
+.
 
 Lemma applied_builtin__functional f f' s s' t : applied_builtin f s t -> applied_builtin f' s' t -> f = f' /\ s = s'.
 Proof.

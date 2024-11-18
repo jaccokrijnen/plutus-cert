@@ -86,3 +86,13 @@ Proof with eauto.
     and type instantiations, we need to do tedious work to
     derive contradictions. *)
 Admitted.
+
+Corollary eval__deterministic_result t v v' j j' :
+  t =[j]=> v ->
+  t =[j']=> v' ->
+  v = v'.
+Proof.
+  intros H H'.
+  eapply proj1.
+  eapply eval__deterministic; eauto.
+Qed.

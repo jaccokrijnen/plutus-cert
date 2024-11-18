@@ -59,7 +59,8 @@ Inductive eval : term -> term -> nat -> Prop :=
   | E_Builtin_Apply : forall s t v,
       fully_applied (Apply s t) ->
       compute_defaultfun (Apply s t) = Some v ->
-      Apply s t =[1]=> v
+      Apply s t =[applied_args (Apply s t) + 1]=> v
+      (* Steps are applied_args, needed for compatibility lemma of Apply *)
   | E_Builtin_TyInst : forall t T v,
       fully_applied (TyInst t T) ->
       compute_defaultfun (TyInst t T) = Some v ->
