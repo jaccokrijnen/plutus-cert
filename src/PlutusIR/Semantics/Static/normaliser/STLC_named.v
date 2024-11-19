@@ -60,11 +60,17 @@ Fixpoint substituteT (X : string) (U T : term) : term :=
 
 (** * Capture-avoiding substitution of types *)
 
+Fixpoint tv_keys_env (sigma : list (string * term)) : list string :=
+  match sigma with
+  | nil => nil
+  | (x, t)::sigma' => x :: (tv t) ++ (tv_keys_env sigma')
+  end.
+
 Definition fresh2 (sigma : list (string * term)) (T : term) : string :=
   "a" (* new*)
-   ++ (String.concat EmptyString (map fst sigma)) (* keys *)
-   ++ (String.concat EmptyString (List.flat_map (compose tv snd) sigma)) (* values *)
-   ++ (String.concat EmptyString (tv T)). (* term *)
+  ++ String.concat EmptyString (
+    tv_keys_env sigma ++ tv T
+  ).
 
 Definition fresh (X : string) (U T : term) : string :=
   "a" ++ X ++ (String.concat EmptyString (ftv U)) ++ (String.concat EmptyString (ftv T)).

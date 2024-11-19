@@ -102,18 +102,6 @@ Lemma step_ebeta x A s t u :
   u = ([x := t] s) -> step (tmapp (tmlam x A s) t) u.
 Proof. move->. exact: step_beta. Qed.
 
-(* This is not true ... *)
-Lemma step_preserves_fresh sigma t1 t2 : 
-  step t1 t2 -> fresh2 sigma t1 = fresh2 sigma t2.
-Proof.
-Admitted.
-(* TODO: Not true because of fresh, what conditions do we need? *)
-(* e.g. rename X Y (tmlam Y A (tmvar X)) = tmlam Y A (tmvar Y). 
-  that case shouldnt be possible. But Y is not in ftv (tmlam Y A (tmvar X))
-  should we consider all type variables, not only the free ones for ftv?
-
-*)
-
 Lemma de_morgan2 : forall P Q : Prop, ~ (P \/ Q) <-> ~ P /\ ~ Q.
 Proof.
   intros P Q. split.
@@ -194,6 +182,63 @@ Proof.
 
 Admitted.
 
+Lemma concat_not_eq_prefix (a b Y : string) :
+  Y = String.append a b -> a <> "" -> Y <> b.
+Proof.
+  intros HY Ha.
+  admit.
+Admitted.
+
+Lemma fresh2_over_tv_term {Y t sigma} :
+  Y = fresh2 sigma t ->
+  ~ In Y (tv t).
+Proof.
+  intros Hfresh.
+  intros Hcontra.
+  unfold fresh2 in Hfresh.
+
+  
+Admitted.
+
+Lemma fresh2_over_key_sigma X s t Y sigma :
+  Y = fresh2 sigma t ->
+  In (X, s) sigma -> Y <> X.
+Admitted.
+
+Lemma fresh2_over_tv_value_sigma X s t Y sigma :
+  Y = fresh2 sigma t ->
+  In (X, s) sigma -> ~ In Y (tv s).
+Admitted.
+
+Lemma alpha_not_in_tv_helper {X X' ren t} :
+  ~ In X (tv t) -> ~ In X' (tv t) -> Alpha ren t t -> Alpha ((X, X')::ren) t t.
+Proof.
+Admitted.
+
+Lemma alpha_not_in_ftv_helper2 {X X' ren t t'} :
+  ~ In X (ftv t) -> Alpha ((X, X')::ren) t t' -> ~ In X' (ftv t') .
+Admitted.
+
+Lemma alpha_in_ftv_helper2 {X X' ren t t'} :
+  In X (ftv t) -> Alpha ((X, X')::ren) t t' -> In X' (ftv t') .
+Admitted.
+
+Lemma length_helper a b :
+  (String.length (a ++ b)) = (String.length a + String.length b).
+Proof.
+Admitted.
+
+Lemma length_concat_helper x xs :
+  In x xs -> le (String.length x) (String.length (String.concat "" xs)).
+Proof.
+Admitted.
+
+Lemma weaken_vacuous_alpha {X X' ren t t'} :
+  Alpha ((X, X')::ren) t t' -> ~ In X (ftv t) -> ~ In X' (ftv t') -> Alpha ren t t'.
+Proof.
+  (* Proof will go something similar to alphaRenameStronger *)
+Admitted.
+
 Lemma ren_vacuous X Y s :
   ~ In X (ftv s) -> rename X Y s = s.
 Proof.
@@ -232,6 +277,13 @@ Proof.
 Qed.
 
 
+(* By X in ftv tmlam Y, we know X <> Y.
+  It doesnt matter wheteher Y' = X, if it is, then also X in ftv (rename Y Y' t).
+*)
+Lemma ftv_lam_rename_helper X Y Y' A t :
+   In X (ftv (tmlam Y A t)) -> In X (ftv (rename Y Y' t)).
+Admitted.
+
 (* We don't need the X <> Y condition, because if X = Y, 
 the lhs is non-sensical and always false *)
 Lemma ftv_lam_helper X Y A t :
@@ -245,6 +297,11 @@ Proof.
   assumption.
 Qed.
 
+Lemma ftv_lam_negative X Y A t :
+  ~ In X (ftv (tmlam Y A t)) -> X <> Y -> ~ In X (ftv t).
+Admitted.
+
+
 Lemma ftv_lam_no_binder X A t :
   ~ In X (ftv (tmlam X A t)).
 Proof.
@@ -254,6 +311,11 @@ Proof.
   apply in_remove in HContra as [_ HContra].
   contradiction.
 Qed.
+
+Lemma extend_ftv_to_tv x s :
+  In x (ftv s) -> In x (tv s).
+Proof.
+Admitted.
 
 Lemma tv_rename_vacuous_helper {X Y Y' t} :
   X <> Y -> In X (tv t) -> In X (tv (rename Y Y' t)).
@@ -305,6 +367,11 @@ Proof.
       apply in_or_app. right. apply IHt2.
 Qed.
 
+Lemma tv_not_after_rename x y z s :
+  z <> y -> ~ In z (tv s) -> ~ In z (tv (rename x y s)).
+Proof.
+Admitted.
+
 
 
 Lemma ftv_rename_vacuous_helper {X Y Y' t} :
@@ -352,6 +419,14 @@ Proof.
       apply in_or_app. right. apply IHt2.
 Qed.
 
+Lemma ftv_not_in_rename X Y Y' t:
+  X <> Y' -> ~ In X (ftv t) -> ~ In X (ftv (rename Y Y' t)).
+Admitted.
+
+Lemma ftv_not_in_after_rename Y Y' t:
+  Y <> Y' -> ~ In Y (ftv (rename Y Y' t)).
+Admitted.
+
 (* If there is a free X in t, then renaming replaces this by Y.
 
 This Y is now in t, but it could be capture by a binder that coincidentally is Y
@@ -395,23 +470,155 @@ Proof.
       apply in_or_app. right. apply IHt2.
 Qed.
 
-Lemma sub_vacuous_stronger X t Y u Y' s s' s'' ren ren1 ren2 :
-  AlphaVar ren Y Y' ->
-  Alpha ren u u ->
+(*
+What if we have (\x. y) (z). Then z in the ftv of the term, but after stepping it is not anymore.
+So ftvs can be removed. But they can never be added.
+*)
+Lemma step_preserves_no_ftv s s' x :
+  ~ In x (ftv s) -> step s s' -> ~ In x (ftv s').
+Proof.
+  intros Hnotins Hstep.
+  induction Hstep.
+  - unfold ftv.
+  (*
+    x notin ftv (tmapp (tmlam x0 A s) t).
+    Suppose x <> x0.
+    Then x notin ftv s.
+    and x notin ftv t
+
+
+    Suppose x = x0.
+    then x notin ftv t.
+    if x in ftv s, then it gets replaced by t, so x notin [x0 := t] s.
+  *)
+Admitted. 
+
+(* One subsitution is related to the other through the alpha context*)
+Inductive AlphaCtx : list (string * string) -> list (string * term) -> list (string * term) -> Prop :=
+  | alpha_ctx_nil : AlphaCtx [] [] []
+  | alpha_ctx_cons ren sigma sigma' x y t t' :
+    AlphaVar ren x y ->
+    Alpha ren t t' ->
+    AlphaCtx ren ((x, t)::sigma) ((y, t')::sigma').
+
+Lemma alpha_ctx_found ren sigma sigma' x x' t t' :
+  AlphaCtx ren sigma sigma' ->
+  AlphaVar ren x x' ->
+  lookup x sigma = Some t ->
+  lookup x' sigma' = Some t' ->
+  Alpha ren t t'.
+Proof.
+Admitted.
+
+Lemma alpha_ctx_left_ex {ren sigma sigma' x x' t' }:
+  AlphaCtx ren sigma sigma' ->
+  AlphaVar ren x x' ->
+  lookup x' sigma' = Some t' ->
+  { t & prod (lookup x sigma = Some t) (Alpha ren t t')}.
+Proof.
+Admitted.
+
+Lemma alpha_ctx_right_ex {ren sigma sigma' x x' t }:
+  AlphaCtx ren sigma sigma' ->
+  AlphaVar ren x x' ->
+  lookup x sigma = Some t ->
+  {t' & prod (lookup x' sigma' = Some t') (Alpha ren t t')}.
+Proof.
+Admitted.
+
+Lemma alpha_ctx_ren_nil {sigma }:
+  AlphaCtx [] sigma sigma.
+Proof.
+  induction sigma.
+  - apply alpha_ctx_nil.
+  - destruct a.
+    apply alpha_ctx_cons.
+    + apply alpha_var_refl.
+    + apply alpha_refl. apply alpha_refl_nil.
+Qed.
+
+
+
+
+Fixpoint ftv_keys_env (sigma : list (string * term)) : list string :=
+  match sigma with
+  | nil => nil
+  | (x, t)::sigma' => x :: (ftv t) ++ (ftv_keys_env sigma')
+  end.
+
+
+(* 
+    Can there be a ftv in t that is equal to g2, then there is a problem?
+    Suppose there is.
+    Then this must be in the keys of sigma:
+      - if it was not in the keys of sigma, it would still be in sigma [[t]]
+      - so then it could not be equal to g2.
+    .
+    Since we also freshen over sigma, and thus over the keys of sigma,
+    it can still not be equal to g2.
+  *)
+Lemma fresh2_subst_helper { Y sigma t } :
+  ~ In Y (ftv (sigma [[t]])) -> ~ In Y (ftv_keys_env sigma) -> ~ In Y (ftv t).
+Admitted.
+
+
+  (*
+
+  We know Alphactx ren sigma sigma'.
+  g2 and g3 are both fresh over sigma and sigma', so no issue.
+
+  But what if g2 and g3 not fresh over ren?
+
+  well, let's look at a simpler case where sigma = [Z := t] and sigma' = [Z' := t']
+  Suppose now g2 in ren. We have AlphaCtx ren sigma sigma'. Since g2 not in Z or t, we cannot have that there is a (g2, B) term with B in Z or t.
+  Hence it is a vacuous one, and we can remove it.
+  Do this for every g2 or g3 and we are left with a ren that does not contain any g2 or g3.
+  Now we can add it and it does nott break shadowing :)
+*)
+Lemma alpha_ctx_ren_extend_fresh sigma sigma' x x' ren:
+  ~ In x (tv_keys_env sigma) ->
+  ~ In x' (tv_keys_env sigma') ->
+  AlphaCtx ren sigma sigma' ->
+  AlphaCtx ((x, x')::ren) sigma sigma'.
+Admitted.
+
+Lemma alpha_extend_fresh {x x' ren t t'}:
+  ~ In x (ftv t) ->
+  ~ In x' (ftv t') ->
+  Alpha ren t t' ->
+  Alpha ((x, x')::ren) t t'.
+Proof.
+Admitted.
+
+(* TODO: SUPERSEDED BY alpha_ctx_ren_extend_fresh. The statements are almost identical (with respect to what we use them for) *)
+(* TODO: t and t' are totall unrelevant here, how do I make them placeholders or something? *)
+Lemma extend_alpha_ctx_fresh {x x' sigma sigma' sigma_ sigma_' ren t t'}:
+  x = fresh2 (sigma_ ++ sigma) t ->
+  x' = fresh2 (sigma_' ++ sigma') t' ->
+  AlphaCtx ren sigma sigma' ->
+  AlphaCtx ((x, x')::ren) sigma sigma'.
+Admitted.
+
+(* Most complex lemma up to now (12 nov) that is completely proved and general over arbitrary substitutions! *)
+Lemma sub_vacuous' X t sigma sigma' s s' s'' ren ren1 ren2 :
+  AlphaCtx ren sigma sigma' ->
   AlphaCtxTrans ren1 ren2 ren ->
   ren1 ⊢ s' ~ s ->
   ren2 ⊢ s ~ s'' ->
-  ~ In X (ftv s') -> Alpha ren (((X, t)::(Y, u)::nil) [[ s' ]]) (((Y', u)::nil) [[ s'' ]]).
+  ~ In X (ftv s') -> Alpha ren (((X, t)::sigma) [[ s' ]]) (sigma' [[ s'' ]]).
 Proof.
-  intros HalphaY HalphaU HalphaTrans Halphas1 Halphas2 Hnotins.
+  intros HalphaSigma HalphaTrans Halphas1 Halphas2 Hnotins.
   generalize dependent ren.
   generalize dependent ren1.
   generalize dependent ren2.
   generalize dependent s'.
   generalize dependent s''.
-  induction s; intros s'' s' HxnotIns' ren2 Halphas2 ren1 Halphas1 ren HalphaY HalphaU HalphaTrans.
+  induction s; intros s'' s' HxnotIns' ren2 Halphas2 ren1 Halphas1 ren HalphaSigma HalphaTrans.
   - inversion Halphas1.
     inversion Halphas2.
+    subst.
+    rewrite capms_equation_1.
+    simpl.
     subst.
     rewrite capms_equation_1.
     simpl.
@@ -419,73 +626,82 @@ Proof.
     + apply not_in_cons in HxnotIns' as [xnotx].
       contradiction.
     + (* X <> x *)
-            assert (AlphaVar ren x y0).
-        {
-          eapply alpha_var_trans; eauto.
-        }
-      destr_eqb_eq Y x.
-      * 
-
-        assert (y0 = Y').
-        {
-          eapply alphavar_unique; eauto.
-        }
-        rewrite H1.
-        rewrite capms_equation_1.
-        simpl.
-        rewrite String.eqb_refl.
-        assumption.
-      * (* AlphaVar x y0
-          x <> Y and AlphaVar Y Y'. Therefore y0 <> Y'
-      *)
-        remember H0 as H0_copy.
-        clear HeqH0_copy.
-        apply (alphavar_unique_not H1 HalphaY) in H0.
-        rewrite capms_equation_1.
-        simpl.
-        rewrite <- String.eqb_neq in H0.
-        rewrite H0.
-        apply alpha_var.
-        assumption.
-
-
-
-      (* By AlphaVar ren x y0 and AlphaVar ren x Y' => Y' = y0, then by capms_equation-1 we have ren |- u ~ u, assumption*) 
-  - (* By X notin tv (tmlam s t0 s0),   also X notin tv s0, so we can use IHS*)
-    inversion Halphas1.
+      assert (AlphaVar ren x y0).
+      {
+        eapply alpha_var_trans; eauto.
+      }
+      destruct (lookup y0 sigma') eqn:y0sigma'.
+      * destruct (lookup x sigma) eqn:xsigma.
+        -- eapply alpha_ctx_found; eauto.
+        -- exfalso.
+           apply (alpha_ctx_left_ex HalphaSigma H0) in y0sigma'.
+           destruct y0sigma' as [t' [y0sigma' Halpha] ].
+           rewrite y0sigma' in xsigma.
+           inversion xsigma.
+    * destruct (lookup x sigma) eqn:xsigma.
+      -- exfalso.
+         apply (alpha_ctx_right_ex HalphaSigma H0) in xsigma as [t' [xsigma Halpha] ].
+         rewrite xsigma in y0sigma'.
+         inversion y0sigma'.
+      -- apply alpha_var.
+         assumption.
+  - inversion Halphas1.
     inversion Halphas2.
     subst.
     rewrite capms_equation_2.
     rewrite capms_equation_2.
     simpl.
-    remember (fresh2 ((x, tmvar x) :: (X, t) :: (Y, u)::nil) s1) as s0'.
-    remember (fresh2 ((y0, tmvar y0) :: (Y', u) :: nil) s4) as s0''.
-
+    subst.
+    remember (fresh2 ((x, tmvar x) :: (X, t) ::sigma) s1) as s0'.
+    remember (fresh2 ((y0, tmvar y0) :: sigma') s4) as s0''.
     apply alpha_lam.
     eapply IHs.
-    + (* X is not s0' by fresh2. and X is not s1 by X notin tv (tmlam x t0 s1)*)
-      shelve.
-    + eapply @alpha_trans with (ren' := ((y0, s0'')::(ctx_id_right ren2))).
+    + destr_eqb_eq X x.
+      * remember (fresh2 ((x, tmvar x) :: (x, t) :: sigma) s1) as x'.
+        apply ftv_not_in_after_rename.
+        apply fresh2_over_key_sigma with (X := x) (s := t) in Heqx'.
+        -- auto.
+        -- apply in_cons. apply in_eq.
+      * assert (~ In X (ftv s1)).
+        {
+          apply ftv_lam_negative in HxnotIns';
+          auto.
+        }
+        apply ftv_not_in_rename.
+        -- apply fresh2_over_key_sigma with (X := X) (s := t) in Heqs0'.
+           ++ auto.
+           ++ apply in_cons. apply in_eq.
+        -- assumption.
+    + eapply @alpha_trans with (ren := ((s, y0)::ren2)) (ren' := (y0, s0'')::(ctx_id_right ren2)).
       * apply alpha_trans_cons.
-          apply id_right_trans.
+        apply id_right_trans.
       * exact H10.
       * change ((y0, s0''):: (ctx_id_right ren2)) with (((y0, s0'')::nil) ++ (ctx_id_right ren2)). 
           apply alpha_extend_ids_right.    
           -- apply ctx_id_right_is_id.
-          -- apply alphaRename. shelve. (* True by s0'' = fresh2 s4*)
+          -- apply alphaRename. 
+             apply fresh2_over_tv_term in Heqs0''.
+             assumption.
     + eapply @alpha_trans with (ren := (s0', x) :: (ctx_id_left ren1)).
       * apply alpha_trans_cons.
         apply id_left_trans.
-      *  
+      * 
         change ((s0', x) :: (ctx_id_left ren1)) with (((s0', x)::nil) ++ (ctx_id_left ren1)).
         apply alpha_extend_ids_right.
         -- apply ctx_id_left_is_id.
         -- eapply alpha_sym.
           ++ apply alpha_sym_cons. apply alpha_sym_nil.
-          ++ apply alphaRename. shelve.
+          ++ apply alphaRename.
+             apply fresh2_over_tv_term in Heqs0'.
+             assumption.
       * exact H2.
-    + shelve. (* By fresh2 *)
-    + shelve. (* By fresh2 *)  
+    + 
+      eapply extend_alpha_ctx_fresh.
+      * change ((x, tmvar x):: (X, t)::sigma) with (((x, tmvar x)::(X, t)::nil) ++ sigma) in Heqs0'.
+        exact Heqs0'.
+      * change ((y0, tmvar y0):: sigma') with (((y0, tmvar y0)::nil) ++ sigma') in Heqs0''.
+        exact Heqs0''.
+      * exact HalphaSigma.
     + apply alpha_trans_cons.
       exact HalphaTrans.
   - inversion Halphas1.
@@ -493,143 +709,168 @@ Proof.
     subst.
     rewrite capms_equation_3.
     rewrite capms_equation_3.
+    simpl.
+    unfold ftv in HxnotIns'. fold ftv in HxnotIns'.
+    apply not_in_app in HxnotIns' as [HxnotIns1 HxnotIns2].
     apply alpha_app.
-    + eapply IHs1.
-      * shelve.
-      * exact H8.
-      * exact H3.
-      * exact HalphaY.
-      * exact HalphaU.
-      * exact HalphaTrans.
-Admitted.
+    + eapply IHs1; eauto.
+    + eapply IHs2; eauto.
+Qed.
 
 (* Need alpha because the bigger vacuous substitution is used in fresh variable generation *)
-Lemma sub_vacuous X t Y u s :
-  ~ In X (ftv s) -> Alpha [] (((X, t)::(Y, u)::nil) [[ s ]]) (((Y, u)::nil) [[ s ]]).
+Lemma sub_vacuous X t sigma s :
+  ~ In X (ftv s) -> Alpha [] (((X, t)::sigma) [[ s ]]) (sigma [[ s ]]).
 Proof.
-  intros Hnotins.
-  eapply sub_vacuous_stronger; try constructor; try apply alpha_refl; try constructor.
+  eapply sub_vacuous'; try apply alpha_refl; try constructor.
+  - apply alpha_ctx_ren_nil.
+Qed.
+
+Lemma alpha_empty_sub s :
+Alpha [] (nil [[s]]) s.
+Proof.
+  induction s.
+  - rewrite capms_equation_1.
+    simpl.
+    apply alpha_var.
+    apply alpha_var_refl.
+  - rewrite capms_equation_2.
+    simpl.
+    remember (fresh2 [(s, tmvar s)] s0) as s0'. 
+    apply alpha_lam.
+    (* Through transitivity and IH we would have to prove:
+        [(s0' , s)] |- [] [[rename s s0' s0]] ~ [] [[s0]]
+      *)
+    (* PFFFF not easy to prove... Probably a corollary of ren_sub_compose_stronger_multiple
+      But so trivial, I will believe it as fact! 
+     *)
+Admitted.
+
+Lemma sub_vacuous_single X t s :
+  ~ In X (ftv s) -> Alpha [] ([X := t] s) s.
+Proof.
+  intros Hxnotins.
+  assert (Alpha nil (nil [[s]]) s).
+  {
+    apply alpha_empty_sub.
+  }
+  eapply alpha_trans.
+  - apply alpha_trans_nil.
+  - eapply sub_vacuous; auto.
   - assumption.
 Qed.
 
+Lemma sub_vacuous_single_stronger X t s s' ren :
+  ~ In X (ftv s) -> Alpha ren s s' -> Alpha ren ([X := t] s) s'.
+Proof.
+Admitted.
+
+(* Idk, but must be true. *)
+Lemma tv_keys_env_helper y s sigma sigma_:
+  y = fresh2 (sigma_ ++ sigma) s ->
+  ~ In y (tv_keys_env sigma).
+Proof.
+Admitted.
+
+Lemma cons_to_append {A } (x : A) sigma :
+  (x :: sigma) = (x :: nil) ++ sigma.
+Proof. reflexivity. Qed.
+
+Lemma cons_chain_to_append {A } (x y : A) sigma :
+(x :: y :: sigma) = (x :: y :: nil) ++ sigma .
+Proof. reflexivity. Qed.
+
+Hint Rewrite (@cons_to_append (string * term)) (@cons_chain_to_append (string * term)) : list_simpl.
 
 
-Lemma sub_preserves_alpha Z Z' t s s' s'' ren1 ren2 ren :
-  AlphaVar ren Z Z' ->
+(* Lemma tv_keys_env_helper_cons y s sigma  *)
+
+Lemma subs_preserves_alpha'' sigma sigma' s : forall s' s'' ren1 ren2 ren,
+  AlphaCtx ren sigma sigma' ->
   AlphaCtxTrans ren1 ren2 ren ->
   ren1 ⊢ s' ~ s ->
   ren2 ⊢ s ~ s'' ->
-  Alpha ren t t ->
-  Alpha ren ([Z := t] s') ([Z' := t] s'').
+  Alpha ren (sigma [[s']]) (sigma' [[s'']]).
 Proof.
-  intros HalphaZ HalphaS HalphaT.
-  generalize dependent s'.
-  generalize dependent s''.
-  generalize dependent ren1.
-  generalize dependent ren2.
-  generalize dependent ren.
-  induction s; intros ren HalphaZ ren2 ren1 HalphaTrans s'' s' Halphas1 Halphas2 Halphat.
-  - inversion Halphas1.
-    inversion Halphas2.
-    subst.
-    rewrite capms_equation_1.
-    rewrite capms_equation_1.
-    simpl.
-          assert (AlphaVar ren x y0).
-      {
-        eapply alpha_var_trans; eauto. 
-      }
-    destr_eqb_eq Z x.
-    + (* Z = x, but AlphaVar ren x Z' and AlphaVar ren x y0, so Z' = y0*)
+  induction s; intros s'_ s''_ ren1_ ren2_ ren_ Hctx Htrans Halphas1 Halphas2.
+  - admit.
+  - 
+Admitted.
 
-      assert (HZ'y0: Z' = y0). { eapply alphavar_unique; eauto. }
-      rewrite HZ'y0.
-      rewrite String.eqb_refl.
-      assumption.
-    + (* Z <> x*)
-      destruct (Z' =? y0) eqn:HZ'y0.
-      * apply String.eqb_eq in HZ'y0.
-        (* Then AlphaVar ren x y0   and  AlphaVar ren Z y0     then also *)
-        subst.
-        exfalso.
-        apply (alphavar_unique_not H0 HalphaZ) in H.
-        contradiction.
-      * apply alpha_var.
-        assumption. 
-
-  - inversion Halphas1.
-    inversion Halphas2.
-    subst.
-    rewrite capms_equation_2.
-    rewrite capms_equation_2.
-    simpl.
-    remember (fresh2 [(x, tmvar x); (Z, t)] s1) as s0'.
-    remember (fresh2 [(y0, tmvar y0); (Z', t)] s4) as s0''.
+Lemma subs_preserves_alpha' sigma sigma' s : forall s' s'' ren1 ren2 ren,
+  AlphaCtx ren sigma sigma' ->
+  AlphaCtxTrans ren1 ren2 ren ->
+  ren1 ⊢ s' ~ s ->
+  ren2 ⊢ s ~ s'' ->
+  Alpha ren (sigma [[s']]) (sigma' [[s'']]).
+Proof.
+  induction s; 
+  intros s'_ s''_ ren1_ ren2_ ren_ Hctx Htrans Ha_s1 Ha_s2;
+  inversion Ha_s1 as [s' _1 _2 Hav_s1 |s' _1 _2 s0' _3 _4 Ha_s01 | sl' _1 sr' _2 _3 Ha_sl1 Ha_sr1 ]; subst;
+  inversion Ha_s2 as [_1 s'' _2 Hav_s2 |_1 s'' _2 _3 s0'' _4 Ha_s02 | _1 sl'' _2 sr'' _3 Ha_sl2 Ha_sr2]; subst.
+  - (* Case: tmvar *)
+    rewrite capms_equation_1. 
+    rewrite capms_equation_1.
+  
+    assert (Havs: AlphaVar ren_ s' s''). { eapply alpha_var_trans; eauto. }
+      
+    destruct (lookup s' sigma) eqn:xinsigma.
+    + apply (alpha_ctx_right_ex Hctx Havs) in xinsigma as [t' [Hlookupy' Halphat ] ].
+      now rewrite Hlookupy'.
+    + destruct (lookup s'' sigma') eqn:y0insigma'.
+      * apply (alpha_ctx_left_ex Hctx Havs) in y0insigma' as [t' [Hlookupx Halphat ] ].
+        now rewrite Hlookupx in xinsigma.
+      * now apply alpha_var.
+  - (* Case: tmlam *)
+    rewrite capms_equation_2; simpl.
+    rewrite capms_equation_2; simpl.
+    remember (fresh2 _ s0') as b'.
+    remember (fresh2 _ s0'') as b''.
     apply alpha_lam.
+
     eapply IHs.
-    + shelve. (* By fresh2 on Z and Z'*)
-    + apply alpha_trans_cons.
-      exact HalphaTrans.
-    + eapply @alpha_trans with (ren := (s0', x) :: (ctx_id_left ren1)).
+    + apply alpha_ctx_ren_extend_fresh; 
+      auto;
+      rewrite cons_to_append in Heqb';
+      rewrite cons_to_append in Heqb'';
+      eapply tv_keys_env_helper; eauto.
+    + apply alpha_trans_cons; eauto.
+    + eapply @alpha_trans with (ren := ((b', s')::nil) ++ (ctx_id_left ren1_)); eauto.
       * apply alpha_trans_cons.
         apply id_left_trans.
-      *  
-        change ((s0', x) :: (ctx_id_left ren1)) with (((s0', x)::nil) ++ (ctx_id_left ren1)).
-        apply alpha_extend_ids_right.
+      * apply alpha_extend_ids_right.
         -- apply ctx_id_left_is_id.
         -- eapply alpha_sym.
-          ++ apply alpha_sym_cons. apply alpha_sym_nil.
-          ++ apply alphaRename. shelve.
-      * exact H2.
-    + eapply alpha_trans.
+           ++ apply alpha_sym_cons. apply alpha_sym_nil.
+           ++ apply alphaRename.
+              now apply fresh2_over_tv_term in Heqb'.
+    + eapply @alpha_trans with (ren' := ((s'', b'')::nil) ++(ctx_id_right ren2_)); eauto.
       * apply alpha_trans_cons.
-          apply id_right_trans.
-      * exact H10.
-      * change ((y0, s0''):: (ctx_id_right ren2)) with (((y0, s0'')::nil) ++ (ctx_id_right ren2)). 
-          apply alpha_extend_ids_right.    
-          -- apply ctx_id_right_is_id.
-          -- apply alphaRename. shelve. (* True by s0'' = fresh2 s4*)
-    + shelve. (* By fresh2 *)
-  - admit. 
+        apply id_right_trans.
+      * apply alpha_extend_ids_right.
+        -- apply ctx_id_right_is_id.
+        -- apply alphaRename.
+           now apply fresh2_over_tv_term in Heqb''.
+           
+  - (* Case: tmapp *)
+    rewrite capms_equation_3.
+    rewrite capms_equation_3.
+    apply alpha_app.
+    + eapply IHs1; eauto.
+    + eapply IHs2; eauto.
+Qed.
 
-Admitted.
-
-Lemma fresh2_tv_helper2 {Y t sigma} :
-  Y = fresh2 sigma t ->
-  ~ In Y (tv t).
-Admitted.
-
-Lemma fresh2_tv_helper {Y Y' t sigma} :
-  Y = fresh2 sigma t -> 
-  In Y' (tv t) ->
-  Y <> Y'.
-Admitted.
-
-Lemma fresh2_helper3 X s t Y sigma :
-  Y = fresh2 sigma t ->
-  In (X, s) sigma -> Y <> X.
-Admitted.
-
-Lemma fresh2_helper4 X s t Y sigma :
-  Y = fresh2 sigma t ->
-  In (X, s) sigma -> ~ In Y (tv s).
-Admitted.
-
-Lemma alpha_not_in_tv_helper {X X' ren t} :
-  ~ In X (tv t) -> ~ In X' (tv t) -> Alpha ren t t -> Alpha ((X, X')::ren) t t.
+Lemma subs_preserves_alpha sigma sigma' s s' ren :
+  AlphaCtx ren sigma sigma' ->
+  ren ⊢ s ~ s' ->
+  Alpha ren (sigma [[s]]) (sigma' [[s']]).
 Proof.
-Admitted.
-
-Lemma length_helper a b :
-  (String.length (a ++ b)) = (String.length a + String.length b).
-Proof.
-Admitted.
-
-Lemma length_concat_helper x xs :
-  In x xs -> le (String.length x) (String.length (String.concat "" xs)).
-Proof.
-Admitted.
-
+  intros.
+  apply (@subs_preserves_alpha' sigma  sigma' s s s' (nil ++ ctx_id_left ren) ren ren); auto.
+  - apply id_left_trans; auto.
+  - apply alpha_extend_ids_right.
+    + apply ctx_id_left_is_id.
+    + apply alpha_refl. apply alpha_refl_nil.
+Qed.
 
 
 Lemma ren_sub_compose_stronger_single : forall s s' s'' ren ren1 ren2 Z Z' t X X' Y,
@@ -723,7 +964,8 @@ Proof.
           unfold fresh2 in Heqs0'.
           assert (gt (String.length s0') (String.length (String.concat "" (tv (rename X Y s1))))).
           {
-            clear Heqs0''.
+            admit. (* TODO: Changed fresh2 definition *)
+            (* clear Heqs0''.
             rewrite Heqs0'.
             repeat rewrite length_helper.
             change (String.length "a") with 1.
@@ -752,7 +994,7 @@ Proof.
             rewrite <- Nat.add_assoc in H4.
             rewrite <- Nat.add_assoc.
             rewrite <- Nat.add_assoc.
-            assumption.
+            assumption. *)
           }
           unfold gt in H1.
           assert ( le (String.length Y)  (String.length (String.concat "" (tv (rename X Y s1))))). 
@@ -766,9 +1008,13 @@ Proof.
 
       assert (s0' <> Y).
       {
-        eapply fresh2_tv_helper.
-        - exact Heqs0'.
-        - assumption.
+        intros Hcontra.
+        subst.
+        symmetry in Hcontra.
+
+
+        apply (fresh2_over_tv_term) in Hcontra.
+        contradiction.
       }
 
       assert (Y <> x).
@@ -783,7 +1029,7 @@ Proof.
         rewrite ren_commute; try auto.
         eapply IHs.
         * apply alpha_trans_cons. exact HalphaTrans.
-        * eapply (fresh2_helper4) in Heqs0'; eapply (fresh2_helper4) in Heqs0''.
+        * eapply (fresh2_over_tv_value_sigma) in Heqs0'; eapply (fresh2_over_tv_value_sigma) in Heqs0''.
           -- apply (alpha_not_in_tv_helper); eauto.
           -- apply in_cons. apply in_cons. apply in_eq.
           -- apply in_cons. apply in_eq.
@@ -791,23 +1037,23 @@ Proof.
         * apply alpha_var_diff.
           -- auto.
           -- 
-            eapply (fresh2_helper3 Heqs0'').
+            eapply (fresh2_over_key_sigma Heqs0'').
             apply in_cons.
             apply in_eq.
           -- assumption.
         
         * apply alpha_var_diff.
-          -- eapply (fresh2_helper3 Heqs0').
+          -- eapply (fresh2_over_key_sigma Heqs0').
              apply in_cons.
              apply in_eq.
-          -- eapply (fresh2_helper3 Heqs0'').
+          -- eapply (fresh2_over_key_sigma Heqs0'').
              apply in_cons.
              apply in_cons.
              apply in_eq.
           -- assumption.
         * apply alpha_var_diff.
            -- assumption.
-           -- apply (fresh2_helper4) with (X := X') (s := tmvar Y) in Heqs0''.
+           -- apply (fresh2_over_tv_value_sigma) with (X := X') (s := tmvar Y) in Heqs0''.
               ++ unfold tv in Heqs0''.
                  apply not_in_cons in Heqs0'' as [Hs0''NotY _].
                  assumption.
@@ -822,7 +1068,7 @@ Proof.
             apply alpha_extend_ids_right.    
             ++ apply ctx_id_right_is_id.
             ++ apply alphaRename. 
-              apply fresh2_tv_helper2 in Heqs0''.
+              apply fresh2_over_tv_term in Heqs0''.
               assumption.
         * eapply @alpha_trans with (ren := (s0', x) :: (ctx_id_left ren1)).
           -- apply alpha_trans_cons.
@@ -840,7 +1086,7 @@ Proof.
                    *)
                    assert (~ In s0' (tv (rename X Y s1))).
                    {
-                    eapply fresh2_tv_helper2; eauto.
+                    eapply fresh2_over_tv_term; eauto.
                    }
 
                    intros HContra.
@@ -874,7 +1120,29 @@ Proof.
 
 Admitted.
 
-(* THIS ONE USES ALPHA PROP DEFINITION! *)
+Lemma in_cons_sum {A : Type} (x y : A) (l : list A) :
+  In x (y :: l) -> sum (x = y) (In x l).
+Proof.
+Admitted. 
+
+(* Analogous to in_app_or, but for set *)
+Lemma in_app_sum {A : Type} (x : A) (l1 l2 : list A) :
+  In x (l1 ++ l2) -> sum (In x l1) (In x l2).
+Proof.
+  intros Hin.
+  induction l1 as [| a l1' IH].
+  - (* Case: l1 is empty *)
+    simpl in Hin.
+    right; assumption.
+  - (* Case: l1 is non-empty *)
+    apply in_cons_sum in Hin.
+    destruct Hin as [Hin | Hin].
+    + left. subst. apply in_eq.
+    + destruct (IH Hin) as [Hin_l1 | Hin_l2].
+      * left; right; assumption.
+      * right; assumption.
+Qed.
+
 Lemma alpha_rename_binder_stronger x y ren1 ren2 ren s s' s'' t t' :
   AlphaCtxTrans (ren1) ren2 (ren) ->
   Alpha ((x, y)::ren1) s' s ->
@@ -935,7 +1203,7 @@ Proof.
     assert (Hyins'' : In y (ftv (rename y1 s0'' s4))).
     {
       remember Hinys'' as Hinys''copy. clear HeqHinys''copy.
-      apply ftv_lam_helper in Hinys''. (* y notin ftv s4 *)
+      apply ftv_lam_helper in Hinys''. 
       apply ftv_rename_vacuous_helper.
       - intros Hcontra.
         subst.
@@ -946,7 +1214,7 @@ Proof.
     assert (Hxins': In x (ftv (rename x0 s0' s1))).
     {
       remember Hinxs' as Hinxs'copy. clear HeqHinxs'copy.
-      apply ftv_lam_helper in Hinxs'. (* x notin ftv s1 *)
+      apply ftv_lam_helper in Hinxs'. 
       apply ftv_rename_vacuous_helper.
       - intros Hcontra.
         subst.
@@ -960,7 +1228,16 @@ Proof.
     eapply IHs; clear IHs.
     + apply alpha_trans_cons.
       assumption.
-    + admit. (* freshness *)
+    + apply alpha_extend_fresh.
+      * eapply fresh2_over_tv_value_sigma in Heqs0'.
+        -- eauto. 
+          (* TODO: s0' notin tv t => s0' notin ftv t lemma*)
+          admit. 
+        -- apply in_cons. apply in_eq.
+      * eapply fresh2_over_tv_value_sigma in Heqs0''.
+        -- eauto. admit.
+        -- apply in_cons. apply in_eq.
+      * assumption.
     + eapply @alpha_trans with (ren := ((s, y1)::ren2)) (ren' := ((y1, s0'')::(ctx_id_right ren2))).
       * apply alpha_trans_cons.
         -- apply id_right_trans.
@@ -968,11 +1245,15 @@ Proof.
       * change ((y1, s0''):: (ctx_id_right ren2)) with (((y1, s0'')::nil) ++ (ctx_id_right ren2)). 
         apply alpha_extend_ids_right.    
         -- apply ctx_id_right_is_id.
-        -- apply alphaRename. admit. (* freshness *)
+        -- apply alphaRename.
+           apply fresh2_over_tv_term in Heqs0''.
+           assumption.
     + assumption.
     + apply alpha_swap with (ren := (s0', s)::(x, y)::ren1).
       * apply lrs_start.
-        -- admit. (* fresh *)
+        -- eapply fresh2_over_key_sigma.
+           ++ exact Heqs0'.
+           ++ apply in_cons. apply in_eq.
         -- intros Hcontra.
            rewrite Hcontra in Hinys.
            apply ftv_lam_no_binder in Hinys.
@@ -986,20 +1267,28 @@ Proof.
            ++ apply ctx_id_left_is_id.
            ++ eapply alpha_sym.
               ** apply alpha_sym_cons. apply alpha_sym_nil.
-              ** apply alphaRename. admit. (* freshness *)
+              ** apply alphaRename.
+                 apply fresh2_over_tv_term in Heqs0'.
+                assumption.
         -- assumption.
     + assumption.
-  - admit.
+  - inversion HalphaS1.
+    inversion HalphaS2.
+    subst.
+    rewrite capms_equation_3.
+    rewrite capms_equation_3.
+    simpl.
+    unfold ftv in Hinxs'.
+    (* fold ftv in Hinxs'.
+    apply in_app_or_set in Hinxs' as [Hinxs1 | Hinxs2].
+    apply alpha_app.
+    + eapply IHs1; eauto.
+    + eapply IHs2; eauto. *)
 Admitted.
 
-(* This one is easy
-Lemma alpha_rename_binder' {y : string } {s : term} s' x t t' ren:
-  Alpha (ren) s (rename y x s') ->
-  Alpha ren t t' ->
-  Alpha ren ([x := t] s) ([x := t'] rename y x s').
-Proof.
-Admitted. *)
 
+(* If s in x gets renamed to y in s', 
+    doing a substitution for x on s corresponds to a substitution for y on s'*)
 Lemma alpha_rename_binder {y : string } {s : term} s' x t t' ren:
   Alpha ((x, y)::ren) s s' ->
   Alpha ren t t' ->
@@ -1009,7 +1298,7 @@ Proof.
   destruct (in_dec String.string_dec x (ftv s)).
   {
     assert (Hinys: In y (ftv s')). {
-      admit.
+      apply alpha_in_ftv_helper2 in Halphas; auto.
     }
 
   eapply alpha_rename_binder_stronger; eauto.
@@ -1022,23 +1311,42 @@ Proof.
   }
   {
     assert (Hnotinys: ~ In y (ftv s')). {
-      intros Hcontra.
-      admit.
+      apply alpha_not_in_ftv_helper2 in Halphas.
+      - assumption.
+      - assumption.
     }
-    (* x not in s, y not in s', hence vacuous substitution! 
-      Goal reduces to ren |- s ~ s'
 
-    Also hypothesis Halphas 
-      (x, y) :: ren) |- s ~ s' 
-    reduces to
-      ren |- s ~ s'.
-    
-    Done.
-    *)
-    admit.
+    (* Three ingredients necessary for transitivity result *)
+    assert (Alpha nil ([x := t] s) s).
+    {
+      apply sub_vacuous_single.
+      assumption.
+    }
+    assert (Alpha ren s s').
+    {
+      apply @weaken_vacuous_alpha with (X' := y) (X := x); assumption.
+    }
+    assert (Alpha nil s' ([y := t'] s')).
+    {
+      eapply alpha_sym.
+      - apply alpha_sym_nil.
+      - apply sub_vacuous_single.
+        assumption.
+    }
 
+    eapply alpha_trans.
+    - apply id_left_trans.
+    - apply alpha_extend_ids_right with (idCtx := ctx_id_left ren) in H.
+      + exact H.
+      + apply ctx_id_left_is_id.
+    - eapply alpha_trans.
+      + apply id_right_trans.
+      + exact H0.
+      + apply alpha_extend_ids_right with (idCtx := ctx_id_right ren) in H1.
+        * exact H1.
+        * apply ctx_id_right_is_id.
   }
-Admitted.
+Qed.
 
 (* TODO: Probably need to prove this with strenghtened induction (non-empty context) for the lambda case *)
 Lemma step_preserves_alpha {s} {s'} {t} ren :
@@ -1081,12 +1389,9 @@ Proof.
 Qed.
 
 
-
-(*
-
-Lemma ren_sub_compose_instantiated X Y Z s t :
-  Y = (fresh2 ((X, tmvar X)::(Z, t)::nil) s) ->
-  nil ⊢ [Z := t] (rename X Y s) ~ ((X, tmvar Y)::(Z, t)::nil) [[s]].
+Lemma ren_sub_compose_instantiated X Y s sigma :
+  Y = (fresh2 ((X, tmvar X)::sigma) s) ->
+  nil ⊢ sigma [[rename X Y s]] ~ ((X, tmvar Y)::sigma) [[s]].
 Proof.
   (* intros HYfresh.
   induction s.
@@ -1112,61 +1417,896 @@ Proof.
   } *)
 Admitted.     
 
+Require Import Coq.Program.Equality.
 
-
-
-
-  (* This is not exactly true, since rename does not create fresh vars and stuff
-        But it is "kind of true" , lol.
-
-        So I guess we have to change capms to not unnecessarily rename?
-        I would rather not ;) Maybe we can strengthen IHh to include this case.
-        Or we change rename to do fresh?
-
-        But it should be true, the fact that x' is fresh is key. that will mean that
-        capms and rename should behave the same in the tylam case
-        SO: TODO: We have to change capms to not freshen if not necessary
-
-        Will it work with alpha equivalence??? Let's work it out on pen and paper
-      *)
-Lemma ren_sub_compose : forall sigma x x' s,
-  varNotIn x' sigma ->
-
-  nil ⊢ sigma [[rename x x' s]] ~ ((x, tmvar x')::sigma) [[s]].
+Lemma merge_sub_stronger x2 y1 x4 y2 s1 s2 s3 s4 t sigma2 sigma4 ren ren12 ren24 ren23 ren34 :
+  Alpha ren12 s1 (((x2, tmvar y2)::sigma2) [[s2]]) ->
+  Alpha ren23 s2 s3 ->
+  Alpha ren34 s3 s4 ->
+  AlphaCtxTrans ren12 ren24 ren ->
+  AlphaCtxTrans ren23 ren34 ren24 ->
+  AlphaCtx ren24 sigma2 sigma4 ->
+  AlphaVar ren24 x2 x4 ->
+  Alpha ren t t ->
+  AlphaVar ren12 y1 y2 ->
+  In y1 (ftv s1) -> (* corollary of x2 in ftv (s2)*)
+  In x4 (ftv s4) ->
+  In x2 (ftv s2) ->
+  Alpha ren ([y1 := t] s1) (((x4, t)::sigma4) [[s4]]).
 Proof.
-  intros sigma X X' s Hfresh.
-  generalize dependent sigma.
-  induction s; intros sigma Hfresh.
-  - admit.
-  - destr_eqb_eq X s.
-    + admit.
-    + assert (HlamRename: rename X X' (tmlam s t s0) = tmlam s t (rename X X' s0)) by admit.
-      rewrite HlamRename.
-      rewrite capms_equation_2.
-      rewrite capms_equation_2.
-      simpl.
-      remember (fresh2 ((s, tmvar s)::sigma) (rename X X' s0)) as s0'.
-      remember (fresh2 ((s, tmvar s)::(X, tmvar X')::sigma) s0) as s0''.
-      apply alpha_lam.
-      (* Problem! What if s0' = X*)
-      (* IH not strong enough. Need to include alpha contexts and alpha equivalence of s *)
+  intros.
+  generalize dependent ren.
+  generalize dependent ren12.
+  generalize dependent ren24.
+  generalize dependent ren23.
+  generalize dependent ren34.
+  generalize dependent s1.
+  generalize dependent s2.
+  generalize dependent s4.
+  induction s3; intros s4 Hinx4 s2 Hinx2 s1 Hiny1 ren34 Halphas34 ren23 Halphas23 ren24 Htrans24 Hctx Halphax ren12 Halphas12 Halphay ren Htrans Halphat.
+  - inversion Halphas34.
+    inversion Halphas23.
+    subst.
+    rewrite capms_equation_1 in Halphas12.
+    rewrite capms_equation_1.
+    unfold ftv in Hinx4.
+    apply in_inv in Hinx4.
+    assert (y = x4).
+    {
+      apply in_inv in Hinx4.
+      destruct Hinx4; try contradiction; auto.
+    } 
+    subst.
+    assert (x2 = x0).
+    {
+      apply in_inv in Hinx2.
+      destruct Hinx2; try contradiction; auto.
+    } 
+    subst.
+    simpl.
+    rewrite String.eqb_refl.
+    simpl in Halphas12.
+    rewrite String.eqb_refl in Halphas12.
+    inversion Halphas12.
+    subst.
+    assert (y1 = x).
+    {
+      apply in_inv in Hiny1.
+      destruct Hiny1; try contradiction; auto.
+    } subst.
+    rewrite capms_equation_1.
+    simpl.
+    rewrite String.eqb_refl.
+    assumption.
+  - inversion Halphas23.
+    inversion Halphas34.
+    subst.
+    rewrite capms_equation_2 in Halphas12.
+    simpl in Halphas12.
+    inversion Halphas12.
+    subst.
+    remember (fresh2 ((x, tmvar x)::(x2, tmvar y2)::sigma2) s0) as b1.
+    rewrite capms_equation_2.
+    rewrite capms_equation_2.
+    simpl.
+    remember (fresh2 [(x0, tmvar x0); (y1, t)] s2) as b2.
+    remember (fresh2 ((y0, tmvar y0)::(x4, t)::sigma4) s7) as b3.
+    apply alpha_lam.
+    eapply IHs3.
+    + eapply ftv_lam_rename_helper; eauto.
+    + eapply ftv_lam_rename_helper. eauto.
+    + eapply ftv_lam_rename_helper; eauto.
+    + eapply @alpha_trans with (ren' := (((y0, b3)::nil) ++ (ctx_id_right ren34))).
+      * 
+      apply alpha_trans_cons.
+        eapply id_right_trans.
+      * exact H10.
+      * apply alpha_extend_ids_right.
+        -- apply ctx_id_right_is_id.
+        -- apply alphaRename.
+           apply fresh2_over_tv_term in Heqb3.
+           assumption.
+    + 
+    {
+     eapply @alpha_trans with (ren := (((b1, x)::nil) ++ (ctx_id_left ren23))).
+     - apply alpha_trans_cons.
+       apply id_left_trans.
+     - apply alpha_extend_ids_right.
+        + apply ctx_id_left_is_id.
+        + eapply alpha_sym; [repeat constructor |].
+          apply alphaRename.
+          apply fresh2_over_tv_term in Heqb1.
+          exact Heqb1.
+      - exact H2.
+    }
+    + apply alpha_trans_cons; eauto.
+    + apply alpha_ctx_ren_extend_fresh.
+      * eapply tv_keys_env_helper.
+        (* now autorewrite with list_simpl in Heqb1.  *)
+        exact Heqb1.
+      * change ((y0, tmvar y0)::(x4, t)::sigma4) with (((y0, tmvar y0)::(x4, t)::nil) ++ sigma4) in Heqb3.
+        eapply tv_keys_env_helper. exact Heqb3.
+      * assumption.
+    + apply alpha_var_diff.
+      * apply fresh2_over_key_sigma with (X := x2) (s := tmvar y2) in Heqb1.
+        -- assumption.
+        -- apply in_cons. apply in_eq.
+      * apply fresh2_over_key_sigma with (X := x4) (s := t) in Heqb3.
+        -- assumption.
+        -- apply in_cons. apply in_eq.
+      * assumption.
+    + 
+    {
+      eapply @alpha_trans with (ren := ((b2, x0)::nil) ++ (ctx_id_left ren12)).
+      - apply alpha_trans_cons.
+        apply id_left_trans.
+      - apply alpha_extend_ids_right.
+        + apply ctx_id_left_is_id.
+        + eapply alpha_sym; repeat constructor.
+          apply alphaRename.
+          apply fresh2_over_tv_term in Heqb2.
+          assumption.
+      - exact H3.
+    }
+    + apply alpha_var_diff; auto.
+      * apply fresh2_over_key_sigma with (X := y1) (s := t) in Heqb2.
+        -- assumption.
+        -- apply in_cons. apply in_eq.
+      * apply fresh2_over_tv_value_sigma with (X := x2) (s := tmvar y2) in Heqb1.
+        -- intros Hcontra.
+           subst.
+           unfold tv in Heqb1.
+           unfold not in Heqb1.
+           assert (In y2 (y2::nil)).
+            {
+              apply in_eq.
+            }
+            apply Heqb1 in H.
+            contradiction.
+        -- apply in_cons. apply in_eq.
+    + apply alpha_trans_cons.
+      assumption.
+    + apply alpha_extend_fresh; auto.
+      * eapply fresh2_over_tv_value_sigma in Heqb2.
+        -- intros Hcontra.
+           apply extend_ftv_to_tv in Hcontra.
+           generalize dependent Hcontra. 
+           exact Heqb2.
+        -- apply in_cons. apply in_eq.
+      * eapply fresh2_over_tv_value_sigma in Heqb3.
+        -- intros Hcontra.
+           apply extend_ftv_to_tv in Hcontra.
+           generalize dependent Hcontra. 
+           exact Heqb3.
+        -- apply in_cons. apply in_eq.
+  - inversion Halphas23.
+    inversion Halphas34.
+    subst.
+    rewrite capms_equation_3 in Halphas12.
+    simpl in Halphas12.
+    inversion Halphas12.
+    subst.
+    rewrite capms_equation_3.
+    rewrite capms_equation_3.
+    simpl.
+    simpl in Hinx4.
+    apply in_app_sum in Hinx4.
+    destruct Hinx4. (* We need to differentiate between vacuous and non-vacuous substs unfortunately*)
+    {
+      admit.
+    (* If y1 in ftv s2, then also x2 in ftv s0 and x4 in ftv s6 I think
+      Then we can use the IH.
+      
+      If it is not, none of them are and we have vacuous substs.
+      Suppose y1 in s2. Then by AlphaVar ren12 y1 y2, we have 
+      y2 in ((x2, tmvar y2) :: sigma2) [[s0]].
+      Hence x2 in s0.
+      Since Alpha ren24 s0 s6, and Alphavar ren24 x2 x4, then x4 in s6.
+
+      Other way around:
+      If y1 not in s2, then y2 not in ((x2, tmvar y2) :: sigma2) [[s0]].
+      Hence x2 not in s0.
+      Since Alpha ren24 s0 s6 and AlphaVar ren24 x2 x4, also not x4 in s6.
+      *)
+    
+
+    }
+    {
+      apply alpha_app.
+      {
+        (* IH1 *)
+        destruct (in_dec String.string_dec x4 (ftv s6)) eqn:x4ins6.
+        {
+          assert (In x2 (ftv s0)) by admit.
+          assert (In y1 (ftv s2)) by admit.
+          eapply IHs3_1; clear IHs3_1; clear IHs3_2.
+          - assumption.
+          - exact ( H).
+          - exact H0.
+          - exact H8.
+          - exact H3.
+          - exact Htrans24.
+          - eauto.
+          - eauto.
+          - eauto.
+          - eauto.
+          - eauto.
+          - eauto.
+        }
+        {
+          clear IHs3_1. clear IHs3_2.
+          (* x4 notin ftv s6: all vacuous substs *)
+          assert (~ In x2 (ftv s0)) by admit.
+          assert (~ In y1 (ftv s2)) by admit.
+
+          apply sub_vacuous_single_stronger; auto.
+          eapply @alpha_trans with (ren := ren) (t := (sigma4 [[s6]])).
+          - apply id_right_trans.
+          - assert (Alpha ren12 s2 ((sigma2 [[s0]]))). { 
+              assert (Alpha (nil ++ ctx_id_right ren12) (((x2, tmvar y2)::sigma2) [[s0]]) (sigma2 [[s0]])).
+              {
+                apply alpha_extend_ids_right.
+                - apply ctx_id_right_is_id.
+                - 
+                eapply sub_vacuous; auto.
+              }
+              eapply alpha_trans; eauto. 
+              + apply id_right_trans.
+           }
+            assert (Alpha ren24 s0 s6). { eapply alpha_trans; eauto. }
+            eapply @alpha_trans with (ren := ren12) (ren' := ren24) (ren'' := ren) (s := s2) (t := sigma2 [[s0]]); eauto.
+            eapply subs_preserves_alpha; auto.
+          - change (ctx_id_right ren) with (nil ++ ctx_id_right ren).
+            apply alpha_extend_ids_right.
+            + apply ctx_id_right_is_id.
+            + eapply alpha_sym; eauto.
+              * apply alpha_sym_nil.
+              * eapply sub_vacuous; auto.
+        }
+      }
+      admit. (* Analogous *)
+    }
+    
 Admitted.
 
+Lemma in_tv_value_then_in_tv_keys_env y y1 t (sigma : list (string * term)) :
+  In y (tv t) -> In (y1, t) sigma -> In y (tv_keys_env sigma).
+Proof.
+Admitted.
+
+Lemma lookup_some_then_in y t (sigma : list (string * term)) :
+  lookup y sigma = Some t -> In (y, t) sigma.
+Admitted.
+
+Lemma no_ftv_subs_helper' y s s' s'' sigma ren ren1 ren2 :
+  AlphaCtxTrans ren1 ren2 ren ->
+  ~ In y (tv s) ->
+  ~ In y (tv_keys_env sigma) ->
+  AlphaCtx ren sigma sigma ->
+  AlphaVar ren y y ->
+  Alpha ren1 s s' ->
+  Alpha ren2 s' s'' ->
+  ~ In y (ftv (sigma [[s'']])).
+Proof.
+  intros.
+  generalize dependent ren.
+  generalize dependent ren1.
+  generalize dependent ren2.
+  generalize dependent s.
+  generalize dependent s''.
+  induction s'; intros s'' s_ Hynots ren2 Halphas2 ren1 Halphas1 ren Htrans Hctx Halphay.
+  - inversion Halphas1.
+    inversion Halphas2.
+    subst.
+    rewrite capms_equation_1.
+    assert (Halphax0y1: AlphaVar ren x y1).
+    {
+      eapply alpha_var_trans; eauto.
+    }
+    assert (Hynotx0: y <> x).
+    {
+      intros Hcontra.
+      subst.
+      unfold tv in Hynots.
+      contradiction Hynots.
+      apply in_eq.
+    }
+    destruct (lookup y1 sigma) eqn:Hlookup.
+    {
+      assert (In (y1, t) sigma).
+      {
+        apply lookup_some_then_in in Hlookup.
+        assumption.
+      }
+      intros Hcontra.
+      apply extend_ftv_to_tv in Hcontra.
+      assert (In y (tv_keys_env sigma)).
+      {
+        
+        eapply in_tv_value_then_in_tv_keys_env; eauto.
+      }
+      contradiction.
+    }
+    {
+      simpl.
+
+      destr_eqb_eq y1 y.
+      - assert (Hx0y: y = x).
+        {
+          
+          eapply alphavar_unique.
+          - assert (Alpha ren (tmvar y) (tmvar y)).
+            {
+              apply alpha_var.
+              assumption.
+            }
+            eapply alpha_sym in H.
+            + inversion H.
+              exact H5.
+            + eapply sym_alpha_ctx_is_sym.
+          - assert (Alpha ren (tmvar x) (tmvar y)).
+          {
+            apply alpha_var.
+            assumption.
+          }
+          eapply alpha_sym in H.
+          + inversion H.
+            exact H5.
+          + eapply sym_alpha_ctx_is_sym.
+        }
+        contradiction.
+      - intros Hcontra.
+        destruct Hcontra; contradiction.
+    }
+    
+  - inversion Halphas1.
+    inversion Halphas2.
+    subst.
+    assert (Hnotys0: ~ In y (tv s1)).
+    {
+      simpl in Hynots.
+      auto.
+    } 
+    rewrite capms_equation_2.
+    simpl.
+    subst.
+    remember (fresh2 _ _) as b.
+
+    (* If y = b, we are done by how remove works*)
+    destr_eqb_eq y b.
+    remember (fresh2 _ _) as b.
+    {
+      apply remove_In.
+    }
+    {
+      (* y <> b*)
+      rewrite <- in_remove.
+      intros Hcontra'.
+      
+      (* We do an unnecessary allowed renaming here, since tv/ftv does not care about this*)
+      remember (fresh2 ((y, tmvar y)::sigma) s1) as b'.
+      assert (Hnotyreny1b's1: ~ In y (tv (rename x b' s1))).
+      {
+        apply tv_not_after_rename.
+        - apply fresh2_over_key_sigma with (X := y) (s := tmvar y) in Heqb'.
+          + auto.
+          + apply in_eq.
+        - assumption.
+      }
+
+      assert (~ In y (ftv (sigma [[rename y1 b s3]]))).
+      {
+        eapply IHs' with (s := rename x b' s1) (ren := ((b', b)::ren)).
+        - assumption.
+        - {
+          eapply @alpha_trans with (ren' := ((y1, b)::nil) ++ (ctx_id_right ren2)).
+          - apply alpha_trans_cons.
+            apply id_right_trans.
+          - exact H11.
+          - apply alpha_extend_ids_right.
+            + apply ctx_id_right_is_id.
+            + apply alphaRename.
+              apply fresh2_over_tv_term in Heqb.
+              assumption.
+        }
+        - eapply @alpha_trans with (ren := ((b', x)::nil) ++ (ctx_id_left ren1)).
+          + apply alpha_trans_cons.
+            apply id_left_trans.
+          + apply alpha_extend_ids_right.
+            * apply ctx_id_left_is_id.
+            * eapply alpha_sym; [repeat constructor |].
+              apply alphaRename.
+              apply fresh2_over_tv_term in Heqb'.
+              assumption.
+          + exact H3.
+        - now apply alpha_trans_cons.
+        - eapply alpha_ctx_ren_extend_fresh.
+          + change ((y, tmvar y):: sigma) with (((y, tmvar y)::nil) ++ sigma) in Heqb'.
+            now apply tv_keys_env_helper in Heqb'.
+          + change ((y1, tmvar y1):: sigma) with (((y1, tmvar y1)::nil) ++ sigma) in Heqb.
+            now apply tv_keys_env_helper in Heqb.
+          + assumption.            
+        - apply alpha_var_diff.
+          + apply fresh2_over_key_sigma with (X := y) (s := tmvar y) in Heqb'.
+            * assumption.
+            * apply in_eq.
+          + auto.
+          + assumption.
+      }
+
+      destruct Hcontra' as [Hcontra' _].
+      contradiction.
+    }
+  - inversion Halphas1.
+    inversion Halphas2.
+    subst.
+    rewrite capms_equation_3.
+    simpl.
+    intros Hcontra.
+    apply in_app_sum in Hcontra.
+    simpl in Hynots.
+    apply not_in_app in Hynots.
+    destruct Hynots as [Hynots1 Hynott1].
+    destruct Hcontra.
+    + eapply IHs'1 with (s := s1); eauto.
+    + eapply IHs'2; eauto.
+Qed.
+
+Lemma no_ftv_subs_helper y s sigma :
+  ~ In y (tv s) ->
+  ~ In y (tv_keys_env sigma) -> (* should be tv*)
+  ~ In y (ftv (sigma [[s]])).
+Proof.
+  intros.
+  eapply (@no_ftv_subs_helper' y s s s sigma nil nil nil); eauto.
+  - constructor.
+  - apply alpha_ctx_ren_nil.
+  - apply alpha_var_refl.
+  - apply alpha_refl. apply alpha_refl_nil.
+  - apply alpha_refl. apply alpha_refl_nil.
+Qed.
+
+Lemma ftv_sub_helper4 x x' y y' s s' s'' sigma sigma' ren1 ren2 ren :
+  AlphaCtxTrans ren1 ren2 ren ->
+  AlphaCtx ren sigma sigma' ->
+  Alpha ren1 s s' ->
+  Alpha ren2 s' s'' ->
+  AlphaVar ren x x' ->
+  AlphaVar ren y y' ->
+  In x (ftv s) ->
+  ~ In y (tv s) -> (* A free var can ber renamed to a name that is bound, then suddenly it is bound! Cannot happen because it is a capture-avoiding substitution, but adding this condition makes it possible to not need a stronger induciton hypothesis*)
+  In y' (ftv (((x', tmvar y')::sigma') [[s'']])).
+Proof.
+  intros.
+  generalize dependent s.
+  generalize dependent s''.
+  generalize dependent ren.
+  generalize dependent ren1.
+  generalize dependent ren2.
+  induction s'; intros ren2 ren1 ren Htrans Hctx Halphax Halphay s'' Hs'' s0 Hs' Hxins Hynotins.
+  - inversion Hs''.
+    inversion Hs'.
+    subst.
+    rewrite capms_equation_1.
+    simpl.
+    assert (x = x1).
+    {
+      inversion Hxins; [auto | contradiction].
+    }
+    subst.
+    (*
+      AlphaVar ren x1 ~ x'. 
+      but also
+      AlphaVar ren x1 y0.
+      Hence x' = y0.
+    *)
+    assert (x' = y0).
+    {
+      assert (AlphaVar ren x1 y0).
+      {
+        eapply alpha_var_trans; eauto.
+      }
+      apply (alphavar_unique Halphax) in H.
+      assumption.
+    }
+    subst.
+    rewrite String.eqb_refl.
+    unfold ftv.
+    apply in_eq.
+  - inversion Hs'.
+    inversion Hs''.
+    subst. 
+    rewrite capms_equation_2.
+    simpl.
+    remember (fresh2 _ _) as b1.
+    assert (x <> x0).
+    {
+      intros Hcontra.
+      subst.
+      apply ftv_lam_no_binder in Hxins.
+      contradiction.
+    }
+    assert (y <> x0).
+    {
+      intros Hcontra.
+      subst.
+      unfold tv in Hynotins. fold tv in Hynotins.
+      apply not_in_cons in Hynotins as [Hynotins _].
+      contradiction.
+    }
+    assert (In y' (ftv (((x', tmvar y'):: sigma') [[rename y1 b1 s4]]))).
+    {
+      
+      (* hmm again a rename...
+
+      for s0 we can choose s1. We know x in ftv s1.
+      Then we need ren1 |- s1 ~ s'.  => ren1 = (x0, s)::ren1
+
+      So then y in ftv (((x, tmvar y) :: sigma ) [[s'']]).
+
+      we need s' ~ s'' = rename y1 b1 s4.
+      We know s' ~ s4 with [s, y1]::ren2.
+
+      Then s' ~ rename y b1 s4 with [s, b1]::ren2.
+
+      Then ren := (x0, b1)::ren
+
+      So do we have AlphaVar (x0, b1)::ren x x'? => x <> x0. b1 <> x', so yes.
+      Do we have AlphaVar (x0, b1)::ren y y'? => y' <> b1. But what if y = x0? Then y notin ftv (tmlam x0 t s1). 
+      Fixed by new condition on y.
+
+    AlphaCtx (x0, b1)::ren sigma sigma' ? We already have AlphaCtx ren sigma sigma'.
+    We for sure do not have that, since x0 not fresh. So it could shadow something.
+    But I think we can cheat it, by doing an unncessesary renaming of x0 to fresh2 ((x0, tmvar x0))::sigma) ?.
+      
+      *)
+      remember (fresh2 ((x0, tmvar y)::sigma) s1) as b2.
+
+      assert (In x (ftv s1)).
+      {
+        apply ftv_lam_helper in Hxins.
+        assumption.
+      }
+
+      eapply IHs'.
+      - apply alpha_trans_cons. exact Htrans.
+      - eapply extend_alpha_ctx_fresh.
+        + change ((x0, tmvar y) :: sigma) with (((x0, tmvar y)::nil) ++ sigma) in Heqb2.
+          exact Heqb2.
+        + change ((y1, tmvar y1)::(x', tmvar y') :: sigma') with (((y1, tmvar y1)::(x', tmvar y')::nil) ++ sigma') in Heqb1.
+          exact Heqb1.
+        + assumption.
+      - apply alpha_var_diff.
+        + apply fresh2_over_tv_term in Heqb2.
+          
+          apply extend_ftv_to_tv in H1.
+          intros Hcontra.
+          subst.
+          contradiction.
+        + eapply fresh2_over_key_sigma in Heqb1.
+          * eauto.
+          * apply in_cons. apply in_eq.
+        + assumption.
+      - (* 
+          y not b2 by cheat b2!
+          y' notin b1.
+        *)
+        apply alpha_var_diff; auto.
+        + eapply fresh2_over_tv_value_sigma with (s := tmvar y) in Heqb2; eauto.
+          * simpl in Heqb2.
+            auto.
+          * apply in_eq.
+        + eapply fresh2_over_tv_value_sigma with (s := tmvar y') in Heqb1; eauto.
+          * simpl in Heqb1.
+            auto.
+          * apply in_cons. apply in_eq.
+      - eapply @alpha_trans with (ren' := (((y1, b1)::nil) ++ ctx_id_right ren2)).
+        + apply alpha_trans_cons.
+          apply id_right_trans.
+        + exact H10.
+        + apply alpha_extend_ids_right.
+          * apply ctx_id_right_is_id.
+          * apply alphaRename.
+            apply fresh2_over_tv_term in Heqb1.
+            assumption.
+      - eapply @alpha_trans with (ren := (((b2, x0)::nil) ++ ctx_id_left ren1)).
+        + apply alpha_trans_cons.
+          apply id_left_trans.
+        + apply alpha_extend_ids_right.
+          * apply ctx_id_left_is_id.
+          * eapply alpha_sym; [repeat constructor |].
+            apply alphaRename.
+            apply fresh2_over_tv_term in Heqb2.
+            exact Heqb2.
+        + exact H2.
+
+      - apply ftv_rename_vacuous_helper; assumption.
+      - apply tv_not_after_rename.
+        + eapply fresh2_over_tv_value_sigma with (s := tmvar y) in Heqb2; auto.
+          * simpl in Heqb2.
+            auto.
+          * apply in_eq.
+        + simpl in Hynotins.
+          auto.
+    }
+    (* y' <> b1 so we can remove the remove *)
+    apply in_remove.
+    split.
+    + assumption.
+    + eapply fresh2_over_tv_value_sigma with (s := tmvar y') in Heqb1; eauto.
+      * simpl in Heqb1.
+        auto.
+      * apply in_cons. apply in_eq.
+  - inversion Hs'.
+    inversion Hs''.
+    subst.
+    rewrite capms_equation_3.
+    simpl.
+    simpl in Hynotins.
+    apply not_in_app in Hynotins.
+    destruct Hynotins as [Hynotins1 Hynotint1].
+
+    apply in_app_iff.
+    simpl in Hxins.
+    apply in_app_sum in Hxins.
+    destruct Hxins.
+    + left.
+      eapply IHs'1; eauto.
+    + right.
+      eapply IHs'2; eauto.
+Qed.
 
 (* We need condition X' not in sigma! 
    Also X' not in s *)
-Lemma merge_subst : forall sigma X X' s t,
-  nil ⊢ ([X' := t] (((X, tmvar X')::sigma) [[s]])) ~ ((X, t)::sigma) [[s]].
+Lemma merge_sub : forall sigma sigma_ x y s t,
+  y = fresh2 (sigma_ ++ sigma) s -> (* TODO: sigma_ is irrelevant, do I have to name it?*)
+  nil ⊢ ([y := t] (((x, tmvar y)::sigma) [[s]])) ~ ((x, t)::sigma) [[s]].
 Proof.
+  intros.
+  destruct (in_dec String.string_dec x (ftv s)).
+  {
+    assert (In y (ftv (((x, tmvar y)::sigma) [[s]]))).
+    {
+       eapply ftv_sub_helper4.
+       - apply alpha_trans_nil.
+       - apply alpha_ctx_ren_nil.
+       - apply alpha_refl.
+         apply alpha_refl_nil.
+        - apply alpha_refl.
+          apply alpha_refl_nil.
+        - apply alpha_var_refl.
+        - apply alpha_var_refl.
+        - assumption.
+        - apply fresh2_over_tv_term in H.
+          assumption.
+    }
+    eapply merge_sub_stronger.
+    - apply alpha_refl.
+      apply alpha_refl_nil.
+    - apply alpha_refl.
+      apply alpha_refl_nil.
+    - apply alpha_refl.
+      apply alpha_refl_nil.
+    - apply alpha_trans_nil.
+    - apply alpha_trans_nil.
+    - apply alpha_ctx_ren_nil.
+    - apply alpha_var_refl.
+    - apply alpha_refl.
+      apply alpha_refl_nil.
+    - apply alpha_var_refl.
+    - assumption.
+    - assumption.
+    - assumption.
+  }
+  {
+    assert (~ In y (ftv (sigma [[s]]))). {
+      
+      apply no_ftv_subs_helper; auto.
+      - apply fresh2_over_tv_term in H.
+        intros Hcontra.
+        contradiction.
+      - eapply tv_keys_env_helper. exact H.
+    }
+    eapply alpha_trans.
+    - apply alpha_trans_nil.
+    - apply subs_preserves_alpha.
+      + apply alpha_ctx_ren_nil.
+      + eapply sub_vacuous; eauto.
+    - {
+      eapply alpha_trans.
+      - apply alpha_trans_nil.
+      - apply sub_vacuous_single; auto.
+      - eapply alpha_sym. apply alpha_sym_nil.
+        eapply sub_vacuous; eauto.
+    }
+  }
+Qed.
+
+Inductive IdSubst : list (string * term) -> Set :=
+  | id_subst_nil : IdSubst nil
+  | id_subst_cons : forall x sigma , IdSubst sigma -> IdSubst ((x, tmvar x)::sigma).
+
+Lemma id_subst_preserves_alpha s sigma :
+  IdSubst sigma -> nil ⊢ sigma [[s]] ~ s.
+Proof.
+  (* WE cannot use ren sub compose because no freshness *)
 Admitted.
 
+(* Since we have two substitutions on the righthand side, we have to pull a substitution into a lambda twice
+  and get two renamings, hence we need another transitivity step around the substitution *)
+Lemma commute_sub_stronger x s s' s'' ssub t sigma sigma' ren ren1 ren2 ren12 ren3 x' :
+AlphaCtxTrans ren1 ren2 ren12 ->
+AlphaCtxTrans ren12 ren3 ren ->
+AlphaCtx ren sigma sigma' ->
+Alpha ren1 s' s ->
+Alpha ren2 s s'' ->
+Alpha ren3 ([x' := t] s'') ssub ->
+In x' (ftv s'') ->
+In x (ftv s') ->
+AlphaVar ren12 x x' ->
+Alpha ren12 t t ->
+Alpha ren (((x, sigma [[t]])::sigma) [[s']]) (sigma' [[ ssub ]]).
+Proof. 
+  intros Htrans12 Htrans Hctx Halphas' Halphas'' Halphassub Hftvs'' Hftvs' Halphax Halphat.
+  generalize dependent s'.
+  generalize dependent s''.
+  generalize dependent ssub.
+  generalize dependent ren1.
+  generalize dependent ren2.
+  generalize dependent ren.
+  generalize dependent ren12.
+  generalize dependent ren3.
 
+  induction s; intros ren3 ren12 Halphax Halphat ren Htrans Hctx ren2 ren1 Htrans12 ssub s'' Halphas'' Halphassub Hftvs'' s' Halphas' Hftvs'.
+  - inversion Halphas'.
+    inversion Halphas''.
+    subst.
+    rewrite capms_equation_1.
+    assert (x = x0).
+    {
+      unfold ftv in Hftvs'.
+      inversion Hftvs'.
+      - auto.
+      - contradiction.
+    }
+    simpl.
+    subst.
+    rewrite String.eqb_refl.
+    assert (x' = y0).
+    {
+      inversion Hftvs''.
+      - auto.
+      - contradiction.
+    }
+    rewrite capms_equation_1 in Halphassub.
+    subst.
+    simpl in Halphassub.
+    rewrite String.eqb_refl in Halphassub.
+
+    assert (Alpha ren t ssub). {
+      eapply alpha_trans; eauto.
+    }
+    apply subs_preserves_alpha; auto.
+
+  - inversion Halphas''; subst.
+    inversion Halphas'; subst.
+    rewrite capms_equation_2 in Halphassub.
+    simpl in Halphassub.
+    inversion Halphassub; subst.
+    remember (fresh2 [(y, tmvar y); (x', t)] s2) as g1.
+    rewrite capms_equation_2.
+    rewrite capms_equation_2.
+    simpl.
+    remember (fresh2 ((x0, tmvar x0):: (x, sigma [[t]])::sigma) s1) as g2.
+    remember (fresh2 ((y0, tmvar y0)::sigma') s4) as g3.
+    apply alpha_lam.
+    eapply IHs with (ren12 := ((g2, g1)::ren12)).
+    + apply alpha_var_diff.
+      * apply fresh2_over_key_sigma with (X := x) (s := sigma [[t]]) in Heqg2; auto.
+        apply in_cons. apply in_eq.
+      * apply fresh2_over_key_sigma with (X := x') (s := t) in Heqg1; auto.
+        apply in_cons. apply in_eq.
+      * assumption.
+    + eapply alpha_extend_fresh.
+      * assert (~ In g2 (ftv (sigma [[t]]))) by admit. (* fresh*)
+        assert (~ In g2 (ftv_keys_env sigma)) by admit. (* fresh*)
+        clear IHs.
+        apply (fresh2_subst_helper H H0).
+        
+      * apply fresh2_over_tv_value_sigma with (X := x') (s := t) in Heqg1; auto.
+        -- admit. (* g1 notin tv t, then also g1 notin ftv t*)
+        -- apply in_cons. apply in_eq.
+      * assumption.
+    
+      
+    + apply alpha_trans_cons.
+      eauto.
+    + apply alpha_ctx_ren_extend_fresh. 
+      * admit. (* fresh *)
+      * admit. (* fresh *) 
+      * assumption. 
+    + apply alpha_trans_cons; eauto.
+    + {
+      eapply alpha_trans.
+      - apply alpha_trans_cons.
+        apply id_right_trans.
+      - exact H4.
+      - change ((y, g1):: (ctx_id_right ren2)) with (((y, g1)::nil) ++ (ctx_id_right ren2)). 
+        apply alpha_extend_ids_right.    
+        + apply ctx_id_right_is_id.
+        + apply alphaRename. 
+          apply fresh2_over_tv_term in Heqg1.
+          assumption.
+      }
+    + {
+      eapply @alpha_trans with (ren' := ((y0, g3)::nil) ++ (ctx_id_right ren3)).
+      - apply alpha_trans_cons.
+        apply id_right_trans.
+      - exact H6.
+      - apply alpha_extend_ids_right.
+        + apply ctx_id_right_is_id.
+        + apply alphaRename.
+          apply fresh2_over_tv_term in Heqg3.
+          assumption.
+    }  
+    + apply ftv_rename_vacuous_helper.
+      * intros Hcontra.
+        subst.
+        assert (~ In y (ftv (tmlam y t0 s2))) by apply ftv_lam_no_binder.
+        contradiction.
+      * apply ftv_lam_helper in Hftvs''.
+        assumption.
+    + {
+      eapply @alpha_trans with (ren := ((g2, x0)::nil) ++ (ctx_id_left ren1)).
+      - apply alpha_trans_cons.
+        apply id_left_trans.
+      - apply alpha_extend_ids_right.
+        + apply ctx_id_left_is_id.
+        + eapply alpha_sym.
+          * apply alpha_sym_cons. apply alpha_sym_nil.
+          * apply alphaRename.
+            apply fresh2_over_tv_term in Heqg2.
+            assumption.
+      - exact H2.
+      }
+    + apply ftv_rename_vacuous_helper.
+      * intros Hcontra.
+        subst.
+        assert (~ In x0 (ftv (tmlam x0 t0 s1))) by apply ftv_lam_no_binder.
+        contradiction.
+      * apply ftv_lam_helper in Hftvs'.
+        assumption.
+  - (* Not supser straightforward. Have to case on vacuous substs*)
+  
+    admit.
+Admitted.
+
+(* Commute subst *)
+(* [] ⊢ ((x, sigma [[t]]) :: sigma) [[s]] ~ sigma [[[x := t] s]] *)
+Lemma commute_sub x s t sigma :
+  Alpha nil (((x, sigma [[t]])::sigma) [[s]]) (sigma [[ [x := t] s]]).
+Proof.
+  destruct (in_dec String.string_dec x (ftv s)).
+  - {
+    eapply commute_sub_stronger;
+      try solve [ constructor 
+                | apply alpha_refl; constructor
+                | auto ].
+    apply alpha_ctx_ren_nil.
+  }
+  - {
+    eapply alpha_trans.
+    - apply alpha_trans_nil.
+    - eapply sub_vacuous; eauto.
+    - eapply subs_preserves_alpha.
+      + apply alpha_ctx_ren_nil.
+      + eapply alpha_sym; [ constructor | now eapply sub_vacuous_single ].
+  }
+Qed.
 
 (* Why do we need this up to alpha equivalence?
 
   Because sub lemmas are up to alpha equivalence.
-
-  Let's first prove it as an exercise in alpha equivalence proofs and then show its necessity.
 *)
 Lemma step_subst {s t} : 
   step s t -> forall sigma : list (string * term), {alphaSigmaT : term & 
@@ -1179,7 +2319,20 @@ Proof.
     eexists.
     split.
     + eapply step_beta.
-    + admit.
+    + 
+    {
+      eapply alpha_trans; eauto.
+      - apply alpha_trans_nil.
+      - eapply subs_preserves_alpha.
+        + apply alpha_ctx_ren_nil.
+        + eapply ren_sub_compose_instantiated; eauto.
+      - eapply alpha_trans.
+        + apply alpha_trans_nil.
+        + eapply merge_sub.
+          * change ((x, tmvar x)::sigma) with (((x, tmvar x)::nil) ++ sigma) in Heqx'.
+            exact Heqx'.
+        + eapply commute_sub.
+    }
   - (* Left application *)
     specialize (IHHstep sigma).
     destruct IHHstep as [alphaSigmaS2  [Hs2Step Hs2Alpha]  ].
@@ -1209,34 +2362,70 @@ Proof.
   - remember (fresh2 ((x, tmvar x)::sigma) s1) as x'.
     specialize (IHHstep ((x, tmvar x')::sigma)).
     destruct IHHstep as [alphaSigmaS2  [Hs2Step Hs2Alpha]  ].
+    assert (HalphaRenCompose: nil ⊢ (sigma [[rename x x' s1]]) ~ ((x, tmvar x')::sigma) [[s1]]).
+    {
+      eapply ren_sub_compose_instantiated; eauto.
+    }
+    assert( {alphaSigmaT : term & prod (step (sigma [[rename x x' s1]]) alphaSigmaT) (Alpha [] alphaSigmaS2 alphaSigmaT )}).
+    {
+      eapply step_preserves_alpha.
+      - eapply alpha_sym.
+        + apply alpha_sym_nil.
+        + exact HalphaRenCompose.
+      - exact Hs2Step.
+    }
+    destruct H as [alphaSigmaT [HalphaStep HalphaSigmaT] ].
     eexists.
-    (* exists (tmlam x' A alphaSigmaS2). *)
     split. 
     + rewrite capms_equation_2. simpl.
       rewrite <- Heqx'.
       apply step_abs.
-      (* By ren_sub_compose we know 
-        sigma [[rename x x' s1]] ~ ((x, tmvar x')::sigma) [[s1]]
-
-        Then by alpha_preserves_beta we know
-        exists ?s2 s.t. sigma [[rename x x' s1]] steps to ?s2 and ?s2 ~ alphaSigmaS2 ~ (x, tmvar x'):: sigma [[s2]]
-      *)
-      admit.
-      (* rewrite ren_sub_compose.
-      * assumption.
-      * admit. *)
+      exact HalphaStep.
     + rewrite capms_equation_2. simpl.
-      assert (Hfresh: (fresh2 sigma s1) = (fresh2 sigma s2)) by apply: step_preserves_fresh Hstep.
-      
-      (* rewrite <- Hfresh. *)
-      (* rewrite <- Heqx'. *)
+
+      remember (fresh2 ((x, tmvar x)::sigma) s2) as s0'.
       apply alpha_lam.
-      admit.
-      (* rewrite ren_sub_compose.
-      * apply alpha_extend_id'.
-        assumption.
-        apply not_break_shadow_nil.
-      * admit. *)
+      assert (Alpha nil alphaSigmaT (((x, tmvar x')::sigma) [[s2]])).
+      {
+        eapply alpha_trans; eauto.
+        - apply alpha_trans_nil.
+        - eapply alpha_sym; eauto.
+          + apply alpha_sym_nil.
+      }
+      eapply alpha_trans.
+      * apply id_left_trans.
+      * eapply alpha_ids.
+        apply ctx_id_left_is_id.
+      * eapply alpha_trans.
+        -- apply id_left_trans.
+        -- change (ctx_id_left [(x', s0')]) with (nil ++ (ctx_id_left [(x', s0')])).
+           apply alpha_extend_ids_right.
+           ++ apply ctx_id_left_is_id.
+           ++ exact H.
+        -- eapply alpha_trans.
+           ++ apply id_right_trans.
+           ++ eapply subs_preserves_alpha.
+              ** apply alpha_ctx_cons.
+                 apply alpha_var_diff.
+                 --- (* by x' = fresh2 (x)*) admit.
+                 --- admit. (* ?y = x also by fresh s0' <> x *) 
+                 --- apply alpha_var_refl.
+                 --- apply alpha_var.
+                     apply alpha_var_cons.
+                     +++ reflexivity.
+                     +++ reflexivity.
+              ** 
+                  eapply alpha_extend_vacuous_single.
+                  --- assert (~ In x' (ftv s1)) by admit. (* x' fresh over s1*)
+                      apply (step_preserves_no_ftv H0) in Hstep.
+                      assumption.
+                  --- admit. (* fresh *)
+            ++ change (ctx_id_right [(x', s0')]) with (nil ++ (ctx_id_right [(x', s0')])).
+               apply alpha_extend_ids_right.
+               ** apply ctx_id_right_is_id.
+               ** eapply alpha_sym; eauto.
+                  --- apply alpha_sym_nil.
+                  --- eapply ren_sub_compose_instantiated; eauto.
 Admitted.
 
 
@@ -1275,7 +2464,7 @@ Lemma red_abs x A s1 s2 :
 (* Proof. apply: star_hom => x' y'. exact: step_abs. Qed. *)
 Proof. Admitted.
 
-(*
+
 
 Lemma red_subst sigma {s} {t} : 
   red s t -> {alphaSigmaT : term & prod (red (sigma [[s]]) alphaSigmaT) (Alpha [] alphaSigmaT (sigma [[t]]))}.
@@ -1291,8 +2480,10 @@ Proof.
     destruct IHHred as [alphaSigmaY [Hred' Halpha] ].
     destruct e as [alphaSigmaZ [Hstep HalphaZ] ].
     eexists.
+
     admit. (* Doable with some alpha arguments*)
 Admitted.
+
 
 (* Lemma sred_up sigma tau : 
   sred sigma tau -> sred (up sigma) (up tau).
@@ -1669,12 +2860,13 @@ Proof.
   }
   rewrite <- HsigIntoLam.
   apply H0.
-  rewrite composeCapms.
+  admit.
+  (* rewrite composeCapms.
   - rewrite capmsRename.
     assumption.
   - rewrite -> HeqX'.
     (* apply freshLemma. easy by freshness*)
-    shelve.
+    admit. *)
 Admitted.
 
 (** Kinding of types *)
@@ -1991,4 +3183,4 @@ Definition normalizer E T (t : term) (Htype : has_type E t T) : term :=
 (* End: *)
 
 
-*)*)
+*)

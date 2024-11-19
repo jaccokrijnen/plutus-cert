@@ -284,6 +284,25 @@ Proof.
   assumption.
 Qed.
 
+Fixpoint sym_alpha_ctx (ren : list (string * string)) :=
+  match ren with
+  | nil => nil
+  | (x, y) :: ren' => ((y, x) :: (sym_alpha_ctx ren'))
+  end.
+
+Lemma sym_alpha_ctx_is_sym ren :
+  AlphaCtxSym ren (sym_alpha_ctx ren).
+Proof.
+  induction ren.
+  - simpl.
+    constructor.
+  - simpl.
+    destruct a as [x y].
+    apply alpha_sym_cons.
+    assumption.
+Qed.
+    
+
 Inductive IdCtx : list (string * string) -> Set :=
 | id_ctx_nil : IdCtx []
 | id_ctx_cons x ren :
@@ -489,7 +508,6 @@ Proof.
     apply lrs_start; auto.
     apply lrs_nil.
 Qed.
-
 
 (* ******************
          Alpha identity renamings 
@@ -739,6 +757,16 @@ Proof.
     + now apply @idCtxNotBreakShadowing with (x := x) in Hid. 
 Qed.
 
+Lemma alpha_ids s idCtx :
+  IdCtx idCtx -> Alpha idCtx s s.
+Proof.
+  intros Hid.
+  change (idCtx) with (nil ++ idCtx).
+  apply alpha_extend_ids_right; auto.
+  apply alpha_refl.
+  apply alpha_refl_nil.
+Qed.
+
 
 
 (* **** Stronger! 
@@ -830,6 +858,17 @@ Proof.
     [apply IHs1 | apply IHs2]; 
     now apply not_in_app in Hfresh as [Hfresh1 Hfresh2].
 Qed.
+
+Lemma alpha_extend_vacuous {x x' s s' ren}:
+  ~ (In x (ftv s)) -> ~ (In x' (tv s')) -> Alpha ren s s' -> Alpha ((x, x')::ren) s s'.
+Proof.
+Admitted.
+
+Lemma alpha_extend_vacuous_single {x x' s}:
+  ~ (In x (ftv s)) -> ~ (In x' (tv s)) -> Alpha ((x, x')::nil) s s.
+Proof.
+Admitted.
+
 
 
 (* *************
