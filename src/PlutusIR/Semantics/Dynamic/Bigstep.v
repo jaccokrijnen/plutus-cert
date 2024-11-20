@@ -9,12 +9,22 @@ Require Export PlutusCert.PlutusIR.Semantics.Dynamic.Values.
 Require Import Arith.
 Local Open Scope nat_scope.
 
+Require Import Lists.List.
+Import ListNotations.
 (** * Big-step operational semantics *)
 
 (** ** Implementation of big-step semantics as an inductive datatype *)
 Reserved Notation "t '=[' j ']=>' v"(at level 40).
 Reserved Notation "t '=[' j ']=>nr' v"(at level 40).
 Reserved Notation "t '=[' j ']=>r' v 'WITH' bs0"(at level 40).
+
+Inductive bindings_nonstrict : list binding -> list binding -> Prop :=
+  | BNS_nil :
+      bindings_nonstrict [] []
+  | BNS_cons s vd t bs bs' :
+      bindings_nonstrict bs bs' ->
+      bindings_nonstrict (TermBind s vd t :: bs) (TermBind NonStrict vd t :: bs')
+.
 
 Inductive eval : term -> term -> nat -> Prop :=
   | E_LamAbs : forall x T t,
@@ -89,8 +99,9 @@ Inductive eval : term -> term -> nat -> Prop :=
   | E_Let : forall bs t v j,
       Let NonRec bs t =[j]=>nr v ->
       Let NonRec bs t =[j]=> v
-  | E_LetRec : forall bs t v j ,
-      Let Rec bs t =[j]=>r v WITH bs ->
+  | E_LetRec : forall bs bs' t v j ,
+      bindings_nonstrict bs bs' ->
+      Let Rec bs t =[j]=>r v WITH bs' ->
       Let Rec bs t =[j]=> v
 
 with eval_bindings_nonrec : term -> term -> nat -> Prop :=
@@ -133,9 +144,9 @@ with eval_bindings_rec : list binding -> term -> term -> nat -> Prop :=
       Let Rec ((TermBind NonStrict (VarDecl x T) t1) :: bs) t0 =[j1 + 1]=>r v1 WITH bs0
 
   | E_LetRec_TermBind_Strict : forall bs0 x T bs t0 t1 v1 v2 j1 j2,
-      t1 =[j1]=> v1 ->
+      Let Rec bs0 (Var x) =[j1]=> v1 ->
       ~ is_error v1 ->
-      <{ [ {Let Rec bs0 v1} / x] {Let Rec bs t0} }> =[j2]=>r v2 WITH bs0 ->
+      <{ [ v1 / x] {Let Rec bs t0} }> =[j2]=>r v2 WITH bs0 ->
       Let Rec ((TermBind Strict (VarDecl x T) t1) :: bs) t0 =[j2 + 1]=>r v2 WITH bs0
 
 where "t '=[' j ']=>' v" := (eval t v j)

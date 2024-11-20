@@ -79,8 +79,10 @@ Lemma eval_ifthenelse_false : forall T t1 t2 t3 v2 v3 k1 k2 k3,
     <{ ifthenelse @ T ⋅ t1 ⋅ t2 ⋅ t3 }> =[ k2 ]=> v3.
 Admitted.
 
-Ltac dec_fully_applied :=
+Ltac finish :=
   match goal with
+
+  (* fully_applied *)
     | |- ~ fully_applied ?t =>
            assert (H := sumboolOut (fully_applied_dec t));
            assumption
@@ -90,39 +92,43 @@ Ltac dec_fully_applied :=
     | |- fully_applied ?t =>
            assert (H := sumboolOut (fully_applied_dec t));
            assumption
+
+  (* bindings_nonstrict *)
+    | |- bindings_nonstrict ?bs ?bs' => auto using bindings_nonstrict
+
+  (* is_error *)
+
+    | |- ~ is_error ?v => inversion 1
   end.
+
+
 
 Example fact_term_evaluates : exists k,
   fact_term 2 =[k]=> Constant (ValueOf DefaultUniInteger 2).
-Proof with (autounfold; simpl; eauto || (try reflexivity) || (try solve [intros Hcon; inversion Hcon])).
+Proof with (simpl; auto; try solve [finish]).
   unfold fact_term.
   eexists.
-  apply E_LetRec.
+  eapply E_LetRec...
   eapply E_LetRec_TermBind_NonStrict.
   simpl.
   eapply E_LetRec_Nil.
-  eapply E_Apply... {
-     dec_fully_applied.
-  }
-
+  eapply E_Apply...
   {
-    eapply E_LetRec.
+    eapply E_LetRec...
     eapply E_LetRec_TermBind_NonStrict.
     simpl.
     eapply E_LetRec_Nil...
     constructor.
-  } {
-    constructor.
-    } {
-    inversion 1.
-    } {
+  }
+  { constructor. }
+  { inversion 1. }
+  {
     simpl.
 
-    eapply E_Apply. { dec_fully_applied. }
+    eapply E_Apply...
     {
       eapply eval_ifthenelse_false.
       - eapply E_Builtin_Apply...
-        admit. (* TODO: decide fully_applied *)
       - constructor.
       - constructor.
       } {
@@ -132,21 +138,59 @@ Proof with (autounfold; simpl; eauto || (try reflexivity) || (try solve [intros 
 
       simpl.
 
-      eapply E_Apply. { admit. }
-      - eapply E_Apply... {admit. }
+      eapply E_Apply...
+      - eapply E_Apply...
         + apply E_Builtin_Eta with (f := MultiplyInteger)...
         + constructor.
         + inversion 1.
         + cbn. constructor.
       - eapply E_Apply...
-        + admit.
         + eapply E_LetRec.
+          { auto using bindings_nonstrict. }
           constructor.
           simpl.
           eapply E_LetRec_Nil.
           constructor.
         + eapply E_Builtin_Apply...
-          admit.
         + inversion 1.
-        (* TODO *)
-Admitted.
+        + simpl.
+          eapply E_Apply...
+          { eapply eval_ifthenelse_false.
+            - constructor...
+            - constructor...
+            - constructor...
+          }
+          { constructor... }
+          { finish.  }
+          { simpl.
+            eapply E_Apply...
+            - eapply E_Apply...
+              + apply E_Builtin_Eta with (f := MultiplyInteger).
+              + constructor...
+              + finish.
+              + simpl.
+                constructor...
+            - eapply E_Apply...
+              + econstructor...
+                constructor.
+                simpl.
+                constructor.
+                constructor.
+              + constructor...
+              + finish.
+              + simpl.
+                eapply E_Apply...
+                * eapply eval_ifthenelse_true...
+                  ** constructor...
+                  ** constructor...
+                  ** constructor...
+                * constructor...
+                * finish.
+                * constructor...
+            - finish.
+            - constructor...
+          }
+          - finish.
+          - constructor...
+          }
+Qed.
