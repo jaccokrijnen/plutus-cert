@@ -78,31 +78,9 @@ Proof.
            ++ auto.
            ++ apply in_cons. apply in_eq.
         -- assumption.
-    + eapply @alpha_trans with (ren := ((s, y0)::ren2)) (ren' := (y0, s0'')::(ctx_id_right ren2)).
-      * apply alpha_trans_cons.
-        apply id_right_trans.
-      * exact H10.
-      * change ((y0, s0''):: (ctx_id_right ren2)) with (((y0, s0'')::nil) ++ (ctx_id_right ren2)). 
-          apply alpha_extend_ids_right.    
-          -- apply ctx_id_right_is_id.
-          -- apply alphaRename. 
-             apply fresh2_over_tv_term in Heqs0''.
-             assumption.
-    + eapply @alpha_trans with (ren := (s0', x) :: (ctx_id_left ren1)).
-      * apply alpha_trans_cons.
-        apply id_left_trans.
-      * 
-        change ((s0', x) :: (ctx_id_left ren1)) with (((s0', x)::nil) ++ (ctx_id_left ren1)).
-        apply alpha_extend_ids_right.
-        -- apply ctx_id_left_is_id.
-        -- eapply alpha_sym.
-          ++ apply alpha_sym_cons. apply alpha_sym_nil.
-          ++ apply alphaRename.
-             apply fresh2_over_tv_term in Heqs0'.
-             assumption.
-      * exact H2.
-    + 
-      eapply extend_alpha_ctx_fresh.
+    + eapply alpha_trans_rename_right; eauto.
+    + eapply alpha_trans_rename_left; eauto.
+    + eapply extend_alpha_ctx_fresh.
       * change ((x, tmvar x):: (X, t)::sigma) with (((x, tmvar x)::(X, t)::nil) ++ sigma) in Heqs0'.
         exact Heqs0'.
       * change ((y0, tmvar y0):: sigma') with (((y0, tmvar y0)::nil) ++ sigma') in Heqs0''.
@@ -558,16 +536,7 @@ Proof.
         -- eauto. admit.
         -- apply in_cons. apply in_eq.
       * assumption.
-    + eapply @alpha_trans with (ren := ((s, y1)::ren2)) (ren' := ((y1, s0'')::(ctx_id_right ren2))).
-      * apply alpha_trans_cons.
-        -- apply id_right_trans.
-      * exact H10.
-      * change ((y1, s0''):: (ctx_id_right ren2)) with (((y1, s0'')::nil) ++ (ctx_id_right ren2)). 
-        apply alpha_extend_ids_right.    
-        -- apply ctx_id_right_is_id.
-        -- apply alphaRename.
-           apply fresh2_over_tv_term in Heqs0''.
-           assumption.
+    + eapply alpha_trans_rename_right; eauto.
     + assumption.
     + apply alpha_swap with (ren := (s0', s)::(x, y)::ren1).
       * apply lrs_start.
@@ -579,18 +548,7 @@ Proof.
            apply ftv_lam_no_binder in Hinys.
            contradiction.
         -- apply legalRenSwap_id.
-      * eapply @alpha_trans with (ren := (s0', x0)::(ctx_id_left ((x, y)::ren1))) (ren' := ((x0, s)::(x, y)::ren1)).
-        -- apply alpha_trans_cons.
-           apply id_left_trans.
-        -- change ((s0', x0) :: (ctx_id_left ((x, y) :: ren1))) with (((s0', x0)::nil) ++ (ctx_id_left ((x, y) :: ren1))).
-           apply alpha_extend_ids_right.
-           ++ apply ctx_id_left_is_id.
-           ++ eapply alpha_sym.
-              ** apply alpha_sym_cons. apply alpha_sym_nil.
-              ** apply alphaRename.
-                 apply fresh2_over_tv_term in Heqs0'.
-                assumption.
-        -- assumption.
+      * eapply alpha_trans_rename_left; eauto.
     + assumption.
   - inversion HalphaS1.
     inversion HalphaS2.
@@ -840,16 +798,7 @@ Proof.
     + eapply ftv_lam_rename_helper; eauto.
     + eapply ftv_lam_rename_helper. eauto.
     + eapply ftv_lam_rename_helper; eauto.
-    + eapply @alpha_trans with (ren' := (((y0, b3)::nil) ++ (ctx_id_right ren34))).
-      * 
-      apply alpha_trans_cons.
-        eapply id_right_trans.
-      * exact H10.
-      * apply alpha_extend_ids_right.
-        -- apply ctx_id_right_is_id.
-        -- apply alphaRename.
-           apply fresh2_over_tv_term in Heqb3.
-           assumption.
+    + eapply alpha_trans_rename_right; eauto.
     + eapply alpha_trans_rename_left; eauto.
     + apply alpha_trans_cons; eauto.
     + apply alpha_ctx_ren_extend_fresh.
@@ -1067,6 +1016,181 @@ Proof.
   (* WE cannot use ren sub compose because no freshness *)
 Admitted.
 
+(* Remove ftv assumptions and instead destruct in var and lam cases *)
+Lemma commute_sub_stronger' x s s' s'' ssub t sigma sigma' ren ren1 ren2 ren12 ren3 x' :
+αCtxTrans ren1 ren2 ren12 ->
+αCtxTrans ren12 ren3 ren ->
+αCtxSub ren sigma sigma' ->
+Alpha ren1 s' s ->
+Alpha ren2 s s'' ->
+Alpha ren3 ([x' := t] s'') ssub ->
+AlphaVar ren12 x x' ->
+Alpha ren12 t t ->
+Alpha ren (((x, sigma [[t]])::sigma) [[s']]) (sigma' [[ ssub ]]).
+Proof. 
+  intros Htrans12 Htrans Hctx Halphas' Halphas'' Halphassub Halphax Halphat.
+  generalize dependent s'.
+  generalize dependent s''.
+  generalize dependent ssub.
+  generalize dependent ren1.
+  generalize dependent ren2.
+  generalize dependent ren.
+  generalize dependent ren12.
+  generalize dependent ren3.
+
+  induction s; intros ren3 ren12 Halphax Halphat ren Htrans Hctx ren2 ren1 Htrans12 ssub s'' Halphas'' Halphassub s' Halphas'.
+  - destruct (in_dec String.string_dec x (ftv s')) eqn:Hftvs'in_dec.
+  {
+    assert (Hftvs': In x (ftv s')).
+    {
+      destruct (in_dec string_dec x (ftv s')) as [Hin | Hnotin].
+      - exact Hin.
+      - discriminate.
+    }
+    inversion Halphas'.
+    inversion Halphas''.
+
+    assert (x = x0).
+    {
+      subst.
+      unfold ftv in Hftvs'.
+      inversion Hftvs'; intuition.
+    }
+
+    assert (Hftvs'': In x' (ftv s'')). {
+      subst.
+      assert (AlphaVar ren12 x0 y0). {
+        eapply alpha_var_trans; eauto.
+      }
+      simpl ftv.
+      apply (alphavar_unique Halphax) in H.
+      subst.
+      apply in_eq.
+    }
+  
+    subst.
+    
+    rewrite capms_equation_1.
+    simpl.
+    subst.
+    rewrite String.eqb_refl.
+    assert (x' = y0).
+    {
+      inversion Hftvs''; intuition.
+    }
+    rewrite capms_equation_1 in Halphassub.
+    subst.
+    simpl in Halphassub.
+    rewrite String.eqb_refl in Halphassub.
+
+    assert (Alpha ren t ssub). {
+      eapply alpha_trans; eauto.
+    }
+    apply subs_preserves_alpha; auto.
+  }
+  {
+    inversion Halphas'.
+    inversion Halphas''.
+    assert (Hftvs': ~ In x (ftv s')). {
+      destruct (in_dec string_dec x (ftv s')) as [Hin | Hnotin].
+      - discriminate.
+      - exact Hnotin.
+    }
+
+    subst.
+      assert (x <> x0).
+      {
+        simpl in Hftvs'.
+        symmetry.
+        intros Hcontra.
+        assert (x0 = x \/ False) by auto.
+        destruct Hftvs'.
+        assumption.
+      }
+      assert (AlphaVar ren12 x0 y0). {
+        eapply alpha_var_trans; eauto.
+      }
+      remember H0 as H0_copy; clear HeqH0_copy.
+      apply (alphavar_unique_not H Halphax) in H0.
+
+    assert (Hftvs'': ~ In x' (ftv (tmvar y0))). {
+      
+      
+      intros Hcontra.
+      destruct Hcontra; intuition.
+    }
+    subst.
+    
+    (* Bunch of vacuous substs*)
+    eapply @alpha_trans with (ren := nil ++ ctx_id_left ren).
+    - simpl. apply id_left_trans.
+    - apply alpha_extend_ids_right.
+      + apply ctx_id_left_is_id.
+      + apply sub_vacuous; auto.
+    - rewrite capms_equation_1 in Halphassub.
+      simpl.
+      simpl in Halphassub.
+      rewrite <- String.eqb_neq in H0.
+      rewrite H0 in Halphassub.
+      inversion Halphassub.
+      subst.
+      (* todo: sub preserves alpha *)
+    admit.
+  }
+
+  - inversion Halphas''; subst.
+    inversion Halphas'; subst.
+    rewrite capms_equation_2 in Halphassub.
+    simpl in Halphassub.
+    inversion Halphassub; subst.
+    remember (fresh2 [(y, tmvar y); (x', t)] s2) as g1.
+    rewrite capms_equation_2.
+    rewrite capms_equation_2.
+    simpl.
+    remember (fresh2 ((x0, tmvar x0):: (x, sigma [[t]])::sigma) s1) as g2.
+    remember (fresh2 ((y0, tmvar y0)::sigma') s4) as g3.
+    apply alpha_lam.
+    eapply IHs with (ren12 := ((g2, g1)::ren12)).
+    + apply alpha_var_diff.
+      * apply fresh2_over_key_sigma with (X := x) (s := sigma [[t]]) in Heqg2; auto.
+        apply in_cons. apply in_eq.
+      * apply fresh2_over_key_sigma with (X := x') (s := t) in Heqg1; auto.
+        apply in_cons. apply in_eq.
+      * assumption.
+    + eapply alpha_extend_fresh.
+      * assert (~ In g2 (tv (sigma [[t]]))) by admit. (* fresh*)
+        assert (~ In g2 (tv_keys_env sigma)) by admit. (* fresh*)
+        apply (fresh2_subst_helper H H0).
+
+        
+      * apply fresh2_over_tv_value_sigma with (X := x') (s := t) in Heqg1; auto.
+        -- admit. (* g1 notin tv t, then also g1 notin ftv t*)
+        -- apply in_cons. apply in_eq.
+      * assumption.
+    
+      
+    + apply alpha_trans_cons.
+      eauto.
+    + apply alpha_ctx_ren_extend_fresh. 
+      *  admit. (* fresh *)
+      * admit. (* fresh *) 
+      * assumption. 
+    + apply alpha_trans_cons; eauto.
+    + eapply alpha_trans_rename_right; eauto.
+    + eapply alpha_trans_rename_right; eauto.
+    + eapply alpha_trans_rename_left; eauto.
+  - inversion Halphas''; subst.
+    inversion Halphas'; subst.
+    rewrite capms_equation_3 in Halphassub.
+    inversion Halphassub; subst.
+    rewrite capms_equation_3.
+    rewrite capms_equation_3.
+
+    apply alpha_app.
+    + eapply IHs1 with (ren12 := ren12); eauto.
+    + eapply IHs2 with (ren12 := ren12); eauto.
+Admitted.
+
 (* Since we have two substitutions on the righthand side, we have to pull a substitution into a lambda twice
   and get two renamings, hence we need another transitivity step around the substitution *)
 Lemma commute_sub_stronger x s s' s'' ssub t sigma sigma' ren ren1 ren2 ren12 ren3 x' :
@@ -1077,7 +1201,7 @@ Alpha ren1 s' s ->
 Alpha ren2 s s'' ->
 Alpha ren3 ([x' := t] s'') ssub ->
 In x' (ftv s'') ->
-In x (ftv s') ->
+In x (ftv s') -> (* automatically by In x' (ftv s'') and AlphaVar ren12 x x'*)
 AlphaVar ren12 x x' ->
 Alpha ren12 t t ->
 Alpha ren (((x, sigma [[t]])::sigma) [[s']]) (sigma' [[ ssub ]]).
@@ -1100,18 +1224,14 @@ Proof.
     assert (x = x0).
     {
       unfold ftv in Hftvs'.
-      inversion Hftvs'.
-      - auto.
-      - contradiction.
+      inversion Hftvs'; intuition.
     }
     simpl.
     subst.
     rewrite String.eqb_refl.
     assert (x' = y0).
     {
-      inversion Hftvs''.
-      - auto.
-      - contradiction.
+      inversion Hftvs''; intuition.
     }
     rewrite capms_equation_1 in Halphassub.
     subst.
@@ -1161,29 +1281,8 @@ Proof.
       * admit. (* fresh *) 
       * assumption. 
     + apply alpha_trans_cons; eauto.
-    + {
-      eapply alpha_trans.
-      - apply alpha_trans_cons.
-        apply id_right_trans.
-      - exact H4.
-      - change ((y, g1):: (ctx_id_right ren2)) with (((y, g1)::nil) ++ (ctx_id_right ren2)). 
-        apply alpha_extend_ids_right.    
-        + apply ctx_id_right_is_id.
-        + apply alphaRename. 
-          apply fresh2_over_tv_term in Heqg1.
-          assumption.
-      }
-    + {
-      eapply @alpha_trans with (ren' := ((y0, g3)::nil) ++ (ctx_id_right ren3)).
-      - apply alpha_trans_cons.
-        apply id_right_trans.
-      - exact H6.
-      - apply alpha_extend_ids_right.
-        + apply ctx_id_right_is_id.
-        + apply alphaRename.
-          apply fresh2_over_tv_term in Heqg3.
-          assumption.
-    }  
+    + eapply alpha_trans_rename_right; eauto.
+    + eapply alpha_trans_rename_right; eauto.
     + apply ftv_rename_vacuous_helper.
       * intros Hcontra.
         subst.
@@ -1191,19 +1290,7 @@ Proof.
         contradiction.
       * apply ftv_lam_helper in Hftvs''.
         assumption.
-    + {
-      eapply @alpha_trans with (ren := ((g2, x0)::nil) ++ (ctx_id_left ren1)).
-      - apply alpha_trans_cons.
-        apply id_left_trans.
-      - apply alpha_extend_ids_right.
-        + apply ctx_id_left_is_id.
-        + eapply alpha_sym.
-          * apply alpha_sym_cons. apply alpha_sym_nil.
-          * apply alphaRename.
-            apply fresh2_over_tv_term in Heqg2.
-            assumption.
-      - exact H2.
-      }
+    + eapply alpha_trans_rename_left; eauto.
     + apply ftv_rename_vacuous_helper.
       * intros Hcontra.
         subst.
@@ -1211,7 +1298,9 @@ Proof.
         contradiction.
       * apply ftv_lam_helper in Hftvs'.
         assumption.
-  - (* Not supser straightforward. Have to case on vacuous substs*)
+  - (* Not supser straightforward. Have to case on vacuous substs
+        Or remove the ftv assumptions, and case on x in ftv s' in lam and app cases.
+      *)
   
     admit.
 Admitted.
