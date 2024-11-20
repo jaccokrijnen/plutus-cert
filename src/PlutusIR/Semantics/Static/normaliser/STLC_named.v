@@ -267,3 +267,9 @@ Proof.
     || replace T' with (rename Y Y' T); eauto; rewrite <- rename_preserves_size; eauto
     ].
 Qed.
+
+(** **** Notations *)
+(* Notation for substitution *)
+Notation "'[' x ':=' s ']' t" := (capms [(x, s)] t) (at level 20).
+
+Notation "sigma [[ t ]]" := (capms sigma t) (at level 20).

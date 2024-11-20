@@ -14,26 +14,7 @@ Require Import Coq.Program.Basics.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From PlutusCert Require Import STLC_named ARS.
-
-
-(* TODO: Also defined in kind checker.*)
-(* Tactic to simplify proofs containing hypotheses of the form
-match x with
-| A => Some alpha
-| B _ _ => None
-end = Some beta
-to conclude x = A and Some alpha = Some beta.
-*)
-Ltac destruct_match :=
-  match goal with
-  | H : (match ?X with _ => _ end = _ ) |- _ => destruct X eqn:?; try discriminate
-  end.
-
-(* Create cases for x = y and x <> y (where we move from (x =? y) = true -> x = y*)
-Ltac destr_eqb_eq x y :=
-  let H := fresh "H" in
-  destruct (x =? y) eqn:H; [apply String.eqb_eq in H; subst | apply String.eqb_neq in H].
+From PlutusCert Require Import STLC_named ARS util.
 
 (** **** Capms lemmas *)
 Lemma capms_var sigma X t:
@@ -50,12 +31,6 @@ Proof.
   rewrite capms_equation_2.
   reflexivity.
 Qed.
-
-(** **** Notations *)
-(* Notation for substitution *)
-Notation "'[' x ':=' s ']' t" := (capms [(x, s)] t) (at level 20).
-
-Notation "sigma [[ t ]]" := (capms sigma t) (at level 20).
 
 (** **** One-Step Reduction *)
 
@@ -222,11 +197,11 @@ Proof with auto.
     now apply alpha_sym_cons.
 Qed.
 
-Inductive AlphaCtxTrans : list (string * string) -> list (string * string) -> list (string * string) -> Set :=
-| alpha_trans_nil : AlphaCtxTrans [] [] []
+Inductive αCtxTrans : list (string * string) -> list (string * string) -> list (string * string) -> Set :=
+| alpha_trans_nil : αCtxTrans [] [] []
 | alpha_trans_cons x y z ren ren' ren'' :
-    AlphaCtxTrans ren ren' ren'' -> 
-    AlphaCtxTrans ((x, y) :: ren) ((y, z) :: ren') ((x, z) :: ren'').
+    αCtxTrans ren ren' ren'' -> 
+    αCtxTrans ((x, y) :: ren) ((y, z) :: ren') ((x, z) :: ren'').
 
 
 (* Do we also have:
@@ -234,7 +209,7 @@ Inductive AlphaCtxTrans : list (string * string) -> list (string * string) -> li
   
 *)
 Lemma alpha_trans {s t u ren ren' ren''}: (* Transitive contexts as well *)
-  AlphaCtxTrans ren ren' ren'' -> Alpha ren s t -> Alpha ren' t u -> Alpha ren'' s u.
+  αCtxTrans ren ren' ren'' -> Alpha ren s t -> Alpha ren' t u -> Alpha ren'' s u.
 Proof with auto. 
   intros Htrans Halpha1 Halpha2.
   generalize dependent ren'.
@@ -272,7 +247,7 @@ Proof with auto.
 Qed.
 
 Lemma alpha_var_trans {s t u ren ren' ren''}:
-  AlphaCtxTrans ren ren' ren'' -> AlphaVar ren s t -> AlphaVar ren' t u -> AlphaVar ren'' s u.
+  αCtxTrans ren ren' ren'' -> AlphaVar ren s t -> AlphaVar ren' t u -> AlphaVar ren'' s u.
 Proof.
   intros Htrans Halpha1 Halpha2.
   assert (Alpha ren'' (tmvar s) (tmvar u)). {
@@ -549,7 +524,7 @@ Proof.
 Qed.
 
 Lemma id_left_trans (ren : list (string * string)) :
-  AlphaCtxTrans (ctx_id_left ren) ren ren.
+  αCtxTrans (ctx_id_left ren) ren ren.
 Proof.
   induction ren.
   - simpl. apply alpha_trans_nil.
@@ -560,7 +535,7 @@ Proof.
 Qed.
 
 Lemma id_right_trans (ren : list (string * string)) :
-  AlphaCtxTrans ren (ctx_id_right ren) ren.
+  αCtxTrans ren (ctx_id_right ren) ren.
 Proof.
   induction ren.
   - simpl. constructor.
@@ -868,143 +843,3 @@ Lemma alpha_extend_vacuous_single {x x' s}:
   ~ (In x (ftv s)) -> ~ (In x' (tv s)) -> Alpha ((x, x')::nil) s s.
 Proof.
 Admitted.
-
-
-
-(* *************
-    Important lemma that shows the relation between alpha contexts and renamings
-*)
-
-(* We use bound and free because it is easier to reason about.
- e.g. x not free in any subterm of \x. y
- But it is bound in there.
-  while in \x.x it is free in the subterm.
-If we just take bound terms always as well, I think it is easier to reason.
-
-Also, we need a freshness condition since renaming is not capture-avoiding.
-
-Correspondence between alpha contexts and renamings on syntactically equal terms.
- *)
-Lemma alphaRename x x' s :
-  (* x' can be equal to x., but then x=x' not in s, so the renaming doesnt do anything. *)
-  ~ (In x' (tv s)) -> Alpha [(x, x')] s (rename x x' s).
-Proof.
-  intros Hfresh.
-  induction s.
-  - unfold rename.
-    unfold mren.
-    unfold lookup.
-    destruct (x =? s) eqn:xs.
-    + apply String.eqb_eq in xs.
-      subst.
-      apply alpha_var.
-      apply alpha_var_cons; reflexivity.
-    + apply alpha_var.
-      apply alpha_var_diff.
-      * apply String.eqb_neq in xs.
-        assumption.
-      * apply not_in_cons in Hfresh.
-        destruct Hfresh as [Hfresh _].
-        assumption.
-      * apply alpha_var_refl.
-  - destruct (x =? s) eqn:xs.
-    + assert (Hsx: s = x).
-      {
-        apply String.eqb_eq in xs.
-        symmetry.
-        assumption. 
-      }
-    
-      assert (HignoreRename: rename x x' (tmlam s t s0) = tmlam s t s0).
-      {
-        unfold rename.
-        unfold mren.
-        fold mren.
-        subst.
-        simpl.
-        rewrite xs.
-        rewrite mren_id.
-        reflexivity.
-      }
-      rewrite HignoreRename.
-      apply alpha_lam.
-
-      rewrite Hsx.
-      rewrite Hsx in HignoreRename.
-      rewrite Hsx in Hfresh.
-      clear Hsx xs.
-
-      (* TODO: boring code, think of tactics*)
-      apply alphaIdShadowsVacuous.
-      unfold tv in Hfresh; fold tv in Hfresh.
-      apply not_in_cons in Hfresh.
-      destruct Hfresh as [_ Hfresh].
-      assumption.
-    + assert (H: rename x x' (tmlam s t s0) = tmlam s t (rename x x' s0)).
-      {
-        unfold rename.
-        unfold mren.
-        fold mren.
-        simpl.
-        rewrite xs.
-        reflexivity.        
-      }
-      rewrite H.
-      apply alpha_lam.
-      assert (s <> x').
-      {
-        apply not_in_cons in Hfresh.
-        destruct Hfresh as [Hfresh _].
-        symmetry.
-        assumption.
-      }
-      assert (s <> x).
-      {
-        apply String.eqb_neq in xs.
-        symmetry.
-        assumption.
-      }
-      apply alpha_extend_id'.
-      * apply IHs.
-        (* We know tv (tmlam s t s0) = s :: tv s0*)
-        (* Hence we make a superset argument: *)
-        unfold tv in Hfresh; fold tv in Hfresh.
-        (* if x' notin x :: s, then also x' not in x*)
-        apply not_in_cons in Hfresh.
-        destruct Hfresh.
-        assumption.
-      * apply not_break_shadow_cons; try assumption.
-        apply not_break_shadow_nil.
-  - unfold rename.
-    unfold mren.
-    apply alpha_app; fold mren.
-    + apply IHs1.
-      unfold tv in Hfresh; fold tv in Hfresh.
-      apply not_in_app in Hfresh.
-      destruct Hfresh as [Hfresh _].
-      assumption.
-    + apply IHs2.
-      unfold tv in Hfresh; fold tv in Hfresh.
-      apply not_in_app in Hfresh.
-      destruct Hfresh as [_ Hfresh].
-      assumption.
-Qed.
-
-(*
- Stronger result where s and s' not syntactically equal
-  New idea! Finally work with high-level ideas instead of induction on terms!
-*)
-Lemma alphaRenameStronger x x' s s' ren :
-  ~ (In x' (tv s')) -> 
-  NotBreakShadowing x ren ->
-  Alpha ren s s' -> Alpha ((x, x')::ren) s (rename x x' s').
-Proof.
-  intros HnotIns' Hshadow Halpha.
-  eapply @alpha_trans with (ren := (x, x)::ren) (ren' := (x, x')::nil ++ ctx_id_right ren).
-  - apply alpha_trans_cons.
-    apply id_right_trans.
-  - apply alpha_extend_id'; eauto.
-  - apply alpha_extend_ids_right with (ren := (x, x')::nil).
-    + apply ctx_id_right_is_id.
-    + now apply alphaRename.
-Qed.
