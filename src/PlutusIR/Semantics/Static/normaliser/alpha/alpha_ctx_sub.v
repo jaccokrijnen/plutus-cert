@@ -36,6 +36,20 @@ Lemma alpha_ctx_right_ex {ren sigma sigma' x x' t }:
 Proof.
 Admitted.
 
+Lemma alpha_ctx_left_nex {ren sigma sigma' x x'}:
+  αCtxSub ren sigma sigma' ->
+  AlphaVar ren x x' ->
+  lookup x' sigma' = None ->
+  lookup x sigma = None.
+Admitted.
+
+Lemma alpha_ctx_right_nex {ren sigma sigma' x x'}:
+  αCtxSub ren sigma sigma' ->
+  AlphaVar ren x x' ->
+  lookup x sigma = None ->
+  lookup x' sigma' = None.
+Admitted.
+
 Lemma alpha_ctx_ren_nil {sigma }:
   αCtxSub [] sigma sigma.
 Proof.

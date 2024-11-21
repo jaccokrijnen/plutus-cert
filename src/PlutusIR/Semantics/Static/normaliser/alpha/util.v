@@ -87,3 +87,7 @@ Qed.
 Lemma lookup_some_then_in y t (sigma : list (string * term)) :
   lookup y sigma = Some t -> In (y, t) sigma.
 Admitted.
+
+Lemma lookup_some_then_in_values y t (sigma : list (string * term)) :
+  lookup y sigma = Some t -> In t (map snd sigma).
+Admitted.

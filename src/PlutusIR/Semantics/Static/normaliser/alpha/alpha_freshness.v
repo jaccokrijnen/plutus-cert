@@ -2,6 +2,90 @@
 From PlutusCert Require Import STLC_named alpha alpha_ctx_sub Util.List freshness util alpha_rename.
 Require Import Coq.Lists.List.
 
+(* Uses stronger assumption that x notin tv s instead of ftv s
+  Makes life easier for not having to deal with binders 
+  Example: x notin ftv (tmlam x. x), but x in ftv x, which is its body.
+          However x in tv (tmlam x. x), as well as in tmlam x. y. easier.
+   *)
+Lemma alpha_preserves_ftv {x x' s s' ren} :
+  ~ In x (tv s) ->
+  Alpha ren s s' ->
+  AlphaVar ren x x' ->
+  ~ In x' (ftv s').
+Proof.
+  intros Hnotin Halphas Halphax.
+  induction Halphas; simpl in *; auto.
+  - intros Hcontra.
+    destruct Hcontra; [|contradiction].
+    subst.
+    assert (x0 <> x).
+    {
+      intros Hcontra.
+      subst.
+      contradiction Hnotin.
+      left.
+      reflexivity.
+    }
+    
+    apply (alphavar_unique_not_left H a) in Halphax.
+    contradiction.
+  - destr_eqb_eq x' y.
+    + apply remove_In.
+    + assert (Hnotin' : ~ In x' (ftv s2)).
+      {
+        eapply IHHalphas.
+        - unfold not in Hnotin.
+          intros Hcontra.
+          apply Hnotin.
+          right.
+          assumption.
+        - assert (x0 <> x).
+          {
+            intros Hcontra.
+            subst.
+            unfold not in Hnotin.
+            apply Hnotin.
+            left.
+            reflexivity.
+          }
+          eapply alpha_var_diff; eauto.
+          
+      }
+      rewrite <- Util.List.in_remove.
+      intros Hcontra.
+      destruct Hcontra; contradiction.
+  - 
+    apply not_in_app in Hnotin as [Hnotin1 Hnotin2].
+    apply not_in_app.
+    split.
+    + eapply IHHalphas1; eauto.
+    + eapply IHHalphas2; eauto.
+Qed.
+
+Lemma alpha_preserves_ftv_right {x x' s s' ren} :
+  ~ In x' (tv s') ->
+  Alpha ren s s' ->
+  AlphaVar ren x x' ->
+  ~ In x (ftv s).
+Proof.
+          (* Bunch of symmetry stuff
+          remember (sym_alpha_ctx ren12) as ren12'.
+          assert (Halphay': Alpha ren12 (tmvar y1) (tmvar y2)).
+          {
+            apply alpha_var; assumption.
+          }
+          eapply @alpha_sym with (ren' := ren12') in Halphay'; [| rewrite Heqren12'; apply sym_alpha_ctx_is_sym].
+          assert (Halphay'' : AlphaVar ren12' y2 y1).
+          {
+            inversion Halphay'.
+            assumption.
+          }
+          eapply @alpha_sym with (ren' := ren12') in Halphas12; [| rewrite Heqren12'; apply sym_alpha_ctx_is_sym].
+
+
+          eapply @alpha_preserves_ftv with (s := t0); eauto. *)
+Admitted.
+
 Lemma no_ftv_subs_helper' y s s' s'' sigma ren ren1 ren2 :
   αCtxTrans ren1 ren2 ren ->
   ~ In y (tv s) ->
@@ -58,7 +142,7 @@ Proof.
       - assert (Hx0y: y = x).
         {
           
-          eapply alphavar_unique.
+          eapply alphavar_unique_right.
           - assert (Alpha ren (tmvar y) (tmvar y)).
             {
               apply alpha_var.
@@ -190,6 +274,7 @@ Proof.
   - apply alpha_refl. apply alpha_refl_nil.
 Qed.
 
+(* IS THIS STILL USED AND WHAT DOES IT DO? *)
 Lemma ftv_sub_helper4 x x' y y' s s' s'' sigma sigma' ren1 ren2 ren :
   αCtxTrans ren1 ren2 ren ->
   αCtxSub ren sigma sigma' ->
@@ -230,7 +315,7 @@ Proof.
       {
         eapply alpha_var_trans; eauto.
       }
-      apply (alphavar_unique Halphax) in H.
+      apply (alphavar_unique_right Halphax) in H.
       assumption.
     }
     subst.

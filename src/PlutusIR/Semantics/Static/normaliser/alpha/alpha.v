@@ -284,7 +284,7 @@ Inductive IdCtx : list (string * string) -> Set :=
     IdCtx ren -> 
     IdCtx ((x, x) :: ren).
 
-Lemma alphavar_unique X Y Y' ren :
+Lemma alphavar_unique_right X Y Y' ren :
   AlphaVar ren X Y -> AlphaVar ren X Y' -> Y = Y'.
 Proof with subst; auto; try contradiction.
   intros Halpha1 Halpha2.
@@ -293,8 +293,26 @@ Proof with subst; auto; try contradiction.
   all: inversion Halpha1...
 Qed.
 
-Lemma alphavar_unique_not X X' Y Y' ren :
+Lemma alphavar_unique_left X X' Y ren :
+  AlphaVar ren X Y -> AlphaVar ren X' Y -> X = X'.
+Proof with subst; auto; try contradiction.
+  intros Halpha1 Halpha2.
+  induction ren.
+  all: inversion Halpha2...
+  all: inversion Halpha1...
+Qed.
+
+Lemma alphavar_unique_not_left X X' Y Y' ren :
   X <> X' -> AlphaVar ren X Y -> AlphaVar ren X' Y' -> Y <> Y'.
+Proof with subst; auto.
+  intros Hneq Halpha1 Halpha2.
+  induction ren.
+  all: inversion Halpha2... 
+  all: inversion Halpha1... 
+Qed.
+
+Lemma alphavar_unique_not_right X X' Y Y' ren :
+  Y <> Y' -> AlphaVar ren X Y -> AlphaVar ren X' Y' -> X <> X'.
 Proof with subst; auto.
   intros Hneq Halpha1 Halpha2.
   induction ren.

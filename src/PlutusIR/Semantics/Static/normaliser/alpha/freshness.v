@@ -68,6 +68,10 @@ Lemma ftv_lam_negative X Y A t :
   ~ In X (ftv (tmlam Y A t)) -> X <> Y -> ~ In X (ftv t).
 Admitted.
 
+Lemma tv_lam_rename_helper X Y Y' A t :
+   Y <> Y' -> ~ In X (tv (tmlam Y A t)) -> ~ In X (tv (rename Y Y' t)).
+Admitted.
+
 
 Lemma ftv_lam_no_binder X A t :
   ~ In X (ftv (tmlam X A t)).
@@ -298,6 +302,10 @@ Lemma tv_keys_env_helper y s sigma sigma_:
   y = fresh2 (sigma_ ++ sigma) s ->
   ~ In y (tv_keys_env sigma).
 Proof.
+Admitted.
+
+Lemma not_env_not_val y sigma t :
+  In t (map snd sigma) -> ~ In y (tv_keys_env sigma) -> ~ In y (tv t).
 Admitted.
 
 Lemma in_tv_value_then_in_tv_keys_env y y1 t (sigma : list (string * term)) :
