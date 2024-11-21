@@ -33,38 +33,93 @@ Inductive alpha : list (string * string) -> term -> term -> Prop :=
       alpha sigma (Apply t1 t2) (Apply t1' t2')
 .
 
-Definition ctx_refl (xs : ctx) := Forall (fun '(x, y) => x = y) xs.
+Section Reflexivity.
 
-Inductive pair_sym : string * string -> string * string -> Prop :=
-  | PS_pair x y : pair_sym (x, y) (y, x)
-.
-Definition ctx_sym (xs ys : ctx) : Prop := Forall2 pair_sym xs ys.
+  Definition ctx_refl (xs : ctx) := Forall (fun '(x, y) => x = y) xs.
 
-Lemma alpha_refl xs t :
-  ctx_refl xs ->
-  alpha xs t t.
-Proof.
-Admitted.
+  Lemma alpha_refl xs t :
+    ctx_refl xs ->
+    alpha xs t t.
+  Proof.
+  Admitted.
 
-Lemma alpha_sym xs ys t t':
-  ctx_sym xs ys ->
-  alpha xs t t' ->
-  alpha ys t' t.
-Proof.
-Admitted.
+End Reflexivity.
+
+Section Symmetry.
+
+  Inductive pair_sym : string * string -> string * string -> Prop :=
+    | PS_pair x y : pair_sym (x, y) (y, x)
+  .
+  Definition ctx_sym (xs ys : ctx) : Prop := Forall2 pair_sym xs ys.
+
+  Lemma alpha_sym xs ys t t':
+    ctx_sym xs ys ->
+    alpha xs t t' ->
+    alpha ys t' t.
+  Proof.
+  Admitted.
+
+End Symmetry.
 
 From PlutusCert Require Import
   Dynamic.Bigstep.
 
 Require Import Coq.Program.Equality.
 
-Lemma alpha__subst x x' s s' t t' :
-  alpha [] s s' ->
-  alpha [(x, x')] t t' ->
-  alpha [] (subst x s t) (subst x' s' t')
-.
-Admitted.
+Section Substitution.
 
+
+  Context
+    (x x' : string)
+    (s s' : term)
+    (H_s : alpha [] s s')
+  .
+
+  Lemma alpha__subst : forall t t',
+    alpha [(x, x')] t t' ->
+    alpha [] (subst x s t) (subst x' s' t')
+  .
+  Proof.
+    intros t.
+    apply term__ind with
+      (P := fun t => forall t', alpha [(x, x')] t t' -> alpha [] (subst x s t) (subst x' s' t'))
+      (Q := fun b => True).
+
+    (* Solve unimplemented cases *)
+    all: try solve [intros; match goal with H : alpha _ _ _ |- _ => inversion H end].
+
+    - (* Var *)
+      intros y t' H_t.
+      inversion H_t. subst x0 t'.
+      rename x'0 into y'.
+      autorewrite with subst.
+      destruct ((x =? y)%string) eqn:H_eq; destruct ((x' =? y')%string) eqn:H_eq'; simpl.
+      * assumption.
+      * rewrite eqb_eq, eqb_neq in *.
+        inversion H1; contradiction.
+      * rewrite eqb_eq, eqb_neq in *.
+        inversion H1; contradiction.
+      * rewrite eqb_neq in *.
+        inversion H1. subst.
+        ** contradiction.
+        ** subst.
+           inversion H8. subst.
+           auto using alpha.
+
+    - (* LamAbs *)
+      intros y T u IH_u t' H_t.
+      inversion H_t;
+      subst x0 T0 t0 t' sigma;
+      rename x'0 into y';
+      rename t'0 into u'.
+      setoid_rewrite subst_unfold.
+      destruct ((x =? y)%string) eqn:H_eq;
+      destruct ((x' =? y')%string) eqn:H_eq'.
+      (* TODO: strengthen IH with environment (xs ++ [(x, x')], such that x and
+      x' do not occur in xs *)
+  Admitted.
+
+End Substitution.
 
 Lemma alpha__fully_applied t t' :
   alpha [] t t' ->

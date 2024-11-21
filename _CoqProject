@@ -51,7 +51,6 @@ src/PlutusIR/Transform/DeadCode.v
 src/PlutusIR/Transform/DeadCode/Intermediate.v
 src/PlutusIR/Transform/DeadCode/DecideBool.v
 src/PlutusIR/Transform/DeadCode/Decide2.v
-src/PlutusIR/Transform/DeadCode/DSP/SubstitutionNonFree.v
 src/PlutusIR/Transform/DeadCode/DSP/TermBind.v
 src/PlutusIR/Transform/DeadCode/DSP/Lemmas.v
 src/PlutusIR/Transform/DeadCode/DSP/BoundVars.v
@@ -74,6 +73,7 @@ src/PlutusIR/Semantics/Dynamic/Builtins/FullyApplied.v
 src/PlutusIR/Semantics/Dynamic/Builtins/BuiltinMeanings.v
 src/PlutusIR/Semantics/Dynamic/Datatypes.v
 src/PlutusIR/Semantics/Dynamic/Substitution.v
+src/PlutusIR/Semantics/Dynamic/Substitution/Free.v
 src/PlutusIR/Semantics/Dynamic/Values.v
 
 src/PlutusIR/Semantics/Static.v

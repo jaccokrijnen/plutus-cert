@@ -24,7 +24,7 @@ Import PlutusNotations.
 
 From PlutusCert Require Import DeadCode.DSP.Lemmas.
 From PlutusCert Require Import DeadCode.DSP.BoundVars.
-From PlutusCert Require Import DeadCode.DSP.SubstitutionNonFree.
+From PlutusCert Require Import Substitution.Free.
 
 Import ListNotations.
 

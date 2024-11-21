@@ -10,14 +10,11 @@ From PlutusCert Require Import
   PlutusIR
   Dynamic.Substitution
   Analysis.FreeVars
-  Analysis.BoundVars
-  Analysis.UniqueBinders
   Util.List
   Util.Tactics
 .
 
 Import ListNotations.
-Import UniqueBinders.
 Import Utf8_core.
 
 

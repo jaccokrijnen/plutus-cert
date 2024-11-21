@@ -13,7 +13,7 @@ From PlutusCert Require Import TypeSafety.TypeLanguage.Preservation.
 From PlutusCert Require Import SemanticEquivalence.LogicalRelation.
 From PlutusCert Require Import FreeVars.
 From PlutusCert Require Import Purity.
-From PlutusCert Require Import SubstitutionNonFree.
+From PlutusCert Require Import Substitution.Free.
 From PlutusCert Require Import Util.List.
 
 Import ListNotations.

@@ -1,5 +1,5 @@
 From PlutusCert Require Import PlutusIR.
-From PlutusCert Require Import DeadCode.DSP.SubstitutionNonFree.
+From PlutusCert Require Import Substitution.Free.
 
 From PlutusCert Require Import Bigstep.
 From PlutusCert Require Import DeadCode3.
