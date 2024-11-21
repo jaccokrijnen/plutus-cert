@@ -29,7 +29,7 @@ Section Term.
 
 
   (* TODO: we cannot have this, since Coq cannot generate nice induction schemes
-   * for the nested recursion that exists between the relation and Forall2 
+   * for the nested recursion that exists between the relation and Forall2
    * so instead, we have a separate case for nil and cons.
 
    * The same applies to Constr and Case

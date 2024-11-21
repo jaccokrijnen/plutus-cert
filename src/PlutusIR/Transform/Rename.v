@@ -376,7 +376,7 @@ Proof.
       + subst y.
         inversion H_afi_x_t; subst.
         contradiction.
-      + unfold safe_var in *. 
+      + unfold safe_var in *.
         constructor.
         * intros H_eq; subst y'.
            inversion H_afi_x_t; subst.

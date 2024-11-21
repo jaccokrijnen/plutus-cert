@@ -124,7 +124,7 @@ Proof.
       rewrite ftvbs_equation.
       rewrite fvbs_equation.
 
-      eapply weaken_well_scoped_binding. 
+      eapply weaken_well_scoped_binding.
       3: exact H_bs.
       all: auto with subset.
     + apply Forall_inv_tail in H_bs.
@@ -196,7 +196,7 @@ Proof.
       {
         assert (exists bs', bs = bs') by (exists bs; reflexivity).
         destruct H1 as [bs' H_bs'].
-        remember 
+        remember
           (rev (BoundVars.btvbs bs) ++ ftv (Let Rec bs t)) as Δ.
         remember (rev (BoundVars.bvbs bs) ++ fv (Let Rec bs t))
           as Γ.
@@ -301,7 +301,7 @@ Proof.
   }
 
   (* Apply *)
-  { intros t H_t t' H_t'. 
+  { intros t H_t t' H_t'.
     unfold P_Term in *.
     constructor.
     {
@@ -393,7 +393,7 @@ Proof.
     unfold P_Binding.
     intros rec.
     destruct dtd as [[τ k] vs m cs].
-    destruct rec. 
+    destruct rec.
     (* NonRec *)
     {
       rewrite ftvb_equation, fvb_equation.

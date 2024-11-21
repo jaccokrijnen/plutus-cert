@@ -65,7 +65,7 @@ Definition to_sig (f : DefaultFun) : builtin_sig :=
   | AppendByteString => <{ bytestring }> → <{ bytestring }> → BS_Result <{ bytestring }>
 
   (* TODO: see Plutus Core Spec *)
-  | _ => <{ℤ}> → BS_Result <{ℤ}> 
+  | _ => <{ℤ}> → BS_Result <{ℤ}>
   end
 .
 

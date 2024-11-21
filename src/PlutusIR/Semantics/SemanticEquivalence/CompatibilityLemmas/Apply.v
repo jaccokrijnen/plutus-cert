@@ -199,10 +199,10 @@ Proof with eauto_LR.
 
     match goal with | |- exists _ _, eval ?t _ _ /\ _ => destruct (dec_fully_applied t) end.
     { (* fully_applied *)
-      eexists. eexists. 
+      eexists. eexists.
       split.
       {
-      (* 
+      (*
         TODO: By lemma full_applied__Apply, close _ _ e1 and close _ _ e2 both evaluate to lambdas (with
          respectively a property of substituting equality), use
          IH1 with those lambdas and then rewrite the substitution using those equalities.
@@ -228,7 +228,7 @@ Proof with eauto_LR.
       admit. (* TODO: similar to E_Apply case *)
       }
     }
-  
+
   - (* E_Error_Apply1 *)
     rename j1 into j_1.
 
@@ -322,7 +322,7 @@ Ltac eval_deterministic :=
   match goal with
     | H  : ?e =[ _ ]=> ?r
     , H' : ?e =[ _ ]=> ?r'
-    |- _ => assert (r = r') by 
+    |- _ => assert (r = r') by
      eauto using eval__deterministic_result
   end
 .
@@ -361,7 +361,7 @@ Ltac use_RC :=
   match goal with
   | H : R_C ?k ?T ?ρ ?e1 ?e2
   , Hev : ?e1 =[ ?i ]=> ?v
-  |- _ => 
+  |- _ =>
     autorewrite with R in H;
     apply H in Hev as [ ? [ ? [? ?]]];
     clear H;
@@ -381,7 +381,7 @@ Ltac run_RC H_RC r' j' H_eval' H_res':=
         assert (H' := H);
         apply H_temp in H' as [r' [j' [H_eval' H_res']]];
         clear H_temp
-    | _ => 
+    | _ =>
       fail 1 "Could not find required hypothesis of type eval"
     end
   end
@@ -626,7 +626,7 @@ Proof with eauto_LR.
       {
       admit. (* TODO: similar to E_Apply case *)
       }
-    
+
 
   - (* E_Error_Apply1 *)
     rename j1 into j_1.

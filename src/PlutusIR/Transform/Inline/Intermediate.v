@@ -141,7 +141,7 @@ Section InlineOnly.
   .
 
 
-  (* Constructs the final term, but without dead-code performed 
+  (* Constructs the final term, but without dead-code performed
      Note: this does result in inlined terms that are α-renamed compared to their
      binding site *)
   Fixpoint inlined_intermediate (elims : list name) (t : term) (t' : term) : option term

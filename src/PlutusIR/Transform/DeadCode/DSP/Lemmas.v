@@ -218,7 +218,7 @@ Section ScopingLemmas.
     (* generalize (bvbs bs) as bvbs_bs.*)
     induction bs as [ | b bs].
     - simpl. reflexivity.
-    - 
+    -
     simpl.
     setoid_rewrite append_distr_remove_many.
     f_equal.
@@ -410,7 +410,7 @@ Section ScopingLemmas.
   Admitted.
 
   Corollary well_scoped_fv_term t Δ Γ :
-    (Δ,, Γ |-+ t) -> 
+    (Δ,, Γ |-+ t) ->
     fv t ⊆ Γ.
     revert Δ Γ.
     apply (proj1 well_scoped_fv t).

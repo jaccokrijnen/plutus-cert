@@ -1,4 +1,4 @@
-From PlutusCert Require Import 
+From PlutusCert Require Import
   Util.List
   PlutusIR
   PlutusIR.Analysis.BoundVars
@@ -9,7 +9,7 @@ From QuickChick Require Import QuickChick.
 From QuickChick Require Import CheckerProofs.
 
 
-  
+
 QCDerive DecOpt for (unique_ty ty).
 
 Instance unique_ty_DecOpt_sound ty: DecOptSoundPos (unique_ty ty).

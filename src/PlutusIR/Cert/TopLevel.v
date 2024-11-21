@@ -41,7 +41,7 @@ Definition mk_proof : forall t,
   (trace_dec cert_claims trace = Some t) -> trace_prop cert_claims trace :=
   fun t eq_refl => t.
 
-Definition proof : trace_prop cert_claims trace := 
+Definition proof : trace_prop cert_claims trace :=
   mk_proof _ eq_refl .
 
 (* Eval vm_compute in (trace_dec cert_claims trace). *)
@@ -101,7 +101,7 @@ Fixpoint trace_proof' (claims : pass -> claim) (t : term) (ps : list (pass * ter
   : option (trace_prop' claims t ps) :=
     match ps return option (trace_prop' claims t ps) with
       | [] => I
-      | (p, t') :: ps => 
+      | (p, t') :: ps =>
         conj p (trace_proof' claims t' ps)
     end
 .

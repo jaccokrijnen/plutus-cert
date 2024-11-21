@@ -149,7 +149,7 @@ Definition plus_lt_lr : forall n m p q : nat, n < m -> p < q -> n + p < m + q :=
 Section NonFold.
 
   Definition size_binding (size : term -> nat) (b : binding) : nat :=
-    1 + 
+    1 +
     match b with
       | TermBind rec (VarDecl _ _) t => size t
       | DatatypeBind dtd => 0

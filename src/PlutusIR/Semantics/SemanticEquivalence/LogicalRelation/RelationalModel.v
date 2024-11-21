@@ -321,7 +321,7 @@ Require Import Coq.Arith.Wf_nat.
 Inductive interpretation := C | V.
 
 
-Definition measure : (interpretation * nat) -> nat := 
+Definition measure : (interpretation * nat) -> nat :=
   fun '(i, n) => n * 10 + if i then 1 else 0.
 
 Lemma lt_pair_wf : well_founded (ltof (interpretation * nat) measure).
@@ -396,7 +396,7 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
                 R C i Tn ((X, (Chi, T1, T2)) :: rho) <{ [[T1 / X ] e_body }> <{ [[T2 / X ] e'_body }>
       end
   ).
-Proof. 
+Proof.
   all: unfold ltof; simpl; lia.
 Qed.
 

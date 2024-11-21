@@ -306,7 +306,7 @@ Proof.
         { apply unused_strengthen_Delta in H_typing.
 
           - rewrite flatten_cons in H_map_norm.
-            apply map_normalise__app in H_map_norm. 
+            apply map_normalise__app in H_map_norm.
             destruct H_map_norm as [_ [bGn [_ [H_map_norm_bGn _]]]].
             admit.
           - admit.

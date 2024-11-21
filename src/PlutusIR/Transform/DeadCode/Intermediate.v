@@ -15,7 +15,7 @@ From PlutusCert Require Import
 
 Import ListNotations.
 
-Require Import 
+Require Import
   Arith.
 
 
@@ -119,7 +119,7 @@ Section Bindings.
         if func_eqb f f'
           then pure (Builtin f)
           else None
-    | Constr i T ts, Constr i' T' ts' => 
+    | Constr i T ts, Constr i' T' ts' =>
         if Nat.eqb i i' && Ty_eqb T T'
           then Constr i T <$> sequence_options (zip_with mk ts ts')
           else None

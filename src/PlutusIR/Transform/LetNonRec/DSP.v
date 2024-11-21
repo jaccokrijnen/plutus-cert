@@ -421,7 +421,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
       * rewrite app_assoc.
         rewrite app_assoc.
         rewrite <- flatten_app...
-    + 
+    +
       match goal with
       | H : map_normalise _ _ |- _ =>
           rewrite flatten_app in H;

@@ -55,7 +55,7 @@ Fixpoint constr_to_term (ix : nat) (ty_sop : ty) (tyvars : list tvdecl) (ty_cons
 
 
 (*
- * TODO compare with what the compiler does: 
+ * TODO compare with what the compiler does:
     see https://github.com/IntersectMBO/plutus/blob/16be7da33eacb1991ae0164b9fd65e12c7e4771e/plutus-core/plutus-ir/src/PlutusIR/Compiler/Datatype.hs#L414
 *)
 

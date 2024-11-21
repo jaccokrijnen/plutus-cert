@@ -813,7 +813,7 @@ Module PlutusNotations.
 
   (* / collides with substitution notation *)
   (*
-  Notation "t1 '/' t2" := (<{ {Builtin DivideInteger} ⋅ t1 ⋅ t2 }>) 
+  Notation "t1 '/' t2" := (<{ {Builtin DivideInteger} ⋅ t1 ⋅ t2 }>)
     (in custom plutus_term at level 50, left associativity).
       *)
 

@@ -503,9 +503,9 @@ Qed.
 Lemma msubstA_Case : forall ss T t ts,
     msubstA ss (Case T t ts) = Case (msubstT ss T) (msubstA ss t) (map (msubstA ss) ts).
 Proof.
-  induction ss; intros. 
+  induction ss; intros.
   - simpl. rewrite map_id. reflexivity.
-  - destruct a. 
+  - destruct a.
     simpl.
     rewrite IHss.
     rewrite map_map.

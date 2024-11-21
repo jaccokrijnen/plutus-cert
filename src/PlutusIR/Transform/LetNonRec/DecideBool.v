@@ -106,7 +106,7 @@ with dec_Binding_compat (b b' : binding) : bool := match b, b' with
 .
 
 (* See comment of dec_Bindings' *)
-Definition dec_Bindings : list binding -> term -> option term := 
+Definition dec_Bindings : list binding -> term -> option term :=
   dec_Bindings' dec_Term.
 
 
@@ -292,7 +292,7 @@ Proof.
       match goal with t' : term |- _ =>
         destruct t'; split; try solve [inversion 1]
       end.
-      * (*fwd *) 
+      * (*fwd *)
       intros.
       simpl_dec_Term.
       rewrite ForallP_Forall in *.

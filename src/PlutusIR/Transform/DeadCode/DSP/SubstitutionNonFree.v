@@ -301,7 +301,7 @@ Section Term.
         rewrite <- in_remove_many in H3.
         intuition.
   Qed.
-  
+
 
   Lemma not_in_fv_Let_Rec_bs x b bs t :
     x ∉ fv (Let Rec (b :: bs) t) ->
@@ -406,7 +406,7 @@ Section Term.
 
   Create HintDb not_in.
   Hint Resolve
-    not_in_fv_TyAbs 
+    not_in_fv_TyAbs
     not_in_fv_LamAbs
     not_in_fv_Apply_l
     not_in_fv_Apply_r
@@ -458,7 +458,7 @@ Section Term.
     - inversion H_ex.
     - destruct (string_dec x a); subst.
       + apply in_eq.
-      + 
+      +
         apply existsb_exists in H_ex as [].
         destruct H.
         apply eqb_eq in H0; subst.
@@ -544,7 +544,7 @@ Section Term.
           * apply not_in_fv_Let_NonRec_hd in H_not_in_fv.
             eapply H1; eauto.
           *
-          destruct (existsb (eqb x) (bvbs bs)) eqn:H_ex_bvbs. 
+          destruct (existsb (eqb x) (bvbs bs)) eqn:H_ex_bvbs.
             ** assert (x ∉ fv (Let NonRec bs t)) by eauto using not_in_fv_Let_NonRec_tl.
                eauto using existsb_bvbs_bs.
             ** assert (x ∉ fv (Let NonRec bs t)) by eauto using  not_in_fv_Let_NonRec_tl.
@@ -655,7 +655,7 @@ Section Term.
       + eauto using not_in_fv_Constr.
 
     - (* Case *)
-      f_equal. 
+      f_equal.
         + apply H.
           eapply not_in_fv_Case_2.
           apply H1.

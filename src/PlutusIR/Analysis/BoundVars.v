@@ -150,7 +150,7 @@ Inductive appears_bound_in_tm (x : string) : term -> Prop :=
       appears_bound_in_tm x (Let recty (TermBind stricty (VarDecl y T) t :: bs) t0)
   | ABI_Tm_Let_DatatypeBind : forall recty XK YKs mfunc cs t0 bs,
       NameIn x (mfunc :: bv_constructors cs) ->
-      appears_bound_in_tm x (Let recty (DatatypeBind (Datatype XK YKs mfunc cs) :: bs) t0) 
+      appears_bound_in_tm x (Let recty (DatatypeBind (Datatype XK YKs mfunc cs) :: bs) t0)
       .
 
 Inductive appears_bound_in_ann (X : string) : term -> Prop :=
@@ -232,10 +232,10 @@ Inductive appears_bound_in_ann (X : string) : term -> Prop :=
       appears_bound_in_ty X T ->
       appears_bound_in_ann X (Let recty (TypeBind (TyVarDecl Y K) T :: bs) t0)
   | ABI_Ann_Let_DatatypeBind : forall recty K YKs mfunc cs t0 bs,
-      appears_bound_in_ann X (Let recty (DatatypeBind (Datatype (TyVarDecl X K) YKs mfunc cs) :: bs) t0) 
+      appears_bound_in_ann X (Let recty (DatatypeBind (Datatype (TyVarDecl X K) YKs mfunc cs) :: bs) t0)
   .
 
-#[export] Hint Constructors 
+#[export] Hint Constructors
   appears_bound_in_ty
   appears_bound_in_tm
   appears_bound_in_ann

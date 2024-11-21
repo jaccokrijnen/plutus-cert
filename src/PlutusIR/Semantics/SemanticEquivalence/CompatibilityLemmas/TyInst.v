@@ -90,7 +90,7 @@ Proof with eauto_LR.
 
 
       eexists. eexists.
-      split. 
+      split.
       eapply E_TyInst...
       admit. (* TODO: Similar to Apply compatibility lemma *)
 
