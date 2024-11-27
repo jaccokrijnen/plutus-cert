@@ -37,6 +37,7 @@ Proof.
   elim: s sigma tau; intros; asimpl; eauto with red_congr.
 Qed. *)
 
+(* Note: 27 nov: this ren_comp_exsits may be an alternative to the alpha trans arguments*)
 
 (* NOTE: A little pen and paper study strongly suggests that this is still true for named. *)
 (* NOTE: At first I would expect that it would step on the right hand side (instead of multistep=red)
@@ -56,131 +57,6 @@ Proof.
   (* TODO: Figure out on pen and paper first.*)
 Admitted.
 
-
-
-Lemma rename_preserves_step x x' s t : 
-step s t -> step (rename x x' s) (rename x x' t).
-Proof.
-  intros Hstep.
-  induction Hstep.
-  - destruct (x =? x0) eqn:xx0.
-    + 
-      assert (x = x0) by admit.
-      subst.
-      unfold rename.
-      unfold mren. fold mren.
-      assert (drop x0 [(x0, x')] = nil) by admit.
-      rewrite H.
-      rewrite mren_id.
-      (* Since all x0 in s are replaced by t, we must turn the rhs into
-        rename x0 x' [x0 := rename x0 x' t] s, exactly like lhs
-      *)  
-      assert (mren [(x0, x')] ([x0 := t] s) = [x0 := mren [(x0, x')] t] s) by admit.
-      rewrite H0.
-      apply step_beta.
-
-    + 
-    unfold rename.
-    unfold mren. fold mren.
-    assert (drop x0 [(x, x')] = ((x, x')::nil)) by admit.
-    rewrite H.
-
-    (* Bulk of the work: This is a special case of commute subst! *)
-    assert (mren [(x, x')] ([x0 := t] s) = [x0 := mren [(x, x')] t] (mren [(x, x')] s)) by admit.
-    rewrite H0.
-    apply step_beta.
-  - apply step_appL.
-    assumption.
-  - apply step_appR.
-    assumption.
-  - admit.
-Admitted.
-
-(* Strengthen IH for red_beta*)
-Lemma red_beta_ren x s t1 t2 rho : step t1 t2 -> { someAlpha : term & prod (red ([x := t1] (mren rho s)) someAlpha)
-            (Alpha [] someAlpha ([x := t2] (mren rho s))) }.
-Proof.
-  elim: s rho t1 t2 => [Y|Y K1 T_body IH|T1 IH1 T2 IH2] rho t1 t2 Hstep.
-  - unfold mren.
-    destruct (lookup Y rho) eqn: Hlookup.
-    all: rewrite capms_equation_1.
-    all: rewrite capms_equation_1.
-    all: simpl.
-    (* TODO: The two cases below are identical except for s vs Y*)
-    + destruct (string_dec x s).
-      * rewrite e.
-        unfold lookup.
-        rewrite eqb_refl.
-        exists t2; split.
-        -- eapply (@starSE) with (e := step).
-            ++ apply starR.
-            ++ assumption.
-        -- apply alpha_refl. apply alpha_refl_nil.
-      * unfold lookup.
-        destruct (x =? s).
-        -- exists t2; split.
-           ++ eapply (@starSE) with (e := step).
-              ** apply starR.
-              ** assumption.
-           ++ apply alpha_refl. apply alpha_refl_nil.
-        -- exists (tmvar s); split.
-           ++ apply starR.
-           ++ apply alpha_refl. apply alpha_refl_nil.
-    + destruct (string_dec x Y).
-      * rewrite e.
-        unfold lookup.
-        rewrite eqb_refl.
-        exists t2; split.
-        -- eapply (@starSE) with (e := step).
-            ++ apply starR.
-            ++ assumption.
-        -- apply alpha_refl. apply alpha_refl_nil.
-      * unfold lookup.
-        destruct (x =? Y).
-        -- exists t2; split.
-           ++ eapply (@starSE) with (e := step).
-              ** apply starR.
-              ** assumption.
-           ++ apply alpha_refl. apply alpha_refl_nil.
-        -- exists (tmvar Y); split.
-            ++ apply starR.
-            ++ apply alpha_refl. apply alpha_refl_nil.
-  - (* lambda abstraction *)
-    simpl.
-    rewrite capms_equation_2.
-    rewrite capms_equation_2.
-    simpl.
-    remember (fresh2 [(Y, tmvar Y);(x, t1)] (mren (drop Y rho) T_body)) as x'.
-    remember (fresh2 [(Y, tmvar Y);(x, t2)] (mren (drop Y rho) T_body)) as x2. (* x' and x2 only equal if we dont look at bound vars*)
-    remember (drop Y rho) as rho'.
-    specialize (IH ((Y, x')::rho') t1 t2 Hstep).
-    (* Let's try the exists formulation again *)
-    destruct IH as [someAlpha [HredAlpha Halpha] ].
-
-    (* exists (tmlam x' K1 someAlpha). *)
-    eexists.
-    split.
-
-    + apply red_abs.
-
-      (* What if Y is in the RHS of rho' ?*)
-      assert (HrenComp: rename Y x' (mren rho' T_body) = mren ((Y, x')::rho') T_body).
-      {
-        admit.
-      }
-      rewrite HrenComp.
-      exact HredAlpha. 
-    + apply alpha_lam.
-
-      admit.
-  - rewrite capms_equation_3.
-    rewrite capms_equation_3.
-    (* apply red_app.
-    + apply IH1.
-      assumption.
-    + apply IH2.
-      assumption.  *)
-Admitted.
 
 Require Import Ascii.
 
@@ -282,10 +158,7 @@ Proof.
     + eapply IHs2; eauto.
 Qed.
 
-    
-
-
-Lemma red_beta' x s t1 t2 : 
+Lemma red_beta'' x s t1 t2 : 
   step t1 t2 ->
   forall s' s'' ren1 ren2 ren,
   ren1 ⊢ s' ~ s ->
@@ -295,8 +168,8 @@ Lemma red_beta' x s t1 t2 :
   AlphaVar ren x x ->
   αCtxTrans ren1 ren2 ren ->
   { a & prod 
-    (ren ⊢ ([x := t1] s') ~ a)
-    (red a (((x, t2)::(x, t1)::nil) [[s'']])) }. (* Ugly cheat: adding the x, t1 makes sure it does not generate fresh vars equal to ftv of t1...*)
+    ( red ([x := t1] s') a)
+    ( ren ⊢ a ~ (((x, t2)::(x, t1)::nil) [[s'']])) }. (* Ugly cheat: adding the x, t1 makes sure it does not generate fresh vars equal to ftv of t1...*)
 Proof. 
 
   intros Hstep.
@@ -368,7 +241,7 @@ Proof.
       
 Admitted.
 
-Lemma use_red_beta' x s t1 t2 :
+Lemma red_beta' x s t1 t2 :
   step t1 t2 ->
   forall s' s'' ren1 ren2 ren,
   ren1 ⊢ s' ~ s ->
@@ -378,33 +251,45 @@ Lemma use_red_beta' x s t1 t2 :
   AlphaVar ren x x ->
   αCtxTrans ren1 ren2 ren ->
   { a & prod 
-    (ren ⊢ ([x := t1] s') ~ a)
-    (red a (((x, t2)::nil) [[s'']])) }.
+    (red ([x := t1] s') a)
+    ( ren ⊢ a ~ (((x, t2)::nil) [[s'']])) }.
 Proof.
   intros.
   assert ({a & prod 
-    (ren ⊢ ([x := t1] s') ~ a)
-    (red a (((x, t2)::(x, t1)::nil) [[s'']])) }) as [a [Halpha Hred] ].
+    (red ([x := t1] s') a)
+    ( ren ⊢ a ~ (((x, t2)::(x, t1)::nil) [[s'']])) }) as [a [Halpha Hred] ].
   {
-    eapply red_beta'; eauto.
+    eapply red_beta''; eauto.
   }
-  (* red a  -> (x, t2); (x, t1)] [[s'']]
-  
-    Also (x, t2); (x, t1)] [[s'']]   Alpha to   (x, t2) [[s'']] with empty ren.
+  exists a.
+  split.
+  - assumption.
+  - eapply alpha_trans.
+    + apply id_right_trans.
+    + exact Hred.
+    + change (ctx_id_right ren) with (nil ++ ctx_id_right ren).
+      apply alpha_extend_ids_right.
+      * apply ctx_id_right_is_id.
+      * eapply alpha_sym. apply alpha_sym_nil.
+        eapply add_vacuous.
+        -- apply alpha_refl. apply alpha_refl_nil.
+        -- apply alpha_refl. apply alpha_refl_nil.
+        -- apply alpha_refl. apply alpha_refl_nil.
+        -- apply alpha_var_refl.
+        -- apply alpha_trans_nil.
+Qed.
 
-    Hence exists a' s.t. red a' ((x, t2)::nil) [[s'']] and Alpha nil a a'.
-    by alpha preserves step I think. We would need to reverse it and do it on level of reductions
-
-    Well, also ren |- [x := t1] s' ~ a, 
-    so then also
-    ren |- [x := t1] s' ~ a'.
-
-    Hence we choose a' as the witness.
-
-
-  *)
-Admitted.
-    
+Lemma red_beta x s t1 t2 :
+  step t1 t2 ->
+  { α & prod 
+      (red ([x := t1] s) α)
+      (nil ⊢ α ~ ([x := t2] s))
+  }.
+Proof.
+  intros Hstep.
+  eapply red_beta'; auto; 
+    solve [try apply alpha_refl; try apply alphavar_refl; constructor].
+Qed.
 
 (* Strong Normalization *)
 
@@ -644,12 +529,17 @@ Proof with eauto.
     destruct H as [alpha [Hred Halpha] ].
     apply (L_cl h) in Hred.
     apply α_preserves_L with (s := alpha); assumption.
-    (* Now we know L A alpha. *)
-    (* It seems close. We just need to know how to incorporate this*)
-    
-    (* exact: step_subst. *) (* need to alphafy this lemma *)
-  - apply: ih2 => //. apply: L_cl_star h _. 
-Admitted.
+  - apply: ih2 => //. 
+    assert ({α & prod (nil ⊢ [x := t] s ~ α) (red α ([x := t2] s))}).
+    {
+      eapply red_beta. assumption.
+    }
+    destruct H as [alpha [Halpha Hred] ].
+    apply α_preserves_L with (s' := alpha) in h.
+    + apply (L_cl_star h) in Hred.
+      assumption.
+    + assumption.
+Qed.
 
 Lemma beta_expansion_subst X t sigma s A B :
   SN t -> L A (((X, t)::sigma) [[s]]) -> L A (tmapp (sigma [[tmlam X B s]]) t).
@@ -670,14 +560,23 @@ Proof.
   }
   rewrite <- HsigIntoLam.
   apply H0.
-  admit.
-  (* rewrite composeCapms.
-  - rewrite capmsRename.
-    assumption.
-  - rewrite -> HeqX'.
-    (* apply freshLemma. easy by freshness*)
-    admit. *)
-Admitted.
+  assert (HalphaCool: nil ⊢ ([X' := t] (sigma [[rename X X' s]])) ~ ((X, t)::sigma) [[s]]).
+  {
+    eapply alpha_trans.
+    + apply id_left_trans.
+    + simpl.
+      eapply subs_preserves_alpha.
+      * apply alpha_ctx_ren_nil.
+      * eapply ren_sub_compose_instantiated.
+        assumption.
+    + eapply merge_sub.
+      change ((X, tmvar X)::sigma) with (((X, tmvar X)::nil) ++ sigma) in HeqX'.
+      exact HeqX'.
+  }
+  eapply alpha_sym in HalphaCool.
+  - apply (α_preserves_L HalphaCool H).
+  - apply alpha_sym_nil.
+Qed.
 
 (** Kinding of types *)
 Reserved Notation "Δ '|-*' T ':' K" (at level 40, T at level 0, K at level 0).
@@ -714,7 +613,7 @@ Proof with eauto using L_sn.
     unfold L in ih1. fold L in ih1. specialize (ih1 (sigma [[t]]) ih2).
     rewrite capms_equation_3.
     assumption.
-Admitted.
+Qed.
 
 (* Identity substitutions: Given a typing context E, give a list of term substitutions matching this E*)
 Fixpoint id_subst (E : list (string * type)) : list (string * term) :=
@@ -723,18 +622,18 @@ Fixpoint id_subst (E : list (string * type)) : list (string * term) :=
   | cons (x, A) E' => cons (x, tmvar x) (id_subst E')
   end.
 
-
+Lemma id_subst_is_IdSubst E :
+  IdSubst (id_subst E).
+Proof.
+  induction E.
+  - constructor.
+  - simpl. destruct a. constructor. assumption.
+Qed.
 
 (* The identity substitution is in the EL relation *)
 
 Lemma id_subst_EL :
   forall (E : list (string * type)),  EL E (id_subst E).
-Proof.
-Admitted.
-
-(* TODO id_ren E could just be []? *)
-Lemma id_subst_alpha_type E s T :
-  has_type E s T -> Alpha [] s ((id_subst E) [[s]]).
 Proof.
 Admitted.
 
@@ -752,6 +651,18 @@ Proof.
   intros Hty.
   apply type_L in Hty.
   apply L_sn in Hty.
+  assumption.
+Qed.
+
+Theorem strong_normalization E s T : has_type E s T -> SN s.
+Proof.
+  intros Hty.
+  remember Hty as Hty_copy; clear HeqHty_copy.
+  apply strong_normalization_alpha in Hty.
+  apply α_preserves_SN with (s := id_subst E [[s]]).
+  eapply alpha_sym. apply alpha_sym_nil.
+  apply id_subst_alpha.
+  apply id_subst_is_IdSubst.
   assumption.
 Qed.
 
@@ -974,18 +885,10 @@ Fixpoint normalizer' {sigma : list (string * string)} (t t' : term) (HAlpha : Al
 (* Normalization procedure for well typed terms *)
 Definition normalizer E T (t : term) (Htype : has_type E t T) : term :=
   let t' := id_subst E [[t]] in
-  let HAlpha := @id_subst_alpha_type E t T Htype in
-  let HSN := strong_normalization_alpha Htype in
+  let HSN := strong_normalization Htype in
   let (t'', p ) := SN_d HSN in
   let (HAlpha', SNstep_d_t'') := p in
-
-    (* HAlpha says Alpha [] t t'
-       HAlpha' says Alpha [] t' t''
-       
-    Hence by transitivity: Alpha [] t t''
-    *)
-  let HAlphaTrans := alpha_trans alpha_trans_nil HAlpha HAlpha' in
-      @normalizer' [] t t'' HAlphaTrans SNstep_d_t''.
+      @normalizer' [] t t'' HAlpha' SNstep_d_t''.
 
 
 (* Local Variables: *)

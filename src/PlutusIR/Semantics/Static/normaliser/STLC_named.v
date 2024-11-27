@@ -172,7 +172,27 @@ Proof.
     ].
 Defined.
 
-Require Import Coq.Program.Equality.
+(** **** Notations *)
+(* Notation for substitution *)
+Notation "'[' x ':=' s ']' t" := (capms [(x, s)] t) (at level 20).
+
+Notation "sigma [[ t ]]" := (capms sigma t) (at level 20).
+
+Lemma capms_var_helper x sigma t :
+  ((x, t)::sigma) [[tmvar x]] = t.
+Admitted.
+
+Lemma capms_var_single_not x y t :
+  x <> y -> ((x, t)::nil) [[tmvar y]] = tmvar y.
+Admitted.
+
+Lemma capms_var_multi_not x y t sigma :
+  x <> y -> ((x, t)::sigma ) [[tmvar y]] = sigma [[tmvar y]].
+Admitted.
+
+
+
+(* Require Import Coq.Program.Equality. *)
 
 (* Equations? capmsfr_rename X X' T : term by wf (size T) :=
   capmsfr_rename X X' (tmvar Y) := if X =? Y then tmvar X' else tmvar Y;
@@ -233,7 +253,7 @@ Idea: [x to x'] (\x.\x.x) in the previous definition became
   
 
 *)
-Equations capmsfr (sigma : list (string * term)) (T : term) : term :=
+(* Equations capmsfr (sigma : list (string * term)) (T : term) : term :=
   capmsfr sigma (tmvar Y) := match lookup Y sigma with
                           | Some t => t
                           | None => tmvar Y
@@ -266,10 +286,4 @@ Proof.
     [ lia
     || replace T' with (rename Y Y' T); eauto; rewrite <- rename_preserves_size; eauto
     ].
-Qed.
-
-(** **** Notations *)
-(* Notation for substitution *)
-Notation "'[' x ':=' s ']' t" := (capms [(x, s)] t) (at level 20).
-
-Notation "sigma [[ t ]]" := (capms sigma t) (at level 20).
+Qed. *)

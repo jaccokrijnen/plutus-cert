@@ -5,18 +5,6 @@ Require Import Coq.Strings.String.
 Require Import Coq.Arith.Arith.
 Require Import Lia.
 
-Lemma capms_var_helper x sigma t :
-  ((x, t)::sigma) [[tmvar x]] = t.
-Admitted.
-
-Lemma capms_var_single_not x y t :
-  x <> y -> ((x, t)::nil) [[tmvar y]] = tmvar y.
-Admitted.
-
-Lemma capms_var_multi_not x y t sigma :
-  x <> y -> ((x, t)::sigma ) [[tmvar y]] = sigma [[tmvar y]].
-Admitted.
-
 (* Most complex lemma up to now (12 nov) that is completely proved and general over arbitrary substitutions! *)
 Lemma sub_vacuous' X t sigma sigma' s s' s'' ren ren1 ren2 :
   αCtxSub ren sigma sigma' ->
@@ -211,7 +199,6 @@ Proof.
     + apply ctx_id_left_is_id.
     + apply alpha_refl. apply alpha_refl_nil.
 Qed.
-
 
 Lemma ren_sub_compose_stronger s σ σ' X X' Y : forall s' s'' ren ren1 ren2,
   αCtxSub ren σ σ' ->
@@ -509,8 +496,6 @@ Proof.
   - apply legalRenSwap_id.
 Qed.
 
-Require Import Coq.Program.Equality.
-
 Lemma merge_sub_stronger' x2 y1 x4 y2 s3 t sigma2 sigma4 : forall s1 s2 s4 ren ren12 ren24 ren23 ren34,
   Alpha ren12 s1 (((x2, tmvar y2)::sigma2) [[s2]]) ->
   Alpha ren23 s2 s3 ->
@@ -668,12 +653,6 @@ Inductive IdSubst : list (string * term) -> Set :=
   | id_subst_nil : IdSubst nil
   | id_subst_cons : forall x sigma , IdSubst sigma -> IdSubst ((x, tmvar x)::sigma).
 
-Lemma id_subst_preserves_alpha s sigma :
-  IdSubst sigma -> nil ⊢ sigma [[s]] ~ s.
-Proof.
-  (* WE cannot use ren sub compose because no freshness *)
-Admitted.
-
 (* Remove ftv assumptions and instead destruct in var and lam cases *)
 Lemma commute_sub_stronger y y' t t' i1 σ σ' : forall s i2 s' R R1 R2 R12 R3,
   αCtxTrans R1 R2 R12 ->
@@ -779,4 +758,64 @@ Proof.
                 | apply alpha_refl; constructor
                 | auto ].
     apply alpha_ctx_ren_nil.
+Qed.
+
+
+(* Identity substitutions preserve alpha equivalence *)
+(* The identity substitution is in the EL relation *)
+Lemma id_subst_alphavar x σ :
+  IdSubst σ ->
+  tmvar x = σ [[tmvar x]]. 
+Proof.
+  intros HidSubst.
+  rewrite capms_equation_1.
+  destruct (lookup x σ) eqn: Hlookup.
+  - induction HidSubst.
+    + inversion Hlookup.
+    + destr_eqb_eq x0 x.
+      * simpl in Hlookup.
+        rewrite String.eqb_refl in Hlookup.
+        inversion Hlookup; subst.
+        reflexivity.
+      * simpl in Hlookup.
+        apply String.eqb_neq in H.
+        rewrite H in Hlookup.
+        apply IHHidSubst in Hlookup.
+        rewrite Hlookup.
+        reflexivity.
+  - reflexivity.
+Qed.
+
+Lemma id_subst_alpha_stronger s σ : forall s' s'' ren ren1 ren2,
+  IdSubst σ ->
+  ren1 ⊢ s' ~ s ->
+  ren2 ⊢ s ~ s'' ->
+  αCtxTrans ren1 ren2 ren ->
+  ren ⊢ s' ~ (σ [[s'']]).
+Proof.
+  induction s; intros s' s'' ren ren1 ren2 HidSub HalphaS1 HalphaS2 Htrans;
+  inversion HalphaS1; subst;
+  inversion HalphaS2; subst.
+  - rewrite <- (id_subst_alphavar y σ HidSub).
+    eapply alpha_trans; eauto.
+  - autorewrite with capms; simpl.
+    remember (fresh2 _ s3) as b2.
+    apply alpha_lam.
+    eapply IHs; eauto.
+    + eapply alpha_trans_rename_right; eauto.
+    + apply alpha_trans_cons; eauto.
+  - autorewrite with capms.
+    apply alpha_app.
+    + eapply IHs1; eauto.
+    + eapply IHs2; eauto.
+Qed.
+
+Lemma id_subst_alpha s σ :
+  IdSubst σ -> nil ⊢ s ~ (σ [[s]]).
+Proof.
+  intros HidSubst.
+  eapply id_subst_alpha_stronger; eauto.
+  - apply alpha_refl. apply alpha_refl_nil.
+  - apply alpha_refl. apply alpha_refl_nil.
+  - apply alpha_trans_nil.
 Qed.
