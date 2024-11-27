@@ -570,13 +570,9 @@ Admitted.
 Lemma reducible_sn : reducible SN.
 Proof. 
   constructor; eauto using ARS.sn. by move=> s t [f] /f. 
+  intros s.  elim: s => //.
+Qed.
 
-  (*
-  
-  TODO INCOMPLETE
-  
-  *)
-Admitted.
 Global Hint Resolve reducible_sn : core.
 
 Lemma reducible_var P x : reducible P -> P (tmvar x).
