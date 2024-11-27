@@ -44,6 +44,18 @@ Proof.
   (* Proof will go something similar to alphaRenameStronger *)
 Admitted.
 
+Lemma ftv_var x x' :
+  In x (ftv (tmvar x')) -> x = x'.
+Proof.
+  simpl. intuition.
+Qed.
+
+Lemma ftv_var_eq x :
+  In x (ftv (tmvar x)).
+Proof.
+  simpl. intuition.
+Qed.
+
 (* By X in ftv tmlam Y, we know X <> Y.
   It doesnt matter wheteher Y' = X, if it is, then also X in ftv (rename Y Y' t).
 *)
@@ -67,6 +79,15 @@ Qed.
 Lemma ftv_lam_negative X Y A t :
   ~ In X (ftv (tmlam Y A t)) -> X <> Y -> ~ In X (ftv t).
 Admitted.
+
+Lemma tv_not_lam X Y A t :
+  ~ In X (tv (tmlam Y A t)) -> prod (X <> Y) (~ In X (tv t)).
+Proof.
+  intros HXnotinlam.
+  unfold tv in HXnotinlam.
+  fold tv in HXnotinlam.
+  split; now apply not_in_cons in HXnotinlam.
+Qed.
 
 Lemma tv_lam_rename_helper X Y Y' A t :
    Y <> Y' -> ~ In X (tv (tmlam Y A t)) -> ~ In X (tv (rename Y Y' t)).
@@ -250,7 +271,7 @@ Lemma step_preserves_no_ftv s s' x :
 Proof.
   intros Hnotins Hstep.
   induction Hstep.
-  - unfold ftv.
+  - admit.
   (*
     x notin ftv (tmapp (tmlam x0 A s) t).
     Suppose x <> x0.
@@ -262,6 +283,9 @@ Proof.
     then x notin ftv t.
     if x in ftv s, then it gets replaced by t, so x notin [x0 := t] s.
   *)
+  - admit.
+  - admit.
+  - admit.
 Admitted. 
 
 Fixpoint ftv_keys_env (sigma : list (string * term)) : list string :=
@@ -269,25 +293,6 @@ Fixpoint ftv_keys_env (sigma : list (string * term)) : list string :=
   | nil => nil
   | (x, t)::sigma' => x :: (ftv t) ++ (ftv_keys_env sigma')
   end.
-
-  (* 
-    Can there be a ftv in t that is equal to g2, then there is a problem?
-    Suppose there is.
-    Then this must be in the keys of sigma:
-      - if it was not in the keys of sigma, it would still be in sigma [[t]]
-      - so then it could not be equal to g2.
-    .
-    Since we also freshen over sigma, and thus over the keys of sigma,
-    it can still not be equal to g2.
-  *)
-Lemma fresh2_subst_helper { Y sigma t } :
-  ~ In Y (tv (sigma [[t]])) -> ~ In Y (tv_keys_env sigma) -> ~ In Y (ftv t).
-Proof.
-  intros.
-  induction sigma.
-  - admit.
-  - 
-Admitted.
 
 Lemma alpha_extend_fresh {x x' ren t t'}:
   ~ In x (ftv t) ->

@@ -91,3 +91,7 @@ Admitted.
 Lemma lookup_some_then_in_values y t (sigma : list (string * term)) :
   lookup y sigma = Some t -> In t (map snd sigma).
 Admitted.
+
+Lemma lookup_no_key_then_none X (sigma : list (string * term)) :
+  ~ In X (map fst sigma) -> lookup X sigma = None.
+Admitted.

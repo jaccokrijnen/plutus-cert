@@ -1,13 +1,164 @@
 
 From PlutusCert Require Import STLC_named alpha alpha_ctx_sub Util.List freshness util alpha_rename.
 Require Import Coq.Lists.List.
+Require Import Coq.Strings.String.
+
+Require Import Coq.Program.Equality.
+
+
+
+(* Suppose In x' (ftv s'), then L x' s'*)
+
+Lemma alphavar_contradiction_shadow' {x x0 y g : string} {ren1 ren2} :
+  x0 <> x -> ~ In x (map fst ren1) -> AlphaVar ren2 x y -> AlphaVar (((x0, y)::ren1) ++ ren2) x g -> False.
+Proof with try contradiction.
+  intros.
+  induction ren2.
+  - inversion H2; subst...
+    inversion H1; subst... (* contradiction: y notin fst ren1, but AlphaVar ren1 y g with y <> g*) admit.
+
+  - destruct a.
+    inversion H1; subst.
+    + inversion H2; subst...
+      (* By x notin fst ren1, we know that AlphaVar ren1 ++ (x, y):: ren2) x g implies
+        AlphaVar (x, y)::ren2 x g. But y <> g. contradiction.
+      *)
+      admit.
+    + inversion H2; subst...
+      (*
+        From AlphaVar ren1 ++ (s, s0)::ren2 x g we know (s, s0)::ren2 x g. Then alphavar unique says y = g, contradiction.
+        *)
+Admitted.
+
+Lemma alphavar_contradiction_shadow {x x0 y g : string} {ren} :
+  x0 <> x -> AlphaVar ren x y -> AlphaVar ((x0, y)::ren) x g -> False.
+Proof with try contradiction.
+  intros.
+  induction ren.
+  - inversion H1; subst...
+    apply (alphavar_unique_right H0) in H9...
+  - destruct a.
+    inversion H0; subst.
+    + inversion H1; subst...
+      inversion H9; subst...
+    + inversion H1; subst...
+      inversion H12; subst...
+      eapply IHren; eauto.
+      apply alpha_var_diff; assumption.
+Qed.
+
+
+(* If x in ftv s, then there exists no s' for this context*)
+Lemma uhm3 (x x0 z y : string) s s' ren1 ren2 :
+    x0 <> x -> ~ In x (map fst ren1) -> In x (ftv s) -> AlphaVar ren2 x y -> Alpha ((x0, y)::ren1 ++ ren2) s s' -> False.
+Proof.
+    intros.
+    generalize dependent x0.
+    generalize dependent ren1.
+    generalize dependent ren2.
+    generalize dependent s'.
+    induction s; intros s' ren2 Hxy ren1 Hxnotren1 x0 Hx0notx Halpha.
+    - inversion Halpha; subst.
+      unfold ftv in H1. apply in_inv in H1; destruct H1; try contradiction; subst.
+      apply (alphavar_contradiction_shadow' Hx0notx Hxnotren1 Hxy H2).
+
+    - inversion Halpha; subst.
+      assert (x <> s).
+      {
+        intros Hcontra; subst.
+        apply ftv_lam_no_binder in H1.
+        contradiction.
+      } 
+      apply ftv_lam_helper in H1.
+      (* Suppose y0 = y. Then we can use IHs with x1 = s and ren3 = (x0, y)::ren1 and ren0 = ren2
+      
+        Suppose now y0 <> y. Also s <> x0. ??? no we dont know that. Nooo... so we cant do swap.
+
+        So we need to extend it with a prepending of (a, b), where a <> x and b <> y...
+      *)
+Admitted.
+
+Lemma alpha_preserves_ftv' {x s s' ren} :
+  In x (ftv s) -> Alpha ren s s' -> { x' & prod (AlphaVar ren x x') (In x' (ftv s')) }.
+Proof.
+  intros Hxins Halphas.
+  induction Halphas.
+  - apply ftv_var in Hxins; subst.
+    exists y; split; auto.
+    apply ftv_var_eq.
+  - assert (x <> x0).
+    {
+      intros Hcontra; subst.
+      apply ftv_lam_no_binder in Hxins.
+      contradiction.
+    } 
+    apply ftv_lam_helper in Hxins.
+    destruct (IHHalphas Hxins) as [x' [Halphax Hx'ins'] ].
+    exists x'; split.
+    + inversion Halphax; subst; try contradiction. assumption.
+    + simpl.
+      apply in_in_remove; auto.
+      assert (x' <> y).
+      {
+        intros Hcontra; subst.
+        inversion Halphax; subst; contradiction.
+      }
+      assumption.
+  - simpl in Hxins; apply in_app_sum in Hxins; destruct Hxins as [H | H].
+    + destruct (IHHalphas1 H) as [x' [Halphax Hx'ins'] ].
+      exists x'; split; auto.
+      apply in_or_app; left; auto.
+    + destruct (IHHalphas2 H) as [x' [Halphax Hx'ins'] ].
+      exists x'; split; auto.
+      apply in_or_app; right; auto.
+Qed.
+    
+
+
+
+
+
+Lemma alpha_preserves_ftv {x x' s s' ren } :
+  In x (ftv s) ->
+  Alpha ren s s' ->
+  AlphaVar ren x x' ->
+  In x' (ftv s').
+Proof.
+  intros Hxins Halphas Halphax.
+  apply (alpha_preserves_ftv' Hxins) in Halphas as [y [Halphay Hyins] ].
+  apply (alphavar_unique_right Halphax) in Halphay; subst.
+  assumption.
+Qed.
+
+
+Lemma alpha_preserves_no_ftv {x x' s s' ren} :
+  ~ In x (ftv s) ->
+  Alpha ren s s' ->
+  AlphaVar ren x x' ->
+  ~ In x' (ftv s').
+Proof.
+  intros Hnotin Halphas Halphax.
+  intros Hcontra.
+  assert (sym_alpha_ctx ren ⊢ s' ~ s).
+  {
+    eapply alpha_sym; eauto.
+    apply sym_alpha_ctx_is_sym.
+  }
+  assert (AlphaVar (sym_alpha_ctx ren) x' x).
+  {
+    eapply alphavar_sym; eauto.
+    apply sym_alpha_ctx_is_sym.
+  }
+  eapply (alpha_preserves_ftv Hcontra H) in H0.
+  contradiction.
+Qed.
 
 (* Uses stronger assumption that x notin tv s instead of ftv s
   Makes life easier for not having to deal with binders 
   Example: x notin ftv (tmlam x. x), but x in ftv x, which is its body.
           However x in tv (tmlam x. x), as well as in tmlam x. y. easier.
    *)
-Lemma alpha_preserves_ftv {x x' s s' ren} :
+Lemma alpha_preserves_ftv_from_tv {x x' s s' ren} :
   ~ In x (tv s) ->
   Alpha ren s s' ->
   AlphaVar ren x x' ->
@@ -62,7 +213,7 @@ Proof.
     + eapply IHHalphas2; eauto.
 Qed.
 
-Lemma alpha_preserves_ftv_right {x x' s s' ren} :
+Lemma alpha_preserves_ftv_tv_right {x x' s s' ren} :
   ~ In x' (tv s') ->
   Alpha ren s s' ->
   AlphaVar ren x x' ->
@@ -464,3 +615,47 @@ Proof.
     + right.
       eapply IHs'2; eauto.
 Qed.
+
+  (* 
+    Can there be a ftv in t that is equal to g2, then there is a problem?
+    Suppose there is.
+    Then this must be in the keys of sigma:
+      - if it was not in the keys of sigma, it would still be in sigma [[t]]
+      - so then it could not be equal to g2.
+    .
+    Since we also freshen over sigma, and thus over the keys of sigma,
+    it can still not be equal to g2.
+  *)
+Lemma fresh2_subst_helper { Y sigma t } :
+  ~ In Y (tv (sigma [[t]])) -> ~ In Y (tv_keys_env sigma) -> ~ In Y (ftv t).
+Proof.
+  intros.
+  generalize dependent sigma.
+  induction t; intros.
+  - rewrite capms_equation_1 in H.
+    destruct (lookup s sigma) eqn:Hlookup.
+    + apply lookup_some_then_in in Hlookup.
+      (* s in sigma. Y notin sigma => Y notin s.*)
+      admit.
+    + intros Hcontra.
+      apply extend_ftv_to_tv in Hcontra.
+      contradiction.
+  - (* If we can show Y notin ftv t0: Done*)
+    rewrite capms_equation_2 in H. 
+    remember (fresh2 _ _) as g.
+    assert (~ In Y (tv ((sigma [[rename s g t0]])))) by admit.
+    (*
+
+    If s = Y, we are donel. Hence assume s <> Y
+    notin Y (tv (tmlam g t sigma (rename s g t0)))
+    Hence Y <> g.
+
+    notin Y (tv sigma [[rename s g t0]])
+    notin Y (tv (s, g)::sigma [[t0]])
+
+    Do we have Y notin tv_keys_env (s,g)::sigma, yes!
+
+    Ok, so for this we need ren sub compose! But do we not need this in ren sub compose by any chance?
+    *)
+
+Admitted.

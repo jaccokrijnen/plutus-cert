@@ -197,6 +197,16 @@ Proof with auto.
     now apply alpha_sym_cons.
 Qed.
 
+Lemma alphavar_sym {s t ren ren'}:
+  AlphaCtxSym ren ren' -> AlphaVar ren s t -> AlphaVar ren' t s.
+Proof.
+  intros.
+  assert (Alpha ren (tmvar s) (tmvar t)) by now apply alpha_var.
+  eapply alpha_sym in H1; eauto.
+  inversion H1; subst; auto.
+Qed.
+
+
 Inductive αCtxTrans : list (string * string) -> list (string * string) -> list (string * string) -> Set :=
 | alpha_trans_nil : αCtxTrans [] [] []
 | alpha_trans_cons x y z ren ren' ren'' :
@@ -276,6 +286,18 @@ Proof.
     apply alpha_sym_cons.
     assumption.
 Qed.
+
+Lemma sym_alpha_ctx_left_is_sym ren :
+  AlphaCtxSym (sym_alpha_ctx ren) ren.
+Proof.
+  induction ren.
+  - simpl.
+    constructor.
+  - simpl.
+    destruct a as [x y].
+    apply alpha_sym_cons.
+    assumption.
+Qed.
     
 
 Inductive IdCtx : list (string * string) -> Set :=
@@ -283,6 +305,11 @@ Inductive IdCtx : list (string * string) -> Set :=
 | id_ctx_cons x ren :
     IdCtx ren -> 
     IdCtx ((x, x) :: ren).
+
+Lemma sym_alpha_ctx_preserves_id_ctx ren :
+  IdCtx ren -> IdCtx (sym_alpha_ctx ren).
+Proof.
+Admitted.
 
 Lemma alphavar_unique_right X Y Y' ren :
   AlphaVar ren X Y -> AlphaVar ren X Y' -> Y = Y'.
@@ -389,6 +416,14 @@ Proof.
     apply lrs_cons.
     assumption.
 Qed.
+
+Lemma lrs_trans ren1 ren2 ren3 :
+  LegalRenSwap ren1 ren2 -> LegalRenSwap ren2 ren3 -> LegalRenSwap ren1 ren3.
+Admitted.
+
+Lemma lrs_sym ren1 ren2 :
+  LegalRenSwap ren1 ren2 -> LegalRenSwap ren2 ren1.
+Admitted.
 
 Lemma alphavar_weaken {v w ren s t} :
   v <> s -> w <> t -> AlphaVar ((v, w)::ren) s t -> AlphaVar ren s t.

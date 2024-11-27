@@ -3,6 +3,39 @@ Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Strings.String.
 
+(* Prove later,  makes sense.
+
+doesnt work for ren = [y, y'; (z, z')] and t = (λ x. z) y. Then t' = z' and s' = z
+Then we need an s, s.t. 
+
+  s steps to s', and Alpha [(y, y'), (z, z')] s (λ x. z) y.
+  For the latter, we need s  to be of the form (λ x' . z') ?, there is no choice for ?. 
+  If we choose y, it gets mapped to y' incorrectly. 
+  If we choose g, it does not get mapped to y....
+
+  it is the ftv problem all over again, that is the culprit!
+    And for the first 
+*)
+Lemma step_preserves_alpha' {s' t t'} ren :
+  Alpha ren s' t' -> step t t' -> {s & prod (step s s') (Alpha ren s t)}. 
+Proof.
+  intros Halpha Hstep.
+  generalize dependent s'.
+  generalize dependent ren.
+  induction Hstep; intros ren s0 Halpha; inversion Halpha; subst.
+  - (* what happens if x0*)
+    admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+Admitted.
+
+Lemma red_preserves_alpha' {s' t t' } ren :
+  Alpha ren s' t' -> red t t' -> {s & prod (red s s') (Alpha ren s t)}.
+Admitted.
+
 (* TODO: Probably need to prove this with strenghtened induction (non-empty context) for the lambda case *)
 Lemma step_preserves_alpha {s} {s'} {t} ren :
   Alpha ren s t -> step s s' -> {t' & prod (step t t') (Alpha ren s' t')}.
@@ -42,6 +75,10 @@ Proof.
     + apply alpha_lam.
       assumption.
 Qed.
+
+Lemma red_preserves_alpha {s} {s'} {t} ren :
+  Alpha ren s t -> red s s' -> {t' & prod (red t t') (Alpha ren s' t')}.
+Admitted.
 
 (* Why do we need this up to alpha equivalence?
 

@@ -14,7 +14,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 From PlutusCert Require Import STLC_named STLC_named_typing ARS.
-From PlutusCert Require Import alpha alpha_rename rename util alpha_ctx_sub freshness alpha_freshness alpha_step step.
+From PlutusCert Require Import alpha alpha_rename rename util alpha_ctx_sub freshness alpha_freshness alpha_step step alpha_sub.
 
 
 
@@ -111,28 +111,40 @@ Proof.
       * rewrite e.
         unfold lookup.
         rewrite eqb_refl.
-        (* apply star1. *)
-        (* assumption. *)
-        admit.
+        exists t2; split.
+        -- eapply (@starSE) with (e := step).
+            ++ apply starR.
+            ++ assumption.
+        -- apply alpha_refl. apply alpha_refl_nil.
       * unfold lookup.
-        destruct (x =? s);
-        admit.
-        (* -- apply star1.
-           assumption.
-        -- apply starR. *)
+        destruct (x =? s).
+        -- exists t2; split.
+           ++ eapply (@starSE) with (e := step).
+              ** apply starR.
+              ** assumption.
+           ++ apply alpha_refl. apply alpha_refl_nil.
+        -- exists (tmvar s); split.
+           ++ apply starR.
+           ++ apply alpha_refl. apply alpha_refl_nil.
     + destruct (string_dec x Y).
       * rewrite e.
         unfold lookup.
         rewrite eqb_refl.
-        admit.
-        (* apply star1.
-        assumption. *)
+        exists t2; split.
+        -- eapply (@starSE) with (e := step).
+            ++ apply starR.
+            ++ assumption.
+        -- apply alpha_refl. apply alpha_refl_nil.
       * unfold lookup.
-        destruct (x =? Y);
-        admit.
-        (* -- apply star1.
-           assumption.
-        -- apply starR. *)
+        destruct (x =? Y).
+        -- exists t2; split.
+           ++ eapply (@starSE) with (e := step).
+              ** apply starR.
+              ** assumption.
+           ++ apply alpha_refl. apply alpha_refl_nil.
+        -- exists (tmvar Y); split.
+            ++ apply starR.
+            ++ apply alpha_refl. apply alpha_refl_nil.
   - (* lambda abstraction *)
     simpl.
     rewrite capms_equation_2.
@@ -142,6 +154,7 @@ Proof.
     remember (fresh2 [(Y, tmvar Y);(x, t2)] (mren (drop Y rho) T_body)) as x2. (* x' and x2 only equal if we dont look at bound vars*)
     remember (drop Y rho) as rho'.
     specialize (IH ((Y, x')::rho') t1 t2 Hstep).
+    (* Let's try the exists formulation again *)
     destruct IH as [someAlpha [HredAlpha Halpha] ].
 
     (* exists (tmlam x' K1 someAlpha). *)
@@ -169,22 +182,229 @@ Proof.
       assumption.  *)
 Admitted.
 
-Lemma red_beta x s t1 t2 : step t1 t2 -> red ([x := t1] s) ([x := t2] s).
-Proof. 
-  intros Hstep.
-  induction s.
-  - admit.
-  - rewrite capms_equation_2. simpl.
-    rewrite capms_equation_2. simpl.
-    remember (fresh2 [(x, t1)] s0) as s0'.
-    remember (fresh2 [(x, t2)] s0) as s0''.
-    (* apply red_abs. *)
+Require Import Ascii.
+
+    (*
     
-  (* move=> h. 
-  apply red_beta_ren with (rho := nil) (x := x) (s := s) in h.
-  rewrite mren_id in h. *)
-  (* assumption. *)
+    Hmm: we know [x := t1] s ~ [x' := t1'] s' under R if all the ingredients are.
+    
+    sooooo suppose there is only one var y∈ U.
+    Let R = [(y, y' = "b" ++ fresh2 x t1 s)]. 
+
+    Suppose y <> x
+
+    Then we know (y, y') |- [x := t1] s ~ [x := ren y y' t1] (ren y y' s)
+
+    (y, y')::ren t1 (ren y y' t1).
+    (y, y')::ren t2 (ren y y' t2). => (y, y')::ren t1 ~ t2, because y notin t2
+
+
+    *)
+
+Lemma add_vacuous x t1 t2 s s' s'' ren1 ren2 ren :
+  ren1 ⊢ s' ~ s ->
+  ren2 ⊢ s ~ s'' ->
+  ren ⊢ t2 ~ t2 ->
+  AlphaVar ren x x ->
+  αCtxTrans ren1 ren2 ren ->
+  ren ⊢ ([x := t2] s') ~ (((x, t2)::(x, t1)::nil) [[s'']]).
+Proof.
+  intros HalphaS1 HalphaS2 Halphat2 Halphax HalphaTrans.
+  generalize dependent s'.
+  generalize dependent s''.
+  generalize dependent ren.
+  generalize dependent ren1.
+  generalize dependent ren2.
+  induction s; intros.
+  - inversion HalphaS1; subst.
+    inversion HalphaS2; subst.
+    assert (AlphaVar ren x0 y). { eapply alpha_var_trans; eauto. }
+    destr_eqb_eq x x0.
+    {
+      assert (y = x0). { apply (alphavar_unique_right Halphax) in H. symmetry. auto. }  subst.
+      rewrite capms_var_helper.
+      rewrite capms_var_helper.
+      assumption.
+    }
+    {
+      assert (y <> x). { apply (alphavar_unique_not_left H0 Halphax) in H. symmetry. auto. }
+      rewrite capms_var_single_not.
+      rewrite capms_var_multi_not.
+      rewrite capms_var_single_not.
+      eapply alpha_trans; eauto.
+      - symmetry; auto.
+      - symmetry; auto.
+      - auto.
+    }
+  - inversion HalphaS1; subst.
+    inversion HalphaS2; subst.
+    autorewrite with capms.
+    simpl.
+    remember (fresh2 _ s1) as b1.
+    remember (fresh2 _ s3) as b2.
+    apply alpha_lam.
+    eapply IHs.
+    + eapply alpha_extend_fresh.
+      * eapply fresh2_over_tv_value_sigma in Heqb1.
+        -- intros Hcontra. 
+           apply extend_ftv_to_tv in Hcontra.
+           apply Heqb1 in Hcontra.
+           contradiction.
+        -- apply in_cons; apply in_eq.
+      * eapply fresh2_over_tv_value_sigma in Heqb2.
+        -- intros Hcontra. 
+           apply extend_ftv_to_tv in Hcontra.
+           apply Heqb2 in Hcontra.
+           contradiction.
+        -- apply in_cons; apply in_eq.
+      * assumption.
+    + apply alpha_var_diff.
+      * eapply fresh2_over_key_sigma in Heqb1.
+        -- intros Hcontra. 
+           apply Heqb1 in Hcontra.
+           contradiction.
+        -- apply in_cons; apply in_eq.
+      * eapply fresh2_over_key_sigma in Heqb2.
+        -- intros Hcontra. 
+           apply Heqb2 in Hcontra.
+           contradiction.
+        -- apply in_cons; apply in_eq.
+      * assumption.
+    + apply alpha_trans_cons.
+      eauto.
+    + eapply alpha_trans_rename_right; eauto.
+    + eapply alpha_trans_rename_left; eauto.
+  - inversion HalphaS1.
+    inversion HalphaS2; subst.
+    autorewrite with capms.
+    apply alpha_app.
+    + eapply IHs1; eauto.
+    + eapply IHs2; eauto.
+Qed.
+
+    
+
+
+Lemma red_beta' x s t1 t2 : 
+  step t1 t2 ->
+  forall s' s'' ren1 ren2 ren,
+  ren1 ⊢ s' ~ s ->
+  ren2 ⊢ s ~ s'' ->
+  ren ⊢ t1 ~ t1 ->
+  ren ⊢ t2 ~ t2 ->
+  AlphaVar ren x x ->
+  αCtxTrans ren1 ren2 ren ->
+  { a & prod 
+    (ren ⊢ ([x := t1] s') ~ a)
+    (red a (((x, t2)::(x, t1)::nil) [[s'']])) }. (* Ugly cheat: adding the x, t1 makes sure it does not generate fresh vars equal to ftv of t1...*)
+Proof. 
+
+  intros Hstep.
+  induction s; intros s' s'' ren1 ren2 ren HalphaS1 HalphaS2 Halphat1 Halphat2 Halphax HalphaTrans.
+  - inversion HalphaS1; subst.
+    inversion HalphaS2; subst.
+    (* Do we have ren |- t1 ~ t1 ?
+    
+      Maybe if the condition is: forall (u, v) in ren
+      if v notin ftv t2, then u notin ftv t1
+
+      But suppose there was some x in ftv t1, that disappears in the step.
+
+      Can we then get the situtaion (x, y) |- t1 ~ t1 ? 
+      y notin ftv t2, so y notin ftv t1
+    *)
+    autorewrite with capms.
+     admit.
+  - (* tmlam *)
+    inversion HalphaS1; subst.
+    inversion HalphaS2; subst.
+    autorewrite with capms; simpl.
+    remember (fresh2 _ s1) as b1.
+    remember (fresh2 _ s3) as b2.
+    eexists (tmlam b2 t _).
+
+    remember (fresh2 [(b1, t1); (b2, t2); (x, tmvar x)] s0) as b3.
+    specialize (IHs (rename x0 b1 s1) (rename y b2 s3) ((b1, s)::ren1) ((s, b2)::ren2) ((b1, b2)::ren)).
+    assert ({a : term & prod
+        (((b1, b2) :: ren)
+        ⊢ [x := t1] rename x0 b1 s1 ~ a ) (
+        red a (((x, t2)::(x, t1)::nil) [[rename y b2 s3]] ))}) as [a' [Halpha' Hstep'] ].
+    {
+      eapply IHs.
+      - eapply alpha_trans_rename_left; eauto.
+      - eapply alpha_trans_rename_right; eauto. 
+      - (* such a cheat!!!! *)
+           
+        admit.
+      - admit.
+      - admit.
+      - apply alpha_trans_cons.
+        eauto.
+    
+    }
+    split.
+    + apply alpha_lam.
+      (* instantiate (1 := ). *)
+
+      (* 
+
+      *)
+      admit.
+    + apply red_abs.
+      (* ?Goal1 := (rename b3 b2 a') 
+        Because then ((b1, b2)::ren) [x := t1] rename x0 b1 s1 ~ rename b3 b2 a'.
+
+        Do we then have:
+
+        red (rename b3 b2 a') ([x := t2] rename y b2 s3)?
+
+        We know
+          red a' ([x := t2] rename y b3 s3).
+          Then also
+          red (rename b3 b2 a') ([x := t2] rename b3 b2 (rename y b3 s3)) probably...
+          nah, it is unclear why we could do rename b3 b2 a'. What if b2 already in a'?
+          it cant be, because it isnt in [x := t2] (rename y b3 s3). ... annoying argument.
+      *)
+      
 Admitted.
+
+Lemma use_red_beta' x s t1 t2 :
+  step t1 t2 ->
+  forall s' s'' ren1 ren2 ren,
+  ren1 ⊢ s' ~ s ->
+  ren2 ⊢ s ~ s'' ->
+  ren ⊢ t1 ~ t1 ->
+  ren ⊢ t2 ~ t2 ->
+  AlphaVar ren x x ->
+  αCtxTrans ren1 ren2 ren ->
+  { a & prod 
+    (ren ⊢ ([x := t1] s') ~ a)
+    (red a (((x, t2)::nil) [[s'']])) }.
+Proof.
+  intros.
+  assert ({a & prod 
+    (ren ⊢ ([x := t1] s') ~ a)
+    (red a (((x, t2)::(x, t1)::nil) [[s'']])) }) as [a [Halpha Hred] ].
+  {
+    eapply red_beta'; eauto.
+  }
+  (* red a  -> (x, t2); (x, t1)] [[s'']]
+  
+    Also (x, t2); (x, t1)] [[s'']]   Alpha to   (x, t2) [[s'']] with empty ren.
+
+    Hence exists a' s.t. red a' ((x, t2)::nil) [[s'']] and Alpha nil a a'.
+    by alpha preserves step I think. We would need to reverse it and do it on level of reductions
+
+    Well, also ren |- [x := t1] s' ~ a, 
+    so then also
+    ren |- [x := t1] s' ~ a'.
+
+    Hence we choose a' as the witness.
+
+
+  *)
+Admitted.
+    
 
 (* Strong Normalization *)
 
@@ -216,7 +436,7 @@ Proof.
 
   
   rewrite eqn => /ih. eauto.
-  Qed.
+Qed.
 
 Lemma sn_preimage_alpha {e : term -> term -> Set} (h : term -> term) x :
   (forall x y, e x y -> { a : term & prod(Alpha [] (h y) a) (e (h x) a) }) -> 
@@ -262,8 +482,6 @@ Proof.
       * assumption. *)
 Admitted.
 
-
-
 (* The Reducibility Candidates/Logical Predicate*)
 
 Definition cand := term -> Set.
@@ -287,6 +505,52 @@ Fixpoint L (T : type) : cand :=
     | tp_base => SN 
     | tp_arrow A B => fun s => forall t, L A t -> L B (tmapp s t)
   end.
+
+Require Import Coq.Program.Equality.
+
+(* Very important result that shows why working up to alpha equivalence is well founded *)
+Theorem α_preserves_SN s s' :
+  Alpha [] s s' -> SN s -> SN s'.
+Proof.
+  intros Hα Hsn.
+  generalize dependent s'.
+  induction Hsn. intros s' Hα.
+  apply SNI.
+  intros y1 Hstep.
+  assert ({y1_α & prod (step x y1_α) (nil ⊢ y1 ~ y1_α)}) as [y1_α [Hstep' Hα'] ].
+  {
+    eapply step_preserves_alpha; auto.
+    - eapply alpha_sym in Hα. exact Hα. apply alpha_sym_nil.
+    - assumption.
+  }
+  eapply H.
+  - exact Hstep'.
+  - eapply alpha_sym. apply alpha_sym_nil. exact Hα'.
+Qed.
+
+(* integrally depends on α_preserves_SN *)
+Lemma α_preserves_L A s s' :
+  Alpha [] s s' -> L A s -> L A s'.
+Proof.
+  intros.
+  generalize dependent s.
+  generalize dependent s'.
+  induction A; intros.
+  - simpl. simpl in H0.
+    apply α_preserves_SN with s; assumption.
+  - simpl in H0.
+    simpl.
+    intros t Ht.
+    specialize (H0 t Ht).
+    assert (nil ⊢ (tmapp s t) ~ (tmapp s' t)).
+    {
+      apply alpha_app.
+      - assumption.
+      - apply alpha_refl. apply alpha_refl_nil.
+    }
+    specialize (IHA2 (tmapp s' t) (tmapp s t) H1 H0).
+    assumption.
+Qed.
 
 (* TODO: Compare with Inductive instantiation from normalisation in
   PLF: that has a cleaner definition, but restraints the order*)
@@ -375,8 +639,20 @@ Proof with eauto.
   move=> snt h. have sns := sn_subst (L_sn h).
   elim: sns t snt h => {} s sns ih1 t. elim=> {} t snt ih2 h.
   apply: L_nc => // u st. inv st => //.
-  - inv H2. apply: ih1 => //. apply: L_cl h _. admit. (* exact: step_subst. *) (* need to alphafy this lemma *)
-  - apply: ih2 => //. apply: L_cl_star h _. exact: red_beta.
+  - inv H2. apply: ih1 => //. 
+    assert ({α & prod (step ([x := t] s) (α)) (nil ⊢ α ~ [x := t] s0)}).
+    {
+      eapply step_subst.
+      assumption.
+    }
+    destruct H as [alpha [Hred Halpha] ].
+    apply (L_cl h) in Hred.
+    apply α_preserves_L with (s := alpha); assumption.
+    (* Now we know L A alpha. *)
+    (* It seems close. We just need to know how to incorporate this*)
+    
+    (* exact: step_subst. *) (* need to alphafy this lemma *)
+  - apply: ih2 => //. apply: L_cl_star h _. 
 Admitted.
 
 Lemma beta_expansion_subst X t sigma s A B :

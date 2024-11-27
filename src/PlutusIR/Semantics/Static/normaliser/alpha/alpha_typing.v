@@ -1,7 +1,16 @@
+Require Import Coq.Lists.List.
+Require Import Coq.Strings.String.
+Import ListNotations.
+From PlutusCert Require Import alpha STLC_named STLC_named_typing Util.List.
+Local Open Scope string_scope.
+Local Open Scope list_scope.
+
+(* Alpha equivalence of types *)
+
 (* Contextual alpha equivalence: kinding contexts that match alpha contexts*)
 Inductive CAlpha : list (string * string) -> list (string * type) -> list (string * type) -> Prop :=
   | calpha_nil : CAlpha [] [] []
-  | calpha_cons sigma Gamma Gamma' x y K :
+  | calpha_cons x y K sigma Gamma Gamma' :
     CAlpha sigma Gamma Gamma' ->
     CAlpha ((x, y)::sigma) ((x, K)::Gamma) ((y, K)::Gamma').
 
@@ -52,7 +61,7 @@ Proof.
   - intros Gamma' Gamma HCAlpha A0 HType.
     inversion HType.
     specialize (IHHAlpha ((y, A)::Gamma') ((x, A)::Gamma)
-      (calpha_cons x y A HCAlpha) K2 H4).
+      (calpha_cons x y A sigma Gamma Gamma' HCAlpha) K2 H4).
     apply K_Lam.
     assumption.
   - intros Gamma' Gamma HCAlpha A HType. 
