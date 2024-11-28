@@ -16,21 +16,6 @@ Then we need an s, s.t.
   it is the ftv problem all over again, that is the culprit!
     And for the first 
 *)
-Lemma step_preserves_alpha' {s' t t'} ren :
-  Alpha ren s' t' -> step t t' -> {s & prod (step s s') (Alpha ren s t)}. 
-Proof.
-  intros Halpha Hstep.
-  generalize dependent s'.
-  generalize dependent ren.
-  induction Hstep; intros ren s0 Halpha; inversion Halpha; subst.
-  - (* what happens if x0*)
-    admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-Admitted.
 
 Lemma red_preserves_alpha' {s' t t' } ren :
   Alpha ren s' t' -> red t t' -> {s & prod (red s s') (Alpha ren s t)}.
@@ -49,8 +34,7 @@ Proof.
     split.
     + apply step_beta.
     + now apply alpha_rename_binder.
-  - 
-    specialize (IHHstep ren s3 H2).
+  - specialize (IHHstep ren s3 H2).
     destruct IHHstep as [t' [IHHstep IHHalpha] ].
     eexists (tmapp t' t2).
     split.
@@ -62,11 +46,7 @@ Proof.
     split.
     + apply step_appR. exact IHHstep.
     + apply alpha_app; assumption.
-
-
   - specialize (IHHstep ((x, y)::ren) s3 H4).
-  
-  
     destruct IHHstep as [t' [IHHstep IHHalpha] ].
     exists (tmlam y A t').
     split.

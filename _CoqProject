@@ -86,6 +86,7 @@ src/PlutusIR/Semantics/Static/normaliser/Context.v
 src/PlutusIR/Semantics/Static/Normalisation.v
 src/PlutusIR/Semantics/Static/normaliser/STLC_named_typing.v
 src/PlutusIR/Semantics/Static/normaliser/STLC_named.v
+src/PlutusIR/Semantics/Static/normaliser/STLC_normalisation.v
 src/PlutusIR/Semantics/Static/normaliser/SN_STLC_named.v
 src/PlutusIR/Semantics/Static/normaliser/alpha/alpha.v
 src/PlutusIR/Semantics/Static/normaliser/alpha/alpha_ctx_sub.v

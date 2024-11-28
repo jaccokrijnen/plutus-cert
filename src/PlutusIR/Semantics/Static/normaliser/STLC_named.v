@@ -262,6 +262,7 @@ Idea: [x to x'] (\x.\x.x) in the previous definition became
                                     tmlam Y' K1 (capmsfr ((Y, tmvar Y')::sigma) T_body); 
   capmsfr sigma (tmapp T1 T2) := tmapp (capmsfr sigma T1) (capmsfr sigma T2).
 
+*)
 
 Equations? substituteTCA (X : string) (U T : term) : term by wf (size T) :=
   substituteTCA X U (tmvar Y) =>
@@ -286,4 +287,4 @@ Proof.
     [ lia
     || replace T' with (rename Y Y' T); eauto; rewrite <- rename_preserves_size; eauto
     ].
-Qed. *)
+Qed.
