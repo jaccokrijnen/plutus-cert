@@ -9,7 +9,7 @@ From PlutusCert Require Import
 Import PlutusNotations.
 From Equations Require Import Equations.
 
-(* built-in function that is applied to values/types of which the (type) arguments match
+(* built-in function that is applied to 0 or more values/types of which the (type) arguments match
    the signature *)
 Inductive applied_builtin : DefaultFun -> builtin_sig -> term -> Prop :=
   | BA_Builtin : forall f,
