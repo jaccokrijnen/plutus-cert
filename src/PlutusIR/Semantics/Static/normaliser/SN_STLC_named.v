@@ -280,6 +280,7 @@ Qed.
 Inductive sn {e : term -> term -> Set } x : Set :=
 | SNI : (forall y, e x y -> sn y) -> sn x.
 
+
 (*
 Intuition:
 h x is strongly normalizing.
@@ -639,6 +640,7 @@ Proof.
   apply id_subst_is_IdSubst.
   assumption.
 Qed.
+
 
 (* Monad maybe*)
 (* Define the bind function for option type *)
@@ -1085,25 +1087,44 @@ Qed.
 Lemma eq_proof {A : Type} (x : A) : x = x.
 Proof. reflexivity. Qed.
 
-(* Terminating normalization procedure helper.
-*)
-Fixpoint normalizer'' {sigma : list (string * string)} (t : term) (HSN : (@sn step_d) t) : term :=
-  match step_d_f t as res return (step_d_f t = res -> term) with
-  | None => fun _ => t
-  | Some t1 => fun Hstep =>
-      let Hstep_d := step_d_f_to_step_d Hstep in
-      let HSN' := match HSN with
-                  | SNI f => f t1 Hstep_d
-        end in
-      @normalizer'' sigma t1 HSN'
-  end (eq_proof (step_d_f t)).
+Theorem strong_normalization_d E s T : has_type E s T -> @sn step_d s.
+Proof.
+  intros Htype.
+  apply (strong_normalization) in Htype.
+  apply SN_nd_to_SN_d.
+  assumption.
+Qed.
 
-(* Normalization procedure for well typed terms *)
-Definition normalizer E T (t : term) (Htype : has_type E t T) : term :=
-  let t' := id_subst E [[t]] in
-  let HSN := strong_normalization Htype in
-  let HSN_d := SN_nd_to_SN_d HSN in
-      @normalizer'' [] t HSN_d.
+Inductive MySN t : Set :=
+| SNI0 : (step_d_f t = None) -> MySN t
+| SNI' : {t' & prod (step_d_f t = Some t') (MySN t')} -> MySN t.
+
+Theorem strong_normalization_mysn E s T : has_type E s T -> @MySN s.
+Proof.
+  intros Htype.
+  apply strong_normalization_d in Htype.
+  induction Htype.
+  destruct (step_d_f x) eqn:Hstep.
+  - assert (step_d x t) by now apply step_d_f_to_step_d.
+    apply SNI'.
+    specialize (H t H0).
+    exists t; auto. 
+  - apply SNI0. assumption.
+Qed.
+
+Fixpoint normalizer' (t : term) (HSN : MySN t) : term :=
+  match HSN with 
+  | SNI0 _ => t
+  | SNI' f =>
+    let (t', H) := f in 
+    let (Hstep, HSN') := H in
+    @normalizer' t' HSN'
+  end.
+
+Definition normalizer (t : term) E T (Htype : has_type E t T) : term :=
+  let myHSN := strong_normalization_mysn Htype in
+    @normalizer' t myHSN.
+  
 
 
 (* Local Variables: *)
