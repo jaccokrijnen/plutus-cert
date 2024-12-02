@@ -307,18 +307,6 @@ Proof.
   rewrite eqn => /ih. eauto.
 Qed.
 
-Lemma sn_preimage_alpha {e : term -> term -> Set} (h : term -> term) x :
-  (forall x y, e x y -> { a : term & prod(Alpha [] (h y) a) (e (h x) a) }) -> 
-  @sn e (h x) -> { a2 : term & prod(Alpha [] x a2) (@sn e a2)}.
-Proof.
-  (* move eqn:(h x) => v A B. elim: B h x A eqn => {} v _ ih h x A eqn.
-  eexists.
-  split.
-  - admit.
-  - 
-  apply: SNI => y /A. rewrite eqn => /ih. apply/ih; eauto. *)
-Admitted.
-
 Notation SN := (@sn step).
 
 Lemma sn_closedL t s : SN (tmapp s t) -> SN s.
@@ -1099,6 +1087,7 @@ Inductive MySN t : Set :=
 | SNI0 : (step_d_f t = None) -> MySN t
 | SNI' : {t' & prod (step_d_f t = Some t') (MySN t')} -> MySN t.
 
+
 Theorem strong_normalization_mysn E s T : has_type E s T -> @MySN s.
 Proof.
   intros Htype.
@@ -1111,6 +1100,96 @@ Proof.
     exists t; auto. 
   - apply SNI0. assumption.
 Qed.
+
+(* Maybe we cannot prove this correctly, but we know tmlam x A u is well kinded, so then u also well kinded
+  so then u also strongly normalzing. *)
+Lemma sn_lam_body x A u : MySN (tmlam x A u) -> MySN u.
+Admitted.
+
+Lemma sn_special_func x A s' t0 toof (HSN1 : MySN (tmlam x A s')) (HSN2 : MySN (tmapp toof t0)) : MySN (substituteTCA x t0 s').
+Admitted.
+
+Lemma sn_app_R t t0 (HSN: MySN (tmapp t t0)) : MySN t0.
+Admitted. 
+
+Lemma sn_app_L t t0 (HSN: MySN (tmapp t t0)) : MySN t.
+Admitted.
+
+Fixpoint term_size (t : term) : nat :=
+  match t with
+  | tmvar _ => 1
+  | tmapp s t => 1 + term_size s + term_size t
+  | tmlam _ _ s => 1 + term_size s
+  end.
+
+(* term size is necessary, because e.g. when we go in a lambda body, the derivation sequence is just as long*)
+Fixpoint mysn_size {t : term} (HSN : MySN t) : nat :=
+  match HSN with
+  | SNI0 _ => term_size t
+  | SNI' (existT _ t' (_, HSN')) => 1 + mysn_size HSN' + term_size t
+  end.
+
+Require Import Coq.Program.Wf.
+
+
+Program Fixpoint normalizer2' (t : term) {HSN : MySN t} {measure (mysn_size HSN)} : term :=
+  match t return MySN t -> term with
+  | tmvar _ => fun _ => t
+  | tmapp s t => fun HSN' =>
+    if is_normal s then 
+      if is_normal t then
+        match s return MySN s -> term with
+        | tmlam x A s' => fun UHHHM => @normalizer2' (substituteTCA x t s) (sn_special_func UHHHM HSN') _
+        | _ => fun _ => tmapp s t
+        end (sn_app_L HSN')
+      else tmapp s (@normalizer2' t (sn_app_R HSN') _)
+    else tmapp (@normalizer2' s (sn_app_L HSN') _) t
+  | tmlam x A s => fun HSN' => tmlam x A (@normalizer2' s (sn_lam_body HSN') _)
+  (* | _ => fun _ => t *)
+end HSN.
+Next Obligation.
+Admitted.
+Next Obligation.
+Admitted.
+Next Obligation.
+Admitted.
+Next Obligation.
+Admitted.
+Next Obligation.
+Admitted.
+Next Obligation.
+Admitted.
+  
+
+Fixpoint normalizer3' (t : term) (HSN : MySN t) : term :=
+  match t return MySN t -> term with
+  | tmvar _ => fun _ => t
+  (* | tmapp s t => fun HSN' =>
+    if is_normal s then 
+      if is_normal t then
+        match s return MySN s -> term with
+        | tmlam x A s' => fun UHHHM => @normalizer2' (substituteTCA x t s') (sn_special_func UHHHM HSN')
+        | _ => fun _ => tmapp s t
+        end (sn_app_L HSN')
+      else tmapp s (@normalizer2' t (sn_app_R HSN'))
+    else tmapp (@normalizer2' s (sn_app_L HSN')) t *)
+  | tmlam x A s => fun HSN' => tmlam x A (@normalizer3' s (sn_lam_body HSN'))
+  | _ => fun _ => t
+end HSN.
+
+
+(* In the last case we have
+  MySN (tmlam x A s)
+Hence, either a value or it steps.
+  Case value:
+    Then also MySN s (value), but this is not contained in the bigger MySN..
+      so will coq know that that is ok?
+
+*)
+
+Definition normalizer2 (t : term) E T (Htype : has_type E t T) : term :=
+  let myHSN := strong_normalization_mysn Htype in
+    @normalizer2' t myHSN.    
 
 Fixpoint normalizer' (t : term) (HSN : MySN t) : term :=
   match HSN with 
