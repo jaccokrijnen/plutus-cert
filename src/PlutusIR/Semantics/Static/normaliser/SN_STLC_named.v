@@ -294,17 +294,84 @@ Then, by the extension, every reduction chain starting from x is finite.
 Lemma sn_preimage {e : term -> term -> Set} (h : term -> term) x :
   (forall x y, e x y -> e (h x) (h y)) -> @sn e (h x) -> @sn e x.
 Proof.
-
-  move eqn:(h x) => v A B.
+  intros A B.
+  remember (h x) as v. (* this allows us to keep B : sn v as an hypothesis*)
   generalize dependent h.
   generalize dependent x.
-  elim: B => {} v _ ih x h eqn.
-  intros A.
-  apply: SNI => y /A.
-  
+  induction B.
+  intros x0 h A eqn.
+  apply SNI.
+  intros y C.
+  apply A in C.
+  specialize (H (h y)).
+  (* apply A in C. *)
+  (* intros C. *)
+  (* apply A in C. *)
+  (* revert C. *)
+  rewrite <- eqn in C.
+  eapply H.
+  - assumption.
+  - exact A.
+  - reflexivity.
+Qed.
 
-  
-  rewrite eqn => /ih. eauto.
+(* TODO: It is currently for step only, not for general relation e anymore.
+Idea: Previous lemma sn_preimage above strengthened IH with remember (h x) as v.
+We strenghen IH with (h x) ~ v.
+ *)
+Lemma sn_preimage_α' (h : term -> term) x v :
+  (forall x y, step x y -> {y_h & prod (step (h x) y_h) (nil ⊢ y_h ~ (h y))}) -> @sn step v -> nil ⊢ v ~ h x -> @sn step x.
+Proof.
+  intros A B Halpha.
+  generalize dependent h.
+  generalize dependent x.
+  (* remember (h x) as v. (* this allows us to keep B : sn v as an hypothesis*)
+  generalize dependent h.
+  generalize dependent x.
+  assert (forall x h, (forall x0 y, e x0 y -> {y_h & prod(e (h x0) y_h) (nil ⊢ y_h ~ h y)}) -> nil ⊢ v ~ h x -> @sn e x).
+  {
+  intros x h A. *)
+  (* So we are now not proving sn (h x) -> sn x anymore.
+    We are proving: sn v ->  v ~ h x  -> sn x
+  *)
+  induction B.
+  intros x0 h A eqn.
+  apply SNI.
+  intros y C.
+  apply A in C.
+  (* x ~ h x0.
+    step (h x0) y_h  /\ y_h ~ h y
+
+    exists y_h' s.t. step x y_h' /\ y_h' ~ y_h   ( and then y_h'  ~  h y)
+  *)
+  assert ({y_h' & prod (step x y_h') (nil ⊢ y_h' ~ h y)}).
+  {
+    destruct C as [yh [ehy yh_alpha] ].
+    eapply alpha_sym in eqn; [|apply alpha_sym_nil].
+    apply (step_preserves_alpha nil eqn) in ehy.
+    destruct ehy as [t' [stept' alphat'] ].
+    exists t'.
+    split.
+    - assumption.
+    - eapply alpha_trans.
+      + apply alpha_trans_nil.
+      + eapply alpha_sym. apply alpha_sym_nil. exact alphat'.
+      + assumption.
+  }
+  destruct H0 as [yh' [ehy' yh_alpha'] ].
+  specialize (H yh').
+  eapply H.
+  - assumption.
+  - exact A.
+  - assumption.
+Qed.
+
+Lemma sn_preimage_α (h : term -> term) x :
+  (forall x y, step x y -> {y_h & prod (step (h x) y_h) (nil ⊢ y_h ~ (h y))}) -> @sn step (h x) -> @sn step x.
+Proof.
+  intros A B.
+  apply sn_preimage_α' with (v := h x) (h := h); eauto.
+  apply alpha_refl. apply alpha_refl_nil.
 Qed.
 
 Notation SN := (@sn step).
@@ -314,30 +381,8 @@ Proof. apply: (sn_preimage (h := tmapp^~t)) => x y. exact: step_appL. Qed.
 
 Lemma sn_subst sigma s : SN (sigma [[s]]) -> SN s.
 Proof.
-Admitted.
-
-(* Not sure yet how to use the step_subst lemma in this*)
-Lemma sn_subst_alpha sigma s : SN (sigma [[s]]) -> {alphaS & prod (Alpha [] alphaS s) (SN alphaS)}.
-Proof.
-  (* intros H.
-  apply sn_preimage_alpha in H. 
-    - destruct H as [alphaS [Halpha Hsn] ].
-    exists alphaS.
-      split.
-      + eapply alpha_sym.
-        * constructor.
-        * assumption.
-      + assumption.
-    - intros x y Hstep.
-      apply (@step_subst_sigma x y sigma) in Hstep.
-      destruct Hstep as [alphaSigmaT [Hred Halpha] ].
-      exists alphaSigmaT.
-      split.
-      * eapply alpha_sym.
-        -- constructor.
-        -- assumption.
-      * assumption. *)
-Admitted.
+  apply: (sn_preimage_α (h := capms sigma)) => x y.  exact: step_subst_sigma.
+Qed.
 
 (* The Reducibility Candidates/Logical Predicate*)
 
@@ -1085,8 +1130,17 @@ Qed.
 
 Inductive MySN t : Set :=
 | SNI0 : (step_d_f t = None) -> MySN t
-| SNI' : {t' & prod (step_d_f t = Some t') (MySN t')} -> MySN t.
+| SNI' : {t' & step_d_f t = Some t' -> ((MySN t'))} -> MySN t. (* TODO: cannot find the inductive step, but removing the existential might work*)
+(* This is the same as the exists, why??? *)
 
+Print MySN_ind.
+
+Inductive MySN' t : Set :=
+| SNI0' : (step_d_f t = None) -> MySN' t
+| SNI'' : forall t', step_d_f t = Some t' -> (MySN' t') -> MySN' t. (* TODO: cannot find the inductive step, but removing the existential might work*)
+(* This is the same as the exists, why??? *)
+
+Print MySN_ind. (* Now we have an induction hypothesis! *)
 
 Theorem strong_normalization_mysn E s T : has_type E s T -> @MySN s.
 Proof.
@@ -1132,6 +1186,7 @@ Fixpoint mysn_size {t : term} (HSN : MySN t) : nat :=
 Require Import Coq.Program.Wf.
 
 
+(* Idea for a definition to make completeness easier *)
 Program Fixpoint normalizer2' (t : term) {HSN : MySN t} {measure (mysn_size HSN)} : term :=
   match t return MySN t -> term with
   | tmvar _ => fun _ => t

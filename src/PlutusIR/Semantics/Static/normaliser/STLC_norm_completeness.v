@@ -28,7 +28,7 @@ Proof.
   intros.
   remember (mysn_size snt) as n.
   generalize dependent tb.
-  dependent induction n.
+  induction n.
   - intros tb snt sntb Hsize.
     remember snt as snt_copy.
     clear Heqsnt_copy.
@@ -75,7 +75,7 @@ Proof.
         inversion e.
         unfold bind in H0.
         destruct_match.
-      * 
+      * (* size not 0 and both step: the interesting case *) 
         
         destruct s as [tb' [Hsteptb' HSNtb'] ].
         destruct s0 as [t' [Hstept' HSNt'] ].
@@ -99,6 +99,29 @@ Proof.
         assumption.
 Qed.
 
+(* TODO: DCopied from SubstitutionPreservesTyping/substitueTca
+  In that file it is defined for PlutusIR and proof is started.
+ *)
+Theorem substituteTCA_preserves_kinding : forall T Delta X K U L,
+    SN_STLC_named.has_type ((X, L) :: Delta) T K ->
+    SN_STLC_named.has_type Delta U L ->
+    SN_STLC_named.has_type Delta (substituteTCA X U T) K.
+Admitted.
+
+(* Needs a neutrality requirement *)
+Lemma norm_app t1 t2 (snt : (MySN (tmapp t1 t2))) (snt1 : MySN t1) (snt2 : MySN t2) :
+  STLC_normalisation.neutral_Ty (@normalizer' t1 snt1) -> @normalizer' (tmapp t1 t2) snt = tmapp (@normalizer' t1 snt1) (@normalizer' t2 snt2).
+Admitted.
+
+(* Looks complicated, but it is really a step forward, since there is no mention of normalise anymore
+  If it is too difficult, we can first try to do it with t1 already normalized fully I think.
+*)
+Lemma norm_subst t1 t2 T1n bX K1 (snt : (MySN (tmapp t1 t2))) (snt1 : (MySN t1)) (snt2 : (MySN t2)) 
+    (snsub : (MySN (substituteTCA bX (@normalizer' t2 snt2) T1n))) :
+  @normalizer' t1 snt1 = tmlam bX K1 T1n -> 
+    @normalizer' (tmapp t1 t2) snt = @normalizer' (substituteTCA bX (@normalizer' t2 snt2) T1n) snsub.
+Admitted.
+
 Theorem norm_complete Δ K (t tn : term) (Hwt : SN_STLC_named.has_type Δ t K):
   normalise t tn -> @normalizer t Δ K Hwt = tn.
 Proof.
@@ -106,124 +129,217 @@ Proof.
   generalize dependent Δ.
   generalize dependent K.
   induction HnormR; intros K' Δ Hwt; subst; auto.
-  - inversion Hwt; subst.
+  - inversion Hwt; subst. (* normalise T1 (tmlam bX K T1n), so T1 is a lambda as well. 
+      What if it is an app before beta reduction?*)
+    (* inversion HnormR1; subst. *)
     specialize (IHHnormR2 K1 Δ H4).
-    specialize (IHHnormR1 (tp_arrow K1 K') Δ H2).
-    specialize (IHHnormR3 (tp_arrow K1 K') Δ).
-    admit.
-  - inversion Hwt; subst.
-    specialize (IHHnormR2 K1 Δ H5).
-    specialize (IHHnormR1 (tp_arrow K1 K') Δ H3).
+    specialize (IHHnormR1 (tp_arrow K1 K') Δ H2). (* we need something like step preserves type? K' = K1 I think*)
 
-    unfold normalizer.
-    unfold normalizer in IHHnormR1.
-    unfold normalizer in IHHnormR2.
+    specialize (IHHnormR3 K' Δ). (* The body of the lambda has just type K'*)
 
-    (* Neutral T1n*)
+    assert (SN_STLC_named.has_type Δ (substituteTCA bX T2n T1n) K').
+    {
+      apply substituteTCA_preserves_kinding with (L := K1).
+      - (* By normalizer preserves typing we have Δ ⊢* (tmlam bX K T1n) : K1 → K'
+              Hence K = K1 and
+              (bX, K1)::Δ ⊢* T1n : K'
+      *) admit.
+      - (* By normalizer preserves typing we have Δ ⊢* T2n : K1  . *)
+        admit.
+    }
+    specialize (IHHnormR3 H).
     subst.
+    eapply norm_subst.
+    exact IHHnormR1.
 
-    destruct (strong_normalization_mysn H3).
-    + (* Case: Value $ T1*)
-      simpl.
-      
-      destruct (strong_normalization_mysn H5).
-      * (* Case Value T1 && Value T2 *)
-        simpl.
-        
-        destruct (strong_normalization_mysn Hwt).
-        -- (* Correct case: Value $ (tmapp T1 T2)*)
-           simpl. reflexivity.
-        -- (* Contradiction, T1 T2 no step, so app neither*)
-           exfalso.
-           destruct s as [t' [HstepT HSNt'] ].
-           inversion HstepT.
-
-           assert (is_normal T1 = true) by admit. (* should be clear from no step *)
-           rewrite H0 in H1.
-           assert (is_normal T2 = true) by admit.
-           rewrite H2 in H1.
-           simpl in H.
-           (* From H1 it follows that T1 must be of shape tmlam,
-            contradiction, because of H: T1 neutral*)
-           admit.
-          
-
-
-      * (* Case: Value T1 && Step T2 T2n *)
-        destruct (strong_normalization_mysn Hwt).
-        -- (* Contradiction: T2 steps, but tmapp not*)
-           exfalso.
-           inversion e0.
-           assert (is_normal T1 = true) by admit. 
-           rewrite H0 in H1.
-           assert (is_normal T2 = false) by admit.
-           rewrite H2 in H1.
-           unfold bind in H1.
-           (* H1 now says step_d_f T2 must be None, but s says it is Some*)
-           admit.
-        -- (* Correct case: T2 steps and app also steps *)           
-            destruct s as [t' [Hstept' HSNt'] ].
-            destruct s0 as [t'' [Hstept'' HSNt''] ].
-            simpl.
-            simpl in HnormR2.
-            simpl in HnormR1.
-            (* Not sure yet how to do this. 
-              Probably first get: t'' = tmapp T1 t', and then same as tmlam case
-            *)
-            admit.
-    + (* Case: step $ T1*)
-  
-    admit.
   - inversion Hwt; subst.
-    specialize (IHHnormR K2 ((bX, K)::Δ) H4).
-    
-    unfold normalizer; destruct (strong_normalization_mysn Hwt);
-    unfold normalizer';
-    unfold normalizer in IHHnormR; destruct (strong_normalization_mysn H4);
-    unfold normalizer' in IHHnormR.
-    + (* Already value*)
-      subst. reflexivity.
-    + exfalso. 
-      (* Contradiction: lambda no step, while body does. *)
-      inversion e.
-      unfold bind in H0.
-      destruct s as [t' [HstepT0' HSNt'] ].
-      destruct_match.  
-    + exfalso.
-      (* Contradiction: body does not step, while lambda does *)
-      destruct s as [t' [HstepT HSNt'] ]. 
-      inversion HstepT.
-      unfold bind in H0.
-      destruct_match.
-    + (* Body and whole lambda step *)
-      fold normalizer'.
-      destruct s as [t [Hstept HSNt] ].
-      destruct s0 as [tb [Hsteptb HSNtb] ].
-      fold normalizer' in IHHnormR.
-      assert (t = tmlam bX K tb).
-      {
-        inversion Hstept.
-        unfold bind in H0.
-        destruct_match.
-        inversion Hsteptb.
-        inversion H0.
-        subst.
-        reflexivity.
-      }
-      subst.
-      eapply norm_lam.
+    rewrite <- (IHHnormR2 K1 Δ H5).
+    specialize (IHHnormR1 (tp_arrow K1 K') Δ H3).
+    subst.
+    now apply norm_app.
+  - inversion Hwt; subst.
+    rewrite <- (IHHnormR K2 ((bX, K)::Δ) H4).
+    apply norm_lam.
   - unfold normalizer.
     destruct (strong_normalization_mysn Hwt).
     unfold normalizer'.
     reflexivity.
 Admitted.
 
+Lemma normalise_extend T1 T2 T3 :
+  step_d T1 T2 -> normalise T2 T3 -> normalise T1 T3.
+Proof.
+  intros Hstep Hnorm.
+  generalize dependent T3.
+  induction Hstep; intros T3 Hnorm; try solve [inversion Hnorm; try constructor; eauto].
+  - eapply N_BetaReduce; eauto.
+    + apply N_TyLam.
+      admit (* Follows from normalisation__stable'__normal *).
+    + admit.  
+Admitted.
+
+Inductive MySN2 t : Set :=
+| SNI2 : (forall t', step_d_f t = Some t' -> (MySN2 t')) -> MySN2 t. (* TODO: cannot find the inductive step, but removing the existential might work*)
+(* This is the same as the exists, why??? *)
+
+(* With MySN' t we get the necessary induciton hypothesis! *)
+Theorem norm_sound'' (t tn : term) (snt : MySN t) :
+  normalizer' snt = tn -> normalise t tn.
+Proof.
+  intros Hnorm.
+  unfold normalizer in Hnorm.
+  assert (sn2t: MySN2 t) by admit.
+  induction sn2t.
+  (* assume there is a t' s.t. step_d_f t = Some t'*)
+  assert ({t' & step_d_f t = Some t'}) as [t' Hstep] by admit.
+  assert (step_d t t') by admit.
+  apply (normalise_extend t t' tn H0).
+  eapply (H t'); eauto.
+  
+    (* should be sn't, but we have to change normalizer' definition first. *)
+Admitted.
+
+Inductive MySN' t : Set :=
+| SNI0' : (step_d_f t = None) -> MySN' t
+| SNI'' : forall t', step_d_f t = Some t' -> (MySN' t') -> MySN' t. (* TODO: cannot find the inductive step, but removing the existential might work*)
+(* This is the same as the exists, why??? *)
+
+(* With MySN' t we get the necessary induciton hypothesis! *)
+Theorem norm_sound' (t tn : term) (snt : MySN t) :
+  normalizer' snt = tn -> normalise t tn.
+Proof.
+  intros Hnorm.
+  unfold normalizer in Hnorm.
+  assert (sn't: MySN' t) by admit.
+  induction sn't.
+  - (* no step: easy *)
+    admit.
+  - assert (step_d t t') by admit.
+    apply (normalise_extend t t' tn H).
+    eapply IHsn't.
+    (* should be sn't*)
+Admitted.
+
 Theorem norm_sound Δ T (t tn : term) (Hwt : SN_STLC_named.has_type Δ t T) :
     normalizer Hwt = tn -> normalise t tn.
 Proof.
   intros Hnorm.
-  unfold normalizer in Hnorm.
-
-  inversion Hnorm.
+  induction Hnorm.
   
+  induction Hwt.
+  - unfold normalizer.
+    destruct (strong_normalization_mysn).
+    + simpl.
+      apply N_TyVar.
+    + exfalso.
+      destruct s as [t' [Hstep HSN] ].
+      inversion Hstep.
+  - unfold normalizer.
+    destruct (strong_normalization_mysn).
+    + simpl.
+      apply N_TyLam.
+      unfold normalizer in IHHwt.
+      destruct (strong_normalization_mysn Hwt) in IHHwt.
+      * simpl in IHHwt.
+        assumption.
+      * exfalso.
+        destruct s as [t' [Hstep HSN] ].
+        inversion e.
+        unfold bind in H0.
+        assert (step_d_f T = None).
+        {
+          admit. (* destruct match ???*)
+        } 
+        rewrite Hstep in H.
+        inversion H.
+    + (* lambda steps! *)
+      destruct s as [t' [Hstep HSN] ].
+      unfold normalizer in IHHwt.
+      destruct (strong_normalization_mysn Hwt) in IHHwt.
+      * exfalso.
+        (* lam body no step, while whole lambda steps, contradiction*)
+        admit.
+      * simpl.
+        destruct s as [t'0 [Hstept'0 HSNt'0] ].
+        inversion Hstep.
+        unfold bind in H0.
+        assert (step_d_f T = Some t'0) by admit. (* destruct match *)
+        assert (tmlam X K1 t'0 = t') by admit. (* destruct match *)
+        subst.
+        rewrite norm_lam with (sntb := HSNt'0).
+        apply N_TyLam.
+        simpl in IHHwt.
+        assumption. 
+  - unfold normalizer.
+    remember (SN_STLC_named.K_App Hwt1 Hwt2) as K.
+    remember (mysn_size (strong_normalization_mysn K)) as n.
+    (* generalize dependent Hwt1.
+    generalize dependent K. *)
+    generalize dependent K2.
+    dependent induction n; intros K2 Hwt1 IHHwt1 K HK Hsize.
+    + admit.
+    + destruct (is_neutral (normalizer Hwt1)) eqn:neut.
+      * rewrite norm_app with (snt1 := strong_normalization_mysn Hwt1) (snt2 := strong_normalization_mysn Hwt2).
+        apply N_TyApp.
+        -- simpl in IHHwt1.
+           assumption.
+        -- unfold normalizer in neut.
+          (* is_neutral and neutral_Ty are sound/complete*)
+           admit.
+        -- simpl in IHHwt2.
+           assumption.
+        -- unfold normalizer in neut.
+            admit. (* same case as second..., generate by rewrite norm_app *)
+      * (* not neutral, hence T1n is a lam! Hence we will substitute! *)
+        (* We need to know the shape of T1n, what is the binder name and the kind *)
+
+        assert ({x & {K1 & {T1n & normalizer Hwt1 = tmlam x K1 T1n}}}) as [x [ K1' [ T1n Hnormlam ] ] ] by admit.
+
+        assert (Htypesub: SN_STLC_named.has_type Δ (substituteTCA x (normalizer Hwt2) T1n) K2).
+        {
+          admit.
+        }
+
+        (* rewrite norm_subst with (T1n := T1n) (bX := x) (K1 := K1')
+          (snt1 := strong_normalization_mysn Hwt1) (snt2 := strong_normalization_mysn Hwt2)
+          (snsub := strong_normalization_mysn (Htypesub))
+          . *)
+
+        (*
+
+        We want to use IHn.
+
+        We need n= mysn_size (strong_normalisation_mysn ). We can assume we have it:
+        that T1 = already in normall ambda form and thus T1 = T1n.
+
+        TODO: IHn needs to be generic over kind
+
+
+        Do we have Htypesub = (SN_STLC_named.K_App Hwt1 Hwt2) ? I think so!
+
+        I guess we could use the IH to let tmapp T1 T2 do one step to say T_one.
+        Then this normalises in n steps to (normalizer K).
+
+        Then we know T_one |-> normalizer' (strong_normalization_mysn T_one)
+
+        But also  T_one |-> normalizer' (strong_normalization_mysn (tmapp T1 T2)).
+
+        So we know
+
+        normalise T_one (strong_normalization_mysn (tmapp T1 T2)).
+
+        Then we can use normalise_extend to construct the higher normalise!
+
+        *)
+        specialize (IHn K2 Hwt1 IHHwt1 K HK). (* faulty reasoning, wen eed to do one step or something*)
+        assert (T1 = tmlam x K1' T1n) by admit.
+        subst.
+        eapply N_BetaReduce.
+        -- rewrite Hnormlam in IHHwt1.
+           exact IHHwt1.
+        -- exact IHHwt2.
+        --
+        admit.
+        -- exact Hnormlam.
+
 Admitted.
