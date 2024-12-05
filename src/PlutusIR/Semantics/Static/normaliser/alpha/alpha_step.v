@@ -3,24 +3,6 @@ Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Strings.String.
 
-(* Prove later,  makes sense.
-
-doesnt work for ren = [y, y'; (z, z')] and t = (λ x. z) y. Then t' = z' and s' = z
-Then we need an s, s.t. 
-
-  s steps to s', and Alpha [(y, y'), (z, z')] s (λ x. z) y.
-  For the latter, we need s  to be of the form (λ x' . z') ?, there is no choice for ?. 
-  If we choose y, it gets mapped to y' incorrectly. 
-  If we choose g, it does not get mapped to y....
-
-  it is the ftv problem all over again, that is the culprit!
-    And for the first 
-*)
-
-Lemma red_preserves_alpha' {s' t t' } ren :
-  Alpha ren s' t' -> red t t' -> {s & prod (red s s') (Alpha ren s t)}.
-Admitted.
-
 (* TODO: Probably need to prove this with strenghtened induction (non-empty context) for the lambda case *)
 Lemma step_preserves_alpha {s} {s'} {t} ren :
   Alpha ren s t -> step s s' -> {t' & prod (step t t') (Alpha ren s' t')}.
@@ -58,7 +40,18 @@ Qed.
 
 Lemma red_preserves_alpha {s} {s'} {t} ren :
   Alpha ren s t -> red s s' -> {t' & prod (red t t') (Alpha ren s' t')}.
-Admitted.
+Proof.
+  intros Halpha Hred.
+  induction Hred.
+  + exists t. split; auto.
+    apply starR.
+  + destruct IHHred as [t'y [Hredt'y Halphat'y] ].
+    apply (step_preserves_alpha ren Halphat'y) in e.
+    destruct e as [t'z [Hstept'z Halphat'z] ].
+    exists t'z.
+    split; auto.
+    eapply starSE with (y := t'y); eauto.
+Qed.
 
 (* Why do we need this up to alpha equivalence?
 
@@ -163,8 +156,8 @@ Proof.
            ++ eapply subs_preserves_alpha.
               ** apply alpha_ctx_cons.
                  apply alpha_var_diff.
-                 --- (* by x' = fresh2 (x)*) admit.
-                 --- admit. (* ?y = x also by fresh s0' <> x *) 
+                 --- eapply fresh2_over_key_sigma with (X := x) (s := tmvar x) in Heqx'; eauto with *.
+                 --- eapply fresh2_over_key_sigma with (X := x) (s := tmvar x) in Heqs0'; eauto with *.
                  --- apply alpha_var_refl.
                  --- apply alpha_var.
                      apply alpha_var_cons.
@@ -172,17 +165,23 @@ Proof.
                      +++ reflexivity.
               ** 
                   eapply alpha_extend_vacuous_single.
-                  --- assert (~ In x' (ftv s1)) by admit. (* x' fresh over s1*)
+                  --- assert (~ In x' (ftv s1)).
+                      {
+                       eapply fresh2_over_tv_term in Heqx'.
+                       intros Hcontra.
+                       apply extend_ftv_to_tv in Hcontra.
+                       contradiction. 
+                      }
                       apply (step_preserves_no_ftv H0) in Hstep. (* Probably easier to do over tv*)
                       assumption.
-                  --- admit. (* fresh *)
+                  --- now apply fresh2_over_tv_term in Heqs0'.
             ++ change (ctx_id_right [(x', s0')]) with (nil ++ (ctx_id_right [(x', s0')])).
                apply alpha_extend_ids_right.
                ** apply ctx_id_right_is_id.
                ** eapply alpha_sym; eauto.
                   --- apply alpha_sym_nil.
                   --- eapply ren_sub_compose_instantiated; eauto.
-Admitted.
+Qed.
 
 
 Lemma step_subst_sigma sigma {s t} :
@@ -201,12 +200,15 @@ Proof.
   - exists (sigma [[s]]). split.
     + apply starR.
     + apply alpha_refl. constructor.
-  - 
-    apply (step_subst_sigma sigma) in e.
-    
-    destruct IHHred as [alphaSigmaY [Hred' Halpha] ].
+  - apply (step_subst_sigma sigma) in e.
     destruct e as [alphaSigmaZ [Hstep HalphaZ] ].
-    eexists.
-
-    admit. (* Doable with some alpha arguments*)
-Admitted.
+    destruct IHHred as [alphaSigmaY [Hred' Halpha] ].
+    apply @alpha_sym with (ren' := nil) in Halpha; [|apply alpha_sym_nil].
+    apply (step_preserves_alpha nil Halpha) in Hstep.
+    destruct Hstep as [alphaSigmaZ' [HstepZ' HalphaZ'] ].
+    exists alphaSigmaZ'. split.
+    + eapply starSE; eauto.
+    + apply @alpha_sym with (ren' := nil) in HalphaZ'; [|apply alpha_sym_nil].
+      eapply alpha_trans; eauto.
+      apply alpha_trans_nil.
+Qed.

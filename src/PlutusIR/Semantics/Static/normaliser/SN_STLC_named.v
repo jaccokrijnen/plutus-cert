@@ -23,39 +23,9 @@ From PlutusCert Require Import alpha alpha_rename rename util alpha_ctx_sub fres
 *)
 
 
-(* Lemma sred_up sigma tau : 
-  sred sigma tau -> sred (up sigma) (up tau).
-Proof. move=> A [|n] //=. asimpl. apply/red_subst/A. Qed. *)
-
 Global Hint Resolve red_app red_abs 
 (* sred_hup  *)
 : red_congr.
-
-(* Lemma red_compat sigma tau s :
-  sred sigma tau -> red ([x := sigma] s) ([x := tau] s).
-Proof.
-  elim: s sigma tau; intros; asimpl; eauto with red_congr.
-Qed. *)
-
-(* Note: 27 nov: this ren_comp_exsits may be an alternative to the alpha trans arguments*)
-
-(* NOTE: A little pen and paper study strongly suggests that this is still true for named. *)
-(* NOTE: At first I would expect that it would step on the right hand side (instead of multistep=red)
-    but it doesnt because of the following example:
-    Let t1 = (\x.x)w and t2 = w (which steps by step_beta)
-    Let s = \y. (\z. x) x
-    Then [x := t1] s = \y. (\z. t1) t1 = \y. (\z. (\x.x) w) ((\x.x) w)
-    And [x := t2] s = \y. (\z. t2) t2 = \y. (\z. w) w
-
-    there is no single step from the first to the second, since we have to perform
-    step_beta in two different places.
-    *)
-
-(* TODO: cant we make it a relation? mren rho1 (mren rho2 s) in Mren s*)
-Lemma ren_comp rho1 rho2 s : exists rho', mren rho1 (mren rho2 s) = mren rho' s.
-Proof.
-  (* TODO: Figure out on pen and paper first.*)
-Admitted.
 
 
 Require Import Ascii.
@@ -168,7 +138,7 @@ Lemma red_beta'' x s t1 t2 :
   AlphaVar ren x x ->
   αCtxTrans ren1 ren2 ren ->
   { a & prod 
-    ( red ([x := t1] s') a)
+    ( red (((x, t1)::(x, t2)::nil) [[s']]) a) (* ugly cheating, adding (x, t2) just for more freshness guarantees*)
     ( ren ⊢ a ~ (((x, t2)::(x, t1)::nil) [[s'']])) }. (* Ugly cheat: adding the x, t1 makes sure it does not generate fresh vars equal to ftv of t1...*)
 Proof. 
 
@@ -176,41 +146,48 @@ Proof.
   induction s; intros s' s'' ren1 ren2 ren HalphaS1 HalphaS2 Halphat1 Halphat2 Halphax HalphaTrans.
   - inversion HalphaS1; subst.
     inversion HalphaS2; subst.
-    (* Do we have ren |- t1 ~ t1 ?
-    
-      Maybe if the condition is: forall (u, v) in ren
-      if v notin ftv t2, then u notin ftv t1
-
-      But suppose there was some x in ftv t1, that disappears in the step.
-
-      Can we then get the situtaion (x, y) |- t1 ~ t1 ? 
-      y notin ftv t2, so y notin ftv t1
-    *)
-    autorewrite with capms.
-     admit.
+    assert (Hx0y: AlphaVar ren x0 y). { eapply alpha_var_trans; eauto. }
+    destr_eqb_eq x0 x.
+    + assert (y = x). { apply (alphavar_unique_right Halphax) in Hx0y. symmetry. auto. } subst.
+      repeat rewrite capms_var_helper.
+      exists t2.
+      split.
+      * eapply starSE. apply starR. assumption.
+      * assumption.
+    + assert (y <> x). { apply (alphavar_unique_not_left H Hx0y) in Halphax. symmetry. auto. }
+      rewrite capms_var_multi_not; auto.
+      rewrite capms_var_single_not; auto.
+      rewrite capms_var_multi_not; auto.
+      rewrite capms_var_single_not; auto.
+      exists (tmvar x0).
+      split.
+      * apply starR.
+      * apply alpha_var.
+        assumption.
   - (* tmlam *)
     inversion HalphaS1; subst.
     inversion HalphaS2; subst.
     autorewrite with capms; simpl.
     remember (fresh2 _ s1) as b1.
     remember (fresh2 _ s3) as b2.
-    (* eexists (tmlam b1 t _). *)
 
     specialize (IHs (rename x0 b1 s1) (rename y b2 s3) ((b1, s)::ren1) ((s, b2)::ren2) ((b1, b2)::ren)).
     assert ({a : term & prod
         
-        (red ([x := t1] rename x0 b1 s1) a ) 
+        (red (((x, t1)::(x, t2)::nil) [[rename x0 b1 s1]]) a ) 
         (((b1, b2)::ren) ⊢ a ~ (((x, t2)::(x, t1)::nil) [[rename y b2 s3]] ))
         }) as [a' [Halpha' Hstep'] ].
     {
       eapply IHs.
       - eapply alpha_trans_rename_left; eauto.
       - eapply alpha_trans_rename_right; eauto. 
-      - (* fresh: such a cheat!!!! *)
-           
-        admit.
-      - (* Need alpha step preserves ftv backward? or we do the cheat again!*) admit.
-      - (* fresh *) admit.
+      - apply alpha_extend_fresh; auto; intros Hcontra; apply extend_ftv_to_tv in Hcontra.
+        + eapply fresh2_over_tv_value_sigma with (X := x) (s := t1) in Heqb1; eauto with *.
+        + eapply fresh2_over_tv_value_sigma with (X := x) (s := t1) in Heqb2; eauto with *.
+      - apply alpha_extend_fresh; auto; intros Hcontra; apply extend_ftv_to_tv in Hcontra.
+        + eapply fresh2_over_tv_value_sigma with (X := x) (s := t2) in Heqb1; eauto with *.
+        + eapply fresh2_over_tv_value_sigma with (X := x) (s := t2) in Heqb2; eauto with *.
+      - apply alpha_var_diff; auto; eapply fresh2_over_key_sigma with (X := x) (s := t2); eauto with *.
       - apply alpha_trans_cons.
         eauto.
     
@@ -221,8 +198,19 @@ Proof.
       exact Halpha'.
     + apply alpha_lam.
       exact Hstep'.
-  - admit.
-Admitted.
+  - (* tmapp *)
+    inversion HalphaS1; subst.
+    inversion HalphaS2; subst.
+    autorewrite with capms.
+    specialize (IHs1 s0 s4 ren1 ren2 ren).
+    specialize (IHs1 H3 H2 Halphat1 Halphat2 Halphax HalphaTrans) as [a1 [Hred1 Halpha1] ].
+    specialize (IHs2 t0 t4 ren1 ren2 ren).
+    specialize (IHs2 H4 H6 Halphat1 Halphat2 Halphax HalphaTrans) as [a2 [Hred2 Halpha2] ].
+    exists (tmapp a1 a2).
+    split.
+    + eapply red_app; auto.
+    + apply alpha_app; auto.
+Qed.
 
 Lemma red_beta' x s t1 t2 :
   step t1 t2 ->
@@ -239,15 +227,39 @@ Lemma red_beta' x s t1 t2 :
 Proof.
   intros.
   assert ({a & prod 
-    (red ([x := t1] s') a)
+    (red (((x, t1)::(x, t2)::nil) [[s']]) a)
     ( ren ⊢ a ~ (((x, t2)::(x, t1)::nil) [[s'']])) }) as [a [Halpha Hred] ].
   {
     eapply red_beta''; eauto.
   }
-  exists a.
+
+  assert (nil ⊢ ((x, t1)::(x, t2)::nil) [[s']] ~ ((x, t1)::nil) [[s']]).
+  {
+    apply @alpha_sym with (ren := nil) (ren' := nil); [apply alpha_sym_nil|].
+    eapply add_vacuous.
+    - apply alpha_refl. apply alpha_refl_nil.
+    - apply alpha_refl. apply alpha_refl_nil.
+    - apply alpha_refl. apply alpha_refl_nil.
+    - apply alpha_var_refl.
+    - apply alpha_trans_nil.
+  }
+  assert ({b & prod (red (((x, t1)::nil) [[s']]) b) (nil ⊢ a ~ b) }).
+  {
+    now apply (red_preserves_alpha nil H6) in Halpha.
+  }
+  destruct H7 as [b [Hredb Halphab] ].
+  exists b.
   split.
   - assumption.
   - eapply alpha_trans.
+    + apply id_left_trans.
+    + eapply @alpha_sym with (ren' := nil) in Halphab; [|apply alpha_sym_nil].
+      change (ctx_id_left ren) with (nil ++ ctx_id_left ren).
+      apply alpha_extend_ids_right.
+      * apply ctx_id_left_is_id.
+      * exact Halphab.
+    + {
+    eapply alpha_trans.
     + apply id_right_trans.
     + exact Hred.
     + change (ctx_id_right ren) with (nil ++ ctx_id_right ren).
@@ -260,6 +272,7 @@ Proof.
         -- apply alpha_refl. apply alpha_refl_nil.
         -- apply alpha_var_refl.
         -- apply alpha_trans_nil.
+    }
 Qed.
 
 Lemma red_beta x s t1 t2 :
@@ -465,6 +478,7 @@ Definition EL (Gamma : list (string * type))
 Lemma extend_EL (Gamma : list (string * type)) (sigma : list (string * term)) x T t :
   EL Gamma sigma -> L T t -> EL ((x, T) :: Gamma) ((x, t) :: sigma).
 Proof.
+
 Admitted.
 
 (* Facts about reducible sets. *)
@@ -714,6 +728,15 @@ with neutral_Ty : term -> Prop :=
       normal_Ty T2 ->
       neutral_Ty (tmapp T1 T2).
 
+Lemma alpha_preserves_normal_Ty s s' R :
+  R ⊢ s ~ s' -> normal_Ty s -> normal_Ty s'.
+Proof.
+
+(* a normal_Ty cannot step.
+Suppose s' steps. Then by alpha_preserves_step we have that there is a corresponding step for s. Contradiction.
+*)
+Admitted.
+
 (* Define an infix operator for bind *)
 Infix ">>=" := bind (at level 50, left associativity).
 
@@ -746,6 +769,31 @@ Inductive step_d : term -> term -> Set :=
     step_d t1 t2 -> step_d (tmapp s t1) (tmapp s t2)
 | step_abs_d x A s1 s2 :
     step_d s1 s2 -> step_d (tmlam x A s1) (tmlam x A s2).
+
+    Lemma orb_false_elim : forall a b : bool,
+  orb a b = false -> a = false /\ b = false.
+Proof.
+  intros a b H.
+  destruct a, b; simpl in H; try discriminate; auto.
+Qed.
+
+(* I really don't want to have to write such fundamental lemmas that have nothing to do with what I am proving*)
+Lemma existsb_false_to_in_dec y l :
+  existsb (String.eqb y) l = false -> ~ In y l.
+Proof.
+  intros Hexistsb.
+  induction l.
+  - simpl. auto.
+  - simpl. intros Hcontra.
+    unfold existsb in Hexistsb.
+    destruct (y =? a) eqn:yisa.
+    + simpl in Hexistsb.
+      discriminate.
+    + destruct Hcontra.
+      * subst. rewrite String.eqb_refl in yisa. discriminate.
+      * simpl in Hexistsb. apply IHl in Hexistsb.
+        contradiction.
+Qed.
 
 (* Liberal and conservative subsitutions are alpha equivalent
   (which is why we are allowed to use liberal substitutions)
@@ -809,8 +857,8 @@ Proof.
         assert (~ In y (ftv (rename y b1 s1))).
         {
           apply ftv_not_in_after_rename.
-          (* freshness y <> b1 *) 
-          admit.
+          symmetry.
+          eapply fresh2_over_key_sigma; eauto with *.
         }
         eapply alpha_trans.
         - apply id_left_trans.
@@ -851,7 +899,7 @@ Proof.
         assert (Hynotafterrename: ~ In y (ftv (rename x0 b1 s1))).
         {
           apply ftv_not_in_rename.
-          - (* freshness *) admit.
+          - symmetry; eapply fresh2_over_key_sigma; auto with *.
           - assumption.
         }
         eapply alpha_trans.
@@ -869,9 +917,10 @@ Proof.
     {
       destruct (existsb (String.eqb y) (ftv t)) eqn:Hftv.
       {
+        
         (* it exists, so we need to avoid capture, so they are identical*)
         simpl.
-        remember (fresh _ _ s3) as b2. (* Uhm, different fresh! oof *)
+        remember (fresh2 _ s3) as b2. (* Uhm, different fresh! oof *)
         apply alpha_lam.
         eapply IHs with (s' := rename x0 b1 s1) (s'' := (rename y b2 s3)).
         - eapply alpha_trans_rename_left; eauto.
@@ -883,12 +932,15 @@ Proof.
             apply alpha_extend_ids_right.
             * apply ctx_id_right_is_id.
             * apply alphaRename.
-              (* freshness? problems with ftv vs tv maybe? *)
-              admit.
+              now apply fresh2_over_tv_term in Heqb2.
         - apply alpha_trans_cons.
           eauto.
-        - (* fresh2 and fresh*) admit.
-        - (* fresh2 and fresh *) admit.
+        - apply alpha_var. apply alpha_var_diff; [| |inversion Halphax; assumption ];
+          eapply fresh2_over_key_sigma with (X := x) (s := t); auto with *.
+        - apply alpha_extend_fresh; auto.
+          + intros Hcontra; apply extend_ftv_to_tv in Hcontra. eapply fresh2_over_tv_value_sigma with (X := x) (s := t) in Heqb1; [contradiction | auto with *].
+          + intros Hcontra; apply extend_ftv_to_tv in Hcontra; eapply fresh2_over_tv_value_sigma with (X := x) (s := t); eauto with *.
+          
       }
       {
         apply alpha_lam.
@@ -897,9 +949,14 @@ Proof.
         - exact H5.
         - apply alpha_trans_cons.
           eauto.
-        - (* x <> y and x <> b1*) admit.
-        - (* b1 <> t  and  ~ In y (ftv t), alpha_extend_fresh works on ftv level: fine.*)
-          admit.
+        - apply alpha_var. apply alpha_var_diff; [| |inversion Halphax]; auto.
+          eapply fresh2_over_key_sigma with (X := x) (s := t); auto with *.
+        - apply alpha_extend_fresh; auto. 
+          + eapply fresh2_over_tv_value_sigma with (X := x) (s := t) in Heqb1; eauto with *. 
+            intros Hcontra.
+            apply extend_ftv_to_tv in Hcontra.
+            contradiction.
+          + now apply existsb_false_to_in_dec in Hftv.
       }
     }
   
@@ -910,7 +967,7 @@ Proof.
     apply alpha_app.
     + eapply IHs1; eauto.
     + eapply IHs2; eauto.
-Admitted.
+Qed.
 
 Lemma lib_con_sub_alpha x s t :
   nil ⊢ [x := t] s ~ substituteTCA x t s.
@@ -972,7 +1029,7 @@ Proof.
   - inversion H2; subst.
     eexists.
     split.
-    + apply step_beta_d. (* alpha preserves normal ty*) admit. admit.
+    + apply step_beta_d; eapply alpha_preserves_normal_Ty; eauto.
     + eapply alpha_trans.
       * apply id_left_trans.
       * change (ctx_id_left ren) with (nil ++ ctx_id_left ren).
@@ -996,14 +1053,14 @@ Proof.
   - destruct (IHHstep ren t4 H4) as [tα [Hstep' Halpha'] ].
     exists (tmapp s2 tα); split.
     + apply step_appR_d.
-      * (* alpha preserves normal ty *) admit.
+      * eapply alpha_preserves_normal_Ty; eauto.
       * assumption.
     + apply alpha_app; assumption.
   - destruct (IHHstep ((x, y)::ren) s3 H4) as [tα [Hstep' Halpha'] ].
     exists (tmlam y A tα); split.
     + apply step_abs_d. assumption.
     + apply alpha_lam; assumption.    
-Admitted.
+Qed.
 
 Theorem α_preserves_sn_d s s' :
   Alpha [] s s' -> (@sn step_d) s -> (@sn step_d) s'.
@@ -1058,7 +1115,10 @@ Lemma is_normal_then_step_d t :
 Proof.
 Admitted.
 
-(* We also need this for sound/completeness, so we can assume it is true/a good approach*)
+
+(* We also need this for sound/completeness, so we can assume it is true/a good approach
+    Mutual induction with neutral?
+*)
 Lemma is_normal_then_normal_Ty t : 
   is_normal t = true -> normal_Ty t.
 Proof.
@@ -1130,7 +1190,7 @@ Qed.
 
 Inductive MySN t : Set :=
 | SNI0 : (step_d_f t = None) -> MySN t
-| SNI' : {t' & step_d_f t = Some t' -> ((MySN t'))} -> MySN t. (* TODO: cannot find the inductive step, but removing the existential might work*)
+| SNI' : {t' & prod (step_d_f t = Some t') ((MySN t'))} -> MySN t. (* TODO: cannot find the inductive step, but removing the existential might work*)
 (* This is the same as the exists, why??? *)
 
 Print MySN_ind.
@@ -1258,6 +1318,69 @@ Fixpoint normalizer' (t : term) (HSN : MySN t) : term :=
 Definition normalizer (t : term) E T (Htype : has_type E t T) : term :=
   let myHSN := strong_normalization_mysn Htype in
     @normalizer' t myHSN.
+
+Fixpoint normalizer4' (t : term) (HSN : @sn step_d t) : term :=
+  match HSN with 
+  | SNI f => match step_d_f t with 
+    | Some t' => fun Heq =>
+      let Hstep := @step_d_f_to_step_d t t' Heq in
+      @normalizer4' t' (f t' Hstep)
+    | None => fun _ => t 
+    end (eq_proof (step_d_f t))
+  end.
+
+(* Uses step_d_f instead of step_d*)
+Inductive SN5 x : Set :=
+| SNI5 : (forall y, step_d_f x = Some y -> SN5 y) -> SN5 x.
+
+Fixpoint normalizer6' (t : term) (steps : list (term )) : term :=
+  match steps with
+    | nil => t
+    | ((t')::ss) => normalizer6' t' ss
+  end.
+
+Fixpoint to_sn_list {t } (HSN : SN5 t) : list (term) :=
+  let '(SNI5 f) := HSN in
+  match step_d_f t with
+    | Some t' => fun Hstep => (t')::(to_sn_list (f t' Hstep))
+    | None => fun Hstep => t::nil
+  end (eq_proof (step_d_f t)).
+
+Theorem strong_normalization_d5 E s T : has_type E s T -> SN5 s.
+Proof.
+  intros Htype.
+  apply (strong_normalization) in Htype.
+  assert (@sn step_d s).
+  {
+    now apply SN_nd_to_SN_d.
+  }
+  apply SNI5.
+  intros y Hstepdf.
+  clear Htype.
+  induction H.
+  apply step_d_f_to_step_d in Hstepdf.
+  apply (H y Hstepdf).
+  admit. (* need to go the other way*)
+Admitted.
+
+Definition normalizer6 (t : term) E T (Htype : has_type E t T) : term :=
+  let myHSN := strong_normalization_d5 Htype in
+  let hmmList := to_sn_list myHSN in
+    @normalizer6' t hmmList.
+
+Fixpoint normalizer5' (t : term) (HSN : SN5 t) : term :=
+  let '(SNI5 f) := HSN in
+  match step_d_f t with 
+    | Some t' => fun Hstep =>
+      @normalizer5' t' (f t' Hstep)
+    | None => fun _ => t 
+  end  (eq_proof (step_d_f t)).
+
+Definition normalizer5 (t : term) E T (Htype : has_type E t T) : term :=
+  let myHSN := strong_normalization_d5 Htype in
+    @normalizer5' t myHSN.
+
+
   
 
 

@@ -274,7 +274,7 @@ Equations? substituteTCA (X : string) (U T : term) : term by wf (size T) :=
         else
           if existsb (String.eqb Y) (ftv U)
             then
-              let Y' := fresh X U T in
+              let Y' := fresh2 ((Y, tmvar Y)::(X, U)::nil) T in
               let T' := rename Y Y' T in
               tmlam Y' K (substituteTCA X U T')
             else
