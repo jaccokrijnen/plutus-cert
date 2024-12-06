@@ -1,4 +1,4 @@
-From PlutusCert Require Import alpha step alpha_sub STLC_named alpha_ctx_sub freshness.
+From PlutusCert Require Import alpha step alpha_sub STLC_named alpha_ctx_sub freshness util alpha_freshness Util.List.
 Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Strings.String.
@@ -19,9 +19,7 @@ Proof.
   - specialize (IHHstep ren s3 H2).
     destruct IHHstep as [t' [IHHstep IHHalpha] ].
     eexists (tmapp t' t2).
-    split.
-    + apply step_appL. assumption.
-    + apply alpha_app; assumption.
+    split; constructor; assumption.
   - specialize (IHHstep ren t4 H4).
     destruct IHHstep as [t' [IHHstep IHHalpha] ].
     eexists.
@@ -52,6 +50,69 @@ Proof.
     split; auto.
     eapply starSE with (y := t'y); eauto.
 Qed.
+
+(*
+What if we have (\x. y) (z). Then z in the ftv of the term, but after stepping it is not anymore.
+So ftvs can be removed. But they can never be added.
+*)
+Lemma step_preserves_no_ftv {s s' x} :
+  ~ In x (tv s) -> step s s' -> ~ In x (ftv s').
+Proof.
+  intros Hnotins Hstep.
+  induction Hstep.
+  - assert (Hxot: ~ In x (tv t)).
+    {
+      simpl in Hnotins.
+      apply de_morgan2 in Hnotins as [_ H].
+      now apply not_in_app in H.
+    }
+    
+    destr_eqb_eq x x0.
+    + apply fresh2_subst_helper3.
+      intros Hcontra.
+      apply extend_ftv_to_tv in Hcontra.
+      contradiction.
+    + apply no_ftv_subs_helper.
+      * simpl in Hnotins.
+        apply de_morgan2 in Hnotins as [_ Hnotins].
+        now apply not_in_app in Hnotins.
+      * simpl.
+        intros Hcontra.
+        destruct Hcontra; [intuition|].
+        rewrite app_nil_r in H0.
+        contradiction.
+  - simpl in Hnotins.
+    rewrite not_in_app in Hnotins.
+    destruct Hnotins as [Hnotins1 Hnotint].
+    apply IHHstep in Hnotins1.
+    simpl.
+    apply not_in_app.
+    split.
+    + assumption.
+    + intros Hcontra.
+      apply extend_ftv_to_tv in Hcontra.
+      contradiction.
+  - simpl in Hnotins.
+    rewrite not_in_app in Hnotins.
+    destruct Hnotins as [Hnotins1 Hnotint].
+    apply IHHstep in Hnotint.
+    simpl.
+    apply not_in_app.
+    split.
+    + intros Hcontra.
+      apply extend_ftv_to_tv in Hcontra.
+      contradiction.
+    + assumption.
+  - simpl in Hnotins.
+    simpl.
+    rewrite <- Util.List.in_remove.
+    apply de_morgan2 in Hnotins as [x0notx Hxnotins1].
+    unfold not.
+    intros.
+    destruct H as [H _].
+    apply IHHstep in Hxnotins1.
+    contradiction.
+Qed. 
 
 (* Why do we need this up to alpha equivalence?
 
@@ -165,11 +226,11 @@ Proof.
                      +++ reflexivity.
               ** 
                   eapply alpha_extend_vacuous_single.
-                  --- assert (~ In x' (ftv s1)).
+                  --- assert (~ In x' (tv s1)).
                       {
                        eapply fresh2_over_tv_term in Heqx'.
                        intros Hcontra.
-                       apply extend_ftv_to_tv in Hcontra.
+                       (* apply extend_ftv_to_tv in Hcontra. *)
                        contradiction. 
                       }
                       apply (step_preserves_no_ftv H0) in Hstep. (* Probably easier to do over tv*)
@@ -192,6 +253,7 @@ Proof.
   assumption.
 Qed.
 
+(* TODO: NOt used???? *)
 Lemma red_subst sigma {s} {t} : 
   red s t -> {alphaSigmaT : term & prod (red (sigma [[s]]) alphaSigmaT) (Alpha [] alphaSigmaT (sigma [[t]]))}.
 Proof. 

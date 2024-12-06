@@ -5,79 +5,6 @@ Require Import Coq.Strings.String.
 
 Require Import Coq.Program.Equality.
 
-
-
-(* Suppose In x' (ftv s'), then L x' s'*)
-
-Lemma alphavar_contradiction_shadow' {x x0 y g : string} {ren1 ren2} :
-  x0 <> x -> ~ In x (map fst ren1) -> AlphaVar ren2 x y -> AlphaVar (((x0, y)::ren1) ++ ren2) x g -> False.
-Proof with try contradiction.
-  intros.
-  induction ren2.
-  - inversion H2; subst...
-    inversion H1; subst... (* contradiction: y notin fst ren1, but AlphaVar ren1 y g with y <> g*) admit.
-
-  - destruct a.
-    inversion H1; subst.
-    + inversion H2; subst...
-      (* By x notin fst ren1, we know that AlphaVar ren1 ++ (x, y):: ren2) x g implies
-        AlphaVar (x, y)::ren2 x g. But y <> g. contradiction.
-      *)
-      admit.
-    + inversion H2; subst...
-      (*
-        From AlphaVar ren1 ++ (s, s0)::ren2 x g we know (s, s0)::ren2 x g. Then alphavar unique says y = g, contradiction.
-        *)
-Admitted.
-
-Lemma alphavar_contradiction_shadow {x x0 y g : string} {ren} :
-  x0 <> x -> AlphaVar ren x y -> AlphaVar ((x0, y)::ren) x g -> False.
-Proof with try contradiction.
-  intros.
-  induction ren.
-  - inversion H1; subst...
-    apply (alphavar_unique_right H0) in H9...
-  - destruct a.
-    inversion H0; subst.
-    + inversion H1; subst...
-      inversion H9; subst...
-    + inversion H1; subst...
-      inversion H12; subst...
-      eapply IHren; eauto.
-      apply alpha_var_diff; assumption.
-Qed.
-
-
-(* If x in ftv s, then there exists no s' for this context*)
-Lemma uhm3 (x x0 z y : string) s s' ren1 ren2 :
-    x0 <> x -> ~ In x (map fst ren1) -> In x (ftv s) -> AlphaVar ren2 x y -> Alpha ((x0, y)::ren1 ++ ren2) s s' -> False.
-Proof.
-    intros.
-    generalize dependent x0.
-    generalize dependent ren1.
-    generalize dependent ren2.
-    generalize dependent s'.
-    induction s; intros s' ren2 Hxy ren1 Hxnotren1 x0 Hx0notx Halpha.
-    - inversion Halpha; subst.
-      unfold ftv in H1. apply in_inv in H1; destruct H1; try contradiction; subst.
-      apply (alphavar_contradiction_shadow' Hx0notx Hxnotren1 Hxy H2).
-
-    - inversion Halpha; subst.
-      assert (x <> s).
-      {
-        intros Hcontra; subst.
-        apply ftv_lam_no_binder in H1.
-        contradiction.
-      } 
-      apply ftv_lam_helper in H1.
-      (* Suppose y0 = y. Then we can use IHs with x1 = s and ren3 = (x0, y)::ren1 and ren0 = ren2
-      
-        Suppose now y0 <> y. Also s <> x0. ??? no we dont know that. Nooo... so we cant do swap.
-
-        So we need to extend it with a prepending of (a, b), where a <> x and b <> y...
-      *)
-Admitted.
-
 Lemma alpha_preserves_ftv' {x s s' ren} :
   In x (ftv s) -> Alpha ren s s' -> { x' & prod (AlphaVar ren x x') (In x' (ftv s')) }.
 Proof.
@@ -112,11 +39,6 @@ Proof.
       exists x'; split; auto.
       apply in_or_app; right; auto.
 Qed.
-    
-
-
-
-
 
 Lemma alpha_preserves_ftv {x x' s s' ren } :
   In x (ftv s) ->
@@ -129,7 +51,6 @@ Proof.
   apply (alphavar_unique_right Halphax) in Halphay; subst.
   assumption.
 Qed.
-
 
 Lemma alpha_preserves_no_ftv {x x' s s' ren} :
   ~ In x (ftv s) ->
@@ -164,53 +85,11 @@ Lemma alpha_preserves_ftv_from_tv {x x' s s' ren} :
   AlphaVar ren x x' ->
   ~ In x' (ftv s').
 Proof.
-  intros Hnotin Halphas Halphax.
-  induction Halphas; simpl in *; auto.
-  - intros Hcontra.
-    destruct Hcontra; [|contradiction].
-    subst.
-    assert (x0 <> x).
-    {
-      intros Hcontra.
-      subst.
-      contradiction Hnotin.
-      left.
-      reflexivity.
-    }
-    
-    apply (alphavar_unique_not_left H a) in Halphax.
-    contradiction.
-  - destr_eqb_eq x' y.
-    + apply remove_In.
-    + assert (Hnotin' : ~ In x' (ftv s2)).
-      {
-        eapply IHHalphas.
-        - unfold not in Hnotin.
-          intros Hcontra.
-          apply Hnotin.
-          right.
-          assumption.
-        - assert (x0 <> x).
-          {
-            intros Hcontra.
-            subst.
-            unfold not in Hnotin.
-            apply Hnotin.
-            left.
-            reflexivity.
-          }
-          eapply alpha_var_diff; eauto.
-          
-      }
-      rewrite <- Util.List.in_remove.
-      intros Hcontra.
-      destruct Hcontra; contradiction.
-  - 
-    apply not_in_app in Hnotin as [Hnotin1 Hnotin2].
-    apply not_in_app.
-    split.
-    + eapply IHHalphas1; eauto.
-    + eapply IHHalphas2; eauto.
+  intros.
+  eapply alpha_preserves_no_ftv; eauto.
+  intros Hcontra.
+  apply extend_ftv_to_tv in Hcontra.
+  contradiction.
 Qed.
 
 Lemma alpha_preserves_ftv_tv_right {x x' s s' ren} :
@@ -219,23 +98,17 @@ Lemma alpha_preserves_ftv_tv_right {x x' s s' ren} :
   AlphaVar ren x x' ->
   ~ In x (ftv s).
 Proof.
-          (* Bunch of symmetry stuff
-          remember (sym_alpha_ctx ren12) as ren12'.
-          assert (Halphay': Alpha ren12 (tmvar y1) (tmvar y2)).
-          {
-            apply alpha_var; assumption.
-          }
-          eapply @alpha_sym with (ren' := ren12') in Halphay'; [| rewrite Heqren12'; apply sym_alpha_ctx_is_sym].
-          assert (Halphay'' : AlphaVar ren12' y2 y1).
-          {
-            inversion Halphay'.
-            assumption.
-          }
-          eapply @alpha_sym with (ren' := ren12') in Halphas12; [| rewrite Heqren12'; apply sym_alpha_ctx_is_sym].
-
-
-          eapply @alpha_preserves_ftv with (s := t0); eauto. *)
-Admitted.
+  intros.
+  eapply alpha_preserves_no_ftv; eauto.
+  - intros Hcontra.
+    apply extend_ftv_to_tv in Hcontra.
+    now apply H in Hcontra.
+  - eapply alpha_sym.
+    + apply sym_alpha_ctx_is_sym.
+    + eauto.
+  - eapply alphavar_sym; eauto.
+    apply sym_alpha_ctx_is_sym.
+Qed.
 
 Lemma no_ftv_subs_helper' y s s' s'' sigma ren ren1 ren2 :
   αCtxTrans ren1 ren2 ren ->
@@ -321,7 +194,7 @@ Proof.
   - inversion Halphas1.
     inversion Halphas2.
     subst.
-    assert (Hnotys0: ~ In y (tv s1)).
+    assert (Hnotys0: ~ In y (tv s1)). (* Cannot be restricted to ftv. What if x = y??*)
     {
       simpl in Hynots.
       auto.
@@ -411,6 +284,7 @@ Proof.
     + eapply IHs'2; eauto.
 Qed.
 
+(* TODO: It would make sense to extend these to ftv assumptions, but the IH is not strong enough in those cases*)
 Lemma no_ftv_subs_helper y s sigma :
   ~ In y (tv s) ->
   ~ In y (tv_keys_env sigma) -> (* should be tv*)
@@ -425,195 +299,100 @@ Proof.
   - apply alpha_refl. apply alpha_refl_nil.
 Qed.
 
-(* IS THIS STILL USED AND WHAT DOES IT DO? *)
-Lemma ftv_sub_helper4 x x' y y' s s' s'' sigma sigma' ren1 ren2 ren :
+Lemma fresh2_subst_helper2' Y' Y'' X s t t' t'' ren1 ren2 ren :
+  Alpha ren1 t' t ->
+  Alpha ren2 t t'' ->
+  AlphaVar ren Y' Y'' ->
   αCtxTrans ren1 ren2 ren ->
-  αCtxSub ren sigma sigma' ->
-  Alpha ren1 s s' ->
-  Alpha ren2 s' s'' ->
-  AlphaVar ren x x' ->
-  AlphaVar ren y y' ->
-  In x (ftv s) ->
-  ~ In y (tv s) -> (* A free var can ber renamed to a name that is bound, then suddenly it is bound! Cannot happen because it is a capture-avoiding substitution, but adding this condition makes it possible to not need a stronger induciton hypothesis*)
-  In y' (ftv (((x', tmvar y')::sigma') [[s'']])).
+  In Y' (ftv t') -> 
+  In Y'' (ftv t'') -> (* follows from ftv_preserved_under_alpha *)
+  X <> Y'' -> 
+  In Y'' (ftv ([X := s] t'')).
 Proof.
   intros.
-  generalize dependent s.
-  generalize dependent s''.
-  generalize dependent ren.
+  generalize dependent t'.
+  generalize dependent t''.
   generalize dependent ren1.
   generalize dependent ren2.
-  induction s'; intros ren2 ren1 ren Htrans Hctx Halphax Halphay s'' Hs'' s0 Hs' Hxins Hynotins.
-  - inversion Hs''.
-    inversion Hs'.
-    subst.
-    rewrite capms_equation_1.
-    simpl.
-    assert (x = x1).
+  generalize dependent ren.
+  induction t; intros ren HalphaY ren2 ren1 Htrans t'' Halphat2 Hyftv2 t' Halphat1 Hyftv1.
+  - inversion Halphat1; subst.
+    inversion Halphat2; subst.
+    apply ftv_var in Hyftv2; subst.
+    apply ftv_var in Hyftv1; subst.
+    rewrite capms_var_single_not; auto.
+    unfold ftv. intuition.
+  - inversion Halphat1; subst.
+    inversion Halphat2; subst.
+    rewrite capms_equation_2; simpl.
+    remember (fresh2 _ s3) as b1.
+    (* What if Y'' is b1
+      Y'' in ftv (tmlam y t s3, so y'' in ftv s3 and b1 is built up from s3, so Y'' <> b1
+      ???*)
+    assert (Y'' <> b1).
     {
-      inversion Hxins; [auto | contradiction].
+      apply ftv_lam_helper in Hyftv2.
+      apply fresh2_over_tv_term in Heqb1.
+      apply extend_ftv_to_tv in Hyftv2.
+      intros Hcontra.
+      subst.
+      contradiction.
     }
-    subst.
-    (*
-      AlphaVar ren x1 ~ x'. 
-      but also
-      AlphaVar ren x1 y0.
-      Hence x' = y0.
-    *)
-    assert (x' = y0).
-    {
-      assert (AlphaVar ren x1 y0).
-      {
-        eapply alpha_var_trans; eauto.
-      }
-      apply (alphavar_unique_right Halphax) in H.
+    apply Util.List.in_remove; split; auto.
+    eapply IHt.
+    + eapply alpha_var_diff with (x := x).
+      * intros Hcontra.
+        subst.
+        apply ftv_lam_no_binder in Hyftv1.
+        contradiction.
+      * symmetry.
+        exact H.
+      * exact HalphaY.
+    + apply alpha_trans_cons.
+      exact Htrans.
+    + eapply alpha_trans_rename_right; eauto.
+    + eapply ftv_lam_rename_helper in Hyftv2.
+      exact Hyftv2.
+    + exact H2.
+    + apply ftv_lam_helper in Hyftv1.
       assumption.
-    }
-    subst.
-    rewrite String.eqb_refl.
-    unfold ftv.
-    apply in_eq.
-  - inversion Hs'.
-    inversion Hs''.
-    subst. 
-    rewrite capms_equation_2.
-    simpl.
-    remember (fresh2 _ _) as b1.
-    assert (x <> x0).
-    {
-      intros Hcontra.
-      subst.
-      apply ftv_lam_no_binder in Hxins.
-      contradiction.
-    }
-    assert (y <> x0).
-    {
-      intros Hcontra.
-      subst.
-      unfold tv in Hynotins. fold tv in Hynotins.
-      apply not_in_cons in Hynotins as [Hynotins _].
-      contradiction.
-    }
-    assert (In y' (ftv (((x', tmvar y'):: sigma') [[rename y1 b1 s4]]))).
-    {
-      
-      (* hmm again a rename...
-
-      for s0 we can choose s1. We know x in ftv s1.
-      Then we need ren1 |- s1 ~ s'.  => ren1 = (x0, s)::ren1
-
-      So then y in ftv (((x, tmvar y) :: sigma ) [[s'']]).
-
-      we need s' ~ s'' = rename y1 b1 s4.
-      We know s' ~ s4 with [s, y1]::ren2.
-
-      Then s' ~ rename y b1 s4 with [s, b1]::ren2.
-
-      Then ren := (x0, b1)::ren
-
-      So do we have AlphaVar (x0, b1)::ren x x'? => x <> x0. b1 <> x', so yes.
-      Do we have AlphaVar (x0, b1)::ren y y'? => y' <> b1. But what if y = x0? Then y notin ftv (tmlam x0 t s1). 
-      Fixed by new condition on y.
-
-    αCtxSub (x0, b1)::ren sigma sigma' ? We already have αCtxSub ren sigma sigma'.
-    We for sure do not have that, since x0 not fresh. So it could shadow something.
-    But I think we can cheat it, by doing an unncessesary renaming of x0 to fresh2 ((x0, tmvar x0))::sigma) ?.
-      
-      *)
-      remember (fresh2 ((x0, tmvar y)::sigma) s1) as b2.
-
-      assert (In x (ftv s1)).
-      {
-        apply ftv_lam_helper in Hxins.
-        assumption.
-      }
-
-      eapply IHs'.
-      - apply alpha_trans_cons. exact Htrans.
-      - eapply extend_alpha_ctx_fresh.
-        + change ((x0, tmvar y) :: sigma) with (((x0, tmvar y)::nil) ++ sigma) in Heqb2.
-          exact Heqb2.
-        + change ((y1, tmvar y1)::(x', tmvar y') :: sigma') with (((y1, tmvar y1)::(x', tmvar y')::nil) ++ sigma') in Heqb1.
-          exact Heqb1.
-        + assumption.
-      - apply alpha_var_diff.
-        + apply fresh2_over_tv_term in Heqb2.
-          
-          apply extend_ftv_to_tv in H1.
-          intros Hcontra.
-          subst.
-          contradiction.
-        + eapply fresh2_over_key_sigma in Heqb1.
-          * eauto.
-          * apply in_cons. apply in_eq.
-        + assumption.
-      - (* 
-          y not b2 by cheat b2!
-          y' notin b1.
-        *)
-        apply alpha_var_diff; auto.
-        + eapply fresh2_over_tv_value_sigma with (s := tmvar y) in Heqb2; eauto.
-          * simpl in Heqb2.
-            auto.
-          * apply in_eq.
-        + eapply fresh2_over_tv_value_sigma with (s := tmvar y') in Heqb1; eauto.
-          * simpl in Heqb1.
-            auto.
-          * apply in_cons. apply in_eq.
-      - eapply @alpha_trans with (ren' := (((y1, b1)::nil) ++ ctx_id_right ren2)).
-        + apply alpha_trans_cons.
-          apply id_right_trans.
-        + exact H10.
-        + apply alpha_extend_ids_right.
-          * apply ctx_id_right_is_id.
-          * apply alphaRename.
-            apply fresh2_over_tv_term in Heqb1.
-            assumption.
-      - eapply @alpha_trans with (ren := (((b2, x0)::nil) ++ ctx_id_left ren1)).
-        + apply alpha_trans_cons.
-          apply id_left_trans.
-        + apply alpha_extend_ids_right.
-          * apply ctx_id_left_is_id.
-          * eapply alpha_sym; [repeat constructor |].
-            apply alphaRename.
-            apply fresh2_over_tv_term in Heqb2.
-            exact Heqb2.
-        + exact H2.
-
-      - apply ftv_rename_vacuous_helper; assumption.
-      - apply tv_not_after_rename.
-        + eapply fresh2_over_tv_value_sigma with (s := tmvar y) in Heqb2; auto.
-          * simpl in Heqb2.
-            auto.
-          * apply in_eq.
-        + simpl in Hynotins.
-          auto.
-    }
-    (* y' <> b1 so we can remove the remove *)
-    apply Util.List.in_remove.
-    split.
-    + assumption.
-    + eapply fresh2_over_tv_value_sigma with (s := tmvar y') in Heqb1; eauto.
-      * simpl in Heqb1.
-        auto.
-      * apply in_cons. apply in_eq.
-  - inversion Hs'.
-    inversion Hs''.
-    subst.
+  - inversion Halphat1; subst.
+    inversion Halphat2; subst.
     rewrite capms_equation_3.
     simpl.
-    simpl in Hynotins.
-    apply not_in_app in Hynotins.
-    destruct Hynotins as [Hynotins1 Hynotint1].
-
-    apply in_app_iff.
-    simpl in Hxins.
-    apply in_app_sum in Hxins.
-    destruct Hxins.
+    apply in_or_app.
+    simpl in Hyftv1.
+    apply in_app_or in Hyftv1.
+    destruct Hyftv1.
     + left.
-      eapply IHs'1; eauto.
+      eapply IHt1; eauto.
+      eapply alpha_preserves_ftv; eauto.
+      eapply alpha_trans; eauto.
     + right.
-      eapply IHs'2; eauto.
+      eapply IHt2; eauto.
+      eapply alpha_preserves_ftv; eauto.
+      eapply alpha_trans; eauto.
+Qed.
+
+Lemma fresh2_subst_helper2 Y X s t :
+  In Y (ftv t) -> X <> Y -> In Y (ftv ([X := s] t)).
+Proof.
+  intros.
+  eapply fresh2_subst_helper2' with (ren1 := nil) (ren2 := nil) (ren := nil); eauto.
+  - apply alpha_refl. constructor.
+  - apply alpha_refl. constructor.
+  - apply alpha_var_refl.
+  - apply alpha_trans_nil.
+Qed.
+
+(* TODO: extend to multiple substitutions: trivial though ;)*)
+Lemma fresh2_subst_helper' {Y X s t} :
+  ~ In Y (ftv ([X := s] t)) -> X <> Y -> ~ In Y (ftv t).
+Proof.
+  intros notInt XnotY.
+  intros Hcontra.
+  apply (fresh2_subst_helper2 Y X s t Hcontra) in XnotY.
+  contradiction.
 Qed.
 
   (* 
@@ -656,6 +435,53 @@ Proof.
     Do we have Y notin tv_keys_env (s,g)::sigma, yes!
 
     Ok, so for this we need ren sub compose! But do we not need this in ren sub compose by any chance?
+    We use this lemma in commute_subst_stronger, which does not use ren_sub_compose!
+
+    Let's first see why we need this lemma. The lemma is not weird or anthing, but maybe we can bypass it
+
     *)
 
 Admitted.
+
+Lemma fresh2_subst_helper3' s t X R s' :
+  R ⊢ s ~ s' ->
+  ~ In X (ftv t) -> ~ In X (ftv ([X := t] s')).
+Proof.
+  intros.
+  generalize dependent R.
+  generalize dependent s'.
+  induction s; intros s' R Halpha.
+  - inversion Halpha; subst.
+    destr_eqb_eq X y.
+    + now rewrite capms_var_helper.
+    + rewrite capms_var_single_not; auto.
+      unfold ftv.
+      intros Hcontra.
+      inversion Hcontra.
+      * intuition.
+      * contradiction.
+  - inversion Halpha; subst.
+    rewrite capms_equation_2; simpl.
+    remember (fresh2 _ _) as b.
+    rewrite <- Util.List.in_remove. 
+    intros Hcontra.
+    destruct Hcontra.
+    revert H.
+    eapply IHs.
+    eapply alpha_trans_rename_right; eauto.
+  - inversion Halpha; subst.
+    autorewrite with capms.
+    simpl.
+    intros Hcontra.
+    apply in_app_or in Hcontra.
+    destruct Hcontra.
+    + eapply IHs1; eauto.
+    + eapply IHs2; eauto.
+Qed. 
+
+Lemma fresh2_subst_helper3 s t X :
+  ~ In X (ftv t) -> ~ In X (ftv ([X := t] s)).
+Proof.
+  eapply fresh2_subst_helper3'.
+  apply alpha_refl. apply alpha_refl_nil.
+Qed.

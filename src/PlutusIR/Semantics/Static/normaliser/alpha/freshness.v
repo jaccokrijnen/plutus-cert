@@ -262,32 +262,6 @@ Proof.
       apply in_or_app. right. apply IHt2.
 Qed.
 
-(*
-What if we have (\x. y) (z). Then z in the ftv of the term, but after stepping it is not anymore.
-So ftvs can be removed. But they can never be added.
-*)
-Lemma step_preserves_no_ftv s s' x :
-  ~ In x (ftv s) -> step s s' -> ~ In x (ftv s').
-Proof.
-  intros Hnotins Hstep.
-  induction Hstep.
-  - admit.
-  (*
-    x notin ftv (tmapp (tmlam x0 A s) t).
-    Suppose x <> x0.
-    Then x notin ftv s.
-    and x notin ftv t
-
-
-    Suppose x = x0.
-    then x notin ftv t.
-    if x in ftv s, then it gets replaced by t, so x notin [x0 := t] s.
-  *)
-  - admit.
-  - admit.
-  - admit.
-Admitted. 
-
 Fixpoint ftv_keys_env (sigma : list (string * term)) : list string :=
   match sigma with
   | nil => nil

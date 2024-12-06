@@ -24,8 +24,13 @@ Inductive star {e : term -> term -> Set } (x : term) : term -> Set :=
 | starSE y z : star x y -> e y z -> star x z.
 
 
-(** **** Many-Step Reduction *)
+(** **** Many-Step Reduction 
+TODO: See if we can use the star from autosubst ARS again. (uses Prop instead of Set)
+*)
 Definition red := @star step.
+
+Lemma star_trans y x z : red x y -> red y z -> red x z.
+Proof. move=> A. elim=> //={z} y' z _. exact: starSE. Qed.
 
 
 
@@ -35,13 +40,28 @@ Definition red := @star step.
 Lemma red_app s1 s2 t1 t2 :
   red s1 s2 -> red t1 t2 -> red (tmapp s1 t1) (tmapp s2 t2).
 Proof.
-  (* move=> A B. apply: (star_trans (tmapp s2 t1)).
-  - apply: (star_hom (tmapp^~ t1)) A => x y. exact: step_appL.
-  - apply: star_hom B => x y. exact: step_appR. *)
-(* Qed. *)
-Admitted.
+  
+  move=> A B. apply: (star_trans (tmapp s2 t1)).
+  - induction A.
+    + exact: starR.
+    + eapply starSE.
+      * exact IHA.
+      * now apply step_appL.
+  - induction B.
+    + exact: starR.
+    + eapply starSE.
+      * exact IHB.
+      * now apply step_appR.
+Qed.
 
 Lemma red_abs x A s1 s2 : 
   red s1 s2 -> red (tmlam x A s1) (tmlam x A s2).
 (* Proof. apply: star_hom => x' y'. exact: step_abs. Qed. *)
-Proof. Admitted.
+Proof. 
+  move=> B.
+  induction B.
+  + apply starR.
+  + eapply starSE.
+    * exact IHB.
+    * now apply step_abs.
+Qed.

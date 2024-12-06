@@ -24,13 +24,10 @@ Ltac destr_eqb_eq x y :=
 
 Lemma de_morgan2 : forall P Q : Prop, ~ (P \/ Q) <-> ~ P /\ ~ Q.
 Proof.
+  
   intros P Q. split.
-  - intros H. split.
-    + intros HP. apply H. left. assumption.
-    + intros HQ. apply H. right. assumption.
-  - intros [H1 H2] [HP | HQ].
-    + apply H1. assumption.
-    + apply H2. assumption.
+  - intros H. split; auto.
+  - intros [H1 H2] [HP | HQ]; auto.
 Qed.
 
 Lemma concat_not_eq_prefix (a b Y : string) :
