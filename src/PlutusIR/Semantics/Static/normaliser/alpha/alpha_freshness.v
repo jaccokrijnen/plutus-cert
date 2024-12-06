@@ -395,50 +395,12 @@ Proof.
   contradiction.
 Qed.
 
-  (* 
-    Can there be a ftv in t that is equal to g2, then there is a problem?
-    Suppose there is.
-    Then this must be in the keys of sigma:
-      - if it was not in the keys of sigma, it would still be in sigma [[t]]
-      - so then it could not be equal to g2.
-    .
-    Since we also freshen over sigma, and thus over the keys of sigma,
-    it can still not be equal to g2.
-  *)
 Lemma fresh2_subst_helper { Y sigma t } :
   ~ In Y (tv (sigma [[t]])) -> ~ In Y (tv_keys_env sigma) -> ~ In Y (ftv t).
 Proof.
   intros.
-  generalize dependent sigma.
-  induction t; intros.
-  - rewrite capms_equation_1 in H.
-    destruct (lookup s sigma) eqn:Hlookup.
-    + apply lookup_some_then_in in Hlookup.
-      (* s in sigma. Y notin sigma => Y notin s.*)
-      admit.
-    + intros Hcontra.
-      apply extend_ftv_to_tv in Hcontra.
-      contradiction.
-  - (* If we can show Y notin ftv t0: Done*)
-    rewrite capms_equation_2 in H. 
-    remember (fresh2 _ _) as g.
-    assert (~ In Y (tv ((sigma [[rename s g t0]])))) by admit.
     (*
-
-    If s = Y, we are donel. Hence assume s <> Y
-    notin Y (tv (tmlam g t sigma (rename s g t0)))
-    Hence Y <> g.
-
-    notin Y (tv sigma [[rename s g t0]])
-    notin Y (tv (s, g)::sigma [[t0]])
-
-    Do we have Y notin tv_keys_env (s,g)::sigma, yes!
-
-    Ok, so for this we need ren sub compose! But do we not need this in ren sub compose by any chance?
-    We use this lemma in commute_subst_stronger, which does not use ren_sub_compose!
-
-    Let's first see why we need this lemma. The lemma is not weird or anthing, but maybe we can bypass it
-
+    TODO: Trivially exteneded from above (and strenghtened to ftv assumption), but do we even need it?
     *)
 
 Admitted.
