@@ -728,6 +728,30 @@ with neutral_Ty : term -> Prop :=
       normal_Ty T2 ->
       neutral_Ty (tmapp T1 T2).
 
+Lemma normal_Ty_dec : forall t, {normal_Ty t} + {~normal_Ty t}.
+Proof.
+  intros t.
+  induction t.
+  - left. constructor. constructor.
+  - destruct IHt.
+    + left. constructor. auto.
+    + right. intros Hcontra. inversion Hcontra. 
+      * subst. contradiction.
+      * subst. inversion H.
+  - destruct IHt1; destruct IHt2.
+    + 
+    + right. intros Hcontra. inversion Hcontra.
+      * subst. contradiction.
+      * subst. inversion H.
+    + right. intros Hcontra. inversion Hcontra.
+      * subst. contradiction.
+      * subst. inversion H.
+    + right. intros Hcontra. inversion Hcontra.
+      * subst. contradiction.
+      * subst. inversion H.
+  (* Prove decidability here, or assume it if it is clear. *)
+Admitted.
+
 Lemma alpha_preserves_normal_Ty s s' R :
   R ⊢ s ~ s' -> normal_Ty s -> normal_Ty s'.
 Proof.
@@ -770,7 +794,9 @@ Inductive step_d : term -> term -> Set :=
 | step_abs_d x A s1 s2 :
     step_d s1 s2 -> step_d (tmlam x A s1) (tmlam x A s2).
 
-    Lemma orb_false_elim : forall a b : bool,
+Notation SN_d := (@sn step_d).
+
+Lemma orb_false_elim : forall a b : bool,
   orb a b = false -> a = false /\ b = false.
 Proof.
   intros a b H.
@@ -1176,202 +1202,15 @@ Proof.
       * discriminate.
 Qed.
 
-(* eq_refl didnt work, this does, thank Copilot, but I dont understand *)
-Lemma eq_proof {A : Type} (x : A) : x = x.
-Proof. reflexivity. Qed.
 
-Theorem strong_normalization_d E s T : has_type E s T -> @sn step_d s.
+
+Theorem strong_normalization_d E s T : has_type E s T -> SN_d s.
 Proof.
   intros Htype.
   apply (strong_normalization) in Htype.
   apply SN_nd_to_SN_d.
   assumption.
 Qed.
-
-Inductive MySN t : Set :=
-| SNI0 : (step_d_f t = None) -> MySN t
-| SNI' : {t' & prod (step_d_f t = Some t') ((MySN t'))} -> MySN t. (* TODO: cannot find the inductive step, but removing the existential might work*)
-(* This is the same as the exists, why??? *)
-
-Print MySN_ind.
-
-Inductive MySN' t : Set :=
-| SNI0' : (step_d_f t = None) -> MySN' t
-| SNI'' : forall t', step_d_f t = Some t' -> (MySN' t') -> MySN' t. (* TODO: cannot find the inductive step, but removing the existential might work*)
-(* This is the same as the exists, why??? *)
-
-Print MySN'_ind. (* Now we have an induction hypothesis! *)
-
-Theorem strong_normalization_mysn E s T : has_type E s T -> @MySN s.
-Proof.
-  intros Htype.
-  apply strong_normalization_d in Htype.
-  induction Htype.
-  destruct (step_d_f x) eqn:Hstep.
-  - assert (step_d x t) by now apply step_d_f_to_step_d.
-    apply SNI'.
-    specialize (H t H0).
-    exists t; auto. 
-  - apply SNI0. assumption.
-Qed.
-
-
-
-Fixpoint term_size (t : term) : nat :=
-  match t with
-  | tmvar _ => 1
-  | tmapp s t => 1 + term_size s + term_size t
-  | tmlam _ _ s => 1 + term_size s
-  end.
-
-(* term size is necessary, because e.g. when we go in a lambda body, the derivation sequence is just as long*)
-Fixpoint mysn_size {t : term} (HSN : MySN t) : nat :=
-  match HSN with
-  | SNI0 _ => term_size t
-  | SNI' (existT _ t' (_, HSN')) => 1 + mysn_size HSN' + term_size t
-  end.
-
-Require Import Coq.Program.Wf.
-
-
-(* Idea for a definition to make completeness easier *)
-Program Fixpoint normalizer2' (t : term) {HSN : MySN t} {measure (mysn_size HSN)} : term :=
-  match t return MySN t -> term with
-  | tmvar _ => fun _ => t
-  | tmapp s t => fun HSN' =>
-    if is_normal s then 
-      if is_normal t then
-        match s return MySN s -> term with
-        | tmlam x A s' => fun UHHHM => @normalizer2' (substituteTCA x t s) (sn_special_func UHHHM HSN') _
-        | _ => fun _ => tmapp s t
-        end (sn_app_L HSN')
-      else tmapp s (@normalizer2' t (sn_app_R HSN') _)
-    else tmapp (@normalizer2' s (sn_app_L HSN') _) t
-  | tmlam x A s => fun HSN' => tmlam x A (@normalizer2' s (sn_lam_body HSN') _)
-  (* | _ => fun _ => t *)
-end HSN.
-Next Obligation.
-Admitted.
-Next Obligation.
-Admitted.
-Next Obligation.
-Admitted.
-Next Obligation.
-Admitted.
-Next Obligation.
-Admitted.
-Next Obligation.
-Admitted.
-  
-
-Fixpoint normalizer3' (t : term) (HSN : MySN t) : term :=
-  match t return MySN t -> term with
-  | tmvar _ => fun _ => t
-  (* | tmapp s t => fun HSN' =>
-    if is_normal s then 
-      if is_normal t then
-        match s return MySN s -> term with
-        | tmlam x A s' => fun UHHHM => @normalizer2' (substituteTCA x t s') (sn_special_func UHHHM HSN')
-        | _ => fun _ => tmapp s t
-        end (sn_app_L HSN')
-      else tmapp s (@normalizer2' t (sn_app_R HSN'))
-    else tmapp (@normalizer2' s (sn_app_L HSN')) t *)
-  | tmlam x A s => fun HSN' => tmlam x A (@normalizer3' s (sn_lam_body HSN'))
-  | _ => fun _ => t
-end HSN.
-
-
-(* In the last case we have
-  MySN (tmlam x A s)
-Hence, either a value or it steps.
-  Case value:
-    Then also MySN s (value), but this is not contained in the bigger MySN..
-      so will coq know that that is ok?
-
-*)
-
-Definition normalizer2 (t : term) E T (Htype : has_type E t T) : term :=
-  let myHSN := strong_normalization_mysn Htype in
-    @normalizer2' t myHSN.    
-
-Fixpoint normalizer' (t : term) (HSN : MySN t) : term :=
-  match HSN with 
-  | SNI0 _ => t
-  | SNI' f =>
-    let (t', H) := f in 
-    let (Hstep, HSN') := H in
-    @normalizer' t' HSN'
-  end.
-
-Definition normalizer (t : term) E T (Htype : has_type E t T) : term :=
-  let myHSN := strong_normalization_mysn Htype in
-    @normalizer' t myHSN.
-
-Fixpoint normalizer4' (t : term) (HSN : @sn step_d t) : term :=
-  match HSN with 
-  | SNI f => match step_d_f t with 
-    | Some t' => fun Heq =>
-      let Hstep := @step_d_f_to_step_d t t' Heq in
-      @normalizer4' t' (f t' Hstep)
-    | None => fun _ => t 
-    end (eq_proof (step_d_f t))
-  end.
-
-(* Uses step_d_f instead of step_d*)
-Inductive SN5 x : Set :=
-| SNI5 : (forall y, step_d_f x = Some y -> SN5 y) -> SN5 x.
-
-Fixpoint normalizer6' (t : term) (steps : list (term )) : term :=
-  match steps with
-    | nil => t
-    | ((t')::ss) => normalizer6' t' ss
-  end.
-
-Inductive Step_Proof t (somet' : option term) : Set :=
-  | Step_Proof' : step_d_f t = somet' -> Step_Proof t somet'.
-
-Fixpoint to_sn_list {t } (HSN : SN5 t) : list (term) :=
-  let '(SNI5 f) := HSN in
-  match step_d_f t with
-    | Some t' => fun Hstep => (t')::(to_sn_list (f t' Hstep))
-    | None => fun Hstep => t::nil
-  end (eq_proof (step_d_f t)).
-
-Theorem strong_normalization_d5 E s T : has_type E s T -> SN5 s.
-Proof.
-  intros Htype.
-  apply (strong_normalization) in Htype.
-  assert (@sn step_d s).
-  {
-    now apply SN_nd_to_SN_d.
-  }
-  apply SNI5.
-  intros y Hstepdf.
-  clear Htype.
-  induction H.
-  apply step_d_f_to_step_d in Hstepdf.
-  apply (H y Hstepdf).
-  admit. (* need to go the other way*)
-Admitted.
-
-Definition normalizer6 (t : term) E T (Htype : has_type E t T) : term :=
-  let myHSN := strong_normalization_d5 Htype in
-  let hmmList := to_sn_list myHSN in
-    @normalizer6' t hmmList.
-
-Fixpoint normalizer5' (t : term) (HSN : SN5 t) : term :=
-  let '(SNI5 f) := HSN in
-  match step_d_f t with 
-    | Some t' => fun Hstep =>
-      @normalizer5' t' (f t' Hstep)
-    | None => fun _ => t 
-  end  (eq_proof (step_d_f t)).
-
-Definition normalizer5 (t : term) E T (Htype : has_type E t T) : term :=
-  let myHSN := strong_normalization_d5 Htype in
-    @normalizer5' t myHSN.
-
-
   
 
 
