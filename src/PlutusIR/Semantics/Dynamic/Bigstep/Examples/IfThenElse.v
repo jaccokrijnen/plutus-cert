@@ -39,10 +39,12 @@ Proof with (eauto with hintdb__eval_no_error || (try solve [decide_error])).
       * eapply E_Apply...
         ** admit.
         ** simpl.
-          eapply E_Builtin_Eta with (f := IfThenElse).
-      * constructor.
-    + cbn. constructor.
+          eapply E_Builtin with (f := IfThenElse).
+          admit.
+      * admit.
+    + admit.
   - inversion 1.
+    admit.
   - cbn.
     rewrite eqb_refl.
     eapply E_Apply...
@@ -50,8 +52,4 @@ Proof with (eauto with hintdb__eval_no_error || (try solve [decide_error])).
     + eapply E_Apply...
       * admit.
       * cbn.
-        constructor.
-    + cbn.
-      apply E_Builtin_Apply...
-      admit.
 Admitted.

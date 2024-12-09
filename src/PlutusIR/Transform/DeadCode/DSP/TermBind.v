@@ -197,7 +197,7 @@ Proof.
 
   (* Find that we have terminating bindings *)
   inversion H_let_terminates as
-    [ | | | | | | | | | | | | | | | | | | ? ? ? ? H_b_bs_terminate | ].
+    [ | | | | | | | | | | | | | | | | | | | | ? ? ? ? H_b_bs_terminate | ].
   subst.
   clear H_let_terminates.
 

@@ -15,6 +15,7 @@ Import ListNotations.
 
 (** ** Implementation of big-step semantics as an inductive datatype *)
 Reserved Notation "t '=[' j ']=>' v"(at level 40).
+Reserved Notation "t '=η=>' v"(at level 40).
 Reserved Notation "t '=[' j ']=>nr' v"(at level 40).
 Reserved Notation "t '=[' j ']=>r' v 'WITH' bs0"(at level 40).
 
@@ -24,6 +25,21 @@ Inductive bindings_nonstrict : list binding -> list binding -> Prop :=
   | BNS_cons s vd t bs bs' :
       bindings_nonstrict bs bs' ->
       bindings_nonstrict (TermBind s vd t :: bs) (TermBind NonStrict vd t :: bs')
+.
+
+Inductive eval_partial_builtin : term -> term -> Prop :=
+  | E_Builtin_Eta : forall f,
+      Builtin f =η=> eta_expand f
+
+  | E_Builtin_Eta_Apply : forall s v x T b,
+      s =η=> LamAbs x T b ->
+      Apply s v =η=> <{ [v / x] b }>
+
+  | E_Builtin_Eta_TyInst : forall s X K T b,
+      s =η=> TyAbs X K b ->
+      TyInst s T =η=> <{ [[T / X] b }>
+
+where "t '=η=>' v" := (eval_partial_builtin t v)
 .
 
 Inductive eval : term -> term -> nat -> Prop :=
@@ -63,14 +79,24 @@ Inductive eval : term -> term -> nat -> Prop :=
       Constr i T ts =[k_ts]=> Constr i T vs ->
       Constr i T (t :: ts) =[k_t + k_ts]=> Constr i T (v :: vs)
 
-  (** Builtins *)
-  | E_Builtin_Eta : forall f,
-      Builtin f =[0]=> eta_expand f
+  (** Builtins: partially applied *)
+  | E_Builtin f v :
+      Builtin f =η=> v ->
+      Builtin f =[0]=> v
+  | E_Builtin_Apply_Eta : forall s t v,
+      partially_applied (Apply s t) ->
+      Apply s t =η=> v ->
+      Apply s t =[0]=> v
+  | E_Builtin_TyInst_Eta : forall t T v,
+      fully_applied (TyInst t T) ->
+      TyInst t T =η=> v ->
+      TyInst t T =[0]=> v
+
+  (** Builtins: fully applied **)
   | E_Builtin_Apply : forall s t v,
       fully_applied (Apply s t) ->
       compute_defaultfun (Apply s t) = Some v ->
-      Apply s t =[applied_args (Apply s t) + 1]=> v
-      (* Steps are applied_args, needed for compatibility lemma of Apply *)
+      Apply s t =[1]=> v
   | E_Builtin_TyInst : forall t T v,
       fully_applied (TyInst t T) ->
       compute_defaultfun (TyInst t T) = Some v ->

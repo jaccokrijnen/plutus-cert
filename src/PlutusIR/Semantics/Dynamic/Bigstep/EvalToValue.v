@@ -54,6 +54,11 @@ Proof with (try discriminate).
   *)
 Admitted.
 
+Lemma eval_builtin_partial__result :
+  forall t r, t =η=> r -> result r
+.
+Admitted.
+
 Lemma eval_to_result :
     (forall t v k, t =[k]=> v -> result v) /\
     (forall t v k, t =[k]=>nr v -> result v) /\
@@ -68,8 +73,12 @@ Proof with (eauto with hintdb__eval_no_error).
     inversion H2.
     + apply R_Constr.
       constructor...
-  - (* Eta *)
-    destruct f; unfold eta_expand; simpl; constructor.
+  - (* Builtin Apply Partial *)
+    eauto using eval_builtin_partial__result. 
+  - (* Builtin TyInst Partial*)
+    eauto using eval_builtin_partial__result. 
+  - (* Builtin TyInst Partial*)
+    eauto using eval_builtin_partial__result. 
 Qed.
 
 Corollary eval_to_result__eval : forall t v k,

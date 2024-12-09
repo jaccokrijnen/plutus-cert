@@ -32,7 +32,7 @@ Qed.
 Lemma fully_applied__Apply t v :
   fully_applied <{ t ⋅ v }> ->
     exists x T s,
-      t =[ applied_args t ]=> LamAbs x T s
+      t =[ 0 ]=> LamAbs x T s
       /\ <{ [v / x] s }> = <{ t ⋅ v }>
 .
 Admitted.
@@ -191,7 +191,9 @@ Proof with eauto_LR.
       auto.
     + destruct temp as [Herr Herr'].
       inversion Herr.
-  - (* E_Builtin *)
+  - (* E_Builtin_Apply_Eta*)
+    admit.
+  - (* E_Builtin_Apply *)
 
     specialize (IH1 _ _ _ _ H_RD H_RG).
     specialize (IH2 _ _ _ _ H_RD H_RG).
@@ -228,7 +230,6 @@ Proof with eauto_LR.
       admit. (* TODO: similar to E_Apply case *)
       }
     }
-
   - (* E_Error_Apply1 *)
     rename j1 into j_1.
 
@@ -466,6 +467,25 @@ autorewrite with applied_args in *. lia.
 Admitted.
 
 
+
+Lemma builtin__RC s t s' t' r T ρ k :
+  fully_applied (Apply s t) ->
+  compute_defaultfun (Apply s t) = Some r ->
+  R_C 1 T ρ (Apply s t) (Apply s' t') ->
+  R_C k T ρ (Apply s t) (Apply s' t').
+Proof.
+intros H_FA H_compute H_RC.
+assert (H_eval : (Apply s t) =[1]=> r). eapply E_Builtin_Apply; auto.
+
+autorewrite with R.
+intros j H_lt r' H_eval'.
+assert (j = 1) by admit.
+assert (r = r') by admit.
+subst r' j.
+
+(* run_RC H_RC r' j' H_eval' H_res'. *)
+Admitted.
+
 Lemma compat_Apply_builtin Δ Γ e1 e2 e1' e2' T1 T2 :
     fully_applied <{e1 ⋅ e2}> ->
     approx Δ Γ e1 e1' (Ty_Fun T1 T2) ->
@@ -560,6 +580,8 @@ Proof with eauto_LR.
       eexists. eexists.
       eauto using E_Apply, value__is_error, R_V_value_2.
 
+  - (* E_Builtin_Apply_Eta *)
+    admit.
   - (* E_Builtin_Apply *)
 
     use_approx IH_LR1 k
@@ -567,11 +589,13 @@ Proof with eauto_LR.
     remember (close γ (msyn1 ρ) e1) as c_e1.
     remember (close γ' (msyn2 ρ) e1') as c_e1'.
 
+    (*
     assert (H_RG' : R_G ρ (k - (applied_args c_e1)) Γ γ γ'). {
       assert (H : k - applied_args c_e1 <= k)...
       eauto using R_G_monotone.
     }
-    use_approx IH_LR2 (k - applied_args c_e1)
+    *)
+    use_approx IH_LR2 k
       H_C_e2.
 
     remember (close γ (msyn1 ρ) e2) as c_e2.
@@ -589,12 +613,13 @@ Proof with eauto_LR.
       run_RC H_C_e1
         r1' j_1' H_ev__e1' H_V_f...
       RV_no_error H_V_f H_V_f.
+      replace (k - 0) with k in H_V_f; try solve [lia].
       assert (value c_e2) by admit.
       assert (value c_e2') by admit.
       apply R_C_values_to_R_V in H_C_e2 as H_V_e2...
 
       (* Related arguments to related results *)
-      destruct (RV_apply (k - applied_args c_e1 - 1) H_RD H_V_f H_V_e2 ltac:(lia) ltac:(lia))
+      destruct (RV_apply (k - 1) H_RD H_V_f H_V_e2 ltac:(lia) ltac:(lia))
         as [x0 [b [b' [T1v [T1v' [Heq'' [Heq''' HRC0]]]]]]].
       inversion Heq''.
       subst x0 s r1'.

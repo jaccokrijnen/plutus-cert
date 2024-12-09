@@ -25,6 +25,9 @@ Ltac dec_fully_applied :=
     | |- fully_applied ?t =>
            assert (H := sumboolOut (fully_applied_dec t));
            assumption
+    | |- partially_applied ?t =>
+           assert (H := sumboolOut (partially_applied_dec t));
+           assumption
   end.
 
 Example test_addInteger : forall x, exists k,
@@ -37,14 +40,11 @@ Proof.
   eapply E_Apply...
   - dec_fully_applied.
   - apply E_LamAbs.
-  - eapply E_Apply...
-    + dec_fully_applied.
-    + apply E_Builtin_Eta with (f := AddInteger).
-    + apply E_Constant.
-    + inversion 1.
-    + apply E_LamAbs.
-  - simpl.
-    inversion 1.
+  - eapply E_Builtin_Apply_Eta.
+    + admit.
+    + eapply E_Builtin_Eta_Apply.
+      * eapply E_Builtin_Eta with (f := AddInteger).
+  - inversion 1.
   - simpl.
     rewrite eqb_refl.
     eapply E_Apply.
@@ -56,4 +56,4 @@ Proof.
       apply E_Builtin_Apply.
       * dec_fully_applied.
       * reflexivity.
-Qed.
+Admitted.

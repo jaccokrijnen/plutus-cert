@@ -116,6 +116,10 @@ Fixpoint result_ty (s : builtin_sig) : ty :=
 
 
 Definition fully_applied t := exists f, applied_builtin f (BS_Result (result_ty (to_sig f))) t.
+Definition partially_applied t :=
+  (exists f T sig, applied_builtin f (BS_Fun T sig) t) \/
+  (exists f X K sig, applied_builtin f (BS_Forall X K sig) t)
+.
 
 Lemma fully_applied_dec t : {fully_applied t} + {~fully_applied t}.
 Proof.
@@ -139,4 +143,28 @@ Proof.
     eauto.
 Defined.
 
+Lemma fully__partially t:
+  fully_applied t ->
+  ~ partially_applied t.
+Admitted.
+
+Lemma not_fully__partially f sig t :
+  applied_builtin f sig t ->
+  ~ fully_applied t ->
+  partially_applied t
+.
+Admitted.
+
+Lemma partially_applied_dec t : {partially_applied t} + {~partially_applied t}.
+  destruct (applied_builtin_dec t) as [ H | H ] .
+  - destruct (fully_applied_dec t).
+    + eauto using fully__partially.
+    + left.
+      destruct H as [ f [ s H_app ]].
+      eauto using not_fully__partially.
+  - right.
+    inversion 1.
+    + admit.
+    + admit.
+Admitted.
 
