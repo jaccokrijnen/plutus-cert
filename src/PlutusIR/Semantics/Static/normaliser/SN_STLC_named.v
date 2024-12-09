@@ -1200,7 +1200,7 @@ Inductive MySN' t : Set :=
 | SNI'' : forall t', step_d_f t = Some t' -> (MySN' t') -> MySN' t. (* TODO: cannot find the inductive step, but removing the existential might work*)
 (* This is the same as the exists, why??? *)
 
-Print MySN_ind. (* Now we have an induction hypothesis! *)
+Print MySN'_ind. (* Now we have an induction hypothesis! *)
 
 Theorem strong_normalization_mysn E s T : has_type E s T -> @MySN s.
 Proof.
@@ -1215,19 +1215,7 @@ Proof.
   - apply SNI0. assumption.
 Qed.
 
-(* Maybe we cannot prove this correctly, but we know tmlam x A u is well kinded, so then u also well kinded
-  so then u also strongly normalzing. *)
-Lemma sn_lam_body x A u : MySN (tmlam x A u) -> MySN u.
-Admitted.
 
-Lemma sn_special_func x A s' t0 toof (HSN1 : MySN (tmlam x A s')) (HSN2 : MySN (tmapp toof t0)) : MySN (substituteTCA x t0 s').
-Admitted.
-
-Lemma sn_app_R t t0 (HSN: MySN (tmapp t t0)) : MySN t0.
-Admitted. 
-
-Lemma sn_app_L t t0 (HSN: MySN (tmapp t t0)) : MySN t.
-Admitted.
 
 Fixpoint term_size (t : term) : nat :=
   match t with
@@ -1338,6 +1326,9 @@ Fixpoint normalizer6' (t : term) (steps : list (term )) : term :=
     | nil => t
     | ((t')::ss) => normalizer6' t' ss
   end.
+
+Inductive Step_Proof t (somet' : option term) : Set :=
+  | Step_Proof' : step_d_f t = somet' -> Step_Proof t somet'.
 
 Fixpoint to_sn_list {t } (HSN : SN5 t) : list (term) :=
   let '(SNI5 f) := HSN in
