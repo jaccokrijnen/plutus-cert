@@ -51,11 +51,34 @@ Proof.
   assumption.
 Qed.
 
-Lemma normalise_unique t t' tn1 tn2 :
+(* see normalisation__deterministic in Normalisation.v*)
+Lemma normalise_unique t tn1 tn2 :
+  normalise t tn1 -> normalise t tn2 -> tn1 = tn2.
+Proof.
+
+Admitted.
+
+Lemma normalise_unique_step t t' tn1 tn2 :
   step_d_f t = Some t' -> normalise t tn1 -> normalise t' tn2 -> tn1 = tn2.
 Proof.
   intros Hstep Hnorm1 Hnorm2.
-
+  assert (step_d t t') by admit.
+  generalize dependent tn2.
+  generalize dependent tn1.
+  induction H; intros tn1 Hnorm1 tn2 Hnorm2.
+  - eapply N_BetaReduce in Hnorm2; eauto. 
+    + eapply (normalise_unique); eauto.
+    + (* ?K = A and itis al l normal so yes *) admit.
+    + (* t is normal, so yes.*) admit.
+  - admit.
+  - admit.
+  - assert (step_d_f s1 = Some s2) by admit.
+    specialize (IHstep_d H0).
+    inversion Hnorm1; subst.
+    inversion Hnorm2; subst.
+    f_equal.
+    apply IHstep_d with (tn1 := T0n) (tn2 := T0n0); eauto.
+    
 Admitted.
 
 Lemma norm_lam7 tb x T (snt : (SN5 (tmlam x T tb))) (sntb : SN5 tb):
@@ -75,11 +98,25 @@ Proof.
     destruct norm_wouter.
     assert (x = x0).
     {
-      apply (normalise_unique tlam tlam' x x0 Hstep_tlam n n0).
+      apply (normalise_unique_step tlam tlam' x x0 Hstep_tlam n n0).
     }
     subst.
     simpl.
     reflexivity.
+Admitted.
+
+(* Needs a neutrality requirement *)
+Lemma norm_app7 t1 t2 (snt : (SN5 (tmapp t1 t2))) (snt1 : SN5 t1) (snt2 : SN5 t2) :
+  STLC_normalisation.neutral_Ty (@normalizer7' t1 snt1) -> @normalizer7' (tmapp t1 t2) snt = tmapp (@normalizer7' t1 snt1) (@normalizer7' t2 snt2).
+Admitted.
+
+(* Looks complicated, but it is really a step forward, since there is no mention of normalise anymore
+  If it is too difficult, we can first try to do it with t1 already normalized fully I think.
+*)
+Lemma norm_subst7 t1 t2 T1n bX K1 (snt : (SN5 (tmapp t1 t2))) (snt1 : (SN5 t1)) (snt2 : (SN5 t2)) 
+    (snsub : (SN5 (substituteTCA bX (@normalizer7' t2 snt2) T1n))) :
+  @normalizer7' t1 snt1 = tmlam bX K1 T1n -> 
+    @normalizer7' (tmapp t1 t2) snt = @normalizer7' (substituteTCA bX (@normalizer7' t2 snt2) T1n) snsub.
 Admitted.
 
 
@@ -128,16 +165,18 @@ Proof.
     rewrite <- (IHHnormR2 K1 Δ H5).
     specialize (IHHnormR1 (tp_arrow K1 K') Δ H3).
     subst.
-    admit.
-    (* now apply norm_app. *)
+    now apply norm_app7.
   - (* Case step_abs *)
     inversion Hwt; subst.
     rewrite <- (IHHnormR K2 ((bX, K)::Δ) H4).
     apply norm_lam7.
-  - unfold normalizer.
-    destruct (strong_normalization_mysn Hwt).
-    unfold normalizer'.
-    (* reflexivity. *)
+  - unfold normalizer7.
+    destruct (strong_normalization_d5 Hwt).
+    unfold normalizer7'.
+    destruct norm_wouter.
+    assert (tmvar X = x) by admit. 
+    subst.
+    auto.
 Admitted.
 
 
