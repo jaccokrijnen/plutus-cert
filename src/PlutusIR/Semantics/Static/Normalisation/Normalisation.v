@@ -305,3 +305,6 @@ Axiom norm_normalise : forall ty, normalise ty (norm ty).
 
 Axiom map_norm : list (string * ty) -> list (string * ty).
 Axiom map_norm_map_normalise : forall Ts, map_normalise Ts (map_norm Ts).
+
+(****** Normaliser function ******)
+
