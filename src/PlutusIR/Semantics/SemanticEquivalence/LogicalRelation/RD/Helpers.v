@@ -52,6 +52,21 @@ Proof.
     destruct (X0 =? X) eqn:Heqb; eauto.
 Qed.
 
+
+Lemma RD_sem_Rel ck rho :
+    RD ck rho ->
+    forall X Chi,
+      sem rho X = Datatypes.Some Chi ->
+      exists T1 T2,
+      Rel T1 T2 Chi.
+Proof with eauto.
+  intros H_RD X Chi H_sem.
+  assert (H_sem' := H_sem).
+  apply RD_sem_syn with (ck := ck) in H_sem' as [ T1 [ T2 [H_syn1 H_syn2] ]]...
+  exists T1, T2.
+  eapply RD_Rel...
+Qed.
+
 Lemma RD_syn_closed : forall ck rho,
     RD ck rho ->
       forall X T1 T2,

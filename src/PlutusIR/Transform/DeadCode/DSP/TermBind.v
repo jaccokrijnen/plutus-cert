@@ -24,7 +24,7 @@ Import PlutusNotations.
 
 From PlutusCert Require Import DeadCode.DSP.Lemmas.
 From PlutusCert Require Import DeadCode.DSP.BoundVars.
-From PlutusCert Require Import DeadCode.DSP.SubstitutionNonFree.
+From PlutusCert Require Import Substitution.Free.
 
 Import ListNotations.
 
@@ -172,7 +172,7 @@ Proof.
     all: subst; auto.
 
   (** Typing of post-term in smaller Γ *)
-  - 
+  -
     apply strengthen_Γ_cons with (x := x) (Tx := Tbn).   (* need strengthening lemma for removing vars from context that do not occur free *)
     + simpl in H_disjoint_b.
       unfold disjoint in H_disjoint_b.
@@ -300,7 +300,7 @@ Proof.
         apply eq_sym.
         apply subst_msubst.
 
-        { admit. 
+        { admit.
           (*
           tb is well-typed:
             H_tb_ty : Δ,, Γ |-+ tb : Tbn
@@ -355,7 +355,7 @@ Proof.
   }
 
   destruct H_post as [v' [k' [H_t' RV_v_v']]].
-  exists v', k'. 
+  exists v', k'.
   split.
   {
     unfold close in H_t'.

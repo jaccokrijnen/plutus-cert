@@ -88,10 +88,10 @@ Fixpoint substA (X : string) (U : ty) (t : term) {struct t} : term :=
       IWrap (substituteT X U F) (substituteT X U T) (substA X U t0)
   | Unwrap t0 =>
       Unwrap (substA X U t0)
-  | Constr i ts =>
-      Constr i (map (substA X U) ts)
-  | Case t ts =>
-      Case (substA X U t) (map (substA X U) ts)
+  | Constr i T ts =>
+      Constr i (substituteT X U T) (map (substA X U) ts)
+  | Case T t ts =>
+      Case (substituteT X U T) (substA X U t) (map (substA X U) ts)
   end
 
 with substA_b (X : string) (U : ty) (b : binding) {struct b} : binding :=

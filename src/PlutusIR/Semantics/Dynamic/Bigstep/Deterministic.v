@@ -68,16 +68,8 @@ Ltac error_is_error :=
       exfalso; apply H; constructor
   end.
 
-Ltac invert_neutral :=
-  match goal with
-  | H : neutral ?t |- ?P =>
-      try solve [inversion H]
-  | H : neutral_value ?n ?t |- ?P =>
-      try solve [inversion H]
-  end.
-
 Ltac try_solve :=
-  try solve [repeat (use_IH || error_is_error || invert_neutral || eauto)].
+  try solve [repeat (use_IH || error_is_error || eauto)].
 
 (** ** The main result *)
 Theorem eval__deterministic : forall x y1 j1,
@@ -89,23 +81,18 @@ Proof with eauto.
   all: intros y5 j5 Hev.
   all: unfold_predicates.
   all: try solve [inversion Hev; subst; try_solve].
-  - inversion Hev; subst.
-    all: try_solve.
-    + inversion H10. subst.
-      apply eval_value in H12.
-      autounfold in H12.
-      use_IH.
-      inversion H10. subst.
-      inversion H15.
-    + inversion H8.
-      subst.
-      eapply fully_applied_neutral__subsumes__neutral_value in H13...
-      eapply eval_value in H13 as H14.
-      autounfold in H14.
-      use_IH.
-      invert_neutral.
 (* ADMIT: Remaining proof cases are technical overhead.
     Since we have multiple evaluation rules for applications
     and type instantiations, we need to do tedious work to
     derive contradictions. *)
 Admitted.
+
+Corollary eval__deterministic_result t v v' j j' :
+  t =[j]=> v ->
+  t =[j']=> v' ->
+  v = v'.
+Proof.
+  intros H H'.
+  eapply proj1.
+  eapply eval__deterministic; eauto.
+Qed.

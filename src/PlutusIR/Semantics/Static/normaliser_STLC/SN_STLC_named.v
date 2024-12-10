@@ -739,7 +739,7 @@ Proof.
       * subst. contradiction.
       * subst. inversion H.
   - destruct IHt1; destruct IHt2.
-    + 
+    (* + 
     + right. intros Hcontra. inversion Hcontra.
       * subst. contradiction.
       * subst. inversion H.
@@ -748,7 +748,7 @@ Proof.
       * subst. inversion H.
     + right. intros Hcontra. inversion Hcontra.
       * subst. contradiction.
-      * subst. inversion H.
+      * subst. inversion H. *)
   (* Prove decidability here, or assume it if it is clear. *)
 Admitted.
 

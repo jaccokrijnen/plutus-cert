@@ -29,7 +29,7 @@ Section Term.
 
 
   (* TODO: we cannot have this, since Coq cannot generate nice induction schemes
-   * for the nested recursion that exists between the relation and Forall2 
+   * for the nested recursion that exists between the relation and Forall2
    * so instead, we have a separate case for nil and cons.
 
    * The same applies to Constr and Case
@@ -88,14 +88,15 @@ Section Term.
 
   (* TODO: add cons/nil cases for Constr and Case, so
      correct induction schemes are generated *)
-  Definition compat_Constr := ∀ n ts ts',
+  Definition compat_Constr := ∀ n T ts ts',
     Forall2 R ts ts' ->
-    R (Constr n ts) (Constr n ts').
+    R (Constr n T ts) (Constr n T ts').
 
-  Definition compat_Case := ∀ t t' ts ts',
+
+  Definition compat_Case := ∀ T (t t' : term) ts ts',
     R t t' ->
     Forall2 R ts ts' ->
-    R (Case t ts) (Case t' ts').
+    R (Case T t ts) (Case T t' ts').
 
 End Term.
 

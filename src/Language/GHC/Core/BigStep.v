@@ -33,7 +33,7 @@ Fixpoint subst x (t1 t2 : Expr string) : Expr string :=
 
   (* TODO: Ignore non-stlc fragment as long as there is no big-step semantics *)
   | _ => t2
- (* 
+ (*
   | Case      : Expr b -> b -> TType -> list (AltCon * list b * Expr b) -> Expr b
   | EType     : TType -> Expr b    (* Renamed from Type *)
 

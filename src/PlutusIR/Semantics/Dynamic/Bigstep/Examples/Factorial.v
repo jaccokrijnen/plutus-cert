@@ -1,5 +1,11 @@
-Require Import PlutusCert.PlutusIR.
-Require Import PlutusCert.PlutusIR.Semantics.Dynamic.Bigstep.
+From PlutusCert Require Import
+  PlutusIR
+  Bigstep
+  Util
+.
+
+Import PlutusNotations.
+
 
 Require Import Coq.ZArith.BinInt.
 Local Open Scope Z_scope.
@@ -8,11 +14,30 @@ Import ListNotations.
 Require Import Coq.Strings.String.
 Local Open Scope string_scope.
 
+
+
+(* Build lazy if-then-else using thunking *)
+
+Definition thunk t :=
+  <{ λ "unit" :: unit, t }>
+.
+
+Definition force t :=
+  <{ t ⋅ () }>
+.
+
+Definition lazy_if T b t1 t2 :=
+force
+  <{
+    ifthenelse @ (unit → T) ⋅ b ⋅ {thunk t1} ⋅ {thunk t2}
+  }>
+.
+
 Definition fact_term (n : Z) : term :=
   Let
     Rec
     [ TermBind
-        Strict
+        NonStrict
         (VarDecl
           "fact"
           (Ty_Fun
@@ -23,39 +48,10 @@ Definition fact_term (n : Z) : term :=
         (LamAbs
           "x"
           (Ty_Builtin DefaultUniInteger)
-          (Apply
-            (Apply
-              (Apply
-                (TyInst
-                  (Builtin IfThenElse)
-                  (Ty_Builtin DefaultUniInteger)
-                )
-                (Apply
-                  (Apply
-                    (Builtin EqualsInteger)
-                    (Var "x")
-                  )
-                  (Constant (ValueOf DefaultUniInteger 0))
-                )
-              )
-              (Constant (ValueOf DefaultUniInteger 1))
-            )
-            (Apply
-              (Apply
-                (Builtin MultiplyInteger)
-                (Var "x")
-              )
-              (Apply
-                (Var "fact")
-                (Apply
-                  (Apply
-                    (Builtin SubtractInteger)
-                    (Var "x")
-                  )
-                  (Constant (ValueOf DefaultUniInteger 1))
-                )
-              )
-            )
+          (lazy_if <{ ℤ }>
+            <{ {Builtin EqualsInteger} ⋅ {Var "x"} ⋅ (CInt 0) }>
+            <{ CInt 1 }>
+            <{ {Var "x"} * ({Var "fact"} ⋅ ({Var "x"} - (CInt 1)))}>
           )
         )
     ]
@@ -69,125 +65,145 @@ Ltac destruct_invert_contra := let Hcon := fresh "Hcon" in intros Hcon; destruct
 Ltac solve_substitute := repeat (econstructor || eauto || invert_contra || destruct_invert_contra).
 Ltac solve_value_builtin := repeat econstructor.
 
-Ltac invert_neutrals :=
+Lemma eval_ifthenelse_true : forall T t1 t2 t3 v2 v3 k1 k2 k3,
+    t1 =[ k1 ]=> <{ true }> ->
+    t2 =[ k2 ]=> v2 ->
+    t3 =[ k3 ]=> v3 ->
+    <{ ifthenelse @ T ⋅ t1 ⋅ t2 ⋅ t3 }> =[ k2 ]=> v2.
+Admitted.
+
+Lemma eval_ifthenelse_false : forall T t1 t2 t3 v2 v3 k1 k2 k3,
+    t1 =[ k1 ]=> <{ false }> ->
+    t2 =[ k2 ]=> v2 ->
+    t3 =[ k3 ]=> v3 ->
+    <{ ifthenelse @ T ⋅ t1 ⋅ t2 ⋅ t3 }> =[ k2 ]=> v3.
+Admitted.
+
+Ltac finish :=
   match goal with
-  | H : neutral_value ?n ?t |- False =>
-      inversion H; clear H; subst; try invert_neutrals
-  | H : neutral ?t |- False =>
-      inversion H; clear H; subst; try invert_neutrals
+
+  (* fully_applied *)
+    | |- ~ fully_applied ?t =>
+           assert (H := sumboolOut (fully_applied_dec t));
+           assumption
+    | |- fully_applied ?t -> False =>
+           assert (H := sumboolOut (fully_applied_dec t));
+           assumption
+    | |- fully_applied ?t =>
+           assert (H := sumboolOut (fully_applied_dec t));
+           assumption
+
+  (* bindings_nonstrict *)
+    | |- bindings_nonstrict ?bs ?bs' => auto using bindings_nonstrict
+
+  (* is_error *)
+
+    | |- ~ is_error ?v => inversion 1
   end.
 
-Ltac decide_neutral :=
-  match goal with
-  | |- neutral_value ?n ?nv =>
-      econstructor; eauto; try decide_neutral
-  | |- ?f <> ?f' =>
-      let Hcon := fresh "Hcon" in
-      try solve [intros Hcon; inversion Hcon]
-  end.
+
 
 Example fact_term_evaluates : exists k,
   fact_term 2 =[k]=> Constant (ValueOf DefaultUniInteger 2).
-Proof with (autounfold; simpl; eauto || (try reflexivity) || (try solve [intros Hcon; inversion Hcon])).
-(* ADMIT: Factorial should use non-strict term bindings, but we do not model them yet. *)
-Admitted.
-  (*
+Proof with (simpl; auto; try solve [finish]).
   unfold fact_term.
   eexists.
-  apply E_LetRec.
-  eapply E_LetRec_TermBind.
+  eapply E_LetRec...
+  eapply E_LetRec_TermBind_NonStrict.
   simpl.
   eapply E_LetRec_Nil.
-  eapply E_Apply... {
-    eapply E_LetRec.
-    eapply E_LetRec_TermBind.
+  eapply E_Apply...
+  {
+    eapply E_LetRec...
+    eapply E_LetRec_TermBind_NonStrict.
     simpl.
     eapply E_LetRec_Nil...
-  } {
-    simpl.
-    eapply E_IfFalse... {
-      eapply E_NeutralApplyFull...
-      eapply FA_Apply...
-      eapply FA_Apply...
-      eapply FA_Builtin...
-    } {
-      eapply E_NeutralApplyPartial. {
-        intros Hcon.
-        invert_neutrals.
-        simpl in H5.
-        apply PeanoNat.Nat.lt_irrefl in H5...
-      } {
-        eapply E_NeutralApply...
-        decide_neutral...
-      } {
-        simpl...
-        decide_neutral...
-      } {
-        eapply E_Apply... {
-          eapply E_LetRec...
-          eapply E_LetRec_TermBind...
-        } {
-          eapply E_NeutralApplyFull...
-          eapply FA_Apply...
-          eapply FA_Apply...
-          eapply FA_Builtin...
-        } {
-          simpl...
-        } {
-          simpl...
-          eapply E_IfFalse... {
-            eapply E_NeutralApplyFull...
-            eapply FA_Apply...
-            eapply FA_Apply...
-            eapply FA_Builtin...
-          }
-          eapply E_NeutralApplyPartial. {
-            intros Hcon.
-            invert_neutrals...
-            simpl in H5.
-            apply PeanoNat.Nat.lt_irrefl in H5...
-          } {
-            eapply E_NeutralApply...
-            decide_neutral...
-          } {
-            unfold constInt...
-            decide_neutral...
-          } {
-            eapply E_Apply... {
-              eapply E_LetRec...
-              eapply E_LetRec_TermBind...
-            } {
-              eapply E_NeutralApplyFull...
-              eapply FA_Apply...
-              eapply FA_Apply...
-              eapply FA_Builtin...
-            } {
-              intros Hcon. inversion Hcon.
-            } {
-              simpl...
-              eapply E_IfTrue...
-              eapply E_NeutralApplyFull...
-              eapply FA_Apply...
-              eapply FA_Apply...
-              eapply FA_Builtin...
-            }
-          } {
-            simpl...
-          } {
-            eapply E_NeutralApplyFull...
-            eapply FA_Apply...
-            eapply FA_Apply...
-            eapply FA_Builtin...
-          }
-        }
-      } {
-        simpl...
-      } {
-        eapply E_NeutralApplyFull...
-        eapply FA_Apply...
-        eapply FA_Apply...
-        eapply FA_Builtin...
-      }
-    }
+    constructor.
   }
-Qed. *)
+  { constructor. }
+  { inversion 1. }
+  {
+    simpl.
+
+    eapply E_Apply...
+    {
+      eapply eval_ifthenelse_false.
+      - eapply E_Builtin_Apply...
+      - constructor.
+      - constructor.
+      } {
+      constructor. } {
+        inversion 1.
+      }
+
+      simpl.
+
+      eapply E_Apply...
+      - eapply E_Apply...
+        + apply E_Builtin.
+          eapply E_Builtin_Eta with (f := MultiplyInteger)...
+        + constructor.
+        + inversion 1.
+        + cbn. constructor.
+      - eapply E_Apply...
+        + eapply E_LetRec.
+          { auto using bindings_nonstrict. }
+          constructor.
+          simpl.
+          eapply E_LetRec_Nil.
+          constructor.
+        + eapply E_Builtin_Apply...
+        + inversion 1.
+        + simpl.
+          eapply E_Apply...
+          { eapply eval_ifthenelse_false.
+            - constructor...
+              { admit. } (* TODO: decision procedure partially_applied *)
+              { admit. } (* TODO *)
+            - constructor...
+            - constructor...
+          }
+          { constructor... }
+          { finish.  }
+          { simpl.
+            eapply E_Apply...
+            - eapply E_Apply...
+              + apply E_Builtin.
+                apply E_Builtin_Eta with (f := MultiplyInteger).
+              + constructor...
+              + finish.
+              + simpl.
+                constructor...
+            - eapply E_Apply...
+              + econstructor...
+                constructor.
+                simpl.
+                constructor.
+                constructor.
+              + constructor...
+                { admit. } (* TODO: decision procedure partially_applied *)
+                { admit. } (* TODO *)
+              + admit.
+              + simpl.
+                eapply E_Apply...
+                * eapply eval_ifthenelse_true...
+                  ** constructor...
+                { admit. } (* TODO: decision procedure partially_applied *)
+                { admit. } (* TODO *)
+
+                  ** constructor...
+                  ** constructor...
+                * constructor...
+                * finish.
+                * constructor...
+            - finish.
+            - constructor...
+                { admit. } (* TODO: decision procedure partially_applied *)
+                { admit. } (* TODO *)
+          }
+          - admit.
+          - constructor...
+                { admit. } (* TODO: decision procedure partially_applied *)
+                { admit. } (* TODO *)
+          }
+Admitted.

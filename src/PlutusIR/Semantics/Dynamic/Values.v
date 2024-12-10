@@ -1,11 +1,19 @@
 Require Import PlutusCert.PlutusIR.
-Require Import PlutusCert.PlutusIR.Semantics.Dynamic.BuiltinMeanings.
-From Coq Require Import Bool.Bool Arith.PeanoNat.
+From PlutusCert Require Import
+  Equality
+.
+From Coq Require Import
+  Lists.List
+  Bool.Bool
+  Arith.PeanoNat
+  Program.Equality
+.
 Import PeanoNat.Nat.
 
 Inductive is_error : term -> Prop :=
   | IsError : forall T,
       is_error (Error T).
+
 
 Inductive value : term -> Prop :=
   | V_LamAbs : forall x T t0,
@@ -14,158 +22,182 @@ Inductive value : term -> Prop :=
       value (TyAbs X K t)
   | V_IWrap : forall F T v,
       value v ->
-      ~ is_error v ->
       value (IWrap F T v)
   | V_Constant : forall u,
       value (Constant u)
-  | V_Error : forall T,
-      value (Error T)
-  (** Builtins *)
-  | V_Neutral : forall nv,
-      neutral_value 0 nv ->
-      value nv
-  (** If-Then-Else constructs
-
-      NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity.
-  *)
-  (* | V_If :
-      value (Builtin IfThenElse)
-  | V_If1 : forall T,
-      value (TyInst (Builtin IfThenElse) T)
-  | V_If2 : forall T cond,
-      value (Apply (TyInst (Builtin IfThenElse) T) cond)
-  | V_If3 : forall T cond t,
-      value (Apply (Apply (TyInst (Builtin IfThenElse) T) cond) t) *)
-
-with neutral_value : nat -> term -> Prop :=
-  | NV_Builtin : forall n f,
-      (* NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity. *)
-      (* f <> IfThenElse -> *)
-      n < arity f ->
-      neutral_value n (Builtin f)
-  | NV_Apply : forall n nv v,
-      value v ->
-      ~ is_error v ->
-      neutral_value (S n) nv ->
-      neutral_value n (Apply nv v)
-  | NV_TyInst : forall n nv T,
-      neutral_value (S n) nv ->
-      neutral_value n (TyInst nv T)
+  | V_Constr : forall i T vs,
+      Forall value vs ->
+      value (Constr i T vs)
   .
 
-#[export] Hint Constructors value : core.
-#[export] Hint Constructors neutral_value : core.
+Section value_ind.
+Context
+  (P : term -> Prop)
+.
+Context
+  (H_LamAbs : forall (x : String.string) (T : ty) (t0 : term), P (LamAbs x T t0))
+  (H_TyAbs : forall (X : String.string) (K : kind) (t : term), P (TyAbs X K t))
+  (H_IWrap : forall (F T : ty) (v : term), value v -> P v -> P (IWrap F T v))
+  (H_Constant : forall c : constant, P (Constant c))
+  (H_Constr : forall (i : nat) (T : ty) (vs : list term), Forall value vs -> Forall P vs -> P (Constr i T vs))
+.
+Fixpoint values__ind (H_value : forall (t : term), value t -> P t) (ts : list term) (vs : Forall value ts): Forall P ts :=
+  match vs as vs in Forall _ ts return Forall P ts with
+    | Forall_nil _ => Forall_nil _
+    | @Forall_cons _ _ x xs vx vxs => @Forall_cons _ _ x xs (H_value x vx) (values__ind H_value xs vxs)
+  end.
+Fixpoint value__ind (t : term) (v : value t) {struct v} : P t :=
+  match v in (value t0) return (P t0) with
+  | V_LamAbs x T t0 => H_LamAbs x T t0
+  | V_TyAbs X K t0 => H_TyAbs X K t0
+  | V_IWrap F1 T v0 v1 => H_IWrap F1 T v0 v1 (value__ind v0 v1)
+  | V_Constant u => H_Constant u
+  | V_Constr i T ts vs => H_Constr i T ts vs
+      ((fix F ts vs := match vs as vs in Forall _ ts return Forall P ts with
+        | Forall_nil _ => Forall_nil _
+        | @Forall_cons _ _ t ts vt vts => @Forall_cons _ _ t ts (value__ind t vt) (F ts vts)
+      end) ts vs)
+  end
+.
 
-Scheme value__ind := Minimality for value Sort Prop
-  with neutral_value__ind := Minimality for neutral_value Sort Prop.
+End value_ind.
 
-Combined Scheme value__multind from
-  value__ind,
-  neutral_value__ind.
 
-Definition neutral (t : term) := neutral_value 0 t.
-
-#[export] Hint Unfold neutral : core.
-
-Inductive fully_applied_neutral : nat -> term -> Prop :=
-  | FA_Builtin : forall n f,
-      (* NOTE (2021-11-4): Removed separate treatment of if-then-else for the sake of simplicity. *)
-      (* f <> IfThenElse -> *)
-      n = arity f ->
-      fully_applied_neutral n (Builtin f)
-  | FA_Apply : forall n nv v,
-      value v ->
+Inductive result : term -> Prop :=
+  | R_LamAbs : forall x T t0,
+      result (LamAbs x T t0)
+  | R_TyAbs : forall X K t,
+      result (TyAbs X K t)
+  | R_IWrap : forall F T v,
+      result v ->
       ~ is_error v ->
-      fully_applied_neutral (S n) nv ->
-      fully_applied_neutral n (Apply nv v)
-  | FA_TyInst : forall n nv T,
-      fully_applied_neutral (S n) nv ->
-      fully_applied_neutral n (TyInst nv T)
+      result (IWrap F T v)
+  | R_Constant : forall u,
+      result (Constant u)
+  | R_Error : forall T,
+      result (Error T)
+  | R_Constr : forall i T vs,
+      Forall result vs ->
+      result (Constr i T vs)
   .
 
-#[export] Hint Constructors fully_applied_neutral : core.
+#[export] Hint Constructors result : core.
 
-Definition fully_applied (t : term) := fully_applied_neutral 0 t.
+Section result_ind.
+Context
+  (P : term -> Prop)
+.
+Context
+  (H_LamAbs : forall (x : String.string) (T : ty) (t0 : term), P (LamAbs x T t0))
+  (H_TyAbs : forall (X : String.string) (K : kind) (t : term), P (TyAbs X K t))
+  (H_IWrap : forall (F T : ty) (v : term), result v -> P v -> ~ is_error v -> P (IWrap F T v))
+  (H_Constant : forall c : constant, P (Constant c))
+  (H_Error : forall T : ty, P (Error T))
+  (H_Constr : forall (i : nat) (T : ty) (vs : list term), Forall result vs -> Forall P vs -> P (Constr i T vs))
+.
+Fixpoint results__ind (H_result : forall (t : term), result t -> P t) (ts : list term) (vs : Forall result ts): Forall P ts :=
+  match vs as vs in Forall _ ts return Forall P ts with
+    | Forall_nil _ => Forall_nil _
+    | @Forall_cons _ _ x xs vx vxs => @Forall_cons _ _ x xs (H_result x vx) (results__ind H_result xs vxs)
+  end.
+Fixpoint result__ind (t : term) (v : result t) {struct v} : P t :=
+  match v in (result t0) return (P t0) with
+  | R_LamAbs x T t0 => H_LamAbs x T t0
+  | R_TyAbs X K t0 => H_TyAbs X K t0
+  | R_IWrap F1 T v0 v1 n => H_IWrap F1 T v0 v1 (result__ind v0 v1) n
+  | R_Constant u => H_Constant u
+  | R_Error T => H_Error T
+  | R_Constr i T ts vs => H_Constr i T ts vs
+      ((fix F ts vs := match vs as vs in Forall _ ts return Forall P ts with
+        | Forall_nil _ => Forall_nil _
+        | @Forall_cons _ _ t ts vt vts => @Forall_cons _ _ t ts (result__ind t vt) (F ts vts)
+      end) ts vs)
+  end
+.
 
-#[export] Hint Unfold fully_applied : core.
+End result_ind.
 
-Require Import Lia.
 
-Lemma neutral_value__monotone : forall n m nv,
-    neutral_value n nv ->
-    m <= n ->
-    neutral_value m nv.
-Proof with (eauto || (try lia)).
-  intros.
-  generalize dependent m.
-  induction H; intros...
-  - destruct f...
-    all: econstructor...
-  - econstructor...
-    eapply IHneutral_value...
-  - econstructor...
-    eapply IHneutral_value...
+Lemma value__is_error v : value v -> ~ is_error v.
+Proof.
+  intros H.
+  induction v;
+  inversion H;
+  inversion 1.
 Qed.
 
-Lemma fully_applied_neutral__subsumes__neutral_value : forall m n nv,
-  fully_applied_neutral n nv ->
-  m < n ->
-  neutral_value m nv.
-Proof with (eauto || (try lia)).
-  intros.
-  generalize dependent m.
-  induction H; intros...
-  - subst...
-  - econstructor...
-    eapply IHfully_applied_neutral...
-  - econstructor...
-    eapply IHfully_applied_neutral...
+Lemma value__result v : value v -> result v.
+Proof.
+  intros H.
+  apply value__ind;
+  intros;
+  auto using result, value__is_error.
 Qed.
 
+Lemma result__value v : result v -> ~ is_error v-> value v.
+Admitted.
 
-Definition is_error_b (t : term) :=
+Lemma is_error_dec t : {is_error t} + {~ is_error t}.
+Proof.
+  destruct t.
+  all: try (solve [right; inversion 1 | left; constructor]).
+Defined.
+
+Lemma ForallT_dec {A} (P : A -> Prop) (xs : list A) :
+ Util.ForallT (fun x => {P x} + {~ P x}) xs ->
+ {Forall P xs} + {~ (Forall P xs)}.
+Proof.
+
+intros H.
+induction H.
+- left. constructor.
+- destruct IHForallT, p.
+  all: try solve [right; inversion 1; contradiction].
+  left. auto.
+Defined.
+
+Lemma result_dec t : {result t} + {~ result t}.
+Proof.
+  apply term__rect with
+    (P := fun t => {result t} + {~result t})
+    (Q := fun b => unit).
+  all: intros.
+  all: try solve
+    [ right; inversion 1
+    | left; constructor
+    | exact tt ].
+  - (* IWrap *)
+    destruct (is_error_dec t2).
+    + right; inversion 1; contradiction.
+    + destruct H.
+      * left. constructor; auto.
+      * right. inversion 1; contradiction.
+  - (* Constr *)
+    apply ForallT_dec in X.
+    destruct X.
+    + left. auto.
+    + right. inversion 1. contradiction .
+Defined.
+
+
+
+Definition is_error_beq (t : term) : bool :=
   match t with
-    | Error T => true
+    | Error _ => true
     | _       => false
   end.
 
-Lemma is_error_is_error_b : forall t, is_error_b t = true -> is_error t.
-Proof.
-  intros t H.
-  destruct t; inversion H.
-  constructor.
-Qed.
-
-Fixpoint
-  dec_value' (n : nat) (t : term) {struct t} :=
+Fixpoint result_beq (t : term) :=
   match t with
     | LamAbs x T t0 => true
     | TyAbs X K t   => true
-    | IWrap F T v   => dec_value' n v && negb (is_error_b v)
+    | IWrap F T v   => result_beq v && negb (is_error_beq v)
     | Constant u    => true
     | Error T       => true
-
-
-    (* Duplication for the termination checker *)
-    | Builtin f   => ltb n (arity f)
-    | Apply nv v  => dec_value' n v && negb (is_error_b v) && dec_value' (S n) nv
-    | TyInst nv T => dec_value' (S n) nv
     | _ => false
   end
   .
 
-Definition dec_value := dec_value' 0.
-
-Definition dec_neutral_value (n : nat) (t : term) :=
-  match t with
-    | Builtin f   => dec_value' n t
-    | Apply nv v  => dec_value' n t
-    | TyInst nv T => dec_value' n t
-    | _           => false
-  end.
-
-Lemma dec_value_value : forall t, dec_value t = true -> value t.
+Lemma dec_result_result : forall t, result_beq t = true -> result t.
 Admitted.
 
-Lemma dec_neutral_value_neutral_value : forall n t, dec_neutral_value n t = true -> neutral_value n t.
-Admitted.

@@ -208,6 +208,13 @@ Section Derived_Eqb.
   Definition Term_eqb_eq := eq_dec_to_eqb__sound term_dec.
   Definition Binding_eqb_eq := eq_dec_to_eqb__sound binding_dec.
 
+  (* Reflexivity *)
+  Definition Kind_eqb_refl x : (eq_dec_to_eqb Kind_dec) x x = true.
+  Proof.
+    apply Kind_eqb_eq.
+    reflexivity.
+  Qed.
+
 
 End Derived_Eqb.
 

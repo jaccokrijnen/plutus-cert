@@ -26,6 +26,13 @@ Proof.
     eauto.
 Qed.
 
+
+Lemma R_G_extend_rho : forall X Chi T1 T2 rho k c env env' ,
+    R_G rho k c env env' ->
+    R_G ((X, (Chi, T1, T2)) :: rho) k c env env'.
+(* See comment in R_V_extend_rho, X may not occur in rho *)
+Admitted.
+
 Lemma RG_domains_match : forall c e1 e2 k rho,
     RG rho k c e1 e2 ->
     forall x T,
@@ -45,6 +52,15 @@ Proof.
       assumption.
 Qed.
 
+Lemma R_G_domains_match : forall c e1 e2 k rho,
+    R_G rho k c e1 e2 ->
+    forall x T,
+      lookup x c = Datatypes.Some T ->
+      exists v1 v2,
+        lookup x e1 = Datatypes.Some v1 /\
+        lookup x e2 = Datatypes.Some v2.
+Admitted.
+
 Lemma RG_context_normal : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
     forall x T,
@@ -60,6 +76,13 @@ Proof.
       assumption.
     + eauto.
 Qed.
+
+Lemma R_G_context_normal : forall rho k c e1 e2,
+    R_G rho k c e1 e2 ->
+    forall x T,
+      lookup x c = Datatypes.Some T ->
+      normal_Ty T.
+Admitted.
 
 Lemma RG_env_closed : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
@@ -86,17 +109,35 @@ Proof.
     * apply IHV.
 Qed.
 
+
+Lemma R_G_env_closed : forall rho k c e1 e2,
+    R_G rho k c e1 e2 ->
+    closed_env e1 /\ closed_env e2.
+Admitted.
+
 Corollary RG_env_closed_1 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
     0 < k ->
     closed_env e1.
 Proof. intros. destruct (RG_env_closed _ _ _ _ _ H H0). assumption. Qed.
 
+
+Corollary R_G_env_closed_1 : forall rho k c e1 e2,
+    R_G rho k c e1 e2 ->
+    closed_env e1.
+Proof. intros. destruct (R_G_env_closed _ _ _ _ _ H). assumption. Qed.
+
 Corollary RG_env_closed_2 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
     0 < k ->
     closed_env e2.
 Proof. intros. destruct (RG_env_closed _ _ _ _ _ H H0). assumption. Qed.
+
+
+Corollary R_G_env_closed_2 : forall rho k c e1 e2,
+    R_G rho k c e1 e2 ->
+    closed_env e2.
+Proof. intros. destruct (R_G_env_closed _ _ _ _ _ H). assumption. Qed.
 
 Lemma RG_RV : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
@@ -118,6 +159,15 @@ Proof.
     + apply IHV with x'; assumption.
 Qed.
 
+Lemma R_G_R_V : forall rho k c e1 e2,
+    R_G rho k c e1 e2 ->
+    forall x T v1 v2,
+      lookup x c = Datatypes.Some T ->
+      lookup x e1 = Datatypes.Some v1 ->
+      lookup x e2 = Datatypes.Some v2 ->
+      R_V k T rho v1 v2.
+Admitted.
+
 Lemma RG_drop : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
     forall x,
@@ -136,6 +186,12 @@ Proof.
       * apply IHV.
 Qed.
 
+Lemma R_G_drop : forall rho k c e1 e2,
+    R_G rho k c e1 e2 ->
+    forall x,
+      R_G rho k (drop x c) (drop x e1) (drop x e2).
+Admitted.
+
 Lemma RG_mdrop : forall xs rho k c e1 e2,
     RG rho k c e1 e2 ->
       RG rho k (mdrop xs c) (mdrop xs e1) (mdrop xs e2).
@@ -144,3 +200,9 @@ Proof with auto.
   simpl.
   auto using RG_drop.
 Qed.
+
+
+Lemma R_G_mdrop : forall xs rho k c e1 e2,
+    R_G rho k c e1 e2 ->
+      R_G rho k (mdrop xs c) (mdrop xs e1) (mdrop xs e2).
+Admitted.

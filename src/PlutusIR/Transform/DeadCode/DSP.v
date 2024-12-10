@@ -115,7 +115,7 @@ Proof.
       simpl in H2.
       admit.
 
-      
+
     + (* E_Error_Let_Termbind*)
       admit.
 
@@ -193,7 +193,7 @@ Proof.
     apply H with
       (t := t) (T := T)
       (Δ := binds_Delta b ++ Δ) (Γ := bsGn ++ Γ)
-      (Γ_bs := Γ_bs) 
+      (Γ_bs := Γ_bs)
       in H4.
     destruct H_unused as [ H_unused_bvb H_unused_btvb ].
     eauto using elim_nonrec_approx.

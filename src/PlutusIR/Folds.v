@@ -27,8 +27,8 @@ Inductive AlgTerm: Type := mkTermAlg
   ; a_Error    : ty -> rTerm
   ; a_IWrap    : ty -> ty -> rTerm -> rTerm
   ; a_Unwrap   : rTerm -> rTerm
-  ; a_Constr   : nat -> list rTerm -> rTerm
-  ; a_Case    : rTerm -> list rTerm -> rTerm
+  ; a_Constr   : nat -> ty -> list rTerm -> rTerm
+  ; a_Case     : ty -> rTerm -> list rTerm -> rTerm
   }
 
 with AlgBinding : Type := mkBindingAlg
@@ -83,8 +83,8 @@ Section Folds.
     | (Error ty)        => a_Error algTerm ty
     | (IWrap ty1 ty2 t) => a_IWrap algTerm ty1 ty2 (foldTerm t)
     | (Unwrap t)        => a_Unwrap algTerm (foldTerm t)
-    | (Constr i ts)     => a_Constr algTerm i (map foldTerm ts)
-    | (Case t ts)      => a_Case algTerm (foldTerm t) (map foldTerm ts)
+    | (Constr i T ts)     => a_Constr algTerm i T (map foldTerm ts)
+    | (Case T t ts)      => a_Case algTerm T (foldTerm t) (map foldTerm ts)
   end
 
   with foldBinding (b : binding) : rb := match b with
@@ -279,8 +279,8 @@ Section Use. (* name comes from "use" rules in attribute grammars *)
     a_Error := fun _ : ty => f [];
     a_IWrap := fun (_ _ : ty) (X : a) => f [X];
     a_Unwrap := fun X : a => f [X];
-    a_Constr := fun i XS => f XS;
-    a_Case := fun X XS => f (X :: XS)
+    a_Constr := fun i T XS => f XS;
+    a_Case := fun T X XS => f (X :: XS)
     |}
     ).
   Defined.

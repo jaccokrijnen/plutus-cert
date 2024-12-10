@@ -16,12 +16,12 @@ Fixpoint type_check (Γ : list (binderName * ty)) (term : term) : (option ty) :=
         | Some T2 => Some (Ty_Fun T1n T2) (* TODO: no normalisation of T2? Is it always normal? In the has_type efinition it is called T2n, so maybe it is*)
         | _ => None
         end
-    (* | Apply t1 t2 =>
+    | Apply t1 t2 =>
         match type_check Γ t1, type_check Γ t2 with
         | Some (Ty_Fun T1 T2), Some T1' =>
             if eqb_ty T1 T1' then Some T2 else None
         | (_, _) => None
-        end *)
+        end
     | _ => None (* TODO *)
     end. (* TODO: normalisation? *)
 

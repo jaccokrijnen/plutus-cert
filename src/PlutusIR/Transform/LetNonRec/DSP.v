@@ -142,6 +142,7 @@ Proof with eauto_LR.
       eexists. eexists.
       split. {
         eapply E_Apply...
+        - inversion 1. repeat (match goal with | H : applied_builtin _ _ _ |- _ => inversion_clear H end).
         - eapply E_LamAbs.
         - eapply RV_error in HRV__vb as temp...
           destruct temp as [ [Herr Herr'] | [Hnerr Hnerr']]...
@@ -420,7 +421,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
       * rewrite app_assoc.
         rewrite app_assoc.
         rewrite <- flatten_app...
-    + 
+    +
       match goal with
       | H : map_normalise _ _ |- _ =>
           rewrite flatten_app in H;

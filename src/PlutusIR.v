@@ -299,8 +299,8 @@ Inductive term :=
   | Error    : ty -> term
   | IWrap    : ty -> ty -> term -> term
   | Unwrap   : term -> term
-  | Constr   : nat -> list term -> term
-  | Case     : term -> list term -> term
+  | Constr   : nat -> ty -> list term -> term
+  | Case     : ty -> term -> list term -> term
 
 with binding :=
   | TermBind : strictness -> vdecl -> term -> binding
@@ -438,8 +438,8 @@ Section term__ind.
     (H_Error   : forall t : ty, P (Error t))
     (H_IWrap   : forall (t t0 : ty) (t1 : term), P t1 -> P (IWrap t t0 t1))
     (H_Unwrap  : forall t : term, P t -> P (Unwrap t))
-    (H_Constr  : forall (i : nat) (ts : list term), ForallP P ts -> P (Constr i ts))
-    (H_Case   : forall (t : term), P t -> forall ts, ForallP P ts -> P (Case t ts))
+    (H_Constr  : forall (i : nat) T (ts : list term), ForallP P ts -> P (Constr i T ts))
+    (H_Case   : forall T (t : term), P t -> forall ts, ForallP P ts -> P (Case T t ts))
     .
 
 
@@ -476,8 +476,8 @@ Section term__ind.
       | Error ty        => H_Error ty
       | Constant c      => H_Constant c
       | Builtin f       => H_Builtin f
-      | Constr i ts     => H_Constr i ts (terms__ind term__ind ts)
-      | Case t ts      => H_Case t (term__ind t) ts (terms__ind term__ind ts)
+      | Constr i T ts     => H_Constr i T ts (terms__ind term__ind ts)
+      | Case T t ts      => H_Case T t (term__ind t) ts (terms__ind term__ind ts)
     end
   with binding__ind (b : binding) : Q b :=
     match b with
@@ -489,6 +489,79 @@ Section term__ind.
   Combined Scheme term__multind from term__ind, binding__ind.
 
 End term__ind.
+
+
+Section term__rect.
+
+  Unset Implicit Arguments.
+
+  Variable (P : term -> Type).
+  Variable (Q : binding -> Type).
+
+  Context
+    (H_Let     : forall rec bs t, ForallT Q bs -> P t -> P (Let rec bs t))
+    (H_Var     : forall s : string, P (Var s))
+    (H_TyAbs   : forall (s : string) (k : kind) (t : term), P t -> P (TyAbs s k t))
+    (H_LamAbs  : forall (s : string) (t : ty) (t0 : term), P t0 -> P (LamAbs s t t0))
+    (H_Apply   : forall t : term, P t -> forall t0 : term, P t0 -> P (Apply t t0))
+    (H_Constant : forall (c : constant), P (Constant c))
+    (H_Builtin : forall d : DefaultFun, P (Builtin d))
+    (H_TyInst  : forall t : term, P t -> forall t0 : ty, P (TyInst t t0))
+    (H_Error   : forall t : ty, P (Error t))
+    (H_IWrap   : forall (t t0 : ty) (t1 : term), P t1 -> P (IWrap t t0 t1))
+    (H_Unwrap  : forall t : term, P t -> P (Unwrap t))
+    (H_Constr  : forall (i : nat) T (ts : list term), ForallT P ts -> P (Constr i T ts))
+    (H_Case   : forall T (t : term), P t -> forall ts, ForallT P ts -> P (Case T t ts))
+    .
+
+
+
+  Context
+    (H_TermBind : forall s v t, P t -> Q (TermBind s v t))
+    (H_TypeBind : forall v ty, Q (TypeBind v ty))
+    (H_DatatypeBind : forall dtd, Q (DatatypeBind dtd)).
+
+  Definition bindings__rect (binding__rect : forall (b : binding), Q b) :=
+    fix bindings__rect bs :=
+    match bs as p return ForallT Q p with
+      | nil       => ForallT_nil
+      | cons b bs => ForallT_cons (binding__rect b) (bindings__rect bs)
+    end.
+
+  Definition terms__rect (term_rect : forall (t : term), P t) :=
+    fix terms_rect' ts :=
+    match ts as p return ForallT P p with
+      | nil       => ForallT_nil
+      | cons t ts => ForallT_cons (term_rect t) (terms_rect' ts)
+    end.
+
+  Fixpoint term__rect (t : term) : P t :=
+    match t with
+      | Let rec bs t    => H_Let rec bs t (bindings__rect binding__rect bs) (term__rect t)
+      | Var n           => H_Var n
+      | TyAbs n k t     => H_TyAbs n k t (term__rect t)
+      | LamAbs n ty t   => H_LamAbs n ty t (term__rect t)
+      | Apply s t       => H_Apply s (term__rect s) t (term__rect t)
+      | TyInst t ty     => H_TyInst t (term__rect t) ty
+      | IWrap ty1 ty2 t => H_IWrap ty1 ty2 t (term__rect t)
+      | Unwrap t        => H_Unwrap t (term__rect t)
+      | Error ty        => H_Error ty
+      | Constant c      => H_Constant c
+      | Builtin f       => H_Builtin f
+      | Constr i T ts     => H_Constr i T ts (terms__rect term__rect ts)
+      | Case T t ts      => H_Case T t (term__rect t) ts (terms__rect term__rect ts)
+    end
+  with binding__rect (b : binding) : Q b :=
+    match b with
+      | TermBind s v t  => H_TermBind s v t (term__rect t)
+      | TypeBind v ty   => H_TypeBind v ty
+      | DatatypeBind dtd => H_DatatypeBind dtd
+    end.
+
+  Combined Scheme term__multrect from term__rect, binding__rect.
+
+End term__rect.
+
 
 Section term_rect.
   Variable (P : term -> Type).
@@ -508,8 +581,8 @@ Section term_rect.
     (H_Error   : forall t : ty, P (Error t))
     (H_IWrap   : forall (t t0 : ty) (t1 : term), P t1 -> P (IWrap t t0 t1))
     (H_Unwrap  : forall t : term, P t -> P (Unwrap t))
-    (H_Constr  : forall (i : nat) (ts : list (term)), ForallT P ts -> P (Constr i ts))
-    (H_Case   : forall t, P t -> forall ts, ForallT P ts -> P (Case t ts)).
+    (H_Constr  : forall (i : nat) T (ts : list (term)), ForallT P ts -> P (Constr i T ts))
+    (H_Case   : forall T t, P t -> forall ts, ForallT P ts -> P (Case T t ts)).
 
   Context
     (H_TermBind    : forall s v t, P t -> Q (TermBind s v t))
@@ -547,8 +620,8 @@ Section term_rect.
       | Error ty        => @H_Error ty
       | Constant c      => @H_Constant c
       | Builtin f       => @H_Builtin f
-      | Constr i ts     => @H_Constr i ts (terms_rect' term_rect' ts)
-      | Case t ts      => @H_Case t (term_rect' t) ts (terms_rect' term_rect' ts)
+      | Constr i T ts     => @H_Constr i T ts (terms_rect' term_rect' ts)
+      | Case T t ts      => @H_Case T t (term_rect' t) ts (terms_rect' term_rect' ts)
     end
   with binding_rect' (b : binding) : Q b :=
     match b with
@@ -718,4 +791,46 @@ Module PlutusNotations.
 
   #[global]
   Open Scope plutus_scope.
+
+  (* Term notations *)
+  Notation "'λ' x :: ty , body" := (LamAbs x ty body) (in custom plutus_term at level 51, right associativity).
+  Notation "'Λ' X :: K , body" := (TyAbs X K body) (in custom plutus_term at level 51, right associativity).
+  Notation "t1 ⋅ t2" := (Apply t1 t2) (in custom plutus_term at level 50, left associativity).
+  Notation "t @ T" := (TyInst t T) (in custom plutus_term at level 50, left associativity).
+
+
+  (* Builtin notations *)
+  Notation "(+)" := (Builtin AddInteger) (in custom plutus_term).
+  Notation "'ifthenelse'" := (Builtin IfThenElse).
+  Notation "t1 '==' t2" := (<{ {Builtin EqualsInteger} ⋅ t1 ⋅ t2 }>)
+    (in custom plutus_term at level 50, no associativity).
+  Notation "t1 '+' t2" := (<{ {Builtin AddInteger} ⋅ t1 ⋅ t2 }>)
+    (in custom plutus_term at level 50, left associativity).
+  Notation "t1 '-' t2" := (<{ {Builtin SubtractInteger} ⋅ t1 ⋅ t2 }>)
+    (in custom plutus_term at level 50, left associativity).
+  Notation "t1 '*' t2" := (<{ {Builtin MultiplyInteger} ⋅ t1 ⋅ t2 }>)
+    (in custom plutus_term at level 50, left associativity).
+
+  (* / collides with substitution notation *)
+  (*
+  Notation "t1 '/' t2" := (<{ {Builtin DivideInteger} ⋅ t1 ⋅ t2 }>)
+    (in custom plutus_term at level 50, left associativity).
+      *)
+
+  (* Constants *)
+  Notation "'CInt' x" := (Constant (ValueOf DefaultUniInteger x)) (in custom plutus_term at level 49).
+  Notation "'CBool' x" := (Constant (ValueOf DefaultUniBool x)) (in custom plutus_term at level 49).
+  Notation "'CBS' xs" := (Constant (ValueOf DefaultUniByteString xs)) (in custom plutus_term at level 49).
+  Notation "'()'" := (Constant (ValueOf DefaultUniUnit tt)) (in custom plutus_term).
+  Notation "'true'" := (Constant (ValueOf DefaultUniBool true)) (in custom plutus_term).
+  Notation "'false'" := (Constant (ValueOf DefaultUniBool false)) (in custom plutus_term).
+
+  (* Built-in types *)
+  Notation "'ℤ'" := (Ty_Builtin DefaultUniInteger) (in custom plutus_term).
+  Notation "'bool'" := (Ty_Builtin DefaultUniBool) (in custom plutus_term).
+  Notation "'unit'" := (Ty_Builtin DefaultUniUnit) (in custom plutus_term).
+  Notation "X '→' Y" := (Ty_Fun X Y) (in custom plutus_term at level 49, right associativity).
+  Notation "'bytestring'" := (Ty_Builtin DefaultUniByteString) (in custom plutus_term at level 51, right associativity).
+
+
 End PlutusNotations.

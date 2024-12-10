@@ -142,7 +142,7 @@ Section ExistsBvbs.
           rewrite In_NameIn in *.
           destruct H.
           ** subst. eauto using NameIn.
-          ** destruct (string_dec x mfunc). 
+          ** destruct (string_dec x mfunc).
             *** subst. eauto using NameIn.
             *** rewrite map_bvc__bv_constructors in H.
                 eauto using NameIn.

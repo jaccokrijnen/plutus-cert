@@ -90,8 +90,8 @@ Fixpoint dec_Term (x y : term) {struct x} : bool := match x, y with
   | Error ty       , Error ty'          => Ty_eqb ty ty'
   | IWrap ty1 ty2 t, IWrap ty1' ty2' t' => Ty_eqb ty1 ty1' && Ty_eqb ty2 ty2' && dec_Term t t'
   | Unwrap t       , Unwrap t'          => dec_Term t t'
-  | Constr i ts    , Constr i' ts'      => Nat.eqb i i' && forall2b dec_Term ts ts'
-  | Case t ts      , Case t' ts'        => dec_Term t t' && forall2b dec_Term ts ts'
+  | Constr i T ts  , Constr i' T' ts'   => Nat.eqb i i' && Ty_eqb T T' && forall2b dec_Term ts ts'
+  | Case T t ts    , Case T' t' ts'     => dec_Term t t' && Ty_eqb T T' && forall2b dec_Term ts ts'
 
   | _, _ => false
   end
@@ -106,7 +106,7 @@ with dec_Binding_compat (b b' : binding) : bool := match b, b' with
 .
 
 (* See comment of dec_Bindings' *)
-Definition dec_Bindings : list binding -> term -> option term := 
+Definition dec_Bindings : list binding -> term -> option term :=
   dec_Bindings' dec_Term.
 
 
@@ -292,7 +292,7 @@ Proof.
       match goal with t' : term |- _ =>
         destruct t'; split; try solve [inversion 1]
       end.
-      * (*fwd *) 
+      * (*fwd *)
       intros.
       simpl_dec_Term.
       rewrite ForallP_Forall in *.

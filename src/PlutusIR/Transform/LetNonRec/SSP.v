@@ -30,7 +30,7 @@ Definition P_CNR_LetRec_compat bs bs' := ∀ Δ Γ,
   map binds_Delta bs = map binds_Delta bs'
   .
 
-Definition P_CNR_Binding b (f : term -> term) := 
+Definition P_CNR_Binding b (f : term -> term) :=
 (
   match b with
     | TermBind Strict (VarDecl v ty) t_bound => ∀ t_bound',
@@ -170,8 +170,8 @@ Theorem CNR_Term__SSP : ∀ t t',
     intros ? ? ? ? H_CNR_Term IH_t_bound.
     unfold P_CNR_Binding.
     intros t_bound'' H_eq.
-    (* work-around: using FUNEXT to conclude t_bound' = t_bound'' *)
-    apply equal_f with (x := Constr 0 []) in H_eq.
+    (* work-around: use arbitrary term to conclude t_bound' = t_bound'' *)
+    apply equal_f with (x := Constant (ValueOf DefaultUniBool true)) in H_eq.
     inversion H_eq.
     subst t_bound''.
     clear H_eq.

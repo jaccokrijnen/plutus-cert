@@ -192,7 +192,7 @@ Qed.
 Lemma append_permute A (m : list (string * A)) k (v : A) xs ys:
   ~ (In k (map fst xs)) -> inclusion (xs ++ ((k, v) :: ys)) ((k, v) :: xs ++ ys) .
 Admitted.
-  
+
 
 Definition equivalent {A : Type} (m m' : list (string * A)) :=
   inclusion m m' /\ inclusion m' m.
@@ -285,7 +285,7 @@ Section Subset.
   Admitted.
 
   Lemma subset_append {A} {xs ys zs : list A} :
-    xs ⊆ zs -> 
+    xs ⊆ zs ->
     ys ⊆ zs ->
     (xs ++ ys) ⊆ zs.
   Admitted.
@@ -421,7 +421,7 @@ Section Subset.
   Lemma In_singleton {A} {x : A} :
     x ∈ [x].
   Proof.
-    constructor. 
+    constructor.
     reflexivity.
   Qed.
 
@@ -570,7 +570,7 @@ Proof.
   induction xs.
   intros xs'.
   - simpl.
-    destruct xs'; split; inversion 1. 
+    destruct xs'; split; inversion 1.
     + constructor.
     + reflexivity.
   - simpl.
@@ -671,6 +671,6 @@ Proof with auto using NameIn.
   induction xs; split; intros; simpl; inversion H; subst...
     - apply IHxs in H3...
     - destruct (string_dec x a); subst...
-      apply NI_There... 
+      apply NI_There...
       apply IHxs...
 Qed.

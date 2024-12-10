@@ -28,18 +28,19 @@ When renaming variables, it is crucial to avoid capturing/shadowing:
        ̸▷
   λ z . λ z . z + z
 
-When defining a renaming, we therefore need to consider the other
-variables that are in scope. In the translation relation we keep track of
-this using contexts Δ and Γ (for type- and term-level variables respectively).
+When defining a renaming, we therefore need to consider the free variables in a
+term. In the translation relation we keep track of free variables using contexts
+Δ and Γ (for type- and term-level variables respectively). This means that only
+closed terms can be related at the top-level, as there is no rule that relates
+free variables that do not occur in Γ or Δ.
 
-Suppose we have these two terms
+Suppose we have these two terms:
 
-  pre-term:  (λ x. t1)
-  post-term: (λ z. t2)
+  pre-term:  (λ x. t)
+  post-term: (λ z. t[z/x])
 
-i.e. x is being renamed to z. This is valid if no other variable in Γ is being
-renamed to z. Because if there were another variable, say y, that is renamed to
-z, we may _capture_ any of its occurrences by introducing another z binder.
+as well as a context Γ with all free term variables in t. This is valid if no
+free variable in Γ is being renamed to z.
 
 We can loosen that condition: x can be safely renamed to z if for any other (y,
 z) in Γ, there are no occurrences of y in the pre-term. That way, we allow some safe
@@ -51,16 +52,19 @@ forms of shadowing. For example:
 
 *)
 
-(* Binding variable x does not capture free variables in (the pre-term) t if they were renamed
-   according to Γ *)
-Definition no_capture x (Γ : ctx) t :=
-  forall y, In (y, x) Γ -> ~ AFI.Term.appears_free_in y t.
 
-Definition no_captureA α (Δ : ctx) t :=
-  forall β, In (β, α) Δ -> ~ AFI.Annotation.appears_free_in β t.
+(* A variable name x is safe (usable for renaming), when it does not capture free
+** variables in the pre-term. However, since those free variables may have other
+** names in the post-term, we need to take into account the context Γ (or Δ).
+*)
+Definition safe_var x (Γ : ctx) t_pre :=
+  forall z, In (z, x) Γ -> ~ AFI.Term.appears_free_in z t_pre.
 
-Definition no_ty_capture α (Δ : ctx) τ :=
-  forall β, In (β, α) Δ -> ~ AFI.Ty.appears_free_in β τ.
+Definition safe_tyvarA α (Δ : ctx) t_pre :=
+  forall β, In (β, α) Δ -> ~ AFI.Annotation.appears_free_in β t_pre.
+
+Definition safe_tyvar α (Δ : ctx) τ_pre :=
+  forall β, In (β, α) Δ -> ~ AFI.Ty.appears_free_in β τ_pre.
 
 
 Inductive rename_tvs (Δ : ctx) (cs : list vdecl) : list tvdecl -> list tvdecl -> ctx -> Prop :=
@@ -71,7 +75,7 @@ Inductive rename_tvs (Δ : ctx) (cs : list vdecl) : list tvdecl -> list tvdecl -
   | rn_tvs_cons : forall α tvs k β tvs' Δ_tvs,
       (* check that the bound tyvar does not capture other renamed vars in the
          type signatures of the constructors *)
-      Forall (fun '(VarDecl _ cty) => no_ty_capture β Δ cty) cs ->
+      Forall (fun '(VarDecl _ cty) => safe_tyvar β Δ cty) cs ->
       rename_tvs ((α, β) :: Δ) cs tvs tvs' Δ_tvs ->
       rename_tvs Δ cs (TyVarDecl α k :: tvs) (TyVarDecl β k :: tvs') ((α, β) :: Δ_tvs)
 .
@@ -97,7 +101,7 @@ Inductive rename_ty (Δ : ctx) : ty -> ty -> Prop :=
 
    | rn_Ty_Forall : forall α α' k τ τ',
       rename_ty ((α, α') :: Δ) τ τ' ->
-      no_ty_capture α Δ τ ->
+      safe_tyvar α Δ τ ->
       rename_ty Δ (Ty_Forall α k τ) (Ty_Forall α' k τ')
 
    | rn_Ty_Builtin : forall t,
@@ -105,7 +109,7 @@ Inductive rename_ty (Δ : ctx) : ty -> ty -> Prop :=
 
    | rn_Ty_Lam : forall α α' k τ τ',
       rename_ty ((α, α') :: Δ) τ τ' ->
-      no_ty_capture α Δ τ ->
+      safe_tyvar α Δ τ ->
       rename_ty Δ (Ty_Lam α k τ) (Ty_Lam α' k τ')
 
    | Ty_App : forall σ τ σ' τ',
@@ -127,9 +131,9 @@ Inductive rename (Δ Γ: ctx) : term -> term -> Prop :=
       (* All bound type- and term variables in the bindings should not capture _in the body_.
 
          Alternatively, this could have been implemented by adding `Let NonRec bs t` as
-         an index in rename_binding and putting a simple no_capture at the actual binding *)
-      Forall (fun '(_, x') => no_capture x' Γ t) Γ_bs ->
-      Forall (fun '(_, α') => no_captureA α' Δ t) Δ_bs ->
+         an index in rename_binding and putting a simple safe_var at the actual binding *)
+      Forall (fun '(_, x') => safe_var x' Γ t) Γ_bs ->
+      Forall (fun '(_, α') => safe_tyvarA α' Δ t) Δ_bs ->
 
       (* All bound (type) variables have to be unique in the binding group *)
       NoDup (bvbs bs') ->
@@ -150,21 +154,21 @@ Inductive rename (Δ Γ: ctx) : term -> term -> Prop :=
       (* All bound (type) variables in the let should not capture.
 
          Alternatively, add `Let NonRec bs t` as index in rename_binding
-         and put a simple no_capture at the actual binding *)
-      Forall (fun '(_, x') => no_capture x' Γ (Let NonRec bs t)) Γ_b ->
-      Forall (fun '(_, α') => no_captureA α' Δ (Let NonRec bs t)) Δ_b ->
+         and put a simple safe_var at the actual binding *)
+      Forall (fun '(_, x') => safe_var x' Γ (Let NonRec bs t)) Γ_b ->
+      Forall (fun '(_, α') => safe_tyvarA α' Δ (Let NonRec bs t)) Δ_b ->
 
       rename Δ Γ (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t')
 
   | rn_TyAbs : forall α α' k t t',
       rename ((α, α') :: Δ) Γ t t' ->
-      no_captureA α' Δ t ->
+      safe_tyvarA α' Δ t ->
       rename Δ Γ (TyAbs α k t) (TyAbs α' k t')
 
   | rn_LamAbs : forall x x' τ τ' t t',
       rename_ty Δ τ τ' ->
       rename Δ ((x, x') :: Γ) t t' ->
-      no_capture x' Γ t ->
+      safe_var x' Γ t ->
       rename Δ Γ (LamAbs x τ t) (LamAbs x' τ' t')
 
   | rn_Apply : forall s t s' t',
@@ -279,17 +283,17 @@ From PlutusCert Require Import Dynamic.Bigstep.
 Require Import PlutusCert.PlutusIR.
 Import PlutusNotations.
 
-(* no_capture facts *)
+(* safe_var facts *)
 
-Lemma no_capture__subst x Γ v y t :
+Lemma safe_var__subst x Γ v y t :
   closed v ->
-  no_capture x Γ <{ [v / y] t }>
+  safe_var x Γ <{ [v / y] t }>
 .
 Admitted.
 
-Lemma no_captureA__subst α Γ v y t :
+Lemma safe_tyvarA__subst α Γ v y t :
   closed v ->
-  no_captureA α Γ <{ [v / y] t }>
+  safe_tyvarA α Γ <{ [v / y] t }>
 .
 Admitted.
 
@@ -372,7 +376,7 @@ Proof.
       + subst y.
         inversion H_afi_x_t; subst.
         contradiction.
-      + unfold no_capture in *. 
+      + unfold safe_var in *.
         constructor.
         * intros H_eq; subst y'.
            inversion H_afi_x_t; subst.
@@ -455,7 +459,7 @@ Proof.
       eapply rename_strengthen in H_ren_t; eauto.
   - simpl.
     constructor; auto.
-    apply no_captureA__subst.
+    apply safe_tyvarA__subst.
     eauto using rename_closed_l.
   - (* LamAbs *)
     simpl.
@@ -491,6 +495,7 @@ Proof.
     rename v2 into t_v.
     inversion H_ren; subst.
     rename t'0 into t'.
+    (*
     specialize (IHH_eval1 _ H2) as [s'_v [ eval_s' H_ren_s_v]]. clear H2.
     inversion H_ren_s_v; subst.
     rename τ' into T', t'0 into u'.
@@ -516,4 +521,5 @@ Proof.
       contradiction.
     + eauto.
   - (* TyAbs *)
+  *)
 Admitted.

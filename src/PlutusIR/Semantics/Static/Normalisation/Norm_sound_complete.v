@@ -3,6 +3,7 @@ From PlutusCert Require Import
   Normalisation.Normalisation 
   Strong_normalisation 
   Kinding.Kinding 
+  Kinding.Checker
   Type_reduction
   Static.Util.
 Require Import Coq.Lists.List.

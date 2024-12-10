@@ -1,4 +1,4 @@
-From PlutusCert Require Import 
+From PlutusCert Require Import
   Util.List
   PlutusIR
   PlutusIR.Analysis.BoundVars.

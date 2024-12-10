@@ -3,9 +3,10 @@ Require Import PlutusCert.Util.List.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.Auxiliary.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
-Require Export PlutusCert.PlutusIR.Semantics.Static.Kinding.
-Require Export PlutusCert.PlutusIR.Semantics.Static.Normalisation.
+Require Export PlutusCert.PlutusIR.Semantics.Static.Kinding.Kinding.
+Require Export PlutusCert.PlutusIR.Semantics.Static.Normalisation.Normalisation.
 Require Export PlutusCert.PlutusIR.Semantics.Static.TypeSubstitution.
+Require Export PlutusCert.PlutusIR.Semantics.Static.Builtins.Signatures.
 
 Import Coq.Lists.List.
 Import ListNotations.
@@ -23,112 +24,8 @@ Definition Ty_BinOp t := Ty_Fun t (Ty_Fun t t).
 Definition Ty_BinPred t := Ty_Fun t (Ty_Fun t Ty_Bool).
 
 (** Types of builtin functions *)
-Definition lookupBuiltinTy (f : DefaultFun) :=
-  match f with
-  | AddInteger
-  | SubtractInteger
-  | MultiplyInteger
-  | DivideInteger
-  | QuotientInteger => Ty_BinOp Ty_Int
-  | _ => Ty_Bool (* TODO *)
-  end
-.
-  (*
-  | RemainderInteger
-  | ModInteger
-  | EqualsInteger
-  | LessThanInteger
-  | LessThanEqualsInteger
-  | AppendByteString
-  | ConsByteString
-  | SliceByteString
-  | LengthOfByteString
-  | IndexByteString
-  | EqualsByteString
-  | LessThanByteString
-  | LessThanEqualsByteString
-  | Sha2_256
-  | Sha3_256
-  | Blake2b_256
-  | VerifyEd25519Signature
-  | VerifyEcdsaSecp256k1Signature
-  | VerifySchnorrSecp256k1Signature
-  | AppendString
-  | EqualsString
-  | EncodeUtf8
-  | DecodeUtf8
-  | IfThenElse
-  | ChooseUnit
-  | Trace
-  | FstPair
-  | SndPair
-  | ChooseList
-  | MkCons
-  | HeadList
-  | TailList
-  | NullList
-  | ChooseData
-  | ConstrData
-  | MapData
-  | ListData
-  | IData
-  | BData
-  | UnConstrData
-  | UnMapData
-  | UnListData
-  | UnIData
-  | UnBData
-  | EqualsData
-  | SerialiseData
-  | MkPairData
-  | MkNilData
-  | MkNilPairData
-  | Bls12_381_G1_add
-  | Bls12_381_G1_neg
-  | Bls12_381_G1_scalarMul
-  | Bls12_381_G1_equal
-  | Bls12_381_G1_hashToGroup
-  | Bls12_381_G1_compress
-  | Bls12_381_G1_uncompress
-  | Bls12_381_G2_add
-  | Bls12_381_G2_neg
-  | Bls12_381_G2_scalarMul
-  | Bls12_381_G2_equal
-  | Bls12_381_G2_hashToGroup
-  | Bls12_381_G2_compress
-  | Bls12_381_G2_uncompress
-  | Bls12_381_millerLoop
-  | Bls12_381_mulMlResult
-  | Bls12_381_finalVerify
-  | Keccak_256
-  | Blake2b_224
+Definition lookupBuiltinTy f := to_ty (to_sig f).
 
-
-
-  (* OLD *)
-  | AddInteger => T_Int_Bin
-  | SubtractInteger => T_Int_Bin
-  | MultiplyInteger => T_Int_Bin
-  | DivideInteger => T_Int_Bin
-  | QuotientInteger => T_Int_Bin
-  | RemainderInteger => T_Int_Bin
-  | ModInteger => T_Int_Bin
-  | LessThanInteger => T_Int_BinPredicate
-  | LessThanEqInteger => T_Int_BinPredicate
-  | EqInteger => T_Int_BinPredicate
-  | Concatenate => T_BS_Bin
-  | TakeByteString => Ty_Fun Ty_Int (Ty_Fun Ty_BS Ty_BS)
-  | DropByteString => Ty_Fun Ty_Int (Ty_Fun Ty_BS Ty_BS)
-  | SHA2 => Ty_Fun Ty_BS Ty_BS
-  | SHA3 => Ty_Fun Ty_BS Ty_BS
-  | VerifySignature => Ty_Fun Ty_BS (Ty_Fun Ty_BS (Ty_Fun Ty_BS Ty_Bool))
-  | EqByteString => T_BS_BinPredicate
-  | LtByteString => T_BS_BinPredicate
-  | GtByteString => T_BS_BinPredicate
-  | IfThenElse => Ty_Forall "a" Kind_Base (Ty_Fun Ty_Bool (Ty_Fun (Ty_Var "a") (Ty_Fun (Ty_Var "a") (Ty_Var "a"))))
-  | Append => Ty_Fun Ty_String (Ty_Fun Ty_String Ty_String)
-  | Trace => Ty_Fun Ty_String Ty_Unit (* TODO: figure out if it is the correct type*)
-  *)
 
 (** Helper funcitons*)
 Definition flatten {A : Type} (l : list (list A)) := List.concat (rev l).

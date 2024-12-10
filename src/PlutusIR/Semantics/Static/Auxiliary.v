@@ -30,7 +30,7 @@ Definition getKind (tvd : tvdecl) :=
 
 (** Auxiliary functions *)
 
-(*  Applies a type to multiple arguments 
+(*  Applies a type to multiple arguments
       Ty_Apps f [x_1; ... ; x_n] = ((f x_1) ... ) x_n
 *)
 Definition Ty_Apps (f : ty) (xs : list ty) : ty :=
