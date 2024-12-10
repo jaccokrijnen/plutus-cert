@@ -80,8 +80,10 @@ src/PlutusIR/Semantics/Static.v
 src/PlutusIR/Semantics/Static/Auxiliary.v
 src/PlutusIR/Semantics/Static/Context.v
 src/PlutusIR/Semantics/Static/Builtins/Signatures.v
-src/PlutusIR/Semantics/Static/Typing.v
 src/PlutusIR/Semantics/Static/Util.v
+
+src/PlutusIR/Semantics/Static/Typing.v
+src/PlutusIR/Semantics/Static/Typing_sound_complete.v
 
 src/PlutusIR/Semantics/Static/Kinding/Checker.v
 src/PlutusIR/Semantics/Static/Kinding/Kinding.v
