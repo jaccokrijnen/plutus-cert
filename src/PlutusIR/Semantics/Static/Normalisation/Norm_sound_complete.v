@@ -1,5 +1,12 @@
-From PlutusCert Require Import PlutusIR Normalisation.Normalisation Strong_normalisation Kinding.Kinding Type_reduction.
-
+From PlutusCert Require Import 
+  PlutusIR 
+  Normalisation.Normalisation 
+  Strong_normalisation 
+  Kinding.Kinding 
+  Type_reduction
+  Static.Util.
+Require Import Coq.Lists.List.
+Import ListNotations.
 
 Lemma normalise_extend T1 T2 T3 :
   step T1 T2 -> normalise T2 T3 -> normalise T1 T3.
@@ -26,12 +33,22 @@ Proof.
   now apply normalise_extend with (T2 := t').
 Admitted.
 
-Definition normaliser T Δ K (Hwk : Δ |-* T : K) :=
+Definition normaliser {T Δ K} (Hwk : Δ |-* T : K) :=
   let snt := strong_normalisation Hwk in
   projT1 (SN__normalise T snt).
 
-Theorem norm_sound T Tn Δ K (Hwk : Δ |-* T : K) :
-  normaliser T Δ K Hwk = Tn -> normalise T Tn.
+
+Definition normaliser_Jacco T : option ty :=
+  match (kind_check [] T) as placeholder 
+    return ((kind_check [] T = placeholder) -> option ty) 
+    with
+  | Some K => fun Hkc => Some (normaliser (kind_checking_sound [] T K Hkc))
+  | None => fun _ => None
+  end eq_refl.
+
+
+Theorem norm_sound  Tn {T Δ K} (Hwk : Δ |-* T : K) :
+  normaliser Hwk = Tn -> normalise T Tn.
 Proof.
   intros.
   unfold normaliser in H.
@@ -41,7 +58,7 @@ Proof.
 Qed.
 
 Theorem norm_complete Δ K (T Tn : ty) (Hwk : Δ |-* T : K):
-  normalise T Tn -> normaliser T Δ K Hwk = Tn.
+  normalise T Tn -> normaliser Hwk = Tn.
 Proof.
   intros HnormR.
   unfold normaliser.
