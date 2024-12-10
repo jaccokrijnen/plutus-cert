@@ -215,6 +215,12 @@ Section Derived_Eqb.
     reflexivity.
   Qed.
 
+  Definition Ty_eqb_refl x : (eq_dec_to_eqb Ty_dec) x x = true.
+  Proof.
+    apply Ty_eqb_eq.
+    reflexivity.
+  Qed.
+
 
 End Derived_Eqb.
 

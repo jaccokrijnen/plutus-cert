@@ -38,14 +38,26 @@ Definition normaliser {T Δ K} (Hwk : Δ |-* T : K) :=
   let snt := strong_normalisation Hwk in
   projT1 (SN__normalise T snt).
 
-
 Definition normaliser_Jacco T : option ty :=
+  match kind_check [] T as o_kind
+        return (kind_check [] T = o_kind -> option ty)
+  with
+  | Some K => fun Hkc =>
+      Some (normaliser (kind_checking_sound [] T K Hkc))
+  | None => fun _ => None
+  end eq_refl.
+
+
+(* Definition normaliser_Jacco T : option ty :=
   match (kind_check [] T) as placeholder 
     return ((kind_check [] T = placeholder) -> option ty) 
     with
-  | Some K => fun Hkc => Some (normaliser (kind_checking_sound [] T K Hkc))
+  | Some K => fun Hkc0 => 
+    let Hkc := eq_ind_r (fun o => kind_check [] T = o) eq_refl Hkc0 in
+    Some (normaliser (kind_checking_sound [] T K Hkc))
   | None => fun _ => None
-  end eq_refl.
+  end eq_refl. *)
+
 
 
 Theorem norm_sound  Tn {T Δ K} (Hwk : Δ |-* T : K) :
@@ -67,3 +79,18 @@ Proof.
   simpl.
   now apply (normalisation__deterministic T x Tn) in n.
 Qed.
+
+
+Theorem normaliser_Jacco_sound T Tn :
+  normaliser_Jacco T = Some Tn -> normalise T Tn.
+Proof.
+  intros Hnorm.
+  unfold normaliser_Jacco in Hnorm.
+  case_eq (kind_check [] T).
+  - intros K Hkc.
+    (* rewrite Hkc in Hnorm. abstracting over term leads to ill typed term *)
+Admitted.
+
+Theorem normaliser_Jacco_complete T Tn :
+  normalise T Tn -> normaliser_Jacco T = Some Tn.
+Admitted.
