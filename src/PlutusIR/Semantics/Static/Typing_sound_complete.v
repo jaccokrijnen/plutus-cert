@@ -1,3 +1,9 @@
+
+Require Import Coq.Lists.List.
+Import ListNotations.
+Require Import Coq.Bool.Bool.
+Require Import Coq.Strings.String.
+
 From PlutusCert Require Import 
     Normalisation.Normalisation 
     Strong_normalisation
@@ -8,9 +14,73 @@ From PlutusCert Require Import
     Static.Util
     Equality
     Kinding.Checker.
-Require Import Coq.Lists.List.
-Import ListNotations.
-Require Import Coq.Bool.Bool.
+
+Fixpoint allb (bs : list bool) : bool :=
+    match bs with
+    | [] => true
+    | b::bs => andb b (allb bs)
+    end.
+
+Definition is_KindBase (k : option kind) : bool :=
+  match k with 
+  | Some Kind_Base => true
+  | _ => false
+  end.
+
+Definition constructor_well_formed_check (Δ : list (binderTyname * kind)) (v : vdecl) (Tr : ty ) : bool :=
+  match v with
+  | VarDecl x T => let (targs, tr') := splitTy T in
+          Ty_eqb Tr tr' && allb (map (fun U => is_KindBase (kind_check Δ U)) targs)
+  end.
+
+(* Idea Jacco: pass the recursively called type_check function as an argument even though it is not defined yet *)
+Definition binding_well_formed_check 
+  (type_check' : ((list (binderTyname * kind)) -> (list (binderName * ty)) -> term -> option ty)) 
+  (Δ : list (binderTyname * kind)) (Γ : list (binderName * ty)) binding : bool :=
+    match binding with
+    | (TypeBind (TyVarDecl X K) T) => match kind_check Δ T with
+                                      | Some K => true (* is this K the same as in the pattern match to the left? it should be*)
+                                      | _ => false
+                                      end
+    | (TermBind s (VarDecl x T) t) => match kind_check Δ T with
+                                      | Some Kind_Base => 
+                                        match type_check' Δ Γ t with   
+                                        | Some Tn => match normaliser_Jacco T with
+                                                    | Some Tn' => Ty_eqb Tn Tn'
+                                                    | _ => false
+                                                    end
+                                        | _ => false
+                                        end
+                                      | _ => false
+                                      end
+    | (DatatypeBind (Datatype X YKs matchFunc cs)) => 
+      let Δ' := rev (map fromDecl YKs) ++ Δ in
+      allb (map (fun c => constructor_well_formed_check Δ' c (constrLastTyExpected (Datatype X YKs matchFunc cs))) cs)
+    end.
+
+(* first argument represents binding_well_formed with the type_check already passed in *)
+Definition bindings_well_formed_nonrec : 
+  ((list (binderTyname * kind)) -> (list (binderName * ty)) -> binding -> bool) ->
+  list (binderTyname * kind) -> (list (binderName * ty)) -> (list binding) -> bool :=
+  fun b_wf =>
+  fix f Δ Γ bs :=
+    match bs with
+      | (b::bs') =>
+            match (map_normaliser (binds_Gamma b)) with
+            | Some bsGn =>
+              b_wf Δ Γ b && f ((binds_Delta b) ++ Δ) (bsGn ++ Γ) bs'
+            | _ => false
+            end
+      | [] => true
+    end.
+
+Definition bindings_well_formed_rec : (binding -> bool) -> list binding -> bool :=
+  fun b_wf =>
+  fix f bs :=
+    match bs with
+      | (b::bs') => b_wf b && f bs'
+      | _ => true
+    end.
 
 Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * ty)) (term : term) : (option ty) :=
     match term with
@@ -73,34 +143,30 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
         Some Tn
     | Error S' =>
         None (* TODO*)
-    | Let NonRec bs t =>
+    | Let NonRec (b::bs) t =>
         let Δ' := flatten (map binds_Delta bs) ++ Δ in
+        map_normaliser (flatten (map binds_Gamma bs)) >>= fun bsgn =>
         let Γ' := flatten (map binds_Gamma bs) ++ Γ in
-        (* todo map_normalise function over map binds_Gamma bs*)
-        (* todo bindings_well_formed_nonrec*)
-        match type_check Δ' Γ' t with
-            | Some T =>
-                match kind_check Δ T with
-                | Some Kind_Base => Some T
-                | _ => None
-                end 
+        if (bindings_well_formed_nonrec (binding_well_formed_check type_check) Δ Γ bs) then 
+          type_check Δ' Γ' t >>= fun T =>
+            match kind_check Δ T with
+            | Some Kind_Base => Some T
             | _ => None
             end
-    | Let Rec bs t =>
+        else None
+    | Let Rec (b::b'::bs) t =>
         let Δ' := flatten (map binds_Delta bs) ++ Δ in
-        let Γ' := flatten (map binds_Gamma bs) ++ Γ in
-        (* todo map_normalise function over map binds_Gamma bs*)
-        (* todo bindings_well_formed_rec*)
-        match type_check Δ' Γ' t with
-            | Some T =>
-                match kind_check Δ T with
-                | Some Kind_Base => Some T
-                | _ => None
-                end 
+        map_normaliser (flatten (map binds_Gamma bs)) >>= fun bsgn =>
+        let Γ' := bsgn ++ Γ in
+        if (bindings_well_formed_rec (binding_well_formed_check type_check Δ' Γ') bs) then 
+          type_check Δ' Γ' t >>= fun T =>
+            match kind_check Δ T with
+            | Some Kind_Base => Some T
             | _ => None
-            end 
+              end 
+        else None
     | _ => None
-    end. (* TODO: normalisation? *)
+    end.
 
 Theorem type_checking_sound : forall Δ Γ t ty,
   type_check Δ Γ t = Some ty -> (Δ ,, Γ |-+ t : ty).
@@ -109,7 +175,7 @@ Proof with (try apply kind_checking_sound; try apply normaliser_Jacco_sound; aut
   generalize dependent Γ.
   generalize dependent Δ.
   generalize dependent ty.
-  induction t; 
+  induction t;
     intros ty Δ Γ Htc; 
     inversion Htc as [Htc']; 
     unfold bind in Htc'; 
@@ -118,7 +184,7 @@ Proof with (try apply kind_checking_sound; try apply normaliser_Jacco_sound; aut
     subst.
   - (* Let, later *) admit.
   - (* Let later *) admit.
-  - apply T_Var with (T:= t)...
+  - apply T_Var with (T := t)...
   - apply T_TyAbs...
   - apply T_LamAbs...
   - eapply T_Apply.

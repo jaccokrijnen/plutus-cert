@@ -8,6 +8,7 @@ From PlutusCert Require Import
   Static.Util.
 Require Import Coq.Lists.List.
 Import ListNotations.
+Require Import Coq.Strings.String.
 
 Lemma normalise_extend T1 T2 T3 :
   step T1 T2 -> normalise T2 T3 -> normalise T1 T3.
@@ -47,6 +48,23 @@ Definition normaliser_Jacco T : option ty :=
   | None => fun _ => None
   end eq_refl.
 
+Fixpoint map_normaliser (xs : list (string * ty)) :=
+  match xs with
+  | nil => Some nil
+  | ((X, T) :: xs') => normaliser_Jacco T >>= fun Tn => 
+                     map_normaliser xs' >>= fun xs'' =>
+                     Some ((X, Tn) ::xs'')
+  end.
+
+Lemma map_normaliser_sound xs xs' :
+  map_normaliser xs = Some xs' -> map_normalise xs xs'.
+Proof.
+Admitted.
+
+Lemma map_normaliser_complete xs xs' :
+  map_normalise xs xs' -> map_normaliser xs = Some xs'.
+Proof.
+Admitted.
 
 (* Definition normaliser_Jacco T : option ty :=
   match (kind_check [] T) as placeholder 
