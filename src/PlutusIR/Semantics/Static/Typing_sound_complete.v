@@ -4,6 +4,25 @@ Import ListNotations.
 Require Import Coq.Bool.Bool.
 Require Import Coq.Strings.String.
 
+Inductive odd : nat -> Prop := oddS : forall n:nat, even n -> odd (S n)
+with even : nat -> Prop :=
+  | evenO : even 0
+  | evenS : forall n:nat, odd n -> even (S n).
+
+Scheme odd_even := Minimality for odd Sort Prop
+with even_odd := Minimality for even Sort Prop.
+
+Lemma even_plus_two : forall n, even n -> even (S (S n)).
+  intros.
+  induction even_odd with (P := odd) (P0 := (even)) (n := n) in H; intuition.
+  - apply evenS. apply oddS. apply evenO.
+  - apply evenS. apply oddS. assumption.
+  - apply oddS. assumption.
+  - apply evenO.
+  - apply evenS. assumption.
+Qed.
+
+
 From PlutusCert Require Import 
     Normalisation.Normalisation 
     Strong_normalisation
@@ -14,6 +33,131 @@ From PlutusCert Require Import
     Static.Util
     Equality
     Kinding.Checker.
+
+
+(** Typing of terms *)
+Reserved Notation "Delta ',,' Gamma '|-+' t ':' T" (at level 101, t at level 0, T at level 0, no associativity).
+Reserved Notation "Delta '|-ok_c' c ':' T" (at level 101, c at level 0, T at level 0).
+Reserved Notation "Delta ',,' Gamma  '|-oks_nr' bs" (at level 101, bs at level 0, no associativity).
+Reserved Notation "Delta ',,' Gamma '|-oks_r' bs" (at level 101, bs at level 0, no associativity).
+Reserved Notation "Delta ',,' Gamma '|-ok_b' b" (at level 101, b at level 0, no associativity).
+
+Local Open Scope list_scope.
+
+Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty -> Prop :=
+  (* Simply typed lambda caclulus *)
+  | T_Var : forall Γ Δ x T Tn,
+      lookup x Γ = Coq.Init.Datatypes.Some T ->
+      normalise T Tn ->
+      Δ ,, Γ |-+ (Var x) : Tn
+  | T_LamAbs : forall Δ Γ x T1 t T2n T1n,
+      Δ |-* T1 : Kind_Base ->
+      normalise T1 T1n ->
+      Δ ,, (x, T1n) :: Γ |-+ t : T2n ->
+      Δ ,, Γ |-+ (LamAbs x T1 t) : (Ty_Fun T1n T2n)
+  | T_Apply : forall Δ Γ t1 t2 T1n T2n,
+      Δ ,, Γ |-+ t1 : (Ty_Fun T1n T2n) ->
+      Δ ,, Γ |-+ t2 : T1n ->
+      Δ ,, Γ |-+ (Apply t1 t2) : T2n
+  (* Universal types *)
+  | T_TyAbs : forall Δ Γ X K t Tn,
+      ((X, K) :: Δ) ,, Γ |-+ t : Tn ->
+      Δ ,, Γ |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
+  | T_TyInst : forall Δ Γ t1 T2 T1n X K2 T0n T2n,
+      Δ ,, Γ |-+ t1 : (Ty_Forall X K2 T1n) ->
+      Δ |-* T2 : K2 ->
+      normalise T2 T2n ->
+      normalise (substituteTCA X T2n T1n) T0n ->
+      Δ ,, Γ |-+ (TyInst t1 T2) : T0n
+  (* Recursive types *)
+  | T_IWrap : forall Δ Γ F T M K Tn Fn T0n,
+      Δ |-* T : K ->
+      normalise T Tn ->
+      Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
+      normalise F Fn ->
+      normalise (unwrapIFix Fn K Tn) T0n ->
+      Δ ,, Γ |-+ M : T0n ->
+      Δ ,, Γ |-+ (IWrap F T M) : (Ty_IFix Fn Tn)
+  | T_Unwrap : forall Δ Γ M Fn K Tn T0n,
+      Δ ,, Γ |-+ M : (Ty_IFix Fn Tn) ->
+      Δ |-* Tn : K ->
+      normalise (unwrapIFix Fn K Tn) T0n ->
+      Δ ,, Γ |-+ (Unwrap M) : T0n
+  (* Additional constructs *)
+  | T_Constant : forall Δ Γ T a,
+      Δ ,, Γ |-+ (Constant (ValueOf T a)) : (Ty_Builtin T)
+  | T_Builtin : forall Δ Γ f T Tn,
+      T = lookupBuiltinTy f ->
+      normalise T Tn ->
+      Δ ,, Γ |-+ (Builtin f) : Tn
+  | T_Error : forall Δ Γ S T Tn,
+      Δ |-* T : Kind_Base ->
+      normalise T Tn ->
+      Δ ,, Γ |-+ (Error S) : Tn
+  (** Let-bindings
+      Note: The rules for let-constructs differ significantly from the paper definitions
+      because we had to adapt the typing rules to the compiler implementation of type checking.
+      Reference: The Haskell module PlutusIR.TypeCheck.Internal in the
+      iohk/plutus/plutus-core/plutus-ir project.
+  **)
+  | T_Let : forall Δ Γ bs t Tn Δ' Γ' bsGn,
+      Δ' = flatten (map binds_Delta bs) ++ Δ ->
+      map_normalise (flatten (map binds_Gamma bs)) bsGn ->
+      Γ' = bsGn ++ Γ ->
+      Δ ,, Γ |-oks_nr bs ->
+      Δ' ,, Γ' |-+ t : Tn ->
+      Δ |-* Tn : Kind_Base ->
+      Δ ,, Γ |-+ (Let NonRec bs t) : Tn
+  | T_LetRec : forall Δ Γ b bs t, (* temp letrec definition for testing completeness*)
+      Δ ,, Γ |-ok_b b -> (* this is more like nonrec now that we do not update Δ and Γ*)
+      Δ ,, Γ |-+ (Let Rec (b :: bs) t) : Ty_Int
+
+(* Constructors are well-formed if their result type equals the fully applied
+ * datatype (the last index), and all parameter types are well-kinded
+*)
+with constructor_well_formed : list (string * kind) -> vdecl -> ty -> Prop :=
+  | W_Con : forall Δ x T Targs Tr,
+      (Targs, Tr) = splitTy T ->
+      (forall U, In U Targs -> Δ |-* U : Kind_Base) ->
+      Δ |-ok_c (VarDecl x T) : Tr
+
+with bindings_well_formed_nonrec : list (string * kind) -> list (string * ty) -> list binding -> Prop :=
+  | W_NilB_NonRec : forall Δ Γ,
+      Δ ,, Γ |-oks_nr nil
+  | W_ConsB_NonRec : forall Δ Γ b bs bsGn,
+      Δ ,, Γ |-ok_b b ->
+      map_normalise (binds_Gamma b) bsGn ->
+      ((binds_Delta b) ++ Δ) ,, (bsGn ++ Γ) |-oks_nr bs ->
+      Δ ,, Γ |-oks_nr (b :: bs)
+
+with bindings_well_formed_rec : list (string * kind) -> list (string * ty) -> list binding -> Prop :=
+  | W_NilB_Rec : forall Δ Γ,
+      Δ ,, Γ |-oks_r nil
+  | W_ConsB_Rec : forall Δ Γ b bs,
+      Δ ,, Γ |-ok_b b ->
+      Δ ,, Γ |-oks_r bs ->
+      Δ ,, Γ |-oks_r (b :: bs)
+
+with binding_well_formed : list (string * kind) -> list (string * ty) -> binding -> Prop :=
+  | W_Term : forall Δ Γ s x T t Tn,
+      Δ |-* T : Kind_Base ->
+      normalise T Tn ->
+      Δ ,, Γ |-+ t : Tn ->
+      Δ ,, Γ |-ok_b (TermBind s (VarDecl x T) t)
+  | W_Type : forall Δ Γ X K T,
+      Δ |-* T : K ->
+      Δ ,, Γ |-ok_b (TypeBind (TyVarDecl X K) T)
+  | W_Data : forall Δ Γ X YKs cs matchFunc Δ',
+      Δ' = rev (map fromDecl YKs) ++ Δ ->
+      (forall c, In c cs -> Δ' |-ok_c c : (constrLastTyExpected (Datatype X YKs matchFunc cs))) ->
+      Δ ,, Γ |-ok_b (DatatypeBind (Datatype X YKs matchFunc cs))
+
+  where "Δ ',,' Γ '|-+' t ':' T" := (has_type Δ Γ t T)
+  and  "Δ '|-ok_c' c ':' T" := (constructor_well_formed Δ c T)
+  and "Δ ',,' Γ '|-oks_nr' bs" := (bindings_well_formed_nonrec Δ Γ bs)
+  and "Δ ',,' Γ '|-oks_r' bs" := (bindings_well_formed_rec Δ Γ bs)
+  and "Δ ',,' Γ '|-ok_b' b" := (binding_well_formed Δ Γ b).
+
 
 Fixpoint allb (bs : list bool) : bool :=
     match bs with
@@ -32,6 +176,7 @@ Definition constructor_well_formed_check (Δ : list (binderTyname * kind)) (v : 
   | VarDecl x T => let (targs, tr') := splitTy T in
           Ty_eqb Tr tr' && allb (map (fun U => is_KindBase (kind_check Δ U)) targs)
   end.
+
 
 (* Idea Jacco: pass the recursively called type_check function as an argument even though it is not defined yet *)
 Definition binding_well_formed_check 
@@ -59,7 +204,7 @@ Definition binding_well_formed_check
     end.
 
 (* first argument represents binding_well_formed with the type_check already passed in *)
-Definition bindings_well_formed_nonrec : 
+Definition bindings_well_formed_nonrec_check : 
   ((list (binderTyname * kind)) -> (list (binderName * ty)) -> binding -> bool) ->
   list (binderTyname * kind) -> (list (binderName * ty)) -> (list binding) -> bool :=
   fun b_wf =>
@@ -74,7 +219,7 @@ Definition bindings_well_formed_nonrec :
       | [] => true
     end.
 
-Definition bindings_well_formed_rec : (binding -> bool) -> list binding -> bool :=
+Definition bindings_well_formed_rec_check : (binding -> bool) -> list binding -> bool :=
   fun b_wf =>
   fix f bs :=
     match bs with
@@ -141,30 +286,32 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
         let T := lookupBuiltinTy f in
         normaliser_Jacco T >>= fun Tn =>
         Some Tn
-    | Error S' =>
-        None (* TODO*)
+    | Error S' => Some Ty_Int (* arbitrary! this will be sound but not complete *)
     | Let NonRec (b::bs) t =>
         let Δ' := flatten (map binds_Delta bs) ++ Δ in
         map_normaliser (flatten (map binds_Gamma bs)) >>= fun bsgn =>
         let Γ' := flatten (map binds_Gamma bs) ++ Γ in
-        if (bindings_well_formed_nonrec (binding_well_formed_check type_check) Δ Γ bs) then 
+        if (bindings_well_formed_nonrec_check (binding_well_formed_check type_check) Δ Γ bs) then 
           type_check Δ' Γ' t >>= fun T =>
             match kind_check Δ T with
             | Some Kind_Base => Some T
             | _ => None
             end
         else None
-    | Let Rec (b::b'::bs) t =>
+    (* | Let Rec bs t => (* Final let rec version*)
         let Δ' := flatten (map binds_Delta bs) ++ Δ in
         map_normaliser (flatten (map binds_Gamma bs)) >>= fun bsgn =>
         let Γ' := bsgn ++ Γ in
-        if (bindings_well_formed_rec (binding_well_formed_check type_check Δ' Γ') bs) then 
-          type_check Δ' Γ' t >>= fun T =>
-            match kind_check Δ T with
-            | Some Kind_Base => Some T
-            | _ => None
-              end 
-        else None
+          if (bindings_well_formed_rec_check (binding_well_formed_check type_check Δ' Γ') bs) then 
+            type_check Δ' Γ' t >>= fun T =>
+              match kind_check Δ T with
+              | Some Kind_Base => Some T
+              | _ => None
+                end 
+          else None *)
+    | Let Rec (b::bs) t =>
+        if (binding_well_formed_check type_check Δ Γ b) then Some Ty_Int else None  (* Temporarily easier efinition with only one bind check. To see how completeness works*)
+         
     | _ => None
     end.
 
@@ -198,6 +345,10 @@ Proof with (try apply kind_checking_sound; try apply normaliser_Jacco_sound; aut
   - apply Kind_eqb_eq in Heqb0.
     subst.
     apply T_TyInst with (X := b) (K2 := k0) (T1n := t2) (T2n := t3)...
+  - apply T_Error with (T := Ty_Int).
+    + apply K_Builtin.
+      apply K_DefaultUniInteger.
+    + apply N_TyBuiltin.
   - apply Ty_eqb_eq in Heqb0.
     rewrite andb_true_iff in Heqb.
     destruct Heqb as [Heqb1 Heqb2].
@@ -237,6 +388,7 @@ Theorem type_checking_complete : forall Δ Γ t ty,
     (Δ ,, Γ |-+ t : ty) -> type_check Δ Γ t = Some ty.
 Proof.
   intros.
+  induction b_wf__typing__rec in H.
   induction H; simpl; auto.
   - rewrite H.
     now apply normaliser_Jacco_complete. 
@@ -267,9 +419,10 @@ Proof.
     now apply normaliser_Jacco_complete in H1; rewrite H1; simpl.
   - subst.
     now apply normaliser_Jacco_complete in H0; rewrite H0; simpl.
-  - (* error case, not implemented yet *) admit.
+  - (* error case, not complete by implementation *) admit.
   - (* let case: later *) admit.
-  - (* let rec case: later *) admit.
+  - (* we dont have the necessary induction hypothesis, we need mutual recursive proof on binding_well_formed_check ? *)
+
 Admitted.
     
 
