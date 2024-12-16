@@ -102,11 +102,16 @@ Qed.
 Theorem normaliser_Jacco_sound T Tn :
   normaliser_Jacco T = Some Tn -> normalise T Tn.
 Proof.
-  intros Hnorm.
-  unfold normaliser_Jacco in Hnorm.
+  (* intros Hnorm.
+  unfold normaliser_Jacco in Hnorm. *)
   case_eq (kind_check [] T).
   - intros K Hkc.
+    unfold normaliser_Jacco.
+    (* TODO: destruct convoy pattern (stack overflow bool)*)
+    destruct (kind_check [] T).
     (* rewrite Hkc in Hnorm. abstracting over term leads to ill typed term *)
+    admit.
+  - 
 Admitted.
 
 Theorem normaliser_Jacco_complete T Tn :

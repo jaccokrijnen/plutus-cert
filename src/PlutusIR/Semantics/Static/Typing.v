@@ -110,7 +110,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ ,, Γ |-+ (Builtin f) : Tn
   | T_Error : forall Δ Γ S T Tn,
       Δ |-* T : Kind_Base ->
-      normalise T Tn ->
+      normalise T Tn -> (* S Sn (denk aan preservation. T Tn hadden we geimplementeerd omdat dat makkelijk is voor preservation mss, maar dat werkt niet voor completeness ), maak pull request*)
       Δ ,, Γ |-+ (Error S) : Tn
   (** Let-bindings
       Note: The rules for let-constructs differ significantly from the paper definitions
