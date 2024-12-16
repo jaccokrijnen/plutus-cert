@@ -108,7 +108,7 @@ Proof.
   - intros K Hkc.
     unfold normaliser_Jacco.
     (* TODO: destruct convoy pattern (stack overflow bool)*)
-    destruct (kind_check [] T).
+    (* destruct (kind_check [] T). *)
     (* rewrite Hkc in Hnorm. abstracting over term leads to ill typed term *)
     admit.
   - 
