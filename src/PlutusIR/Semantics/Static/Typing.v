@@ -99,13 +99,13 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
   | T_Unwrap : forall Δ Γ M Fn K Tn T0n,
       Δ ,, Γ |-+ M : (Ty_IFix Fn Tn) ->
       Δ |-* Tn : K ->
-      normalise (unwrapIFix Fn K Tn) T0n ->
+      normalise (unwrapIFix Fn K Tn) T0n -> (* TODO: Check that this is well kinded, OPEN QUESTION*)
       Δ ,, Γ |-+ (Unwrap M) : T0n
   (* Additional constructs *)
   | T_Constant : forall Δ Γ T a,
       Δ ,, Γ |-+ (Constant (ValueOf T a)) : (Ty_Builtin T)
   | T_Builtin : forall Δ Γ f T Tn,
-      T = lookupBuiltinTy f -> (* TODO: Does this function always return well-kinded terms? *)
+      T = lookupBuiltinTy f -> (* TODO: Probably well-kinded by lookupBuiltinTy__well_kinded lemma below *)
       normalise T Tn ->
       Δ ,, Γ |-+ (Builtin f) : Tn
   | T_Error : forall Δ Γ S T Tn,
@@ -120,7 +120,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
   **)
   | T_Let : forall Δ Γ bs t Tn Δ' Γ' bsGn,
       Δ' = flatten (map binds_Delta bs) ++ Δ ->
-      map_normalise (flatten (map binds_Gamma bs)) bsGn ->
+      map_normalise (flatten (map binds_Gamma bs)) bsGn -> (* TODO: Could these binders have ill-kidned types? I dont think so, by binders_well_formed *)
       Γ' = bsGn ++ Γ ->
       Δ ,, Γ |-oks_nr bs ->
       Δ' ,, Γ' |-+ t : Tn ->
@@ -193,6 +193,27 @@ Combined Scheme has_type__multind from
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
 
+Require Import Coq.Program.Equality.
+
+(* Probably true *)
+Lemma lookupBuiltinTy__well_kinded f :
+  exists Δ K, Δ |-* (lookupBuiltinTy f) : K.
+Proof.
+  unfold lookupBuiltinTy.
+  (* to_ty always yields base_kind if T in BSResult is of base_kind.
+  
+  This T is created in to_sig, this is only ever Ty_Var "A" from the Ty_Forall rule, and there it has kidn Kind_Base
+  Or ℤ or bytestring or bool, which are also Kind_Base*)
+Admitted.
+
+(* Probably false *)
+Lemma unwrap_well_kinded : forall Tn Fn Δ Γ M K,
+  Δ ,, Γ |-+ M : (Ty_IFix Fn Tn) -> 
+  Δ |-* Tn : K ->
+  exists Δ' K', Δ' |-* (unwrapIFix Fn K Tn) : K'.
+Proof.
+  intros.
+Abort.
 
 (* There is no kind check on the types in the environment, so we can have well-typed terms that have ill-kinded types *)
 Lemma ill_kinded_well_typed_var T :
