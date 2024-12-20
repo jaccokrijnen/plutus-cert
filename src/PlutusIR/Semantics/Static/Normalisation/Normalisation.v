@@ -85,7 +85,7 @@ Combined Scheme normal_Ty__multind from
 (** Type normalisation *)
 Inductive normalise : ty -> ty -> Prop :=
   | N_BetaReduce : forall bX K T1 T2 T1n T2n T,
-      normalise T1 (Ty_Lam bX K T1n) ->
+      normalise T1 (Ty_Lam bX K T1n) ->     (* TyApp (Lam bX Kind_Base (Ty_Var bX)) (Lam bY Kind_Base (Ty_Var bY)) -> Lam bY Kind_Base (Ty_Var bY) *)
       normalise T2 T2n ->
       normalise (substituteTCA bX T2n T1n) T ->
       normalise (Ty_App T1 T2) T

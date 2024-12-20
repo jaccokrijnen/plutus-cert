@@ -32,6 +32,21 @@ Inductive has_kind_uni : DefaultUni -> kind -> Prop :=
   where "'|-*_uni' T ':' K" := (has_kind_uni T K)
 .
 
+
+(* Example ill-kinded:
+nil |-* TyApp (Lam bX Kind_Base "bX") (Lam bY Kind_Base "bY")
+
+So then: nil |-* (Lam bY Kind_Base "bY") : K1a -> K1b
+(bY, Kind_Base) |-* "bY" : Kind_Base = K1b
+also K1a = K1b = Kind_Base
+Hence K1 := Kind_Base -> Kind_Base
+
+lam bX Kind_Base "bX" : (KB -> KB) -> K2 ?
+No, because it is KB -> KB in total.
+No way to unify (KB -> KB) -> K2 with KB -> KB
+
+*)
+
 (** Kinding of types *)
 Reserved Notation "Δ '|-*' T ':' K" (at level 40, T at level 0, K at level 0).
 Inductive has_kind : list (binderTyname * kind) -> ty -> kind -> Prop :=

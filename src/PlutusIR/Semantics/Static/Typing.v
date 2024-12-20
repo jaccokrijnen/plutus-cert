@@ -51,6 +51,22 @@ Definition fromDecl (tvd : tvdecl) : string * kind :=
   | TyVarDecl v K => (v, K)
   end.
 
+(* TODO:
+
+well-kinded?
+normalisation preserves kinding.
+T has kind K 
+F has kind (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base))
+
+(Ty_IFix F (Ty_Var "X") has kind Kind_Base if (Ty_Var "X") has kind K.
+
+Then (Ty_Lam "X" K (Ty_IFix F (Ty_Var "X"))) has kind (Kind_Arrow K Kind_Base)
+
+We apply F to this type to get the same kind back (see kind F), so then we have
+(Ty_App F (Ty_Lam "X" K (Ty_IFix F (Ty_Var "X")))) has kind (Kind_Arrow K Kind_Base)
+
+T has kind K, so this is well kinded with kind Kind_Base and for every context.
+*)
 Definition unwrapIFix (F : ty) (K : kind) (T : ty) : ty := (Ty_App (Ty_App F (Ty_Lam "X" K (Ty_IFix F (Ty_Var "X")))) T).
 
 (** Typing of terms *)
@@ -66,6 +82,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
   (* Simply typed lambda caclulus *)
   | T_Var : forall Γ Δ x T Tn,
       lookup x Γ = Coq.Init.Datatypes.Some T ->
+      (* TODO: T may be ill-kinded! Temporary fix: have well-kinded assumption here*)
       normalise T Tn ->
       Δ ,, Γ |-+ (Var x) : Tn
   | T_LamAbs : forall Δ Γ x T1 t T2n T1n,
@@ -85,7 +102,9 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ ,, Γ |-+ t1 : (Ty_Forall X K2 T1n) ->
       Δ |-* T2 : K2 ->
       normalise T2 T2n ->
-      normalise (substituteTCA X T2n T1n) T0n ->
+      normalise (substituteTCA X T2n T1n) T0n -> (* well-kinded? has the same kind as T1n has, but without (X, K2) in environment
+        so is T1n well-kinded?
+      *)
       Δ ,, Γ |-+ (TyInst t1 T2) : T0n
   (* Recursive types *)
   | T_IWrap : forall Δ Γ F T M K Tn Fn T0n,
@@ -93,13 +112,13 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       normalise T Tn ->
       Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
       normalise F Fn ->
-      normalise (unwrapIFix Fn K Tn) T0n ->
+      normalise (unwrapIFix Fn K Tn) T0n -> (* This one is well kinded by the kinding assumptions! *)
       Δ ,, Γ |-+ M : T0n ->
       Δ ,, Γ |-+ (IWrap F T M) : (Ty_IFix Fn Tn)
   | T_Unwrap : forall Δ Γ M Fn K Tn T0n,
       Δ ,, Γ |-+ M : (Ty_IFix Fn Tn) ->
       Δ |-* Tn : K ->
-      normalise (unwrapIFix Fn K Tn) T0n ->
+      normalise (unwrapIFix Fn K Tn) T0n -> (* well-kinded? Only if F has correct kind, TODO: check *)
       Δ ,, Γ |-+ (Unwrap M) : T0n
   (* Additional constructs *)
   | T_Constant : forall Δ Γ T a,
@@ -192,6 +211,61 @@ Combined Scheme has_type__multind from
   bindings_well_formed_nonrec__ind,
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
+
+(* There is no kind check on the types in the environment, so we can have well-typed terms that have ill-kinded types *)
+Lemma ill_kinded_well_typed T :
+  T = Ty_App (Ty_Lam "bX" Kind_Base (Ty_Var "bX")) (Ty_Lam "bY" Kind_Base (Ty_Var "bY")) ->
+  (~ (exists Δ K, Δ |-* T : K) /\ 
+  (nil ,, [("x",  T)] |-+ (Var "x") : (Ty_Lam "bY" Kind_Base (Ty_Var "bY")))).
+Proof.
+  intros; rewrite H.
+  split.
+  {
+    intros Hcontra.
+    destruct Hcontra as [Δ [K Hcontra]].
+    inversion Hcontra; subst.
+    inversion H3; subst.
+    inversion H5.
+  }
+  {
+  eapply T_Var.
+  - simpl. reflexivity.
+  - eapply N_BetaReduce.
+    + eapply N_TyLam.
+      eapply N_TyVar.
+    + eapply N_TyLam.
+      eapply N_TyVar.
+    + autorewrite with substituteTCA.
+      simpl.
+      eapply N_TyLam.
+      eapply N_TyVar.
+  }
+Qed.
+
+(* has_type problem: Ty_Foralls always have to be Kind_Base*)
+Lemma ill_kinded_well_typed_forall T :
+  T = Ty_Forall "X" Kind_Base (Ty_Lam "Z" Kind_Base (Ty_Var "Z")) ->
+  (~ (exists Δ K, Δ |-* T : K) /\ 
+  (nil ,, [("W", Ty_Lam "Z" Kind_Base (Ty_Var "Z"))] |-+ (TyAbs "X" Kind_Base (Var "W")) : T)).
+Proof.
+  intros; subst.
+  split.
+  {
+    intros Hcontra.
+    destruct Hcontra as [Δ [K Hcontra]].
+    inversion Hcontra; subst.
+    inversion H4; subst.
+  }
+  {
+    eapply T_TyAbs.
+    eapply T_Var.
+    - simpl.
+      reflexivity.
+    - eapply N_TyLam.
+      eapply N_TyVar.
+  }
+Qed.
+
 
 Definition well_typed t := exists T, [] ,, [] |-+ t : T.
 

@@ -92,6 +92,7 @@ src/PlutusIR/Semantics/Static/Normalisation/Normalisation.v
 src/PlutusIR/Semantics/Static/Normalisation/Strong_normalisation.v
 src/PlutusIR/Semantics/Static/Normalisation/Type_reduction.v
 src/PlutusIR/Semantics/Static/Normalisation/Norm_sound_complete.v
+src/PlutusIR/Semantics/Static/Normalisation/CpdtTactics.v
 
 
 src/PlutusIR/Semantics/Static/normaliser_STLC/AutosubstSsr.v

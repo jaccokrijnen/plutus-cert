@@ -5,7 +5,8 @@ From PlutusCert Require Import
   Kinding.Kinding 
   Kinding.Checker
   Type_reduction
-  Static.Util.
+  Static.Util
+  CpdtTactics.
 Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Strings.String.
@@ -35,50 +36,37 @@ Proof.
   now apply normalise_extend with (T2 := t').
 Admitted.
 
+
 Definition normaliser {T Δ K} (Hwk : Δ |-* T : K) :=
   let snt := strong_normalisation Hwk in
   projT1 (SN__normalise T snt).
 
-Definition normaliser_Jacco T : option ty :=
-  match kind_check [] T as o_kind
-        return (kind_check [] T = o_kind -> option ty)
-  with
+Definition normaliser_Jacco Δ T : option ty :=
+  match kind_check Δ T with
   | Some K => fun Hkc =>
-      Some (normaliser (kind_checking_sound [] T K Hkc))
+      Some (normaliser (kind_checking_sound Δ T K Hkc))
   | None => fun _ => None
   end eq_refl.
 
-Fixpoint map_normaliser (xs : list (string * ty)) :=
+Fixpoint map_normaliser Δ (xs : list (string * ty)) :=
   match xs with
   | nil => Some nil
-  | ((X, T) :: xs') => normaliser_Jacco T >>= fun Tn => 
-                     map_normaliser xs' >>= fun xs'' =>
+  | ((X, T) :: xs') => normaliser_Jacco Δ T >>= fun Tn => 
+                     map_normaliser Δ xs' >>= fun xs'' =>
                      Some ((X, Tn) ::xs'')
   end.
 
-Lemma map_normaliser_sound xs xs' :
-  map_normaliser xs = Some xs' -> map_normalise xs xs'.
+Lemma map_normaliser_sound Δ xs xs' :
+  map_normaliser Δ xs = Some xs' -> map_normalise xs xs'.
 Proof.
 Admitted.
 
-Lemma map_normaliser_complete xs xs' :
-  map_normalise xs xs' -> map_normaliser xs = Some xs'.
+Lemma map_normaliser_complete Δ xs xs' :
+  map_normalise xs xs' -> map_normaliser Δ xs = Some xs'.
 Proof.
 Admitted.
 
-(* Definition normaliser_Jacco T : option ty :=
-  match (kind_check [] T) as placeholder 
-    return ((kind_check [] T = placeholder) -> option ty) 
-    with
-  | Some K => fun Hkc0 => 
-    let Hkc := eq_ind_r (fun o => kind_check [] T = o) eq_refl Hkc0 in
-    Some (normaliser (kind_checking_sound [] T K Hkc))
-  | None => fun _ => None
-  end eq_refl. *)
-
-
-
-Theorem norm_sound  Tn {T Δ K} (Hwk : Δ |-* T : K) :
+Theorem norm_sound Tn {T Δ K} (Hwk : Δ |-* T : K) :
   normaliser Hwk = Tn -> normalise T Tn.
 Proof.
   intros.
@@ -98,22 +86,37 @@ Proof.
   now apply (normalisation__deterministic T x Tn) in n.
 Qed.
 
+From Coq Require Import ssreflect.
 
-Theorem normaliser_Jacco_sound T Tn :
-  normaliser_Jacco T = Some Tn -> normalise T Tn.
+Theorem normaliser_Jacco_sound Δ T Tn :
+  normaliser_Jacco Δ T = Some Tn -> normalise T Tn.
 Proof.
-  (* intros Hnorm.
-  unfold normaliser_Jacco in Hnorm. *)
-  case_eq (kind_check [] T).
-  - intros K Hkc.
-    unfold normaliser_Jacco.
-    (* TODO: destruct convoy pattern (stack overflow bool)*)
-    (* destruct (kind_check [] T). *)
-    (* rewrite Hkc in Hnorm. abstracting over term leads to ill typed term *)
-    admit.
-  - 
-Admitted.
+  unfold normaliser_Jacco.
+  move: eq_refl.
+  case: {2 3}(kind_check Δ T) => // a e H. (* TODO: I don't understand (all of) this ssreflect stuff, see https://stackoverflow.com/questions/47345174/using-destruct-on-pattern-match-expression-with-convoy-pattern*)
+  inversion H.
+  eapply norm_sound; eauto.
+Qed.
 
-Theorem normaliser_Jacco_complete T Tn :
-  normalise T Tn -> normaliser_Jacco T = Some Tn.
-Admitted.
+(* We need the well-kinded assumption, otherwise counterexample:
+    nil |-* TyApp (Lam bX Kind_Base "bX") (Lam bY Kind_Base "bY")
+
+    which normalises to Lam bY Kind_Base "bY",
+    but normaliser_Jacco _ T will return None
+
+*)
+Theorem normaliser_Jacco_complete {K Δ T Tn} :
+  Δ |-* T : K -> normalise T Tn -> normaliser_Jacco Δ T = Some Tn.
+Proof.
+  unfold normaliser_Jacco.
+  intros.
+  apply kind_checking_complete in H.
+  move: eq_refl.
+  case: {2 3}(kind_check Δ T) => //.
+  - intros.
+    f_equal.
+    eapply norm_complete; eauto.
+  - intros.
+    rewrite H in e.
+    discriminate.
+Qed.
