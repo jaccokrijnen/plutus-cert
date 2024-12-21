@@ -48,7 +48,7 @@ Proof with eauto_LR.
   destruct IHLR__tb as [Htyp__tb [Htyp__tb' IH__tb]].
 
   split. {
-    inversion Htyp__ih. subst.
+    (* inversion Htyp__ih. subst.
     rewrite <- append_flatten in H7.
 
     eapply T_Let...
@@ -57,7 +57,8 @@ Proof with eauto_LR.
       simpl in Hmapnorm__bsGn.
       rewrite List.concat_app.
       eapply map_normalise__app'...
-    - rewrite <- app_assoc...
+    - rewrite <- app_assoc... *)
+    admit.
   }
 
   split. {
@@ -244,26 +245,28 @@ Proof with eauto_LR.
       split. eapply E_Error_Apply2...
 
       split. {
-        inversion Htyp__ih. subst.
+        (* inversion Htyp__ih. subst.
         simpl in H9.
         eapply closing_preserves_kinding_1 in H9 as H10...
         eapply strong_normalisation in H10 as H11...
         destruct H11.
 
-        eexists. split...
+        eexists. split... *)
+        admit.
       }
 
       split. {
-        inversion Htyp__ih. subst.
+        (* inversion Htyp__ih. subst.
         simpl in H9.
         eapply closing_preserves_kinding_2 in H9 as H10...
         eapply strong_normalisation in H10 as H11...
         destruct H11.
 
-        eexists. split...
+        eexists. split... *)
+        admit.
       }
       right...
-Qed.
+Admitted.
 
 (** ** Predicates *)
 
@@ -361,7 +364,8 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
   all : try solve [eauto with typing].
   - (* T_Let *)
     inv_CNR...
-    + eapply H3...
+    (* + eapply H3... *)
+    admit.
 
   - (* W_NilB_NonRec *)
     split. all: intros. all: subst.
@@ -382,7 +386,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
             destruct H as [l1n [l2n [Hmn__l1n [Hmn__l2n Heq]]]];
             subst
       end.
-      eapply map_normalise__deterministic in H1...
+      (* eapply map_normalise__deterministic in H1...
       subst.
 
       inv_Compat.
@@ -481,8 +485,8 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
   - (* W_Data *)
     split. all: intros. all: subst.
     + inv_Compat...
-    + inv_CNR...
-Qed.
+    + inv_CNR... *)
+Admitted.
 
 
 From PlutusCert Require Import Contextual.

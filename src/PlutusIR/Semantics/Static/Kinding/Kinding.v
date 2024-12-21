@@ -1,5 +1,7 @@
 Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.Util.List.
+Require Import Coq.Strings.String.
+Require Import Coq.Lists.List.
 
 Reserved Notation "'|-*_uni' T ':' K" (at level 40, T at level 0, K at level 0).
 Inductive has_kind_uni : DefaultUni -> kind -> Prop :=
@@ -75,3 +77,12 @@ Inductive has_kind : list (binderTyname * kind) -> ty -> kind -> Prop :=
       Δ |-* T2 : K1 ->
       Δ |-* (Ty_App T1 T2) : K2
 where "Δ '|-*' T ':' K" := (has_kind Δ T K).
+
+(* TODO: there is probably a higher order thing to create stuff like this *)
+Inductive map_wk : list (string * ty * list (string * kind)) -> Prop :=
+  | MW_nil :
+      map_wk nil
+  | MW_cons : forall X Δ T (xs : list (string * ty * list (string * kind))) K,
+      map_wk xs ->
+      has_kind Δ T K ->
+      map_wk ((X, T, Δ) :: xs).

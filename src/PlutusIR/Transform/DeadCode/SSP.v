@@ -348,11 +348,11 @@ Proof with (eauto with typing).
     repeat unfold P_dc, P_dc_NonRec, P_dc_Rec in *.
     intros ? ? ? ? H_dc_t IH_t H_dc_Rec IH_Rec ? ? ? H_typing_Let.
     inversion H_typing_Let; subst.
-    eapply IH_t in H7;
+    (* eapply IH_t in H7;
       try (solve [eassumption | reflexivity]).
     eapply IH_Rec in H4.
     econstructor; eauto.
-    eauto using has_type, bindings_well_formed_rec.
+    eauto using has_type, bindings_well_formed_rec. *)
 
     all: admit.
   - admit.

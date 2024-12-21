@@ -48,23 +48,49 @@ Definition normaliser_Jacco Δ T : option ty :=
   | None => fun _ => None
   end eq_refl.
 
-Fixpoint map_normaliser Δ (xs : list (string * ty)) :=
+Fixpoint map_normaliser (xs : list (string * ty * (list (string * kind)))) :=
   match xs with
   | nil => Some nil
-  | ((X, T) :: xs') => normaliser_Jacco Δ T >>= fun Tn => 
-                     map_normaliser Δ xs' >>= fun xs'' =>
+  | ((X, T, Δ) :: xs') => normaliser_Jacco Δ T >>= fun Tn => 
+                     map_normaliser xs' >>= fun xs'' =>
                      Some ((X, Tn) ::xs'')
   end.
 
-Lemma map_normaliser_sound Δ xs xs' :
-  map_normaliser Δ xs = Some xs' -> map_normalise xs xs'.
-Proof.
-Admitted.
+Fixpoint map_wk_f (xs : list (string * ty * (list (string * kind)))) :=
+  match xs with
+  | nil => true
+  | ((X, T, Δ) :: xs') => match kind_check Δ T
+                          with
+                          | Some _ => map_wk_f xs'
+                          | None => false
+                          end
+  end.
 
-Lemma map_normaliser_complete Δ xs xs' :
-  map_normalise xs xs' -> map_normaliser Δ xs = Some xs'.
+Theorem map_wk_sound xs :
+  map_wk_f xs = true -> map_wk xs.
 Proof.
-Admitted.
+  intros.
+  induction xs.
+  - constructor.
+  - destruct a as [[X T] Δ].
+    simpl in H.
+    destruct (kind_check Δ T) eqn:Hkc; try discriminate.
+    apply MW_cons with (K := k).
+    auto.
+    now apply kind_checking_sound in Hkc.
+Qed.
+
+Theorem map_wk_complete xs :
+  map_wk xs -> map_wk_f xs = true.
+Proof.
+  intros.
+  induction H.
+  - auto.
+  - simpl.
+    apply kind_checking_complete in H0.
+    rewrite H0.
+    auto.
+Qed.
 
 Theorem norm_sound Tn {T Δ K} (Hwk : Δ |-* T : K) :
   normaliser Hwk = Tn -> normalise T Tn.
@@ -98,6 +124,18 @@ Proof.
   eapply norm_sound; eauto.
 Qed.
 
+Theorem normaliser_Jacco__well_kinded Δ T Tn :
+  normaliser_Jacco Δ T = Some Tn -> exists K, Δ |-* T : K.
+Proof.
+  unfold normaliser_Jacco.
+  move: eq_refl.
+  case: {2 3}(kind_check Δ T) => // a e H. (* TODO: I don't understand (all of) this ssreflect stuff, see https://stackoverflow.com/questions/47345174/using-destruct-on-pattern-match-expression-with-convoy-pattern*)
+  inversion H.
+  intros.
+  exists a.
+  now apply kind_checking_sound.
+Qed.
+
 (* We need the well-kinded assumption, otherwise counterexample:
     nil |-* TyApp (Lam bX Kind_Base "bX") (Lam bY Kind_Base "bY")
 
@@ -120,3 +158,128 @@ Proof.
     rewrite H in e.
     discriminate.
 Qed.
+
+Lemma map_normaliser_unfold {Δ : list (string * kind)} {X T} {xs xs'} :
+  map_normaliser ((X, T, Δ) :: xs) = Some xs'
+  -> exists Tn xs'', (xs' = (X, Tn)::xs'') /\ normaliser_Jacco Δ T = Some Tn /\ (map_normaliser xs = Some xs'').
+Proof.
+  intros.
+  inversion H.
+  unfold bind in H1.
+  repeat destruct_match.
+  inversion H1.
+  exists t.
+  exists l.
+  auto.
+Qed.
+
+Fixpoint remove_deltas  {A B C : Type} (xs : list (A * B * C)) :=
+  match xs with
+  | nil => nil 
+  | (X, T, _) :: xs' => (X, T) :: (remove_deltas xs')
+  end.
+
+Lemma map_normaliser_sound xs xs' :
+  map_normaliser xs = Some xs' -> map_normalise (remove_deltas xs) xs'.
+Proof.
+  intros.
+  generalize dependent xs'.
+  induction xs; intros.
+  - inversion H; subst.
+    constructor.
+  - destruct a as [[X T] Δ].
+    apply map_normaliser_unfold in H.
+    destruct H as [Tn [xs'' [Heq [Hnorm Hmap]] ] ].
+    rewrite Heq.
+    constructor.
+    + now apply IHxs.
+    + eapply normaliser_Jacco_sound; eauto.
+Qed.
+
+Lemma map_normaliser__well_kinded xs xs' :
+  map_normaliser xs = Some xs' -> map_wk xs.
+Proof.
+  intros.
+  generalize dependent xs'.
+  induction xs; intros.
+  - inversion H; subst.
+    constructor.
+  - destruct a as [[X T] Δ].
+    apply map_normaliser_unfold in H.
+    destruct H as [Tn [xs'' [Heq [Hnorm Hmap]] ] ].
+    apply normaliser_Jacco__well_kinded in Hnorm as [K Hwk].
+    apply MW_cons with (K := K).
+    + apply (IHxs xs''); auto.
+    + assumption.
+Qed.
+
+Require Import Coq.Program.Equality.
+
+(* Basically we need a map_wellkinded argument *)
+Lemma map_normaliser_complete {xs : list (string * ty * (list (string * kind)))} {xs'} :
+  map_wk xs -> map_normalise (remove_deltas xs) xs' -> map_normaliser xs = Some xs'.
+Proof.
+  intros.
+  dependent induction H0.
+  - simpl.
+    assert (xs = []). {
+      unfold remove_deltas in x.
+      destruct xs; auto.
+      fold (@remove_deltas string) in x.
+      destruct p as [p0 pff].
+      destruct p0 as [X T].
+      inversion x.
+    }
+    subst.
+    reflexivity.
+  - simpl.
+    unfold bind.
+    inversion H.
+    + subst.
+      simpl in x.
+      inversion x.
+    + assert (T = T0). 
+      {
+        unfold remove_deltas in x.
+        destruct xs; [inversion H4 |].
+        fold (@remove_deltas string) in x.
+        destruct p as [p0 pff].
+        destruct p0 as [X1 T1].
+        inversion x.
+        subst.
+        inversion H4.
+        subst.
+        reflexivity.
+      }
+      subst.
+      apply (normaliser_Jacco_complete H3) in H1.
+      specialize (IHmap_normalise xs0 H2).
+      assert (Ts = remove_deltas xs0).
+      {
+        unfold remove_deltas in x; fold (@remove_deltas string) in x.
+        inversion x.
+        auto.
+      }
+      specialize (IHmap_normalise H4).
+      unfold map_normaliser.
+      rewrite H1.
+      simpl.
+      fold map_normaliser.
+      rewrite IHmap_normalise.
+      simpl.
+      assert (X = X0).
+      {
+        unfold remove_deltas in x; fold (@remove_deltas string) in x.
+        inversion x.
+        subst.
+        reflexivity.
+      }
+      subst.
+      reflexivity.
+Qed.
+
+Theorem normaliser_preserves_typing {Δ T Tn K } :
+  Δ |-* T : K -> normaliser_Jacco Δ T = Some Tn -> Δ |-* Tn : K.
+Proof.
+(* will rely on step_preserves_typing *)
+Admitted.

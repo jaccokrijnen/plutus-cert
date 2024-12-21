@@ -4,6 +4,8 @@ Import ListNotations.
 Require Import Coq.Bool.Bool.
 Require Import Coq.Strings.String.
 
+Local Open Scope string_scope.
+
 From PlutusCert Require Import 
     Normalisation.Normalisation 
     Strong_normalisation
@@ -14,7 +16,8 @@ From PlutusCert Require Import
     Static.Util
     Equality
     Kinding.Checker
-    Util.
+    Util
+    SubstituteTCA.
 
 Scheme has_type_mut_ind := Induction for has_type Sort Prop
 with bs_wf_mut_ind := Induction for bindings_well_formed_rec Sort Prop
@@ -107,7 +110,7 @@ Definition bindings_well_formed_nonrec_check :
   fix f Δ Γ bs :=
     match bs with
       | (b::bs') =>
-            match (map_normaliser Δ (binds_Gamma b)) with
+            match (map_normaliser (insert_deltas_rec (binds_Gamma b) Δ)) with
             | Some bsGn =>
               b_wf Δ Γ b && f ((binds_Delta b) ++ Δ) (bsGn ++ Γ) bs'
             | _ => false
@@ -146,11 +149,15 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
     | TyInst t1 T2 => (* TODO: normalisation T1?*)
         match type_check Δ Γ t1, kind_check Δ T2 with (* TODO: first we check that it kind and type checks here, and then normaliser_Jacco does it again. Feels a little off*)
         | Some (Ty_Forall X K2 T1), Some K2' =>
+            match kind_check ((X, K2)::Δ) T1 with
+            | Some Kind_Base =>
             if Kind_eqb K2 K2' then 
                 normaliser_Jacco Δ T2 >>= fun T2n =>
                 normaliser_Jacco Δ (substituteTCA X T2n T1) >>= fun T0n =>
                 Some T0n
             else None
+            | _ => None
+            end
         | _, _ => None
         end
     | IWrap F T M =>
@@ -169,11 +176,12 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
     | Unwrap M =>
         match type_check Δ Γ M with
             | Some (Ty_IFix F T) =>
-                match kind_check Δ T with
-                    | Some K =>
-                        normaliser_Jacco Δ (unwrapIFix F K T) >>= fun T0n =>
-                        Some T0n
-                    | _ => None
+                match kind_check Δ T, kind_check Δ F with
+                    | Some K, Some (Kind_Arrow (Kind_Arrow K' Kind_Base) (Kind_Arrow K'' Kind_Base)) =>
+                        if andb (Kind_eqb K K') (Kind_eqb K K'') then
+                          normaliser_Jacco Δ (unwrapIFix F K T) >>= fun T0n => Some T0n
+                        else None
+                    | _, _ => None
                     end 
             | _ => None
             end
@@ -185,26 +193,32 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
     | Error S' => Some Ty_Int (* arbitrary! this will be sound but not complete (zie teams Jacco over preservation type errors (app case))*)
     | Let NonRec bs t =>
         let Δ' := flatten (map binds_Delta bs) ++ Δ in
-        map_normaliser Δ (flatten (map binds_Gamma bs)) >>= fun bsgn => (* TODO:  Δ' ?*)
-        let Γ' := bsgn ++ Γ in
-        if (bindings_well_formed_nonrec_check (binding_well_formed_check type_check) Δ Γ bs) then 
-          type_check Δ' Γ' t >>= fun T =>
-            match kind_check Δ T with
-            | Some Kind_Base => Some T
-            | _ => None
-            end
-        else None
-    | Let Rec bs t => (* Final let rec version*)
-        let Δ' := flatten (map binds_Delta bs) ++ Δ in
-        map_normaliser Δ (flatten (map binds_Gamma bs)) >>= fun bsgn =>
-        let Γ' := bsgn ++ Γ in
-          if (bindings_well_formed_rec_check (binding_well_formed_check type_check Δ' Γ') bs) then 
+        let xs := (insert_deltas_rec (flatten (map binds_Gamma bs)) Δ) in
+        if map_wk_f xs then
+          map_normaliser xs >>= fun bsgn => (* TODO:  Δ' ?*) (* TODO different Δ*)
+          let Γ' := bsgn ++ Γ in
+          if (bindings_well_formed_nonrec_check (binding_well_formed_check type_check) Δ Γ bs) then 
             type_check Δ' Γ' t >>= fun T =>
               match kind_check Δ T with
               | Some Kind_Base => Some T
               | _ => None
-                end 
+              end
           else None
+        else None
+    | Let Rec bs t => (* Final let rec version*)
+        let Δ' := flatten (map binds_Delta bs) ++ Δ in
+        let xs := (insert_deltas_rec (flatten (map binds_Gamma bs)) Δ') in
+        if map_wk_f xs then
+          map_normaliser xs >>= fun bsgn =>
+          let Γ' := bsgn ++ Γ in
+            if (bindings_well_formed_rec_check (binding_well_formed_check type_check Δ' Γ') bs) then 
+              type_check Δ' Γ' t >>= fun T =>
+                match kind_check Δ T with
+                | Some Kind_Base => Some T
+                | _ => None
+                  end 
+            else None
+        else None
     | _ => None (* TODO: Case and Constr?? *)
     end.
 
@@ -337,6 +351,18 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma insert_remove_deltas_id xs Δ :
+  xs = remove_deltas (insert_deltas_rec xs Δ).
+Proof.
+  induction xs.
+  - reflexivity.
+  - simpl.
+    destruct a as [x T].
+    unfold remove_deltas. fold (@remove_deltas string).
+    f_equal.
+    assumption.
+Qed.
+
 Theorem type_checking_sound : 
  forall Δ Γ t ty, type_check Δ Γ t = Some ty -> (Δ ,, Γ |-+ t : ty).
 Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; eauto).
@@ -348,7 +374,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
     (R := fun bs => forall Δ Γ, bindings_well_formed_rec_check (binding_well_formed_check type_check Δ Γ) bs = true -> bindings_well_formed_rec Δ Γ bs)
     (S := fun bs => forall Δ Γ, bindings_well_formed_nonrec_check (binding_well_formed_check type_check) Δ Γ bs = true -> bindings_well_formed_nonrec Δ Γ bs).
     repeat destruct_match.
-  - (* Case: Let *)
+  - (* Case: Let Rec*)
     intros ec bs t0.
     intros P.
     intros.
@@ -357,7 +383,11 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
       repeat destruct_match.
       eapply T_LetRec.
       * reflexivity.
-      * apply (map_normaliser_sound Δ). eauto.
+      * apply map_wk_sound in Heqb.
+        assumption.
+      * apply (map_normaliser_sound) in Heqo; eauto.
+        rewrite <- insert_remove_deltas_id in Heqo.
+        exact Heqo.
       * reflexivity.
       * eapply t0; eauto.
       * eapply P; eauto.
@@ -378,24 +408,27 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
       repeat destruct_match.
       eapply T_Let with (Δ' := flatten (map binds_Delta rec) ++ Δ).
       * reflexivity.
-      * apply (map_normaliser_sound Δ). eauto.
+      * apply map_wk_sound. assumption.
+      * apply (map_normaliser_sound) in Heqo. 
+        rewrite <- insert_remove_deltas_id in Heqo.
+        exact Heqo.
       * reflexivity.
-      * eapply t0; eauto. 
-      * apply P.
-        inversion H1.
+      * eapply t0. auto. 
+      * inversion H1.
         subst.
-        auto.
-      * 
-        inversion H1.
+        eapply P. auto.
+      * inversion H1.
         subst.
-        apply kind_checking_sound in Heqo1.
-        assumption.
+        apply kind_checking_sound in Heqo1.  auto.
   - intros. 
     inversion H.
     unfold bind in H1.
     repeat destruct_match.
-    apply normaliser_Jacco_sound in H1.
-    eapply T_Var; eauto...
+    remember H1 as H1_copy; clear HeqH1_copy.
+    apply normaliser_Jacco__well_kinded in H1 as [K H1].
+    apply T_Var with (T := t0) (K := K); auto.
+    apply kind_checking_complete in H1.
+    now apply normaliser_Jacco_sound in H1_copy.
   - intros. 
     inversion H0.
     unfold bind in H0.
@@ -438,8 +471,13 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
     inversion H2. subst.
     apply Kind_eqb_eq in Heqb0.
     subst.
-    apply T_TyInst with (X := b) (K2 := k0) (T1n := t3) (T2n := t4)...
+    apply T_TyInst with (X := b) (K2 := k0) (T1n := t3) (T2n := t4); eauto.
+    + apply kind_checking_sound. auto.
+    + apply kind_checking_sound. auto.
+    + apply normaliser_Jacco_sound in Heqo2. auto.
+    + apply normaliser_Jacco_sound in Heqo3. auto.
   - intros.
+    unfold type_check in H.
     inversion H. subst.
     apply T_Error with (T := Ty_Int).
     + apply K_Builtin.
@@ -464,6 +502,11 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
     repeat destruct_match.
     inversion H2. subst.
     apply T_Unwrap with (Fn := t2_1) (Tn := t2_2) (K := k)...
+    apply andb_true_iff in Heqb as [Heqb1 Heqb2].
+    apply Kind_eqb_eq in Heqb1.
+    apply Kind_eqb_eq in Heqb2.
+    subst.
+    assumption.
   - intros.
     inversion H.
   - intros.
@@ -527,10 +570,14 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
     eapply W_ConsB_NonRec.
     + apply H.
       assumption.
+    + apply map_normaliser__well_kinded in Heqo.
+      auto.
     + apply map_normaliser_sound in Heqo.
       eauto.
-    + apply H0.
-      assumption.
+      rewrite <- insert_remove_deltas_id in Heqo.
+      exact Heqo.
+    + eapply H0.
+      intuition.
   - intros.
     apply W_NilB_NonRec.
 Qed.
@@ -571,14 +618,7 @@ Proof.
         ; simpl; auto; intros.
   - (*Case T_Var *)
     rewrite e. simpl. 
-    remember (kind_check Δ0 T) as K. 
-    symmetry in HeqK.
-    destruct K.
-    eapply (norm_complete Δ0 k T Tn (kind_checking_sound Δ0 T k HeqK)) in n.
-    
-    admit.
-    admit.
-    (* now apply normaliser_Jacco_complete. *)
+    eapply normaliser_Jacco_complete; eauto.
   - (* Case: T_LamAbs *)
     eapply (normaliser_Jacco_complete h) in n.
     rewrite n. simpl.
@@ -592,41 +632,76 @@ Proof.
     now apply oof2.   
   - (* Case: T_Inst *)
     rewrite H0.
-    apply kind_checking_complete in h0; rewrite h0.
+    apply (normaliser_Jacco_complete h1) in n; rewrite n; simpl.
+    apply kind_checking_complete in h1; rewrite h1.
     rewrite -> Kind_eqb_refl.
-    apply normaliser_Jacco_complete in n; rewrite n; simpl.
-    now apply normaliser_Jacco_complete in n0; rewrite n0; simpl.
+    assert (Δ0 |-* (substituteTCA X T2n T1n) : Kind_Base) as Hwk_subst.
+    {
+      eapply substituteTCA_preserves_kinding; eauto.
+      eapply normaliser_preserves_typing; eauto.
+      eapply kind_checking_sound; eauto.
+    }
+    apply kind_checking_complete in h0; rewrite h0.
+    now apply (normaliser_Jacco_complete Hwk_subst) in n0; rewrite n0; simpl.
   - (* Case T_IWrap *)
+    apply (normaliser_Jacco_complete h) in n; rewrite n; simpl.
+    apply (normaliser_Jacco_complete h0) in n0; rewrite n0; simpl.
+
     apply kind_checking_complete in h; rewrite h.
     apply kind_checking_complete in h0; rewrite h0.
+
+    assert (Δ0 |-* (unwrapIFix Fn K Tn) : Kind_Base).
+    {
+      admit.
+    }
+
+    apply (normaliser_Jacco_complete H1) in n1; rewrite n1; simpl.
+
     rewrite H0.
     rewrite Kind_eqb_refl; simpl.
-    apply normaliser_Jacco_complete in n; rewrite n; simpl.
-    apply normaliser_Jacco_complete in n0; rewrite n0; simpl.
-    apply normaliser_Jacco_complete in n1; rewrite n1; simpl.
     now rewrite Ty_eqb_refl.
   - (* Case: T_Unwrap*)
     rewrite H0.
     apply kind_checking_complete in h0; rewrite h0.
-    now apply normaliser_Jacco_complete in n; rewrite n; simpl.
+    (* now apply normaliser_Jacco_complete in n; rewrite n; simpl. *)
+    admit.
   - (* Case: T_Builtin*)
     subst.
-    now apply normaliser_Jacco_complete in n; rewrite n; simpl.
+    eapply normaliser_Jacco_complete in n.
+    rewrite n. simpl. reflexivity.
+    apply lookupBuiltinTy__well_kinded. (* TODO: Is this true?*)
   - (* Case: T_Error *)
     admit. (* TODO: Not complete in current implementation*)
-  - (* Case: T_Let *)
-  (* Cas Let NonRec    (* apply map_normaliser_complete in m. *)
-    (* In the goal we need things about subterms of bs. That is probably fine here, but I'm not sure why and probably in soundness this will then go wrong?*)
-    admit. *)
-    apply map_normaliser_complete in m; rewrite m; simpl.
+  - (* Case: T_Let (NonRec)*)
+    assert (map_normaliser (insert_deltas_rec (flatten (map binds_Gamma bs)) Δ0) = Some bsGn).
+    {
+      eapply map_normaliser_complete.
+      - assumption.
+      - rewrite <- insert_remove_deltas_id.
+        assumption.
+    }
+    rewrite H2.
     rewrite H0.
+    simpl.
     subst.
     rewrite H1; simpl.
     apply kind_checking_complete in h0; rewrite h0.
+    apply map_wk_complete in m; rewrite m.
     reflexivity.
   - (* Case: T_LetRec *)
     intros. simpl. subst.
-    apply map_normaliser_complete in m; rewrite m; simpl.
+    assert (map_normaliser ((insert_deltas_rec (flatten (map binds_Gamma bs))
+  (flatten (map binds_Delta bs) ++ Δ0))) = Some bsGn).
+  {
+    eapply map_normaliser_complete.
+    - assumption.
+    - rewrite <- insert_remove_deltas_id.
+      assumption.
+  }
+  rewrite H2; simpl.
+  apply map_wk_complete in m; rewrite m.
+    (* rewrite insert_remove_deltas_id with (Δ := (flatten (map binds_Delta bs) ++ Δ0)) in m0. *)
+    (* apply (map_normaliser_complete m) in m0; rewrite m; simpl. *)
     rewrite H0.
     rewrite H1.
     simpl.
@@ -634,10 +709,17 @@ Proof.
   - (* Case: ? *)
     intros. simpl. rewrite H0. auto.
   - (* Case: ? *)
-    apply map_normaliser_complete in m; rewrite m.
-    intuition.
+    assert (map_normaliser (insert_deltas_rec (binds_Gamma b) (Δ0)) = Some bsGn).
+    {
+      eapply map_normaliser_complete.
+      - assumption.
+      - rewrite <- insert_remove_deltas_id.
+        assumption.
+    }
+    rewrite H2; simpl. 
+    auto with *.
   - intros. simpl. rewrite H0.
-    apply normaliser_Jacco_complete in n; rewrite n.
+    apply (normaliser_Jacco_complete h) in n; rewrite n.
     rewrite Ty_eqb_refl.
     apply kind_checking_complete in h; rewrite h.
     auto.
@@ -649,10 +731,11 @@ Proof.
     subst.
     assumption.
 Admitted.
+
     
 
 
-
+Print Assumptions type_checking_complete.
       
       
       

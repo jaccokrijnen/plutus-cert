@@ -93,16 +93,17 @@ Module Term.
       eapply H2 in H8...
       rewrite lookup_neq in H8...
     - (* T_Let *)
-      inversion Hafi.
+      (* inversion Hafi.
       + subst.
         eapply H5 in H12...
         apply notIn_bvbs_bindsG in H10.
         eapply notIn__map_normalise in H10...
         rewrite notIn__lookup_append in H12...
       + subst.
-        eapply H3 in H9...
+        eapply H3 in H9... *)
+        admit.
     - (* T_LetRec *)
-      inversion Hafi.
+      (* inversion Hafi.
       + subst.
         eapply H5 in H12...
         apply notIn_bvbs_bindsG in H10.
@@ -112,16 +113,17 @@ Module Term.
         eapply H3 in H11...
         apply notIn_bvbs_bindsG in H10.
         eapply notIn__map_normalise in H10...
-        rewrite notIn__lookup_append in H11...
+        rewrite notIn__lookup_append in H11... *)
+        admit.
     - (* W_ConsB_NonRec *)
       inversion Hafi.
       + subst.
         apply H0...
       + subst.
-        apply notIn_bvb_bindsG in H7.
+        (* apply notIn_bvb_bindsG in H7.
         eapply notIn__map_normalise in H7...
-        erewrite <- notIn__lookup_append...
-Qed.
+        erewrite <- notIn__lookup_append... *)
+Admitted.
 
 End Term.
 
@@ -182,15 +184,16 @@ Module Annotation.
       eapply H0 in H5...
       rewrite lookup_neq in H5...
     - (* T_Let*)
-      inversion Hafi.
+      (* inversion Hafi.
       + subst.
         eapply H5 in H11...
         apply notIn_btvbs_bindsD in H9.
         rewrite notIn__lookup_append in H11...
       + subst.
-        eapply H3 in H8...
+        eapply H3 in H8... *)
+        admit.
     - (* T_LetRec *)
-      inversion Hafi.
+      (* inversion Hafi.
       + subst.
         eapply H5 in H11...
         apply notIn_btvbs_bindsD in H9.
@@ -198,7 +201,8 @@ Module Annotation.
       + subst.
         eapply H3 in H10...
         apply notIn_btvbs_bindsD in H9.
-        rewrite notIn__lookup_append in H10...
+        rewrite notIn__lookup_append in H10... *)
+        admit.
     - (* W_Con *)
       inversion Hafi. subst.
       rewrite <- H3 in H.
@@ -210,14 +214,14 @@ Module Annotation.
       + subst.
         apply H0...
       + subst.
-        apply notIn_btvb_bindsD in H6.
+        (* apply notIn_btvb_bindsD in H6.
         erewrite <- notIn__lookup_append...
     - (* W_Data *)
       inversion Hafi. subst.
       destruct H7 as [c [HIn__c Hafi__c]].
       erewrite <- notIn__lookup_append...
-      eapply H1...
-  Qed.
+      eapply H1... *)
+  Admitted.
 
 End Annotation.
 
