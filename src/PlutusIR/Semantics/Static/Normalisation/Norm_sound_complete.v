@@ -278,8 +278,14 @@ Proof.
       reflexivity.
 Qed.
 
-Theorem normaliser_preserves_typing {Δ T Tn K } :
+Theorem normaliser_preserves_kinding {Δ T Tn K } :
   Δ |-* T : K -> normaliser_Jacco Δ T = Some Tn -> Δ |-* Tn : K.
 Proof.
 (* will rely on step_preserves_typing *)
+Admitted.
+
+Theorem normalisation_preserves_kinding {Δ T Tn K } :
+  Δ |-* T : K -> normalise T Tn -> Δ |-* Tn : K.
+Proof.
+(* We can use the above almost directly with normalisation sound/complete*)
 Admitted.

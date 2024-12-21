@@ -166,7 +166,7 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
             => if andb (Kind_eqb K K') (Kind_eqb K K'') then
                     normaliser_Jacco Δ T >>= fun Tn =>
                     normaliser_Jacco Δ F >>= fun Fn =>
-                    normaliser_Jacco Δ (unwrapIFix Fn K Tn) >>= fun T0n' =>
+                    normaliser_Jacco Δ (unwrapIFixFresh Fn K Tn) >>= fun T0n' =>
                     if Ty_eqb T0n T0n' then 
                         Some (Ty_IFix Fn Tn)
                     else None 
@@ -179,7 +179,7 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
                 match kind_check Δ T, kind_check Δ F with
                     | Some K, Some (Kind_Arrow (Kind_Arrow K' Kind_Base) (Kind_Arrow K'' Kind_Base)) =>
                         if andb (Kind_eqb K K') (Kind_eqb K K'') then
-                          normaliser_Jacco Δ (unwrapIFix F K T) >>= fun T0n => Some T0n
+                          normaliser_Jacco Δ (unwrapIFixFresh F K T) >>= fun T0n => Some T0n
                         else None
                     | _, _ => None
                     end 
@@ -638,7 +638,7 @@ Proof.
     assert (Δ0 |-* (substituteTCA X T2n T1n) : Kind_Base) as Hwk_subst.
     {
       eapply substituteTCA_preserves_kinding; eauto.
-      eapply normaliser_preserves_typing; eauto.
+      eapply normaliser_preserves_kinding; eauto.
       eapply kind_checking_sound; eauto.
     }
     apply kind_checking_complete in h0; rewrite h0.
@@ -647,14 +647,16 @@ Proof.
     apply (normaliser_Jacco_complete h) in n; rewrite n; simpl.
     apply (normaliser_Jacco_complete h0) in n0; rewrite n0; simpl.
 
-    apply kind_checking_complete in h; rewrite h.
-    apply kind_checking_complete in h0; rewrite h0.
-
-    assert (Δ0 |-* (unwrapIFix Fn K Tn) : Kind_Base).
+    assert (Δ0 |-* (unwrapIFixFresh Fn K Tn) : Kind_Base).
     {
-      admit.
+      eapply unwrapIFixFresh__well_kinded; eauto.
+      - eapply normaliser_preserves_kinding; eauto.
+      - eapply normaliser_preserves_kinding; eauto.
     }
 
+    apply kind_checking_complete in h; rewrite h.
+    apply kind_checking_complete in h0; rewrite h0.
+    (* apply kind_checking_complete in H1. *)
     apply (normaliser_Jacco_complete H1) in n1; rewrite n1; simpl.
 
     rewrite H0.
@@ -662,8 +664,15 @@ Proof.
     now rewrite Ty_eqb_refl.
   - (* Case: T_Unwrap*)
     rewrite H0.
+
+
+    assert (Δ0 |-* (unwrapIFixFresh Fn K Tn) : Kind_Base).
+    {
+      eapply unwrapIFixFresh__well_kinded; eauto.
+    }
+
     apply kind_checking_complete in h0; rewrite h0.
-    (* now apply normaliser_Jacco_complete in n; rewrite n; simpl. *)
+    apply normaliser_Jacco_complete in n; rewrite n; simpl.
     admit.
   - (* Case: T_Builtin*)
     subst.

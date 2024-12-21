@@ -368,7 +368,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
     admit.
 
   - (* W_NilB_NonRec *)
-    split. all: intros. all: subst.
+    (* split. all: intros. all: subst.
     + inv_Compat.
       inversion H1...
     + inv_CNR.
@@ -385,7 +385,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
             apply map_normalise__app in H;
             destruct H as [l1n [l2n [Hmn__l1n [Hmn__l2n Heq]]]];
             subst
-      end.
+      end. *)
       (* eapply map_normalise__deterministic in H1...
       subst.
 

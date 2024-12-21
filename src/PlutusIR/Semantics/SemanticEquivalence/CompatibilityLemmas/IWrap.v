@@ -30,11 +30,11 @@ Admitted.
 
 Lemma normalise_unwrapIFix_commutes_1 : forall ck rho Fn K Tn T0n Fn' Tn' T0n',
     RD ck rho ->
-    normalise (unwrapIFix Fn K Tn) T0n ->
+    normalise (unwrapIFixFresh Fn K Tn) T0n ->
     normalise (msubstT (msyn1 rho) Fn) Fn' ->
     normalise (msubstT (msyn1 rho) Tn) Tn' ->
     normalise (msubstT (msyn1 rho) T0n) T0n' ->
-    normalise (unwrapIFix Fn' K Tn') T0n'.
+    normalise (unwrapIFixFresh Fn' K Tn') T0n'.
 Proof.
 (* ADMIT: Commutativity should hold. Well-typedness of unwrapIFix term
    should follow from uniqueness property. *)
@@ -42,11 +42,11 @@ Admitted.
 
 Lemma normalise_unwrapIFix_commutes_2 : forall ck rho Fn K Tn T0n Fn' Tn' T0n',
     RD ck rho ->
-    normalise (unwrapIFix Fn K Tn) T0n ->
+    normalise (unwrapIFixFresh Fn K Tn) T0n ->
     normalise (msubstT (msyn2 rho) Fn) Fn' ->
     normalise (msubstT (msyn2 rho) Tn) Tn' ->
     normalise (msubstT (msyn2 rho) T0n) T0n' ->
-    normalise (unwrapIFix Fn' K Tn') T0n'.
+    normalise (unwrapIFixFresh Fn' K Tn') T0n'.
 Proof.
 (* ADMIT: Commutativity should hold. Well-typedness of unwrapIFix term
    should follow from uniqueness property. *)
@@ -57,7 +57,7 @@ Lemma compatibility_IWrap : forall Delta Gamma e e' T K Tn F Fn T0n,
     normalise T Tn ->
     Delta |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
     normalise F Fn ->
-    normalise (unwrapIFix Fn K Tn) T0n ->
+    normalise (unwrapIFixFresh Fn K Tn) T0n ->
     LR_logically_approximate Delta Gamma e e' T0n ->
     LR_logically_approximate Delta Gamma (IWrap F T e) (IWrap F T e') (Ty_IFix Fn Tn).
 Proof with eauto_LR.
@@ -155,6 +155,7 @@ Proof with eauto_LR.
     eapply RV_to_RC.
 
     eapply RV_monotone...
+    admit.
   - (* E_Error_Iwrap *)
     assert (HRC :
       RC k T0n rho
@@ -209,4 +210,4 @@ Proof with eauto_LR.
         eapply N_TyIFix...
       }
       right...
-Qed.
+Admitted.

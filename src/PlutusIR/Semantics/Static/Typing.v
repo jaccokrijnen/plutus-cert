@@ -7,6 +7,9 @@ Require Export PlutusCert.PlutusIR.Semantics.Static.Kinding.Kinding.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Normalisation.Normalisation.
 Require Export PlutusCert.PlutusIR.Semantics.Static.TypeSubstitution.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Builtins.Signatures.
+Require Import PlutusCert.PlutusIR.Analysis.BoundVars.
+Require Export PlutusCert.PlutusIR.Analysis.FreeVars.
+
 
 Import Coq.Lists.List.
 Import ListNotations.
@@ -69,6 +72,45 @@ T has kind K, so this is well kinded with kind Kind_Base and for every context.
 *)
 Definition unwrapIFix (F : ty) (K : kind) (T : ty) : ty := (Ty_App (Ty_App F (Ty_Lam "X" K (Ty_IFix F (Ty_Var "X")))) T).
 
+(* TODO: Do we really need bound variables? *)
+Definition freshUnwrapIFix (F : ty) : string :=
+  "a" ++ String.concat EmptyString (FreeVars.Ty.ftv F).
+
+
+
+Definition unwrapIFixFresh (F : ty) (K : kind) (T : ty) : ty :=
+  let b := freshUnwrapIFix F in 
+ (Ty_App (Ty_App F (Ty_Lam b K (Ty_IFix F (Ty_Var b)))) T).
+
+(* TODO: See also Theorems/Weakening
+*)
+Lemma weakening : forall T T2 K X Δ,
+      ~ In X (FreeVars.Ty.ftv T) ->
+      Δ |-* T : K ->
+      ((X, T2)::Δ) |-* T : K.
+Proof.
+Admitted.
+
+Lemma unwrapIFixFresh__well_kinded F K T Δ :
+  Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
+  Δ |-* T : K ->
+  Δ |-* (unwrapIFixFresh F K T) : Kind_Base.
+Proof.
+  intros.
+  unfold unwrapIFix.
+  eapply K_App with (K1 := K); auto.
+  eapply K_App with (K1 := Kind_Arrow K Kind_Base); auto.
+  eapply K_Lam.
+  eapply K_IFix with (K := K); auto.
+  - admit.
+  - remember (freshUnwrapIFix F) as x.
+    (* Now weaken *)
+    eapply weakening with (Δ := Δ); auto.
+    unfold List.inclusion.
+    admit.
+
+Admitted.
+
 (** Typing of terms *)
 Reserved Notation "Delta ',,' Gamma '|-+' t ':' T" (at level 101, t at level 0, T at level 0, no associativity).
 Reserved Notation "Delta '|-ok_c' c ':' T" (at level 101, c at level 0, T at level 0).
@@ -107,7 +149,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ ,, Γ |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
   | T_TyInst : forall Δ Γ t1 T2 T1n X K2 T0n T2n,
       Δ ,, Γ |-+ t1 : (Ty_Forall X K2 T1n) ->
-      ((X, K2)::Δ) |-* T1n : Kind_Base -> (* Added *)
+      ((X, K2)::Δ) |-* T1n : Kind_Base -> (* Richard: Added *)
       Δ |-* T2 : K2 ->
       normalise T2 T2n ->
       normalise (substituteTCA X T2n T1n) T0n ->
@@ -118,14 +160,14 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       normalise T Tn ->
       Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
       normalise F Fn ->
-      normalise (unwrapIFix Fn K Tn) T0n ->
+      normalise (unwrapIFixFresh Fn K Tn) T0n -> (* Richard: Changed to fresh!*)
       Δ ,, Γ |-+ M : T0n ->
       Δ ,, Γ |-+ (IWrap F T M) : (Ty_IFix Fn Tn)
   | T_Unwrap : forall Δ Γ M Fn K Tn T0n,
       Δ ,, Γ |-+ M : (Ty_IFix Fn Tn) ->
-      Δ |-* Fn : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) -> (* Added *)
+      Δ |-* Fn : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) -> (* Richard: Added *)
       Δ |-* Tn : K ->
-      normalise (unwrapIFix Fn K Tn) T0n ->
+      normalise (unwrapIFixFresh Fn K Tn) T0n -> (* Richard: Changed to fresh*)
       Δ ,, Γ |-+ (Unwrap M) : T0n
   (* Additional constructs *)
   | T_Constant : forall Δ Γ T a,
