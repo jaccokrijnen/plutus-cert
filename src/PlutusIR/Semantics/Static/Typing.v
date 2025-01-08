@@ -120,10 +120,10 @@ Reserved Notation "Delta ',,' Gamma '|-ok_b' b" (at level 101, b at level 0, no 
 
 Local Open Scope list_scope.
 
-Fixpoint insert_deltas_rec (xs : list (string * ty)) (Δ : list (string * kind)) := 
+Fixpoint insert_deltas_rec (xs : list ty) (Δ : list (string * kind)) := 
 match xs with
   | nil => nil
-  | (x, T) :: xs' => (x, T, Δ) :: insert_deltas_rec xs' Δ
+  | T :: xs' => (T, Δ) :: insert_deltas_rec xs' Δ
 end.
 
 
@@ -188,7 +188,6 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
   **)
   | T_Let : forall Δ Γ bs t Tn Δ' Γ' bsGn,
       Δ' = flatten (map binds_Delta bs) ++ Δ ->
-      map_wk (insert_deltas_rec (flatten (map binds_Gamma bs)) Δ) -> (* Why these deltas? Seems too strict, what about Δ' *)
       map_normalise (flatten (map binds_Gamma bs)) bsGn ->
       Γ' = bsGn ++ Γ ->
       Δ ,, Γ |-oks_nr bs ->
@@ -197,8 +196,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ ,, Γ |-+ (Let NonRec bs t) : Tn
   | T_LetRec : forall Δ Γ bs t Tn Δ' Γ' bsGn,
       Δ' = flatten (map binds_Delta bs) ++ Δ ->
-      map_wk (insert_deltas_rec (flatten (map binds_Gamma bs)) Δ') -> (* Why these deltas? *)
-      map_normalise (flatten (map binds_Gamma bs)) bsGn ->
+      map_normalise (flatten (map binds_Gamma bs)) bsGn -> (* TODO: Why do we need this to be normalised? Create a counterexample that shows things go wrong without normalisation here*)
       Γ' = bsGn ++ Γ->
       Δ' ,, Γ' |-oks_r bs ->
       Δ' ,, Γ' |-+ t : Tn ->
@@ -219,7 +217,6 @@ with bindings_well_formed_nonrec : list (string * kind) -> list (string * ty) ->
       Δ ,, Γ |-oks_nr nil
   | W_ConsB_NonRec : forall Δ Γ b bs bsGn,
       Δ ,, Γ |-ok_b b ->
-      map_wk (insert_deltas_rec (binds_Gamma b) (Δ)) -> (* Just Δ? Or binds_Delta b?*)
       map_normalise (binds_Gamma b) bsGn ->
       ((binds_Delta b) ++ Δ) ,, (bsGn ++ Γ) |-oks_nr bs ->
       Δ ,, Γ |-oks_nr (b :: bs)
@@ -266,6 +263,111 @@ Combined Scheme has_type__multind from
 
 Lemma lookupBuiltinTy__well_kinded f Δ :
   Δ |-* (lookupBuiltinTy f) : Kind_Base.
+Admitted.
+
+Lemma b_wf__wk Δ Γ b :
+  Δ ,, Γ |-ok_b b -> forall T _x, In (_x, T) (binds_Gamma b) -> exists K, Δ |-* T : K.
+Proof.
+  intros.
+  inversion H; subst.
+  - inversion H0; intuition.
+    inversion H4; subst; clear H4.
+    now exists Kind_Base.
+  - inversion H0; intuition.
+  - admit.
+Admitted.
+
+Require Import Coq.Program.Equality.
+
+Lemma b_wf__map_wk Δ Γ b :
+  Δ ,, Γ |-ok_b b -> map_wk (insert_deltas_rec (map snd (binds_Gamma b)) Δ).
+Proof.
+  intros.
+
+    assert ((forall x T, In (x, T) (binds_Gamma b) -> exists K, Δ |-* T : K)).
+    {
+      intros.
+      eapply b_wf__wk; eauto.
+    }
+  induction (binds_Gamma b).
+  - simpl.
+    constructor.
+  - simpl.
+    destruct a as [a1 a2].
+    assert(exists K, Δ |-* a2 : K).
+    { 
+      eapply H0.
+      left.
+      auto.
+    }
+    destruct H1 as [K H1].
+    apply MW_cons with (K := K); auto.
+    apply IHl.
+    simpl in H0.
+    intros.
+    eapply H0.
+    right.
+    eauto.
+Qed.
+
+Lemma in_flatten_cons_helper {A} x (xs : list (list A)) y :
+  In y (flatten (x::xs)) -> In y x \/ In y (flatten xs).
+Proof.
+  intros.
+  unfold flatten in H.
+  rewrite in_concat in H.
+  destruct H as [x0 [Hl Hr]].
+  apply in_rev in Hl.
+  destruct Hl.
+  - subst.
+    left; auto.
+  - right.
+    unfold flatten.
+    rewrite in_concat.
+    exists x0.
+    split.
+    + now rewrite <- in_rev.
+    + auto.
+Qed.
+
+Lemma bs_wf_nr__bs_wk Δ Γ bs :
+  Δ ,, Γ |-oks_nr bs -> forall T _x, In (_x, T) (flatten (map binds_Gamma bs)) -> exists K Δ', Δ' |-* T : K.
+Proof.
+  intros.
+  induction H; subst.
+  - auto with *.
+  - simpl in H0.
+    apply in_flatten_cons_helper in H0.
+    destruct H0.
+    + apply b_wf__wk with (T := T) (_x := _x) in H.
+      * destruct H as [K H].
+        exists K. exists Δ. assumption.
+      * assumption.
+    + eapply IHbindings_well_formed_nonrec.
+      eauto.
+Qed.
+
+Lemma bs_wf_r__bs_wk Δ Γ bs :
+  Δ ,, Γ |-oks_r bs -> forall T _x, In (_x, T) (flatten (map binds_Gamma bs)) -> exists K, Δ |-* T : K.
+Proof.
+  intros.
+  induction H; subst.
+  - inversion H0.
+  - simpl in H0.
+    apply in_flatten_cons_helper in H0.
+    destruct H0.
+    + subst.
+      eapply b_wf__wk; eauto.
+    + now eapply IHbindings_well_formed_rec.
+Qed.
+
+Lemma bs_wf_r__map_wk Δ Γ bs :
+  Δ ,, Γ |-oks_r bs -> map_wk (insert_deltas_rec (map snd (flatten (map binds_Gamma bs))) Δ).
+Proof.
+  intros.
+  induction H.
+  - constructor.
+  - admit.
 Admitted.
 
 

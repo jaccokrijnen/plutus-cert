@@ -74,7 +74,6 @@ Definition constructor_well_formed_check (Δ : list (binderTyname * kind)) (v : 
           Ty_eqb Tr tr' && allbmap (fun U => is_KindBase (kind_check Δ U)) targs
   end.
 
-
 (* Idea Jacco: pass the recursively called type_check function as an argument even though it is not defined yet 
 Make another version that already has type_check as argument after type_check is defined.
 *)
@@ -665,15 +664,17 @@ Proof.
   - (* Case: T_Unwrap*)
     rewrite H0.
 
-
     assert (Δ0 |-* (unwrapIFixFresh Fn K Tn) : Kind_Base).
     {
       eapply unwrapIFixFresh__well_kinded; eauto.
     }
 
     apply kind_checking_complete in h0; rewrite h0.
-    apply normaliser_Jacco_complete in n; rewrite n; simpl.
-    admit.
+    apply kind_checking_complete in h1; rewrite h1.
+    rewrite Kind_eqb_refl; simpl.
+    unfold bind.
+    apply (normaliser_Jacco_complete H1) in n; rewrite n.
+    reflexivity.
   - (* Case: T_Builtin*)
     subst.
     eapply normaliser_Jacco_complete in n.
