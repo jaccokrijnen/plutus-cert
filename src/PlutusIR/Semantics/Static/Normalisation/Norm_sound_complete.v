@@ -56,42 +56,6 @@ Fixpoint map_normaliser (xs : list (string * ty * (list (string * kind)))) :=
                      Some ((X, Tn) ::xs'')
   end.
 
-Fixpoint map_wk_f (xs : list (string * ty * (list (string * kind)))) :=
-  match xs with
-  | nil => true
-  | ((X, T, Δ) :: xs') => match kind_check Δ T
-                          with
-                          | Some _ => map_wk_f xs'
-                          | None => false
-                          end
-  end.
-
-Theorem map_wk_sound xs :
-  map_wk_f xs = true -> map_wk xs.
-Proof.
-  intros.
-  induction xs.
-  - constructor.
-  - destruct a as [[X T] Δ].
-    simpl in H.
-    destruct (kind_check Δ T) eqn:Hkc; try discriminate.
-    apply MW_cons with (K := k).
-    auto.
-    now apply kind_checking_sound in Hkc.
-Qed.
-
-Theorem map_wk_complete xs :
-  map_wk xs -> map_wk_f xs = true.
-Proof.
-  intros.
-  induction H.
-  - auto.
-  - simpl.
-    apply kind_checking_complete in H0.
-    rewrite H0.
-    auto.
-Qed.
-
 Theorem norm_sound Tn {T Δ K} (Hwk : Δ |-* T : K) :
   normaliser Hwk = Tn -> normalise T Tn.
 Proof.
@@ -234,6 +198,7 @@ Proof.
     reflexivity.
   - simpl.
     unfold bind.
+    
     inversion H.
     + subst.
       simpl in x.
@@ -242,7 +207,7 @@ Proof.
       {
         unfold remove_deltas in x.
         destruct xs; [inversion H4 |].
-        fold (@remove_deltas string) in x.
+        fold (@remove_deltas string) in x. 
         destruct p as [p0 pff].
         destruct p0 as [X1 T1].
         inversion x.

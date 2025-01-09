@@ -79,10 +79,18 @@ Inductive has_kind : list (binderTyname * kind) -> ty -> kind -> Prop :=
 where "Δ '|-*' T ':' K" := (has_kind Δ T K).
 
 (* TODO: there is probably a higher order thing to create stuff like this *)
-Inductive map_wk : list (ty * list (string * kind)) -> Prop :=
+Inductive map_wk : list (string * ty * list (string * kind)) -> Prop :=
   | MW_nil :
       map_wk nil
-  | MW_cons : forall Δ T (xs : list (ty * list (string * kind))) K,
+  | MW_cons : forall X Δ T (xs : list (string * ty * list (string * kind))) K,
       map_wk xs ->
       has_kind Δ T K ->
-      map_wk ((T, Δ) :: xs).
+      map_wk ((X, T, Δ) :: xs).
+
+Inductive map_wk_any_delta : list (string * ty) -> Prop :=
+  | MW_nil_ad :
+      map_wk_any_delta nil
+  | MW_cons_ad : forall X Δ T (xs : list (string * ty)) K,
+      map_wk_any_delta xs ->
+      has_kind Δ T K ->
+      map_wk_any_delta ((X, T) :: xs).

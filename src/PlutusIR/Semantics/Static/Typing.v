@@ -120,10 +120,10 @@ Reserved Notation "Delta ',,' Gamma '|-ok_b' b" (at level 101, b at level 0, no 
 
 Local Open Scope list_scope.
 
-Fixpoint insert_deltas_rec (xs : list ty) (Δ : list (string * kind)) := 
+Fixpoint insert_deltas_rec (xs : list (string * ty)) (Δ : list (string * kind)) := 
 match xs with
   | nil => nil
-  | T :: xs' => (T, Δ) :: insert_deltas_rec xs' Δ
+  | (X, T):: xs' => (X, T, Δ) :: insert_deltas_rec xs' Δ
 end.
 
 
@@ -176,10 +176,10 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       T = lookupBuiltinTy f ->
       normalise T Tn ->
       Δ ,, Γ |-+ (Builtin f) : Tn
-  | T_Error : forall Δ Γ S T Tn,
-      Δ |-* T : Kind_Base ->
-      normalise T Tn -> (* S Sn (denk aan preservation. T Tn hadden we geimplementeerd omdat dat makkelijk is voor preservation mss, maar dat werkt niet voor completeness ), maak pull request*)
-      Δ ,, Γ |-+ (Error S) : Tn
+  | T_Error : forall Δ Γ S Sn,
+      Δ |-* S : Kind_Base ->
+      normalise S Sn -> (* S Sn (denk aan preservation. T Tn hadden we geimplementeerd omdat dat makkelijk is voor preservation mss, maar dat werkt niet voor completeness ), maak pull request*)
+      Δ ,, Γ |-+ (Error S) : Sn
   (** Let-bindings
       Note: The rules for let-constructs differ significantly from the paper definitions
       because we had to adapt the typing rules to the compiler implementation of type checking.
@@ -280,7 +280,7 @@ Admitted.
 Require Import Coq.Program.Equality.
 
 Lemma b_wf__map_wk Δ Γ b :
-  Δ ,, Γ |-ok_b b -> map_wk (insert_deltas_rec (map snd (binds_Gamma b)) Δ).
+  Δ ,, Γ |-ok_b b -> map_wk (insert_deltas_rec (binds_Gamma b) Δ).
 Proof.
   intros.
 
@@ -362,12 +362,48 @@ Proof.
 Qed.
 
 Lemma bs_wf_r__map_wk Δ Γ bs :
-  Δ ,, Γ |-oks_r bs -> map_wk (insert_deltas_rec (map snd (flatten (map binds_Gamma bs))) Δ).
+  Δ ,, Γ |-oks_r bs -> map_wk (insert_deltas_rec (flatten (map (binds_Gamma) bs)) Δ).
 Proof.
   intros.
   induction H.
   - constructor.
-  - admit.
+  - simpl.
+    assert (flatten (binds_Gamma b :: map binds_Gamma bs) = (binds_Gamma b) ++ flatten (map binds_Gamma bs)).
+    { admit. }
+    rewrite H1.
+    assert (forall xs ys, insert_deltas_rec (xs ++ ys) Δ = insert_deltas_rec xs Δ ++ insert_deltas_rec ys Δ).
+    { admit. }
+    rewrite H2.
+    assert (forall xs ys, map_wk xs /\ map_wk ys -> map_wk (xs ++ ys)).
+    { admit. }
+    apply H3.
+    split.
+    + apply b_wf__map_wk in H.
+    auto.
+    + now apply IHbindings_well_formed_rec.
+Admitted.
+
+
+Fixpoint insert_deltas_bind_Gamma_nr (bs : list binding) (Δ : list (binderTyname * kind)) : list (binderName * ty * list (binderTyname * kind)) :=
+  match bs with
+  | [] => []
+  | (b :: bs') => (insert_deltas_rec (binds_Gamma b) Δ) ++ (insert_deltas_bind_Gamma_nr bs' (binds_Delta b ++ Δ))
+  end.
+
+Lemma bs_wf_nr__map_wk Δ Γ bs :
+  Δ ,, Γ |-oks_nr bs -> map_wk (insert_deltas_bind_Gamma_nr bs Δ). (* Hmm, should we have nonrec insertion here?*)
+Proof.
+  intros.
+  induction H.
+  - constructor.
+  - simpl.
+    assert (forall xs ys, map_wk xs /\ map_wk ys -> map_wk (xs ++ ys)).
+    { admit. }
+    apply H2.
+    split.
+    + apply b_wf__map_wk in H.
+      auto.
+    + now apply IHbindings_well_formed_nonrec.
 Admitted.
 
 

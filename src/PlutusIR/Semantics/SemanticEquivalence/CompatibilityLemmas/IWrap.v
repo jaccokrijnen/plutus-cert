@@ -186,10 +186,11 @@ Proof with eauto_LR.
         eexists.
         split. eapply N_TyIFix...
         eapply T_Error.
-        eapply K_IFix.
+        (* eapply K_IFix.
         eapply H1.
         eapply H2.
-        eapply N_TyIFix...
+        eapply N_TyIFix... *)
+        admit. admit.
       }
 
       split. {
@@ -204,10 +205,11 @@ Proof with eauto_LR.
         eexists.
         split. eapply N_TyIFix...
         eapply T_Error.
-        eapply K_IFix.
+        admit. admit.
+        (* eapply K_IFix.
         eapply H1.
         eapply H2.
-        eapply N_TyIFix...
+        eapply N_TyIFix... *)
       }
       right...
 Admitted.
