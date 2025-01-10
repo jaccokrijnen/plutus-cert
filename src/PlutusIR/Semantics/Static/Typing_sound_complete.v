@@ -372,6 +372,15 @@ Qed.
 Lemma insert_remove_deltas_nr_id xs Δ :
   flatten (map binds_Gamma xs) = remove_deltas (insert_deltas_bind_Gamma_nr xs Δ).
 Proof.
+  induction xs.
+  - reflexivity.
+  - simpl.
+    assert (flatten (binds_Gamma a :: map binds_Gamma xs) = binds_Gamma a ++ flatten (map binds_Gamma xs)) by admit.
+    rewrite H.
+    assert (forall (xs : (list (string * ty * (list (string * kind))))) ys, remove_deltas (xs ++ ys) = remove_deltas xs ++ remove_deltas ys) by admit.
+    rewrite H0.
+    rewrite <- insert_remove_deltas_id.
+    admit. (* need some more stuff that is trivial*)
 Admitted.
 
 Theorem type_checking_sound : 
@@ -703,8 +712,8 @@ Proof.
     assert (map_normaliser (insert_deltas_bind_Gamma_nr bs Δ0) = Some bsGn).
     {
       assert (flatten (map binds_Gamma bs) = remove_deltas (insert_deltas_bind_Gamma_nr bs Δ0)).
-      { (* Also an identity, since insert-deltas_bind_Gamma_nr is just binds_Gamma and some stuff on Deltas*)
-        admit.
+      { 
+        apply insert_remove_deltas_nr_id.
       }
       rewrite H2 in m.
       apply (map_normaliser_complete b) in m.
@@ -723,7 +732,7 @@ Proof.
     (flatten (map binds_Gamma bs)) = remove_deltas (insert_deltas_rec (flatten (map binds_Gamma bs)) (flatten (map binds_Delta bs) ++
 Δ0))).
     {
-      admit.
+      apply insert_remove_deltas_id.
     }
     rewrite H2 in m.
     apply (map_normaliser_complete b) in m.
@@ -739,7 +748,7 @@ Proof.
     apply b_wf__map_wk in b0.
     assert (binds_Gamma b = remove_deltas (insert_deltas_rec (binds_Gamma b) Δ0)).
     {
-      admit.
+      apply insert_remove_deltas_id.
     }
     rewrite H2 in m.
     apply (map_normaliser_complete b0) in m.
@@ -758,11 +767,9 @@ Proof.
     apply constructor_well_formed_complete in c.
     subst.
     assumption.
-Admitted.
+Qed.
 
-    
-
-
+Print Assumptions type_checking_sound.
 Print Assumptions type_checking_complete.
       
       

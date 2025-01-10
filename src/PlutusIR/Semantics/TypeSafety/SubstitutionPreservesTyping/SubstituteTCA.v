@@ -25,5 +25,11 @@ Proof with eauto with typing.
     + (* X <> Y *)
       apply eqb_neq in Heqb as Hneq.
       rewrite lookup_neq in H1...
+  - (* Ty_Forall *)
+    admit.
+  - (* Ty_lam*)
+  admit.
+
+    
 (* ADMIT: I had no time to finish this. Requires proofs about renamings. *)
 Admitted.

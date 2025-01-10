@@ -102,11 +102,15 @@ Proof.
   eapply K_App with (K1 := Kind_Arrow K Kind_Base); auto.
   eapply K_Lam.
   eapply K_IFix with (K := K); auto.
-  - admit.
+  - remember (freshUnwrapIFix F) as X.
+    constructor.
+    (* Trivial lookup lemma*)
+    admit.
   - remember (freshUnwrapIFix F) as x.
     (* Now weaken *)
     eapply weakening with (Δ := Δ); auto.
     unfold List.inclusion.
+    (* By definition of freshUnwrapIFix *)
     admit.
 
 Admitted.
@@ -125,7 +129,6 @@ match xs with
   | nil => nil
   | (X, T):: xs' => (X, T, Δ) :: insert_deltas_rec xs' Δ
 end.
-
 
 Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty -> Prop :=
   (* Simply typed lambda caclulus *)
@@ -263,7 +266,9 @@ Combined Scheme has_type__multind from
 
 Lemma lookupBuiltinTy__well_kinded f Δ :
   Δ |-* (lookupBuiltinTy f) : Kind_Base.
-Admitted.
+Proof.
+  destruct f; repeat constructor.
+Qed.
 
 Lemma b_wf__wk Δ Γ b :
   Δ ,, Γ |-ok_b b -> forall T _x, In (_x, T) (binds_Gamma b) -> exists K, Δ |-* T : K.
@@ -274,7 +279,7 @@ Proof.
     inversion H4; subst; clear H4.
     now exists Kind_Base.
   - inversion H0; intuition.
-  - admit.
+  - 
 Admitted.
 
 Require Import Coq.Program.Equality.
@@ -308,57 +313,6 @@ Proof.
     eapply H0.
     right.
     eauto.
-Qed.
-
-Lemma in_flatten_cons_helper {A} x (xs : list (list A)) y :
-  In y (flatten (x::xs)) -> In y x \/ In y (flatten xs).
-Proof.
-  intros.
-  unfold flatten in H.
-  rewrite in_concat in H.
-  destruct H as [x0 [Hl Hr]].
-  apply in_rev in Hl.
-  destruct Hl.
-  - subst.
-    left; auto.
-  - right.
-    unfold flatten.
-    rewrite in_concat.
-    exists x0.
-    split.
-    + now rewrite <- in_rev.
-    + auto.
-Qed.
-
-Lemma bs_wf_nr__bs_wk Δ Γ bs :
-  Δ ,, Γ |-oks_nr bs -> forall T _x, In (_x, T) (flatten (map binds_Gamma bs)) -> exists K Δ', Δ' |-* T : K.
-Proof.
-  intros.
-  induction H; subst.
-  - auto with *.
-  - simpl in H0.
-    apply in_flatten_cons_helper in H0.
-    destruct H0.
-    + apply b_wf__wk with (T := T) (_x := _x) in H.
-      * destruct H as [K H].
-        exists K. exists Δ. assumption.
-      * assumption.
-    + eapply IHbindings_well_formed_nonrec.
-      eauto.
-Qed.
-
-Lemma bs_wf_r__bs_wk Δ Γ bs :
-  Δ ,, Γ |-oks_r bs -> forall T _x, In (_x, T) (flatten (map binds_Gamma bs)) -> exists K, Δ |-* T : K.
-Proof.
-  intros.
-  induction H; subst.
-  - inversion H0.
-  - simpl in H0.
-    apply in_flatten_cons_helper in H0.
-    destruct H0.
-    + subst.
-      eapply b_wf__wk; eauto.
-    + now eapply IHbindings_well_formed_rec.
 Qed.
 
 Lemma bs_wf_r__map_wk Δ Γ bs :

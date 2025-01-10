@@ -1,7 +1,7 @@
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
 Import ListNotations.
-From PlutusCert Require Import alpha STLC_named STLC_named_typing Util.List.
+From PlutusCert Require Import freshness util alpha STLC_named STLC_named_typing Util.List alpha_freshness alpha_rename.
 Local Open Scope string_scope.
 Local Open Scope list_scope.
 
@@ -9,10 +9,13 @@ Local Open Scope list_scope.
 
 (* Contextual alpha equivalence: kinding contexts that match alpha contexts*)
 Inductive CAlpha : list (string * string) -> list (string * type) -> list (string * type) -> Prop :=
-  | calpha_nil : CAlpha [] [] []
+  | calpha_nil D : CAlpha [] D D (* Non-empty kinding enviornments because id renamings are like no renamings. TODO: think whether we want to allow that or want to enforce that id renamings are in the alpha enviornment always*)
   | calpha_cons x y K sigma Gamma Gamma' :
     CAlpha sigma Gamma Gamma' ->
     CAlpha ((x, y)::sigma) ((x, K)::Gamma) ((y, K)::Gamma').
+  (* | calpha_id x K sigma Gamma Gamma' :
+    CAlpha sigma Gamma Gamma' ->
+    CAlpha sigma ((x, K)::Gamma) ((x, K)::Gamma'). *)
 
 (* Exercise and possibly useful *)
 Lemma alpha_preserves_typing sigma s t A Gamma Gamma' :
@@ -70,3 +73,413 @@ Proof.
     specialize (IHHAlpha2 Gamma' Gamma HCAlpha K1 H4).
     apply K_App with (K1 := K1); assumption.
 Qed.
+
+(* FROM deadcode/DSP/lemmas.v*)
+  Lemma strengthen_Γ_cons Γ t T x Tx :
+    ~ In x (ftv t) ->
+    ((x, Tx) :: Γ) |-* t : T ->
+    Γ |-* t : T.
+Proof.
+  (* PIR PROOF is still incomplete*)
+Admitted.
+
+(* TODO: NAIVE NOT WORKING INDUCTION HYPOTHESIS*)
+Theorem substituteTCA_preserves_kinding : forall T Delta X K U L,
+    ((X, L) :: Delta) |-* T : K ->
+    Delta |-* U : L ->
+    Delta |-* (substituteTCA X U T) : K.
+Proof with eauto.
+  induction T.
+  all: intros Delta X K U L Hkind__T HHkind__U.
+  all: autorewrite with substituteTCA.
+  all: simpl.
+  all: inversion Hkind__T; subst...
+  - (* Ty_Var *)
+    rename s into Y.
+    destruct (X =? Y)%string eqn:Heqb.
+    + (* X = Y *)
+      apply eqb_eq in Heqb as Heq.
+      subst.
+      rewrite lookup_eq in H1.
+      congruence.
+    + (* X <> Y *)
+      apply eqb_neq in Heqb as Hneq.
+      rewrite lookup_neq in H1...
+      now constructor.
+  - (* Ty_Lam *)
+    rename s into Y.
+    destruct (X =? Y)%string eqn:Heqb.
+    + (* X = Y *)
+      apply eqb_eq in Heqb as Heq.
+      subst.
+      apply K_Lam.
+      assert (((Y, t)::(Y, L):: Delta) |-* T : K2 -> ((Y, t)::Delta) |-* T : K2).
+      {
+        (* weaken duplicates *)
+        admit.
+      }
+      auto.
+    + destruct (in_dec string_dec Y (ftv U)).
+      * (* Y in FV(U) *)
+
+        (* DIFFICULT CASE THAT REQUIRES ALPHA RENAMING*)
+        assert (existsb (eqb Y) (ftv U) = true) by admit. (* trivial *)
+        rewrite H.
+        apply K_Lam.
+        remember (fresh2 _ T) as Y'.
+        specialize (IHT ((Y', t)::Delta) X K2 U L).
+
+        admit.
+      * (* Y not in FV(U) *)
+        assert (existsb (eqb Y) (ftv U) = false).
+        { (* Follows from Y notin ftv U*)
+          admit.
+        }
+        rewrite H.
+        apply K_Lam.
+        eapply IHT.
+        -- (* X is not Y, so we can probably switch those around in the environment *)
+          admit.
+        -- (* Y not in U, so we can remove (Y, t) from the context *)
+          admit.
+  - (* Ty_App *)
+    admit.
+Admitted.
+
+(* OLD LEMMA FOR ME TO RESEARCH WHY WE NEED SUCH COMPLICATED IH AND IF WE CAN MAYBE MAKE IT EASIER*)
+Theorem substituteTCA_preserves_kinding_alpha_ren : forall T Delta Delta' ren T' X X' K U' L,
+    Alpha ren T T' ->
+    AlphaVar ren X X' ->
+    CAlpha ren Delta Delta' ->
+    ((X, L) :: Delta) |-* T : K ->
+    Delta' |-* U' : L ->
+    Delta' |-* (substituteTCA X' U' T') : K.
+Proof with eauto.
+  induction T.
+  all: intros Delta Delta' ren T' X X' K U' L HalphaT HalphaX HalphaC Hkind__T HHkind__U.
+  all: autorewrite with substituteTCA.
+  all: simpl.
+  all: inversion Hkind__T; subst...
+  - (* Ty_Var *)
+    admit.
+  - (* Ty_Lam *)
+    inversion HalphaT; subst.
+    autorewrite with substituteTCA.
+    destruct (X' =? y)%string eqn:Heqb.
+    + (* X = Y *)
+      apply eqb_eq in Heqb as Heq; subst.
+      apply K_Lam.
+      (*
+        If we can prove: 
+          (we have s renamed to Y)
+        (s, t) :: Delta |-* T : K2.
+
+        Suppose there is an X in T and s not equal to X.
+            Then we cannot have (s, Y) :: ren |- T ~ s2, because (X, Y) in ren, so then Y must be in s2, but this must be renamed to s, not to X
+
+          Suppose X = s, then 
+            (s=X, t) :: (X, L) :: Delta |-* T : K2, and we can remove the (X, L)
+          then we have the result by alpha preserves kinding?  
+
+        Suppose there is no X in T, then we can remove (X, L)
+      *)
+      admit.
+    + (* X <> Y *)
+      destruct (in_dec string_dec y (ftv U')).
+      * (* Y in FV(U) *)
+        assert (existsb (eqb y) (ftv U') = true) by admit. (* trivial *)
+        rewrite H.
+        remember (fresh2 _ s2) as Y'.
+        simpl.
+        apply K_Lam.
+        specialize (IHT ((s, t)::Delta) ((Y', t)::Delta') ((s, Y')::ren) (rename y Y' s2) X X' K2 U' L).
+        (* Y' fresh over U, so (Y', t)::Delta |-* U : L should hold, because we can add an irrelevant thing*)
+        (* 
+          Y' <> X', hence we must have s <> X.
+        
+         *)
+        eapply IHT.
+        -- admit.
+        --  assert (s = X) by admit. subst. remember (fresh2 _ s2) as Y'.
+            exfalso.
+          (* Suppose X = s
+
+            suppose ren = (X, X').
+            then (X, y)::(X, X') |- T ~ s2.
+            Suppose X in T and X' in s2. then this is a contradiction I think.
+            So in all cases, if we assume X in T and X' in s2, then X <> s
+          *)
+
+          assert (ren = ((X, X')::nil)) by admit. subst. 
+
+        
+            admit.
+        -- (* should hold? *) admit.
+        -- (* *) admit.
+        -- (* Yes, by Y' not in U' *) admit.
+      * assert (existsb (eqb y) (ftv U') = false) by admit.
+        rewrite H.
+        apply K_Lam.
+        eapply IHT.
+        -- exact H5.
+        -- admit.
+        -- 
+
+Admitted.
+
+(* TODO: See also Theorems/Weakening for already existing PIR version
+*)
+Lemma weakening : forall T T2 K X Δ,
+      ~ In X (ftv T) ->
+      Δ |-* T : K ->
+      ((X, T2)::Δ) |-* T : K.
+Proof.
+ (* PIR PROOF DONE IN WEAKENING THEOREMS FILE*)
+Admitted.
+
+Lemma substituteTCA_vacuous : forall R R1 R2 X U T T' T'',
+    αCtxTrans R1 R2 R ->
+    Alpha R1 T T' -> (* We need the additional T and transitivity because otherwise we cannot deal with the "rename _ _ T" (because then it can only reason about T)*)
+    Alpha R2 T' T'' ->
+    ~ In X (ftv T) ->
+    Alpha R (substituteTCA X U T) T''.
+Proof.
+  intros.
+  generalize dependent T.
+  generalize dependent T''.
+  generalize dependent R.
+  generalize dependent R1.
+  generalize dependent R2.
+  induction T'; intros.
+  - inversion H1; inversion H0; subst.
+    apply not_in_ftv_var in H2.
+    autorewrite with substituteTCA.
+    rewrite <- String.eqb_neq in H2.
+    rewrite H2.
+    eapply alpha_trans; eauto.
+  - 
+    inversion H1; subst.
+    inversion H0; subst.
+    autorewrite with substituteTCA.
+
+    (* difficult lambda case*)
+    destr_eqb_eq X x.
+    { 
+      constructor.
+      eapply alpha_trans; eauto.
+      now constructor.
+    }
+    {
+      assert (~ In X (ftv s1)).
+      {
+        now apply ftv_lam_negative in H2.
+      }
+      destruct (existsb (eqb x) (ftv U)) eqn:sinU.
+      {
+        simpl.
+        remember (fresh2 _ s1) as Y.
+        constructor.
+        apply (IHT' ((s, y)::R2) ((Y, s)::R1) ((Y, y)::R)).
+        - now constructor.
+        - assumption.
+        - eapply alpha_trans_rename_left; eauto.
+        - apply ftv_not_in_rename.
+          + eapply fresh2_over_key_sigma in HeqY. symmetry. eauto.
+            apply in_cons. apply in_eq.
+          + assumption.
+      }
+      {
+        constructor.
+        apply (IHT' ((s, y)::R2) ((x, s)::R1) ((x, y)::R)); auto.
+        now constructor.
+      }
+    }
+    
+  - inversion H1; subst.
+    inversion H0; subst.
+  
+    assert (~ In X (ftv s1)) by now apply not_ftv_app_not_left in H2.
+    assert (~ In X (ftv t1)) by now apply not_ftv_app_not_right in H2.
+    autorewrite with substituteTCA.
+    constructor.
+    + eapply IHT'1; eauto.
+    + eapply IHT'2; eauto.
+Qed.
+
+Corollary substituteTCA_vacuous_specialized X U T:  
+  ~ In X (ftv T) ->
+  Alpha nil (substituteTCA X U T) T.
+Proof.
+  intros.
+  eapply substituteTCA_vacuous; try apply alpha_ids; repeat constructor; auto.
+Qed.
+
+Lemma swap_kinding_context : forall T X Y K1 K2 K3 Δ,
+    X <> Y -> 
+    ((X, K1) :: (Y, K2) :: Δ) |-* T : K3 ->
+    ((Y, K2) :: (X, K1) :: Δ) |-* T : K3.
+Proof.
+
+(* NOTE: See context_invariance for finished proof on PIR *)
+Admitted.
+
+Theorem substituteTCA_preserves_kinding_alpha_ren_nonvac : forall T Delta Delta' ren T' X X' K U' L,
+    Alpha ren T T' ->
+    AlphaVar ren X X' ->
+    CAlpha ren Delta Delta' ->
+    ((X, L) :: Delta) |-* T : K ->
+    In X (ftv T) -> (* otherwise we have a vacuous substitution*)
+    In X' (ftv T') ->
+    Delta' |-* U' : L ->
+    Delta' |-* (substituteTCA X' U' T') : K.
+Proof with eauto.
+  induction T.
+  all: intros Delta Delta' ren T' X X' K U' L HalphaT HalphaX HalphaC Hkind__T HinT HinT' HHkind__U.
+  all: autorewrite with substituteTCA.
+  all: simpl.
+  all: inversion Hkind__T; subst...
+  - (* Ty_Var *)
+    inversion HalphaT; subst.
+    autorewrite with substituteTCA.
+    apply ftv_var in HinT; subst.
+    apply ftv_var in HinT'; subst.
+    rewrite String.eqb_refl.
+    inversion H1.
+    rewrite String.eqb_refl in H0.
+    inversion H0; subst; auto.
+  - (* Ty_Lam *)
+    inversion HalphaT; subst.
+    autorewrite with substituteTCA.
+    destruct (X' =? y)%string eqn:Heqb.
+    + (* X = Y *)
+      apply eqb_eq in Heqb as Heq; subst.
+      apply ftv_lam_no_binder in HinT'.
+      contradiction.
+    + (* X <> Y *)
+      remember HinT as HinT_copy. clear HeqHinT_copy.
+      apply ftv_lam_in_no_binder in HinT.
+      apply ftv_lam_helper in HinT_copy as HinT_body.
+      destruct (existsb (eqb y) (ftv U')) eqn:yInU'.
+      * (* Y in FV(U) *)
+        remember (fresh2 _ s2) as Y'.
+        simpl.
+        apply K_Lam.
+        specialize (IHT ((s, t)::Delta) ((Y', t)::Delta') ((s, Y')::ren) (rename y Y' s2) X X' K2 U' L).
+
+        eapply IHT.
+        -- eapply alpha_trans_rename_right. eauto. eauto.
+        -- apply alpha_var_diff; auto.
+           eapply fresh2_over_key_sigma in HeqY'; eauto. eapply in_cons. eapply in_eq.
+        -- constructor. auto.
+        -- now eapply swap_kinding_context.
+        -- assumption.
+        -- eapply ftv_lam_rename_helper. eauto.
+        -- eapply weakening in HHkind__U; eauto.
+           eapply fresh2_over_tv_value_sigma in HeqY'.
+           ++ intros Hcontra.
+              apply extend_ftv_to_tv in Hcontra.
+              revert Hcontra.
+              eauto.
+           ++ eapply in_cons. eapply in_eq.           
+      * apply K_Lam.
+        eapply IHT.
+        -- exact H5.
+        -- apply alpha_var_diff; eauto.
+           intros Hcontra.
+           subst.
+           rewrite String.eqb_refl in Heqb.
+           discriminate.
+        -- constructor. eauto.
+        -- eapply swap_kinding_context; eauto.
+        -- assumption.
+        -- now apply ftv_lam_helper in HinT'. 
+        -- eapply weakening in HHkind__U; eauto.
+           now apply not_existsb_not_in.
+  - (* Ty_App *)
+    inversion HalphaT; subst.
+    autorewrite with substituteTCA.
+    eapply K_App.
+      + destruct (in_dec String.string_dec X' (ftv s2)). 
+        -- eapply IHT1; eauto. eapply alpha_preserves_ftv; eauto.
+          ++ eapply @alpha_sym with (ren' := sym_alpha_ctx ren).
+             eapply sym_alpha_ctx_is_sym.
+             eauto.
+          ++ eapply alphavar_sym.
+             eapply sym_alpha_ctx_is_sym.
+             auto.
+        -- remember n as n'; clear Heqn'.
+           eapply substituteTCA_vacuous_specialized in n.
+           eapply alpha_preserves_typing with (s := T1).
+           ++ eapply alpha_trans.
+              ** eapply id_right_trans.
+              ** eauto.
+              ** change (ctx_id_right ren) with (nil ++ ctx_id_right ren) .
+                 eapply alpha_extend_ids_right.
+                 apply ctx_id_right_is_id.
+                 eapply alpha_sym.
+                 constructor.
+                 eauto.
+           ++ eauto.
+           ++ eapply strengthen_Γ_cons.
+              ** eapply @alpha_preserves_no_ftv with (ren := sym_alpha_ctx ren) (x := X') (x' := X).
+                 --- eauto.
+                 --- eapply @alpha_sym.
+                    eapply sym_alpha_ctx_is_sym.
+                    eauto.
+                 --- eapply alphavar_sym.
+                     eapply sym_alpha_ctx_is_sym.
+                     eauto.
+              ** eauto.
+      + destruct (in_dec String.string_dec X' (ftv t2)).
+        -- eapply IHT2; eauto. eapply alpha_preserves_ftv; eauto.
+           ++ eapply @alpha_sym with (ren' := sym_alpha_ctx ren).
+              eapply sym_alpha_ctx_is_sym.
+              eauto.
+           ++ eapply alphavar_sym.
+              eapply sym_alpha_ctx_is_sym.
+              eauto.
+        -- remember n as n'; clear Heqn'.
+           eapply substituteTCA_vacuous_specialized in n.
+           eapply alpha_preserves_typing with (s := T2).
+           ++ eapply alpha_trans.
+              ** eapply id_right_trans.
+              ** eauto.
+              ** change (ctx_id_right ren) with (nil ++ ctx_id_right ren) .
+                 eapply alpha_extend_ids_right.
+                 apply ctx_id_right_is_id.
+                 eapply alpha_sym.
+                 constructor.
+                 eauto.
+           ++ exact HalphaC.
+           ++ eapply strengthen_Γ_cons.
+              ** eapply @alpha_preserves_no_ftv with (ren := sym_alpha_ctx ren) (x := X') (x' := X).
+                 --- eauto.
+                 --- eapply @alpha_sym.
+                     eapply sym_alpha_ctx_is_sym.
+                     eauto.
+                 --- eapply alphavar_sym.
+                     eapply sym_alpha_ctx_is_sym.
+                     eauto.
+              ** eauto.
+Qed.
+
+Corollary substituteTCA_preserves_kinding_specialised : forall T Delta X K U L,
+    ((X, L) :: Delta) |-* T : K ->
+    Delta |-* U : L ->
+    Delta |-* (substituteTCA X U T) : K.
+Proof with eauto.
+  intros.
+  destruct (in_dec String.string_dec X (ftv T)).
+  - eapply substituteTCA_preserves_kinding_alpha_ren_nonvac; eauto; try constructor.
+    + apply alpha_ids. constructor.
+  - remember n as n'; clear Heqn'.
+    eapply strengthen_Γ_cons in H; eauto.
+    eapply alpha_preserves_typing; eauto.
+    + eapply alpha_sym; try constructor.
+      now eapply substituteTCA_vacuous_specialized.
+    + constructor.
+Qed.
+
+      
+
+      

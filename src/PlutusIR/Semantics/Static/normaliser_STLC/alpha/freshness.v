@@ -50,11 +50,27 @@ Proof.
   simpl. intuition.
 Qed.
 
+Lemma not_in_ftv_var x x' :
+  ~ In x (ftv (tmvar x')) -> x <> x'.
+Proof.
+  simpl. intuition.
+Qed.
+
 Lemma ftv_var_eq x :
   In x (ftv (tmvar x)).
 Proof.
   simpl. intuition.
 Qed.
+
+Lemma not_ftv_app_not_left t1 t2 x :
+  ~ In x (ftv (tmapp t1 t2)) -> ~ In x (ftv t1).
+Proof.
+Admitted.
+
+Lemma not_ftv_app_not_right t1 t2 x :
+  ~ In x (ftv (tmapp t1 t2)) -> ~ In x (ftv t2).
+  Proof.
+  Admitted.
 
 (* By X in ftv tmlam Y, we know X <> Y.
   It doesnt matter wheteher Y' = X, if it is, then also X in ftv (rename Y Y' t).
@@ -93,6 +109,10 @@ Lemma tv_lam_rename_helper X Y Y' A t :
    Y <> Y' -> ~ In X (tv (tmlam Y A t)) -> ~ In X (tv (rename Y Y' t)).
 Admitted.
 
+Lemma ftv_lam_in_no_binder Y X A t :
+  In Y (ftv (tmlam X A t)) -> X <> Y.
+Proof.
+Admitted.
 
 Lemma ftv_lam_no_binder X A t :
   ~ In X (ftv (tmlam X A t)).

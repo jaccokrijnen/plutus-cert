@@ -6,7 +6,9 @@ From PlutusCert Require Import
   Kinding.Checker
   Type_reduction
   Static.Util
-  CpdtTactics.
+  CpdtTactics
+  SubstituteTCA
+  .
 Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Strings.String.
@@ -23,18 +25,86 @@ Proof.
   + now apply normalisation__stable'__normal.
 Qed.
 
+Lemma normalise_extend2 T1 T2 T3 :
+  step T1 T2 -> normalise T1 T3 -> normalise T2 T3.
+Proof.
+Admitted.
+
+Lemma step_dec_counter t : t = Ty_App (Ty_Builtin DefaultUniProtoPair) (Ty_Builtin DefaultUniInteger) 
+  -> prod((has_kind [] t Kind_Base)) (prod(forall t', step t t' -> Empty_set) (~ normal_Ty t)).
+Proof.
+  intros.
+  split; [|split]; subst.
+  - eapply K_App; repeat constructor.
+  - intros.
+    inversion H.
+    + inversion H3.
+    + inversion H4.
+  - intros Hcontra.
+    inversion Hcontra.
+    inversion H.
+    inversion H3.
+Qed.
+
+Definition step_dec (t : ty) : {t' & step t t'} + normal_Ty t.
+Proof.
+  induction t.
+  - right.
+    repeat constructor.
+  - destruct IHt1.
+    + left.
+      destruct s as [t1' Ht1].
+      exists (Ty_Fun t1' t2).
+      now constructor.
+    + destruct IHt2.
+      * left.
+        destruct s as [t2' Ht2].
+        exists (Ty_Fun t1 t2').
+        now constructor.
+      * right.
+        apply NO_TyFun; assumption.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - destruct IHt1.
+    + left.
+      destruct s as [t1' Ht1].
+      exists (Ty_App t1' t2).
+      now constructor.
+    + destruct IHt2.
+      * left.
+        destruct s as [t2' Ht2].
+        exists (Ty_App t1 t2').
+        now constructor.
+      * right.
+        {
+        induction t1.
+        - admit.
+        - admit.
+        - admit.
+        - admit.
+        - (* this can be well-kinded and yet not be normal and not take a step*) admit.
+        - admit.
+        - admit.
+        }
+
+Admitted.
+
 (* Wouter's suggestion: do not use explicit normalizer in soundness proof*)
 Theorem SN__normalise t :
   SN t -> {t' & normalise t t'}.
 Proof.
   intros HSN.
   induction HSN as [t].
-  (* Suppose step_d_f t = None, then t normal, then t' = t and normalise t t *)
-  assert ({t' & step t t'}) as [t' Ht_steps] by admit.
-  specialize (H t' Ht_steps) as [tn normt'].
-  exists tn.
-  now apply normalise_extend with (T2 := t').
-Admitted.
+  destruct (step_dec t).
+  - destruct s0 as [t' Ht_steps].
+    specialize (H t' Ht_steps) as [tn normt'].
+    exists tn.
+    now apply normalise_extend with (T2 := t').
+  - exists t.
+    now apply normalisation__stable'__normal.
+Qed.
 
 
 Definition normaliser {T Δ K} (Hwk : Δ |-* T : K) :=
@@ -243,14 +313,37 @@ Proof.
       reflexivity.
 Qed.
 
-Theorem normaliser_preserves_kinding {Δ T Tn K } :
-  Δ |-* T : K -> normaliser_Jacco Δ T = Some Tn -> Δ |-* Tn : K.
+(* We ended up not needing it for normalisation_preserves_kinding because we moved through normalise instead of normaliser*)
+Theorem step_preserves_kinding {T T'} : forall Δ K,
+  Δ |-* T : K -> step T T' -> Δ |-* T' : K.
 Proof.
-(* will rely on step_preserves_typing *)
-Admitted.
+  intros.
+  generalize dependent K.
+  generalize dependent Δ.
+  induction H0; intros Δ K0 Hkind_T; 
+    inversion Hkind_T; subst; try solve [econstructor; eauto].
+  - inversion H2; subst.
+    eapply substituteTCA_preserves_kinding; eauto.
+Qed.
 
 Theorem normalisation_preserves_kinding {Δ T Tn K } :
   Δ |-* T : K -> normalise T Tn -> Δ |-* Tn : K.
 Proof.
-(* We can use the above almost directly with normalisation sound/complete*)
-Admitted.
+  intros.
+  generalize dependent K.
+  generalize dependent Δ.
+  induction H0; intros Δ K0 Hkind; inversion Hkind; subst; try solve [econstructor; eauto].
+  - eapply IHnormalise3; eauto.
+    eapply substituteTCA_preserves_kinding; eauto.
+    specialize (IHnormalise1 Δ (Kind_Arrow K1 K0) H2).
+    inversion IHnormalise1; subst.
+    assumption.
+Qed.
+
+Theorem normaliser_preserves_kinding {Δ T Tn K } :
+  Δ |-* T : K -> normaliser_Jacco Δ T = Some Tn -> Δ |-* Tn : K.
+Proof.
+  intros.
+  apply (normaliser_Jacco_sound) in H0.
+  apply (normalisation_preserves_kinding H) in H0; auto.
+Qed.
