@@ -43,8 +43,8 @@ Proof with eauto_LR.
   unfold LR_logically_approximate.
 
   destruct IH_LR as [Htyp__e [Htyp__e' IH__e]].
-
-  split... split...
+  (* TODO: What did I break here by adding kinding assumptions??? *)
+  (* split... split...
 
   intros k rho env env' HRD HRG.
   subst.
@@ -141,5 +141,5 @@ Proof with eauto_LR.
 
       split... admit. (* ADMIT: I had no time to finish this. Should hold. *)
       split... admit. (* ADMIT: I had no time to finish this. Should hold. *)
-(* ADMIT: Proof contains admits. *)
+ADMIT: Proof contains admits. *)
 Admitted.

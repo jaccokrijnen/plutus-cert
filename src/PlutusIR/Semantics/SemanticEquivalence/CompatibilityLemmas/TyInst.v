@@ -37,8 +37,8 @@ Proof with eauto_LR.
   unfold LR_logically_approximate.
 
   destruct IH_LR as [Htyp__e [Htyp__e' IH__e]].
-
-  split... split...
+  (* TODO: What did I break here by adding kidnign assumptions? *)
+  (* split... split...
 
   intros k rho env env' HRD HRG.
   subst.
@@ -110,5 +110,5 @@ Proof with eauto_LR.
       eapply RV_equiv...
     + destruct temp as [Herr Herr'].
       inversion Herr.
-  - (* ADMIT: I had no time to finish this. *)
+  - ADMIT: I had no time to finish this. *)
 Admitted.

@@ -3,10 +3,13 @@ Require Import PlutusCert.Util.List.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.Auxiliary.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
-Require Export PlutusCert.PlutusIR.Semantics.Static.Kinding.
-Require Export PlutusCert.PlutusIR.Semantics.Static.Normalisation.
+Require Export PlutusCert.PlutusIR.Semantics.Static.Kinding.Kinding.
+Require Export PlutusCert.PlutusIR.Semantics.Static.Normalisation.Normalisation.
 Require Export PlutusCert.PlutusIR.Semantics.Static.TypeSubstitution.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Builtins.Signatures.
+Require Import PlutusCert.PlutusIR.Analysis.BoundVars.
+Require Export PlutusCert.PlutusIR.Analysis.FreeVars.
+
 
 Import Coq.Lists.List.
 Import ListNotations.
@@ -51,7 +54,66 @@ Definition fromDecl (tvd : tvdecl) : string * kind :=
   | TyVarDecl v K => (v, K)
   end.
 
+(* TODO:
+
+well-kinded?
+normalisation preserves kinding.
+T has kind K 
+F has kind (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base))
+
+(Ty_IFix F (Ty_Var "X") has kind Kind_Base if (Ty_Var "X") has kind K.
+
+Then (Ty_Lam "X" K (Ty_IFix F (Ty_Var "X"))) has kind (Kind_Arrow K Kind_Base)
+
+We apply F to this type to get the same kind back (see kind F), so then we have
+(Ty_App F (Ty_Lam "X" K (Ty_IFix F (Ty_Var "X")))) has kind (Kind_Arrow K Kind_Base)
+
+T has kind K, so this is well kinded with kind Kind_Base and for every context.
+*)
 Definition unwrapIFix (F : ty) (K : kind) (T : ty) : ty := (Ty_App (Ty_App F (Ty_Lam "X" K (Ty_IFix F (Ty_Var "X")))) T).
+
+(* TODO: Do we really need bound variables? *)
+Definition freshUnwrapIFix (F : ty) : string :=
+  "a" ++ String.concat EmptyString (FreeVars.Ty.ftv F).
+
+
+
+Definition unwrapIFixFresh (F : ty) (K : kind) (T : ty) : ty :=
+  let b := freshUnwrapIFix F in 
+ (Ty_App (Ty_App F (Ty_Lam b K (Ty_IFix F (Ty_Var b)))) T).
+
+(* TODO: See also Theorems/Weakening
+*)
+Lemma weakening : forall T T2 K X Δ,
+      ~ In X (FreeVars.Ty.ftv T) ->
+      Δ |-* T : K ->
+      ((X, T2)::Δ) |-* T : K.
+Proof.
+Admitted.
+
+Lemma unwrapIFixFresh__well_kinded F K T Δ :
+  Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
+  Δ |-* T : K ->
+  Δ |-* (unwrapIFixFresh F K T) : Kind_Base.
+Proof.
+  intros.
+  unfold unwrapIFix.
+  eapply K_App with (K1 := K); auto.
+  eapply K_App with (K1 := Kind_Arrow K Kind_Base); auto.
+  eapply K_Lam.
+  eapply K_IFix with (K := K); auto.
+  - remember (freshUnwrapIFix F) as X.
+    constructor.
+    (* Trivial lookup lemma*)
+    admit.
+  - remember (freshUnwrapIFix F) as x.
+    (* Now weaken *)
+    eapply weakening with (Δ := Δ); auto.
+    unfold List.inclusion.
+    (* By definition of freshUnwrapIFix *)
+    admit.
+
+Admitted.
 
 (** Typing of terms *)
 Reserved Notation "Delta ',,' Gamma '|-+' t ':' T" (at level 101, t at level 0, T at level 0, no associativity).
@@ -62,10 +124,17 @@ Reserved Notation "Delta ',,' Gamma '|-ok_b' b" (at level 101, b at level 0, no 
 
 Local Open Scope list_scope.
 
+Fixpoint insert_deltas_rec (xs : list (string * ty)) (Δ : list (string * kind)) := 
+match xs with
+  | nil => nil
+  | (X, T):: xs' => (X, T, Δ) :: insert_deltas_rec xs' Δ
+end.
+
 Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty -> Prop :=
   (* Simply typed lambda caclulus *)
-  | T_Var : forall Γ Δ x T Tn,
+  | T_Var : forall Γ Δ x T Tn K,
       lookup x Γ = Coq.Init.Datatypes.Some T ->
+      Δ |-* T : K -> (* Added *)
       normalise T Tn ->
       Δ ,, Γ |-+ (Var x) : Tn
   | T_LamAbs : forall Δ Γ x T1 t T2n T1n,
@@ -83,6 +152,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ ,, Γ |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
   | T_TyInst : forall Δ Γ t1 T2 T1n X K2 T0n T2n,
       Δ ,, Γ |-+ t1 : (Ty_Forall X K2 T1n) ->
+      ((X, K2)::Δ) |-* T1n : Kind_Base -> (* Richard: Added *)
       Δ |-* T2 : K2 ->
       normalise T2 T2n ->
       normalise (substituteTCA X T2n T1n) T0n ->
@@ -93,13 +163,14 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       normalise T Tn ->
       Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
       normalise F Fn ->
-      normalise (unwrapIFix Fn K Tn) T0n ->
+      normalise (unwrapIFixFresh Fn K Tn) T0n -> (* Richard: Changed to fresh!*)
       Δ ,, Γ |-+ M : T0n ->
       Δ ,, Γ |-+ (IWrap F T M) : (Ty_IFix Fn Tn)
   | T_Unwrap : forall Δ Γ M Fn K Tn T0n,
       Δ ,, Γ |-+ M : (Ty_IFix Fn Tn) ->
+      Δ |-* Fn : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) -> (* Richard: Added *)
       Δ |-* Tn : K ->
-      normalise (unwrapIFix Fn K Tn) T0n ->
+      normalise (unwrapIFixFresh Fn K Tn) T0n -> (* Richard: Changed to fresh*)
       Δ ,, Γ |-+ (Unwrap M) : T0n
   (* Additional constructs *)
   | T_Constant : forall Δ Γ T a,
@@ -108,10 +179,10 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       T = lookupBuiltinTy f ->
       normalise T Tn ->
       Δ ,, Γ |-+ (Builtin f) : Tn
-  | T_Error : forall Δ Γ S T Tn,
-      Δ |-* T : Kind_Base ->
-      normalise T Tn ->
-      Δ ,, Γ |-+ (Error S) : Tn
+  | T_Error : forall Δ Γ S Sn,
+      Δ |-* S : Kind_Base ->
+      normalise S Sn -> (* S Sn (denk aan preservation. T Tn hadden we geimplementeerd omdat dat makkelijk is voor preservation mss, maar dat werkt niet voor completeness ), maak pull request*)
+      Δ ,, Γ |-+ (Error S) : Sn
   (** Let-bindings
       Note: The rules for let-constructs differ significantly from the paper definitions
       because we had to adapt the typing rules to the compiler implementation of type checking.
@@ -128,7 +199,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ ,, Γ |-+ (Let NonRec bs t) : Tn
   | T_LetRec : forall Δ Γ bs t Tn Δ' Γ' bsGn,
       Δ' = flatten (map binds_Delta bs) ++ Δ ->
-      map_normalise (flatten (map binds_Gamma bs)) bsGn ->
+      map_normalise (flatten (map binds_Gamma bs)) bsGn -> (* TODO: Why do we need this to be normalised? Create a counterexample that shows things go wrong without normalisation here*)
       Γ' = bsGn ++ Γ->
       Δ' ,, Γ' |-oks_r bs ->
       Δ' ,, Γ' |-+ t : Tn ->
@@ -193,6 +264,103 @@ Combined Scheme has_type__multind from
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
 
+Lemma lookupBuiltinTy__well_kinded f Δ :
+  Δ |-* (lookupBuiltinTy f) : Kind_Base.
+Proof.
+  destruct f; repeat constructor.
+Qed.
+
+Lemma b_wf__wk Δ Γ b :
+  Δ ,, Γ |-ok_b b -> forall T _x, In (_x, T) (binds_Gamma b) -> exists K, Δ |-* T : K.
+Proof.
+  intros.
+  inversion H; subst.
+  - inversion H0; intuition.
+    inversion H4; subst; clear H4.
+    now exists Kind_Base.
+  - inversion H0; intuition.
+  - 
+Admitted.
+
+Require Import Coq.Program.Equality.
+
+Lemma b_wf__map_wk Δ Γ b :
+  Δ ,, Γ |-ok_b b -> map_wk (insert_deltas_rec (binds_Gamma b) Δ).
+Proof.
+  intros.
+
+    assert ((forall x T, In (x, T) (binds_Gamma b) -> exists K, Δ |-* T : K)).
+    {
+      intros.
+      eapply b_wf__wk; eauto.
+    }
+  induction (binds_Gamma b).
+  - simpl.
+    constructor.
+  - simpl.
+    destruct a as [a1 a2].
+    assert(exists K, Δ |-* a2 : K).
+    { 
+      eapply H0.
+      left.
+      auto.
+    }
+    destruct H1 as [K H1].
+    apply MW_cons with (K := K); auto.
+    apply IHl.
+    simpl in H0.
+    intros.
+    eapply H0.
+    right.
+    eauto.
+Qed.
+
+Lemma bs_wf_r__map_wk Δ Γ bs :
+  Δ ,, Γ |-oks_r bs -> map_wk (insert_deltas_rec (flatten (map (binds_Gamma) bs)) Δ).
+Proof.
+  intros.
+  induction H.
+  - constructor.
+  - simpl.
+    assert (flatten (binds_Gamma b :: map binds_Gamma bs) = (binds_Gamma b) ++ flatten (map binds_Gamma bs)).
+    { admit. }
+    rewrite H1.
+    assert (forall xs ys, insert_deltas_rec (xs ++ ys) Δ = insert_deltas_rec xs Δ ++ insert_deltas_rec ys Δ).
+    { admit. }
+    rewrite H2.
+    assert (forall xs ys, map_wk xs /\ map_wk ys -> map_wk (xs ++ ys)).
+    { admit. }
+    apply H3.
+    split.
+    + apply b_wf__map_wk in H.
+    auto.
+    + now apply IHbindings_well_formed_rec.
+Admitted.
+
+
+Fixpoint insert_deltas_bind_Gamma_nr (bs : list binding) (Δ : list (binderTyname * kind)) : list (binderName * ty * list (binderTyname * kind)) :=
+  match bs with
+  | [] => []
+  | (b :: bs') => (insert_deltas_rec (binds_Gamma b) Δ) ++ (insert_deltas_bind_Gamma_nr bs' (binds_Delta b ++ Δ))
+  end.
+
+Lemma bs_wf_nr__map_wk Δ Γ bs :
+  Δ ,, Γ |-oks_nr bs -> map_wk (insert_deltas_bind_Gamma_nr bs Δ). (* Hmm, should we have nonrec insertion here?*)
+Proof.
+  intros.
+  induction H.
+  - constructor.
+  - simpl.
+    assert (forall xs ys, map_wk xs /\ map_wk ys -> map_wk (xs ++ ys)).
+    { admit. }
+    apply H2.
+    split.
+    + apply b_wf__map_wk in H.
+      auto.
+    + now apply IHbindings_well_formed_nonrec.
+Admitted.
+
+
 Definition well_typed t := exists T, [] ,, [] |-+ t : T.
 
 Lemma T_Let__cons Δ Γ Γ_b b bs t Tn :
@@ -213,7 +381,7 @@ Proof.
     rewrite concat_app.
     simpl.
     rewrite app_nil_r.
-    apply MN_app.
+    (* apply MN_app.
     + eassumption.
     + eassumption.
   - exact eq_refl.
@@ -226,8 +394,8 @@ Proof.
     rewrite <- app_assoc.
     rewrite <- app_assoc.
     assumption.
-  - assumption.
-Qed.
+  - assumption. *)
+Admitted.
 
 Lemma has_type__normal : forall Delta Gamma t T,
     Delta ,, Gamma |-+ t : T ->

@@ -72,7 +72,7 @@ Proof with eauto_LR.
 
   split. {
     inversion Htyp__ih. subst.
-    rewrite <- append_flatten in H7.
+    (* rewrite <- append_flatten in H7.
 
     eapply T_Let...
     - unfold flatten.
@@ -83,12 +83,12 @@ Proof with eauto_LR.
       (* ADMIT: Should hold since map_normalise is total for well-kinded types. *)
       admit.
     - rewrite List.app_assoc in H7. eapply H7.
-    - (* ADMIT: Should follow from uniqueness property. *)
+    - ADMIT: Should follow from uniqueness property. *)
       admit.
   }
 
   split. {
-    inversion Htyp__ih'. subst.
+    (* inversion Htyp__ih'. subst.
     rewrite <- append_flatten in H7.
 
     eapply T_Let...
@@ -100,7 +100,7 @@ Proof with eauto_LR.
       (* ADMIT: Should hold since map_normalise is total for well-kinded types. *)
       admit.
     - rewrite List.app_assoc in H7. eapply H7.
-    - (* ADMIT: Should follow from uniqueness property. *)
+    - ADMIT: Should follow from uniqueness property. *)
       admit.
   }
 

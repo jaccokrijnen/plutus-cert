@@ -1,5 +1,5 @@
 Require Import PlutusCert.PlutusIR.Analysis.Equality.
-Require Import PlutusCert.PlutusIR.Semantics.Static.Kinding.
+Require Import PlutusCert.PlutusIR.Semantics.Static.Kinding.Kinding.
 Require Import PlutusCert.PlutusIR.
 
 Require Import Coq.Bool.Bool.

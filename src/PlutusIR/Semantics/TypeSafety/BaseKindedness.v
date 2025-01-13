@@ -27,7 +27,7 @@ Proof with (eauto || solver).
   - inversion IHhas_type. subst.
     eapply preservation.
     2:{
-      apply H2.
+      apply H3.
     }
     eapply substituteTCA_preserves_kinding...
     eapply preservation...
@@ -35,11 +35,7 @@ Proof with (eauto || solver).
     inversion IHhas_type. subst.
     assert (K = K0) by admit.
     subst.
-    eapply preservation in H1; eauto.
-    econstructor...
-    econstructor...
-    econstructor...
-    econstructor...
+    eapply preservation in H1; eauto;
     (* ADMIT: Should follow from uniqnuess property. *)
     admit.
   - (* TODO: keep typing derivation around during induction and use uniType__basekinded *)

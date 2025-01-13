@@ -85,7 +85,7 @@ Combined Scheme normal_Ty__multind from
 (** Type normalisation *)
 Inductive normalise : ty -> ty -> Prop :=
   | N_BetaReduce : forall bX K T1 T2 T1n T2n T,
-      normalise T1 (Ty_Lam bX K T1n) ->
+      normalise T1 (Ty_Lam bX K T1n) ->     (* TyApp (Lam bX Kind_Base (Ty_Var bX)) (Lam bY Kind_Base (Ty_Var bY)) -> Lam bY Kind_Base (Ty_Var bY) *)
       normalise T2 T2n ->
       normalise (substituteTCA bX T2n T1n) T ->
       normalise (Ty_App T1 T2) T
@@ -221,6 +221,7 @@ Lemma normalisation__complete : forall S T Sn,
 Proof. Abort.
 
 (** Normalisation of lists of types*)
+(* Added well-kinded proofs as this is necessary for completeness of normalisation *)
 Inductive map_normalise : list (string * ty) -> list (string * ty) -> Prop :=
   | MN_nil :
       map_normalise nil nil
@@ -228,6 +229,7 @@ Inductive map_normalise : list (string * ty) -> list (string * ty) -> Prop :=
       map_normalise Ts Tsn ->
       normalise T Tn ->
       map_normalise ((X, T) :: Ts) ((X, Tn) :: Tsn).
+
 
 #[export] Hint Constructors map_normalise : core.
 
@@ -305,3 +307,6 @@ Axiom norm_normalise : forall ty, normalise ty (norm ty).
 
 Axiom map_norm : list (string * ty) -> list (string * ty).
 Axiom map_norm_map_normalise : forall Ts, map_normalise Ts (map_norm Ts).
+
+(****** Normaliser function ******)
+

@@ -92,7 +92,8 @@ Section Term.
     Forall2 R ts ts' ->
     R (Constr n T ts) (Constr n T ts').
 
-  Definition compat_Case := ∀ t t' ts ts' T,
+
+  Definition compat_Case := ∀ T (t t' : term) ts ts',
     R t t' ->
     Forall2 R ts ts' ->
     R (Case T t ts) (Case T t' ts').
