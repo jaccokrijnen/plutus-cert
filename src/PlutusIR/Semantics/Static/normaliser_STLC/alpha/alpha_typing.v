@@ -237,81 +237,44 @@ Proof.
  (* PIR PROOF DONE IN WEAKENING THEOREMS FILE*)
 Admitted.
 
-Lemma substituteTCA_vacuous : forall R R1 R2 X U T T' T'',
-    αCtxTrans R1 R2 R ->
-    Alpha R1 T T' -> (* We need the additional T and transitivity because otherwise we cannot deal with the "rename _ _ T" (because then it can only reason about T)*)
-    Alpha R2 T' T'' ->
+Lemma substituteTCA_vacuous : forall R X U T T',
+    Alpha R T T' ->
     ~ In X (ftv T) ->
-    Alpha R (substituteTCA X U T) T''.
+    Alpha R (substituteTCA X U T) T'.
 Proof.
   intros.
   generalize dependent T.
-  generalize dependent T''.
   generalize dependent R.
-  generalize dependent R1.
-  generalize dependent R2.
   induction T'; intros.
-  - inversion H1; inversion H0; subst.
-    apply not_in_ftv_var in H2.
-    autorewrite with substituteTCA.
-    rewrite <- String.eqb_neq in H2.
-    rewrite H2.
-    eapply alpha_trans; eauto.
-  - 
-    inversion H1; subst.
-    inversion H0; subst.
-    autorewrite with substituteTCA.
-
-    (* difficult lambda case*)
-    destr_eqb_eq X x.
-    { 
+  all: inversion H; subst.
+  all: autorewrite with substituteTCA.
+  - apply not_in_ftv_var in H0.
+    rewrite <- String.eqb_neq in H0.
+    now rewrite H0.
+  - destr_eqb_eq X x; [now constructor|].
+    assert (~ In X (ftv s1)) by now apply ftv_lam_negative in H0.
+    destruct (existsb (eqb x) (ftv U)) eqn:sinU.
+    + simpl.
+      remember (fresh2 _ s1) as Y.
       constructor.
-      eapply alpha_trans; eauto.
-      now constructor.
-    }
-    {
-      assert (~ In X (ftv s1)).
-      {
-        now apply ftv_lam_negative in H2.
-      }
-      destruct (existsb (eqb x) (ftv U)) eqn:sinU.
-      {
-        simpl.
-        remember (fresh2 _ s1) as Y.
-        constructor.
-        apply (IHT' ((s, y)::R2) ((Y, s)::R1) ((Y, y)::R)).
-        - now constructor.
-        - assumption.
-        - eapply alpha_trans_rename_left; eauto.
-        - apply ftv_not_in_rename.
-          + eapply fresh2_over_key_sigma in HeqY. symmetry. eauto.
-            apply in_cons. apply in_eq.
-          + assumption.
-      }
-      {
-        constructor.
-        apply (IHT' ((s, y)::R2) ((x, s)::R1) ((x, y)::R)); auto.
-        now constructor.
-      }
-    }
-    
-  - inversion H1; subst.
-    inversion H0; subst.
-  
-    assert (~ In X (ftv s1)) by now apply not_ftv_app_not_left in H2.
-    assert (~ In X (ftv t1)) by now apply not_ftv_app_not_right in H2.
-    autorewrite with substituteTCA.
-    constructor.
-    + eapply IHT'1; eauto.
+      eapply IHT'.
+      * eapply alpha_trans_rename_left; eauto.
+      * apply ftv_not_in_rename; auto.
+        eapply fresh2_over_key_sigma in HeqY. symmetry. eauto.
+        apply in_cons. apply in_eq.
+    + constructor; auto.
+  - constructor.
+    + eapply IHT'1; eauto. 
+      now apply not_ftv_app_not_left in H0.
     + eapply IHT'2; eauto.
+      now apply not_ftv_app_not_right in H0.
 Qed.
 
 Corollary substituteTCA_vacuous_specialized X U T:  
   ~ In X (ftv T) ->
   Alpha nil (substituteTCA X U T) T.
 Proof.
-  intros.
-  eapply substituteTCA_vacuous; try apply alpha_ids; repeat constructor; auto.
+  eapply substituteTCA_vacuous; try apply alpha_ids; auto; repeat constructor.
 Qed.
 
 Lemma swap_kinding_context : forall T X Y K1 K2 K3 Δ,
@@ -479,7 +442,3 @@ Proof with eauto.
       now eapply substituteTCA_vacuous_specialized.
     + constructor.
 Qed.
-
-      
-
-      

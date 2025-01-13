@@ -313,7 +313,7 @@ Proof.
       reflexivity.
 Qed.
 
-(* We ended up not needing it for normalisation_preserves_kinding because we moved through normalise instead of normaliser*)
+(* TODO: We ended up not needing it for normalisation_preserves_kinding because we moved through normalise instead of normaliser*)
 Theorem step_preserves_kinding {T T'} : forall Δ K,
   Δ |-* T : K -> step T T' -> Δ |-* T' : K.
 Proof.
