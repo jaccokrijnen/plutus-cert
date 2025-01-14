@@ -1046,7 +1046,7 @@ Qed.
 
 (* Main lemma for going from using t alpha t' in SN t' to SN t*)
 Lemma step_d_preserves_alpha ren s t s' :
-  Alpha ren s t -> step_d s s' -> {t' & prod (step_d t t') (Alpha ren s' t')}.
+  Alpha ren s t -> step_d s s' -> {t' & (step_d t t') * (Alpha ren s' t')}%type.
 Proof.
   intros Halpha Hstep.
   generalize dependent t.

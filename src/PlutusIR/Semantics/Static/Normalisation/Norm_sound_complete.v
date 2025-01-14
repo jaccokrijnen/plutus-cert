@@ -25,91 +25,146 @@ Proof.
   + now apply normalisation__stable'__normal.
 Qed.
 
-Lemma normalise_extend2 T1 T2 T3 :
-  step T1 T2 -> normalise T1 T3 -> normalise T2 T3.
-Proof.
-Admitted.
+Require Import Coq.Program.Equality.
 
-Lemma step_dec_counter t : t = Ty_App (Ty_Builtin DefaultUniProtoPair) (Ty_Builtin DefaultUniInteger) 
-  -> prod((has_kind [] t Kind_Base)) (prod(forall t', step t t' -> Empty_set) (~ normal_Ty t)).
+Definition step_dec (T : ty) : forall Δ K, has_kind Δ T K -> {T' & step T T'} + normal_Ty T.
 Proof.
-  intros.
-  split; [|split]; subst.
-  - eapply K_App; repeat constructor.
-  - intros.
-    inversion H.
-    + inversion H3.
-    + inversion H4.
-  - intros Hcontra.
-    inversion Hcontra.
-    inversion H.
-    inversion H3.
-Qed.
-
-Definition step_dec (t : ty) : {t' & step t t'} + normal_Ty t.
-Proof.
-  induction t.
+  induction T; intros.
   - right.
     repeat constructor.
-  - destruct IHt1.
-    + left.
+  - apply kind_checking_complete in H.
+    inversion H.
+    repeat destruct_match.
+    apply kind_checking_sound in Heqo.
+    apply kind_checking_sound in Heqo0.
+    edestruct IHT1; eauto.
+    + left. 
       destruct s as [t1' Ht1].
-      exists (Ty_Fun t1' t2).
+      exists (Ty_Fun t1' T2).
       now constructor.
-    + destruct IHt2.
+    + edestruct IHT2; eauto.
       * left.
         destruct s as [t2' Ht2].
-        exists (Ty_Fun t1 t2').
+        exists (Ty_Fun T1 t2').
         now constructor.
-      * right.
-        apply NO_TyFun; assumption.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - destruct IHt1.
+  
+  - apply kind_checking_complete in H.
+    inversion H.
+    repeat destruct_match.
+    apply kind_checking_sound in Heqo.
+    apply kind_checking_sound in Heqo0.
+    edestruct IHT1; eauto.
     + left.
       destruct s as [t1' Ht1].
-      exists (Ty_App t1' t2).
+      exists (Ty_IFix t1' T2).
       now constructor.
-    + destruct IHt2.
+    + edestruct IHT2; eauto.
+      left.
+      destruct s as [t2' Ht2].
+      exists (Ty_IFix T1 t2').
+      now constructor.
+  - apply kind_checking_complete in H. (* Note: Move to kind_checker world to fix not being able to `inversion` on `has_kind`*)
+    inversion H.
+    repeat destruct_match.
+    apply kind_checking_sound in Heqo.
+    destruct (IHT ((b, k) :: Δ) Kind_Base Heqo).
+    + left.
+      destruct s as [t1' Ht1].
+      exists (Ty_Forall b k t1').
+      now constructor.
+    + right.
+      apply NO_TyForall; assumption.
+  - right. apply NO_TyBuiltin. 
+  - apply kind_checking_complete in H. (* Note: Move to kind_checker world to fix not being able to `inversion` on `has_kind`*)
+    inversion H.
+    repeat destruct_match.
+    apply kind_checking_sound in Heqo.
+    destruct (IHT ((b, k) :: Δ) k0 Heqo).
+    + left.
+      destruct s as [t1' Ht1].
+      exists (Ty_Lam b k t1').
+      now constructor.
+    + right.
+      apply NO_TyLam; assumption.
+  - remember H as H_copy; clear HeqH_copy.
+    apply kind_checking_complete in H. (* Note: Move to kind_checker world to fix not being able to `inversion` on `has_kind`*)
+    inversion H.
+    repeat destruct_match.
+    apply kind_checking_sound in Heqo.
+    destruct (IHT1 Δ (Kind_Arrow k0_1 k0_2) Heqo).
+    + left.
+      destruct s as [t1' Ht1].
+      exists (Ty_App t1' T2).
+      now constructor.
+    + apply kind_checking_complete in H_copy. (* Note: Move to kind_checker world to fix not being able to `inversion` on `has_kind`*)
+      inversion H.
+      repeat destruct_match.
+      apply kind_checking_sound in Heqo2.
+      destruct (IHT2 Δ k2 Heqo2).
       * left.
         destruct s as [t2' Ht2].
-        exists (Ty_App t1 t2').
+        exists (Ty_App T1 t2').
         now constructor.
-      * right.
+      * 
         {
-        induction t1.
-        - admit.
-        - admit.
-        - admit.
-        - admit.
-        - (* this can be well-kinded and yet not be normal and not take a step*) admit.
-        - admit.
-        - admit.
+        induction T1.
+        - right. constructor. constructor.
+          + inversion n. assumption.
+          + assumption.
+        - (* This does not step *)
+          (* but this is also never a normal ty since Ty_Fun is never neutral*)
+          exfalso.
+          (* it must be ill-kinded *)
+          inversion Heqo.
+        - exfalso. 
+          inversion Heqo.
+        - exfalso.
+          inversion Heqo.
+        - exfalso. 
+          inversion Heqo.
+        - left. 
+          exists (substituteTCA b T2 T1).
+          constructor.
+          + inversion n. assumption. inversion H0.
+          + assumption.
+        - right. constructor. constructor.
+          + inversion n. assumption.
+          + assumption.
         }
+Qed.
 
-Admitted.
+(* TODO: We ended up not needing it for normalisation_preserves_kinding because we moved through normalise instead of normaliser*)
+Theorem step_preserves_kinding {T T'} : forall Δ K,
+  Δ |-* T : K -> step T T' -> Δ |-* T' : K.
+Proof.
+  intros.
+  generalize dependent K.
+  generalize dependent Δ.
+  induction H0; intros Δ K0 Hkind_T; 
+    inversion Hkind_T; subst; try solve [econstructor; eauto].
+  - inversion H2; subst.
+    eapply substituteTCA_preserves_kinding; eauto.
+Qed.
 
 (* Wouter's suggestion: do not use explicit normalizer in soundness proof*)
-Theorem SN__normalise t :
-  SN t -> {t' & normalise t t'}.
+Theorem SN__normalise t Δ K :
+  Δ |-* t : K -> SN t -> {t' & normalise t t'}.
 Proof.
-  intros HSN.
+  intros HWK HSN.
   induction HSN as [t].
-  destruct (step_dec t).
+  destruct (step_dec t Δ K HWK).
   - destruct s0 as [t' Ht_steps].
-    specialize (H t' Ht_steps) as [tn normt'].
-    exists tn.
-    now apply normalise_extend with (T2 := t').
+    remember (step_preserves_kinding Δ K HWK Ht_steps) as Ht'_kind.
+    specialize (H t' Ht_steps Ht'_kind) as [tn normt'].
+    exists tn. now apply normalise_extend with (T2 := t').
   - exists t.
     now apply normalisation__stable'__normal.
 Qed.
 
 
 Definition normaliser {T Δ K} (Hwk : Δ |-* T : K) :=
-  let snt := strong_normalisation Hwk in
-  projT1 (SN__normalise T snt).
+  let HSN := strong_normalisation Hwk in
+  projT1 (SN__normalise T Δ K Hwk HSN).
 
 Definition normaliser_Jacco Δ T : option ty :=
   match kind_check Δ T with
@@ -311,19 +366,6 @@ Proof.
       }
       subst.
       reflexivity.
-Qed.
-
-(* TODO: We ended up not needing it for normalisation_preserves_kinding because we moved through normalise instead of normaliser*)
-Theorem step_preserves_kinding {T T'} : forall Δ K,
-  Δ |-* T : K -> step T T' -> Δ |-* T' : K.
-Proof.
-  intros.
-  generalize dependent K.
-  generalize dependent Δ.
-  induction H0; intros Δ K0 Hkind_T; 
-    inversion Hkind_T; subst; try solve [econstructor; eauto].
-  - inversion H2; subst.
-    eapply substituteTCA_preserves_kinding; eauto.
 Qed.
 
 Theorem normalisation_preserves_kinding {Δ T Tn K } :

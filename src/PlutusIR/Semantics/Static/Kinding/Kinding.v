@@ -28,7 +28,7 @@ Inductive has_kind_uni : DefaultUni -> kind -> Prop :=
       |-*_uni t' : k ->
       |-*_uni (DefaultUniApply t t') : k'
   | K_DefaultUniProtoPair :
-      |-*_uni DefaultUniProtoPair : (Kind_Arrow Kind_Base Kind_Base)
+      |-*_uni DefaultUniProtoPair : (Kind_Arrow Kind_Base (Kind_Arrow Kind_Base Kind_Base))
   | K_DefaultUniProtoList :
       |-*_uni DefaultUniProtoList : (Kind_Arrow Kind_Base Kind_Base)
   where "'|-*_uni' T ':' K" := (has_kind_uni T K)
@@ -66,9 +66,9 @@ Inductive has_kind : list (binderTyname * kind) -> ty -> kind -> Prop :=
   | K_Forall : forall Δ X K T,
       ((X, K) :: Δ) |-* T : Kind_Base ->
       Δ |-* (Ty_Forall X K T) : Kind_Base
-  | K_Builtin : forall Δ T K,
-      |-*_uni T : K ->
-      Δ |-* (Ty_Builtin T) : K
+  | K_Builtin : forall Δ T,
+      |-*_uni T : Kind_Base ->
+      Δ |-* (Ty_Builtin T) : Kind_Base (* DefaultUni built in types must be fully applied with K_DefaultUniApply *)
   | K_Lam : forall Δ X K1 T K2,
       ((X, K1) :: Δ) |-* T : K2 ->
       Δ |-* (Ty_Lam X K1 T) : (Kind_Arrow K1 K2)

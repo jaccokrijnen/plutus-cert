@@ -4,6 +4,7 @@ Require Import PlutusCert.Util.List.
 
 
 
+(* See alpha_typing.v for a proof of this for STLC. This proof will be analogous*)
 Theorem substituteTCA_preserves_kinding : forall T Delta X K U L,
     ((X, L) :: Delta) |-* T : K ->
     Delta |-* U : L ->

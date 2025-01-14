@@ -363,37 +363,33 @@ Proof with eauto.
     autorewrite with substituteTCA.
     eapply K_App.
       + destruct (in_dec String.string_dec X' (ftv s2)). 
-        -- eapply IHT1; eauto. eapply alpha_preserves_ftv; eauto.
+        * eapply IHT1; eauto. eapply alpha_preserves_ftv; eauto.
           ++ eapply @alpha_sym with (ren' := sym_alpha_ctx ren).
              eapply sym_alpha_ctx_is_sym.
              eauto.
           ++ eapply alphavar_sym.
              eapply sym_alpha_ctx_is_sym.
              auto.
-        -- remember n as n'; clear Heqn'.
-           eapply substituteTCA_vacuous_specialized in n.
-           eapply alpha_preserves_typing with (s := T1).
-           ++ eapply alpha_trans.
-              ** eapply id_right_trans.
-              ** eauto.
-              ** change (ctx_id_right ren) with (nil ++ ctx_id_right ren) .
-                 eapply alpha_extend_ids_right.
-                 apply ctx_id_right_is_id.
-                 eapply alpha_sym.
-                 constructor.
-                 eauto.
-           ++ eauto.
-           ++ eapply strengthen_Γ_cons.
-              ** eapply @alpha_preserves_no_ftv with (ren := sym_alpha_ctx ren) (x := X') (x' := X).
-                 --- eauto.
-                 --- eapply @alpha_sym.
-                    eapply sym_alpha_ctx_is_sym.
-                    eauto.
-                 --- eapply alphavar_sym.
-                     eapply sym_alpha_ctx_is_sym.
-                     eauto.
-              ** eauto.
-      + destruct (in_dec String.string_dec X' (ftv t2)).
+        * (* X' notin ftv s2, so cannot use IH *)
+           assert (Alpha ren T1 (substituteTCA X' U' s2)).
+           {
+              eapply alpha_sym.
+              eapply sym_alpha_ctx_left_is_sym.
+              eapply substituteTCA_vacuous; auto.
+              eapply alpha_sym; eauto.
+              eapply sym_alpha_ctx_is_sym.
+           }
+           eapply alpha_preserves_typing; eauto.
+           eapply strengthen_Γ_cons.
+           eapply @alpha_preserves_no_ftv with (ren := sym_alpha_ctx ren) (x := X') (x' := X); 
+           eauto.
+           -- eapply alpha_sym; eauto.
+              eapply sym_alpha_ctx_is_sym; eauto.
+           -- eapply alphavar_sym; eauto.
+              eapply sym_alpha_ctx_is_sym; eauto.
+           -- eauto.
+      + (* TODO Make analogous to above*) 
+       destruct (in_dec String.string_dec X' (ftv t2)).
         -- eapply IHT2; eauto. eapply alpha_preserves_ftv; eauto.
            ++ eapply @alpha_sym with (ren' := sym_alpha_ctx ren).
               eapply sym_alpha_ctx_is_sym.

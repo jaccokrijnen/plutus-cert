@@ -20,3 +20,10 @@ Inductive has_type : list (string * type) -> term -> type -> Prop :=
       Δ |-* T2 : K1 ->
       Δ |-* (tmapp T1 T2) : K2
 where "Δ '|-*' T ':' K" := (has_type Δ T K).
+
+Lemma lam_ty_helper Δ b K1 T K' :
+  has_type Δ (tmlam b K1 T) K' -> {K2 & has_type ((b, K1)::Δ) T K2}.
+Proof.
+  intros.
+  (* inversion H. *)
+Abort.
