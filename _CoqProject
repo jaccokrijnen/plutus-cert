@@ -115,6 +115,7 @@ src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/rename.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/step.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/util.v
 
+src/PlutusIR/Semantics/Static/TypingTyForallFix.v
 src/PlutusIR/Semantics/Static/Theorems/ContextInvariance.v
 src/PlutusIR/Semantics/Static/Theorems/ContextInvariance/AFI.v
 src/PlutusIR/Semantics/Static/Theorems/FreeInContext.v

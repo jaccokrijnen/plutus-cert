@@ -10,7 +10,7 @@ From PlutusCert Require Import
     Normalisation.Normalisation 
     Strong_normalisation
     Norm_sound_complete
-    Static.Typing 
+    Static.Typing
     PlutusIR 
     Util.List
     Static.Util
