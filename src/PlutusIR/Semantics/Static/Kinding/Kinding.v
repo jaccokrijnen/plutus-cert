@@ -87,10 +87,12 @@ Inductive map_wk : list (string * ty * list (string * kind)) -> Prop :=
       has_kind Δ T K ->
       map_wk ((X, T, Δ) :: xs).
 
-Inductive map_wk_any_delta : list (string * ty) -> Prop :=
-  | MW_nil_ad :
-      map_wk_any_delta nil
-  | MW_cons_ad : forall X Δ T (xs : list (string * ty)) K,
-      map_wk_any_delta xs ->
-      has_kind Δ T K ->
-      map_wk_any_delta ((X, T) :: xs).
+(* TODO: Is this what we usually call app? *)
+Lemma map_wk_app : forall xs ys,
+  map_wk xs ->
+  map_wk ys ->
+  map_wk (xs ++ ys).
+Proof.
+    intros xs ys H_xs.
+    induction H_xs; intros H_ys; try econstructor; eauto.
+Qed.

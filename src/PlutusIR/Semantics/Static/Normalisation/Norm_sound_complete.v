@@ -268,6 +268,19 @@ Fixpoint remove_deltas  {A B C : Type} (xs : list (A * B * C)) :=
   | (X, T, _) :: xs' => (X, T) :: (remove_deltas xs')
   end.
 
+Lemma remove_deltas_app {A B C : Type} (xs ys : list (A * B * C)) :
+  remove_deltas (xs ++ ys) = remove_deltas xs ++ remove_deltas ys.
+Proof.
+  induction xs.
+  - reflexivity.
+  - simpl.
+    destruct a.
+    destruct p.
+    rewrite IHxs.
+    reflexivity.
+Qed.
+    
+
 Lemma map_normaliser_sound xs xs' :
   map_normaliser xs = Some xs' -> map_normalise (remove_deltas xs) xs'.
 Proof.

@@ -375,11 +375,11 @@ Proof.
   induction xs.
   - reflexivity.
   - simpl.
-    assert (flatten (binds_Gamma a :: map binds_Gamma xs) = binds_Gamma a ++ flatten (map binds_Gamma xs)) by admit.
-    rewrite H.
-    assert (forall (xs : (list (string * ty * (list (string * kind))))) ys, remove_deltas (xs ++ ys) = remove_deltas xs ++ remove_deltas ys) by admit.
-    rewrite H0.
+    rewrite flatten_cons.
+    rewrite remove_deltas_app.
+
     rewrite <- insert_remove_deltas_id.
+
     admit. (* need some more stuff that is trivial*)
 Admitted.
 

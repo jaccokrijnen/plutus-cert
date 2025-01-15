@@ -10,6 +10,8 @@ Require Export PlutusCert.PlutusIR.Semantics.Static.Builtins.Signatures.
 Require Import PlutusCert.PlutusIR.Analysis.BoundVars.
 Require Export PlutusCert.PlutusIR.Analysis.FreeVars.
 
+From PlutusCert Require Import util.
+
 
 Import Coq.Lists.List.
 Import ListNotations.
@@ -91,6 +93,10 @@ Lemma weakening : forall T T2 K X Δ,
 Proof.
 Admitted.
 
+Lemma unwrapIFixFresh_ftv_helper F :
+  ~ In (freshUnwrapIFix F) (FreeVars.Ty.ftv F).
+Admitted.
+
 Lemma unwrapIFixFresh__well_kinded F K T Δ :
   Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
   Δ |-* T : K ->
@@ -104,15 +110,16 @@ Proof.
   eapply K_IFix with (K := K); auto.
   - remember (freshUnwrapIFix F) as X.
     constructor.
-    (* Trivial lookup lemma*)
-    admit.
+    simpl.
+    rewrite String.eqb_refl.
+    reflexivity.
   - remember (freshUnwrapIFix F) as x.
     (* Now weaken *)
     eapply weakening with (Δ := Δ); auto.
     unfold List.inclusion.
     (* By definition of freshUnwrapIFix *)
-    admit.
-
+    subst.
+    apply unwrapIFixFresh_ftv_helper.
 Admitted.
 
 (** Typing of terms *)
@@ -129,6 +136,16 @@ match xs with
   | nil => nil
   | (X, T):: xs' => (X, T, Δ) :: insert_deltas_rec xs' Δ
 end.
+
+Lemma insert_deltas_rec_app xs ys Δ :
+  insert_deltas_rec (xs ++ ys) Δ = insert_deltas_rec xs Δ ++ insert_deltas_rec ys Δ.
+Proof.
+  induction xs.
+  - reflexivity.
+  - simpl. rewrite IHxs. 
+    destruct a.
+    reflexivity.
+Qed.
 
 Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty -> Prop :=
   (* Simply typed lambda caclulus *)
@@ -190,7 +207,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       iohk/plutus/plutus-core/plutus-ir project.
   **)
   | T_Let : forall Δ Γ bs t Tn Δ' Γ' bsGn,
-      Δ' = flatten (map binds_Delta bs) ++ Δ ->
+      Δ' = flatten (map binds_Delta bs) ++ Δ -> (* TODO: flatten reverses. Should it? *)
       map_normalise (flatten (map binds_Gamma bs)) bsGn ->
       Γ' = bsGn ++ Γ ->
       Δ ,, Γ |-oks_nr bs ->
@@ -279,7 +296,24 @@ Proof.
     inversion H4; subst; clear H4.
     now exists Kind_Base.
   - inversion H0; intuition.
-  - 
+  - clear H.
+    inversion H0; clear H0.
+    + inversion H.
+      exists Kind_Base.
+
+      admit. 
+    + unfold constrBinds in H.
+      rewrite <- in_rev in H.
+      apply in_map_iff in H.
+      destruct H as [c [HconstrBind Hxincs]].
+      specialize (H2 c Hxincs).
+      remember (Datatype X YKs matchFunc cs) as d.
+      unfold constrBind in HconstrBind.
+      destruct_match; subst.
+      inversion HconstrBind; subst.
+      inversion H2; subst.
+      inversion H3; subst.
+      exists Kind_Base. (* Ty_Forall always has Kind_Base, so also Ty_Foralls *)
 Admitted.
 
 Require Import Coq.Program.Equality.
@@ -322,20 +356,10 @@ Proof.
   induction H.
   - constructor.
   - simpl.
-    assert (flatten (binds_Gamma b :: map binds_Gamma bs) = (binds_Gamma b) ++ flatten (map binds_Gamma bs)).
-    { admit. }
-    rewrite H1.
-    assert (forall xs ys, insert_deltas_rec (xs ++ ys) Δ = insert_deltas_rec xs Δ ++ insert_deltas_rec ys Δ).
-    { admit. }
-    rewrite H2.
-    assert (forall xs ys, map_wk xs /\ map_wk ys -> map_wk (xs ++ ys)).
-    { admit. }
-    apply H3.
-    split.
-    + apply b_wf__map_wk in H.
-    auto.
-    + now apply IHbindings_well_formed_rec.
-Admitted.
+    rewrite flatten_cons.
+    rewrite insert_deltas_rec_app.
+    apply map_wk_app; now apply b_wf__map_wk in H.
+Qed.
 
 
 Fixpoint insert_deltas_bind_Gamma_nr (bs : list binding) (Δ : list (binderTyname * kind)) : list (binderName * ty * list (binderTyname * kind)) :=
@@ -351,14 +375,11 @@ Proof.
   induction H.
   - constructor.
   - simpl.
-    assert (forall xs ys, map_wk xs /\ map_wk ys -> map_wk (xs ++ ys)).
-    { admit. }
-    apply H2.
-    split.
+    apply map_wk_app.
     + apply b_wf__map_wk in H.
       auto.
     + now apply IHbindings_well_formed_nonrec.
-Admitted.
+Qed.
 
 
 Definition well_typed t := exists T, [] ,, [] |-+ t : T.
@@ -381,7 +402,7 @@ Proof.
     rewrite concat_app.
     simpl.
     rewrite app_nil_r.
-    (* apply MN_app.
+    apply MN_app.
     + eassumption.
     + eassumption.
   - exact eq_refl.
@@ -394,8 +415,8 @@ Proof.
     rewrite <- app_assoc.
     rewrite <- app_assoc.
     assumption.
-  - assumption. *)
-Admitted.
+  - assumption.
+Qed.
 
 Lemma has_type__normal : forall Delta Gamma t T,
     Delta ,, Gamma |-+ t : T ->
