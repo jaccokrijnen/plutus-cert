@@ -689,11 +689,14 @@ Proof.
 Qed.
 
 (* Remove ftv assumptions and instead destruct in var and lam cases *)
+(* TODO: Setoid hell 
+    Alpha equivalentie definitie veranderen
+  *)
 Lemma commute_sub_stronger y y' t t' i1 σ σ' : forall s i2 s' R R1 R2 R12 R3,
   αCtxTrans R1 R2 R12 ->
   αCtxTrans R12 R3 R ->
   αCtxSub R σ σ' ->
-  Alpha R1 s i1 ->
+  Alpha R1 s i1 -> 
   Alpha R2 i1 i2 ->
   Alpha R3 ([y' := t'] i2) s' ->
   AlphaVar R12 y y' ->

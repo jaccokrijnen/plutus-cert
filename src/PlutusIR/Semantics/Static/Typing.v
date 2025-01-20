@@ -229,6 +229,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
 with constructor_well_formed : list (string * kind) -> vdecl -> ty -> Prop :=
   | W_Con : forall Δ x T Targs Tr,
       (Targs, Tr) = splitTy T ->
+      (* TODO: Is Tr well-kinded? *)
       (forall U, In U Targs -> Δ |-* U : Kind_Base) ->
       Δ |-ok_c (VarDecl x T) : Tr
 
