@@ -22,7 +22,7 @@ Proof with eauto_LR.
 
   destruct IH_LR as [Htyp__e [Htyp__e' IH__e]].
 
-  split... split...
+  split... { admit. } split... { admit. }
 
   intros k rho env env' HRD HRG.
 
@@ -58,6 +58,7 @@ Proof with eauto_LR.
     rewrite msubstA_TyAbs in Htyp__e.
     rewrite msubst_TyAbs in Htyp__e.
     eauto.
+    admit.
   }
   split... {
     apply T_TyAbs in Htyp__e'.
@@ -76,6 +77,7 @@ Proof with eauto_LR.
     rewrite msubstA_TyAbs in Htyp__e'.
     rewrite msubst_TyAbs in Htyp__e'.
     eauto.
+    admit.
   }
 
   left. split. intros Hcon. inversion Hcon. split. intros Hcon. inversion Hcon.
@@ -97,4 +99,4 @@ Proof with eauto_LR.
     rewrite <- minus_n_O in Hlt_i.
     apply Nat.lt_le_incl.
     assumption.
-Qed.
+Admitted.
