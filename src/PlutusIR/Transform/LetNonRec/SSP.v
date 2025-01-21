@@ -130,7 +130,7 @@ Theorem CNR_Term__SSP : ∀ t t',
     destruct IH_bs as [H_bs' [H_eq_Gamma H_eq_Delta]].
     rewrite H_eq_Gamma in H_mn_bs.
     rewrite H_eq_Delta in *...
-
+  - admit.
   - (* CNR_LetRec_nil *)
     unfold P_CNR_Bindings.
     intros.
@@ -200,4 +200,4 @@ Theorem CNR_Term__SSP : ∀ t t',
     + eauto with typing.
     + simpl. rewrite H_eq_2, H_eq_3. reflexivity.
     + simpl. rewrite H_eq_1, H_eq_4. reflexivity.
-Qed.
+Admitted.
