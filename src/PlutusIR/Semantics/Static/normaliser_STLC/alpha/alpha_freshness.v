@@ -5,6 +5,19 @@ Require Import Coq.Strings.String.
 
 Require Import Coq.Program.Equality.
 
+Lemma alpha3_preserves_ftv (s s' : term) (X : string) : 
+  Alpha3 s s' -> In X (ftv s) -> In X (ftv s').
+Proof.
+  intros.
+  generalize dependent s'.
+  induction s; intros; inversion H; subst.
+  - auto.
+  - subst.
+    remember H0 as H0'; clear HeqH0'.
+    apply ftv_lam_helper in H0.
+(* Painful*)
+Admitted.
+
 Lemma alpha_preserves_ftv' {x s s' ren} :
   In x (ftv s) -> Alpha ren s s' -> { x' & prod (AlphaVar ren x x') (In x' (ftv s')) }.
 Proof.

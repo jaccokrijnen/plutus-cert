@@ -392,9 +392,9 @@ Notation SN := (@sn step).
 Lemma sn_closedL t s : SN (tmapp s t) -> SN s.
 Proof. apply: (sn_preimage (h := tmapp^~t)) => x y. exact: step_appL. Qed.
 
-Lemma sn_subst sigma s : SN (sigma [[s]]) -> SN s.
+Lemma sn_subst X T s : SN ([X := T] s) -> SN s.
 Proof.
-  apply: (sn_preimage_α (h := capms sigma)) => x y.  exact: step_subst_sigma.
+  apply: (sn_preimage_α (h := capms ((X, T)::nil))) => x y.  exact: step_subst_sigma.
 Qed.
 
 (* The Reducibility Candidates/Logical Predicate*)
@@ -420,6 +420,12 @@ Fixpoint L (T : type) : cand :=
     | tp_base => SN 
     | tp_arrow A B => fun s => forall t, L A t -> L B (tmapp s t)
   end.
+
+Fixpoint Lα (T : type) : cand :=
+match T with
+  | tp_base => SN 
+  | tp_arrow A B => fun s => forall t, Lα A t -> {t' & nil ⊢ t ~ t' * Lα B (tmapp s t')}
+end.
 
 Require Import Coq.Program.Equality.
 
@@ -503,6 +509,32 @@ Proof with eauto using step.
     + move=> s h. apply: (@sn_closedL (tmvar "x")). apply: (p_sn (P := L B))...
       eapply h. eapply reducible_var; eauto.
     + move=> s t h st u la. apply: (p_cl _ (s := tmapp s u))...
+    + move=> s ns h t la.
+      have snt := p_sn ih1 la.
+      elim: snt la => {} t _ ih3 la. apply: p_nc... move=> v st. inv st=> //...
+      (* Note: Case L B ([x := t] s0. By using Autosubst's "inv" instead of normal inversion, this goal vanishes. Why? *) (* Todo: Think, this case doesn't happen in db variant*)
+      * apply: ih3 => //. exact: (p_cl ih1) la _.
+Qed.
+
+
+Lemma Lα_reducible A :
+  reducible (Lα A).
+Proof with eauto using step.
+  elim: A => /=[|A ih1 B ih2].
+  - apply reducible_sn.
+  - constructor.
+    + move=> s h. apply: (@sn_closedL (tmvar "x")). apply: (p_sn (P := Lα B))...
+      specialize (h (tmvar "x")).
+      destruct h as [t' [Halpha Ht'] ].
+      * apply reducible_var; eauto.
+      * inversion Halpha; subst. inversion H1; subst. assumption.
+    + move=> s t h st u la. 
+      specialize (h u la).
+      destruct h as [t' [Halphaut' HLB] ]. 
+      exists t'.
+      split.
+      * auto.
+      * apply: (p_cl _ (s := tmapp s t'))...
     + move=> s ns h t la.
       have snt := p_sn ih1 la.
       elim: snt la => {} t _ ih3 la. apply: p_nc... move=> v st. inv st=> //...
@@ -688,14 +720,6 @@ Proof.
   assumption.
 Qed.
 
-
-(* Monad maybe*)
-(* Define the bind function for option type *)
-Definition bind {A B : Type} (xx : option A) (f : A -> option B) : option B :=
-  match xx with
-  | None => None
-  | Some a => f a
-  end.
 
 Fixpoint is_normal (t : term) : bool :=
   match t with
@@ -1005,6 +1029,20 @@ Proof.
   - apply alpha_refl. apply alpha_refl_nil.
   - apply alpha_refl. apply alpha_refl_nil.
 Qed.
+
+Lemma alpha_capms_to_naive X U T:
+  {T' & Alpha [] T T' * Alpha [] (substituteTCA X U T) (substituteT X U T')}.
+Proof.
+Admitted.
+
+Lemma alpha_rename_binder_substituteT {y : string } {s : term} s' x t t' ren:
+  Alpha ((x, y)::ren) s s' ->
+  Alpha ren t t' ->
+  Alpha ren (substituteT x t s) (substituteT y t' s').
+Proof.
+(* My assumption is that this is easier than for substituteTCA*)
+Admitted.
+
 (* step_nd is a subset of step
 This is not true since step_d should use a different kind of substitution (only freshening when necessary)
 *)
@@ -1048,30 +1086,45 @@ Qed.
 Lemma step_d_preserves_alpha ren s t s' :
   Alpha ren s t -> step_d s s' -> {t' & (step_d t t') * (Alpha ren s' t')}%type.
 Proof.
+(* exists s'' s.t. step_gu_naive s s'' and s' ~ s''
+
+  We know s ~ t.
+
+  Supposinng we have step_gu_naive preserves alpha:
+  exists t'' s.t. step_gu_naive t t''   and s'' ~ t''
+
+  I think we then also have
+  exists t''' step_d t t'''. And since we also have s' ~ t'', the t' we are looking for is t''
+  
+  *)
   intros Halpha Hstep.
   generalize dependent t.
   generalize dependent ren.
   induction Hstep; intros ren t0 Halpha; inversion Halpha; subst.
   - inversion H2; subst.
+    remember (alpha_capms_to_naive x t s).
+    destruct s1 as [s' [Halpha1 Halpha2] ].
     eexists.
     split.
     + apply step_beta_d; eapply alpha_preserves_normal_Ty; eauto.
-    + eapply alpha_trans.
+    + eapply @alpha_trans with (t := substituteT x t s').
       * apply id_left_trans.
       * change (ctx_id_left ren) with (nil ++ ctx_id_left ren).
         apply alpha_extend_ids_right.
         -- apply ctx_id_left_is_id.
-        -- eapply alpha_sym. apply alpha_sym_nil.
-           apply lib_con_sub_alpha.
-      * eapply alpha_trans.
+        -- auto.
+      * remember (alpha_capms_to_naive y t2 s0).
+        destruct s1 as [t' [Halpha1' Halpha2'] ].
+      
+        eapply @alpha_trans with (t := substituteT y t2 t').
         -- apply id_right_trans.
-        -- eapply alpha_rename_binder.
-           ++ exact H6.
+        -- eapply alpha_rename_binder_substituteT.
+           ++ admit.
            ++ exact H4.
         -- change (ctx_id_right ren) with (nil ++ ctx_id_right ren).
            apply alpha_extend_ids_right.
            ++ apply ctx_id_right_is_id.
-           ++ apply lib_con_sub_alpha.
+           ++ eapply alpha_sym. constructor. eauto.
   - destruct (IHHstep ren s3 H2) as [t1_α [Hstep' Halpha'] ].
     exists (tmapp t1_α t2); split.
     + apply step_appL_d. assumption.
@@ -1086,7 +1139,7 @@ Proof.
     exists (tmlam y A tα); split.
     + apply step_abs_d. assumption.
     + apply alpha_lam; assumption.    
-Qed.
+Admitted.
 
 Theorem α_preserves_sn_d s s' :
   Alpha [] s s' -> (@sn step_d) s -> (@sn step_d) s'.

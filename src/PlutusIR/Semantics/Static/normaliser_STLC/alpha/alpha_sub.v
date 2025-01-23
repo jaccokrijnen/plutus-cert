@@ -1,9 +1,288 @@
-From PlutusCert Require Import Util.List alpha step freshness alpha_freshness alpha_rename rename util alpha_ctx_sub STLC_named.
+From PlutusCert Require Import Util.List  alpha step freshness alpha_freshness alpha_rename rename util alpha_ctx_sub STLC_named.
 Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Strings.String.
 Require Import Coq.Arith.Arith.
 Require Import Lia.
+
+Declare Scope my_scope.
+Notation "A * B" := (prod A B) (at level 40, left associativity) : my_scope.
+
+Open Scope my_scope.
+
+(* Maybe this is the fundamental lemma 
+We say that there exists a term with different binders, so that we do not have any capture problems
+I thought of this by looking at the definition of substituteTCA and seein why we are renaming:
+We are renaming so that we end up at an alpha_equivalent term for which the binder is not problematic/capturing
+*)
+Lemma alpha3_capms_to_naive X U T:
+  {T' & Alpha3 T T' * Alpha3 (substituteTCA X U T) (substituteT X U T')}.
+Proof.
+Admitted.
+
+(* From capture-avoiding to naive *)
+Lemma alpha_capms_to_naive X U T:
+  {T' & Alpha [] T T' * Alpha [] (substituteTCA X U T) (substituteT X U T')}.
+Proof.
+Admitted.
+
+
+Lemma id_substituteT X s :
+  (substituteT X (tmvar X) s) = s.
+Proof.
+  induction s.
+  - destr_eqb_eq X s.
+    + simpl.
+      rewrite String.eqb_refl.
+      reflexivity.
+    + simpl.
+      rewrite <- String.eqb_neq in H.
+      rewrite H.
+      reflexivity.
+  - simpl.
+    destr_eqb_eq X s.
+    + reflexivity.
+    + rewrite IHs.
+      reflexivity.
+  - simpl.
+    rewrite IHs1.
+    rewrite IHs2.
+    reflexivity.
+Qed.
+(* This shows that alpha_capms_to_naive is a great way of abstracting the substitution details!*)
+Lemma id_subst_alpha_test s X :
+  nil ⊢ (substituteTCA X (tmvar X) s) ~ s.
+Proof.
+  assert ({s' & Alpha [] s s' * Alpha [] (substituteTCA X (tmvar X) s) (substituteT X (tmvar X) s')}).
+  {
+      apply alpha_capms_to_naive.
+  }
+  destruct H as [s' [Halphas Halphasubst] ].
+  eapply @alpha_trans with (t := substituteT X (tmvar X) s').
+  - constructor.
+  - auto.
+  - rewrite id_substituteT.
+    eapply alpha_sym; eauto. constructor.
+Qed.
+
+
+Lemma alpha_ids' s s' idCtx :
+  IdCtx idCtx -> Alpha nil s s' -> Alpha idCtx s s'.
+Proof.
+Admitted.
+
+Lemma alpha_ids'2 s s' idCtx :
+  IdCtx idCtx -> Alpha idCtx s s' -> Alpha nil s s'.
+Proof.
+Admitted.
+
+
+(* Showcasing working with substituteT is better behaved*)
+Lemma substituteT_preserves_alpha_test R U U' T T' X X':
+  (forall Y, In Y (btv T) -> ~ In Y (ftv U)) -> (* this is why we can do substituteT without worrying about capture*)
+  Alpha R U U' ->
+  Alpha R T T' ->
+  AlphaVar R X X' ->
+  Alpha R (substituteT X U T) (substituteT X' U' T').
+Proof.
+  intros.
+  generalize dependent R.
+  generalize dependent U.
+  generalize dependent U'.
+  generalize dependent T'.
+  induction T; intros; inversion H1; subst.
+  - 
+  (* inversion H3; subst.
+    destr_eqb_eq X y.
+    + simpl.
+      rewrite String.eqb_refl.
+      assumption.
+    + simpl.
+      rewrite <- String.eqb_neq in H1.
+      rewrite H1.
+      constructor.
+      assumption.
+    + admit.
+    + admit. *)
+    admit.
+  - destruct (in_dec String.string_dec X (ftv (tmlam s t T))).
+    {
+    simpl.
+    destr_eqb_eq X s.
+    {
+      destr_eqb_eq X' y; auto.
+      apply ftv_lam_in_no_binder in i.
+      contradiction.
+    }
+    assert (In X' (ftv (tmlam y t s2))).
+    {
+      apply (alpha_preserves_ftv i H1) in H2.
+      auto.
+    }
+    destr_eqb_eq X' y.
+    {
+      apply ftv_lam_in_no_binder in H4.
+      contradiction.
+    }
+
+    apply alpha_lam.
+    eapply IHT.
+    intros.
+    (* If X in btv T, then also X in btv (tmlam s t T).
+        Then by H we have X notin ftv U *)
+    + admit.
+    + admit.
+    + assumption.
+    + apply alpha_var_diff; auto.
+    }
+    {
+      (* sub vacuous*)
+      admit.
+    }
+  - simpl.
+    apply alpha_app.
+    + eapply IHT1; auto.
+      intros.
+      admit.
+    + eapply IHT2; auto.
+      intros.
+      admit.
+Admitted.
+
+
+Lemma subs_preserves_alpha_test U U' T T' X:
+  Alpha [] U U' ->
+  Alpha [] T T' ->
+  Alpha [] (substituteTCA X U T) (substituteTCA X U' T').
+Proof.
+  (* By capms_to_naive:
+    {T'' & Alpha [] T T'' * Alpha [] (substituteTCA X U T) (substituteT X U T'')}
+    Then also
+    Alpha [] T' T''
+    
+    So to show:
+    Alpha [] (substituteT X U T'') (substituteTCA X U' T')
+
+    From the other side we know
+    {T''' & Alpha [] T' T''' * Alpha [] (substituteTCA X U' T') (substituteT X U' T''')}
+    And thus Alpha [] T T'''
+
+    Alpha [] U U' ->
+    Alpha [] T'' T''' ->
+    Alpha [] (substituteT X U T'') (substituteT X U' T''')
+
+   *)
+Admitted.
+
+
+(* Then the below could be proved using:
+  exists s', Alpha s s' * Alpha (substituteTCA X U s) (substituteT X U s')
+
+  ~ In X (ftv s) -> ~ In X (ftv s'). Let's see how hard this is in alpha_freshness.v
+
+  Hence substituteT X U s' = s'. This does not require alpha equivalence
+
+  So Alpha (substituteTCA X U s) s'
+
+  Then by transitivity.
+
+*)
+
+Lemma substituteT_vacuous_test X U s :
+  ~ In X (ftv s) -> substituteT X U s = s.
+Proof.
+  intros Hnotin.
+  induction s.
+  - simpl.
+    apply not_in_ftv_var in Hnotin.
+    rewrite <- String.eqb_neq in Hnotin.
+    rewrite Hnotin.
+    reflexivity.
+  - simpl.
+    destr_eqb_eq X s.
+    + reflexivity.
+    + apply ftv_lam_negative in Hnotin; auto.
+      rewrite IHs; auto.
+  - simpl.
+    f_equal.
+    + apply IHs1. apply not_ftv_app_not_left in Hnotin; auto.
+    + apply IHs2; apply not_ftv_app_not_right in Hnotin; auto.
+Qed.
+
+Lemma sub_vacuous_test X t s :
+  ~ In X (ftv s) -> Alpha [] (substituteTCA X t s) s.
+Proof.
+  intros Hnotin.
+  assert ({s' & Alpha [] s s' * Alpha [] (substituteTCA X t s) (substituteT X t s')}).
+  {
+    apply alpha_capms_to_naive.
+  }
+  destruct H as [s' [Halphas Halphasubst] ].
+  eapply @alpha_trans.
+  - constructor.
+  - eauto.
+  - assert (substituteT X t s' = s').
+    {
+      apply substituteT_vacuous_test.
+      eapply (alpha_preserves_no_ftv Hnotin) in Halphas; eauto. constructor.
+    }
+    rewrite H.
+    eapply alpha_sym; eauto. constructor.
+Qed.
+
+Lemma sub_vacuous3 X t s :
+  ~ In X (ftv s) -> Alpha3 ([X := t] s) s.
+Proof.
+  intros.
+  induction s; intros.
+  - admit.
+  - (*
+      X notin ftv (mren rho (tmlam s t0 s0))
+      X notin ftv (rename Y Z (tmlam s t0 s0)) (* Z should prolly be fresh*)
+      Suppose Y = s.
+
+      Then:
+      X notin ftv (tmlam s t0 s0)
+
+      Suppose Y <> s
+      Then:
+      X notin ftv (tmlam s t0 (rename Y Z s0))
+
+
+      Suppose X = s and   X in ftv s0 and Y = s
+      Then:
+      [X := t] (tmlam s t0 s0) = [X := t] (tmlam X t0 s0) = tmlam X t0 s0
+      and we have to show:
+      Alpha3 (tmlam X t0 s0) (tmlam X t0 s0)
+
+      Suppose X = s and X  in (rename Y Z s0)   and Y <> s
+      Then to show:
+      Alpha3 ([X := t] (tmlam X t0 (rename Y Z s0)))
+          (tmlam X t0 (rename Y Z s0))
+      and the subsitutions falls away.
+
+      So suppose X <> s
+      Suppose Y = s.
+      Then to show:
+      A ([X := t] tmlam s t0 s0) (tmlam s t0 s0)
+
+      capms:
+      A (tmlam fr t0 [X := t] (rename s fr s0)) (tmlam s t0 s0)
+      A (rename fr FR ([X := t] (rename s fr s0)) (rename s FR s0)
+      A ([X := t] (rename s FR s0)) (rename s FR s0) (BY IH)
+
+
+      Suppose Y <> s
+      A ([X := t] (tmlam s t0 (rename Y Z s0))) (tmlam s t0 (rename Y Z s0))
+      A (tmlam fr t0 ([X := t] (rename s fr (rename Y Z s0))) (tmlam s t0 (rename Y Z s0)))
+
+         then alpha:
+      A (rename fr FR ([X := t] (rename s fr (rename Y Z s0))) (rename s FR (rename Y Z s0))) 
+      A 
+  *)
+Admitted.
+
+  
 
 (* Most complex lemma up to now (12 nov) that is completely proved and general over arbitrary substitutions! *)
 Lemma sub_vacuous' X t sigma sigma' s s' s'' ren ren1 ren2 :
@@ -170,6 +449,7 @@ Proof.
   - apply alpha_refl. apply alpha_refl_nil.
   - apply alpha_trans_nil.
 Qed.
+
 
 Lemma sub_vacuous_single X t s :
   ~ In X (ftv s) -> Alpha [] ([X := t] s) s.
@@ -432,6 +712,52 @@ Proof.
         assumption.
 Admitted.
 
+(* DO we need multisubsts?*)
+
+(* Lemma ren_sub_compose_stonger_test R X X' Y Y' s s' σ σ' :
+  Y = (fresh2 ((X, tmvar X)::σ) s) ->
+  AlphaVar R X X' ->
+  AlphaVar R Y Y' ->
+  Alpha R s s' ->
+  αCtxSub R σ σ' ->
+  R ⊢ capms_c σ (rename2 X Y s) ~ capms_c ((X', tmvar Y')::σ') s.
+Proof.
+Admitted. *)
+
+Lemma ren_sub_compose_instantiated_test X Y s sigma :
+  Y = (fresh2 ((X, tmvar X)::sigma) s) ->
+  nil ⊢ sigma [[rename X Y s]] ~ ((X, tmvar Y)::sigma) [[s]].
+Proof.
+(* We need capms_to_naive for multi substitutions.
+Supposing we have that:
+
+[] |- substituteTCAs sigma [[rename X Y s]] ~ substituteTs sigma T'
+
+with  [] ⊢ rename X Y s ~ T'
+
+then exists T'' s.t. T' = rename X Y T'' (namely T'' = rename Y X T')
+
+Hence then to show
+  nil ⊢ substituteTs sigma (rename X Y (rename Y X T')) ~ substituteTCAs ((X, tmvar Y)::sigma) s
+
+  Then (rename X Y (rename Y X T')) ~ rename X Y s.
+    Then probably also:
+      rename Y X T' ~ s
+  from the other side:
+  exists T'' s.t. s ~ T'' 
+  s.t. substituteTCA ((X, tmvar Y)::sigma) s ~ substituteTs ((X, tmvar Y)::sigma) T''
+
+  Hence by transitivity to show:
+nil ⊢ substituteTs sigma (rename X Y (rename Y X T')) ~ substituteTs ((X, tmvar Y)::sigma) T''
+
+enough to show:
+G ~ G'
+then
+substituteTs sigma (rename X Y G) ~ substituteTs ((X, tmvar Y)::sigma) G'
+
+*)
+Admitted.
+
 Lemma ren_sub_compose_instantiated X Y s sigma :
   Y = (fresh2 ((X, tmvar X)::sigma) s) ->
   nil ⊢ sigma [[rename X Y s]] ~ ((X, tmvar Y)::sigma) [[s]].
@@ -443,7 +769,7 @@ Proof.
   - apply alpha_refl. apply alpha_refl_nil.
   - (* X contained in Y, and Y fresh2, so at least longer (by "a" ++), so length X smaller than length Y*) admit.  
   - (* Freshness *) admit.
-  - apply fresh2_over_tv_term in H; auto.
+  - apply fresh2_over_tv_term in H. auto.
 Admitted. 
 
 (* We need a legal ren swap because the new binders get in front of the (x, y) in the inductive step of the lambda*)
@@ -544,8 +870,8 @@ Lemma merge_sub_stronger' x2 y1 x4 y2 s3 t sigma2 sigma4 : forall s1 s2 s4 ren r
   αCtxSub ren24 sigma2 sigma4 ->
   AlphaVar ren24 x2 x4 ->
   Alpha ren t t ->
-  ~ In y2 (tv_keys_env sigma2) ->
-  ~ In y2 (tv s2) ->
+  ~ In y2 (tv_keys_env sigma2) -> (* i.e. does not capture*)
+  ~ In y2 (tv s2) -> (* i.e. does not capture *)
   AlphaVar ren12 y1 y2 ->
   Alpha ren ([y1 := t] s1) (((x4, t)::sigma4) [[s4]]).
 Proof.
@@ -675,6 +1001,19 @@ Proof.
     + eapply IHs3_1 with (s2 := s0); eauto. simpl in Hy2nots2. apply not_in_app in Hy2nots2. intuition.
     + eapply IHs3_2 with (s2 := t1); eauto. simpl in Hy2nots2. apply not_in_app in Hy2nots2. intuition.
 Qed.
+
+Lemma merge_sub_test : forall sigma sigma_ x y s t,
+  y = fresh2 (sigma_ ++ sigma) s -> (* TODO: sigma_ is irrelevant, do I have to name it?*)
+  nil ⊢ ([y := t] (((x, tmvar y)::sigma) [[s]])) ~ ((x, t)::sigma) [[s]].
+Proof.
+  (*
+    exists T' ~ ((x, tmvar y)::sigma) [[s]] .s.t.
+
+    ([y := t] (((x, tmvar y)::sigma) [[s]])) ~ [y := t]_n T'
+
+    hmm
+  *)
+Admitted.
 
 Lemma merge_sub : forall sigma sigma_ x y s t,
   y = fresh2 (sigma_ ++ sigma) s -> (* TODO: sigma_ is irrelevant, do I have to name it?*)

@@ -114,9 +114,76 @@ Proof.
     contradiction.
 Qed. 
 
-(* Why do we need this up to alpha equivalence?
+Lemma commute_sub_from_naive x s t sigma :
+  nil ⊢ ([x := substituteTs sigma t] (substituteTs sigma s)) ~ (substituteTs sigma ([x := t] s)).
+Proof.
+  (* I think it must again be possible to transform (subsituteTs sigma s) 
+    to something without binders ocurring in (subsituteTs sigma t)
+    while keeping the shape (substituteTs sigma' s')
+    since we do a substitutionm, we cannot be sure we still have global uniqueness afterwards,
+    but we can be sure that non of the stuff in substituteTs sigma t will be captured.
 
+  *)
+Admitted.
+
+(* step_subst for naive substitutions? *)
+Lemma step_subst_naive {s t sigma} : 
+  step s t -> {α : term & 
+  (step (substituteTs sigma s) α) * (nil ⊢ α ~ (substituteTs sigma t))} .
+Proof.
+  intros Hstep; induction Hstep; autorewrite with substituteTs.
+  - eexists.
+    split.
+    + eapply step_beta.
+    + apply commute_sub_from_naive.
+  - destruct IHHstep as [α' [Hstep' Halpha'] ].
+    eexists. split; constructor; eauto.
+    apply alpha_refl. constructor.
+  - destruct IHHstep as [α' [Hstep' Halpha'] ].
+    eexists. split.
+    + apply step_appR; eauto.
+    + constructor; auto. apply alpha_refl; constructor.
+  - autorewrite with substituteTs.
+    destruct IHHstep as [α [Hstep_α Halpha_α] ].
+    eexists.
+    split.
+    + apply step_abs.
+      eauto.
+    + constructor.
+      change ((x, x)::nil) with (nil ++ (x, x)::nil).
+      eapply alpha_extend_ids_right. constructor. constructor.
+      auto.
+Qed.
+
+Lemma step_subst_from_naive {s t sigma} :
+    step s t -> {α : term & 
+  (step (sigma [[ s ]]) α) * (nil ⊢ α ~ (sigma [[t]]))}.
+Proof.
+(* 
+Generate globally unique s_gu (also based on sigma) s.t.
+  [] ⊢ s ~ s_gu   *    step s_gu t_gu    *    [] ⊢ t ~ t_gu.   
+
+  exists [] ⊢ s ~ s_gu s.t.
+
+  sigma [[s]] = subsituteTs sigma s_gu  (* namely choose the binder names that substitueTCA would choose fresh*)
+  sigma [[t]] = substituteTs sigma t_gu
+
+  
+If we then work with multi substituteTCA instead of capms (with the check on whether we have to rename)
+We can then use step_subst_naive to see:
+  step (substituteTs sigma s_gu) α     *     [] ⊢ (substituteTs sigma t_gu) ~ α
+
+Hence also:
+  step (sigma [[s]]) α        * [] ⊢ α ~ sigma [[t]]
+
+*)
+Admitted.
+
+
+(* Why do we need this up to alpha equivalence?
   Because sub lemmas are up to alpha equivalence.
+
+  Why do we need this for multiple substitutions?
 *)
 Lemma step_subst {s t} : 
   step s t -> forall sigma : list (string * term), {alphaSigmaT : term & 
@@ -244,33 +311,10 @@ Proof.
                   --- eapply ren_sub_compose_instantiated; eauto.
 Qed.
 
-
 Lemma step_subst_sigma sigma {s t} :
   step s t -> {alphaSigmaT : term & prod (step (sigma [[ s ]]) alphaSigmaT) (Alpha [] alphaSigmaT (sigma [[t]]))}.
 Proof.
   intros Hstep.
   apply step_subst.
   assumption.
-Qed.
-
-(* TODO: NOt used???? *)
-Lemma red_subst sigma {s} {t} : 
-  red s t -> {alphaSigmaT : term & prod (red (sigma [[s]]) alphaSigmaT) (Alpha [] alphaSigmaT (sigma [[t]]))}.
-Proof. 
-  intros Hred.
-  induction Hred. 
-  - exists (sigma [[s]]). split.
-    + apply starR.
-    + apply alpha_refl. constructor.
-  - apply (step_subst_sigma sigma) in e.
-    destruct e as [alphaSigmaZ [Hstep HalphaZ] ].
-    destruct IHHred as [alphaSigmaY [Hred' Halpha] ].
-    apply @alpha_sym with (ren' := nil) in Halpha; [|apply alpha_sym_nil].
-    apply (step_preserves_alpha nil Halpha) in Hstep.
-    destruct Hstep as [alphaSigmaZ' [HstepZ' HalphaZ'] ].
-    exists alphaSigmaZ'. split.
-    + eapply starSE; eauto.
-    + apply @alpha_sym with (ren' := nil) in HalphaZ'; [|apply alpha_sym_nil].
-      eapply alpha_trans; eauto.
-      apply alpha_trans_nil.
 Qed.

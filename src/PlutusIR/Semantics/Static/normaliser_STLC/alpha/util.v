@@ -97,3 +97,11 @@ Lemma not_existsb_not_in y U' :
   existsb (eqb y) (ftv U') = false -> ~ In y (ftv U').
 Proof.
 Admitted.
+
+(* Monad maybe*)
+(* Define the bind function for option type *)
+Definition bind {A B : Type} (xx : option A) (f : A -> option B) : option B :=
+  match xx with
+  | None => None
+  | Some a => f a
+  end.

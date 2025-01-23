@@ -99,6 +99,9 @@ src/PlutusIR/Semantics/Static/normaliser_STLC/AutosubstSsr.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/ARS.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/Context.v
 
+src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/SN_STLC_named_naive.v
+src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/SN_STLC_named2.v
+
 src/PlutusIR/Semantics/Static/normaliser_STLC/STLC_named_typing.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/STLC_named.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/STLC_normalisation.v

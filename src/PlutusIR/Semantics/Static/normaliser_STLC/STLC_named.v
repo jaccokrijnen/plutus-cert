@@ -40,6 +40,16 @@ Function ftv (T : term) : list string :=
         ftv T1 ++ ftv T2
     end.
 
+Fixpoint btv (T : term) : list string :=
+    match T with
+    | tmvar X =>
+        []
+    | tmlam X K1 T' =>
+      X :: btv T'
+    | tmapp T1 T2 =>
+        btv T1 ++ btv T2
+    end.
+
 (* Bound and free type variables *)
 Fixpoint tv (s : term) : list string :=
   match s with
@@ -171,6 +181,17 @@ Proof.
     || replace T_body' with (rename Y Y' T_body); eauto; rewrite <- rename_preserves_size; eauto
     ].
 Defined.
+
+Equations substituteTs (sigma : list (string * term)) (T : term) : term :=
+  substituteTs sigma (tmvar Y) =>
+      match lookup Y sigma with
+      | Some t => t
+      | None => tmvar Y
+      end;
+  substituteTs sigma (tmlam Y K T) =>
+      tmlam Y K (substituteTs sigma T); (* no check on Y in keys of sigma, should nto be necessary by global uniqueness? *)
+  substituteTs sigma (tmapp T1 T2) =>
+      tmapp (substituteTs sigma T1) (substituteTs sigma T2).
 
 (** **** Notations *)
 (* Notation for substitution *)
