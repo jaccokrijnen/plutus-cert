@@ -25,9 +25,9 @@ Inductive value : term -> Prop :=
       value (IWrap F T v)
   | V_Constant : forall u,
       value (Constant u)
-  | V_Constr : forall i T vs,
+  | V_Constr : forall T i vs,
       Forall value vs ->
-      value (Constr i T vs)
+      value (Constr T i vs)
   .
 
 Section value_ind.
@@ -39,7 +39,7 @@ Context
   (H_TyAbs : forall (X : String.string) (K : kind) (t : term), P (TyAbs X K t))
   (H_IWrap : forall (F T : ty) (v : term), value v -> P v -> P (IWrap F T v))
   (H_Constant : forall c : constant, P (Constant c))
-  (H_Constr : forall (i : nat) (T : ty) (vs : list term), Forall value vs -> Forall P vs -> P (Constr i T vs))
+  (H_Constr : forall (T : ty) (i : nat) (vs : list term), Forall value vs -> Forall P vs -> P (Constr T i vs))
 .
 Fixpoint values__ind (H_value : forall (t : term), value t -> P t) (ts : list term) (vs : Forall value ts): Forall P ts :=
   match vs as vs in Forall _ ts return Forall P ts with
@@ -52,7 +52,7 @@ Fixpoint value__ind (t : term) (v : value t) {struct v} : P t :=
   | V_TyAbs X K t0 => H_TyAbs X K t0
   | V_IWrap F1 T v0 v1 => H_IWrap F1 T v0 v1 (value__ind v0 v1)
   | V_Constant u => H_Constant u
-  | V_Constr i T ts vs => H_Constr i T ts vs
+  | V_Constr T i ts vs => H_Constr T i ts vs
       ((fix F ts vs := match vs as vs in Forall _ ts return Forall P ts with
         | Forall_nil _ => Forall_nil _
         | @Forall_cons _ _ t ts vt vts => @Forall_cons _ _ t ts (value__ind t vt) (F ts vts)
@@ -76,9 +76,9 @@ Inductive result : term -> Prop :=
       result (Constant u)
   | R_Error : forall T,
       result (Error T)
-  | R_Constr : forall i T vs,
+  | R_Constr : forall T i vs,
       Forall result vs ->
-      result (Constr i T vs)
+      result (Constr T i vs)
   .
 
 #[export] Hint Constructors result : core.
@@ -93,7 +93,7 @@ Context
   (H_IWrap : forall (F T : ty) (v : term), result v -> P v -> ~ is_error v -> P (IWrap F T v))
   (H_Constant : forall c : constant, P (Constant c))
   (H_Error : forall T : ty, P (Error T))
-  (H_Constr : forall (i : nat) (T : ty) (vs : list term), Forall result vs -> Forall P vs -> P (Constr i T vs))
+  (H_Constr : forall (T : ty) (i : nat) (vs : list term), Forall result vs -> Forall P vs -> P (Constr T i vs))
 .
 Fixpoint results__ind (H_result : forall (t : term), result t -> P t) (ts : list term) (vs : Forall result ts): Forall P ts :=
   match vs as vs in Forall _ ts return Forall P ts with
@@ -107,7 +107,7 @@ Fixpoint result__ind (t : term) (v : result t) {struct v} : P t :=
   | R_IWrap F1 T v0 v1 n => H_IWrap F1 T v0 v1 (result__ind v0 v1) n
   | R_Constant u => H_Constant u
   | R_Error T => H_Error T
-  | R_Constr i T ts vs => H_Constr i T ts vs
+  | R_Constr T i ts vs => H_Constr T i ts vs
       ((fix F ts vs := match vs as vs in Forall _ ts return Forall P ts with
         | Forall_nil _ => Forall_nil _
         | @Forall_cons _ _ t ts vt vts => @Forall_cons _ _ t ts (result__ind t vt) (F ts vts)

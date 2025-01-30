@@ -72,11 +72,11 @@ Inductive dc : term -> term -> Prop :=
   | dc_Unwrap :
       compat_1 dc (Unwrap)
   | dc_Constr_nil n T :
-      dc (Constr n T nil) (Constr n T nil)
+      dc (Constr T n nil) (Constr T n nil)
   | dc_Constr_cons n T t t' ts ts' :
       dc t t' ->
-      dc (Constr n T ts) (Constr n T ts') ->
-      dc (Constr n T (t :: ts)) (Constr n T (t' :: ts'))
+      dc (Constr T n ts) (Constr T n ts') ->
+      dc (Constr T n (t :: ts)) (Constr T n (t' :: ts'))
   | dc_Case_nil T d d':
       dc d d' ->
       dc (Case T d []) (Case T d' [])

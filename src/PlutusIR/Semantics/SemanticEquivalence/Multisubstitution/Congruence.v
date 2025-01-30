@@ -494,7 +494,7 @@ Lemma msubstA_Unwrap : forall ss M ,
 Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
 Lemma msubstA_Constr : forall ss n T ts ,
-    msubstA ss (Constr n T ts) = Constr n (msubstT ss T) (map (msubstA ss) ts).
+    msubstA ss (Constr T n ts) = Constr (msubstT ss T) n (map (msubstA ss) ts).
 Proof. induction ss; intros.
   - simpl. rewrite map_id. reflexivity.
   - destruct a. simpl. rewrite IHss. rewrite map_map. reflexivity.

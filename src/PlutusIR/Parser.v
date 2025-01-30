@@ -51,7 +51,7 @@ Module DumpNotations.
   Notation Error x y := (Error y).
   Notation IWrap x y z w := (IWrap y z w).
   Notation Unwrap x y := (Unwrap y).
-  Notation Constr x y z := (Constr y z).
+  Notation Constr x y z w := (Constr y z w).
   Notation Case x y z := (Case y z).
   Notation TermBind x y z w := (TermBind y z w).
   Notation TypeBind x y z := (TypeBind y z).

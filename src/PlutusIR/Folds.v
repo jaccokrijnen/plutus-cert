@@ -27,7 +27,7 @@ Inductive AlgTerm: Type := mkTermAlg
   ; a_Error    : ty -> rTerm
   ; a_IWrap    : ty -> ty -> rTerm -> rTerm
   ; a_Unwrap   : rTerm -> rTerm
-  ; a_Constr   : nat -> ty -> list rTerm -> rTerm
+  ; a_Constr   : ty -> nat -> list rTerm -> rTerm
   ; a_Case     : ty -> rTerm -> list rTerm -> rTerm
   }
 
@@ -83,7 +83,7 @@ Section Folds.
     | (Error ty)        => a_Error algTerm ty
     | (IWrap ty1 ty2 t) => a_IWrap algTerm ty1 ty2 (foldTerm t)
     | (Unwrap t)        => a_Unwrap algTerm (foldTerm t)
-    | (Constr i T ts)     => a_Constr algTerm i T (map foldTerm ts)
+    | (Constr T i ts)     => a_Constr algTerm T i (map foldTerm ts)
     | (Case T t ts)      => a_Case algTerm T (foldTerm t) (map foldTerm ts)
   end
 

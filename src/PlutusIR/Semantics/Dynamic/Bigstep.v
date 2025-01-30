@@ -73,11 +73,11 @@ Inductive eval : term -> term -> nat -> Prop :=
       Constant a =[0]=> Constant a
   (** Constructors *)
   | E_Constr_nil : forall i T,
-      Constr i T nil =[0]=> Constr i T nil
+      Constr T i nil =[0]=> Constr T i nil
   | E_Constr_cons : forall i T k_t k_ts t ts v vs,
       t =[k_t]=> v ->
-      Constr i T ts =[k_ts]=> Constr i T vs ->
-      Constr i T (t :: ts) =[k_t + k_ts]=> Constr i T (v :: vs)
+      Constr T i ts =[k_ts]=> Constr T i vs ->
+      Constr T i (t :: ts) =[k_t + k_ts]=> Constr T i (v :: vs)
 
   (** Builtins: partially applied *)
   | E_Builtin f v :

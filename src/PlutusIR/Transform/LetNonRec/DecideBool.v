@@ -90,7 +90,7 @@ Fixpoint dec_Term (x y : term) {struct x} : bool := match x, y with
   | Error ty       , Error ty'          => Ty_eqb ty ty'
   | IWrap ty1 ty2 t, IWrap ty1' ty2' t' => Ty_eqb ty1 ty1' && Ty_eqb ty2 ty2' && dec_Term t t'
   | Unwrap t       , Unwrap t'          => dec_Term t t'
-  | Constr i T ts  , Constr i' T' ts'   => Nat.eqb i i' && Ty_eqb T T' && forall2b dec_Term ts ts'
+  | Constr T i ts  , Constr T' i' ts'   => Nat.eqb i i' && Ty_eqb T T' && forall2b dec_Term ts ts'
   | Case T t ts    , Case T' t' ts'     => dec_Term t t' && Ty_eqb T T' && forall2b dec_Term ts ts'
 
   | _, _ => false

@@ -92,7 +92,7 @@ Section InlineOnly.
         | Error τ           => Error (inline_uncond_ty Δ τ)
         | IWrap τ1 τ2 t     => IWrap (inline_uncond_ty Δ τ1) (inline_uncond_ty Δ τ2) (inline_uncond Γ Δ t)
         | Unwrap t          => Unwrap (inline_uncond Γ Δ t)
-        | Constr i T ts     => Constr i (inline_uncond_ty Δ T) (map (inline_uncond Γ Δ) ts)
+        | Constr T i ts     => Constr (inline_uncond_ty Δ T) i (map (inline_uncond Γ Δ) ts)
         | Case T t ts       => Case (inline_uncond_ty Δ T) (inline_uncond Γ Δ t) (map (inline_uncond Γ Δ) ts)
       end
 
@@ -119,7 +119,7 @@ Section InlineOnly.
       | Error ty          => Error ty
       | IWrap ty1 ty2 t   => IWrap ty1 ty2 (inline_deadcode t)
       | Unwrap t          => Unwrap (inline_deadcode t)
-      | Constr i T ts     => Constr i T (map inline_deadcode ts)
+      | Constr T i ts     => Constr T i (map inline_deadcode ts)
       | Case T t ts       => Case T (inline_deadcode t) (map (inline_deadcode) ts)
     end
 
@@ -181,7 +181,7 @@ Section InlineOnly.
         | IWrap _ _ _ , _ => None
         | Unwrap t, Unwrap t' => Unwrap <$> inlined_intermediate elims t t'
         | Unwrap _, _ => None
-        | Constr i T ts, Constr _ _ ts' => Constr i T <$> sequence_options (zip_with (inlined_intermediate elims) ts ts')
+        | Constr T i ts, Constr _ _ ts' => Constr T i <$> sequence_options (zip_with (inlined_intermediate elims) ts ts')
         | Constr _ _ _, _ => None
         | Case T t ts, Case _ t' ts' => Case T <$> inlined_intermediate elims t t' <*> sequence_options (zip_with (inlined_intermediate elims) ts ts')
         | Case _ _ _, _ => None

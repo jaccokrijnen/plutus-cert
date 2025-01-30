@@ -90,8 +90,8 @@ Function subst (x : string) (s : term) (t : term) {struct t} : term :=
       IWrap F T (subst x s t0)
   | Unwrap t0 =>
       Unwrap (subst x s t0)
-  | Constr i T ts =>
-      Constr i T (map (subst x s) ts)
+  | Constr T i ts =>
+      Constr T i (map (subst x s) ts)
   | Case T t ts =>
       Case T (subst x s t) (map (subst x s) ts)
   end
@@ -159,8 +159,8 @@ Lemma subst_unfold x s t : subst x s t =
       IWrap F T (subst x s t0)
   | Unwrap t0 =>
       Unwrap (subst x s t0)
-  | Constr i T ts =>
-      Constr i T (map (subst x s) ts)
+  | Constr T i ts =>
+      Constr T i (map (subst x s) ts)
   | Case T t ts =>
       Case T (subst x s t) (map (subst x s) ts)
   end.

@@ -121,7 +121,7 @@ Function term_beq (x y : term) {struct x} : bool := match x, y with
   | (Error T), (Error T')              => ty_beq T T'
   | (IWrap T1 T2 t), (IWrap T1' T2' t') => ty_beq T1 T1' && ty_beq T2 T2' && term_beq t t'
   | (Unwrap t), (Unwrap t')            => term_beq t t'
-  | (Constr n T ts), (Constr n' T' ts') => Nat.eqb n n' && ty_beq T T' && forall2b term_beq ts ts'
+  | (Constr T n ts), (Constr T' n' ts') => Nat.eqb n n' && ty_beq T T' && forall2b term_beq ts ts'
   | (Case T t ts), (Case T' t' ts')     => term_beq t t' && ty_beq T T' && forall2b term_beq ts ts'
 
   | (Let r bs t), _ => false
@@ -135,7 +135,7 @@ Function term_beq (x y : term) {struct x} : bool := match x, y with
   | (Error T), _ => false
   | (IWrap T1 T2 t), _ => false
   | (Unwrap t), _ => false
-  | (Constr n _ ts), _ => false
+  | (Constr _ i ts), _ => false
   | (Case _ t ts), _ => false
   end
 with
@@ -177,8 +177,8 @@ Axiom eq_TyInst : forall t t' ty ty', t = t' /\ ty = ty' <-> TyInst t ty = TyIns
 Axiom eq_Error : forall ty ty', ty = ty' <-> Error ty = Error ty'.
 Axiom eq_IWrap : forall ty1 ty1' ty2 ty2' t t', ty1 = ty1' /\ ty2 = ty2' /\ t = t' <-> IWrap ty1 ty2 t = IWrap ty1' ty2' t'.
 Axiom eq_Unwrap : forall t t', t = t' <-> Unwrap t = Unwrap t'.
-Axiom eq_Constr : forall i i' ts ts', i = i' /\ ts = ts' <-> Constr i ts = Constr i' ts'.
-Axiom eq_Case : forall t t' ts ts', t = t' /\ ts = ts' <-> Case t ts = Case t' ts'.
+Axiom eq_Constr : forall T T' i i' ts ts', i = i' /\ ts = ts' <-> Constr T i ts = Constr T' i' ts'.
+Axiom eq_Case : forall T T' t t' ts ts', t = t' /\ ts = ts' <-> Case T t ts = Case T' t' ts'.
 
 Create HintDb term_eq.
 Hint Rewrite <-
