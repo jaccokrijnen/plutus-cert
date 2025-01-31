@@ -80,6 +80,7 @@ Admitted.
 (* Showcasing working with substituteT is better behaved*)
 Lemma substituteT_preserves_alpha_test R U U' T T' X X':
   (forall Y, In Y (btv T) -> ~ In Y (ftv U)) -> (* this is why we can do substituteT without worrying about capture*)
+  (* We could prevent this maybe by just renaming to globally unique in every lemma*)
   Alpha R U U' ->
   Alpha R T T' ->
   AlphaVar R X X' ->
@@ -229,59 +230,6 @@ Proof.
     rewrite H.
     eapply alpha_sym; eauto. constructor.
 Qed.
-
-Lemma sub_vacuous3 X t s :
-  ~ In X (ftv s) -> Alpha3 ([X := t] s) s.
-Proof.
-  intros.
-  induction s; intros.
-  - admit.
-  - (*
-      X notin ftv (mren rho (tmlam s t0 s0))
-      X notin ftv (rename Y Z (tmlam s t0 s0)) (* Z should prolly be fresh*)
-      Suppose Y = s.
-
-      Then:
-      X notin ftv (tmlam s t0 s0)
-
-      Suppose Y <> s
-      Then:
-      X notin ftv (tmlam s t0 (rename Y Z s0))
-
-
-      Suppose X = s and   X in ftv s0 and Y = s
-      Then:
-      [X := t] (tmlam s t0 s0) = [X := t] (tmlam X t0 s0) = tmlam X t0 s0
-      and we have to show:
-      Alpha3 (tmlam X t0 s0) (tmlam X t0 s0)
-
-      Suppose X = s and X  in (rename Y Z s0)   and Y <> s
-      Then to show:
-      Alpha3 ([X := t] (tmlam X t0 (rename Y Z s0)))
-          (tmlam X t0 (rename Y Z s0))
-      and the subsitutions falls away.
-
-      So suppose X <> s
-      Suppose Y = s.
-      Then to show:
-      A ([X := t] tmlam s t0 s0) (tmlam s t0 s0)
-
-      capms:
-      A (tmlam fr t0 [X := t] (rename s fr s0)) (tmlam s t0 s0)
-      A (rename fr FR ([X := t] (rename s fr s0)) (rename s FR s0)
-      A ([X := t] (rename s FR s0)) (rename s FR s0) (BY IH)
-
-
-      Suppose Y <> s
-      A ([X := t] (tmlam s t0 (rename Y Z s0))) (tmlam s t0 (rename Y Z s0))
-      A (tmlam fr t0 ([X := t] (rename s fr (rename Y Z s0))) (tmlam s t0 (rename Y Z s0)))
-
-         then alpha:
-      A (rename fr FR ([X := t] (rename s fr (rename Y Z s0))) (rename s FR (rename Y Z s0))) 
-      A 
-  *)
-Admitted.
-
   
 
 (* Most complex lemma up to now (12 nov) that is completely proved and general over arbitrary substitutions! *)

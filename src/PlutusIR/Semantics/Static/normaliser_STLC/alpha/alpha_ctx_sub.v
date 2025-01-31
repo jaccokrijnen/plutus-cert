@@ -7,6 +7,7 @@ From PlutusCert Require Import STLC_named alpha Util.List.
 Inductive αCtxSub : list (string * string) -> list (string * term) -> list (string * term) -> Prop :=
   | alpha_ctx_nil : αCtxSub [] [] []
   | alpha_ctx_cons ren sigma sigma' x y t t' :
+  (* TODO: what about sigma and sigma'? no conditions?*)
     AlphaVar ren x y ->
     Alpha ren t t' ->
     αCtxSub ren ((x, t)::sigma) ((y, t')::sigma').

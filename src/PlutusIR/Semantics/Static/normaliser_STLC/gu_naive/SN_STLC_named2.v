@@ -163,7 +163,7 @@ Proof.
         eapply @alpha_trans with (t := substituteT y t2 t').
         -- apply id_right_trans.
         -- eapply alpha_rename_binder_substituteT.
-           ++ admit.
+           ++ (* follows directly from 3-fold transitivity*) admit.
            ++ exact H4.
         -- change (ctx_id_right ren) with (nil ++ ctx_id_right ren).
            apply alpha_extend_ids_right.

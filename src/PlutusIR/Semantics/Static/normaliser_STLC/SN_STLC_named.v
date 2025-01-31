@@ -577,7 +577,7 @@ Qed.
 
 (* Closure under beta expansion. *)
 Lemma beta_expansion A B x s t :
-  SN t -> L A ([x := t] s) ->
+  SN t -> L A ([x := t] s) -> (* To add: s unique binders wrt freevars t*)
   L A (tmapp (tmlam x B s) t).
 Proof with eauto.
   move=> snt h. have sns := sn_subst (L_sn h).
@@ -662,6 +662,10 @@ Proof with eauto using L_sn.
     assumption.
   - move=> t h.
     specialize (ih ((X, t)::sigma) (extend_EL EL h)).
+    (* We would have to change here to an s that is alpha to actual s 
+    and is globally unique wrt t
+    can we also do that in ih? yes by subs_preserves_alpha
+    *)
     apply: beta_expansion_subst...
   - specialize (ih1 _ HEL). specialize (ih2 _ HEL).
     unfold L in ih1. fold L in ih1. specialize (ih1 (sigma [[t]]) ih2).

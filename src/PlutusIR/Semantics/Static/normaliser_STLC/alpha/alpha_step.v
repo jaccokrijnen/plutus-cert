@@ -114,18 +114,6 @@ Proof.
     contradiction.
 Qed. 
 
-Lemma commute_sub_from_naive x s t sigma :
-  nil ⊢ ([x := substituteTs sigma t] (substituteTs sigma s)) ~ (substituteTs sigma ([x := t] s)).
-Proof.
-  (* I think it must again be possible to transform (subsituteTs sigma s) 
-    to something without binders ocurring in (subsituteTs sigma t)
-    while keeping the shape (substituteTs sigma' s')
-    since we do a substitutionm, we cannot be sure we still have global uniqueness afterwards,
-    but we can be sure that non of the stuff in substituteTs sigma t will be captured.
-
-  *)
-Admitted.
-
 (* step_subst for naive substitutions? *)
 Lemma step_subst_naive {s t sigma} : 
   step s t -> {α : term & 
