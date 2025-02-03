@@ -109,7 +109,7 @@ Fixpoint uniType_option (x : DefaultUni) : option Set :=
   match x with
     | DefaultUniInteger    => Some Z
     | DefaultUniByteString => Some (list byte)
-    | DefaultUniString => Some string
+    | DefaultUniString => Some (list byte) (* UTF-8 encoded strings *)
     | DefaultUniUnit => Some unit
     | DefaultUniData => Some Data
     | DefaultUniBLS12_381_G1_Element => Some Z
@@ -832,5 +832,21 @@ Module PlutusNotations.
   Notation "X '→' Y" := (Ty_Fun X Y) (in custom plutus_term at level 49, right associativity).
   Notation "'bytestring'" := (Ty_Builtin DefaultUniByteString) (in custom plutus_term at level 51, right associativity).
 
+  (* String notation for list byte (bytestring and string)
+
+  Pretty-print values of type list byte (used for pir's bytestring and string
+  representation) as string literals, for readability.
+
+  The parsing function will always fail, as we won't accept string literal
+  notation in the parser, which has different mechanisms in Haskell and Coq
+  *)
+
+  (* String Notation requires a monomorphised type *)
+  Notation bytes := (list byte) (only parsing).
+
+  Definition parse_bytes (x : bytes) := x.
+  Definition print_bytes (x : bytes) := x.
+
+  String Notation bytes parse_bytes print_bytes : plutus_scope.
 
 End PlutusNotations.
