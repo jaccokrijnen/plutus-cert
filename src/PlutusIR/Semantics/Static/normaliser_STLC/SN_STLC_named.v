@@ -651,7 +651,7 @@ where "Δ '|-*' T ':' K" := (has_type Δ T K).
 Theorem soundness Gamma s A :
   has_type Gamma s A -> forall sigma,
     EL Gamma sigma -> L A (sigma [[s]]).
-Proof with eauto using L_sn. 
+Proof with eauto using L_sn.
   elim=> {Gamma s A} [Gamma X A |Gamma X A s B _ ih sigma EL|Gamma s t A B _ ih1 _ ih2 sigma HEL].
   - intros HlookupGamma sigma HEL.
     unfold EL in HEL.

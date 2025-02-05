@@ -26,6 +26,16 @@ Fixpoint sub (X : string) (U T : term) : term :=
     tmapp (sub X U T1) (sub X U T2)
   end.
 
+Fixpoint subCA (X : string) (U T : term) : term :=
+  match T with
+  | tmvar Y =>
+    if X =? Y then U else tmvar Y
+  | tmlam Y K1 T' =>
+    if X =? Y then tmlam Y K1 T' else tmlam Y K1 (subCA X U T')
+  | tmapp T1 T2 =>
+    tmapp (subCA X U T1) (subCA X U T2)
+  end.
+
 Inductive step_naive : term -> term -> Set :=
 | step_beta (x : string) (A : type) (s t : term) :
     step_naive (tmapp (tmlam x A s) t) ( sub x t s)
@@ -40,6 +50,12 @@ Fixpoint subs (sigma : list (string * term)) (T : term) : term :=
   match sigma with
   | nil => T
   | cons (x, t) sigma' => sub x t (subs sigma' T) (* or the other way around?*)
+  end.
+
+Fixpoint subsCA (sigma : list (string * term)) (T : term) : term :=
+  match sigma with
+  | nil => T
+  | cons (x, t) sigma' => subCA x t (subsCA sigma' T) (* or the other way around?*)
   end.
 
 (* Define the rewrite rules *)
@@ -705,6 +721,10 @@ match T with
   | tp_arrow A B => fun s => forall t, L2 A t -> GU_vars (tmapp s t) -> L2 B (tmapp s t)
 end.
 
+Lemma α_preserves_L2 A s s' :
+  Alpha [] s s' -> L2 A s -> L2 A s'.
+
+
 (* integrally depends on α_preserves_SN *)
 Lemma α_preserves_L A s s' :
   Alpha [] s s' -> L A s -> L A s'.
@@ -974,6 +994,56 @@ Inductive Blabla : list (string * term) -> Set :=
     lookup_left x sigma = Some T   -> subs sigma (tmvar x) = T
 *)
 
+Lemma beta_expansion_subst_tca X t sigma s A B :
+  SN_na t -> L A (subsCA ((X, t)::sigma) s) -> L A (tmapp (subsCA sigma (tmlam X B s)) t).
+Proof.
+  (*
+    We find a s' s.t.
+
+    subsCA ((X, t)::sigma) s = subs ((X, t)::sigma) s'
+
+
+
+
+  *)
+  intros nc snt H.
+  simpl in H.
+  eapply beta_expansion in H.
+  - autorewrite with subs_db. eauto.
+  - apply alpha_refl. constructor.
+  - assumption.
+    (* again we need an alpha step here that transforms subs sigma s to something GU in some sense
+    *) 
+  - assumption. 
+Admitted.
+
+(* The fundamental theorem. *)
+Theorem soundness_ex_tca Gamma s A :
+  has_type Gamma s A -> 
+  forall sigma,
+    EL Gamma sigma -> 
+    (L A (subsCA sigma s)).
+Proof.
+  intros.
+  generalize dependent sigma.
+  induction H.
+  - admit.
+  - intros.
+    simpl.
+    intros.
+    specialize (IHhas_type ((X, t)::sigma)).
+    apply assume_first_arg in IHhas_type.
+    apply beta_expansion_subst_tca; auto.
+    apply L_sn in H1; auto.
+  - intros.
+    assert (subsCA sigma (tmapp T1 T2) = tmapp (subsCA sigma T1) (subsCA sigma T2)) by admit.
+    rewrite H2.
+    specialize (IHhas_type1 sigma H1).
+    specialize (IHhas_type2 sigma H1).
+    simpl in IHhas_type1.
+    specialize (IHhas_type1 (subsCA sigma T2) IHhas_type2).
+    assumption.
+Admitted.
 
 (* The fundamental theorem. *)
 Theorem soundness_ex Gamma s sigma' s' A R :
@@ -1004,6 +1074,10 @@ Proof.
     (* So also L
         The above can be summarised as: sub_preserves_alpha
     *)
+
+    (* we want subs sigma (tmvar X) to lookup X in sigma from the rhs. It finds it. That is in L. Then we want 
+        all remaining lhs of sigma to not occur in the already found rhss of sigma.
+      *)
 
     (* What if it is not in sigma'? variables are automatically L*)
     + admit.
