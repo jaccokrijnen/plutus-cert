@@ -80,6 +80,32 @@ Inductive Alpha : list (string * string) -> term -> term -> Set :=
     Alpha sigma t1 t2 -> 
     Alpha sigma (tmapp s1 t1) (tmapp s2 t2).
 
+Fixpoint swap (x y : string) (s : term) := 
+  match s with
+  | tmvar z => if z =? x then tmvar y else if z =? y then tmvar x else tmvar z
+  | tmlam z A s' => if z =? x then tmlam y A (swap x y s') else if z =? y then tmlam x A (swap x y s') else tmlam z A (swap x y s')
+  | tmapp s1 s2 => tmapp (swap x y s1) (swap x y s2)
+  end.
+
+Inductive AlphaSwap : term -> term -> Set :=
+| alphaswap_var x :
+  AlphaSwap (tmvar x) (tmvar x)
+| alphaswap_lam x y A s1 s2 :
+  AlphaSwap s1 (swap x y s2) -> 
+  AlphaSwap (tmlam x A s1) (tmlam y A s2)
+| alphaswap_app s1 s2 t1 t2 :
+  AlphaSwap s1 s2 -> 
+  AlphaSwap t1 t2 -> 
+  AlphaSwap (tmapp s1 t1) (tmapp s2 t2).
+
+(* **** Properties of Alpha *)
+
+(* **** Reflexivity *)
+
+(* **** Examples *)
+
+(* Example of alpha equivalence *)
+
 Notation "sigma '⊢' t1 '~' t2" := (Alpha sigma t1 t2) (at level 40).
 (* Notation "t1 '~' t2" := (Alpha [] t1 t2) (at level 40). TODO: This doesnt work, coq doesnt understand when to use which*)
 

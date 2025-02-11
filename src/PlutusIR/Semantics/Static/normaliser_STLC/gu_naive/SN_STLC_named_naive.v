@@ -680,6 +680,9 @@ Definition neutral (s : term) : bool :=
     | _ => true
   end.
 
+Definition No_Capture (s t : term) :=
+  forall x, In x (ftv t) -> ~ In x (btv s).
+
 Record reducible (P : cand) : Set := {
   p_sn : forall s, P s -> SN_na s;
   p_cl : forall s t, P s -> step_gu_naive s t -> P t;
@@ -711,18 +714,89 @@ end.
 
 Fixpoint L2 (T : type) : cand :=
 match T with
-  | tp_base => SN_na 
+  | tp_base => SN_na
   (* this is a restriction on the t that we want to accept.
   However, these types of programs that we no longer allow are not GU_Vars, something like
   
   (λx.λy. x) y
   This would not be allowed, but we can always find an alpha equivalent s for which this particular t would be allowed.
   *)
-  | tp_arrow A B => fun s => forall t, L2 A t -> GU_vars (tmapp s t) -> L2 B (tmapp s t)
+  | tp_arrow A B => fun s => forall t, L2 A t -> No_capture  (tmapp s t) -> L2 B (tmapp s t)
 end.
 
-Lemma α_preserves_L2 A s s' :
-  Alpha [] s s' -> L2 A s -> L2 A s'.
+
+Inductive P : term -> Set := .
+
+Fixpoint L3 (T : type) : cand :=
+fun s => (prod (GU_vars s) (match T with
+  | tp_base => SN_na s
+  | tp_arrow A B => forall t, L3 A t -> L3 B (tmapp s t)
+end)).
+
+Definition Save_App (s t : term) := forall x, In x (ftv t) -> ~ In x (btv s).
+
+Fixpoint Lα (T : type) : cand :=
+match T with
+  | tp_base => SN_na 
+  | tp_arrow A B => fun s => 
+      forall t, Lα A t -> {s' & Alpha [] s s' * Save_App s' t * Lα B (tmapp s' t)}%type
+end.
+
+(* Als P niet composeert: P s -> P t -> P (tmapp s t), dan hebben we een Q nodig, zie chat Jacco Dinsdag 4 feb*)
+
+Lemma notGU_example x A :
+  GU_vars (tmlam x A (tmlam x A (tmvar x))) -> false.
+Proof.
+Admitted.
+
+Lemma L2_notGU x A B:
+  L2 (tp_arrow A B) (tmlam x (tp_arrow A B) (tmlam x A (tmvar x))).
+Proof.
+  simpl.
+  intros.
+  (* contradiction in H0, there is no t s.t. gu_vars *)
+Admitted.
+  
+8
+
+Lemma α_preserves_L2 A s s' R :
+  L2 A s -> Alpha R s s' -> L2 A s'.
+Proof.
+  intros.
+  generalize dependent s.
+  generalize dependent s'.
+  generalize dependent R.
+  induction A; intros.
+  - eapply α_preserves_SN_R. eauto. eauto.
+  - simpl.
+    simpl in H.
+    intros.
+    eapply IHA2.
+    + eapply H.
+     * eapply IHA1. exact H1.
+
+      (* we have R ⊢ s ~ s'
+          We also have this if R only contains all free vars in s and s'.
+
+          We have GU_vars (tmapp s' t). Hence, all bound vars in s' are not free vars in t (and also not in s').
+          We call all bound vars in s B.
+          They need to be renamed away in t.
+            What to? Fresh stuff, doesnt matter what.
+          We can add these renamings to the alpha context to get R+. Since these variables do not occur free in s or s'
+            we still have (R+ ⊢ s ~ s').
+             This does not change anything in s, since these are only bound vars
+          then we can let t_s   (corresponding to the lefthand side) s.t.  R+ ⊢ t_s ~ t
+            and s.t. (GU_vars (tmapp s t_s)) holds.
+          For this last condition we need all bound vars in s to not occur free in t_s.
+
+      *)
+      admit.
+      * (* possible*)
+        admit.
+    + (* We then have R+ ⊢ t_s ~ t
+          We also have R+ ⊢ s ~ s'   (by the property that we only added bound var names, so they have no effect)
+    *) 
+
 
 
 (* integrally depends on α_preserves_SN *)
@@ -787,6 +861,28 @@ Global Hint Resolve reducible_sn : core.
 Lemma reducible_var P x : reducible P -> P (tmvar x).
 Proof. move/p_nc. apply=> // t st. 
 (* There is no t s.t. step_gu_naive (tmvar x) t*)
+Admitted.
+
+Lemma L2_reducible A :
+  reducible (L2 A).
+Proof with eauto using step_gu_naive.
+  elim: A => /=[|A ih1 B ih2].
+  - apply reducible_sn.
+  - constructor.
+    + move=> s h. 
+      assert (GU_vars (tmapp s (tmvar "x"))) as hgu by admit. (* todo, choose "x" so this is true, requires that all elements in L (and thus s) are globally unique*)
+      apply: (@sn_closedL (tmvar "x")). apply: (p_sn (P := L2 B))...
+      eapply h. eapply reducible_var; eauto. auto.
+    + move=> s t h st u la gu.
+      eapply p_cl with (s := tmapp s u); eauto.
+      * eapply h; eauto.
+      apply: (p_cl _ (s := tmapp s u))...
+      apply step_gu_naive_intro. inversion st; subst.  apply: step_appL. apply: h. apply: p_sn...
+    + move=> s ns h t la.
+      have snt := p_sn ih1 la.
+      elim: snt la => {} t _ ih3 la. apply: p_nc... move=> v st. inv st=> //...
+      (* Note: Case L B ([x := t] s0. By using Autosubst's "inv" instead of normal inversion, this goal vanishes. Why? *) (* Todo: Think, this case doesn't happen in db variant*)
+      * apply: ih3 => //. exact: (p_cl ih1) la _.
 Admitted.
 
 Lemma L_reducible A :
@@ -953,6 +1049,25 @@ Proof with eauto.
   - (* presumably analogous to above? *)
 Admitted.
 
+Lemma beta_expansion_subst_L2 X t sigma s A B :
+  no_capture (subs sigma s) [(X, t)] ->
+  SN_na t -> L2 A (subs ((X, t)::sigma) s) -> L2 A (tmapp (subs sigma (tmlam X B s)) t).
+Proof.
+(* to remove the no_capture assumption
+  we generate s' s.t. no_capture (subs sigma s) [(X, t)].
+  not possible, what if the binder is in rhs of sigma.
+  well, it should also be allowed to change the rhs's of sigma to alpha equivalent terms.
+*)
+  intros nc snt H.
+  simpl in H.
+  eapply beta_expansion in H.
+  - autorewrite with subs_db. eauto.
+  - apply alpha_refl. constructor.
+  - assumption.
+    (* again we need an alpha step here that transforms subs sigma s to something GU in some sense
+    *) 
+  - assumption. 
+Qed.
 
 Lemma beta_expansion_subst X t sigma s A B :
   no_capture (subs sigma s) [(X, t)] ->
@@ -994,56 +1109,7 @@ Inductive Blabla : list (string * term) -> Set :=
     lookup_left x sigma = Some T   -> subs sigma (tmvar x) = T
 *)
 
-Lemma beta_expansion_subst_tca X t sigma s A B :
-  SN_na t -> L A (subsCA ((X, t)::sigma) s) -> L A (tmapp (subsCA sigma (tmlam X B s)) t).
-Proof.
-  (*
-    We find a s' s.t.
 
-    subsCA ((X, t)::sigma) s = subs ((X, t)::sigma) s'
-
-
-
-
-  *)
-  intros nc snt H.
-  simpl in H.
-  eapply beta_expansion in H.
-  - autorewrite with subs_db. eauto.
-  - apply alpha_refl. constructor.
-  - assumption.
-    (* again we need an alpha step here that transforms subs sigma s to something GU in some sense
-    *) 
-  - assumption. 
-Admitted.
-
-(* The fundamental theorem. *)
-Theorem soundness_ex_tca Gamma s A :
-  has_type Gamma s A -> 
-  forall sigma,
-    EL Gamma sigma -> 
-    (L A (subsCA sigma s)).
-Proof.
-  intros.
-  generalize dependent sigma.
-  induction H.
-  - admit.
-  - intros.
-    simpl.
-    intros.
-    specialize (IHhas_type ((X, t)::sigma)).
-    apply assume_first_arg in IHhas_type.
-    apply beta_expansion_subst_tca; auto.
-    apply L_sn in H1; auto.
-  - intros.
-    assert (subsCA sigma (tmapp T1 T2) = tmapp (subsCA sigma T1) (subsCA sigma T2)) by admit.
-    rewrite H2.
-    specialize (IHhas_type1 sigma H1).
-    specialize (IHhas_type2 sigma H1).
-    simpl in IHhas_type1.
-    specialize (IHhas_type1 (subsCA sigma T2) IHhas_type2).
-    assumption.
-Admitted.
 
 (* The fundamental theorem. *)
 Theorem soundness_ex Gamma s sigma' s' A R :
@@ -1175,10 +1241,89 @@ Proof.
     eauto.
 Admitted.
 
+Lemma gu__no_capture (s t : term) :
+  GU_vars (tmapp s t) -> No_Capture s t.
+Proof.
+Admitted.
+
+Lemma gu_vars_appL (s t : term) :
+  GU_vars (tmapp s t) -> GU_vars s.
+Admitted.
+
+Lemma gu_vars_appR (s t : term) :
+  GU_vars (tmapp s t) -> GU_vars t.
+  Admitted.
+
+(* Q Gamma s: 
+      forall x, In x (lhs Gamma) -> ~ In x (btv s)
+      forall x, In x (lhs Gamma) -> ~ In x (btv (tmlam y A s0))
+      ->
+      forall x, In x (lhs (y, A)::Gamma) -> ~ In x (btv s0)?
+
+      decompositioneel, belangrijk voor instantieteren inductiehypotheses
+
+  Compositioneel?
+     belangrijk voor subsituties. als Q s /\ Q' sigma -> Q (subs sigma s)
+
+     in de lam case mag de binder niet voorkomen in Gamma
+*)
+(* P t
+EL Gamma Sigma (tmlam y. s0) -> EL (y,A)::Gamma (y,t)::sigma s0 *)
+
 (* The fundamental theorem. *)
 Theorem soundness Gamma s A :
+  has_type Gamma s A -> GU_vars s -> forall sigma,
+    EL Gamma sigma -> L A (subs sigma s).
+Proof with eauto using L_sn. 
+  elim=> {Gamma s A} [Gamma X A |Gamma X A s B _ gu ih sigma EL|Gamma s t A B _ ih1 _ ih2 gu sigma HEL].
+  - admit.
+  - admit.
+  - autorewrite with subs_db.
+    
+    specialize (ih1 (gu_vars_appL gu) _ HEL).
+    specialize (ih2 (gu_vars_appR gu) _ HEL).
+    unfold L in ih1. fold L in ih1.
+    specialize (ih1 (subs sigma t) ih2).
+    assumption.
+Admitted.
+
+(* The fundamental theorem. *)
+
+Theorem soundness' Gamma s A :
+  has_type Gamma s A -> forall sigma,
+    EL Gamma sigma -> Lα A (subs sigma s).
+Proof with eauto using L_sn. 
+  elim=> {Gamma s A} [Gamma X A |Gamma X A s B _ ih sigma EL|Gamma s t A B _ ih1 _ ih2 sigma HEL].
+  - admit.
+  - admit.
+  - specialize (ih1 _ HEL).
+    specialize (ih2 _ HEL).
+    unfold Lα in ih1. fold Lα in ih1.
+    specialize (ih1 (subs sigma t) ih2).
+    destruct ih1 as [s' [ [Hα Hsave] HL] ].
+    (* here we need composability of no_capture, 
+      if no ftv in sigma occurs in s' or t', then also not in tmapp s' t'
+    *)
+    split. admit.
+    autorewrite with subs_db.
+    assumption.
+Admitted.
+
+(*
+  P global unique
+  Q no_capture
+  P => Q for apply case
+  EL extra parameter s
+*)
+
+(* The fundamental theorem. *)
+Theorem soundness' Gamma s A :
   has_type Gamma s A -> forall sigma,
     EL Gamma sigma -> L A (subs sigma s).
+
+    (*
+    L' A sigma s
+    *)
 Proof with eauto using L_sn. 
   elim=> {Gamma s A} [Gamma X A |Gamma X A s B _ ih sigma EL|Gamma s t A B _ ih1 _ ih2 sigma HEL].
   - intros HlookupGamma sigma HEL.

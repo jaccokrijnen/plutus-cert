@@ -133,7 +133,7 @@ Inductive step_gu_naive : term -> term -> Set :=
     step_gu_naive s t. *)
 
 (* used to be prop (TODO: Defined also in SN_STCL_named )*)
-Inductive sn {e : term -> term -> Set } x : Set :=
+Inductive sn {e : term -> term -> Set } (x : term) : Set :=
 | SNI : (forall y, e x y -> sn y) -> sn x.
 
 Notation SN_na := (@sn step_gu_naive).
