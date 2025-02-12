@@ -151,7 +151,7 @@ Section SubstitutionLemmas.
   Admitted.
 
   Lemma compose_subst_msubst_bindings_nonrec : forall x tx γ bs,
-    <{ [ tx / x ][bnr] (/[ γ /][bnr] bs) }> = <{ /[ (x, tx) :: γ /][bnr] bs }>.
+    <{ [ x := tx ]bnr ([γ]*bnr bs) }> = <{ [(x, tx) :: γ]*bnr bs }>.
   Admitted.
 
   Lemma result_msubstA_result v δ :
@@ -164,7 +164,7 @@ Section SubstitutionLemmas.
 
   Lemma result_msubst_result v γ :
     result v ->
-    result <{/[ γ /] v}>.
+    result <{[γ]* v}>.
   Proof.
   (** Should hold: only substitute under lambdas etc *)
   Admitted.

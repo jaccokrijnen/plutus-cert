@@ -33,7 +33,7 @@ Lemma fully_applied__Apply t v :
   fully_applied <{ t ⋅ v }> ->
     exists x T s,
       t =[ 0 ]=> LamAbs x T s
-      /\ <{ [v / x] s }> = <{ t ⋅ v }>
+      /\ <{ [x := v] s }> = <{ t ⋅ v }>
 .
 Admitted.
 
@@ -59,7 +59,7 @@ reduction and then using the standard E_Builtin rule.
 Lemma E_Builtin_partial : forall s v i x T t w j,
   fully_applied <{s ⋅ v}>
   -> s =[i]=> LamAbs x T t
-  -> <{ [v / x] t }> =[j]=> w
+  -> <{ [x := v] t }> =[j]=> w
   -> <{ s ⋅ v }> =[i + 1 + j]=> w
 .
 Proof.
@@ -343,7 +343,7 @@ Lemma RV_apply {j T1 T2 Δ ρ f f' k v v'} i :
   exists (x : binderName) (b b' : term) (T1v T1v' : ty),
     f = <{ λ x :: T1v, b }> /\
     f' = <{ λ x :: T1v', b' }> /\
-    R_C i T2 ρ <{ [ v / x] b }> <{ [v' / x] b' }>.
+    R_C i T2 ρ <{ [x := v] b }> <{ [x := v'] b' }>.
 Proof with eauto_LR.
   intros H_RD H_V_f H_V_v H_j H_k.
   apply R_V_functional_extensionality in H_V_f

@@ -106,11 +106,11 @@ Proof.
 Qed.
 
 Lemma subst_b__bound_vars : forall x s b,
-    bvb b = bvb <{ [s/x][b] b }>.
+    bvb b = bvb <{ [x := s]b b }>.
 Proof. intros. induction b. all: eauto. destruct v. eauto. Qed.
 
 Lemma subst_bnr__bound_vars : forall x s bs,
-    bvbs bs = bvbs <{ [s/x][bnr] bs }>.
+    bvbs bs = bvbs <{ [x := s]bnr bs }>.
 Proof.
   intros.
   induction bs.
@@ -129,7 +129,7 @@ Proof.
 Qed.
 
 Lemma msubst_bnr__bound_vars : forall bs ss,
-    bvbs bs = bvbs <{ /[ ss /][bnr] bs }>.
+    bvbs bs = bvbs <{ [ss]*bnr bs }>.
 Proof with eauto.
   intros bs ss.
   generalize bs.
@@ -313,11 +313,11 @@ Proof.
 Admitted.
 
 Lemma msubst__fold : forall ss x v t,
-    msubst ss <{ [v / x] t }> = msubst ((x, v) :: ss) t.
+    msubst ss <{ [x := v] t }> = msubst ((x, v) :: ss) t.
 Proof. induction ss; intros; auto. Qed.
 
 Lemma msubst_bnr__fold : forall ss x v bs,
-    msubst_bnr ss <{ [v / x][bnr] bs }> = msubst_bnr ((x, v) :: ss) bs.
+    msubst_bnr ss <{ [x := v]bnr bs }> = msubst_bnr ((x, v) :: ss) bs.
 Proof. induction ss; intros; auto. Qed.
 
 Lemma msubst_LamAbs : forall ss x T t0,

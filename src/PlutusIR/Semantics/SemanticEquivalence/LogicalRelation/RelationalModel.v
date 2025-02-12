@@ -86,7 +86,7 @@ Equations? RC (k : nat) (T : ty) (rho : tymapping) (e e' : term) : Prop by wf k 
                     ~ is_error v_0 /\ ~ is_error v'_0 ->
                     result v_0 /\ result v'_0 /\
                     RC i T1n rho v_0 v'_0 ->
-                    RC i T2n rho <{ [v_0 / x] e_body }> <{ [v'_0 / x] e'_body }>
+                    RC i T2n rho <{ [x := v_0] e_body }> <{ [x := v'_0] e'_body }>
 
             (* RV for recursive types *)
             | Ty_IFix Fn Tn =>
@@ -372,7 +372,7 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
             v' = LamAbs x T1' e'_body /\
             forall i (Hlt_i : i < k) v_0 v'_0,
               R V i T1n rho v_0 v'_0 ->
-              R C i T2n rho <{ [v_0 / x] e_body }> <{ [v'_0 / x] e'_body }>
+              R C i T2n rho <{ [x := v_0] e_body }> <{ [x := v'_0] e'_body }>
 
       | Ty_IFix Fn Tn =>
           exists v_0 v'_0 F F' T T',

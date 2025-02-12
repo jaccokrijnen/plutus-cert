@@ -12,7 +12,7 @@ Import ListNotations.
 (** * Helper lemmas *)
 
 Lemma subst_b__preserves_bindsD : forall b v x,
-    binds_Delta <{ [v / x][b] b }> = binds_Delta b.
+    binds_Delta <{ [x := v]b b }> = binds_Delta b.
 Proof with eauto.
   intros.
   destruct b.
@@ -23,7 +23,7 @@ Proof with eauto.
 Qed.
 
 Lemma subst_b__preserves_bindsG : forall b v x,
-    binds_Gamma <{ [v / x][b] b }> = binds_Gamma b.
+    binds_Gamma <{ [x := v]b b }> = binds_Gamma b.
 Proof with eauto.
   intros.
   destruct b.
@@ -34,7 +34,7 @@ Proof with eauto.
 Qed.
 
 Lemma subst_bnr__preserves_bindsD : forall bs v x,
-    map binds_Delta <{ [v / x][bnr] bs }> = map binds_Delta bs.
+    map binds_Delta <{ [x := v]bnr bs }> = map binds_Delta bs.
 Proof with eauto.
   induction bs; intros...
   - simpl.
@@ -45,7 +45,7 @@ Proof with eauto.
 Qed.
 
 Lemma subst_bnr__preserves_bindsG : forall bs v x,
-    map binds_Gamma <{ [v / x][bnr] bs }> = map binds_Gamma bs.
+    map binds_Gamma <{ [x := v]bnr bs }> = map binds_Gamma bs.
 Proof with eauto.
   induction bs; intros...
   - simpl.
@@ -56,7 +56,7 @@ Proof with eauto.
 Qed.
 
 Lemma subst_br__preserves_bindsD : forall bs v x,
-    map binds_Delta <{ [v / x][br] bs }> = map binds_Delta bs.
+    map binds_Delta <{ [x := v]br bs }> = map binds_Delta bs.
 Proof with eauto.
   induction bs; intros...
   - simpl.
@@ -65,7 +65,7 @@ Proof with eauto.
 Qed.
 
 Lemma subst_br__preserves_bindsG : forall bs v x,
-    map binds_Gamma <{ [v / x][br] bs }> = map binds_Gamma bs.
+    map binds_Gamma <{ [x := v]br bs }> = map binds_Gamma bs.
 Proof with eauto.
   induction bs; intros...
   - simpl.
@@ -80,14 +80,14 @@ Definition P_Term (t : term) :=
     Delta ,, ((x, U) :: Gamma) |-+ t : T ->
     normalise U Un ->
     [] ,, [] |-+ v : Un ->
-    Delta ,, Gamma |-+ <{ [v / x] t }> : T.
+    Delta ,, Gamma |-+ <{ [x := v] t }> : T.
 
 Definition P_Binding (b : binding) : Prop :=
   forall Delta Gamma x U Un v,
     Delta ,, ((x, U) :: Gamma) |-ok_b b ->
     normalise U Un ->
     [] ,, [] |-+ v : Un ->
-    Delta ,, Gamma |-ok_b <{ [v / x][b] b }>.
+    Delta ,, Gamma |-ok_b <{ [x := v]b b }>.
 
 #[export] Hint Unfold
   P_Term
@@ -104,7 +104,7 @@ Lemma SPT__Bindings_NonRec : forall bs,
       Delta ,, ((x, U) :: Gamma) |-oks_nr bs ->
       normalise U Un ->
       [] ,, [] |-+ v : Un ->
-      Delta ,, Gamma |-oks_nr <{ [v / x][bnr] bs }>.
+      Delta ,, Gamma |-oks_nr <{ [x := v]bnr bs }>.
 Proof with (eauto with typing).
   induction bs. all: intros...
   - simpl.
@@ -153,7 +153,7 @@ Lemma SPT__Bindings_Rec : forall bs,
       Delta ,, ((x, U) :: Gamma) |-oks_r bs ->
       normalise U Un ->
       [] ,, [] |-+ v : Un ->
-      Delta ,, Gamma |-oks_r <{ [v / x][br] bs }>.
+      Delta ,, Gamma |-oks_r <{ [x := v]br bs }>.
 Proof with (eauto with typing).
   induction bs. all: intros...
   - simpl.
@@ -290,12 +290,12 @@ Corollary substitution_preserves_typing__Term : forall t Delta Gamma x U Un v T,
     Delta ,, ((x, U) :: Gamma)  |-+ t : T ->
     normalise U Un ->
     [] ,, [] |-+ v : Un ->
-    Delta ,, Gamma |-+ <{ [v / x] t }> : T.
+    Delta ,, Gamma |-+ <{ [x := v] t }> : T.
 Proof. apply substitution_preserves_typing. Qed.
 
 Corollary substitution_preserves_typing__Binding : forall b Delta Gamma x U Un v,
     Delta ,, ((x, U) :: Gamma) |-ok_b b ->
     normalise U Un ->
     [] ,, [] |-+ v : Un ->
-    Delta ,, Gamma |-ok_b <{ [v / x][b] b }>.
+    Delta ,, Gamma |-ok_b <{ [x := v]b b }>.
 Proof. apply substitution_preserves_typing. Qed.

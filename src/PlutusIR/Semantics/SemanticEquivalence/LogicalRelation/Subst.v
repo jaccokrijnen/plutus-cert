@@ -25,7 +25,7 @@ Local Open Scope string_scope.
 Lemma subst_closed : forall t,
     closed t ->
     forall x s,
-      <{ [s / x] t }> = t.
+      <{ [x := s] t }> = t.
 Proof. Admitted.
 
 Lemma substA_closed : forall t,
@@ -36,7 +36,7 @@ Proof. Admitted.
 
 Lemma subst_not_afi : forall t x v,
     closed v ->
-    ~(Term.appears_free_in x <{ [v / x] t }> ).
+    ~(Term.appears_free_in x <{ [x := v] t }> ).
 Proof. Admitted.
 
 Lemma substA_not_afi : forall t X U,
@@ -46,7 +46,7 @@ Proof. Admitted.
 
 Lemma duplicate_subst : forall x t v v',
     closed v ->
-    <{ [v' / x] ([v / x] t) }> = <{ [v / x] t }>.
+    <{ [x := v'] ([x := v] t) }> = <{ [x := v] t }>.
 Proof. Admitted.
 
 Lemma duplicate_substA : forall X t U U',
@@ -56,21 +56,21 @@ Proof. Admitted.
 
 Lemma duplicate__subst_bnr : forall x bs v v',
     closed v ->
-    <{ [v' / x][bnr] ([v / x][bnr] bs) }> = <{ [v / x][bnr] bs }>.
+    <{ [x := v']bnr ([x := v]bnr bs) }> = <{ [x := v]bnr bs }>.
 Proof. Admitted.
 
 Lemma swap_subst : forall t x x1 v v1,
     x <> x1 ->
     closed v ->
     closed v1 ->
-    <{ [v1/x1]([v/x]t) }> = <{ [v/x]([v1/x1]t) }>.
+    <{ [x1 := v1]([x := v]t) }> = <{ [x := v]([x1 := v1]t) }>.
 Proof. Admitted.
 
 Lemma swap__subst_bnr : forall bs x x1 v v1,
     x <> x1 ->
     closed v ->
     closed v1 ->
-    <{ [v1/x1][bnr]([v/x][bnr] bs) }> = <{ [v/x][bnr]([v1/x1][bnr] bs) }>.
+    <{ [x1 := v1]bnr([x := v]bnr bs) }> = <{ [x := v]bnr([x1 := v1]bnr bs) }>.
 Proof. Admitted.
 
 
@@ -104,7 +104,7 @@ Qed.
 Lemma subst_msubst : forall env x v t,
     closed v ->
     closed_env env ->
-    msubst env <{ [v/x]t }> = <{ [v/x] {msubst (drop x env) t} }>.
+    msubst env <{ [x := v]t }> = <{ [x := v] {msubst (drop x env) t} }>.
 Proof.
   induction env; intros; auto.
   destruct a. simpl.
@@ -120,7 +120,7 @@ Qed.
 Lemma subst_msubst' : forall env x v t,
     closed v ->
     closed_env env ->
-    msubst (drop x env) <{ [v/x]t }> = <{ [v/x] {msubst (drop x env) t} }>.
+    msubst (drop x env) <{ [x := v]t }> = <{ [x := v] {msubst (drop x env) t} }>.
 Proof.
   induction env; intros; auto.
   destruct a. simpl.
@@ -138,13 +138,13 @@ Lemma subst_msubst'' : forall env x xs v t,
     closed v ->
     closed_env env ->
     ~ In x xs ->
-    msubst (mdrop xs env) <{ [v/x]t }> = <{ [v/x] {msubst (mdrop xs env) t} }>.
+    msubst (mdrop xs env) <{ [x := v]t }> = <{ [x := v] {msubst (mdrop xs env) t} }>.
 Proof. Admitted.
 
 Lemma subst_bnr__msubst_bnr : forall env x v bs,
     closed v ->
     closed_env env ->
-    msubst_bnr env <{ [v/x][bnr] bs }> = <{ [v/x][bnr] {msubst_bnr (drop x env) bs} }>.
+    msubst_bnr env <{ [x := v]bnr bs }> = <{ [x := v]bnr {msubst_bnr (drop x env) bs} }>.
 Proof.
   induction env; intros; auto.
   destruct a. simpl.
@@ -160,7 +160,7 @@ Qed.
 Lemma subst_bnr__msubst_bnr' : forall env x v bs,
     closed v ->
     closed_env env ->
-    msubst_bnr (drop x env) <{ [v/x][bnr] bs }> = <{ [v/x][bnr] {msubst_bnr (drop x env) bs} }>.
+    msubst_bnr (drop x env) <{ [x := v]bnr bs }> = <{ [x := v]bnr {msubst_bnr (drop x env) bs} }>.
 Proof. Admitted.
 
 Lemma substA_msubstA : forall envA X U t,
@@ -170,7 +170,7 @@ Proof. Admitted.
 
 Lemma substA_msubst : forall X U env t,
     Ty.closed U ->
-    <{ [[U / X] (/[ env /] t ) }> =  <{ /[ env /] ([[U / X] t) }> .
+    <{ [[U / X] ([ env ]* t ) }> =  <{ [ env ]* ([[U / X] t) }> .
 Proof. Admitted.
 
 (** ** Properties of multi-extensions *)
