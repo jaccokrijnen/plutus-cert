@@ -168,7 +168,7 @@ Combined Scheme dc__multind from
 
 Hint Unfold R_refl.
 
-Lemma dc_sym : ∀ t, dc t t.
+Lemma dc_refl : ∀ t, dc t t.
 Proof.
   apply term__multind with
     (P := fun t => dc t t)
