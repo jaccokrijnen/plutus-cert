@@ -322,21 +322,12 @@ No binder in t can occur as free or bound variable in sigma,
   thus substituting sigma in t will not cause unwanted capture.
 *)
 Inductive no_capture : term -> list (string * term) -> Set :=
-| no_capture_nil t :
-    no_capture t []
-| no_capture_cons t x s sigma :
-    no_capture t sigma ->
-    (forall y, In y (btv t) -> ((y <> x) * (~ In y (tv s)))) -> (* no capturing *)
-    GU_vars s -> (* unique binders in sigma elementwise *)
-    (* 
-      Added to fix soundness
-    Now since multiple institutions should be interpreted as first doing the substs on the right
-      and then the one on the left, we also do not want capture after first doing those on the right
-      
-      Hence, no free var in s nor x itself may be captured by binders in map snd sigma
-      *)
-    (forall y, In y (List.concat (map btv (map snd sigma))) -> ((y <> x) * (~ In y (tv s)))) ->
-    no_capture t ((x, s) :: sigma).
+| no_capture_nil s :
+    no_capture s []
+| no_capture_cons s x t sigma :
+    no_capture s sigma ->
+    (forall y, In y (btv s) -> ((y <> x) * (~ In y (ftv t)))) -> (* no capturing *)
+    no_capture s ((x, t) :: sigma).
 
 Lemma no_capture_lam x A s sigma :
   no_capture (tmlam x A s) sigma -> no_capture s sigma.
@@ -512,6 +503,15 @@ Lemma subs_preserves_alpha R sigma T T' :
   Alpha R T T' ->
   Alpha R (subs sigma T) (subs sigma T').
 Proof.
+Admitted.
+
+Lemma subs_preserves_alpha_σ sigma sigma' s :
+  no_capture s sigma ->
+  no_capture s sigma' ->
+  αCtxSub [] sigma sigma' ->
+  Alpha [] (subs sigma s) (subs sigma' s).
+Proof.
+  (* should hold, Idk how hard it will be*)
 Admitted.
 
 (* Problem: this is not true.
@@ -1094,6 +1094,8 @@ Proof.
   - assumption. 
 Qed.
 
+ 
+
 Lemma no_capture_helper s X t sigma :
   no_capture s ((X, t)::sigma) -> no_capture (subs sigma s) [(X, t)].
 Admitted.
@@ -1123,139 +1125,8 @@ Inductive Blabla : list (string * term) -> Set :=
   TODO: Do we need to enforce that we cannot have twice the same key? 
   For now: righthanded lookup will do the job
 *)
-Lemma blabla_lookup x t sigma :
-  Blabla sigma -> lookup x sigma = Some t -> subs sigma (tmvar x) = t.
-Admitted.
-
-
-(* The fundamental theorem. *)
-Theorem soundness_ex Gamma s sigma' s' A R :
-  has_type Gamma s A -> 
-  forall sigma,
-    EL Gamma sigma -> 
-    (* Blabla sigma -> (* this will say that we cannot have sigmas like [x |-> y] ([z |-> x] s) *)
-      in other words, the next subsitution has no effect if the previous one suceeded.
-    *)
-    (* Blabla sigma -> *)
-    Blabla sigma' -> (* this still allows identity substitutions, we could put this into EL*)
-    Alpha R s s' -> 
-    αCtxSub R sigma sigma' -> (* TODO: Once this works, why do we even need this? sigma and sigma' are all free to choose, why do we not just choose original sigma to not be captured??? *)
-    no_capture s' sigma' -> (* shouldnt be too strong. we only want to use this for identity substitutions. And even by design only substituting free variables (so no free var in sigma should be a bound var in s)*)
-    (L A (subs sigma' s')).
-Proof.
-  intros.
-  generalize dependent R.
-  generalize dependent s'.
-  generalize dependent sigma.
-  generalize dependent sigma'.
-  induction H.
-  - intros.
-    inversion H2; subst. clear H4.
-    eapply α_preserves_L with (s := subs sigma (tmvar X)).
-    (* Everything in sigma is L by EL Δ sigma*)
-    (* Then by alpha also for sigma' and then also X in sigma' and value alpha equivalent to the one in sigma*)
-    (* So also L
-        The above can be summarised as: sub_preserves_alpha
-    *)
-
-    (* we want subs sigma (tmvar X) to lookup X in sigma from the rhs. It finds it. That is in L. Then we want 
-        all remaining lhs of sigma to not occur in the already found rhss of sigma.
-      *)
-
-    (* What if it is not in sigma'? variables are automatically L*)
-    + admit.
-    + unfold EL in H0.
-      specialize (H0 X K e).
-      destruct H0 as [t [HlookupSigma LAt] ].
-      (* problem. what if first X is subsituted for Y, and then that is again substituted
-        This is because we no longer have parallel substitutions.
-
-        ok. but. suppose it is like (subs sigma1 (subs sigma2 X)) and then in subs sigma2 X, it indeed
-        subsitutes for t which is L.
-        
-      Next step: this works with new alphactxsub?
-
-      Does new alphactx sub make sense?
-
-      *)  
-    admit.
-  - 
-    intros.
-    simpl.
-    intros.
-    inversion H2; subst.
-    (* this says: we can rename binders in rhs of sigma' and s' so that no capturign occurs *)
-    assert ({s'' & { sigma'' &  Alpha [] s2 s'' *
-      (* no_capture (tmlam X K1 s'') sigma''  * TODO: Oof. We cannot enforce this, because now we say: X not in sigma'' *)
-      no_capture s'' ((y, t)::sigma'') * 
-      αCtxSub [] sigma' sigma'' *
-      no_capture (subs sigma'' s'') [(y, t)]
-      }}%type) by admit.
-
-    assert ({t0 & Alpha ((X, y)::R) t0 t}) as [t0 Halphat0] by admit.
-
-    destruct H6 as [s'' [sigma'' [ [ [ Halpha Hno_cap ] Hctx ] Hnocapsubs ] ] ].
-    
-    specialize (IHhas_type ((y, t)::sigma'')).
-      assert (Hblabla: Blabla ((y, t)::sigma'')).
-      {
-        constructor; auto.
-        (* alpha preserves blabla (yes, because alpha doesnt change freevars )*)
-        admit.
-        (* by no_capture (tmlam y K1 s2) sigma'
-            y is a binder in the term.
-            So that means that y is not free in any of the values of sigma', 
-              and also not in the keys of sigma'
-
-              by aphaCtxSub [] sigma' sigma'' we have that they have the same ftvs, so it also holds for sigma''
-        *)
-        admit.
-      }
-      specialize (IHhas_type Hblabla ((X, t0)::sigma)).
-      apply assume_first_arg in IHhas_type.
-
-
-
-
-      
-
-      specialize (IHhas_type s'' Hno_cap ((X, y)::R)).
-      apply assume_first_arg in IHhas_type.
-      assert (αCtxSub ((X, y)::R) ((X, t0)::sigma) ((y, t)::sigma'')) by admit.
-      (* This notion assumes a different definition of αCtxSub
-        Every substitution corresponds to a beta reduction.
-        We already had the subsitutions with R sigma and sigma''
-        let's make that less abstract
-        [x -> t]   and   [y -> t']    and R = [x, y] ??
-        origingating from 
-        (λz. (λx. s) t) U    and  (λz'. (λy. s') t') U'
-      *)
-      specialize (IHhas_type H6).
-      
-      
-      eapply beta_expansion_subst in IHhas_type.
-      + eapply α_preserves_L; [|exact IHhas_type].
-        constructor; [|eapply alpha_refl; constructor].
-        apply subs_preseserves_alpha.
-        admit.
-
-
-      + auto.
-      + apply L_sn in H5. auto.
-  - intros.
-    inversion H3; subst.
-    autorewrite with subs_db.
-    specialize (IHhas_type2 sigma' H1 sigma).
-    specialize (IHhas_type1 sigma' H1 sigma).
-    apply assume_first_arg in IHhas_type1.
-    apply assume_first_arg in IHhas_type2.
-    specialize (IHhas_type1 s2).
-    specialize (IHhas_type2 t2).
-    apply assume_first_arg in IHhas_type1.
-    apply assume_first_arg in IHhas_type2.
-    specialize (IHhas_type1 R H9 H5).
-    specialize (IHhas_type2 R H11 H5).
-    eauto.
+Lemma psubs_to_subs {s sigma} :
+  Blabla sigma -> subs sigma s = psubs sigma s.
 Admitted.
 
 Lemma gu__no_capture (s t : term) :
@@ -1271,39 +1142,6 @@ Lemma gu_vars_appR (s t : term) :
   GU_vars (tmapp s t) -> GU_vars t.
   Admitted.
 
-(* Q Gamma s: 
-      forall x, In x (lhs Gamma) -> ~ In x (btv s)
-      forall x, In x (lhs Gamma) -> ~ In x (btv (tmlam y A s0))
-      ->
-      forall x, In x (lhs (y, A)::Gamma) -> ~ In x (btv s0)?
-
-      decompositioneel, belangrijk voor instantieteren inductiehypotheses
-
-  Compositioneel?
-     belangrijk voor subsituties. als Q s /\ Q' sigma -> Q (subs sigma s)
-
-     in de lam case mag de binder niet voorkomen in Gamma
-*)
-(* P t
-EL Gamma Sigma (tmlam y. s0) -> EL (y,A)::Gamma (y,t)::sigma s0 *)
-
-(* The fundamental theorem. *)
-Theorem soundness Gamma s A :
-  has_type Gamma s A -> forall sigma,
-    EL Gamma sigma -> L A (subs sigma s).
-Proof with eauto using L_sn. 
-  elim=> {Gamma s A} [Gamma X A |Gamma X A s B _ gu ih sigma EL|Gamma s t A B _ ih1 _ ih2 gu sigma HEL].
-  - admit.
-  - admit.
-  - autorewrite with subs_db.
-    
-    specialize (ih1 (gu_vars_appL gu) _ HEL).
-    specialize (ih2 (gu_vars_appR gu) _ HEL).
-    unfold L in ih1. fold L in ih1.
-    specialize (ih1 (subs sigma t) ih2).
-    assumption.
-Admitted.
-
 
 
 (* The fundamental theorem. *)
@@ -1316,62 +1154,62 @@ Theorem soundness' Gamma s A :
     EL Gamma sigma -> (* So that terms in a substitution are already L *)
   L A (subs sigma s).
 Proof with eauto using L_sn. 
-  elim=> {Gamma s A} [Gamma X A ih gu sigma nc blabla EL |Gamma X A s B _ ih gu sigma nc blabla EL|Gamma s t A B _ ih1 _ ih2 gu sigma nc blabla HEL].
-  - apply (blabla_lookup blabla) in ih.
-    admit.
+  elim=> {Gamma s A} [Gamma X A ih gu sigma nc blabla HEL |Gamma X A s B _ ih gu sigma nc blabla EL|Gamma s t A B _ ih1 _ ih2 gu sigma nc blabla HEL].
+  - rewrite psubs_to_subs; eauto.
+    unfold EL in HEL.
+    specialize (HEL X A ih).
+    destruct HEL as [t [HlookupSigma LAt] ].
+    simpl.
+    rewrite HlookupSigma.
+    assumption.
   - unfold L. fold L.
     intros.
 
     specialize (ih (gu_vars_lam gu)).
 
-    (* The problem: we want to add t to sigma,
-      but we cannot have that ftvs in t are bound in s
-      Can we generate t' that has renamed ftvs?
-      Only if those ftvs are not ftvs in s.
-      By GUVARS s, we know that all bound vars in s are not free vars in s.
-      if we only rename ftvs in t that are btv in s, we end up with an alpha term
-      we have no_capture (tmlam X a s) sigma. So we know that these particular ftvs we want to
-      rename do not occur in sigma. If they did, they would be ftv in sigma, while also btv in s,
-      not allowed by no_capture
-      *)
-    assert (H_nicet: {t' & { R & Alpha R t t' * Alpha R s s * no_capture s ((X, t')::sigma)}%type }%type).
+    (* Choose t' so that we do not have capture but can still use IH through L_α*)
+
+      (* We need to transform sigma a little first ALSO to be able to use beta expansion: *)
+          (* no ftv in t' (or X) is bound in the result (subs sigma'' s'')
+              that is the case if it is not bound in s'' and not in sigma'',
+              over which we have control.
+              We already altered t' so that no ftv in t' is bound in s!
+              By GU_vars (tmlam X A s) we know x not bound in s.
+          *)
+    assert (H_nicet: {t' & { R & { sigma' & Alpha R t t' 
+          * Alpha R s s 
+          * αCtxSub [] sigma sigma'
+          * no_capture (subs sigma' s) ((X, t')::nil)
+          * no_capture s ((X, t')::sigma')}%type }%type }%type).
     {
       (* Alpha R s s says: no element of R occurs in lhs or rhs of s*)
       admit.
     }
+    destruct H_nicet as [t' [ R [ sigma' [ [ [ [Ha_t' Ha_s] Hctx ] Hnc_sub ] Hnc_t'] ] ] ].
 
-    destruct H_nicet as [t' [ R [ [Ha_t' Ha_s] Hnc_t'] ] ].
 
-    specialize (ih ((X, t')::sigma) Hnc_t').
 
-    assert (blablajeej: Blabla ((X, t')::sigma)).
-    {
-      constructor; auto.
-      admit.
-    }
+    specialize (ih ((X, t')::sigma') Hnc_t').
 
+    (* blabla preservet under alpha [] *)
+    assert (blablajeej: Blabla ((X, t')::sigma')) by admit.
     specialize (ih blablajeej).
 
-    apply assume_first_arg in ih.
-
-    (* We need to transform ih once more:
-      we want a sigma such that no_capture (subs sigma s') [(X, t)].
-      we already no no_capture s' [(X, t)].
-      we must the only make sure that binders in the rhs of sigma are not free in t.
-      we can easily rename them.
-    *)
-    assert (Hno_c_beta: {s'' & Alpha [] s s'' * { sigma'' & αCtxSub [] sigma sigma'' * no_capture (subs sigma'' s'') ((X, t')::nil) }%type }%type).
-    { 
-      admit.
-    }
-    destruct Hno_c_beta as [s'' [Halphas'' [sigma'' [Ha_sigma Hno_c_beta] ] ] ].
-
-    (* both not capturing, should be ok *)
-    assert (Alpha [] (subs ((X, t')::sigma) s) (subs ((X, t')::sigma'') s'')).
+    assert (L_t': L A t').
     {
+      eapply α_preserves_L_R; eauto.
+    }
+    assert (H_EL_sigma': SN_STLC_named_naive.EL ((X, A)::Gamma) ((X, t')::sigma')).
+    {
+      (* We only renamed binders in sigma', so should not change a thing?
+        We can prevent this by instantiating the IH with sigma, and then doing an alpha argument later
+        That has disadvantages too in having to prove some no_capture things again.
+      *)
       admit.
     }
-    eapply α_preserves_L with (s' := subs ((X, t')::sigma'') s'') in ih; eauto.
+    specialize (ih H_EL_sigma').
+(* **** ih is now fully applied **** *)
+
 
 
 
@@ -1385,37 +1223,28 @@ Proof with eauto using L_sn.
       admit.
     } *)
 
-    eapply α_preserves_L_R with (s' := tmapp (subs sigma (tmlam X A s)) t) (R := sym_alpha_ctx R); eauto.
-    constructor.
-    
-    
+    eapply α_preserves_L_R with (s' := tmapp (subs sigma (tmlam X A s)) t) in ih. eauto. constructor.
+    2: {eapply @alpha_sym with (ren := R); eauto.
+    apply sym_alpha_ctx_is_sym. }
 
-    (* Now we need:
-    R ⊢ (subs sigma (tmlam X A s)) ~ (subs sigma'' (tmlam X A s''))
+    (* Now, first we prove that it is true without the alpha context*)
+    assert (Alpha [] (subs sigma' (tmlam X A s)) (subs sigma (tmlam X A s))).
+    {
+      eapply subs_preserves_alpha_σ; eauto.
+      - (* by no_capture (tmlam X A s) sigma 
+            => X not in ftv sigma
+            => X not in ftv sigma'   (alpha [] preserves ftvs)*)
+        admit.
+      - (* symmetry *) admit.
+    }
+    (* Then by Alpha R s s and αCtxSym R sigma sigma  and αCtxSym R sigma' sigma'
+      we know that the alpha context doesnt do anything and can be removed
 
-    both are valid substitutions and we easily have:
-
-    [] ⊢ subs sigma (tmlam X A s) ~ subs sigma'' (tmlam X A s'')
-
-    Then why can we add R? The idea is that no element of R appears in these terms
-    We defined lhs R as {x if   In x ftv t  /\  In x btv s}
-
-    Hence we know that if In x (lhs R) -> ~ In x (ftv s) 
-      -> ~ In x (ftv (tmlam X A s))   (adding a lam never adds ftvs) 
-    
-    We are workign with valid substitutions, so no ftv in sigma is bound in s.
-    We need  In x (lhs R) -> ~ In x (ftv sigma)
-      Suppose we have   x  s.t.   In x (lhs R)   AND   In x (ftv sigma)
-    this means that x was free in t and BOUND in s.
-    Since we have no_capture s sigma, this would mean x not free in sigma.
-    contradiction.
-
-
-
+      I am not sure how to make that argument precise yet, and how much work it is.
     *)
-    admit. 
-  - 
-    specialize (ih1 (gu_vars_app_l gu) _ (no_capture_app_l nc) blabla HEL).
+    admit.
+
+  - specialize (ih1 (gu_vars_app_l gu) _ (no_capture_app_l nc) blabla HEL).
     specialize (ih2 (gu_vars_app_r gu) _ (no_capture_app_r nc) blabla HEL).
     autorewrite with subs_db.
     unfold L in ih1. fold L in ih1.
@@ -1430,55 +1259,6 @@ Admitted.
   EL extra parameter s
 *)
 
-(* The fundamental theorem. *)
-Theorem soundness' Gamma s A :
-  has_type Gamma s A -> forall sigma,
-    EL Gamma sigma -> L A (subs sigma s).
-
-    (*
-    L' A sigma s
-    *)
-Proof with eauto using L_sn. 
-  elim=> {Gamma s A} [Gamma X A |Gamma X A s B _ ih sigma EL|Gamma s t A B _ ih1 _ ih2 sigma HEL].
-  - intros HlookupGamma sigma HEL.
-    unfold EL in HEL.
-    specialize (HEL X A HlookupGamma).
-    destruct HEL as [t [HlookupSigma LAt] ].
-    admit.
-  - move=> t h.
-    specialize (ih ((X, t)::sigma) (extend_EL EL h)).
-
-    (* The key everytime is that we can move to an alpha equivalent term that is nice to work with
-        i.e. does not have shadowing and is globally unqiue, and can have some properties like
-          unique wrt sigma *)
-    assert({s' & Alpha [] s s' * no_capture s' ((X, t)::sigma)}%type) by admit.
-    destruct H as [s' [Halphas Hno_caps'] ].
-    assert (Alpha [] (subs ((X, t) :: sigma) s) (subs ((X, t)::sigma) s')).
-    {
-      eapply subs_preserves_alpha.
-      - admit.
-      - assumption.
-    }
-    assert (L B (subs ((X, t) :: sigma) s')).
-    {
-      eapply α_preserves_L in ih; eauto.
-    }
-    eapply beta_expansion_subst in H0; eauto.
-    + eapply α_preserves_L with (s := tmapp (subs sigma (tmlam X A s')) t); eauto.
-      constructor.
-      * autorewrite with subs_db.
-        constructor.
-        admit.
-      * apply alpha_refl. constructor.
-    +  admit.
-    + apply L_sn in h. assumption.
-  - autorewrite with subs_db.
-    specialize (ih1 _ HEL).
-    specialize (ih2 _ HEL).
-    unfold L in ih1. fold L in ih1.
-    specialize (ih1 (subs sigma t) ih2).
-    assumption.
-Admitted.
 
 
 Theorem SN_naive E s T : has_type E s T -> {s' & nil ⊢ s ~ s' * SN_na s'}.
