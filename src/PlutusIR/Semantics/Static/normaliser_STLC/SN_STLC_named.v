@@ -517,31 +517,6 @@ Proof with eauto using step.
 Qed.
 
 
-Lemma Lα_reducible A :
-  reducible (Lα A).
-Proof with eauto using step.
-  elim: A => /=[|A ih1 B ih2].
-  - apply reducible_sn.
-  - constructor.
-    + move=> s h. apply: (@sn_closedL (tmvar "x")). apply: (p_sn (P := Lα B))...
-      specialize (h (tmvar "x")).
-      destruct h as [t' [Halpha Ht'] ].
-      * apply reducible_var; eauto.
-      * inversion Halpha; subst. inversion H1; subst. assumption.
-    + move=> s t h st u la. 
-      specialize (h u la).
-      destruct h as [t' [Halphaut' HLB] ]. 
-      exists t'.
-      split.
-      * auto.
-      * apply: (p_cl _ (s := tmapp s t'))...
-    + move=> s ns h t la.
-      have snt := p_sn ih1 la.
-      elim: snt la => {} t _ ih3 la. apply: p_nc... move=> v st. inv st=> //...
-      (* Note: Case L B ([x := t] s0. By using Autosubst's "inv" instead of normal inversion, this goal vanishes. Why? *) (* Todo: Think, this case doesn't happen in db variant*)
-      * apply: ih3 => //. exact: (p_cl ih1) la _.
-Qed.
-
 Corollary L_sn A s : L A s -> SN s.
 Proof. intros Las. assert (reducible (L A)) by apply (L_reducible A).
    apply (p_sn H). assumption.

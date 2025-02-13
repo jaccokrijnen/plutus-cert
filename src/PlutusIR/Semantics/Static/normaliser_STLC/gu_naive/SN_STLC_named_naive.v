@@ -52,6 +52,12 @@ Fixpoint subs (sigma : list (string * term)) (T : term) : term :=
   | cons (x, t) sigma' => sub x t (subs sigma' T) (* or the other way around?*)
   end.
 
+Lemma single_subs_is_sub X T s :
+  subs [(X, T)] s = sub X T s.
+Proof.
+  simpl. reflexivity.
+Qed.
+
 (* parallel subs *)
 Fixpoint psubs (sigma : list (string * term)) (T : term) : term :=
   match T with
@@ -107,35 +113,35 @@ Hint Extern 1 => simpl sub : subs_db.
 
 (* todo, current implementation is not correct, there is 
   no relation between binders in s and t. *)
-Fixpoint to_unique_binders (s : term) := 
+Fixpoint to_GU (s : term) := 
   match s with
   | tmvar x => tmvar x
-  | tmlam x A s => tmlam x A (to_unique_binders s)
-  | tmapp s t => tmapp (to_unique_binders s) (to_unique_binders t)
+  | tmlam x A s => tmlam x A (to_GU s)
+  | tmapp s t => tmapp (to_GU s) (to_GU t)
   end.
 
-Lemma to_unique_binders_alpha s : Alpha [] s (to_unique_binders s).
+Lemma to_GU__alpha s : Alpha [] s (to_GU s).
 Admitted.
 
-Inductive GU_vars : term -> Set :=
-| GU_var x : GU_vars (tmvar x)
+Inductive GU : term -> Set :=
+| GU_var x : GU (tmvar x)
 (* in app, if s and t do not share GU_vars: *)
 | GU_app s t : 
-    GU_vars s -> 
-    GU_vars t -> 
+    GU s -> 
+    GU t -> 
     (* Intersection of bound type variables of s and t is empty *)
     forall (H_btv_btv_empty : forall x, In x (btv t) -> ~ In x (btv s)),
     (* Intersection of bound type variables of s and free type variables of t is empty *)
     forall (H_btv_ftv_empty : forall x, In x (btv s) -> ~ In x (ftv t)),
     (* Intersection of free type variables of s and bound type variables of t is empty *)
     forall (H_ftv_btv_empty : forall x, In x (btv t) -> ~ In x (ftv s)),
-    GU_vars (tmapp s t)
+    GU (tmapp s t)
 | GU_lam x A s : 
-    GU_vars s -> 
+    GU s -> 
     ~ In x (btv s) ->
-    GU_vars (tmlam x A s).
+    GU (tmlam x A s).
 
-Lemma to_unique_binders_unique s : GU_vars (to_unique_binders s).
+Lemma to_GU__GU s : GU (to_GU s).
 Admitted.
 
 (* Examples
@@ -153,7 +159,7 @@ Admitted.
 Inductive step_gu_naive : term -> term -> Set :=
 | step_gu_naive_intro s s' t : 
     Alpha [] s s' ->
-    GU_vars s' ->
+    GU s' ->
     step_naive s' t ->
     step_gu_naive s t.
 (*     
@@ -268,11 +274,11 @@ Proof.
 
     exists y_h' s.t. step x y_h' /\ y_h' ~ y_h   ( and then y_h'  ~  h y)
   *)
-  assert ({y_h' & prod (step x y_h') (nil ⊢ y_h' ~ h y)}).
+  assert ({y_h' & prod (step_gu_naive x y_h') (nil ⊢ y_h' ~ h y)}).
   {
     destruct C as [yh [ehy yh_alpha] ].
     eapply alpha_sym in eqn; [|apply alpha_sym_nil].
-    apply (step_preserves_alpha nil eqn) in ehy.
+    apply (step_gu_naive_preserves_alpha eqn) in ehy.
     destruct ehy as [t' [stept' alphat'] ].
     exists t'.
     split.
@@ -288,7 +294,7 @@ Proof.
   - assumption.
   - exact A.
   - assumption.
-Admitted.
+Qed.
 
 Lemma sn_preimage_α (h : term -> term) x :
   (forall x y, step_gu_naive x y -> {y_h & prod (step_gu_naive (h x) y_h) (nil ⊢ y_h ~ (h y))}) -> @sn step_gu_naive (h x) -> @sn step_gu_naive x.
@@ -298,59 +304,100 @@ Proof.
   apply alpha_refl. apply alpha_refl_nil.
 Qed.
 
-Lemma sn_closedL t s : SN_na (tmapp s t) -> SN_na s.
-Proof. apply: (sn_preimage (h := tmapp^~t)) => x y.
-(* Maybe this must be up to alpha*)
+(* We need alpha here because global unique can create different terms depending on input:
+  global unique does not compose
+  suppose there is a free var in s2, then that must be renamed when doing step_gu_naive (tmapp s1 s2)
+  while that is not the case in step_gu_naive s1 t1 (there s2 does not need to be taken into account)
+  *)
+Lemma step_gu_naive_app_l s1 s2 t1 :
+  step_gu_naive s1 t1 -> 
+  {t1' & Alpha [] t1 t1' * {s2' & Alpha [] s2 s2' * step_gu_naive (tmapp s1 s2) (tmapp t1' s2')}%type }%type.
+Proof.
+  intros.
+  assert ({s1' & { s2' & Alpha [] (tmapp s1 s2) (tmapp s1' s2') * GU (tmapp s1' s2')}}%type).
+  {
+    (* just renaming binders *)
+    admit.
+  }
+  destruct H0 as [s1' [s2' [Ha_app H_gu] ] ].
+  (* I think we then need a step_gu_naive_alpha*)
+  assert (Alpha [] s1 s1') by now inv Ha_app.
+  assert (Alpha [] s2 s2') by now inv Ha_app.
+  apply (step_gu_naive_preserves_alpha H0) in H.
+  destruct H as [t' [Hstep_s1' Ha_t1] ].
+  inv Hstep_s1'.
+  assert (Alpha [] s1 s').
+  {
+    eapply alpha_trans; eauto. constructor.
+  }
+  assert (Alpha [] (tmapp s1 s2) (tmapp s' s2')).
+  {
+    constructor; eauto.
+  }
+  clear Ha_app.
+
+  (* tbh, i don't understand the flow of this, but it's all just renaming binders ;)*)
+
+  exists t'.
+  split; auto.
+  assert ({s2'' & GU (tmapp s' s2'') * Alpha [] s2 s2''}%type) by admit. (* just renaming binders*)
+  destruct H6 as [s2'' [Hgu_app Ha_s2'] ].
+  exists s2''.
+  split; auto.
+  clear H5.
+  econstructor; eauto.
+  - constructor; eauto.
+  - apply step_appL. auto.
 Admitted.
 
-Require Import Coq.Program.Equality.
-
-Inductive step_gu_naive_helper : term -> term -> term -> term -> Set :=
-  sgunahIntro s s' t' t :
-    Alpha [] s s' ->
-    GU_vars s' ->
-    step_naive s' t' ->
-    Alpha [] t' t ->
-    GU_vars t ->
-    step_gu_naive_helper s s' t' t.
+Lemma sn_closedL t s : SN_na (tmapp s t) -> SN_na s.
+Proof.
+  apply: (sn_preimage_α (h := tmapp^~t)) => x y.
+  intros.
+  apply (step_gu_naive_app_l t) in H.
+  destruct H as [t1' [Ha_t1' [s2' [Ha_t Hstep] ] ] ].
+  exists (tmapp t1' s2').
+  intuition.
+  constructor; eapply alpha_sym; intuition; constructor.
+Qed.
 
 
 (* Not sure how to call this yet.
-if we have no_capture t sigma
+if we have NC t sigma
 We want to have unique binders elementwise in sigma.
 No binder in t can occur as free or bound variable in sigma,
   thus substituting sigma in t will not cause unwanted capture.
 *)
-Inductive no_capture : term -> list (string * term) -> Set :=
-| no_capture_nil s :
-    no_capture s []
-| no_capture_cons s x t sigma :
-    no_capture s sigma ->
+Inductive NC : term -> list (string * term) -> Set :=
+| nc_nil s :
+    NC s []
+| nc_cons s x t sigma :
+    NC s sigma ->
     (forall y, In y (btv s) -> ((y <> x) * (~ In y (ftv t)))) -> (* no capturing *)
-    no_capture s ((x, t) :: sigma).
+    NC s ((x, t) :: sigma).
 
-Lemma no_capture_lam x A s sigma :
-  no_capture (tmlam x A s) sigma -> no_capture s sigma.
+Lemma nc_lam x A s sigma :
+  NC (tmlam x A s) sigma -> NC s sigma.
 Admitted.
 
-Lemma no_capture_app_l s t sigma :
-  no_capture (tmapp s t) sigma -> no_capture s sigma.
+Lemma nc_app_l s t sigma :
+  NC (tmapp s t) sigma -> NC s sigma.
 Admitted.
 
-Lemma no_capture_app_r s t sigma :
-  no_capture (tmapp s t) sigma -> no_capture t sigma.
+Lemma nc_app_r s t sigma :
+  NC (tmapp s t) sigma -> NC t sigma.
 Admitted.
 
-Lemma gu_vars_app_l s t :
-  GU_vars (tmapp s t) -> GU_vars s.
+Lemma gu_app_l s t :
+  GU (tmapp s t) -> GU s.
 Admitted.
 
-Lemma gu_vars_app_r s t :
-  GU_vars (tmapp s t) -> GU_vars t.
+Lemma gu_app_r s t :
+  GU (tmapp s t) -> GU t.
 Admitted.
 
-Lemma gu_vars_lam x A s :
-  GU_vars (tmlam x A s) -> GU_vars s.
+Lemma gu_lam x A s :
+  GU (tmlam x A s) -> GU s.
   Admitted.
 
 Lemma assume_first_arg a b :
@@ -358,41 +405,14 @@ Lemma assume_first_arg a b :
 Proof.
 Admitted.
 
-Inductive SubCA : string -> term -> term -> term -> list (string * string) -> Set :=
-| SubCA_intro x U T T' R :
-    Alpha R T T' ->
-    Alpha R U U ->
-    Alpha R (tmvar x) (tmvar x) ->
-    no_capture T' [(x, U)] -> (* x not a binder in T' and no binder in T' is a free var in U*)
-    SubCA x U T (sub x U T') R.
-
-(*
-Sub x U T T1 iff  ⊢ T1 ~ substituteTCA x U T
-*)
-
-(* This would be another way of doing it, where the fourth argument is the term that the
-  subsitution goes to taking into account capture*)
-Lemma commute_sub_16 X σ Tx Tσ s A B C D R:
-  SubCA X Tx s    A R ->
-  SubCA σ Tσ A    B R -> (* this does nto make sense, we would need different R, sicne the rightalpha of this one is used as the left alpha somewhere else*)
-
-  SubCA σ Tσ s    C R ->
-  SubCA σ Tσ Tx   D R ->
-  SubCA X D C     B R.
-
-
-Lemma commute_sub_15 X σ Tx Tσ s :
-  Alpha [] 
-    (sub X (sub σ Tσ Tx) (sub σ Tσ s))
-    (sub σ Tσ (sub X Tx s)).
 
 (* I want to be in a position where the binders are chosen thus that I can do substitueT
   without checking if we are tyring to substitute a binder:
     i.e. no checks in substituteT 
     Then we ahve the property:
     subsT x t (tmlam y T s) = tmlam y T (subsT x t s) even if x = y (because that cannot happen anymore)
-      Then also no_capture can go into the lambda
-    this can be put into the no_capture property?
+      Then also NC can go into the lambda
+    this can be put into the NC property?
     *)
   (* Maybe we can leave out the R by switching to a renaming approach? *)
 Lemma commute_sub_naive R x s t (sigma sigma' : list (string * term)) xtsAlpha:
@@ -402,10 +422,10 @@ Lemma commute_sub_naive R x s t (sigma sigma' : list (string * term)) xtsAlpha:
   (* these two just say: x not in key or ftv sigma*)
   ~ In x (map fst sigma) ->
   (forall ftvs, In ftvs (map snd sigma) -> ~ In x (ftv ftvs)) -> 
-  no_capture xtsAlpha sigma' ->
-  no_capture s [(x, t)] ->
-  no_capture s sigma ->
-  no_capture (subs sigma s) [(x, subs sigma t)] ->
+  NC xtsAlpha sigma' ->
+  NC s [(x, t)] ->
+  NC s sigma ->
+  NC (subs sigma s) [(x, subs sigma t)] ->
   (* s.t. substituteTs sigma xtsAlpha does not capture 
     e.g. suppose sigma:= [y := x]
     and xtsAlpha = λx. y.
@@ -476,14 +496,14 @@ Proof.
     autorewrite with subs_db in *.
     (* simpl sub. *)
     constructor.
-    eapply IHs; try eapply no_capture_lam; eauto.
+    eapply IHs; try eapply nc_lam; eauto.
     admit.
   - simpl in H.
     inversion H; subst.
     autorewrite with subs_db in *.
     constructor. fold sub.
-    + eapply IHs1; eauto; eapply no_capture_app_l; eauto.
-    + eapply IHs2; eauto; eapply no_capture_app_r; eauto.
+    + eapply IHs1; eauto; eapply nc_app_l; eauto.
+    + eapply IHs2; eauto; eapply nc_app_r; eauto.
 Admitted.
 
 (* SEE ALPHA_SUB.v for proof for substituteT, that is prolly easily ported *)
@@ -506,12 +526,21 @@ Proof.
 Admitted.
 
 Lemma subs_preserves_alpha_σ sigma sigma' s :
-  no_capture s sigma ->
-  no_capture s sigma' ->
+  NC s sigma ->
+  NC s sigma' ->
   αCtxSub [] sigma sigma' ->
   Alpha [] (subs sigma s) (subs sigma' s).
 Proof.
-  (* should hold, Idk how hard it will be*)
+  intros.
+  induction s.
+  - (* s in sigma => s in sigma', and rhs of sigma,sigma' are alpha*) 
+    admit.
+  - (* NC decomposes, so we can use IHs
+      By NC (tmlam s t s0) sigma we can pull subs inwards
+    *)
+    autorewrite with subs_db.
+    constructor.
+    (* then some arg that we can remove id renamings*)
 Admitted.
 
 (* Problem: this is not true.
@@ -522,32 +551,31 @@ Admitted.
   this will not complicate the induction hypothesis or anything, it
   will just restrict the applicability of the lemma, which is fine.
 *)
-Lemma step_subst_sigma sigma {s s' t t' } :
-  Alpha [] s s' -> 
-  step_naive s' t -> 
-  GU_vars s' ->
-  no_capture s' sigma -> (* no free vars in sigma are binders in s'*)
+Lemma step_subst_sigma sigma {s t t' } :
+  step_naive s t -> 
+  GU s ->
+  NC s sigma -> (* no free vars in sigma are binders in s'*)
   Alpha [] t t' -> 
-  GU_vars t' ->
-  no_capture t' sigma ->
+  GU t' ->
+  NC t' sigma ->
   {aT : term & 
-  (step_gu_naive (subs sigma s') aT) * (Alpha [] aT (subs sigma t'))}%type.
+  (step_gu_naive (subs sigma s) aT) * (Alpha [] aT (subs sigma t'))}%type.
 Proof.
-  intros. rename H0 into Hstep. generalize dependent s. generalize dependent t'. induction Hstep; intros.
+  intros. rename H0 into Hstep. generalize dependent t'. induction H; intros.
   - (* The difficult case. The whole reason we need to do global uniqueness every step
     *)
-    inversion H; subst. inversion H9; subst.
+    
     autorewrite with subs_db. 
     assert ({
       subSigS & {
         subSigT & 
           Alpha [] subSigS (subs sigma s) *
           Alpha [] subSigT (subs sigma t) *
-          GU_vars (tmapp (tmlam x A (subSigS)) subSigT)
+          GU (tmapp (tmlam x A (subSigS)) subSigT)
         }
       }%type
     ) by admit.
-    destruct H0 as [subSigS [subSigT [HsubSigS ] ] ].
+    destruct H as [subSigS [subSigT [HsubSigS ] ] ].
     destruct HsubSigS as [HsubSigSAlpha HsubSigTAlpha].
 
     exists (sub x subSigT subSigS).
@@ -626,22 +654,22 @@ Proof.
     - step_beta: s = tmapp (tmlam x A s1) s2 ->  t_ = subsT x s2 s1, then t = gu t
     *)
     * admit.
-    - inversion H; subst.
+    - 
 
-      assert (GU_vars s1) by admit.
-      specialize (IHHstep H0).
-      apply assume_first_arg in IHHstep.
-      inversion H3; subst.
-      specialize (IHHstep s4 H11).
-      apply assume_first_arg in IHHstep.
-      apply assume_first_arg in IHHstep.
-      specialize (IHHstep s0 H9).
-      destruct IHHstep as [sigS1 [HstepS1 HalphaS1] ]. 
+      assert (GU s1) by admit.
+      specialize (IHstep_naive H0).
+      apply assume_first_arg in IHstep_naive.
+      inversion H2; subst.
+      specialize (IHstep_naive s3 H8).
+      apply assume_first_arg in IHstep_naive.
+      apply assume_first_arg in IHstep_naive.
+      
+      destruct IHstep_naive as [sigS1 [HstepS1 HalphaS1] ]. 
       autorewrite with subs_db.
       assert ({sigS1alpha : term & {sigtalpha : term & 
         (Alpha [] sigS1 sigS1alpha) * 
         (Alpha [] (subs sigma t) sigtalpha) *
-        GU_vars (tmapp sigS1alpha sigtalpha)
+        GU (tmapp sigS1alpha sigtalpha)
       } }%type).
       {
         (* This is not hard to see:
@@ -682,7 +710,7 @@ Proof.
       (* we know no x in sigma and no binders x in s1*)
       assert ({subSigmaS1 & 
         Alpha [] subSigmaS1 (subs sigma s1) * 
-        GU_vars (tmlam x A subSigmaS1)
+        GU (tmlam x A subSigmaS1)
       }%type).
       {
         admit.
@@ -692,9 +720,46 @@ Proof.
   
 Admitted.
 
-Lemma sn_subst X T s : SN_na (sub X T s) -> SN_na s.
+(* We construct s in such a way that
+  - Alpha [] to original
+  - GU
+  - NC with respect to X and T.
+
+  We can achieve this since we only rename binders:
+  - We can always generate a alpha GU term by only changing binders
+  - We can then again change some binders so that they dont capture ftvs in X or T,
+    this preserves GU and Alpha.
+*)
+Definition to_GU' (X : string) (T : term) (s : term) := s.
+
+Definition sub_gu X T s := sub X T (to_GU' X T s).
+
+Lemma sn_subst X T s : NC s ((X, T)::nil) -> SN_na (sub X T s) -> SN_na s.
 Proof.
-  apply: (sn_preimage_α (h := sub X T)) => x y. exact: step_subst_single.
+  intros nc.
+  apply: (sn_preimage_α (h := sub_gu X T)) => x y. 
+  unfold sub_gu.
+  intros.
+  assert (H_to_GU'_a: Alpha [] x (to_GU' X T x)).
+  {
+    (* by construction.*)
+    admit.
+  }
+  apply (step_gu_naive_preserves_alpha H_to_GU'_a) in H.
+  destruct H as [t' [Hstep H_a] ].
+  (* to_GU' is created such that we have GU s and NC s ((X, T))*)
+  repeat rewrite <- single_subs_is_sub.
+  eapply step_subst_sigma; eauto.
+  - (* by construction *)
+    admit.
+  - (* by construction *)
+    admit.
+  - (* t' ~ y,  and y ~ to_GU' X T y   by construction *)
+    admit.
+  - (* by construction *)
+    admit.
+  - (* by construction *)
+    admit.
 Admitted.
 
 Definition cand := term -> Set.
@@ -704,9 +769,6 @@ Definition neutral (s : term) : bool :=
     | tmlam _ _ _ => false
     | _ => true
   end.
-
-Definition No_Capture (s t : term) :=
-  forall x, In x (ftv t) -> ~ In x (btv s).
 
 Record reducible (P : cand) : Set := {
   p_sn : forall s, P s -> SN_na s;
@@ -734,95 +796,6 @@ match T with
   | tp_base => SN_na 
   | tp_arrow A B => fun s => forall t, L A t -> L B (tmapp s t)
 end.
-
-
-
-Fixpoint L2 (T : type) : cand :=
-match T with
-  | tp_base => SN_na
-  (* this is a restriction on the t that we want to accept.
-  However, these types of programs that we no longer allow are not GU_Vars, something like
-  
-  (λx.λy. x) y
-  This would not be allowed, but we can always find an alpha equivalent s for which this particular t would be allowed.
-  *)
-  | tp_arrow A B => fun s => forall t, L2 A t -> No_capture  (tmapp s t) -> L2 B (tmapp s t)
-end.
-
-
-Inductive P : term -> Set := .
-
-Fixpoint L3 (T : type) : cand :=
-fun s => (prod (GU_vars s) (match T with
-  | tp_base => SN_na s
-  | tp_arrow A B => forall t, L3 A t -> L3 B (tmapp s t)
-end)).
-
-Definition Save_App (s t : term) := forall x, In x (ftv t) -> ~ In x (btv s).
-
-Fixpoint Lα (T : type) : cand :=
-match T with
-  | tp_base => SN_na 
-  | tp_arrow A B => fun s => 
-      forall t, Lα A t -> {s' & Alpha [] s s' * Save_App s' t * Lα B (tmapp s' t)}%type
-end.
-
-(* Als P niet composeert: P s -> P t -> P (tmapp s t), dan hebben we een Q nodig, zie chat Jacco Dinsdag 4 feb*)
-
-Lemma notGU_example x A :
-  GU_vars (tmlam x A (tmlam x A (tmvar x))) -> false.
-Proof.
-Admitted.
-
-Lemma L2_notGU x A B:
-  L2 (tp_arrow A B) (tmlam x (tp_arrow A B) (tmlam x A (tmvar x))).
-Proof.
-  simpl.
-  intros.
-  (* contradiction in H0, there is no t s.t. gu_vars *)
-Admitted.
-  
-8
-
-Lemma α_preserves_L2 A s s' R :
-  L2 A s -> Alpha R s s' -> L2 A s'.
-Proof.
-  intros.
-  generalize dependent s.
-  generalize dependent s'.
-  generalize dependent R.
-  induction A; intros.
-  - eapply α_preserves_SN_R. eauto. eauto.
-  - simpl.
-    simpl in H.
-    intros.
-    eapply IHA2.
-    + eapply H.
-     * eapply IHA1. exact H1.
-
-      (* we have R ⊢ s ~ s'
-          We also have this if R only contains all free vars in s and s'.
-
-          We have GU_vars (tmapp s' t). Hence, all bound vars in s' are not free vars in t (and also not in s').
-          We call all bound vars in s B.
-          They need to be renamed away in t.
-            What to? Fresh stuff, doesnt matter what.
-          We can add these renamings to the alpha context to get R+. Since these variables do not occur free in s or s'
-            we still have (R+ ⊢ s ~ s').
-             This does not change anything in s, since these are only bound vars
-          then we can let t_s   (corresponding to the lefthand side) s.t.  R+ ⊢ t_s ~ t
-            and s.t. (GU_vars (tmapp s t_s)) holds.
-          For this last condition we need all bound vars in s to not occur free in t_s.
-
-      *)
-      admit.
-      * (* possible*)
-        admit.
-    + (* We then have R+ ⊢ t_s ~ t
-          We also have R+ ⊢ s ~ s'   (by the property that we only added bound var names, so they have no effect)
-    *) 
-
-
 
 (* integrally depends on α_preserves_SN *)
 Lemma α_preserves_L A s s' :
@@ -884,31 +857,9 @@ Qed.
 Global Hint Resolve reducible_sn : core.
 
 Lemma reducible_var P x : reducible P -> P (tmvar x).
-Proof. move/p_nc. apply=> // t st. 
-(* There is no t s.t. step_gu_naive (tmvar x) t*)
-Admitted.
-
-Lemma L2_reducible A :
-  reducible (L2 A).
-Proof with eauto using step_gu_naive.
-  elim: A => /=[|A ih1 B ih2].
-  - apply reducible_sn.
-  - constructor.
-    + move=> s h. 
-      assert (GU_vars (tmapp s (tmvar "x"))) as hgu by admit. (* todo, choose "x" so this is true, requires that all elements in L (and thus s) are globally unique*)
-      apply: (@sn_closedL (tmvar "x")). apply: (p_sn (P := L2 B))...
-      eapply h. eapply reducible_var; eauto. auto.
-    + move=> s t h st u la gu.
-      eapply p_cl with (s := tmapp s u); eauto.
-      * eapply h; eauto.
-      apply: (p_cl _ (s := tmapp s u))...
-      apply step_gu_naive_intro. inversion st; subst.  apply: step_appL. apply: h. apply: p_sn...
-    + move=> s ns h t la.
-      have snt := p_sn ih1 la.
-      elim: snt la => {} t _ ih3 la. apply: p_nc... move=> v st. inv st=> //...
-      (* Note: Case L B ([x := t] s0. By using Autosubst's "inv" instead of normal inversion, this goal vanishes. Why? *) (* Todo: Think, this case doesn't happen in db variant*)
-      * apply: ih3 => //. exact: (p_cl ih1) la _.
-Admitted.
+Proof. move/p_nc. apply=> // t st.
+  inv st. inv H. inv H1.
+Qed.
 
 Lemma L_reducible A :
   reducible (L A).
@@ -918,14 +869,37 @@ Proof with eauto using step_gu_naive.
   - constructor.
     + move=> s h. apply: (@sn_closedL (tmvar "x")). apply: (p_sn (P := L B))...
       eapply h. eapply reducible_var; eauto.
-    + move=> s t h st u la. apply: (p_cl _ (s := tmapp s u))...
-      apply step_gu_naive_intro. inversion st; subst.  apply: step_appL. apply: h. apply: p_sn...
+    + intros. specialize (H t0 H1).
+      eapply step_gu_naive_app_l with (s1 := s) (t1 := t) (s2 := t0) in H0. 
+      * destruct H0 as [t1' [ Ha_t [s2' [Ha_s2' Hstep] ] ] ].
+        eapply p_cl with (s := (tmapp s t0)) in H; auto.
+        2: exact Hstep.
+        eapply α_preserves_L.
+        2: exact H.
+        constructor; eapply alpha_sym; eauto; constructor.
     + move=> s ns h t la.
       have snt := p_sn ih1 la.
       elim: snt la => {} t _ ih3 la. apply: p_nc... move=> v st. inv st=> //...
-      (* Note: Case L B ([x := t] s0. By using Autosubst's "inv" instead of normal inversion, this goal vanishes. Why? *) (* Todo: Think, this case doesn't happen in db variant*)
-      * apply: ih3 => //. exact: (p_cl ih1) la _.
-Admitted.
+      inv H.  inv H1=> //...
+      * inv H5. discriminate ns.
+      * assert (Hgn: step_gu_naive s s0).
+        {
+          apply gu_app_l in H0.
+          econstructor; eauto.
+        }
+        specialize (h s0 Hgn).
+        apply α_preserves_L with (s' := t2) in la; eauto.
+      * assert (step_gu_naive t t0).
+        {
+          apply gu_app_r in H0.
+          econstructor; eauto.    
+        }
+        specialize (ih3 t0 H).
+        apply (p_cl ih1 la) in H.
+        specialize (ih3 H).
+        eapply α_preserves_L; eauto.
+        constructor; eauto. eapply alpha_refl. constructor.
+Qed.
 
 Corollary L_sn A s : L A s -> SN_na s.
 Proof. intros Las. assert (reducible (L A)) by apply (L_reducible A).
@@ -949,8 +923,9 @@ Qed.
 
 Corollary L_var T x : L T (tmvar x).
 Proof.
-  apply L_nc; first by []. intros t st. inversion st.
-Admitted. 
+  apply L_nc; first by []. intros t st. inversion st. subst.
+  inversion H. subst. inversion H1.
+Qed.
 
 Inductive star {e : term -> term -> Set } (x : term) : term -> Set :=
 | starR : star x x
@@ -997,6 +972,11 @@ Inductive has_type : list (string * type) -> term -> type -> Set :=
       Δ |-* (tmapp T1 T2) : K2
 where "Δ '|-*' T ':' K" := (has_type Δ T K).
 
+(* NOTE: Proof in alpha_typing*)
+Lemma alpha_preserves_typing s t A Gamma :
+  Alpha nil s t -> Gamma |-* s : A -> Gamma |-* t : A.
+Admitted.
+
 
 Lemma red_beta_gu_na x s t1 t2 :
   step_gu_naive t1 t2 ->
@@ -1013,7 +993,7 @@ Admitted.
 (* Closure under beta expansion. *)
 Lemma beta_expansion A B x s s' t :
   Alpha [] s' s ->
-  no_capture s' [(x, t)] -> (* this really is the right assumption. no free variable in t is a binder in s', because these binders could be added to the environment through beta reduction and then capture*)
+  NC s' [(x, t)] -> (* this really is the right assumption. no free variable in t is a binder in s', because these binders could be added to the environment through beta reduction and then capture*)
   SN_na t -> L A (sub x t s') -> (* Key: s' is GU now *)
   L A (tmapp (tmlam x B s) t).
 Proof with eauto.
@@ -1041,15 +1021,15 @@ Proof with eauto.
   - inv H3.
     assert (Hprr: step_gu_naive x0 s0) by admit.
     specialize (H s0 Hprr).
-    assert({s'0_nc & Alpha [] s'0_nc s0 * no_capture s'0_nc [(x, t)]}%type) by admit.
+    assert({s'0_nc & Alpha [] s'0_nc s0 * NC s'0_nc [(x, t)]}%type) by admit.
     destruct H0 as [s'0_nc [Hreds0_nc Hno_caps0] ].
     specialize (H s'0_nc Hreds0_nc Hno_caps0).
 
     (* inversion au'; subst. inversion H3; subst.  *)
-    (* assert (step_gu_naive s s0) by admit. assumes no_capture also says something about uniqueness in term *)
+    (* assert (step_gu_naive s s0) by admit. assumes NC also says something about uniqueness in term *)
     apply H => //.
     (* s steps naively to s0. Could make it non-unique, but it could not have caused new binders like x and t*)
-    (* assert ({s0' & Alpha [] s0 s0' * no_capture s0' [(x, t)]}%type) as [s0' [Hreds0' Hno_caps0'] ].
+    (* assert ({s0' & Alpha [] s0 s0' * NC s0' [(x, t)]}%type) as [s0' [Hreds0' Hno_caps0'] ].
     {
       admit.
     } *)
@@ -1075,40 +1055,26 @@ Proof with eauto.
 Admitted.
 
 Lemma beta_expansion_subst X t sigma s A B :
-  no_capture (subs sigma s) [(X, t)] ->
+  NC (subs sigma s) [(X, t)] -> (* so the substitution makes sense after "breaking"  it open*)
   SN_na t -> L A (subs ((X, t)::sigma) s) -> L A (tmapp (subs sigma (tmlam X B s)) t).
 Proof.
-(* to remove the no_capture assumption
-  we generate s' s.t. no_capture (subs sigma s) [(X, t)].
-  not possible, what if the binder is in rhs of sigma.
-  well, it should also be allowed to change the rhs's of sigma to alpha equivalent terms.
-*)
   intros nc snt H.
   simpl in H.
-  eapply beta_expansion in H.
-  - autorewrite with subs_db. eauto.
-  - apply alpha_refl. constructor.
-  - assumption.
-    (* again we need an alpha step here that transforms subs sigma s to something GU in some sense
-    *) 
-  - assumption. 
+  autorewrite with subs_db.
+  eapply beta_expansion in H; eauto.
+  apply alpha_refl. constructor.
 Qed.
 
- 
-
-Lemma no_capture_helper s X t sigma :
-  no_capture s ((X, t)::sigma) -> no_capture (subs sigma s) [(X, t)].
-Admitted.
 
 (* I devised this to make soundness var case easier, but is not getting easier
   so maybe I try to switch to paralell substs anyway.
 *)
-Inductive Blabla : list (string * term) -> Set :=
-| Blabla_nil : Blabla []
-| Blabla_cons x t sigma :
-    Blabla sigma -> 
+Inductive ParSeq : list (string * term) -> Set :=
+| ParSeq_nil : ParSeq []
+| ParSeq_cons x t sigma :
+    ParSeq sigma -> 
     ~ In x (List.concat (map ftv (map snd sigma))) -> 
-    Blabla ((x, t)::sigma).
+    ParSeq ((x, t)::sigma).
 (* This says that one subsitutions does not have effect on the next one
   In other word, no substiutions chains, where x -> t, and then t -> y, etc.
 
@@ -1126,31 +1092,18 @@ Inductive Blabla : list (string * term) -> Set :=
   For now: righthanded lookup will do the job
 *)
 Lemma psubs_to_subs {s sigma} :
-  Blabla sigma -> subs sigma s = psubs sigma s.
+  ParSeq sigma -> subs sigma s = psubs sigma s.
 Admitted.
-
-Lemma gu__no_capture (s t : term) :
-  GU_vars (tmapp s t) -> No_Capture s t.
-Proof.
-Admitted.
-
-Lemma gu_vars_appL (s t : term) :
-  GU_vars (tmapp s t) -> GU_vars s.
-Admitted.
-
-Lemma gu_vars_appR (s t : term) :
-  GU_vars (tmapp s t) -> GU_vars t.
-  Admitted.
 
 
 
 (* The fundamental theorem. *)
-Theorem soundness' Gamma s A :
+Theorem soundness Gamma s A :
   has_type Gamma s A -> 
-  GU_vars s -> (* So that we know GU_vars (tmlam x A s) -> ~ In x (btv s), and btv s ∩ ftv s = ∅, important for dealing with vars in `t` that roll out of LR*)
+  GU s -> (* So that we know GU_vars (tmlam x A s) -> ~ In x (btv s), and btv s ∩ ftv s = ∅, important for dealing with vars in `t` that roll out of LR*)
   forall sigma, 
-    no_capture s sigma -> (* so we get "nice" substitutions *)
-    Blabla sigma -> (* So parallel and sequential substitions are identical *)
+    NC s sigma -> (* so we get "nice" substitutions *)
+    ParSeq sigma -> (* So parallel and sequential substitions are identical *)
     EL Gamma sigma -> (* So that terms in a substitution are already L *)
   L A (subs sigma s).
 Proof with eauto using L_sn. 
@@ -1165,7 +1118,7 @@ Proof with eauto using L_sn.
   - unfold L. fold L.
     intros.
 
-    specialize (ih (gu_vars_lam gu)).
+    specialize (ih (gu_lam gu)).
 
     (* Choose t' so that we do not have capture but can still use IH through L_α*)
 
@@ -1179,20 +1132,17 @@ Proof with eauto using L_sn.
     assert (H_nicet: {t' & { R & { sigma' & Alpha R t t' 
           * Alpha R s s 
           * αCtxSub [] sigma sigma'
-          * no_capture (subs sigma' s) ((X, t')::nil)
-          * no_capture s ((X, t')::sigma')}%type }%type }%type).
+          * NC (subs sigma' s) ((X, t')::nil)
+          * NC s ((X, t')::sigma')}%type }%type }%type).
     {
       (* Alpha R s s says: no element of R occurs in lhs or rhs of s*)
       admit.
     }
     destruct H_nicet as [t' [ R [ sigma' [ [ [ [Ha_t' Ha_s] Hctx ] Hnc_sub ] Hnc_t'] ] ] ].
-
-
-
     specialize (ih ((X, t')::sigma') Hnc_t').
 
     (* blabla preservet under alpha [] *)
-    assert (blablajeej: Blabla ((X, t')::sigma')) by admit.
+    assert (blablajeej: ParSeq ((X, t')::sigma')) by admit.
     specialize (ih blablajeej).
 
     assert (L_t': L A t').
@@ -1203,25 +1153,15 @@ Proof with eauto using L_sn.
     {
       (* We only renamed binders in sigma', so should not change a thing?
         We can prevent this by instantiating the IH with sigma, and then doing an alpha argument later
-        That has disadvantages too in having to prove some no_capture things again.
+        That has disadvantages too in having to prove some NC things again.
       *)
       admit.
     }
     specialize (ih H_EL_sigma').
-(* **** ih is now fully applied **** *)
-
-
-
-
+(* **** ih is now fully applied ********************** *)
 
     eapply beta_expansion_subst in ih; eauto. 
       2: { apply L_sn in H. eapply α_preserves_SN_R; eauto. }
-
-    (* assert (forall x y, In (x, y) R -> 
-      ~ In x (ftv (subs sigma (tmlam X A s))) * (~ In y (ftv (subs sigma'' (tmlam X A s'')))))%type.
-    {
-      admit.
-    } *)
 
     eapply α_preserves_L_R with (s' := tmapp (subs sigma (tmlam X A s)) t) in ih. eauto. constructor.
     2: {eapply @alpha_sym with (ren := R); eauto.
@@ -1231,7 +1171,7 @@ Proof with eauto using L_sn.
     assert (Alpha [] (subs sigma' (tmlam X A s)) (subs sigma (tmlam X A s))).
     {
       eapply subs_preserves_alpha_σ; eauto.
-      - (* by no_capture (tmlam X A s) sigma 
+      - (* by NC (tmlam X A s) sigma 
             => X not in ftv sigma
             => X not in ftv sigma'   (alpha [] preserves ftvs)*)
         admit.
@@ -1244,22 +1184,84 @@ Proof with eauto using L_sn.
     *)
     admit.
 
-  - specialize (ih1 (gu_vars_app_l gu) _ (no_capture_app_l nc) blabla HEL).
-    specialize (ih2 (gu_vars_app_r gu) _ (no_capture_app_r nc) blabla HEL).
+  - specialize (ih1 (gu_app_l gu) _ (nc_app_l nc) blabla HEL).
+    specialize (ih2 (gu_app_r gu) _ (nc_app_r nc) blabla HEL).
     autorewrite with subs_db.
     unfold L in ih1. fold L in ih1.
     specialize (ih1 (subs sigma t) ih2).
     assumption.
 Admitted.
 
-(*
-  P global unique
-  Q no_capture
-  P => Q for apply case
-  EL extra parameter s
-*)
 
+(* Identity substitutions: Given a typing context E, give a list of term substitutions matching this E*)
+Fixpoint id_subst (E : list (string * type)) : list (string * term) :=
+  match E with
+  | nil => nil
+  | cons (x, A) E' => cons (x, tmvar x) (id_subst E')
+  end.
 
+From PlutusCert Require Import alpha_sub.
 
-Theorem SN_naive E s T : has_type E s T -> {s' & nil ⊢ s ~ s' * SN_na s'}.
+Lemma id_subst_is_IdSubst E :
+  IdSubst (id_subst E).
+Proof.
+  induction E.
+  - constructor.
+  - simpl. destruct a. constructor. assumption.
+Qed.
+
+Lemma id_subst__id s σ :
+  (* NC s σ ->  *)
+  IdSubst σ -> 
+  subs σ s = s. (* even when this capturs, it doesnt matter, since it captures something and then substiutes it for the same name*)
+Proof.
+  intros.
+  induction s.
+  - admit.
+    
+  - autorewrite with subs_db.
+    f_equal.
+    apply IHs.
+  - autorewrite with subs_db.
+    f_equal; eauto.
 Admitted.
+
+(* The identity substitution is in the EL relation *)
+
+Lemma id_subst__EL E :
+  EL E (id_subst E).
+Proof.
+Admitted.
+
+Lemma id_subst__ParSeq :
+  forall (σ : list (string * term)), IdSubst σ -> ParSeq σ.
+Admitted.
+
+(* The fundamental theorem for named variables. *)
+Corollary type_L (E : list (string * type)) s T : has_type E s T -> L T (subs (id_subst E) s).
+Proof.
+  intros Htype.
+  assert (HEL: EL E (id_subst E)) by apply id_subst__EL.
+  assert ({s' & nil ⊢ s ~ s' * GU s' * NC s' (id_subst E)}).
+  {
+    (* easy, this can be achieved by only renaming some binders in s*)
+    admit.
+  }
+  destruct H as [s' [ [Halpha Hgu] Hnc ] ].
+  eapply alpha_preserves_typing with (t := s') in Htype; eauto.
+  eapply soundness in Htype; eauto.
+  - rewrite id_subst__id in Htype; [|apply id_subst_is_IdSubst]. 
+    rewrite id_subst__id; [|apply id_subst_is_IdSubst].
+    eapply α_preserves_L with (s := s'); eauto.
+    eapply alpha_sym. eapply alpha_sym_nil. assumption.
+  - apply id_subst__ParSeq. apply id_subst_is_IdSubst.
+Admitted.
+
+
+
+Theorem SN_naive E s T : has_type E s T -> SN_na s.
+  intros.
+  eapply type_L in H.
+  rewrite id_subst__id in H; [|apply id_subst_is_IdSubst].
+  eapply L_sn; eauto.
+Qed.
