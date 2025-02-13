@@ -143,11 +143,11 @@ Proof with eauto.
 Qed.
 
 Lemma substA_b__bound_tyvars : forall a T b,
-    btvb b = btvb <{ [[T/a][b] b }>.
+    btvb b = btvb <{ :[a := T]b b }>.
 Proof. intros. induction b. all: eauto. destruct v; eauto. destruct d; eauto. Qed.
 
 Lemma substA_bnr__bound_tyvars : forall a T bs,
-    btvbs bs = btvbs <{ [[T/a][bnr] bs }>.
+    btvbs bs = btvbs <{ :[a := T]bnr bs }>.
 Proof.
   intros.
   induction bs.
@@ -166,15 +166,15 @@ Proof.
 Qed.
 
 Lemma substA_c__bvc : forall c a T,
-  bvc <{ [[T / a][c] c }> = bvc c.
+  bvc <{ :[a := T]c c }> = bvc c.
 Admitted.
 
 Lemma substA_cs__bvc : forall cs a T,
-  map bvc <{ [[T / a][cs] cs }> = map bvc cs.
+  map bvc <{ :[a := T]cs cs }> = map bvc cs.
 Admitted.
 
 Lemma substA_b__bvb : forall a T b,
-    bvb b = bvb <{ [[T/a][b] b }>.
+    bvb b = bvb <{ :[a := T]b b }>.
 Proof with eauto.
   destruct b; simpl.
   - destruct v...
@@ -185,7 +185,7 @@ Proof with eauto.
 Qed.
 
 Lemma substA_bnr__bvbs : forall a T bs,
-    bvbs bs = bvbs <{ [[T/a ][bnr] bs }>.
+    bvbs bs = bvbs <{ :[a := T]bnr bs }>.
 Proof with eauto.
   induction bs...
   simpl.
@@ -198,7 +198,7 @@ Proof with eauto.
 Qed.
 
 Lemma msubstA_bnr__bvbs : forall ss bs,
-    bvbs bs = bvbs <{ /[[ ss /][bnr] bs }>.
+    bvbs bs = bvbs <{ :[ ss ]*bnr bs }>.
 Proof with eauto.
   induction ss...
   destruct a.

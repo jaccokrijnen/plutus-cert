@@ -37,7 +37,7 @@ Inductive eval_partial_builtin : term -> term -> Prop :=
 
   | E_Builtin_Eta_TyInst : forall s X K T b,
       s =η=> TyAbs X K b ->
-      TyInst s T =η=> <{ [[T / X] b }>
+      TyInst s T =η=> <{ :[X := T] b }>
 
 where "t '=η=>' v" := (eval_partial_builtin t v)
 .
@@ -58,7 +58,7 @@ Inductive eval : term -> term -> nat -> Prop :=
   | E_TyInst : forall t1 T2 X K t0 v0 j1 j0,
       ~ fully_applied (TyInst t1 T2) ->
       t1 =[j1]=> TyAbs X K t0 ->
-      <{ [[T2 / X] t0 }> =[j0]=> v0 ->
+      <{ :[X := T2] t0 }> =[j0]=> v0 ->
       TyInst t1 T2 =[j1 + 1 + j0]=> v0
   (** Recursive types *)
   | E_IWrap : forall F T t0 v0 j0,
@@ -152,7 +152,7 @@ with eval_bindings_nonrec : term -> term -> nat -> Prop :=
       Let NonRec (DatatypeBind dtd :: bs) t =[i + 1]=>nr v
 
   | E_Let_TypeBind : forall X K T bs t0 j1 v1,
-      <{ [[T / X] ({Let NonRec bs t0}) }> =[j1]=> v1 ->
+      <{ :[X := T] ({Let NonRec bs t0}) }> =[j1]=> v1 ->
       Let NonRec ((TypeBind (TyVarDecl X K) T) :: bs) t0 =[j1 + 1]=>nr v1
   (* Error propagation *)
   | E_Error_Let_TermBind : forall x T t1 j1 T' bs t0,

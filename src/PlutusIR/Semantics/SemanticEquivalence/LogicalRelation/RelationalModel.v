@@ -113,7 +113,7 @@ Equations? RC (k : nat) (T : ty) (rho : tymapping) (e e' : term) : Prop by wf k 
                     [] |-* T2 : K ->
                     Rel T1 T2 Chi ->
                     forall i (Hlt_i : i < k - j),
-                      RC i Tn ((X, (Chi, T1, T2)) :: rho) <{ [[T1 / X ] e_body }> <{ [[T2 / X ] e'_body }>
+                      RC i Tn ((X, (Chi, T1, T2)) :: rho) <{ :[X := T1] e_body }> <{ :[X := T2] e'_body }>
             end
           )
         ) \/ (
@@ -393,7 +393,7 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
               [] |-* T2 : K ->
               Rel T1 T2 Chi ->
               forall i (Hlt_i : i < k),
-                R C i Tn ((X, (Chi, T1, T2)) :: rho) <{ [[T1 / X ] e_body }> <{ [[T2 / X ] e'_body }>
+                R C i Tn ((X, (Chi, T1, T2)) :: rho) <{ :[X := T1] e_body }> <{ :[X := T2] e'_body }>
       end
   ).
 Proof.

@@ -254,7 +254,7 @@ Lemma RV_condition : forall k T rho v v',
                 [] |-* T2 : K ->
                 Rel T1 T2 Chi ->
                 forall i (Hlt_i : i < k),
-                  RC i T ((bX, (Chi, T1, T2)) :: rho) <{ [[T1 / bX ] e_body }> <{ [[T2 / bX ] e'_body }>
+                  RC i T ((bX, (Chi, T1, T2)) :: rho) <{ :[bX := T1] e_body }> <{ :[bX := T2] e'_body }>
         end
       ) \/ (
         is_error v /\
@@ -374,7 +374,7 @@ Corollary RV_instantiational_extensionality : forall k bX K T rho v v',
           [] |-* T2 : K ->
           Rel T1 T2 Chi ->
           forall i (Hlt_i : i < k),
-            RC i T ((bX, (Chi, T1, T2)) :: rho) <{ [[T1 / bX ] e_body }> <{ [[T2 / bX ] e'_body }>
+            RC i T ((bX, (Chi, T1, T2)) :: rho) <{ :[bX := T1] e_body }> <{ :[bX := T2] e'_body }>
     ) \/ (
       is_error v /\
       is_error v'

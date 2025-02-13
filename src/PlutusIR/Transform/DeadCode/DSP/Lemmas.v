@@ -156,7 +156,7 @@ Section SubstitutionLemmas.
 
   Lemma result_msubstA_result v δ :
     result v ->
-    result <{/[[ δ /] v}>.
+    result <{ :[ δ ]* v}>.
   Proof.
   (** Should hold: only substitutes in types *)
   Admitted.

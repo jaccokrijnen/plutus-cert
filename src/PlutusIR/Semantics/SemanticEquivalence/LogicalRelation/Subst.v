@@ -31,7 +31,7 @@ Proof. Admitted.
 Lemma substA_closed : forall t,
     closed t ->
     forall X T,
-      <{ [[T / X] t }> = t.
+      <{ :[X := T] t }> = t.
 Proof. Admitted.
 
 Lemma subst_not_afi : forall t x v,
@@ -41,7 +41,7 @@ Proof. Admitted.
 
 Lemma substA_not_afi : forall t X U,
     Ty.closed U ->
-    ~(Annotation.appears_free_in X <{ [[U / X] t }> ).
+    ~(Annotation.appears_free_in X <{ :[X := U] t }> ).
 Proof. Admitted.
 
 Lemma duplicate_subst : forall x t v v',
@@ -51,7 +51,7 @@ Proof. Admitted.
 
 Lemma duplicate_substA : forall X t U U',
     Ty.closed U ->
-    <{ [[U' / X] ([[U / X] t) }> = <{ [[U / X] t }>.
+    <{ :[X := U'] (:[X := U] t) }> = <{ :[X := U] t }>.
 Proof. Admitted.
 
 Lemma duplicate__subst_bnr : forall x bs v v',
@@ -165,12 +165,12 @@ Proof. Admitted.
 
 Lemma substA_msubstA : forall envA X U t,
     Ty.closed U ->
-    msubstA envA <{ [[U/X]t }> = <{ [[U/X] {msubstA (drop X envA) t} }>.
+    msubstA envA <{ :[X := U]t }> = <{ :[X := U] {msubstA (drop X envA) t} }>.
 Proof. Admitted.
 
 Lemma substA_msubst : forall X U env t,
     Ty.closed U ->
-    <{ [[U / X] ([ env ]* t ) }> =  <{ [ env ]* ([[U / X] t) }> .
+    <{ :[X := U] ([ env ]* t ) }> =  <{ [ env ]* (:[X := U] t) }> .
 Proof. Admitted.
 
 (** ** Properties of multi-extensions *)
