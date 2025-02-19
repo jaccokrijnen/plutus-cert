@@ -56,13 +56,13 @@ Definition P_Term (t : term) :=
     ((X, K) :: Delta) ,, Gamma |-+ t : T ->
     [] |-* U : K ->
     normalise (substituteT X U T) Tn ->
-    Delta ,, (gsubst X U Gamma) |-+ <{ [[U / X] t }> : Tn.
+    Delta ,, (gsubst X U Gamma) |-+ <{ :[X := U] t }> : Tn.
 
 Definition P_Binding (b : binding) : Prop :=
   forall Delta Gamma X K U,
     ((X, K) :: Delta) ,, Gamma |-ok_b b ->
     [] |-* U : K ->
-    Delta ,, (gsubst X U Gamma) |-ok_b <{ [[U / X][b] b }>.
+    Delta ,, (gsubst X U Gamma) |-ok_b <{ :[X := U]b b }>.
 
 #[export] Hint Unfold
   P_Term

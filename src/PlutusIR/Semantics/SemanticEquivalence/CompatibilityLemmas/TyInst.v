@@ -81,8 +81,8 @@ Proof with eauto_LR.
         RC (k - j_1 - 1)
           T1n
           ((X, (Chi, msubstT (msyn1 rho) T2, msubstT (msyn2 rho) T2)) :: rho)%list
-          <{ [[{msubstT (msyn1 rho) T2} / X] e_body }>
-          <{ [[{msubstT (msyn2 rho) T2} / X] e'_body }>
+          <{ :[X := {msubstT (msyn1 rho) T2}] e_body }>
+          <{ :[X := {msubstT (msyn2 rho) T2}] e'_body }>
       ). eapply r...
 
       eapply RC_to_RV with (j := j_0) (e_f := e_f) in HRC2 as temp...

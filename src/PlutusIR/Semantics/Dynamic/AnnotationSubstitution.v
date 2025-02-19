@@ -88,8 +88,8 @@ Fixpoint substA (X : string) (U : ty) (t : term) {struct t} : term :=
       IWrap (substituteT X U F) (substituteT X U T) (substA X U t0)
   | Unwrap t0 =>
       Unwrap (substA X U t0)
-  | Constr i T ts =>
-      Constr i (substituteT X U T) (map (substA X U) ts)
+  | Constr T i ts =>
+      Constr (substituteT X U T) i (map (substA X U) ts)
   | Case T t ts =>
       Case (substituteT X U T) (substA X U t) (map (substA X U) ts)
   end
@@ -107,47 +107,47 @@ with substA_b (X : string) (U : ty) (b : binding) {struct b} : binding :=
 Definition substA_bnr X U bs := @substA_bnr' substA_b X U bs.
 Definition substA_br X U bs := @substA_br' substA_b X U bs.
 
-Notation "'[[' U '/' X ']' t" := (substA X U t) (in custom plutus_term at level 20, X constr).
-Notation "'[[' U '/' X '][b]' b" := (substA_b X U b) (in custom plutus_term at level 20, X constr).
-Notation "'[[' U '/' X '][bnr]' bs" := (substA_bnr X U bs) (in custom plutus_term at level 20, X constr).
-Notation "'[[' U '/' X '][br]' bs" := (substA_br X U bs) (in custom plutus_term at level 20, X constr).
-Notation "'[[' U '/' X '][cs]' cs" := (substA_cs X U cs) (in custom plutus_term at level 20, X constr).
-Notation "'[[' U '/' X '][c]' c" := (substA_c X U c) (in custom plutus_term at level 20, X constr).
+Notation "':[' X ':=' U ']' t" := (substA X U t) (in custom plutus_term at level 20, X constr).
+Notation "':[' X ':=' U ']b' b" := (substA_b X U b) (in custom plutus_term at level 20, X constr).
+Notation "':[' X ':=' U ']bnr' bs" := (substA_bnr X U bs) (in custom plutus_term at level 20, X constr).
+Notation "':[' X ':=' U ']br' bs" := (substA_br X U bs) (in custom plutus_term at level 20, X constr).
+Notation "':[' X ':=' U ']cs' cs" := (substA_cs X U cs) (in custom plutus_term at level 20, X constr).
+Notation "':[' X ':=' U ']c' c" := (substA_c X U c) (in custom plutus_term at level 20, X constr).
 
 
 (** Multi-substitutions of types in type annotations *)
 Fixpoint msubstA (ss : list (string * ty)) (t : term) : term :=
   match ss with
   | nil => t
-  | (X, U) :: ss' => msubstA ss' <{ [[U / X] t }>
+  | (X, U) :: ss' => msubstA ss' <{ :[X := U] t }>
   end.
 
 Fixpoint msubstA_b (ss : list (string * ty)) (b : binding) : binding :=
   match ss with
   | nil => b
-  | (X, U) :: ss' => msubstA_b ss' <{ [[U / X][b] b }>
+  | (X, U) :: ss' => msubstA_b ss' <{ :[X := U]b b }>
   end.
 
 Fixpoint msubstA_bnr (ss : list (string * ty)) (bs : list binding) : list binding :=
   match ss with
   | nil => bs
-  | (X, U) :: ss' => msubstA_bnr ss' <{ [[U / X][bnr] bs }>
+  | (X, U) :: ss' => msubstA_bnr ss' <{ :[X := U]bnr bs }>
   end.
 
 Fixpoint msubstA_br (ss : list (string * ty)) (bs : list binding) : list binding :=
   match ss with
   | nil => bs
-  | (X, U) :: ss' => msubstA_br ss' <{ [[U / X][br] bs }>
+  | (X, U) :: ss' => msubstA_br ss' <{ :[X := U]br bs }>
   end.
 
 Fixpoint msubstA_cs (ss : list (string * ty)) (cs : list vdecl) : list vdecl :=
   match ss with
   | nil => cs
-  | (X, U) :: ss' => msubstA_cs ss' <{ [[U / X][cs] cs}>
+  | (X, U) :: ss' => msubstA_cs ss' <{ :[X := U]cs cs}>
   end.
 
-Notation "'/[[' ss '/]' t" := (msubstA ss t) (in custom plutus_term at level 20, ss constr).
-Notation "'/[[' ss '/][b]' b" := (msubstA_b ss b) (in custom plutus_term at level 20, ss constr).
-Notation "'/[[' ss '/][bnr]' bs" := (msubstA_bnr ss bs) (in custom plutus_term at level 20, ss constr).
-Notation "'/[[' ss '/][cs]' cs" := (msubstA_cs ss cs) (in custom plutus_term at level 20, ss constr).
+Notation "':[' ss ']*' t" := (msubstA ss t) (in custom plutus_term at level 20, ss constr).
+Notation "':[' ss ']*b' b" := (msubstA_b ss b) (in custom plutus_term at level 20, ss constr).
+Notation "':[' ss ']*bnr' bs" := (msubstA_bnr ss bs) (in custom plutus_term at level 20, ss constr).
+Notation "':[' ss ']*cs' cs" := (msubstA_cs ss cs) (in custom plutus_term at level 20, ss constr).
 

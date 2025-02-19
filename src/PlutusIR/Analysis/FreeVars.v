@@ -70,7 +70,7 @@ Module Term.
      | Error ty        => []
      | Constant v      => []
      | Builtin f       => []
-     | Constr i T ts   => concat (map fv ts)
+     | Constr T i ts   => concat (map fv ts)
      | Case T t ts     => fv t ++ concat (map fv ts)
    end
 
@@ -155,7 +155,7 @@ Module Term.
      | Error τ         => Ty.ftv τ
      | Constant v      => []
      | Builtin f       => []
-     | Constr i T ts   => Ty.ftv T ++ concat (map ftv ts)
+     | Constr T i ts   => Ty.ftv T ++ concat (map ftv ts)
      | Case T t ts     => Ty.ftv T ++ ftv t ++ concat (map ftv ts)
      end
 

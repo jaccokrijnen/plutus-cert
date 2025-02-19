@@ -354,7 +354,7 @@ Section Term.
   Qed.
 
   Lemma not_in_fv_Constr x i T ts :
-    x ∉ fv (Constr i T ts) ->
+    x ∉ fv (Constr T i ts) ->
     Forall (fun t => x ∉ fv t) ts.
   Proof.
     intros H.

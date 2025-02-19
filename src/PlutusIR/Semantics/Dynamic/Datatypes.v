@@ -32,7 +32,7 @@ Definition mkName : nat -> string :=
 Fixpoint constr_to_term_mono (ix : nat) (ty_sop : ty) (ty_constr : ty) (n : nat) :=
   match ty_constr with
     | Ty_Fun σ τ => LamAbs (mkName n) σ (constr_to_term_mono ix ty_sop τ (S n))
-    | _          => Constr ix ty_sop (map (Var ∘ mkName) (seq 0 n))
+    | _          => Constr ty_sop ix (map (Var ∘ mkName) (seq 0 n))
   end
 .
 
@@ -44,7 +44,7 @@ Fixpoint constr_to_term_mono (ix : nat) (ty_sop : ty) (ty_constr : ty) (n : nat)
  *
  * builds a term of the form:
  *
- *    Λ α_0. ... Λ α_1. λ0. ... λ n. Constr ix τ_SOP [0, ... n]
+ *    Λ α_0. ... Λ α_1. λ0. ... λ n. Constr τ_SOP ix [0, ... n]
  *)
 Fixpoint constr_to_term (ix : nat) (ty_sop : ty) (tyvars : list tvdecl) (ty_constr : ty) :=
   match tyvars with

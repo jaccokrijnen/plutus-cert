@@ -89,7 +89,7 @@ Defined.
 Definition dec_uniType : forall (t : DefaultUni), EqDec (uniType t).
 Proof.
   destruct t; auto with Eqs.
-Qed.
+Defined.
 
 Definition constant_dec  : EqDec constant.
 Proof.
@@ -112,7 +112,7 @@ Proof.
     intros H.
     inversion H.
     contradiction.
-Qed.
+Defined.
   #[export] Hint Resolve constant_dec : Eqs.
 
 Definition Kind_dec : EqDec kind. solveEq. Defined.

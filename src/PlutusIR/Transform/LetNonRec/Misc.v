@@ -24,7 +24,7 @@ Fixpoint compile_term (t : term) : term := match t with
   | Constant c      => Constant c
   | Builtin f       => Builtin f
   | Error τ         => Error τ
-  | Constr i T ts   => Constr i T (map compile_term ts)
+  | Constr T i ts   => Constr T i (map compile_term ts)
   | Case T t ts     => Case T (compile_term t) (map compile_term ts)
   end
 

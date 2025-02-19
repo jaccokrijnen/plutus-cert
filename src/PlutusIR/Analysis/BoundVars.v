@@ -118,13 +118,13 @@ Inductive appears_bound_in_tm (x : string) : term -> Prop :=
 
   | ABI_Tm_Constr_Cons_Head : forall i T t ts,
         appears_bound_in_tm x t ->
-        appears_bound_in_tm x (Constr i T (t :: ts))
+        appears_bound_in_tm x (Constr T i (t :: ts))
   | ABI_Tm_Constr_Cons_Tail : forall i T t ts,
-        appears_bound_in_tm x (Constr i T ts) ->
-        appears_bound_in_tm x (Constr i T (t :: ts))
+        appears_bound_in_tm x (Constr T i ts) ->
+        appears_bound_in_tm x (Constr T i (t :: ts))
   | ABI_Tm_Constr_Nil : forall i t T,
         appears_bound_in_tm x t ->
-        appears_bound_in_tm x (Constr i T (t :: nil))
+        appears_bound_in_tm x (Constr T i (t :: nil))
 
   | ABI_Tm_Case_Cons_Tail : forall T t t1 ts,
         appears_bound_in_tm x (Case T t ts) ->
@@ -194,10 +194,10 @@ Inductive appears_bound_in_ann (X : string) : term -> Prop :=
   | ABI_Ann_Constr_Nil : forall i T t,
       appears_bound_in_ty X T ->
       appears_bound_in_ann X t ->
-      appears_bound_in_ann X (Constr i T (t :: nil))
+      appears_bound_in_ann X (Constr T i (t :: nil))
   | ABI_Ann_Constr_Cons : forall i T t ts,
-      appears_bound_in_ann X (Constr i T ts) ->
-      appears_bound_in_ann X (Constr i T (t :: ts))
+      appears_bound_in_ann X (Constr T i ts) ->
+      appears_bound_in_ann X (Constr T i (t :: ts))
 
   | ABI_Ann_Case_Cons_Head : forall T t t1 ts,
       appears_bound_in_ann X t1 ->
@@ -310,7 +310,7 @@ Function bound_vars (t : term) : list name :=
    | (Error ty)        => []
    | (Constant v)      => []
    | (Builtin f)       => []
-   | (Constr i T ts)   => concat (map bound_vars ts)
+   | (Constr T i ts)   => concat (map bound_vars ts)
    | (Case T t ts)     => bound_vars t ++ concat (map bound_vars ts)
    end
 with bound_vars_binding (b : binding) : list name := match b with
@@ -339,7 +339,7 @@ Fixpoint btv (t : term) : list tyname :=
    | Error ty        => Ty.btv ty
    | Constant v      => []
    | Builtin f       => []
-   | (Constr i T ts) => concat (map btv ts)
+   | (Constr T i ts) => concat (map btv ts)
    | (Case T t ts)   => btv t ++ concat (map btv ts)
    end
 with btv_binding (b : binding) : list tyname := match b with

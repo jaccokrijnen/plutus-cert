@@ -287,13 +287,13 @@ Import PlutusNotations.
 
 Lemma safe_var__subst x Γ v y t :
   closed v ->
-  safe_var x Γ <{ [v / y] t }>
+  safe_var x Γ <{ [y := v] t }>
 .
 Admitted.
 
 Lemma safe_tyvarA__subst α Γ v y t :
   closed v ->
-  safe_tyvarA α Γ <{ [v / y] t }>
+  safe_tyvarA α Γ <{ [y := v] t }>
 .
 Admitted.
 
@@ -422,7 +422,7 @@ Lemma rename_subst : forall t t' Δ Γ v v' x x',
   Γ |-- x ~> x' ->
   rename Δ Γ t t' ->
   rename [] [] v v' ->
-  rename Δ (delete x Γ) <{ [ v / x] t }> <{[ v' / x'] t'}>
+  rename Δ (delete x Γ) <{ [x := v] t }> <{[ x' := v'] t'}>
 .
 Proof.
   induction t; intros t'' Δ Γ v v' x x' H_lookup H_ren_t H_ren_v.

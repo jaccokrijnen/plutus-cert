@@ -112,8 +112,8 @@ Proof with eauto_LR.
 
     assert (HRC__ih :
       RC (k - jb - 1) Tn rho
-        <{ /[ (x, vb) :: env /] ( /[[ msyn1 rho /] {Let NonRec bs t} ) }>
-        <{ /[ (x, vb') :: env' /] ( /[[ msyn2 rho /] {fold_right apply t' fbs'} ) }>
+        <{ [(x, vb) :: env]* ( :[ msyn1 rho ]* {Let NonRec bs t} ) }>
+        <{ [(x, vb') :: env']* ( :[ msyn2 rho ]* {fold_right apply t' fbs'} ) }>
     ). {
       apply IH__ih.
       - assumption.
@@ -176,8 +176,8 @@ Proof with eauto_LR.
         apply RG_env_closed in HRG as Hclss...
         destruct Hclss as [Hcls__env Hcls__env'].
         rewrite <- subst_bnr__msubst_bnr' in Hev__e_f...
-        replace (concat (map bvb <{ /[[ msyn1 rho /][bnr] bs }>)) with
-          (bvbs <{ /[[ msyn1 rho /][bnr] bs }>) in Hev__e_f...
+        replace (concat (map bvb <{ :[ msyn1 rho ]*bnr bs }>)) with
+          (bvbs <{ :[ msyn1 rho ]*bnr bs }>) in Hev__e_f...
 
         unfold btvbs in Hev__e_f.
         simpl in Hev__e_f.
@@ -199,8 +199,8 @@ Proof with eauto_LR.
         apply RG_env_closed in HRG as Hclss...
         destruct Hclss as [Hcls__env Hcls__env'].
         rewrite <- subst_bnr__msubst_bnr in Hev__e_f...
-        replace (concat (map bvb <{ /[[ msyn1 rho /][bnr] bs }>)) with
-          (bvbs <{ /[[ msyn1 rho /][bnr] bs }>) in Hev__e_f...
+        replace (concat (map bvb <{ :[ msyn1 rho ]*bnr bs }>)) with
+          (bvbs <{ :[ msyn1 rho ]*bnr bs }>) in Hev__e_f...
 
         unfold btvbs in Hev__e_f.
         simpl in Hev__e_f.

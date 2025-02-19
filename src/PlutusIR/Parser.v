@@ -4,73 +4,134 @@ From PlutusCert Require Import
 .
 
 From PlutusCert Require Import Equality.
+Require Import Strings.Byte.
+
+
+
 
 Module DumpNotations.
+
+  (* Parsing happens in a custom scope: the syntax is only meant for parsing  the
+  * dump (not pretty-printing)
+  *)
+  Declare Scope pir_dump_scope.
+  Delimit Scope pir_dump_scope with pird.
+
   Require Export Coq.Strings.String.
   Require Export Coq.Strings.Byte.
   Require Export Coq.ZArith.BinInt.
 
-  Notation ":|" := (cons).
-  Notation ":" := (cons).
-  Notation "()" := (tt).
-  Notation "[]" := (nil).
+  (* Haskell-like list notation [x1, x2, x3] with commas as separators *)
+  Notation "[ ]" := nil
+    (only parsing) : pir_dump_scope.
+  Notation "[ x ]" := (cons x nil)
+    (only parsing) : pir_dump_scope.
+  Notation "[ x , y , .. , z ]" :=
+    (cons x (cons y .. (cons z nil) ..))
+    (only parsing) : pir_dump_scope.
 
-  Definition const {A} (x : A) (y : unit) : A := x.
+  (* Non-empty lists are parsed as regular lists *)
+  Infix ":|" := cons
+    (at level 60, right associativity, only parsing) : pir_dump_scope.
+  (* unit *)
+  Notation "()" := (tt)
+    (only parsing) : pir_dump_scope.
 
-  Notation TyFun x y z := (Ty_Fun y z).
-  Notation TyApp x y z := (Ty_App y z).
-  Notation TyVar x y := (Ty_Var y).
-  Notation TyForall x y z w := (Ty_Forall y z w).
-  Notation TyBuiltin x y := (Ty_Builtin y).
-  Notation TyLam x y z w := (Ty_Lam y z w).
-  Notation TyIFix x y z := (Ty_IFix y z).
+  (* ty *)
+  Notation TyFun x y z := (Ty_Fun y z)
+    (only parsing).
+  Notation TyApp x y z := (Ty_App y z)
+    (only parsing).
+  Notation TyVar x y := (Ty_Var y)
+    (only parsing).
+  Notation TyForall x y z w := (Ty_Forall y z w)
+    (only parsing).
+  Notation TyBuiltin x y := (Ty_Builtin y)
+    (only parsing).
+  Notation TyLam x y z w := (Ty_Lam y z w)
+    (only parsing).
+  Notation TyIFix x y z := (Ty_IFix y z)
+    (only parsing).
 
-  Notation KindArrow x y z := (Kind_Arrow y z).
+  (* kind *)
+  Notation KindArrow x y z := (Kind_Arrow y z)
+    (only parsing).
+  (* Abbreviations don't work for the reserved word 'Type', usual notation does *)
+  #[global]
+  Notation "'Type' x" := (PlutusIR.Kind_Base)
+    (at level 10, only parsing) : pir_dump_scope.
 
-  Notation Name s n := (Show.show_Z n).
-  Notation TyName s := s.
-  Notation Unique n := n.
+  Notation Name s n := (Show.show_Z n)
+    (only parsing).
+  Notation TyName s := s
+    (only parsing).
+  Notation Unique n := n
+    (only parsing).
 
-  Notation SomeTypeIn T := T.
-  Notation DefaultUniData := DefaultUniBool. (* update DefaultUni *)
+  Notation SomeTypeIn T := T
+    (only parsing).
 
+  (* datatype *)
+  Notation Datatype x y z w v := (PlutusIR.Datatype y  z w v)
+    (only parsing).
 
-  Notation Datatype x y z w v := (PlutusIR.Datatype y  z w v).
+  (* vardecl *)
+  Notation TyVarDecl x y z := (TyVarDecl y z)
+    (only parsing).
+  Notation VarDecl x y z := (VarDecl  y z)
+    (only parsing).
 
-  Notation TyVarDecl x y z := (TyVarDecl y z).
-  Notation VarDecl x y z := (VarDecl  y z).
+  (* term *)
+  Notation Let x y z w := (Let y z w)
+    (only parsing).
+  Notation Var x y := (Var y)
+    (only parsing).
+  Notation TyAbs x y z w := (TyAbs y z w)
+    (only parsing).
+  Notation LamAbs x y z w := (LamAbs y z w)
+    (only parsing).
+  Notation Apply x y z := (Apply y z)
+    (only parsing).
+  Notation Constant x y := (Constant y)
+    (only parsing).
+  Notation Builtin x y := (Builtin y)
+    (only parsing).
+  Notation TyInst x y z := (TyInst y z)
+    (only parsing).
+  Notation Error x y := (Error y)
+    (only parsing).
+  Notation IWrap x y z w := (IWrap y z w)
+    (only parsing).
+  Notation Unwrap x y := (Unwrap y)
+    (only parsing).
+  Notation Constr x y z w := (Constr y z w)
+    (only parsing).
+  Notation Case x y z := (Case y z)
+    (only parsing).
 
-  Notation Let x y z w := (Let y z w).
-  Notation Var x y := (Var y).
-  Notation TyAbs x y z w := (TyAbs y z w).
-  Notation LamAbs x y z w := (LamAbs y z w).
-  Notation Apply x y z := (Apply y z).
-  Notation Constant x y := (Constant y).
-  Notation Builtin x y := (Builtin y).
-  Notation TyInst x y z := (TyInst y z).
-  Notation Error x y := (Error y).
-  Notation IWrap x y z w := (IWrap y z w).
-  Notation Unwrap x y := (Unwrap y).
-  Notation Constr x y z := (Constr y z).
-  Notation Case x y z := (Case y z).
-  Notation TermBind x y z w := (TermBind y z w).
-  Notation TypeBind x y z := (TypeBind y z).
-  Notation DatatypeBind x y := (DatatypeBind y).
+  (* binding *)
+  Notation TermBind x y z w := (TermBind y z w)
+    (only parsing).
+  Notation TypeBind x y z := (TypeBind y z)
+    (only parsing).
+  Notation DatatypeBind x y := (DatatypeBind y)
+    (only parsing).
 
-  Notation True := true.
-  Notation False := false.
+  Notation True := true
+    (only parsing).
+  Notation False := false
+    (only parsing).
 
-  Notation Kind_Base x y := Kind_Base.
   Definition Some {A} (x : A) := x.
 
+  (*
   Notation SrcSpans x := x.
 
   Definition Word8 (b : byte) := b.
 
   #[global]
   Notation "'Set' x" := (x) (at level 10).
-  #[global]
-  Notation "'Type' x" := (PlutusIR.Kind_Base) (at level 10).
+    *)
 
   (* Set Warnings "-abstract-large-number". *)
 
@@ -78,21 +139,40 @@ Module DumpNotations.
   Open Scope byte_scope.
   Open Scope Z_scope.
 
+  (*
   Arguments Word8 _%byte_scope.
   Import Strings.Byte.
   Definition byte_to_Z b := Z.of_nat (Byte.to_nat b).
   Definition byte_of_Z x := of_nat (Z.to_nat x).
   Number Notation byte byte_of_Z byte_to_Z : byte_scope.
 
-
   Number Notation nat Nat.of_num_uint Nat.to_num_hex_uint (abstract after 0) : hex_nat_scope.
+  *)
+
+  (* Postpone evaluation until numeric literals to after parsing *)
   Number Notation nat Nat.of_num_uint Nat.to_num_uint (abstract after 0) : nat_scope.
 
   #[export]
   Set Warnings "-abstract-large-number".
 
-End DumpNotations.
+(* PLACEHOLDERS *)
+  Definition XorByteString := AddInteger.
+  Definition WriteBits := AddInteger.
+  Definition ShiftByteString := AddInteger.
+  Definition RotateByteString := AddInteger.
+  Definition Ripemd_160 := AddInteger.
+  Definition ReplicateByte := AddInteger.
+  Definition ReadBit := AddInteger.
+  Definition OrByteString := AddInteger.
+  Definition FindFirstSetBit := AddInteger.
+  Definition ExpModInteger := AddInteger.
+  Definition CountSetBits := AddInteger.
+  Definition ComplementByteString := AddInteger.
+  Definition AndByteString := AddInteger.
 
+  Definition TySOP := fun (_ : unit) (_ : list (list ty)) => Ty_Var ""%string.
+
+End DumpNotations.
 
 
 

@@ -33,11 +33,11 @@ Inductive eval_partial_builtin : term -> term -> Prop :=
 
   | E_Builtin_Eta_Apply : forall s v x T b,
       s =η=> LamAbs x T b ->
-      Apply s v =η=> <{ [v / x] b }>
+      Apply s v =η=> <{  [x := v] b }>
 
   | E_Builtin_Eta_TyInst : forall s X K T b,
       s =η=> TyAbs X K b ->
-      TyInst s T =η=> <{ [[T / X] b }>
+      TyInst s T =η=> <{ :[X := T] b }>
 
 where "t '=η=>' v" := (eval_partial_builtin t v)
 .
@@ -50,7 +50,7 @@ Inductive eval : term -> term -> nat -> Prop :=
       t1 =[j1]=> LamAbs x T t0 ->
       t2 =[j2]=> v2 ->
       ~ is_error v2 ->
-      <{ [v2 / x] t0 }> =[j0]=> v0 ->
+      <{ [x := v2 ] t0 }> =[j0]=> v0 ->
       Apply t1 t2 =[j1 + j2 + 1 + j0]=> v0
   (** Universal types *)
   | E_TyAbs : forall X K t,
@@ -58,7 +58,7 @@ Inductive eval : term -> term -> nat -> Prop :=
   | E_TyInst : forall t1 T2 X K t0 v0 j1 j0,
       ~ fully_applied (TyInst t1 T2) ->
       t1 =[j1]=> TyAbs X K t0 ->
-      <{ [[T2 / X] t0 }> =[j0]=> v0 ->
+      <{ :[X := T2] t0 }> =[j0]=> v0 ->
       TyInst t1 T2 =[j1 + 1 + j0]=> v0
   (** Recursive types *)
   | E_IWrap : forall F T t0 v0 j0,
@@ -73,11 +73,11 @@ Inductive eval : term -> term -> nat -> Prop :=
       Constant a =[0]=> Constant a
   (** Constructors *)
   | E_Constr_nil : forall i T,
-      Constr i T nil =[0]=> Constr i T nil
+      Constr T i nil =[0]=> Constr T i nil
   | E_Constr_cons : forall i T k_t k_ts t ts v vs,
       t =[k_t]=> v ->
-      Constr i T ts =[k_ts]=> Constr i T vs ->
-      Constr i T (t :: ts) =[k_t + k_ts]=> Constr i T (v :: vs)
+      Constr T i ts =[k_ts]=> Constr T i vs ->
+      Constr T i (t :: ts) =[k_t + k_ts]=> Constr T i (v :: vs)
 
   (** Builtins: partially applied *)
   | E_Builtin f v :
@@ -137,7 +137,7 @@ with eval_bindings_nonrec : term -> term -> nat -> Prop :=
   | E_Let_TermBind_Strict : forall x T t1 j1 v1 j2 v2 bs t0,
       t1 =[j1]=> v1 ->
       ~ is_error v1 ->
-      <{ [v1 / x] ({Let NonRec bs t0}) }> =[j2]=>nr v2 ->
+      <{ [x := v1] ({Let NonRec bs t0}) }> =[j2]=>nr v2 ->
       Let NonRec ((TermBind Strict (VarDecl x T) t1) :: bs) t0 =[j1 + 1 + j2]=>nr v2
   | E_Let_DatatypeBind : forall dtd X K tvds matchf X_ty matchf_term cs_subst cs bs t i v,
 
@@ -152,7 +152,7 @@ with eval_bindings_nonrec : term -> term -> nat -> Prop :=
       Let NonRec (DatatypeBind dtd :: bs) t =[i + 1]=>nr v
 
   | E_Let_TypeBind : forall X K T bs t0 j1 v1,
-      <{ [[T / X] ({Let NonRec bs t0}) }> =[j1]=> v1 ->
+      <{ :[X := T] ({Let NonRec bs t0}) }> =[j1]=> v1 ->
       Let NonRec ((TypeBind (TyVarDecl X K) T) :: bs) t0 =[j1 + 1]=>nr v1
   (* Error propagation *)
   | E_Error_Let_TermBind : forall x T t1 j1 T' bs t0,
@@ -166,13 +166,13 @@ with eval_bindings_rec : list binding -> term -> term -> nat -> Prop :=
       Let Rec nil t0 =[j0 + 1]=>r v0 WITH bs0
 
   | E_LetRec_TermBind_NonStrict : forall bs0 x T bs t0 t1 v1 j1,
-      <{ [ {Let Rec bs0 t1} / x] {Let Rec bs t0} }> =[j1]=>r v1 WITH bs0 ->
+      <{ [ x := {Let Rec bs0 t1}] {Let Rec bs t0} }> =[j1]=>r v1 WITH bs0 ->
       Let Rec ((TermBind NonStrict (VarDecl x T) t1) :: bs) t0 =[j1 + 1]=>r v1 WITH bs0
 
   | E_LetRec_TermBind_Strict : forall bs0 x T bs t0 t1 v1 v2 j1 j2,
       Let Rec bs0 (Var x) =[j1]=> v1 ->
       ~ is_error v1 ->
-      <{ [ v1 / x] {Let Rec bs t0} }> =[j2]=>r v2 WITH bs0 ->
+      <{ [ x := v1] {Let Rec bs t0} }> =[j2]=>r v2 WITH bs0 ->
       Let Rec ((TermBind Strict (VarDecl x T) t1) :: bs) t0 =[j2 + 1]=>r v2 WITH bs0
 
 where "t '=[' j ']=>' v" := (eval t v j)

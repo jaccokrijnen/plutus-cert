@@ -90,8 +90,8 @@ Function subst (x : string) (s : term) (t : term) {struct t} : term :=
       IWrap F T (subst x s t0)
   | Unwrap t0 =>
       Unwrap (subst x s t0)
-  | Constr i T ts =>
-      Constr i T (map (subst x s) ts)
+  | Constr T i ts =>
+      Constr T i (map (subst x s) ts)
   | Case T t ts =>
       Case T (subst x s t) (map (subst x s) ts)
   end
@@ -109,10 +109,10 @@ with
 Definition subst_bnr x s bs := (@subst_bnr' subst_b x s bs).
 Definition subst_br x s bs := (@subst_br' subst_b x s bs).
 
-Notation "'[' s '/' x ']' t" := (subst x s t) (in custom plutus_term at level 20, x constr).
-Notation "'[' s '/' x '][b]' b" := (subst_b x s b) (in custom plutus_term at level 20, x constr).
-Notation "'[' s '/' x '][bnr]' bs" := (@subst_bnr x s bs) (in custom plutus_term at level 20, x constr).
-Notation "'[' s '/' x '][br]' bs" := (@subst_br  x s bs) (in custom plutus_term at level 20, x constr).
+Notation "'[' x ':=' s ']' t" := (subst x s t) (in custom plutus_term at level 20, x constr).
+Notation "'[' x ':=' s ']b' b" := (subst_b x s b) (in custom plutus_term at level 20, x constr).
+Notation "'[' x ':=' s ']bnr' bs" := (@subst_bnr x s bs) (in custom plutus_term at level 20, x constr).
+Notation "'[' x ':=' s ']br' bs" := (@subst_br  x s bs) (in custom plutus_term at level 20, x constr).
 
 
 (* Unfolding lemmas *)
@@ -159,8 +159,8 @@ Lemma subst_unfold x s t : subst x s t =
       IWrap F T (subst x s t0)
   | Unwrap t0 =>
       Unwrap (subst x s t0)
-  | Constr i T ts =>
-      Constr i T (map (subst x s) ts)
+  | Constr T i ts =>
+      Constr T i (map (subst x s) ts)
   | Case T t ts =>
       Case T (subst x s t) (map (subst x s) ts)
   end.
@@ -183,24 +183,24 @@ Qed.
 Fixpoint msubst (ss : list (string * term)) (t : term) : term :=
   match ss with
   | nil => t
-  | (x, s) :: ss' => msubst ss' <{ [s / x] t }>
+  | (x, s) :: ss' => msubst ss' <{ [x := s] t }>
   end.
 
 Fixpoint msubst_b (ss : list (string * term)) (b : binding) : binding :=
   match ss with
   | nil => b
-  | (x, s) :: ss' => msubst_b ss' <{ [s / x][b] b }>
+  | (x, s) :: ss' => msubst_b ss' <{ [x := s]b b }>
   end.
 
 Fixpoint msubst_bnr (ss : list (string * term)) (bs : list binding) : list binding :=
   match ss with
   | nil => bs
-  | (x, s) :: ss' => msubst_bnr ss' <{ [s / x][bnr] bs }>
+  | (x, s) :: ss' => msubst_bnr ss' <{ [x := s]bnr bs }>
   end.
 
-Notation "'/[' ss '/]' t" := (msubst ss t) (in custom plutus_term at level 20, ss constr).
-Notation "'/[' ss '/][b]' b" := (msubst_b ss b) (in custom plutus_term at level 20, ss constr).
-Notation "'/[' ss '/][bnr]' bs" := (msubst_bnr ss bs) (in custom plutus_term at level 20, ss constr).
+Notation "'[' ss ']*' t" := (msubst ss t) (in custom plutus_term at level 20, ss constr).
+Notation "'[' ss ']*b' b" := (msubst_b ss b) (in custom plutus_term at level 20, ss constr).
+Notation "'[' ss ']*bnr' bs" := (msubst_bnr ss bs) (in custom plutus_term at level 20, ss constr).
 
 Create HintDb subst.
 Hint Rewrite subst_unfold : subst.

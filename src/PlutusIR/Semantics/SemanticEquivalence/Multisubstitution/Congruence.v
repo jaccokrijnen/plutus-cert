@@ -106,11 +106,11 @@ Proof.
 Qed.
 
 Lemma subst_b__bound_vars : forall x s b,
-    bvb b = bvb <{ [s/x][b] b }>.
+    bvb b = bvb <{ [x := s]b b }>.
 Proof. intros. induction b. all: eauto. destruct v. eauto. Qed.
 
 Lemma subst_bnr__bound_vars : forall x s bs,
-    bvbs bs = bvbs <{ [s/x][bnr] bs }>.
+    bvbs bs = bvbs <{ [x := s]bnr bs }>.
 Proof.
   intros.
   induction bs.
@@ -129,7 +129,7 @@ Proof.
 Qed.
 
 Lemma msubst_bnr__bound_vars : forall bs ss,
-    bvbs bs = bvbs <{ /[ ss /][bnr] bs }>.
+    bvbs bs = bvbs <{ [ss]*bnr bs }>.
 Proof with eauto.
   intros bs ss.
   generalize bs.
@@ -143,11 +143,11 @@ Proof with eauto.
 Qed.
 
 Lemma substA_b__bound_tyvars : forall a T b,
-    btvb b = btvb <{ [[T/a][b] b }>.
+    btvb b = btvb <{ :[a := T]b b }>.
 Proof. intros. induction b. all: eauto. destruct v; eauto. destruct d; eauto. Qed.
 
 Lemma substA_bnr__bound_tyvars : forall a T bs,
-    btvbs bs = btvbs <{ [[T/a][bnr] bs }>.
+    btvbs bs = btvbs <{ :[a := T]bnr bs }>.
 Proof.
   intros.
   induction bs.
@@ -166,15 +166,15 @@ Proof.
 Qed.
 
 Lemma substA_c__bvc : forall c a T,
-  bvc <{ [[T / a][c] c }> = bvc c.
+  bvc <{ :[a := T]c c }> = bvc c.
 Admitted.
 
 Lemma substA_cs__bvc : forall cs a T,
-  map bvc <{ [[T / a][cs] cs }> = map bvc cs.
+  map bvc <{ :[a := T]cs cs }> = map bvc cs.
 Admitted.
 
 Lemma substA_b__bvb : forall a T b,
-    bvb b = bvb <{ [[T/a][b] b }>.
+    bvb b = bvb <{ :[a := T]b b }>.
 Proof with eauto.
   destruct b; simpl.
   - destruct v...
@@ -185,7 +185,7 @@ Proof with eauto.
 Qed.
 
 Lemma substA_bnr__bvbs : forall a T bs,
-    bvbs bs = bvbs <{ [[T/a ][bnr] bs }>.
+    bvbs bs = bvbs <{ :[a := T]bnr bs }>.
 Proof with eauto.
   induction bs...
   simpl.
@@ -198,7 +198,7 @@ Proof with eauto.
 Qed.
 
 Lemma msubstA_bnr__bvbs : forall ss bs,
-    bvbs bs = bvbs <{ /[[ ss /][bnr] bs }>.
+    bvbs bs = bvbs <{ :[ ss ]*bnr bs }>.
 Proof with eauto.
   induction ss...
   destruct a.
@@ -313,11 +313,11 @@ Proof.
 Admitted.
 
 Lemma msubst__fold : forall ss x v t,
-    msubst ss <{ [v / x] t }> = msubst ((x, v) :: ss) t.
+    msubst ss <{ [x := v] t }> = msubst ((x, v) :: ss) t.
 Proof. induction ss; intros; auto. Qed.
 
 Lemma msubst_bnr__fold : forall ss x v bs,
-    msubst_bnr ss <{ [v / x][bnr] bs }> = msubst_bnr ((x, v) :: ss) bs.
+    msubst_bnr ss <{ [x := v]bnr bs }> = msubst_bnr ((x, v) :: ss) bs.
 Proof. induction ss; intros; auto. Qed.
 
 Lemma msubst_LamAbs : forall ss x T t0,
@@ -494,7 +494,7 @@ Lemma msubstA_Unwrap : forall ss M ,
 Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
 
 Lemma msubstA_Constr : forall ss n T ts ,
-    msubstA ss (Constr n T ts) = Constr n (msubstT ss T) (map (msubstA ss) ts).
+    msubstA ss (Constr T n ts) = Constr (msubstT ss T) n (map (msubstA ss) ts).
 Proof. induction ss; intros.
   - simpl. rewrite map_id. reflexivity.
   - destruct a. simpl. rewrite IHss. rewrite map_map. reflexivity.

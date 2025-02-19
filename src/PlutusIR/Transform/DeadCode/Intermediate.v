@@ -119,9 +119,9 @@ Section Bindings.
         if func_eqb f f'
           then pure (Builtin f)
           else None
-    | Constr i T ts, Constr i' T' ts' =>
+    | Constr T i ts, Constr T' i' ts' =>
         if Nat.eqb i i' && Ty_eqb T T'
-          then Constr i T <$> sequence_options (zip_with mk ts ts')
+          then Constr T i <$> sequence_options (zip_with mk ts ts')
           else None
     | Case T t ts, Case T' t' ts' =>
         if Ty_eqb T T' then
