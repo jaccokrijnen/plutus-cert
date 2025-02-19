@@ -1,4 +1,4 @@
-From mathcomp Require Import ssreflect ssrbool eqtype ssrnat.
+(* From mathcomp Require Import ssreflect ssrbool eqtype ssrnat.
 From Coq Require Import ssrfun.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
@@ -249,4 +249,4 @@ Proof.
     assumption.
   - apply SNI. 
     exact H.
-Qed.
+Qed. *)

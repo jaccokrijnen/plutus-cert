@@ -1,3 +1,5 @@
+From Coq Require Extraction.
+
 From PlutusCert Require Import 
   PlutusIR 
   Normalisation.Normalisation 
@@ -147,7 +149,7 @@ Proof.
 Qed.
 
 (* Wouter's suggestion: do not use explicit normalizer in soundness proof*)
-Theorem SN__normalise t Δ K :
+Theorem SN_normalise t Δ K :
   Δ |-* t : K -> SN t -> {t' & normalise t t'}.
 Proof.
   intros HWK HSN.
@@ -164,7 +166,24 @@ Qed.
 
 Definition normaliser {T Δ K} (Hwk : Δ |-* T : K) :=
   let HSN := strong_normalisation Hwk in
-  projT1 (SN__normalise T Δ K Hwk HSN).
+  projT1 (SN_normalise T Δ K Hwk HSN).
+
+Print Assumptions normaliser.
+
+Fixpoint normaliser_gas (n : nat) {T Δ K} (Hwk : Δ |-* T : K) :=
+  match n with
+    | O => T
+    | S n' => 
+        match step_dec T Δ K Hwk with
+        | inl (existT _ T' P) => 
+            let Hwk' := @step_preserves_kinding T T' Δ K Hwk P in
+            normaliser_gas n' Hwk'
+        | inr _ => T
+        end
+  end.
+
+Extraction Language Haskell.
+Recursive Extraction normaliser_gas.
 
 Definition normaliser_Jacco Δ T : option ty :=
   match kind_check Δ T with
@@ -186,7 +205,7 @@ Theorem norm_sound Tn {T Δ K} (Hwk : Δ |-* T : K) :
 Proof.
   intros.
   unfold normaliser in H.
-  destruct SN__normalise in H.
+  destruct SN_normalise in H.
   subst.
   assumption.
 Qed.
@@ -196,7 +215,7 @@ Theorem norm_complete Δ K (T Tn : ty) (Hwk : Δ |-* T : K):
 Proof.
   intros HnormR.
   unfold normaliser.
-  destruct SN__normalise.
+  destruct SN_normalise.
   simpl.
   now apply (normalisation__deterministic T x Tn) in n.
 Qed.

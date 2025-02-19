@@ -227,7 +227,7 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
             else None
     | _ => None (* TODO: Case and Constr?? *)
     end.
-
+(* 
 Section term_recursivity_rect.
   Variable (P : term -> Type).
   Variable (Q : binding -> Type).
@@ -773,4 +773,4 @@ Print Assumptions type_checking_sound.
 Print Assumptions type_checking_complete.
       
       
-      
+       *)

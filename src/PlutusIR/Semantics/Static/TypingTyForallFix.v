@@ -3,8 +3,8 @@ Require Import PlutusCert.Util.List.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.Auxiliary.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
-Require Export PlutusCert.PlutusIR.Semantics.Static.Kinding.
-Require Export PlutusCert.PlutusIR.Semantics.Static.Normalisation.
+Require Export PlutusCert.PlutusIR.Semantics.Static.Kinding.Kinding.
+Require Export PlutusCert.PlutusIR.Semantics.Static.Normalisation.Normalisation.
 Require Export PlutusCert.PlutusIR.Semantics.Static.TypeSubstitution.
 Require Export PlutusCert.PlutusIR.Semantics.Dynamic.AnnotationSubstitution.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Builtins.Signatures.
