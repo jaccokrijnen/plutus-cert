@@ -122,7 +122,7 @@ Proof.
       apply not_in_app in Hfresh.
       destruct Hfresh as [_ Hfresh].
       assumption.
-Qed.
+Qed.  
 
 (*
  Stronger result where s and s' not syntactically equal

@@ -58,10 +58,8 @@ equal' _ _ _ = False
 *)
 Inductive AlphaVar : list (string * string) -> string -> string -> Set :=
 | alpha_var_refl x : AlphaVar [] x x
-| alpha_var_cons x y z w sigma :
-    x = z ->
-    y = w ->
-    AlphaVar ((x, y) :: sigma) z w
+| alpha_var_cons z w sigma :
+    AlphaVar ((z, w) :: sigma) z w
 | alpha_var_diff x y z w sigma :
     x <> z -> 
     y <> w -> 
@@ -426,11 +424,9 @@ Proof with auto.
       subst.
       assumption.
       
-    + inversion H1;
-      inversion H2; subst; try contradiction.
+    + inversion H1; subst.
+      inversion a; subst; try contradiction.
       * apply alpha_var_cons.
-        inversion a. subst. reflexivity.
-        contradiction. reflexivity.
       * apply alpha_var_diff.
         -- inversion a. subst. contradiction. assumption.
         -- assumption.
@@ -975,6 +971,12 @@ Proof.
     + assumption.
     + reflexivity.
     + now apply @idCtxNotBreakShadowing with (x := x) in Hid. 
+Qed.
+
+Lemma alpha_extend_ids idCtx s t:
+  IdCtx idCtx -> Alpha nil s t -> Alpha idCtx s t.
+Proof.
+  eapply alpha_extend_ids_right.
 Qed.
 
 Lemma alpha_ids s idCtx :

@@ -82,6 +82,20 @@ Lemma alpha_ctx_ren_extend_fresh sigma sigma' x x' ren:
   αCtxSub ((x, x')::ren) sigma sigma'.
 Admitted.
 
+
+Fixpoint ftv_keys_env (sigma : list (string * term)) : list string :=
+  match sigma with
+  | nil => nil
+  | (x, t)::sigma' => x :: (ftv t) ++ (ftv_keys_env sigma')
+  end.
+
+Lemma alpha_ctx_ren_extend_fresh_ftv sigma sigma' x x' ren:
+  ~ In x (ftv_keys_env sigma) ->
+  ~ In x' (ftv_keys_env sigma') ->
+  αCtxSub ren sigma sigma' ->
+  αCtxSub ((x, x')::ren) sigma sigma'.
+Admitted.
+
 (* TODO: SUPERSEDED BY alpha_ctx_ren_extend_fresh. The statements are almost identical (with respect to what we use them for) *)
 (* TODO: t and t' are totall unrelevant here, how do I make them placeholders or something? *)
 Lemma extend_alpha_ctx_fresh {x x' sigma sigma' sigma_ sigma_' ren t t'}:

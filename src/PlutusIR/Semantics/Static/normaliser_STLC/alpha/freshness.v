@@ -282,12 +282,6 @@ Proof.
       apply in_or_app. right. apply IHt2.
 Qed.
 
-Fixpoint ftv_keys_env (sigma : list (string * term)) : list string :=
-  match sigma with
-  | nil => nil
-  | (x, t)::sigma' => x :: (ftv t) ++ (ftv_keys_env sigma')
-  end.
-
 Lemma alpha_extend_fresh {x x' ren t t'}:
   ~ In x (ftv t) ->
   ~ In x' (ftv t') ->
@@ -311,3 +305,10 @@ Lemma in_tv_value_then_in_tv_keys_env y y1 t (sigma : list (string * term)) :
   In y (tv t) -> In (y1, t) sigma -> In y (tv_keys_env sigma).
 Proof.
 Admitted.
+
+Lemma btv_lam {X A t} :
+  In X (btv (tmlam X A t)).
+Proof.
+  unfold btv.
+  apply in_eq.
+Qed.
