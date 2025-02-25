@@ -1086,6 +1086,13 @@ Lemma alpha_extend_vacuous {x x' s s' ren}:
 Proof.
 Admitted.
 
+(* definitions for that? *)
+Lemma alpha_extend_vacuous_right {s s' R R'}:
+  (forall x, In x (map fst R') -> ~ In x (ftv s)) -> 
+  (forall x, In x (map snd R') -> ~ In x (ftv s')) -> Alpha R s s' -> Alpha (R ++ R') s s'.
+Proof.
+Admitted.
+
 Lemma alpha_extend_vacuous_single {x x' s}:
   ~ (In x (ftv s)) -> ~ (In x' (tv s)) -> Alpha ((x, x')::nil) s s.
 Proof.

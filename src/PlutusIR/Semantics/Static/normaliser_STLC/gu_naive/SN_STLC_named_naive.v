@@ -812,6 +812,93 @@ match T with
   | tp_arrow A B => fun s => forall t, L A t -> L B (tmapp s t)
 end.
 
+Definition set_diff (l1 l2 : list string) : list string :=
+  filter (fun x => negb (existsb (String.eqb x) l2)) l1.
+
+Fixpoint fresh18 (l : list string) : string :=
+  match l with
+    | nil => "fr"
+    | x :: xs => x ++ fresh18 xs
+  end.
+
+(*
+I THINK THIS IS THE SAME PROCEDURE AS WHAT WE NEED IN BETA REDUCTION
+
+The reason why we need to extend R
+ We can always find a term that is alpha to another term with arbitrary renaming context
+  except that we cannot. Take R = [x, y], t = x y.
+  no. But we can find R', s.t. Alpha (R' ++ (x, y)) (x, y) (y, yfr)
+  e.g. R' = (y, yfr) and t' = y yfr
+
+  let's say s = x y, then R cannot be [x, y], because then s' cannot exist
+  let's say s = y adn R = [x, y].  then also not possible to have found an s'
+
+
+  R' needs exactly to contain on the rhs the ftvs in t that are not in s'
+  and on the lhs some random fresh balbla
+
+OK BUT IS THIS ACTUALLY NECESSARY:
+  Whenever a ftv occurs in s, it can no longer form a problem.
+  So, we could instead of extending R, also diminish R
+  Different philosophy: Problem is not t, it is R.
+  In the example above for example. We have [x, y] ⊢ s ~ s', hence we know y not in s.
+  BUT WE CANNOT REMOVE IT!!! SO THIS IS NO SOLUTION, NVM.
+    *)
+
+(*
+  We can always find a term that is alpha to another term with arbitrary renaming context
+  except that we cannot. Take R = [x, y] [y, z], t = x y z.
+  no. But we can find R', s.t. Alpha (R' ++ (x, y)) (x, y) (y, yfr)
+  e.g. R' = (y, yfr) and t' = y yfr
+
+  let's say s = x y, then R cannot be [x, y], because then s' cannot exist
+  let's say s = y adn R = [x, y].  then also not possible to have found an s' *)
+
+Definition R_extender (s s' t : term) : list (string * string) :=
+  let ftvs_t := ftv t in
+  let ftvs_s' := ftv s' in
+  let ftvs_s := ftv s in
+  (* problematic ones are: ftvs in t that are also in rhs of R
+    but not if they are also in the lhs of R, or if they are ftv in s. Then never a problem:
+    R ⊢ s ~ s' is already proving that that is not a problem.
+
+    We can maybe play it safe. Only problematic ones are ftvs_t - ftvs_s.
+
+    Adding for any of those a translation (even if not necessary) to the end of R, 
+    will not have an influence on s
+  *)
+
+  (* We first add identity substs for everything in s, and then that makes sure the fresh ones (second map)
+    only renames the problematic ones
+  *)
+  map (fun x => (x, x)) (ftv s) ++
+  map (fun x => (fresh18 ((ftv s) ++ (ftv s') ++ (ftv t)), x)) (ftv t).
+
+(* Too much indirection! 
+  Nice is about fresh vars in rhs of R, while R_extender creates them on LHS.
+*)
+Lemma R_extender_Nice R s s' t' :
+  Nice (sym_alpha_ctx (R ++ R_extender s s' t')) t'.
+Proof.
+Admitted.
+
+Lemma some_constructive_arg {R s s'} t' :
+  Alpha R s s' -> {t & Alpha (R ++ R_extender s s' t') t t' * Alpha (R ++ R_extender s s' t') s s'}%type.
+Proof.
+  intros.
+  remember (R_extender s s' t') as R'.
+  exists (mren (sym_alpha_ctx (R ++ R')) t').
+  split.
+  - eapply @alpha_sym with (ren := sym_alpha_ctx (R ++ R')). auto with α_eq_db.
+    eapply alpha_mren_specal.
+    subst.
+    eapply R_extender_Nice.
+
+  - eapply @alpha_extend_vacuous_right; auto.
+    + (* by construction *) admit.
+    + (* by construction *) admit.
+Admitted.
+
 Lemma α_preserves_L_R A s s' R :
   Alpha R s s' -> L A s -> L A s'.
 Proof.
@@ -826,13 +913,12 @@ Proof.
     simpl.
     intros t Ht.
 
-    (* We can always find a term that is alpha to another term with arbitrary renaming context*)
-    assert ({t0 & Alpha R t0 t}) as [t0 Halphat0] by admit.
+    destruct (some_constructive_arg t H) as [t0 [Ha_t0 Ha_s] ].
     
-    eapply (IHA2 R _ (tmapp s t0)).
+    eapply (IHA2 (R ++ (R_extender s s' t)) _ (tmapp s t0)).
     constructor; eauto.
-    eapply H0. eapply (IHA1 (sym_alpha_ctx R) t0 t); eauto with α_eq_db.
-Admitted.
+    eapply H0. eapply (IHA1 (sym_alpha_ctx (R ++ (R_extender s s' t))) t0 t); eauto with α_eq_db.
+Qed.
 
 Lemma reducible_sn : reducible SN_na.
 Proof. 
