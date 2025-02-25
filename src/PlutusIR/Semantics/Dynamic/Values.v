@@ -62,7 +62,7 @@ Fixpoint value__ind (t : term) (v : value t) {struct v} : P t :=
 
 End value_ind.
 
-
+(* Results represent the result of computation, which include values and errors *)
 Inductive result : term -> Prop :=
   | R_LamAbs : forall x T t0,
       result (LamAbs x T t0)

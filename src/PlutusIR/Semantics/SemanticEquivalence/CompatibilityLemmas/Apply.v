@@ -333,13 +333,13 @@ HRV1 : R_V (k - j_1) <{ T1 → T2 }> ρ <{ λ x :: T, t0 }> r1'
 HRV2 : R_V (k - j_1 - j_2) T1 ρ r2 r2'
 *)
 
-
+(* Related arguments go to related results *)
 Lemma RV_apply {j T1 T2 Δ ρ f f' k v v'} i :
   RD Δ ρ ->
   R_V j <{ T1 → T2 }> ρ f f' ->
   R_V k T1 ρ v v' ->
   i < j ->
-  i < k ->
+  i <= k ->
   exists (x : binderName) (b b' : term) (T1v T1v' : ty),
     f = <{ λ x :: T1v, b }> /\
     f' = <{ λ x :: T1v', b' }> /\
@@ -418,11 +418,13 @@ Ltac RV_apply H_V_f H_V_v i :=
   assert (H := H_V_v)
 .
 
+
 Ltac RV_no_error H HR :=
   destruct H as [HR | [H_err H_err'] ];
   try solve [inversion H_err; inversion H_err'];
   try solve [contradiction]
 .
+
 
 Lemma H_fully_applied e1 e2 e1' e2' T1 T2 k Δ ρ:
   RD Δ ρ ->
@@ -502,10 +504,11 @@ Proof.
   destruct H_approx_e2 as [_ [ _ H_RC_e2]].
 Admitted.
 
+
 Lemma compat_Apply Δ Γ e1 e2 e1' e2' T1 T2 :
-    approx Δ Γ e1 e1' (Ty_Fun T1 T2) ->
+    approx Δ Γ e1 e1' <{T1 → T2}> ->
     approx Δ Γ e2 e2' T1 ->
-    approx Δ Γ (Apply e1 e2) (Apply e1' e2') T2.
+    approx Δ Γ <{e1 ⋅ e2}> <{e1' ⋅ e2'}> T2.
 Proof with eauto_LR.
   intros IH_LR1 IH_LR2.
 
@@ -515,9 +518,9 @@ Proof with eauto_LR.
   *)
 
   split...
-  admit.
+  admit. (* typing *)
   split...
-  admit.
+  admit. (* typing *)
 
   intros k ρ γ γ' H_RD H_RG.
 
@@ -525,60 +528,27 @@ Proof with eauto_LR.
   autorewrite with multi_subst.
 
   intros j Hlt__j r Hev__app.
-
-
   inversion Hev__app; subst.
+
   - (* E_Apply *)
-    rename v2 into r2.
-    rename j1 into j_1.
-    rename j2 into j_2.
-    rename j0 into j_3.
-
-
-    (* Use IH1 with k steps *)
     use_approx IH_LR1 k
       H_C_e1.
-    run_RC H_C_e1
-      r1' j_1' H_ev__e1' H_V_f...
-    clear H_C_e1.
-    RV_no_error H_V_f H_V_f.
+    remember (close γ (msyn1 ρ) e1) as c_e1.
+    remember (close γ' (msyn2 ρ) e1') as c_e1'.
 
-    (* Use IH2 with k - j1 steps *)
-    assert (H_RG' : R_G ρ (k - j_1) Γ γ γ'). {
-      assert (H : k - j_1 <= k)...
-      eauto using R_G_monotone.
-    }
-    use_approx IH_LR2 (k - j_1)
+    use_approx IH_LR2 k
       H_C_e2.
-    run_RC H_C_e2
-      r2' j_2' H_ev__e2' H_V_2...
-    clear H_C_e2.
-    RV_no_error H_V_2 H_V_2.
+    remember (close γ (msyn1 ρ) e2) as c_e2.
+    remember (close γ' (msyn2 ρ) e2') as c_e2'.
 
-    (* Related arguments give related results *)
-    destruct (RV_apply (k - j_1 - j_2 - 1) H_RD H_V_f H_V_2 ltac:(lia) ltac:(lia))
-      as [x0 [b [b' [T1v [T1v' [Heq [Heq' HRC0]]]]]]].
-    inversion Heq; subst; clear Heq.
+    autorewrite with R in H_C_e1.
+    specialize (H_C_e1 j1 ltac:(lia) _ H2) as [r' [j' [H_ev_c_e1' H_r_r']]].
 
-    run_RC HRC0
-      r' j'_3 Hev__r' H_V_0...
+    (* try proving from goal instead *)
 
-    assert (H : k - (j_1 + j_2 + 1 + j_3) = k - j_1 - j_2 - 1 - j_3)...
-    rewrite H; clear H.
-
-
-    match goal with | |- exists _ _, eval ?t _ _ /\ _ => destruct (dec_fully_applied t) end.
-    + (* fully_applied *)
-      eexists. eexists.
-      split...
-      eapply E_Builtin_partial...
-      apply fully_applied__arg_value in f .
-      eval_deterministic.
-      subst.
-      eassumption.
-    + (* ~ fully_applied *)
-      eexists. eexists.
-      eauto using E_Apply, value__is_error, R_V_value_2.
+    eexists.
+    eexists.
+    split;admit.
 
   - (* E_Builtin_Apply_Eta *)
     admit.
@@ -603,13 +573,12 @@ Proof with eauto_LR.
 
     autorewrite with applied_args in *.
 
-    destruct (dec_fully_applied <{ c_e1' ⋅ c_e2' }>).
+    destruct (dec_fully_applied <{ c_e1' ⋅ c_e2' }>) as [H_FA | H_FA].
     + (* fully_applied *)
 
       (* c_e1 evaluates to a value (eta expansion with partially applied builtin) *)
-      assert (H_FA := H1).
       apply fully_applied__Apply in H1 as [x [T [s [Hev Heq]]]].
-      apply fully_applied__Apply in f as [x' [T' [s' [Hev' Heq']]]].
+      apply fully_applied__Apply in H_FA as [x' [T' [s' [Hev' Heq']]]].
       run_RC H_C_e1
         r1' j_1' H_ev__e1' H_V_f...
       RV_no_error H_V_f H_V_f.
@@ -658,5 +627,8 @@ Proof with eauto_LR.
 
     assert (HRC1 :
       R_C k (Ty_Fun T1 T2) ρ (close γ (msyn1 ρ) e1) (close γ' (msyn2 ρ) e1')
-    )...
+    ) by admit.
+    admit.
+  - (* E_Error_Apply2 *)
+    admit.
 Admitted.

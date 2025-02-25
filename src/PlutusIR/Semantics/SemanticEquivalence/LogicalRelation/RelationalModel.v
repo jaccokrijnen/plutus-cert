@@ -15,17 +15,19 @@ Require Import Coq.Strings.String.
 
 Local Open Scope list_scope.
 Local Open Scope string_scope.
+Require Import Utf8_core.
 
-
-Definition Rel (T T' : ty) (Chi : nat -> term -> term -> Prop) : Prop :=
+(* Rel:
+Any step-indexed relation χ on values, that is closed w.r.t. a decreasing step-index
+*)
+Definition Rel (T T' : ty) (χ : nat -> term -> term -> Prop) : Prop :=
   forall j v v',
-    Chi j v v' -> 0 < j ->
+    χ j v v' -> 0 < j ->
       result v /\ result v' /\
-      (exists Tn, normalise T Tn /\ ([] ,, [] |-+ v : Tn)) /\
-      (exists Tn', normalise T' Tn' /\ ([] ,, [] |-+ v' : Tn')) /\
-      forall i,
-        i <= j ->
-        Chi i v v'.
+      (∃ Tn, normalise T Tn /\ ([] ,, [] |-+ v : Tn)) /\
+      (∃ Tn', normalise T' Tn' /\ ([] ,, [] |-+ v' : Tn')) /\
+      (∀ i, i <= j -> χ i v v')
+.
 
 
 
@@ -321,6 +323,13 @@ Require Import Coq.Arith.Wf_nat.
 Inductive interpretation := C | V.
 
 
+(* Termination argument of R
+
+In recursive calls of R:
+  - either the step-index decreases
+  - or a R V calls R C
+We express this in a measure on naturals
+*)
 Definition measure : (interpretation * nat) -> nat :=
   fun '(i, n) => n * 10 + if i then 1 else 0.
 
@@ -331,26 +340,26 @@ Qed.
 
 Instance wf_pair : WellFounded (ltof _ measure) := lt_pair_wf.
 
+(* Logical relation for closed values and computations *)
 Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : term) : Prop by wf (i, k) (ltof _ measure) :=
 
   R C k T rho e e' :=
-    forall j (Hlt_j : j < k) r,
+    ∀ j (Hlt_j : j < k) r,
       e =[j]=> r ->
-      exists r' j',
+      ∃ r' j',
         e' =[j']=> r' /\
-        (R V (k - j) T rho r r' \/
-        (is_error r /\ is_error r'));
+        (R V (k - j) T rho r r' \/ (is_error r /\ is_error r'));
 
   R V k T rho v v' :=
-    exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([] ,, [] |-+ v : Tn) /\
-    exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\  ([] ,, [] |-+ v' : Tn') /\
+    ∃ Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([] ,, [] |-+ v : Tn) /\
+    ∃ Tn', normalise (msubstT (msyn2 rho) T) Tn' /\  ([] ,, [] |-+ v' : Tn') /\
 
     value v /\
     value v' /\
     (
       match T with
       | Ty_Var a =>
-          forall Chi,
+          ∀ Chi,
             sem rho a = Datatypes.Some Chi ->
             Chi k v v'
 
@@ -370,7 +379,7 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
           exists x e_body e'_body T1 T1',
             v = LamAbs x T1 e_body /\
             v' = LamAbs x T1' e'_body /\
-            forall i (Hlt_i : i < k) v_0 v'_0,
+            ∀ i (Hlt_i : i < k) v_0 v'_0,
               R V i T1n rho v_0 v'_0 ->
               R C i T2n rho <{ [x := v_0] e_body }> <{ [x := v'_0] e'_body }>
 
@@ -378,7 +387,7 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
           exists v_0 v'_0 F F' T T',
             v = IWrap F T v_0 /\
             v' = IWrap F' T' v'_0 /\
-            forall i (Hlt_i : i < k) K T0n,
+            ∀ i (Hlt_i : i < k) K T0n,
               [] |-* (msubstT (msyn1 rho) Tn) : K ->
               [] |-* (msubstT (msyn2 rho) Tn) : K ->
               normalise (unwrapIFix Fn K Tn) T0n ->
@@ -388,11 +397,11 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
           exists e_body e'_body,
             v = TyAbs X K e_body /\
             v' = TyAbs X K e'_body /\
-            forall T1 T2 Chi,
+            ∀ T1 T2 Chi,
               [] |-* T1 : K ->
               [] |-* T2 : K ->
               Rel T1 T2 Chi ->
-              forall i (Hlt_i : i < k),
+              ∀ i (Hlt_i : i < k),
                 R C i Tn ((X, (Chi, T1, T2)) :: rho) <{ :[X := T1] e_body }> <{ :[X := T2] e'_body }>
       end
   ).
