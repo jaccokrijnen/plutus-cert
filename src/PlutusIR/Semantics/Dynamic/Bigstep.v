@@ -121,14 +121,38 @@ Inductive eval : term -> term -> nat -> Prop :=
       t0 =[j0]=> Error T ->
       Unwrap t0 =[j0 + 1]=> Error T
 
-  (** Let-bindings *)
+  (** let (non-recursive)*)
   | E_Let : forall bs t v j,
       Let NonRec bs t =[j]=>nr v ->
       Let NonRec bs t =[j]=> v
+
+  (* letrec (terms)
+   * ------
+   * Strict bindings need to evaluate with the rest of the let-bindings treated
+   * as non-strict. Therefore we pass a list of bindings that are
+   * non-strictified
+   * TODO: find out how the compilation of mutually recursive strict terms
+   * exactly works in Plutus
+   *)
   | E_LetRec : forall bs bs' t v j ,
       bindings_nonstrict bs bs' ->
       Let Rec bs t =[j]=>r v WITH bs' ->
       Let Rec bs t =[j]=> v
+
+  (* letrec (data)
+   * Plutus does not allow mutually recursive ADTs, so we can require there is
+   * only one binding in the let group.
+   *)
+  | E_LetRec_Data : forall dtd X K tvds matchf cs t ty t_match t_cs v j ,
+      dtd = Datatype (TyVarDecl X K) tvds matchf cs ->
+      (ty, t_match, t_cs) = compile_data Rec dtd ->
+
+      (substA X ty
+        (msubst t_cs
+          (subst matchf t_match
+            t))) =[j]=> v ->
+      Let Rec [DatatypeBind dtd] t =[j + 1]=> v
+
 
 with eval_bindings_nonrec : term -> term -> nat -> Prop :=
   | E_Let_Nil : forall t0 v0 j0,
@@ -142,9 +166,9 @@ with eval_bindings_nonrec : term -> term -> nat -> Prop :=
   | E_Let_DatatypeBind : forall dtd X K tvds matchf X_ty matchf_term cs_subst cs bs t i v,
 
       dtd = Datatype (TyVarDecl X K) tvds matchf cs ->
-      (X_ty, matchf_term, cs_subst) = dt_subst dtd ->
+      (X_ty, matchf_term, cs_subst) = compile_data NonRec dtd ->
 
-      (substA X (dt_to_ty dtd)
+      (substA X X_ty
         (msubst cs_subst
           (subst matchf matchf_term
             (Let NonRec bs t)))) =[i]=> v ->

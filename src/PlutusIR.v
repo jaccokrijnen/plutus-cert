@@ -789,6 +789,7 @@ Module PlutusNotations.
   Notation "{ x }" := x (in custom plutus_ty at level 1, x constr) : plutus_scope.
   Notation "{ x }" := x (in custom plutus_kind at level 1, x constr) : plutus_scope.
 
+
   #[global]
   Open Scope plutus_scope.
 
