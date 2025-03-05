@@ -216,8 +216,11 @@ Inductive Nice : (list (string * string)) -> term -> Prop :=
   | NiceNil t : Nice nil t
 
   (* If we rename something to y, and that already occured in t, then we need to rename that away thereafter*)
-  | NiceOne x y t R : In y (ftv t) -> In y (map fst R) -> Nice R t -> Nice ((x, y)::R) t
-  | NiceTwo x y t R : ~ In y (ftv t) -> Nice R t -> Nice ((x, y)::R) t. (* Not a problematic renaming*)
+  | NiceOne x y t R :  ~ In y (btv t) ->   In y (ftv t) -> In y (map fst R) -> Nice R t -> Nice ((x, y)::R) t
+  | NiceTwo x y t R : ~ In y (btv t) -> ~ In y (ftv t) ->                     Nice R t -> Nice ((x, y)::R) t. (* Not a problematic renaming*)
+(* for non-problematic renamings it can also not be in a bound type variable:
+  look at R = (x, y) and t = (tmlam y. x).
+*)
 
 (*
   If R is nice, then the renaming is capture-avoiding.
@@ -228,8 +231,71 @@ Inductive Nice : (list (string * string)) -> term -> Prop :=
   but what it does do is have an easy way of always knowing the renaming will be ok: we are playing on the safe side
 *)
 
+(* oooof.. Nice allows R = (x, y) and s = tmlam y. x y. Problem is that the rhs is a btv there.
+  I think an "easy" fix is to assume nothing in rhs R appears in btv of s.
+  I have nwo put this into nice
+ *)
+
 Lemma alpha_mren_specal (R : list (string * string)) s :
-  (* x' can be equal to x., but then x=x' not in s, so the renaming doesnt do anything. *)
   Nice R s -> Alpha R s (mren R s).
 Proof.
+  intros.
+  generalize dependent R.
+  induction s; intros.
+  - (* mren renames this according to what it finds in R. If it does not find s, 
+    We have to show R ⊢ tmvar s ~ tmvar s. That is problematic if s is in the RHS of R.
+
+    By Nice and s in tmvar s, we have by NiceOne that then s also somewhere in the LHS of R. 
+    Contradiction.
+
+    Now suppose we have (s, s') in R. Then we have to show R ⊢ s ~ s'.
+    This is problematic if there is a (x, s') in front of (s, s') in R.
+
+  *)
+  admit.
+  - (* Nice R (tmlam s t s0)
+    then also Nice (drop s R)
+  *) 
+    assert (mren ((s, s):: R) s0 = mren R s0).
+    {
+      (* s not in R by Nice R (tmlam s t s0), s binder*)
+      (* then vacuous rename*)
+      admit.
+    }
+    assert (R ⊢ s0 ~ (mren (R) s0) ).
+    {
+      eapply IHs.
+      admit.
+    }
+    assert (mren R (tmlam s t s0) = tmlam s t (mren R s0)) by admit.
+    rewrite H2.
+    constructor.
+    (* then extend identity*)
+
+  (* how would the lam case go here? 
+    we have tmlam x. s   ~   tmlam y. s'
+
+    We want to add x and y to R.
+    Do we then have Nice (x, y)::R s?
+    Well, we know R s. But y can be free in s I think. How do we deal with that?
+    e.g.
+
+    Nice [] (tmlam x. x y).    and mren [] (tmlam x. x y) = tmlam x. x y
+
+    Then in the lam case, we have mren [(x, y)] x y
+  *)
+    admit.
+  - simpl.
+    constructor.
+    + eapply IHs1.
+      inversion H.
+      * constructor.
+      * subst.
+        (* if y in ftv s1, then by NiceOne. Otherwise by NiceTwo*)
+        admit.
+      * assert (~ In y (ftv s1)) by admit.
+        apply NiceTwo.
+        -- admit.
+        -- assumption.
+        -- (* we need to do that by i9nduction. But so inconclusion, I think this decomposes*)
 Admitted.

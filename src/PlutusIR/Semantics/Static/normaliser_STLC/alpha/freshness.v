@@ -105,6 +105,12 @@ Proof.
   split; now apply not_in_cons in HXnotinlam.
 Qed.
 
+
+Lemma tv_not_app_l X Y A t :
+  ~ In X (tv (tmlam Y A t)) -> prod (X <> Y) (~ In X (tv t)).
+Proof.
+Admitted.
+
 Lemma tv_lam_rename_helper X Y Y' A t :
    Y <> Y' -> ~ In X (tv (tmlam Y A t)) -> ~ In X (tv (rename Y Y' t)).
 Admitted.

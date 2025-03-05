@@ -973,11 +973,21 @@ Proof.
     + now apply @idCtxNotBreakShadowing with (x := x) in Hid. 
 Qed.
 
+Lemma alphavar_extend_ids idCtx s t:
+  IdCtx idCtx -> AlphaVar nil s t -> AlphaVar idCtx s t.
+Proof.
+Admitted.
+
 Lemma alpha_extend_ids idCtx s t:
   IdCtx idCtx -> Alpha nil s t -> Alpha idCtx s t.
 Proof.
   eapply alpha_extend_ids_right.
 Qed.
+
+Lemma alpha_weaken_ids idCtx s t:
+  IdCtx idCtx -> Alpha idCtx s t -> Alpha nil s t.
+Proof.
+Admitted.
 
 Lemma alpha_ids s idCtx :
   IdCtx idCtx -> Alpha idCtx s s.
@@ -1012,6 +1022,14 @@ Proof.
   intros Hren.
   apply alpha_extend_id_split with (ren := ren) (ren1 := nil); eauto.
 Qed. 
+
+(* Since we have Alpha ren s s, we know no ftv in s is in ren! (or it is identity, so we already no that we won't get breaking
+  and if we do it is with variables that do not do antying to s
+)*)
+Lemma alpha_extend_id'' {s z ren}:
+  Alpha ren s s -> Alpha ((z, z)::ren ) s s.
+Proof.
+Admitted.
 
 (* We can extend alpha context by a non-shadowing identity substitution *)
 Lemma alpha_extend_id {s z ren}:
@@ -1081,8 +1099,14 @@ Proof.
     now apply not_in_app in Hfresh as [Hfresh1 Hfresh2].
 Qed.
 
+(* WHY DO WE HAVE THIS? WHY NOT FTV?*)
 Lemma alpha_extend_vacuous {x x' s s' ren}:
   ~ (In x (ftv s)) -> ~ (In x' (tv s')) -> Alpha ren s s' -> Alpha ((x, x')::ren) s s'.
+Proof.
+Admitted.
+
+Lemma alpha_extend_vacuous_ftv {x x' s s' ren}:
+  ~ (In x (ftv s)) -> ~ (In x' (ftv s')) -> Alpha ren s s' -> Alpha ((x, x')::ren) s s'.
 Proof.
 Admitted.
 

@@ -277,8 +277,6 @@ Proof.
                  --- apply alpha_var_refl.
                  --- apply alpha_var.
                      apply alpha_var_cons.
-                     +++ reflexivity.
-                     +++ reflexivity.
               ** 
                   eapply alpha_extend_vacuous_single.
                   --- assert (~ In x' (tv s1)).

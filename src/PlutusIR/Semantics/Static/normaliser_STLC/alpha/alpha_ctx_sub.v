@@ -5,12 +5,21 @@ From PlutusCert Require Import STLC_named alpha Util.List.
 
 (* One subsitution is related to the other through the alpha context*)
 Inductive αCtxSub : list (string * string) -> list (string * term) -> list (string * term) -> Prop :=
-  | alpha_ctx_nil : αCtxSub [] [] []
-  | alpha_ctx_cons ren sigma sigma' x y t t' :
+  | alpha_ctx_nil R : αCtxSub R [] []
+  | alpha_ctx_cons R σ σ' x y t t' :
   (* TODO: what about sigma and sigma'? no conditions?*)
+    αCtxSub R σ σ' ->
+    AlphaVar R x y ->
+    Alpha R t t' ->
+    αCtxSub R ((x, t)::σ) ((y, t')::σ').
+
+(* One subsitution is related to the other through the alpha context*)
+Inductive αCtxSubSingle : list (string * string) -> list (string * term) -> list (string * term) -> Prop :=
+  | alpha_ctx_single_nil : αCtxSubSingle [] [] []
+  | alpha_ctx_single_cons ren x y t t' :
     AlphaVar ren x y ->
     Alpha ren t t' ->
-    αCtxSub ren ((x, t)::sigma) ((y, t')::sigma').
+    αCtxSubSingle ren ((x, t)::nil) ((y, t')::nil).
 
 Lemma alpha_ctx_found ren sigma sigma' x x' t t' :
   αCtxSub ren sigma sigma' ->
@@ -57,7 +66,7 @@ Proof.
   induction sigma.
   - apply alpha_ctx_nil.
   - destruct a.
-    apply alpha_ctx_cons.
+    apply alpha_ctx_cons; auto.
     + apply alpha_var_refl.
     + apply alpha_refl. apply alpha_refl_nil.
 Qed.
@@ -103,4 +112,17 @@ Lemma extend_alpha_ctx_fresh {x x' sigma sigma' sigma_ sigma_' ren t t'}:
   x' = fresh2 (sigma_' ++ sigma') t' ->
   αCtxSub ren sigma sigma' ->
   αCtxSub ((x, x')::ren) sigma sigma'.
+Admitted.
+
+Lemma αctx_sym σ σ' :
+  αCtxSub [] σ σ' -> αCtxSub [] σ' σ.
+Admitted.
+
+Lemma αctx_trans R1 R2 R σ σ' σ'' :
+  αCtxTrans R1 R2 R -> 
+  αCtxSub R1 σ σ' -> αCtxSub R2 σ' σ'' -> αCtxSub R σ σ''.
+Admitted.
+
+Lemma αctx_ids idCtx σ σ' :
+  IdCtx idCtx -> αCtxSub nil σ σ' -> αCtxSub idCtx σ σ'.
 Admitted.

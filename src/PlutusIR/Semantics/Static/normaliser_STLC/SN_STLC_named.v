@@ -14,7 +14,9 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 From PlutusCert Require Import STLC_named STLC_named_typing ARS.
-From PlutusCert Require Import alpha alpha_rename rename util alpha_ctx_sub freshness alpha_freshness alpha_step step alpha_sub.
+From PlutusCert Require Import alpha_rename alpha rename util alpha_ctx_sub freshness alpha_freshness step alpha_sub.
+
+From PlutusCert Require Import alpha_step.
 
 
 
@@ -560,7 +562,7 @@ Proof with eauto.
   apply: L_nc => // u st. inv st => //.
   - inv H2. apply: ih1 => //. 
     assert ({α & prod (step ([x := t] s) (α)) (nil ⊢ α ~ [x := t] s0)}) 
-      as [alpha [Hred Halpha] ] by now eapply step_subst.
+      as [alpha [Hred Halpha] ] by now eapply step_subst_sigma.
     apply (L_cl h) in Hred.
     apply α_preserves_L with (s := alpha); assumption.
   - apply: ih2 => //. 
