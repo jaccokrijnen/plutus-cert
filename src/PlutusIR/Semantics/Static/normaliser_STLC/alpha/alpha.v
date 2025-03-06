@@ -1110,6 +1110,11 @@ Lemma alpha_extend_vacuous_ftv {x x' s s' ren}:
 Proof.
 Admitted.
 
+Lemma alpha_vacuous_R {s s' R1 R2}:
+  (forall x x', In (x, x') R1 -> prod (~ In x (ftv s)) (~ In x' (ftv s')) ) -> Alpha R2 s s' -> Alpha (R1 ++ R2) s s'.
+Proof.
+Admitted.
+
 (* definitions for that? *)
 Lemma alpha_extend_vacuous_right {s s' R R'}:
   (forall x, In x (map fst R') -> ~ In x (ftv s)) -> 

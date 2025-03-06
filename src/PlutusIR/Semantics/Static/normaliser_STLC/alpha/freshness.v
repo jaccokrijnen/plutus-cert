@@ -312,9 +312,23 @@ Lemma in_tv_value_then_in_tv_keys_env y y1 t (sigma : list (string * term)) :
 Proof.
 Admitted.
 
+(* BTV *)
+
 Lemma btv_lam {X A t} :
   In X (btv (tmlam X A t)).
 Proof.
   unfold btv.
   apply in_eq.
 Qed.
+
+Lemma not_btv_dc_lam {X Y A t} :
+  ~ In X (btv (tmlam Y A t)) -> ~ In X (btv t).
+Admitted.
+
+Lemma not_btv_dc_appl {X t1 t2} :
+  ~ In X (btv (tmapp t1 t2)) -> ~ In X (btv t1).
+Admitted.
+
+Lemma not_btv_dc_appr {X t1 t2} :
+  ~ In X (btv (tmapp t1 t2)) -> ~ In X (btv t2).
+Admitted.

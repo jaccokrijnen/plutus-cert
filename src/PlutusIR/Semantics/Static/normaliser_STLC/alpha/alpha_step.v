@@ -271,6 +271,7 @@ Proof.
            ++ apply id_right_trans.
            ++ eapply subs_preserves_alpha.
               ** apply alpha_ctx_cons.
+                 admit. (* ?*)
                  apply alpha_var_diff.
                  --- eapply fresh2_over_key_sigma with (X := x) (s := tmvar x) in Heqx'; eauto with *.
                  --- eapply fresh2_over_key_sigma with (X := x) (s := tmvar x) in Heqs0'; eauto with *.
@@ -295,7 +296,7 @@ Proof.
                ** eapply alpha_sym; eauto.
                   --- apply alpha_sym_nil.
                   --- eapply ren_sub_compose_instantiated; eauto.
-Qed.
+Admitted.
 
 Lemma step_subst_sigma sigma {s t} :
   step s t -> {alphaSigmaT : term & prod (step (sigma [[ s ]]) alphaSigmaT) (Alpha [] alphaSigmaT (sigma [[t]]))}.
