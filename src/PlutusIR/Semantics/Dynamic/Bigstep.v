@@ -19,6 +19,8 @@ Reserved Notation "t '=η=>' v"(at level 40).
 Reserved Notation "t '=[' j ']=>nr' v"(at level 40).
 Reserved Notation "t '=[' j ']=>r' v 'WITH' bs0"(at level 40).
 
+(* Make bindings non-strict so they can be used in strict let-rec
+ *)
 Inductive bindings_nonstrict : list binding -> list binding -> Prop :=
   | BNS_nil :
       bindings_nonstrict [] []
@@ -88,7 +90,7 @@ Inductive eval : term -> term -> nat -> Prop :=
       Apply s t =η=> v ->
       Apply s t =[0]=> v
   | E_Builtin_TyInst_Eta : forall t T v,
-      fully_applied (TyInst t T) ->
+      partially_applied (TyInst t T) ->
       TyInst t T =η=> v ->
       TyInst t T =[0]=> v
 
