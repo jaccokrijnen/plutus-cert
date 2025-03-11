@@ -332,3 +332,42 @@ Admitted.
 Lemma not_btv_dc_appr {X t1 t2} :
   ~ In X (btv (tmapp t1 t2)) -> ~ In X (btv t2).
 Admitted.
+
+Lemma btv_c_lam {X Y A t} :
+  In X (btv t) -> In X (btv (tmlam Y A t)).
+Admitted.
+
+Lemma btv_c_appl {X t1 t2} :
+  In X (btv t1) -> In X (btv (tmapp t1 t2)).
+Admitted.
+
+Lemma btv_c_appr {X t1 t2} :
+  In X (btv t2) -> In X (btv (tmapp t1 t2)).
+Admitted.
+
+(* TV *)
+Lemma not_tv_dc_lam {X Y A t} :
+  ~ In X (tv (tmlam Y A t)) -> ~ In X (tv t).
+Admitted.
+
+Lemma not_tv_dc_appl {X t1 t2} :
+  ~ In X (tv (tmapp t1 t2)) -> ~ In X (tv t1).
+Admitted.
+
+Lemma not_tv_dc_appr {X t1 t2} :
+  ~ In X (tv (tmapp t1 t2)) -> ~ In X (tv t2).
+Admitted.
+
+Lemma tv_c_lam {X Y A t} :
+  In X (tv t) -> In X (tv (tmlam Y A t)).
+Admitted.
+
+Lemma tv_c_appl {X t1 t2} :
+  In X (tv t1) -> In X (tv (tmapp t1 t2)).
+Admitted.
+
+Lemma tv_c_appr {X t1 t2} :
+  In X (tv t2) -> In X (tv (tmapp t1 t2)).
+Admitted.
+
+(* FTV *)

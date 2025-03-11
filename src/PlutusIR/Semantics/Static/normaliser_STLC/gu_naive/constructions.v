@@ -69,6 +69,9 @@ Fixpoint uniqueRHs_ (acc : list string) (R : list (string * string)) :=
 (* this is not exactly uniqueness as it allows for identical pairs, but that's ok for alpha, but not for uniqueness!*)
 Definition UniqueRhs (R : list (string * string)) := uniqueRHs_ nil R.
 
+Definition KindOfUniqueRhs (R : list (string * string)) (s : term) := 
+  forall x y, lookup x R = Some y -> AlphaVar R x y.
+
 (* fresh generates something not in R*)
 Lemma uniqueRhs_fresh x R used : UniqueRhs R -> UniqueRhs ((x, fresh_to_GU_ used R x)::R).
 Admitted.
@@ -756,16 +759,149 @@ Opaque sconstr2.
 Create HintDb sconstr2_db.
 Hint Resolve sconstr2_alpha_s sconstr2_alpha_t sconstr2_nc_sub sconstr2_nc_s sconstr2_nc_t sconstr2_nc_s_t : sconstr2_db.
 
+Require Import List.
+Import ListNotations.
+
+(* all elements in l1 not in l2*)
+Definition list_diff {A : Type} (eq_dec : forall x y : A, {x = y} + {x <> y})  
+  (l1 l2 : list A) : list A :=  
+  filter (fun x => if in_dec eq_dec x l2 then false else true) l1.
 
 (* We know the result is R ++ R' (i.e. prepended by argument), but that is not so 
     important here in the axiomatization, just that there exists one
 
   TODO: Can we use one of the other constructions, like the one for type_L?  
   I also feel like we may need conditions here on t?
+
+  this is not trivial because:
+  - suppose (x, x') in R.
+  - and now suppose x' in t.
+  - if then also x in t, then x gets renamed to x', and we have a clash
+  - solution: rename away all ftvs in t that are not free in s, to fresh stuff
+  - Then still Alpha R+ s s' (since nto free in s)
+
+  - then for all x in ftv t. if it is in (ftv s), then R(s) gives some x' (or if its not in there identical)
+      it is then also not in R+, so Alpha R' x x'.
+  - now suppose we find an x in ftv t that is not in ftv s. 
+      Then we rename it to smoething fresh. What if it was however in R already?
+
+    We can use to_GU_ with this special R probably to get the alpha behaviour.
+    R' will only have vars not in ftv s, so that should be fine:
+    problematic is: R does nto have to have UniqueRHS. Maybe we can remove it, or remove conditions of that lemma
   *)
-Lemma axiomatized_construction {R s s'} t :
-  Alpha R s s' -> {t' & { R' & Alpha R' t t' * Alpha R' s s'} }%type.
+
+
+Fixpoint strip_R' (R : list (string * string)) (acc : list (string * string)) :=
+  match R with 
+  | nil => ((nil : list (string * string)), acc) 
+  | (x, y) :: R' => match lookup x acc with
+                    | Some z => (strip_R' R' acc)  (* already found, ignore *)
+                    | None => (strip_R' R' (acc ++ (x, y)::nil))
+                    end
+  end.
+
+Require Import Coq.Program.Equality.
+
+Definition strip_R (R : list (string * string)) :=
+  snd (strip_R' R nil).
+
+Lemma strip_R_preserves_alpha R s s' :
+  Alpha R s s' -> Alpha (strip_R R) s s'.
+Proof.
+  intros.
+  generalize dependent R.
+  generalize dependent s'.
+  induction s; intros.
+  - inversion H; subst.
+    constructor.
+    (* no clue*)
+    admit.
+  - inversion H; subst.
+    constructor.
+    (* no clue*)
+    admit.
+  - inversion H; subst.
+    constructor.
+    + eapply IHs1; eauto.
+    + eapply IHs2; eauto.
 Admitted.
+
+(* forall ftvs in s, lookup that in R, to get (x, y) and add that to the new R*)
+
+Definition a_R_constr R (s s' : term) t : list (string * string) :=
+  let used := tv s ++ tv s' ++ tv t ++ (map fst R) ++ (map snd R) in
+
+  (* rename those ftvs in t, that are not ftvs in s to fresh stuff
+    all ftvs in s are already mapped by R to something else, t should follow the same 
+      behaviour for these ftvs, since they refer to the same ftv.
+
+      This also means we can easily add Rfr in front of R and still keep s-alpha
+  *)
+  let Rfr := (map (fun x => (x, fresh18 used)) (list_diff string_dec (ftv t) (ftv s))) in
+  let R_u := strip_R R in
+  let R_id := map (fun x => (x, x)) (ftv t) in
+  Rfr ++ R_u ++ R_id.
+
+Definition a_constr {R} {s s' : term} t : prod (list (string * string)) (term) :=
+  let R' := @a_R_constr R s s' t in
+  let used' := tv s ++ tv s' ++ tv t ++ (map fst R') ++ (map snd R') in 
+  (R', snd (to_GU_ used' R' t)).
+
+Lemma a_R_constr_UniqueRHS R R' s s' t :
+  R' = @a_R_constr R s s' t ->
+  UniqueRhs R'.
+Admitted.
+
+Lemma a_R_constr_alpha_s R s s' t R' :
+  R' = a_R_constr R s s' t ->
+  Alpha R s s' ->
+  Alpha R' s s'.
+Proof.
+Admitted.
+
+Lemma a_constr__t_alpha {R s s' t R' t'} :
+  (R', t') = @a_constr R s s' t ->
+  Alpha R' t t'.
+Proof.
+  unfold a_constr.
+  intros.
+  inversion H.
+  apply to_GU__alpha_.
+  - eapply a_R_constr_UniqueRHS. eauto.
+  - intros.
+    exists x.
+    apply in_app_iff.
+    right.
+    apply in_app_iff.
+    right.
+    eapply in_map with (f := (fun x0 : string =>
+(x0, x0))) in H0.
+    eauto.
+Qed.
+
+Lemma a_constr__s_alpha {R s s' t R' t'} :
+  (R', t') = @a_constr R s s' t ->
+  Alpha R s s' ->
+  Alpha R' s s'.
+Proof.
+  intros.
+  unfold a_constr in H.
+  inversion H.
+  eapply a_R_constr_alpha_s with (R' := R') (t := t) in H0; eauto.
+  subst.
+  eauto.
+Qed.
+
+(*
+
+  Forall x, y in R, we do lookup x R = Some y, then we prepend x, y to R.
+  Let R = (x, x'), (y, x')   and s = z   s' = z.
+
+  Now let t = tmapp y x' z. 
+
+
+
+*)
 
 
     (*
@@ -800,12 +936,7 @@ Admitted.
             - t': we have to look at ftvs in t'. they cannot be binders in s. But we renamed all x that are btv in s in t. so this is ok!
           - IN CONCLUSION: we need a third UHM property: Already added!
 *)
-Require Import List.
-Import ListNotations.
 
-Definition list_diff {A : Type} (eq_dec : forall x y : A, {x = y} + {x <> y})  
-  (l1 l2 : list A) : list A :=  
-  filter (fun x => if in_dec eq_dec x l2 then false else true) l1.
 
 
 Definition R_constr (t : term) (s : term) (sigma : list (string * term)) (X : string) : prod (list (string * string)) (list (string * string)) :=
@@ -828,6 +959,25 @@ Definition t_constr (t : term) (s : term) (sigma : list (string * term)) (X : st
   let (R1, R2) := R_constr t s sigma X in
   (snd (to_GU_ used (R1 ++ R2) t), R1 ++ R2). 
 
+Lemma t_constr__GU {t t' R s sigma X} :
+  (t', R) = t_constr t s sigma X ->
+  GU t'.
+Proof.
+  intros.
+  unfold t_constr in H.
+  remember (R_constr t s sigma X) as p.
+  destruct p as [R1 R2].
+  inversion H.
+  eapply to_GU__GU_; eauto.
+  - (* yes by construction. either they are mapped to something fresh (if they are bound in s or sigma)
+        or else there is identity subst in R2*)
+    admit.
+  - intros.
+    apply in_app_iff.
+    left.
+    auto.
+Admitted.
+
 Lemma t_constr__a_t {t t' R s sigma X }:
   (t', R) = t_constr t s sigma X ->
   Alpha R t t'.
@@ -847,6 +997,17 @@ Proof.
     apply in_app_iff.
     right.
     (* x in ftv t, so (x, x) in (map (x -> (x,x)) (ftv t))*)
+Admitted.
+
+Lemma t_constr__fresh_X_btv_t' {t t' R s sigma X} :
+  (t', R) = t_constr t s sigma X ->
+  ~ In X (btv t').
+Admitted.
+
+(* by construction we rename all ftvs in t that are binders in sigma*)
+Lemma t_constr__fresh_btv_env_sigma__ftv_t' {t t' R s sigma X} :
+  (t', R) = t_constr t s sigma X ->
+  (forall Y, In Y (btv_env sigma) -> ~ In Y (ftv t')).
 Admitted.
 
 Lemma R_constr__a_s {R1 R2 t s sigma X} :

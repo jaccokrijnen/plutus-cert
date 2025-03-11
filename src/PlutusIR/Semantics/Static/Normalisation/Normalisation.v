@@ -110,11 +110,13 @@ Inductive normalise : ty -> ty -> Prop :=
       normalise F Fn ->
       normalise T Tn ->
       normalise (Ty_IFix F T) (Ty_IFix Fn Tn)
-  | N_TyBuiltin : forall st,
+  | N_TyBuiltin : forall (st : DefaultUni),
       normalise (Ty_Builtin st) (Ty_Builtin st)
   .
 
 #[export] Hint Constructors normalise : core.
+
+
 
 (** Properties of type normalisation *)
 Lemma normalise_to_normal : forall T Tn,

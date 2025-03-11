@@ -180,6 +180,17 @@ Inductive NC : term -> list (string * term) -> Set :=
     (forall y, In y (btv s) -> ((y <> x) * (~ In y (ftv t)))) -> (* no capturing *)
     NC s ((x, t) :: sigma).
 
+Lemma nc_smaller {s sigma x t} : NC s ((x, t)::sigma) -> NC s sigma.
+Proof.
+  intros.
+  inversion H; subst.
+  auto.
+Qed.
+
+(* why doesnt sigma grow???
+  NC: forall btv in s, not in sigma
+  we remove a binder, thenw e should still have that all remaining btvs are not in the original sigma.
+*)
 Lemma nc_lam {x A s sigma} :
   NC (tmlam x A s) sigma -> NC s sigma.
 Admitted.
@@ -298,14 +309,14 @@ Proof.
   unfold Uhm.
   split; [split|]; intros.
   - specialize (uhm1 x H).
-    (* (not tv) decomposes *)
-    admit.
+    apply not_tv_dc_appl in uhm1. auto.
   - specialize (uhm2 x H). auto.
   - specialize (uhm3 x).
-    assert (In x (btv (tmapp s t))) by admit. (* btv composes*)
+    assert (In x (btv (tmapp s t))).
+    { apply btv_c_appl. auto. }
     specialize (uhm3 H0).
     auto.
-Admitted.
+Qed.
 
 Lemma Uhm_appr {s t sigma} :
   Uhm sigma (tmapp s t) -> Uhm sigma t.
@@ -320,19 +331,77 @@ Lemma Uhm_lam {x A s sigma t} :
     (forall y, In y (btv t) -> ~ In y (ftv_keys_env sigma)) -> (* uhm2*)
   (forall y, In y (btv s) -> ~ In y (ftv t)) ->  (* uhm3*)
 
+  (~ In x (btv t)) -> (* uhm6*)
+  GU t -> (* uhm7 *)
+  (forall y, In y (btv_env sigma) -> ~ In y (ftv t)) -> (* uhm8 *)
+  (~ In x (btv s)) -> (* uhm9 *)
 
   (* cannot combine uhm3 and uhm1: free vars in t can still be free vars in s*)
   Uhm sigma (tmlam x A s) -> Uhm ((x, t)::sigma) s.
 Proof.
-  intros.
+  intros uhm1' uhm2' uhm3' uhm6' uhm7' uhm8' uhm9' HUhm.
   unfold Uhm.
-  split; [split|]; intros.
+  split; [split|]; intros;
       (* ~ In tv decomposes through tmlam.
-        And we have control over binder names in t'? Yeah why not. They were not a problem yet before though...
-        Where do we need the GU sigma then? I think for the alphaCtxSub sigma sigma: renaming stuff that is binder in sigma is vacuous alpha subst, but if it is also ftv, then no longer. But if it is GU (elementwise for value side), then that canot happen
+        And we have control over binder names in t'? Yeah why not. 
+          They were not a problem yet before though...
+        Where do we need the GU sigma then? I think for the alphaCtxSub sigma sigma: 
+          renaming stuff that is binder in sigma is vacuous alpha subst, but if it is also ftv, 
+          then no longer. But if it is GU (elementwise for value side), then that canot happen
         That still allows the identity substitutions!
       *)
+  unfold Uhm in HUhm; destruct HUhm as [ [uhm1 uhm2] uhm3].
+  - (* x0 not in tv s.
+      Case x0 in btv t:
+        - then by uhm1' notin tv s
+      Case x0 in btv_env sigma:
+        - then by uhm1 and not_tv_dc_lam.
+    *)
 
+    admit.
+  - (* suppose x0 in btv t
+        - then by uhm2' not in ftv_keys_env sigma
+        - then also not in tv s
+        - what if x = x0?
+
+          suppose x in btv env sigma. then x not in tv (tmlam x A s). Contradiction.
+          Hence x not in btv_env sigma.
+          Hence x in btv t.
+
+       suppose x0 in btv_env sigma 
+        - then not in tv (tmlam x A s)   -> x0 <> x
+        - not in ftv_keys_env sigma
+    *)
+    destr_eqb_eq x0 x.
+    + exfalso.
+      simpl in H.
+      apply in_app_iff in H.
+      destruct H.
+      * apply uhm6' in H. (* uhm6' *)
+        auto.
+      * specialize (uhm1 x H).
+        contradiction uhm1.
+        simpl. left. reflexivity.
+    + simpl in H. apply in_app_iff in H.
+      destruct H.
+      * (* in btv t, then not in ftv of t by GU t (uhm7').
+          and
+          by uhm2' not in ftv keys env sigma.
+        *)
+        admit.
+      * (*
+          x: by x0 <> x.
+          t: by uhm8'
+          sigma: by uhm2
+        *)
+        admit.
+  - destr_eqb_eq x0 x.
+    + contradiction. (* by uhm9'*)
+    + (*
+        x : by x0 <> x
+        t : by uhm3'
+        sigma: By uhm3
+    *)
 Admitted.
 
 

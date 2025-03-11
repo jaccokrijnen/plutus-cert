@@ -116,6 +116,7 @@ Proof.
     split; constructor; auto.
 Qed.
 
+
 (* Examples
 λ x. x is GU_vars
 λ x. y is GU_vars
@@ -128,7 +129,7 @@ Qed.
 
 (* If a term has globally unique binders, then it has unique binders*)
 
-Inductive step_gu_naive : term -> term -> Set :=
+Inductive step_gu_naive : term -> term -> Type :=
 | step_gu_naive_intro s s' t : 
     Alpha [] s s' ->
     GU s' ->
@@ -140,10 +141,10 @@ Inductive step_gu_naive : term -> term -> Set :=
     step_gu_naive s t. *)
 
 (* used to be prop (TODO: Defined also in SN_STCL_named )*)
-Inductive sn {e : term -> term -> Set } x : Set :=
+Inductive sn {X : Type} {e : X -> X -> Type } x : Type :=
 | SNI : (forall y, e x y -> sn y) -> sn x.
 
-Notation SN_na := (@sn step_gu_naive).
+Notation SN_na := (@sn term step_gu_naive).
 
 Lemma step_gu_naive_preserves_alpha {s} {s'} {t} R :
   Alpha R s t -> step_gu_naive s s' -> {t' & prod (step_gu_naive t t') (Alpha R s' t')}.
@@ -176,7 +177,7 @@ Proof.
 Qed.
 
 
-Inductive star {e : term -> term -> Set } (x : term) : term -> Set :=
+Inductive star {e : term -> term -> Type } (x : term) : term -> Type :=
 | starR : star x x
 | starSE y z : star x y -> e y z -> star x z.
 
@@ -184,7 +185,7 @@ Inductive star {e : term -> term -> Set } (x : term) : term -> Set :=
 (** **** Many-Step Reduction 
 TODO: See if we can use the star from autosubst ARS again. (uses Prop instead of Set)
 *)
-Inductive red_gu_na : term -> term -> Set :=
+Inductive red_gu_na : term -> term -> Type :=
 | red_gu_na_star s t t':
      step_gu_naive s t -> 
      red_gu_na t t' ->
@@ -227,11 +228,18 @@ Proof.
     - eauto with α_eq_db.
     - exact Hstep.
   }
-  eapply H; eauto with α_eq_db.
+  eapply X; eauto with α_eq_db.
 Qed.
 
-Lemma sn_preimage {e : term -> term -> Set} (h : term -> term) x :
-  (forall x y, e x y -> e (h x) (h y)) -> @sn e (h x) -> @sn e x.
+(** Types *)
+Inductive term2 :=
+  | tm2var : string -> term2
+  | tm2lam : string -> type -> term2 -> term2
+  | tm2app : term2 -> term2 -> term2
+.
+
+Lemma sn_preimage2 {e2 : term2 -> term2 -> Type} {e : term -> term -> Type} (h : term2 -> term) (x : term2) :
+  (forall x y, e2 x y -> e (h x) (h y)) -> @sn term e (h x) -> @sn term2 e2 x.
 Proof.
   intros A B.
   remember (h x) as v. (* this allows us to keep B : sn v as an hypothesis*)
@@ -242,9 +250,30 @@ Proof.
   apply SNI.
   intros y C.
   apply A in C.
-  specialize (H (h y)).
+  
+  specialize (X (h y)).
   rewrite <- eqn in C.
-  eapply H.
+  eapply X.
+  - assumption.
+  - exact A.
+  - reflexivity.
+Qed.
+
+Lemma sn_preimage {e : term -> term -> Type} (h : term -> term) x :
+  (forall x y, e x y -> e (h x) (h y)) -> @sn term e (h x) -> @sn term e x.
+Proof.
+  intros A B.
+  remember (h x) as v. (* this allows us to keep B : sn v as an hypothesis*)
+  generalize dependent h.
+  generalize dependent x.
+  induction B.
+  intros x0 h A eqn.
+  apply SNI.
+  intros y C.
+  apply A in C.
+  specialize (X (h y)).
+  rewrite <- eqn in C.
+  eapply X.
   - assumption.
   - exact A.
   - reflexivity.
@@ -255,7 +284,7 @@ Idea: Previous lemma sn_preimage above strengthened IH with remember (h x) as v.
 We strenghen IH with (h x) ~ v.
  *)
 Lemma sn_preimage_α' (h : term -> term) x v :
-  (forall x y, step_gu_naive x y -> {y_h & prod (step_gu_naive (h x) y_h) (nil ⊢ y_h ~ (h y))}) -> @sn step_gu_naive v -> nil ⊢ v ~ h x -> @sn step_gu_naive x.
+  (forall x y, step_gu_naive x y -> {y_h & prod (step_gu_naive (h x) y_h) (nil ⊢ y_h ~ (h y))}) -> @sn term step_gu_naive v -> nil ⊢ v ~ h x -> @sn term step_gu_naive x.
 Proof.
   intros A B Halpha.
   generalize dependent h.
@@ -293,16 +322,16 @@ Proof.
       + eapply alpha_sym. apply alpha_sym_nil. exact alphat'.
       + assumption.
   }
-  destruct H0 as [yh' [ehy' yh_alpha'] ].
-  specialize (H yh').
-  eapply H.
+  destruct H as [yh' [ehy' yh_alpha'] ].
+  specialize (X yh').
+  eapply X.
   - assumption.
   - exact A.
   - assumption.
 Qed.
 
 Lemma sn_preimage_α (h : term -> term) x :
-  (forall x y, step_gu_naive x y -> {y_h & prod (step_gu_naive (h x) y_h) (nil ⊢ y_h ~ (h y))}) -> @sn step_gu_naive (h x) -> @sn step_gu_naive x.
+  (forall x y, step_gu_naive x y -> {y_h & prod (step_gu_naive (h x) y_h) (nil ⊢ y_h ~ (h y))}) -> @sn term step_gu_naive (h x) -> @sn term step_gu_naive x.
 Proof.
   intros A B.
   apply sn_preimage_α' with (v := h x) (h := h); eauto.
@@ -373,8 +402,20 @@ Proof.
   intros.
   induction sigma.
   - reflexivity.
-  - admit.
-Admitted.
+  - destruct a as [a1 a2].
+    simpl in H.
+    apply de_morgan2 in H.
+    destruct H as [H1 H2].
+    specialize (IHsigma H2).
+    simpl.
+
+    
+    rewrite <- String.eqb_neq in H1.
+    simpl.
+    rewrite H1.
+    unfold psubs in IHsigma.
+    assumption.
+Qed.
 
 
 Lemma subs_vac_var sigma x :
@@ -384,15 +425,42 @@ Proof.
   intros.
   induction sigma.
   - reflexivity.
-  - admit.
-Admitted.
+  - simpl.
+    destruct a as [a1 a2].
+    simpl in H.
+    apply de_morgan2 in H.
+    destruct H as [H1 H2].
+    specialize (IHsigma H2).
+    rewrite IHsigma.
+    rewrite <- String.eqb_neq in H1.
+    simpl.
+    rewrite H1.
+    reflexivity.
+Qed.
 
 (* need also handle btv, since substitution is nto capture avoiding*)
 Lemma sub_vac x t s :
  ~ In x (ftv s) ->
  ~ In x (btv s) ->
  sub x t s = s.
-Admitted.
+Proof.
+  intros.
+  induction s; simpl; auto.
+  - destr_eqb_eq x s; auto.
+    unfold ftv in H. contradiction H. apply in_eq.
+  - f_equal.
+    assert (~ In x (ftv s0)).
+    {
+      simpl in H0.
+      apply ftv_lam_negative in H; auto.
+    }
+    specialize (IHs H1 (not_btv_dc_lam H0)). auto.
+  - f_equal.
+    + eapply IHs1; eauto.
+      eapply not_ftv_app_not_left; eauto. eapply not_btv_dc_appl. eauto.
+    + eapply IHs2; eauto.
+      eapply not_ftv_app_not_right; eauto. eapply not_btv_dc_appr. eauto.
+Qed.
 (* looks like sub_vacuous maybe?*)
 
 
@@ -437,14 +505,32 @@ Definition subs' sigma s := subs sigma (to_GU s). (* something like that*)
 
 *)
 Lemma psubs_nil s : psubs nil s = s.
-Admitted.
+Proof.
+  induction s; auto.
+  - simpl. f_equal. auto.
+  - simpl. f_equal; auto.
+Qed.
+
+Fixpoint remove_ids (sigma : list (string * term)) : list (string * term) :=
+  match sigma with 
+  | nil => nil
+  | (x, tmvar y)::sigma' => if String.eqb x y then remove_ids sigma' else (x, tmvar y)::(remove_ids sigma')
+  | (x, t)::sigma' => (x, t)::(remove_ids sigma')
+  end.
 
 Inductive ParSeq : list (string * term) -> Set :=
 | ParSeq_nil : ParSeq []
 | ParSeq_cons x t sigma :
     ParSeq sigma -> 
     (* ~ In x (List.concat (map ftv (map snd sigma))) ->  *)
-    ~ In x (ftv_keys_env sigma) -> (* UPDATE Feb 27: we cannot have that x is a key in sigma either
+
+    (* we do remove_ids, since identity substitutions have no effect 
+      (and can thus not break par <=> seq)
+      hence if we have x => t, and there was an x => x before, then in tha par case
+        this is ignored of course,
+        and in the seq case, it is applied, but since it is id, it is like not applying.
+      *)
+    ~ In x (ftv_keys_env (remove_ids sigma)) -> (* UPDATE Feb 27: we cannot have that x is a key in sigma either
       look e.g. at (x, a)::(x, b). As a sequential sub applied to tmvar x, we get b.
                                     As a parallel, we get a.
 
@@ -469,6 +555,89 @@ Inductive ParSeq : list (string * term) -> Set :=
 *)
 Lemma parseq_smaller {sigma x t} :
   ParSeq ((x, t)::sigma) -> ParSeq sigma.
+Proof.
+  intros.
+  inversion H; subst.
+  auto.
+Qed.
+
+(* Identity substitutions: Given a typing context E, give a list of term substitutions matching this E*)
+Fixpoint id_subst (E : list (string * type)) : list (string * term) :=
+  match E with
+  | nil => nil
+  | cons (x, A) E' => cons (x, tmvar x) (id_subst E')
+  end.
+
+
+Inductive IdSubst : list (string * term) -> Set :=
+  | id_subst_nil : IdSubst nil
+  | id_subst_cons : forall x sigma , IdSubst sigma -> IdSubst ((x, tmvar x)::sigma).
+
+
+Lemma id_subst_is_IdSubst E :
+  IdSubst (id_subst E).
+Proof.
+  induction E.
+  - constructor.
+  - simpl. destruct a. constructor. assumption.
+Qed.
+
+Lemma id_subst__id s σ :
+  (* NC s σ ->  *)
+  IdSubst σ -> 
+  subs σ s = s. (* even when this capturs, it doesnt matter, since it captures something and then substiutes it for the same name*)
+Proof.
+  intros.
+  induction s.
+  - induction σ.
+    + reflexivity.
+    + simpl. destruct a as [x1 x2].
+      inversion H; subst.
+      specialize (IHσ H1).
+      rewrite IHσ.
+      destr_eqb_eq x1 s.
+      * simpl. rewrite String.eqb_refl. reflexivity.
+      * simpl. rewrite <- String.eqb_neq in H0. rewrite H0. reflexivity.
+  - autorewrite with subs_db.
+    f_equal.
+    apply IHs.
+  - autorewrite with subs_db.
+    f_equal; eauto.
+Qed.
+
+Lemma remove_id_subs_no_effect sigma s :
+  subs sigma s = subs (remove_ids sigma) s.
+Proof.
+  induction sigma.
+  - reflexivity.
+  - destruct a as [a1 s1].
+    simpl.
+    induction s1.
+    + simpl. f_equal.
+      destr_eqb_eq a1 s0.
+      * rewrite <- IHsigma.
+        assert (IdSubst ((s0, tmvar s0)::nil)).
+        {
+          constructor. constructor.
+        }
+        rewrite <- single_subs_is_sub.
+        apply id_subst__id; auto.
+      * simpl. f_equal. auto.
+    + simpl. f_equal. auto.
+    + simpl. f_equal. auto.
+Qed.
+
+Lemma ftv_keys_env__no_keys sigma x :
+  ~ In x (ftv_keys_env sigma) -> ~ In x (map fst sigma).
+Admitted.
+
+Lemma ftv_keys_env__no_values sigma x :
+  ~ In x (ftv_keys_env sigma) -> (forall val, In val (map snd sigma) -> ~ In x (ftv val)).
+Admitted.
+
+Lemma ftv_keys_env_helper sigma x :
+  ~ In x (map fst sigma) -> (forall ftvs, In ftvs (map snd sigma) -> ~ In x (ftv ftvs)) 
+    -> ~ In x (ftv_keys_env sigma).
 Admitted.
 
 Lemma psubs_to_subs {s sigma} :
@@ -487,9 +656,13 @@ Proof.
       * simpl. rewrite String.eqb_refl.
         assert (subs sigma (tmvar s) = (tmvar s)).
         {
-          apply subs_vac_var.
           inversion H; subst.
-          (* well yes.. definition mismatch, but trivial *) admit.
+          assert (subs (remove_ids sigma) (tmvar s) = (tmvar s)).
+          {
+            apply subs_vac_var.
+            apply ftv_keys_env__no_keys in H4. auto.
+          }
+          rewrite remove_id_subs_no_effect. auto.
         }
         rewrite H0.
         simpl.
@@ -502,10 +675,19 @@ Proof.
         {
           
           rewrite <- single_subs_is_sub.
+          assert (subs sigma (tmvar s) = subs (remove_ids sigma) (tmvar s)).
+          {
+            apply remove_id_subs_no_effect.
+          }
+          repeat rewrite H1.
           apply sub_vac. (* NOTE: Because this also talks about btvs, that is why we needed to add the btv condeition in parseq*)
           inversion H; subst.
-          - (* by a1 not s, and a1 not in ftv keys env sigma and subs does not introduce new ftv*) admit.
-          - inversion H; subst. (* by a1 not in btv_env sigma and subs does not introduce new btv*) admit.
+          - 
+            (* by a1 not s, and a1 not in ftv keys env sigma and subs 
+              does not introduce new ftv*) admit.
+          - inversion H; subst. 
+            (* by a1 not in btv_env sigma and subs does 
+              not introduce new btv*) admit.
         }
         rewrite H1.
         eapply IHsigma.
@@ -546,7 +728,9 @@ Proof.
 Admitted.
 
 Lemma single_parseq x t : ParSeq [(x, t)].
-Admitted.
+Proof.
+  now repeat constructor.
+Qed.
 
 Lemma sub_vacuous x t s :
   ~ In x (ftv s) -> NC s ((x, t)::nil) -> sub x t s = s.
@@ -572,19 +756,6 @@ Proof.
     + eapply IHs2; eauto. 
       eapply not_ftv_app_not_right. eauto. eapply nc_app_r; eauto.
 Qed.
-
-Lemma ftv_keys_env__no_keys sigma x :
-  ~ In x (ftv_keys_env sigma) -> ~ In x (map fst sigma).
-Admitted.
-
-Lemma ftv_keys_env__no_values sigma x :
-  ~ In x (ftv_keys_env sigma) -> (forall val, In val (map snd sigma) -> ~ In x (ftv val)).
-Admitted.
-
-Lemma ftv_keys_env_helper sigma x :
-  ~ In x (map fst sigma) -> (forall ftvs, In ftvs (map snd sigma) -> ~ In x (ftv ftvs)) 
-    -> ~ In x (ftv_keys_env sigma).
-Admitted.
 
 (* substitutions do not introduce new free variables 
 *)
@@ -908,11 +1079,11 @@ Proof with eauto with to_GU'_db.
   - eapply @alpha_sym; auto. constructor. apply to_GU'__alpha.
   -  *)
   intros.
-    rewrite <- single_subs_is_psub in H0.
-    eapply α_preserves_SN_R with (s := psubs ((X, T)::nil) s) (s' := psubs((X, T)::nil) (to_GU' X T s)) in H0.
+    rewrite <- single_subs_is_psub in X0.
+    eapply α_preserves_SN_R with (s := psubs ((X, T)::nil) s) (s' := psubs((X, T)::nil) (to_GU' X T s)) in X0.
     {
-      rewrite single_subs_is_psub in H0.
-      revert H0.
+      rewrite single_subs_is_psub in X0.
+      revert X0.
       
     apply (sn_preimage_α (h := sub_gu X T)) => x y. 
     intros.
@@ -938,7 +1109,7 @@ Proof with eauto with to_GU'_db.
   - constructor. constructor. constructor. apply alpha_refl. constructor.
 Qed.
 
-Definition cand := term -> Set.
+Definition cand := term -> Type.
 
 Definition neutral (s : term) : bool :=
   match s with
@@ -946,7 +1117,7 @@ Definition neutral (s : term) : bool :=
     | _ => true
   end.
 
-Record reducible (P : cand) : Set := {
+Record reducible (P : cand) : Type := {
   p_sn : forall s, P s -> SN_na s;
   p_cl : forall s t, P s -> step_gu_naive s t -> P t;
   p_nc : forall s, neutral s -> (forall t, step_gu_naive s t -> P t) -> P s
@@ -984,9 +1155,9 @@ Proof.
   generalize dependent s'.
   generalize dependent R.
   induction A; intros.
-  - simpl. simpl in H0.
+  - simpl. simpl in X.
     eapply α_preserves_SN_R with (s := s); eauto.
-  - simpl in H0.
+  - simpl in X.
     simpl.
     intros t' Ht.
 
@@ -997,14 +1168,18 @@ Proof.
       eauto with α_eq_db.
     }
 
-    destruct (axiomatized_construction t' H1) as [t [R_ [Ha_t0 Ha_s] ] ].
+    remember (@a_constr R' s' s t') as Rt.
+    destruct Rt as [R_ t].
     
     (* first arg of R_extender needs to live in the same alpha land as the last*)
     eapply (IHA2 (sym_alpha_ctx R_) _ (tmapp s t)).
     + eapply @alpha_sym. eapply sym_alpha_ctx_is_sym.
       constructor; eauto.
+      * eapply a_constr__s_alpha; eauto.
+      * eapply a_constr__t_alpha; eauto.
     + 
-    eapply H0. eapply (IHA1 R_ t t'); eauto with α_eq_db.
+    eapply X. eapply (IHA1 R_ t t'); eauto with α_eq_db.
+    eapply a_constr__t_alpha; eauto.
 Qed.
 
 Lemma reducible_sn : reducible SN_na.
@@ -1028,13 +1203,13 @@ Proof with eauto using step_gu_naive.
   - constructor.
     + move=> s h. apply: (@sn_closedL (tmvar "x")). apply: (p_sn (P := L B))...
       eapply h. eapply reducible_var; eauto.
-    + intros. specialize (H t0 H1).
-      eapply step_gu_naive_app_l with (s1 := s) (t1 := t) (s2 := t0) in H0. 
-      * destruct H0 as [t1' [ Ha_t [s2' [Ha_s2' Hstep] ] ] ].
-        eapply p_cl with (s := (tmapp s t0)) in H; auto.
+    + intros. specialize (X t0 X0).
+      eapply step_gu_naive_app_l with (s1 := s) (t1 := t) (s2 := t0) in H. 
+      * destruct H as [t1' [ Ha_t [s2' [Ha_s2' Hstep] ] ] ].
+        eapply p_cl with (s := (tmapp s t0)) in X; auto.
         2: exact Hstep.
         eapply α_preserves_L_R.
-        2: exact H.
+        2: eauto.
         constructor; eapply alpha_sym; eauto; constructor.
     + move=> s ns h t la.
       have snt := p_sn ih1 la.
@@ -1062,7 +1237,7 @@ Qed.
 
 Corollary L_sn A s : L A s -> SN_na s.
 Proof. intros Las. assert (reducible (L A)) by apply (L_reducible A).
-   apply (p_sn H). assumption.
+   apply (p_sn X). assumption.
 Qed.
 
 Corollary L_cl T s t : L T s -> step_gu_naive s t -> L T t.
@@ -1095,7 +1270,7 @@ Proof.
 Qed.
 
 Definition EL (Gamma : list (string * type)) 
-          (sigma : list (string * term)) : Set :=
+          (sigma : list (string * term)) : Type :=
   forall x T, lookup x Gamma = Some T ->
     { t & prod (lookup x sigma = Some t) (L T t)}.
 
@@ -1110,15 +1285,15 @@ Proof.
   - exists t.
     split.
     + simpl. rewrite String.eqb_refl. reflexivity.
-    + simpl in H1. rewrite String.eqb_refl in H1. inversion H1. subst. assumption.
-  - simpl in H1. rewrite <- String.eqb_neq in H2. rewrite String.eqb_sym in H2. rewrite H2 in H1.
-    unfold EL in H.
-    specialize (H x0 T0 H1).
+    + simpl in H. rewrite String.eqb_refl in H. inversion H. subst. assumption.
+  - simpl in H. rewrite <- String.eqb_neq in H0. rewrite String.eqb_sym in H0. rewrite H0 in H.
+    unfold EL in X.
+    specialize (X x0 T0 H).
     
-    destruct H as [t' [H3 H4] ].
+    destruct X as [t' [H3 H4] ].
     exists t'.
     split.
-    + simpl. rewrite H2. assumption.
+    + simpl. rewrite H0. assumption.
     + assumption.
 Qed.
 
@@ -1208,12 +1383,152 @@ Proof.
     + apply alpha_refl. constructor.
 Qed.
 
+Lemma step_gu_na_appl_fold {s1 s2 t1 }:
+  step_gu_naive s1 s2 -> {app & step_gu_naive (tmapp s1 t1) app * Alpha [] app (tmapp s2 t1)}%type.
+Proof.
+  intros Hstep_gu.
+  inversion Hstep_gu; subst.
+  assert (Hgu_a: nil ⊢ (tmapp s1 t1) ~ (to_GU (tmapp s1 t1))) by apply to_GU__alpha.
+  inversion Hgu_a; subst.
+
+  assert (Hstep_na': {s2' & step_naive s3 s2' * Alpha [] s2 s2'}%type).
+  {
+    eapply step_naive_preserves_alpha2; eauto.
+    - assert (Hgu_app: GU (to_GU (tmapp s1 t1))) by apply to_GU__GU.
+      rewrite <- H5 in Hgu_app.
+      eapply gu_app_l. eauto.
+    - assert (Alpha [] s1 (to_GU s1)) by apply to_GU__alpha.
+      eauto with α_eq_db.
+  }
+  destruct Hstep_na' as [s2' [Hstep_s2' Ha_s2'] ].
+  exists (tmapp s2' t2).
+  split.
+  - eapply step_gu_naive_intro with (s' := tmapp s3 t2).
+    + rewrite H5. auto.
+    + rewrite H5. apply to_GU__GU.
+    + apply step_appL. auto.
+  - constructor; eauto with α_eq_db.
+Qed.
+
+Lemma step_gu_na_appr_fold {s1 t1 t2 } : 
+  step_gu_naive t1 t2 -> {app & step_gu_naive (tmapp s1 t1) app * Alpha [] app (tmapp s1 t2)}%type.
+Proof.
+  intros Hstep_gu.
+  inversion Hstep_gu; subst.
+  assert (Hgu_a: nil ⊢ (tmapp s1 t1) ~ (to_GU (tmapp s1 t1))) by apply to_GU__alpha.
+  inversion Hgu_a; subst.
+
+  assert (Hstep_na': {t2' & step_naive t3 t2' * Alpha [] t2 t2'}%type).
+  {
+    eapply step_naive_preserves_alpha2; eauto.
+    - assert (Hgu_app: GU (to_GU (tmapp s1 t1))) by apply to_GU__GU.
+      rewrite <- H5 in Hgu_app.
+      eapply gu_app_r. eauto.
+    - assert (Alpha [] t1 (to_GU t1)) by apply to_GU__alpha.
+      eauto with α_eq_db.
+  }
+  destruct Hstep_na' as [t2' [Hstep_t2' Ha_t2'] ].
+  exists (tmapp s2 t2').
+  split.
+  - eapply step_gu_naive_intro with (s' := tmapp s2 t3).
+    + rewrite H5. auto.
+    + rewrite H5. apply to_GU__GU.
+    + apply step_appR. auto.
+  - constructor; eauto with α_eq_db.
+Qed.
+
+Lemma red_gu_na_trans s t u :
+  red_gu_na s t -> red_gu_na t u -> red_gu_na s u.
+Proof.
+  intros.
+  generalize dependent u.
+  induction H; intros.
+  - generalize dependent s.
+    generalize dependent t.
+    induction H0; intros.
+    + eapply IHred_gu_na with (t := t0).
+      * eapply IHred_gu_na0.
+        eapply red_gu_na_star; eauto. constructor.
+      * intros.
+        eapply IHred_gu_na0.
+        eapply red_gu_na_star; eauto.
+      * auto.
+    + eapply red_gu_na_star; eauto.
+  - induction H0.
+    + eapply red_gu_na_star; eauto.
+    + constructor.
+Qed.
+
+Lemma red_gu_na_appl_fold {s1 s2 t} :
+  red_gu_na s1 s2 -> {app & red_gu_na (tmapp s1 t) app * Alpha [] app (tmapp s2 t)}%type.
+Proof.
+  intros H0.
+  induction H0.
+    + destruct IHred_gu_na as [app [Hred Halpha] ].
+      eapply (@step_gu_na_appl_fold) with (s1 := s) (t1 := t) in s0.
+      destruct s0 as [app' [Hred' Halpha'] ].
+      assert ({app'' & red_gu_na app' app'' * Alpha [] app app''}%type).
+      {
+        eapply @red_gu_naive_preserves_alpha with (s := tmapp t0 t); eauto with α_eq_db.
+      }
+      destruct H as [app'' [Hred'' Halpha'' ] ].
+      exists app''.
+      split.
+      * eapply red_gu_na_star.
+        -- exact Hred'.
+        -- eauto.
+      * eauto with α_eq_db.
+    + exists (tmapp s t).
+      split.
+      * apply red_gu_na_nil.
+      * apply alpha_refl. constructor. 
+Qed.
+
+Lemma red_gu_na_appr_fold {s1 t1 t2} :
+  red_gu_na t1 t2 -> {app & red_gu_na (tmapp s1 t1) app * Alpha [] app (tmapp s1 t2)}%type.
+Proof.
+  intros H0.
+  induction H0.
+    + destruct IHred_gu_na as [app [Hred Halpha] ].
+      eapply (@step_gu_na_appr_fold) with (s1 := s1) (t1 := s) (t2 := t) in s0.
+      destruct s0 as [app' [Hred' Halpha'] ].
+      assert ({app'' & red_gu_na app' app'' * Alpha [] app app''}%type).
+      {
+        eapply @red_gu_naive_preserves_alpha with (s := tmapp s1 t); eauto with α_eq_db.
+      }
+      destruct H as [app'' [Hred'' Halpha'' ] ].
+      exists app''.
+      split.
+      * eapply red_gu_na_star.
+        -- exact Hred'.
+        -- eauto.
+      * eauto with α_eq_db.
+    + exists (tmapp s1 s).
+      split.
+      * apply red_gu_na_nil.
+      * apply alpha_refl. constructor.
+Qed.
 
 Lemma red_gu_na_app_fold {s1 s2 t1 t2} :
   red_gu_na s1 s2 -> red_gu_na t1 t2 -> {app & red_gu_na (tmapp s1 t1) app * Alpha [] app (tmapp s2 t2)}%type.
 Proof.
   intros.
-Admitted.
+  eapply @red_gu_na_appl_fold with (t := t1) in H.
+  destruct H as [app [Hred Halpha] ].
+
+  eapply @red_gu_na_appr_fold with (s1 := s2) in H0.
+  destruct H0 as [app' [Hred' Halpha'] ].
+
+  assert ({app'' & red_gu_na app app'' * Alpha [] app' app''}%type).
+  {
+    eapply @red_gu_naive_preserves_alpha with (s := tmapp s2 t1); eauto with α_eq_db.
+  }
+  destruct H as [app'' [Hred'' Halpha'' ] ].
+  exists app''.
+  split.
+  - eapply red_gu_na_trans; eauto.
+  - eauto with α_eq_db.
+Qed.
 
 
 Lemma red_beta x s t1 t2 : 
@@ -1303,7 +1618,7 @@ Proof with eauto with α_eq_db gu_nc_db.
   clear sns.
   generalize dependent s.
   generalize dependent t.
-  induction H.
+  induction X.
   intros t snt s0 Ha Hnc.
 
   (* Now create IH for other step *)
@@ -1311,18 +1626,17 @@ Proof with eauto with α_eq_db gu_nc_db.
   revert snt.
   elim=> {}.
   intros.
-  rename H0 into H10.
+  rename X0 into H10.
 
   apply: L_nc => // u st. 
-  inversion st; subst. inv H0. inversion H6; subst. 
+  inversion st; subst. inv H. inversion H5; subst. 
 
-  inv H2 => //.
+  inv H1 => //.
   - eapply α_preserves_L_R with (R := (nil)); eauto.
-    rewrite <- single_subs_is_sub.
-    eapply alpha_rename_binder_stronger...
-    + constructor. constructor.
-     
-  - inv H5.
+    (* repeat rewrite <- single_subs_is_sub. *)
+    eapply alpha_rename_binder_stronger with (Rs := ((x, y0)::nil))...
+    constructor. constructor.
+  - inv H4.
     assert (Alpha [(y, y0)] (to_GU x0) s4).
     {
       eapply @alpha_trans with (ren := (y, y)::nil) (t := x0).
@@ -1333,13 +1647,10 @@ Proof with eauto with α_eq_db gu_nc_db.
     assert ({s5' & step_naive (to_GU x0) s5' * Alpha [(y0, y)] s5 s5'}%type).
     {
 
-      eapply step_naive_preserves_alpha2 with (s := s4) (t:=s5) (s' := (to_GU x0)).
-      - eauto with gu_nc_db.
-      - apply to_GU__GU.
-      - eauto with α_eq_db.
-      - assumption.
+      eapply step_naive_preserves_alpha2 with (s := s4) (t:=s5) (s' := (to_GU x0))...
+      apply to_GU__GU.
     }
-    destruct H2 as [s5' [Hstep_na_s5' Ha_s5'] ].
+    destruct H1 as [s5' [Hstep_na_s5' Ha_s5'] ].
     assert (Hstep_s5': step_gu_naive x0 s5').
     {
       apply step_gu_naive_intro with (s' := to_GU x0).
@@ -1349,8 +1660,8 @@ Proof with eauto with α_eq_db gu_nc_db.
     }
 
     eapply α_preserves_L_R with (s := tmapp (tmlam y B s5') x1) (R := nil)...
-    specialize (H s5' Hstep_s5' x1).
-    clear Ha_s5'. clear H7. clear st. clear s5.
+    specialize (X s5' Hstep_s5' x1).
+    clear Ha_s5'. clear H7. clear st. 
     inv Hstep_s5'.
     assert (HSN_x1: SN_na x1) by now constructor.
 
@@ -1360,8 +1671,8 @@ Proof with eauto with α_eq_db gu_nc_db.
       eapply step_naive_preserves_alpha2 with (s := s') (s' := s0) (t := s5')...
       eapply @alpha_trans with (ren := (y, y)::nil) (ren' := (y, x)::nil) (t := x0)...
     }
-    destruct H5 as [s'_a [ Hstep_s'_a Ha_s'_a ] ].
-    specialize (H HSN_x1 (to_GU' x x1 s'_a)). (* just renaming binders*)
+    destruct H4 as [s'_a [ Hstep_s'_a Ha_s'_a ] ].
+    specialize (X HSN_x1 (to_GU' x x1 s'_a)). (* just renaming binders*)
     remember (to_GU' x x1 s'_a) as s'_a1.
     assert (((y, x)::nil) ⊢ s5' ~ s'_a1).
     {
@@ -1369,7 +1680,7 @@ Proof with eauto with α_eq_db gu_nc_db.
       eapply alpha_extend_ids. constructor. constructor. subst. eapply to_GU'__alpha.
     }
 
-    eapply H; eauto.
+    eapply X; eauto.
 
     * subst. eapply to_GU'__GU. 
     * subst. eapply to_GU'__NC.
@@ -1401,7 +1712,7 @@ Proof with eauto with α_eq_db gu_nc_db.
         - eapply step_naive_pererves_nc_ctx with (s := s0); eauto.
           eapply alpha_preserves_nc_ctx; eauto.
       }
-      destruct H0 as [a [Hred_a Ha_a] ].
+      destruct H as [a [Hred_a Ha_a] ].
       eapply (L_cl_star) in h.
       * eapply α_preserves_L_R with (R := nil); eauto.
       * assumption.
@@ -1431,7 +1742,36 @@ Proof.
 Qed.
 
 
-
+Lemma ftv_keys_env_sigma_remove x sigma :
+  In x (ftv_keys_env (remove_ids sigma)) -> In x (ftv_keys_env sigma).
+Proof.
+  intros.
+  induction sigma.
+  - simpl in H. contradiction.
+  - simpl in H.
+    destruct a as [y t].
+    simpl in H.
+    destruct t.
+    + destr_eqb_eq y s.
+      * simpl. right. right. apply IHsigma. auto.
+      * destruct H.
+        -- simpl. left. auto.
+        -- simpl. apply in_app_or in H. destruct H.
+          ++ simpl. right. left. auto. apply ftv_var in H. auto.
+          ++ simpl. right. right. apply IHsigma. auto.
+    + destruct H.
+      * subst. simpl. left. reflexivity.
+      * apply in_app_or in H.
+        destruct H.
+        -- simpl. right. apply in_or_app. left. assumption.
+        -- simpl. right. apply in_or_app. right. apply IHsigma. auto.
+    + destruct H.
+      * subst. simpl. left. reflexivity.
+      * apply in_app_or in H.
+        destruct H.
+        -- simpl. right. apply in_or_app. left. assumption.
+        -- simpl. right. apply in_or_app. right. apply IHsigma. auto.
+Qed.
 
 
 
@@ -1467,6 +1807,12 @@ Proof with eauto using L_sn.
       - intros. eapply t_constr__uhm1 in Heqt'R; eauto.
       - intros. eapply t_constr__uhm2; eauto. 
       - intros. eapply t_constr__uhm3; eauto. 
+      - eapply t_constr__fresh_X_btv_t'; eauto.
+      - eapply t_constr__GU. eauto.
+      - eapply t_constr__fresh_btv_env_sigma__ftv_t'; eauto.
+      - intros Hcontra.
+        inversion gu; subst.
+        contradiction.
     }
     assert (HX: ~ In X (btv s)).
     {
@@ -1480,17 +1826,23 @@ Proof with eauto using L_sn.
     {
       (* we now need: X not a binder in sigma. *)
       constructor. auto.
-      apply nc_ftv_env with (x := X) in nc.
-      assumption.
-      apply btv_lam.
-      unfold Uhm in wierd. destruct wierd as [ [uhm1 _] _].
-      intros Hcontra.
-      apply uhm1 in Hcontra; auto.
-      simpl in Hcontra.
-      intuition.
+        - assert (~ In X (ftv_keys_env sigma)).
+        {
+          intros contra.
+          eapply nc_ftv_env with (x := X) in nc.
+          contradiction.
+          apply btv_lam.
+        }
+        intros Hcontra.
+        apply ftv_keys_env_sigma_remove in Hcontra. contradiction.
+      - unfold Uhm in wierd. destruct wierd as [ [uhm1 _] _].
+        intros Hcontra.
+        apply uhm1 in Hcontra; auto.
+        simpl in Hcontra.
+        intuition.
     }
 
-    specialize (ih Hparseq (extend_EL EL (α_preserves_L_R (t_constr__a_t Heqt'R) H))).
+    specialize (ih Hparseq (extend_EL EL (α_preserves_L_R (t_constr__a_t Heqt'R) X0))).
 (* **** ih is now fully applied ********************** *)
 
     eapply beta_expansion_subst in ih; eauto.
@@ -1521,53 +1873,95 @@ Proof with eauto using L_sn.
     assumption.
 Qed.
 
-
-(* Identity substitutions: Given a typing context E, give a list of term substitutions matching this E*)
-Fixpoint id_subst (E : list (string * type)) : list (string * term) :=
-  match E with
-  | nil => nil
-  | cons (x, A) E' => cons (x, tmvar x) (id_subst E')
-  end.
-
-From PlutusCert Require Import alpha_sub.
-
-Lemma id_subst_is_IdSubst E :
-  IdSubst (id_subst E).
-Proof.
-  induction E.
-  - constructor.
-  - simpl. destruct a. constructor. assumption.
-Qed.
-
-Lemma id_subst__id s σ :
-  (* NC s σ ->  *)
-  IdSubst σ -> 
-  subs σ s = s. (* even when this capturs, it doesnt matter, since it captures something and then substiutes it for the same name*)
-Proof.
-  intros.
-  induction s.
-  - (* if s in sigma, then it is mapped to s by IdSubst*)
-    admit.
-  - autorewrite with subs_db.
-    f_equal.
-    apply IHs.
-  - autorewrite with subs_db.
-    f_equal; eauto.
-Admitted.
-
 (* The identity substitution is in the EL relation *)
 Lemma id_subst__EL E :
   EL E (id_subst E).
 Proof.
-Admitted.
+  induction E.
+  - intros. simpl. unfold EL. intros. inversion H.
+  - intros.
+    destruct a as [x K].
+    simpl.
+    apply extend_EL; eauto.
+    apply L_var.
+Qed.
+
+Lemma remove_ids_IdSubst_is_nil sigma :
+  IdSubst sigma -> remove_ids sigma = nil.
+Proof.
+  intros.
+  induction sigma.
+  - reflexivity.
+  - simpl.
+    destruct a as [x1 x2].
+    inversion H; subst.
+    rewrite IHsigma; auto.
+    rewrite String.eqb_refl. auto.
+Qed.
+
+Lemma IdSubst_no_binders sigma :
+  IdSubst sigma -> btv_env sigma = nil.
+Proof.
+  intros.
+  induction sigma.
+  - reflexivity.
+  - simpl.
+    destruct a as [x1 x2].
+    inversion H; subst.
+    rewrite IHsigma; auto.
+Qed.
 
 Lemma id_subst__ParSeq :
   forall (σ : list (string * term)), IdSubst σ -> ParSeq σ.
-Admitted.
+Proof.
+  intros.
+  induction σ.
+  - constructor.
+  - simpl. destruct a as [x1 x2]. constructor. 
+    + apply IHσ. inversion H. assumption.
+    + inversion H; subst.
+      rewrite (remove_ids_IdSubst_is_nil H1). auto.
+    + inversion H; subst.
+      rewrite IdSubst_no_binders; eauto.
+Qed.
+
+Lemma no_btv_in_id_subst E :
+  forall x, In x (btv_env (id_subst E)) -> False.
+Proof.
+  intros.
+  induction E.
+  - simpl in H. contradiction.
+  - simpl in H. destruct a as [x1 x2].
+    simpl in H.
+    eapply IHE. auto.
+Qed.
 
 Lemma id_subst__nc_uhm E s :
   NC s (id_subst E) -> Uhm (id_subst E) s.
-Admitted.
+Proof.
+  intros.
+  unfold Uhm.
+  split; [split|].
+  - intros. apply no_btv_in_id_subst in H0. contradiction.
+  - intros. apply no_btv_in_id_subst in H0. contradiction.
+  - intros; induction s.
+    + inversion H0.
+  
+    + destr_eqb_eq x s.
+      * apply nc_ftv_env with (x := s) in H; auto.
+      * specialize (IHs (nc_lam H)).
+        eapply IHs.
+        simpl in H0.
+        destruct H0; intuition.
+    + specialize (IHs1 (nc_app_l H)). 
+      specialize (IHs2 (nc_app_r H)).
+      intros.
+      unfold btv in H0.
+      apply in_app_or in H0.
+      destruct H0; fold btv in H0.
+      * eapply IHs1; eauto.
+      * eapply IHs2; eauto.
+Qed.
 
 (* The fundamental theorem for named variables. *)
 Corollary type_L (E : list (string * type)) s T : has_type E s T -> L T (subs (id_subst E) s).
