@@ -23,7 +23,7 @@ Any step-indexed relation χ on values, that is closed w.r.t. a decreasing step-
 Definition Rel (T T' : ty) (χ : nat -> term -> term -> Prop) : Prop :=
   forall j v v',
     χ j v v' -> 0 < j ->
-      result v /\ result v' /\
+      result v /\ result v' /\ (* TODO: change to value? The use-site should already enforce this*)
       (∃ Tn, normalise T Tn /\ ([] ,, [] |-+ v : Tn)) /\
       (∃ Tn', normalise T' Tn' /\ ([] ,, [] |-+ v' : Tn')) /\
       (∀ i, i <= j -> χ i v v')
