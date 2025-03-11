@@ -3,7 +3,7 @@ From Coq Require Import
 .
 From PlutusCert Require Import
   PlutusIR
-  Values
+  Builtins.Arity
 .
 Import PlutusNotations.
 
@@ -69,8 +69,8 @@ Definition to_sig (f : DefaultFun) : builtin_sig :=
   end
 .
 
-(* Arity of built-in functions *)
-(* TODO: For some reason, this doesn't evaluate fully under simpl *)
-Definition arity (f : DefaultFun) : nat :=
-  sig_arity (to_sig f)
-.
+(* The arity and to_sig functions are consistent *)
+Lemma signature_arity f : sig_arity (to_sig f) = arity f.
+Proof.
+  destruct f; unfold to_sig, sig_arity; try reflexivity.
+Qed.
