@@ -71,12 +71,32 @@ Section SOP_CONSTRUCTOR.
 
 End SOP_CONSTRUCTOR.
 
+
+Section SOP_TYPE.
+
+Definition arg_tys (t : ty) := fst (splitTy t).
+
+Axiom Ty_SOP : list (list ty) -> ty.
+
+Definition pat_functor (d : dtdecl) : ty :=
+  match d with
+    Datatype _ _ _ cs => Ty_SOP (map (arg_tys ∘ vdecl_ty) cs)
+  end.
+
+Definition compile_ty (rec : recursivity) (d : dtdecl) : ty :=
+  match rec with
+    | Rec    => Ty_Var "<SOP>"%string
+    | NonRec => Ty_Var "<SOP>"%string
+  end
+.
+
+End SOP_TYPE.
+
+
 Definition constrs_to_subst (ty_sop : ty) (tyvars : list tvdecl) (cs : list vdecl)
   : list (string * term) :=
   map (fun '(ix, c) => constr_to_subst ix ty_sop tyvars c) (zip_from 0 cs)
 .
-
-Definition compile_ty : recursivity -> dtdecl -> ty := fun _ _ => Ty_Var "<SOP>"%string.
 
 (*
  * TODO compare with what the compiler does:
