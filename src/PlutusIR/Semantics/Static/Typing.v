@@ -40,12 +40,6 @@ Proof.
   reflexivity.
 Qed.
 
-Fixpoint splitTy (T : ty) : list ty * ty :=
-  match T with
-  | Ty_Fun Targ T' => (cons Targ (fst (splitTy T')), snd (splitTy T'))
-  | Tr => (nil, Tr)
-  end.
-
 Definition fromDecl (tvd : tvdecl) : string * kind :=
   match tvd with
   | TyVarDecl v K => (v, K)

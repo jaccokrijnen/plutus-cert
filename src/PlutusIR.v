@@ -766,6 +766,14 @@ Definition ty_transform (custom : forall T, option (ty_alg_transform T)) : ty ->
 
 Definition unitVal : term := Constant (ValueOf DefaultUniUnit tt).
 
+(* AST utilities *)
+Fixpoint splitTy (T : ty) : list ty * ty :=
+  match T with
+  | Ty_Fun Targ T' => (cons Targ (fst (splitTy T')), snd (splitTy T'))
+  | Tr => (nil, Tr)
+  end.
+
+
 
 
 Declare Scope plutus_scope.
