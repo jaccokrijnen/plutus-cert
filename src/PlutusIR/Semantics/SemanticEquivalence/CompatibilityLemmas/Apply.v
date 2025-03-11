@@ -333,7 +333,8 @@ HRV1 : R_V (k - j_1) <{ T1 → T2 }> ρ <{ λ x :: T, t0 }> r1'
 HRV2 : R_V (k - j_1 - j_2) T1 ρ r2 r2'
 *)
 
-(* Related arguments go to related results *)
+(* Related arguments go to related results
+*)
 Lemma RV_apply {j T1 T2 Δ ρ f f' k v v'} i :
   RD Δ ρ ->
   R_V j <{ T1 → T2 }> ρ f f' ->
@@ -352,11 +353,26 @@ Proof with eauto_LR.
   split; try assumption.
   split; try assumption.
   (* prepare argument *)
-  apply R_V_monotone with (i := i) (ck := Δ)  in H_V_v...
+  apply R_V_monotone with (i := i) (Δ := Δ) in H_V_v...
 Qed.
 
-
-
+(* There should be a lemma that can compute a new step-index for the result *)
+Lemma RV_apply_min {j T1 T2 Δ ρ f f' k v v'} :
+  RD Δ ρ ->
+  R_V j <{ T1 → T2 }> ρ f f' ->
+  R_V k T1 ρ v v' ->
+  exists (i : nat) (x : binderName) (b b' : term) (T1v T1v' : ty),
+    f = <{ λ x :: T1v, b }> /\
+    f' = <{ λ x :: T1v', b' }> /\
+    R_C (j - i) T2 ρ <{ [x := v] b }> <{ [x := v'] b' }>.
+Proof.
+  intros D_Δ V_f V_v.
+  destruct (lt_dec k j).
+  - (* k < j *)
+    exists k.
+      admit.
+  - admit.
+Abort.
 
 Ltac use_RC :=
   match goal with
@@ -371,6 +387,14 @@ Ltac use_RC :=
   end
 .
 
+(* Run an R_C(e, e') by looking in the context for an evaluation of e, and use that
+* amount of steps
+* binds the resulting
+*    r' : result
+*    j' : nat
+*    H_eval' : eval e' ... 
+*    H_res' : R_V(r, r')
+*)
 Ltac run_RC H_RC r' j' H_eval' H_res':=
   match type of H_RC with
   | R_C ?k ?T ?ρ ?e1 ?e2 =>
@@ -454,7 +478,7 @@ Proof.
       assert (value e2'). admit.
       eauto using R_C_values_to_R_V.
     }
-    apply R_V_monotone with (i := k - (applied_args <{e1 ⋅ e2}>)) (ck := Δ) in H_RV_e2.
+    apply R_V_monotone with (i := k - (applied_args <{e1 ⋅ e2}>)) (Δ := Δ) in H_RV_e2.
     apply H_RV_r' in H_RV_e2; clear H_RV_r'.
     rewrite H_eq_subst in H_RV_e2. clear H_eq_subst.
     apply fully_applied__Apply in H_FA' as [x' [T'' [b'' [H_ev_e1' H_eq_subst']]]].
@@ -512,11 +536,6 @@ Lemma compat_Apply Δ Γ e1 e2 e1' e2' T1 T2 :
 Proof with eauto_LR.
   intros IH_LR1 IH_LR2.
 
-  (*
-  destruct IH_LR1 as [Htyp__e1 [Htyp__e1' IH1]].
-  destruct IH_LR2 as [Htyp__e2 [Htyp__e2' IH2]].
-  *)
-
   split...
   admit. (* typing *)
   split...
@@ -532,23 +551,28 @@ Proof with eauto_LR.
 
   - (* E_Apply *)
     use_approx IH_LR1 k
-      H_C_e1.
+      C_e1.
     remember (close γ (msyn1 ρ) e1) as c_e1.
     remember (close γ' (msyn2 ρ) e1') as c_e1'.
 
     use_approx IH_LR2 k
-      H_C_e2.
+      C_e2.
     remember (close γ (msyn1 ρ) e2) as c_e2.
     remember (close γ' (msyn2 ρ) e2') as c_e2'.
 
-    autorewrite with R in H_C_e1.
-    specialize (H_C_e1 j1 ltac:(lia) _ H2) as [r' [j' [H_ev_c_e1' H_r_r']]].
+    run_RC C_e1
+      r1' j1' E_e1' R_e1...
+    RV_no_error R_e1 V_e1.
 
-    (* try proving from goal instead *)
+    run_RC C_e2
+      r2' j2' E_e2' R_e2...
+    RV_no_error R_e2 V_e2.
 
-    eexists.
-    eexists.
-    split;admit.
+    (* Lower the step-index of e2 *)
+    apply R_V_monotone with (i := k - (j1 + j2 + 1)) (Δ := Δ) in V_e2...
+
+    (* related arguments go to related results, use j0 steps *)
+    admit.
 
   - (* E_Builtin_Apply_Eta *)
     admit.

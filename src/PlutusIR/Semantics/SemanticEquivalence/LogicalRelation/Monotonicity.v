@@ -80,8 +80,8 @@ Proof.
   eapply RC_monotone. eauto. eauto. eauto.
 Qed.
 
-Lemma R_V_monotone : forall k rho T i v v' ck,
-    RD ck rho ->
+Lemma R_V_monotone : forall {k rho T v v'} i Δ,
+    RD Δ rho -> (* why is this argument necessary? *)
     R_V k T rho v v' ->
     i <= k ->
     R_V i T rho v v'.
