@@ -1,6 +1,7 @@
 Require Import PlutusCert.PlutusIR.
 From PlutusCert Require Import
   Equality
+  Builtins.Arity
 .
 From Coq Require Import
   Lists.List
@@ -14,6 +15,13 @@ Inductive is_error : term -> Prop :=
   | IsError : forall T,
       is_error (Error T).
 
+Fixpoint arg_count (t : term) : nat :=
+  match t with
+  | Apply s t => 1 + arg_count s
+  | TyInst t T => 1 + arg_count t
+  | _ => 0
+  end
+.
 
 Inductive value : term -> Prop :=
   | V_LamAbs : forall x T t0,
@@ -28,11 +36,29 @@ Inductive value : term -> Prop :=
   | V_Constr : forall T i vs,
       Forall value vs ->
       value (Constr T i vs)
+  | V_AppliedBuiltin : forall f t,
+      arg_count t < arity f ->
+      applied f t ->
+      value t
+
+with applied : DefaultFun -> term -> Prop :=
+  | A_Builtin : forall f,
+      applied f (Builtin f)
+  | A_Apply : forall f t v,
+      value v ->
+      applied f t ->
+      applied f (Apply t v)
+  | A_TyInst : forall f t T,
+      applied f t ->
+      applied f (TyInst t T)
   .
+
+#[export] Hint Constructors value applied : core.
 
 Section value_ind.
 Context
   (P : term -> Prop)
+  (Q : DefaultFun -> term -> Prop)
 .
 Context
   (H_LamAbs : forall (x : String.string) (T : ty) (t0 : term), P (LamAbs x T t0))
@@ -40,12 +66,19 @@ Context
   (H_IWrap : forall (F T : ty) (v : term), value v -> P v -> P (IWrap F T v))
   (H_Constant : forall c : constant, P (Constant c))
   (H_Constr : forall (T : ty) (i : nat) (vs : list term), Forall value vs -> Forall P vs -> P (Constr T i vs))
+  (H_AppliedBuiltin : forall f t, arg_count t < arity f -> applied f t -> Q f t -> P t)
+
+  (H_Builtin : forall f, Q f (Builtin f))
+  (H_Apply : forall f t v, value v -> P v -> applied f t -> Q f t -> Q f (Apply t v))
+  (H_TyInst : forall f t T, applied f t -> Q f t -> Q f (TyInst t T))
 .
+
 Fixpoint values__ind (H_value : forall (t : term), value t -> P t) (ts : list term) (vs : Forall value ts): Forall P ts :=
   match vs as vs in Forall _ ts return Forall P ts with
     | Forall_nil _ => Forall_nil _
     | @Forall_cons _ _ x xs vx vxs => @Forall_cons _ _ x xs (H_value x vx) (values__ind H_value xs vxs)
   end.
+
 Fixpoint value__ind (t : term) (v : value t) {struct v} : P t :=
   match v in (value t0) return (P t0) with
   | V_LamAbs x T t0 => H_LamAbs x T t0
@@ -57,10 +90,22 @@ Fixpoint value__ind (t : term) (v : value t) {struct v} : P t :=
         | Forall_nil _ => Forall_nil _
         | @Forall_cons _ _ t ts vt vts => @Forall_cons _ _ t ts (value__ind t vt) (F ts vts)
       end) ts vs)
+  | V_AppliedBuiltin f t H_arity app => H_AppliedBuiltin f t H_arity app (applied__ind f t app)
+  end
+with applied__ind f t (H_a : applied f t) {struct H_a} : Q f t :=
+  match H_a in (applied f0 t0) return (Q f0 t0) with
+  | A_Builtin f => H_Builtin f
+  | A_Apply f t v H_val H_a => H_Apply f t v H_val (value__ind v H_val) H_a (applied__ind f t H_a)
+  | A_TyInst f t T H_a => H_TyInst f t T H_a (applied__ind f t H_a)
   end
 .
 
 End value_ind.
+
+Inductive result' : term -> Prop :=
+  | R'_Value t : value t -> result' t
+  | R'_Error T : result' (Error T)
+.
 
 (* Results represent the result of computation, which include values and errors *)
 Inductive result : term -> Prop :=
@@ -124,15 +169,18 @@ Proof.
   induction v;
   inversion H;
   inversion 1.
+  (* Applied builtin *)
+  inversion H1.
 Qed.
 
+Lemma value__result' v : value v -> result' v.
+Proof. auto using result'. Qed.
+
 Lemma value__result v : value v -> result v.
-Proof.
-  intros H.
-  apply value__ind;
-  intros;
-  auto using result, value__is_error.
-Qed.
+Admitted.
+
+Lemma result'__value v : result' v -> ~ is_error v -> value v.
+Admitted.
 
 Lemma result__value v : result v -> ~ is_error v-> value v.
 Admitted.
@@ -147,14 +195,19 @@ Lemma ForallT_dec {A} (P : A -> Prop) (xs : list A) :
  Util.ForallT (fun x => {P x} + {~ P x}) xs ->
  {Forall P xs} + {~ (Forall P xs)}.
 Proof.
-
-intros H.
-induction H.
-- left. constructor.
-- destruct IHForallT, p.
-  all: try solve [right; inversion 1; contradiction].
-  left. auto.
+  intros H.
+  induction H.
+  - left. constructor.
+  - destruct IHForallT, p.
+    all: try solve [right; inversion 1; contradiction].
+    left. auto.
 Defined.
+
+Lemma value_dec t : {value t} + {~ value t}.
+Admitted.
+
+Lemma result'_dec t : {result' t} + {~ result' t}.
+Admitted.
 
 Lemma result_dec t : {result t} + {~ result t}.
 Proof.
@@ -187,6 +240,12 @@ Definition is_error_beq (t : term) : bool :=
     | _       => false
   end.
 
+Fixpoint value_beq (t : term) : bool.
+Admitted.
+
+Fixpoint result'_beq (t : term) : bool.
+Admitted.
+
 Fixpoint result_beq (t : term) :=
   match t with
     | LamAbs x T t0 => true
@@ -197,6 +256,11 @@ Fixpoint result_beq (t : term) :=
     | _ => false
   end
   .
+
+Lemma value_beq__value : forall t, value_beq t = true <-> value t.
+Admitted.
+Lemma result'_dec__result' : forall t, result'_beq t = true <-> result' t.
+Admitted.
 
 Lemma dec_result_result : forall t, result_beq t = true -> result t.
 Admitted.

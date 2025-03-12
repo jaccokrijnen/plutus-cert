@@ -60,11 +60,11 @@ Proof with (try solve [eauto || lia]).
 Qed.
 
 
-Lemma R_C_monotone : forall k rho T i e e' ck,
+Lemma C_monotone : forall k rho T i e e' ck,
     RD ck rho ->
-    R_C k T rho e e' ->
+    C k T rho e e' ->
     i <= k ->
-    R_C i T rho e e'.
+    C i T rho e e'.
 Admitted.
 
 Lemma RV_monotone : forall k rho T i v v' ck,
@@ -80,11 +80,11 @@ Proof.
   eapply RC_monotone. eauto. eauto. eauto.
 Qed.
 
-Lemma R_V_monotone : forall {k rho T v v'} i Δ,
+Lemma V_monotone : forall {k rho T v v'} i Δ,
     RD Δ rho -> (* why is this argument necessary? *)
-    R_V k T rho v v' ->
+    V k T rho v v' ->
     i <= k ->
-    R_V i T rho v v'.
+    V i T rho v v'.
 Admitted.
 
 
@@ -107,9 +107,9 @@ Proof.
 Qed.
 
 
-Lemma R_G_monotone : forall c ck rho i k env env',
+Lemma G_monotone : forall c ck rho i k env env',
     RD ck rho ->
-    R_G rho k c env env' ->
+    G rho k c env env' ->
     i <= k ->
-    R_G rho i c env env'.
+    G rho i c env env'.
 Admitted.

@@ -329,42 +329,42 @@ Ltac eval_deterministic :=
 .
 
 (*
-HRV1 : R_V (k - j_1) <{ T1 → T2 }> ρ <{ λ x :: T, t0 }> r1'
-HRV2 : R_V (k - j_1 - j_2) T1 ρ r2 r2'
+HRV1 : V (k - j_1) <{ T1 → T2 }> ρ <{ λ x :: T, t0 }> r1'
+HRV2 : V (k - j_1 - j_2) T1 ρ r2 r2'
 *)
 
 (* Related arguments go to related results
 *)
 Lemma RV_apply {j T1 T2 Δ ρ f f' k v v'} i :
   RD Δ ρ ->
-  R_V j <{ T1 → T2 }> ρ f f' ->
-  R_V k T1 ρ v v' ->
+  V j <{ T1 → T2 }> ρ f f' ->
+  V k T1 ρ v v' ->
   i < j ->
   i <= k ->
   exists (x : binderName) (b b' : term) (T1v T1v' : ty),
     f = <{ λ x :: T1v, b }> /\
     f' = <{ λ x :: T1v', b' }> /\
-    R_C i T2 ρ <{ [x := v] b }> <{ [x := v'] b' }>.
+    C i T2 ρ <{ [x := v] b }> <{ [x := v'] b' }>.
 Proof with eauto_LR.
   intros H_RD H_V_f H_V_v H_j H_k.
-  apply R_V_functional_extensionality in H_V_f
+  apply V_functional_extensionality in H_V_f
     as [ x [ b [ b' [ T1v [T1v' [H_v [H_v' H_ext ]]]]]]].
   exists x, b, b', T1v, T1v'.
   split; try assumption.
   split; try assumption.
   (* prepare argument *)
-  apply R_V_monotone with (i := i) (Δ := Δ) in H_V_v...
+  apply V_monotone with (i := i) (Δ := Δ) in H_V_v...
 Qed.
 
 (* There should be a lemma that can compute a new step-index for the result *)
 Lemma RV_apply_min {j T1 T2 Δ ρ f f' k v v'} :
   RD Δ ρ ->
-  R_V j <{ T1 → T2 }> ρ f f' ->
-  R_V k T1 ρ v v' ->
+  V j <{ T1 → T2 }> ρ f f' ->
+  V k T1 ρ v v' ->
   exists (i : nat) (x : binderName) (b b' : term) (T1v T1v' : ty),
     f = <{ λ x :: T1v, b }> /\
     f' = <{ λ x :: T1v', b' }> /\
-    R_C (j - i) T2 ρ <{ [x := v] b }> <{ [x := v'] b' }>.
+    C (j - i) T2 ρ <{ [x := v] b }> <{ [x := v'] b' }>.
 Proof.
   intros D_Δ V_f V_v.
   destruct (lt_dec k j).
@@ -376,7 +376,7 @@ Abort.
 
 Ltac use_RC :=
   match goal with
-  | H : R_C ?k ?T ?ρ ?e1 ?e2
+  | H : C ?k ?T ?ρ ?e1 ?e2
   , Hev : ?e1 =[ ?i ]=> ?v
   |- _ =>
     autorewrite with R in H;
@@ -387,17 +387,17 @@ Ltac use_RC :=
   end
 .
 
-(* Run an R_C(e, e') by looking in the context for an evaluation of e, and use that
+(* Run an C(e, e') by looking in the context for an evaluation of e, and use that
 * amount of steps
 * binds the resulting
 *    r' : result
 *    j' : nat
 *    H_eval' : eval e' ... 
-*    H_res' : R_V(r, r')
+*    H_res' : V(r, r')
 *)
-Ltac run_RC H_RC r' j' H_eval' H_res':=
+Ltac run_C H_RC r' j' H_eval' H_res':=
   match type of H_RC with
-  | R_C ?k ?T ?ρ ?e1 ?e2 =>
+  | C ?k ?T ?ρ ?e1 ?e2 =>
     match goal with
     | H : e1 =[ ?i ]=> ?v1 |- _ =>
         let H_temp := fresh "H" in
@@ -416,8 +416,8 @@ Lemma use_approx {Δ ρ Γ γ γ' e e' T }:
   approx Δ Γ e e' T ->
   forall k,
   RD Δ ρ ->
-  R_G ρ k Γ γ γ' ->
-  R_C k T ρ (close γ (msyn1 ρ) e) (close γ' (msyn2 ρ) e')
+  G ρ k Γ γ γ' ->
+  C k T ρ (close γ (msyn1 ρ) e) (close γ' (msyn2 ρ) e')
 .
 Proof.
   unfold approx.
@@ -431,7 +431,7 @@ match type of H_approx with
 | approx ?Δ ?Γ _ _ _ =>
   match goal with
   | H_RD : RD Δ _
-  , H_RG : R_G _ k Γ _ _
+  , H_RG : G _ k Γ _ _
   |- _ => assert (H_RC := use_approx H_approx k H_RD H_RG)
   end
 end
@@ -455,9 +455,9 @@ Lemma H_fully_applied e1 e2 e1' e2' T1 T2 k Δ ρ:
   fully_applied <{e1 ⋅ e2}> ->
   fully_applied <{e1' ⋅ e2'}> ->
   applied_args <{ e1 ⋅ e2 }> < k -> (* we can make at least applied_args <{e1 ⋅ e2}> steps *)
-  R_C k <{ T1 → T2 }> ρ e1 e1' ->
-  R_C k T1 ρ e2 e2' ->
-  R_C (k - applied_args <{ e1 ⋅ e2 }>) T2 ρ <{e1 ⋅ e2}> <{e1' ⋅ e2'}>
+  C k <{ T1 → T2 }> ρ e1 e1' ->
+  C k T1 ρ e2 e2' ->
+  C (k - applied_args <{ e1 ⋅ e2 }>) T2 ρ <{e1 ⋅ e2}> <{e1' ⋅ e2'}>
 .
 Proof.
   intros H_RD H_FA H_FA' H_lt H_RC_e1 H_RC_e2 .
@@ -466,19 +466,19 @@ Proof.
   autorewrite with R in H_RC_e1.
   apply H_RC_e1 in H_ev_e1 as [r' [j' [ H_ev H_RV_r ]]]; clear H_RC_e1.
   - destruct H_RV_r as [H_RV_r | [H_err _] ]; [ | inversion H_err].
-    apply R_V_functional_extensionality in H_RV_r as [x' [e_body [b' [T3 [T' [H_eq [H_eq_r' H_RV_r']]]]]]].
+    apply V_functional_extensionality in H_RV_r as [x' [e_body [b' [T3 [T' [H_eq [H_eq_r' H_RV_r']]]]]]].
     subst.
     symmetry in H_eq.
     inversion H_eq; subst; clear H_eq.
 
-    (* Convert R_C to R_V *)
-    assert (H_RV_e2 : R_V k T1 ρ e2 e2'). {
+    (* Convert C to V *)
+    assert (H_RV_e2 : V k T1 ρ e2 e2'). {
       assert (0 < k). autorewrite with applied_args in H_lt; lia.
       assert (value e2). admit.
       assert (value e2'). admit.
-      eauto using R_C_values_to_R_V.
+      eauto using C_values_to_V.
     }
-    apply R_V_monotone with (i := k - (applied_args <{e1 ⋅ e2}>)) (Δ := Δ) in H_RV_e2.
+    apply V_monotone with (i := k - (applied_args <{e1 ⋅ e2}>)) (Δ := Δ) in H_RV_e2.
     apply H_RV_r' in H_RV_e2; clear H_RV_r'.
     rewrite H_eq_subst in H_RV_e2. clear H_eq_subst.
     apply fully_applied__Apply in H_FA' as [x' [T'' [b'' [H_ev_e1' H_eq_subst']]]].
@@ -497,8 +497,8 @@ Admitted.
 Lemma builtin__RC s t s' t' r T ρ k :
   fully_applied (Apply s t) ->
   compute_defaultfun (Apply s t) = Some r ->
-  R_C 1 T ρ (Apply s t) (Apply s' t') ->
-  R_C k T ρ (Apply s t) (Apply s' t').
+  C 1 T ρ (Apply s t) (Apply s' t') ->
+  C k T ρ (Apply s t) (Apply s' t').
 Proof.
 intros H_FA H_compute H_RC.
 assert (H_eval : (Apply s t) =[1]=> r). eapply E_Builtin_Apply; auto.
@@ -509,7 +509,7 @@ assert (j = 1) by admit.
 assert (r = r') by admit.
 subst r' j.
 
-(* run_RC H_RC r' j' H_eval' H_res'. *)
+(* run_C H_RC r' j' H_eval' H_res'. *)
 Admitted.
 
 Lemma compat_Apply_builtin Δ Γ e1 e2 e1' e2' T1 T2 :
@@ -560,16 +560,16 @@ Proof with eauto_LR.
     remember (close γ (msyn1 ρ) e2) as c_e2.
     remember (close γ' (msyn2 ρ) e2') as c_e2'.
 
-    run_RC C_e1
+    run_C C_e1
       r1' j1' E_e1' R_e1...
     RV_no_error R_e1 V_e1.
 
-    run_RC C_e2
+    run_C C_e2
       r2' j2' E_e2' R_e2...
     RV_no_error R_e2 V_e2.
 
     (* Lower the step-index of e2 *)
-    apply R_V_monotone with (i := k - (j1 + j2 + 1)) (Δ := Δ) in V_e2...
+    apply V_monotone with (i := k - (j1 + j2 + 1)) (Δ := Δ) in V_e2...
 
     (* related arguments go to related results, use j0 steps *)
     admit.
@@ -584,9 +584,9 @@ Proof with eauto_LR.
     remember (close γ' (msyn2 ρ) e1') as c_e1'.
 
     (*
-    assert (H_RG' : R_G ρ (k - (applied_args c_e1)) Γ γ γ'). {
+    assert (H_RG' : G ρ (k - (applied_args c_e1)) Γ γ γ'). {
       assert (H : k - applied_args c_e1 <= k)...
-      eauto using R_G_monotone.
+      eauto using G_monotone.
     }
     *)
     use_approx IH_LR2 k
@@ -603,13 +603,13 @@ Proof with eauto_LR.
       (* c_e1 evaluates to a value (eta expansion with partially applied builtin) *)
       apply fully_applied__Apply in H1 as [x [T [s [Hev Heq]]]].
       apply fully_applied__Apply in H_FA as [x' [T' [s' [Hev' Heq']]]].
-      run_RC H_C_e1
+      run_C H_C_e1
         r1' j_1' H_ev__e1' H_V_f...
       RV_no_error H_V_f H_V_f.
       replace (k - 0) with k in H_V_f; try solve [lia].
       assert (value c_e2) by admit.
       assert (value c_e2') by admit.
-      apply R_C_values_to_R_V in H_C_e2 as H_V_e2...
+      apply C_values_to_V in H_C_e2 as H_V_e2...
 
       (* Related arguments to related results *)
       destruct (RV_apply (k - 1) H_RD H_V_f H_V_e2 ltac:(lia) ltac:(lia))
@@ -626,7 +626,7 @@ Proof with eauto_LR.
 
       clear - HRC0 Hev__app.
 
-      run_RC HRC0
+      run_C HRC0
         r' j' H_eval' H_res'...
 
       all: admit.
@@ -650,7 +650,7 @@ Proof with eauto_LR.
     rename j1 into j_1.
 
     assert (HRC1 :
-      R_C k (Ty_Fun T1 T2) ρ (close γ (msyn1 ρ) e1) (close γ' (msyn2 ρ) e1')
+      C k (Ty_Fun T1 T2) ρ (close γ (msyn1 ρ) e1) (close γ' (msyn2 ρ) e1')
     ) by admit.
     admit.
   - (* E_Error_Apply2 *)

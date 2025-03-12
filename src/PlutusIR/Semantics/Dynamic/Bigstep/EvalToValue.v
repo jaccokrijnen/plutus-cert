@@ -54,6 +54,14 @@ Proof with (try discriminate).
   *)
 Admitted.
 
+
+Lemma compute_defaultfun__result' : forall t v,
+    fully_applied t ->
+    compute_defaultfun t = Datatypes.Some v ->
+    result' v.
+Admitted.
+
+
 Lemma eval_builtin_partial__result :
   forall t r, t =η=> r -> result r
 .
@@ -81,17 +89,39 @@ Proof with (eauto with hintdb__eval_no_error).
     eauto using eval_builtin_partial__result. 
 Qed.
 
+Lemma eval_to_result' :
+    (forall t v k, t =[k]=> v -> result' v) /\
+    (forall t v k, t =[k]=>nr v -> result' v) /\
+    (forall bs0 t v k, t =[k]=>r v WITH bs0 -> result' v).
+Admitted.
+
 Corollary eval_to_result__eval : forall t v k,
     t =[k]=> v ->
     result v.
 Proof. apply eval_to_result. Qed.
+
+Corollary eval_to_result'__eval : forall t v k,
+    t =[k]=> v ->
+    result' v.
+Proof. apply eval_to_result'. Qed.
 
 Corollary eval_to_result__eval_bindings_nonrec : forall t v k,
     t =[k]=>nr v ->
     result v.
 Proof. apply eval_to_result. Qed.
 
+
+Corollary eval_to_result'__eval_bindings_nonrec : forall t v k,
+    t =[k]=>nr v ->
+    result' v.
+Proof. apply eval_to_result'. Qed.
+
 Corollary eval_to_result__eval_bindings_rec : forall bs0 t v k,
     t =[k]=>r v WITH bs0 ->
     result v.
 Proof. apply eval_to_result. Qed.
+
+Corollary eval_to_result'__eval_bindings_rec : forall bs0 t v k,
+    t =[k]=>r v WITH bs0 ->
+    result' v.
+Proof. apply eval_to_result'. Qed.

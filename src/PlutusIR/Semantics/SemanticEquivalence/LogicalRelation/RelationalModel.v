@@ -320,7 +320,7 @@ Require Import Coq.Arith.Wf_nat.
     RV = Relational interpretation for values
     RC = Relation interpretation for computations
 *)
-Inductive interpretation := C | V.
+Inductive interpretation := I_C | I_V.
 
 
 (* Termination argument of R
@@ -343,14 +343,14 @@ Instance wf_pair : WellFounded (ltof _ measure) := lt_pair_wf.
 (* Logical relation for closed values and computations *)
 Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : term) : Prop by wf (i, k) (ltof _ measure) :=
 
-  R C k T rho e e' :=
+  R I_C k T rho e e' :=
     ∀ j (Hlt_j : j < k) r,
       e =[j]=> r ->
       ∃ r' j',
         e' =[j']=> r' /\
-        (R V (k - j) T rho r r' \/ (is_error r /\ is_error r'));
+        (R I_V (k - j) T rho r r' \/ (is_error r /\ is_error r'));
 
-  R V k T rho v v' :=
+  R I_V k T rho v v' :=
     ∃ Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([] ,, [] |-+ v : Tn) /\
     ∃ Tn', normalise (msubstT (msyn2 rho) T) Tn' /\  ([] ,, [] |-+ v' : Tn') /\
 
@@ -380,8 +380,8 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
             v = LamAbs x T1 e_body /\
             v' = LamAbs x T1' e'_body /\
             ∀ i (Hlt_i : i < k) v_0 v'_0,
-              R V i T1n rho v_0 v'_0 ->
-              R C i T2n rho <{ [x := v_0] e_body }> <{ [x := v'_0] e'_body }>
+              R I_V i T1n rho v_0 v'_0 ->
+              R I_C i T2n rho <{ [x := v_0] e_body }> <{ [x := v'_0] e'_body }>
 
       | Ty_IFix Fn Tn =>
           exists v_0 v'_0 F F' T T',
@@ -391,7 +391,7 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
               [] |-* (msubstT (msyn1 rho) Tn) : K ->
               [] |-* (msubstT (msyn2 rho) Tn) : K ->
               normalise (unwrapIFix Fn K Tn) T0n ->
-              R V i T0n rho v_0 v'_0
+              R I_V i T0n rho v_0 v'_0
 
       | Ty_Forall X K Tn =>
           exists e_body e'_body,
@@ -402,22 +402,22 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
               [] |-* T2 : K ->
               Rel T1 T2 Chi ->
               ∀ i (Hlt_i : i < k),
-                R C i Tn ((X, (Chi, T1, T2)) :: rho) <{ :[X := T1] e_body }> <{ :[X := T2] e'_body }>
+                R I_C i Tn ((X, (Chi, T1, T2)) :: rho) <{ :[X := T1] e_body }> <{ :[X := T2] e'_body }>
       end
   ).
 Proof.
   all: unfold ltof; simpl; lia.
 Qed.
 
-Notation R_C := (R C).
-Notation R_V := (R V).
+Notation C := (R I_C).
+Notation V := (R I_V).
 
-Corollary R_C_values_to_R_V k T rho v v' :
+Corollary C_values_to_V k T rho v v' :
     0 < k ->
     value v ->
     value v' ->
-    R_C k T rho v v' ->
-    R_V k T rho v v'.
+    C k T rho v v' ->
+    V k T rho v v'.
 Proof.
   intros H_gt H_v H_v' H_RC.
   autorewrite with R in H_RC.
@@ -438,14 +438,14 @@ Proof.
   - assumption.
 Qed.
 
-Inductive R_G (rho : tymapping) (k : nat) : tass -> env -> env -> Prop :=
-  | R_G_nil :
-      R_G rho k nil nil nil
-  | R_G_cons : forall x T v1 v2 c e1 e2,
-      R_V k T rho v1 v2 ->
+Inductive G (rho : tymapping) (k : nat) : tass -> env -> env -> Prop :=
+  | G_nil :
+      G rho k nil nil nil
+  | G_cons : forall x T v1 v2 c e1 e2,
+      V k T rho v1 v2 ->
       normal_Ty T ->
-      R_G rho k c e1 e2 ->
-      R_G rho k ((x, T) :: c) ((x, v1) :: e1) ((x, v2) :: e2)
+      G rho k c e1 e2 ->
+      G rho k ((x, T) :: c) ((x, v1) :: e1) ((x, v2) :: e2)
 .
 
 Definition approx Δ Γ e e' T :=
@@ -453,6 +453,6 @@ Definition approx Δ Γ e e' T :=
     (Δ ,, Γ |-+ e' : T) /\
     forall k ρ γ γ',
       RD Δ ρ ->
-      R_G ρ k Γ γ γ' ->
-      R C k T ρ (close γ (msyn1 ρ) e) (close γ' (msyn2 ρ) e').
+      G ρ k Γ γ γ' ->
+      C k T ρ (close γ (msyn1 ρ) e) (close γ' (msyn2 ρ) e').
 
