@@ -143,13 +143,13 @@ Qed.
 
 
 Inductive step_nd : term -> term -> Type :=
-| step_beta_d (B : BType) (x : string) (A : type) (s t : term) :
+| step_beta_d (x : string) (A : type) (s t : term) :
   (* This allows for more steps then should be allowed.
       e.g. tmapp (forall B x A s) t) will now beta reduce.
 
       But that is no problem! As long as step_nd allows all steps that step_plut allows.
   *)
-    step_nd (tmapp (@tmlam B x A s) t) (substituteTCA x t s) (* capture avoiding conservative substitutions *)
+    step_nd (tmapp (@tmlam L x A s) t) (substituteTCA x t s) (* capture avoiding conservative substitutions *)
 | step_appL_d s1 s2 t :
     step_nd s1 s2 -> step_nd (tmapp s1 t) (tmapp s2 t)
 | step_appR_d s t1 t2 :
@@ -329,6 +329,9 @@ Qed.
 Inductive sn {X : Type} {e : X -> X -> Type } x : Type :=
 | SNI : (forall y, e x y -> sn y) -> sn x.
 
+(*
+Jacco: Dit is blijkbaar een forward simulation
+*)
 Lemma sn_preimage2 {e2 : term_plut -> term_plut -> Type} {e : term -> term -> Type} (h : term_plut -> term) (x : term_plut) :
   (forall x y, e2 x y -> e (h x) (h y)) -> @sn term e (h x) -> @sn term_plut e2 x.
 Proof.

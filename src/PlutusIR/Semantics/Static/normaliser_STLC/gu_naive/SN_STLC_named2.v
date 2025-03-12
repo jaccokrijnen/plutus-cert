@@ -14,7 +14,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 From PlutusCert Require Import STLC_named STLC_named_typing ARS.
-From PlutusCert Require Import alpha alpha_rename rename util alpha_ctx_sub freshness alpha_freshness alpha_step step alpha_sub.
+From PlutusCert Require Import alpha alpha_rename rename util alpha_ctx_sub freshness alpha_freshness step.
 From PlutusCert Require Import SN_STLC_named_naive pre constructions.
 
 (* Define an infix operator for bind *)
@@ -312,7 +312,7 @@ Proof.
 Qed.
 
 Lemma alpha_capms_to_naive X U T:
-  {T' & Alpha [] T T' * Alpha [] (substituteTCA X U T) (sub X U T') * NC T' ((X, U)::nil)}.
+  {T' & Alpha [] T T' * Alpha [] (substituteTCA X U T) (sub X U T') * NC T' ((X, U)::nil)}%type.
 Proof.
   exists (to_GU' X U T).
   split; [split|].
@@ -414,7 +414,7 @@ Qed.
 
 Lemma step_d_implies_step_gu_na t t' : 
     step_d t t' ->  
-    {t_α & step_gu_naive t t_α * (nil ⊢ t' ~ t_α)}.
+    {t_α & step_gu_naive t t_α * (nil ⊢ t' ~ t_α)}%type.
 Proof.
     remember (to_GU t) as t_GU.
     assert (nil ⊢ t ~ t_GU) as H_alpha.
@@ -483,3 +483,5 @@ Theorem strong_normalization E s T : has_type E s T -> (@sn term step_d) s.
   apply SN_na_to_SN_d.
   assumption.
 Qed.
+
+Print Assumptions strong_normalization.

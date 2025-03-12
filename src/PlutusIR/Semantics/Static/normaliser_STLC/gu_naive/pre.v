@@ -10,7 +10,7 @@ Require Import Lia.
 Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Arith.
 
-From PlutusCert Require Import STLC_named util alpha freshness alpha_ctx_sub.
+From PlutusCert Require Import STLC_named util alpha freshness alpha_freshness alpha_ctx_sub.
 
 
 
@@ -206,11 +206,146 @@ Admitted.
 (* No free vars are changed *)
 Lemma alpha_preserves_nc_ctx s x t t':
    Alpha [] t t' -> NC s ((x, t)::nil) -> NC s ((x, t')::nil).
-Admitted.
+Proof.
+  intros Ha_t Hnc_t.
+  inversion Hnc_t; subst.
+  constructor. auto.
+  intros y Hbtv.
+  specialize (H4 y Hbtv).
+  destruct H4 as [Hynotx Hftv_t].
+  split; auto.
+  eapply alpha_preserves_no_ftv; eauto.
+  constructor.
+Qed.
 
-Lemma step_naive_pererves_nc_ctx s t t1 t2 x :
-  step_naive t1 t2 -> NC s ((x, t1)::nil) -> NC t ((x, t2)::nil).
-Admitted.
+Lemma sub_helper {x t s} :
+  ~ In x (ftv t) -> ~ In x (ftv (sub x t s)).
+Proof.
+  intros Hcontra.
+  induction s.
+  - destr_eqb_eq x s.
+    + simpl. destr_eqb_eq s s. auto. contradiction.
+    + simpl. destr_eqb_eq x s. auto.
+      intros Hcontra2.
+      apply ftv_var in Hcontra2. contradiction.
+  - simpl. (* remove_string_dec s (ftv (sub x t s0)) is a subset of ftv (sub x t s0)*)
+    intros Hcontra2.
+    apply in_remove in Hcontra2.
+    destruct Hcontra2 as [Hcontra2 _].
+    contradiction.
+  - simpl. apply not_in_app. split.
+    + apply IHs1.
+    + apply IHs2.
+Qed.
+
+
+Lemma subs_does_not_create_ftv sigma x s :
+  ~ In x (ftv s) -> ~ In x (ftv_keys_env sigma) -> ~ In x (ftv (subs sigma s)).
+Proof.
+  intros Hftv_s Hftv_sigma.
+  induction s.
+  - apply not_in_ftv_var in Hftv_s.
+    induction sigma.
+    + simpl. unfold not. intros Hcontra.
+      destruct Hcontra.
+      * symmetry in H. contradiction.
+      * contradiction.
+    + simpl. destruct a as [y t].
+      simpl in Hftv_sigma.
+      apply de_morgan2 in Hftv_sigma.
+      destruct Hftv_sigma as [ _ Hftv_sigma ].
+      apply not_in_app in Hftv_sigma.
+      destruct Hftv_sigma as [Hftv_sigma].
+      specialize (IHsigma H).
+      destr_eqb_eq x y.
+      * apply sub_helper. auto.
+      * 
+        (* This should be its own lemma, since it is about sub now, not subs*)
+        {
+        induction (subs sigma (tmvar s)).
+        - simpl. destr_eqb_eq y s0; auto.
+        - simpl.
+          intros Hcontra.
+          apply in_remove in Hcontra as [Hcontra Hcontra_s0].
+          contradiction IHt0.
+          eapply ftv_lam_negative; eauto.
+        - simpl.
+          apply not_in_app. split.
+          + apply IHt0_1. auto. eapply not_ftv_app_not_left; eauto.
+          + apply IHt0_2. auto. eapply not_ftv_app_not_right; eauto.
+
+        }
+        
+
+
+  - autorewrite with subs_db.
+    destr_eqb_eq x s.
+    + apply ftv_lam_no_binder.
+    + intros Hcontra.
+      apply ftv_lam_helper in Hcontra.
+      apply ftv_lam_negative in Hftv_s.
+      specialize (IHs Hftv_s).
+      contradiction. auto.
+  - autorewrite with subs_db.
+    simpl.
+    apply not_in_app. split.
+    + apply IHs1. auto. eapply not_ftv_app_not_left; eauto.
+    + apply IHs2. auto; eapply not_ftv_app_not_right; eauto.
+Qed.
+
+Lemma step_naive_preserves_no_ftv x t1 t2 :
+  step_naive t1 t2 -> ~ In x (ftv t1) -> ~ In x (ftv t2).
+Proof.
+  intros Hstep Hftv_t1.
+  induction Hstep.
+  - destr_eqb_eq x x0.
+    + apply sub_helper. apply not_ftv_app_not_right in Hftv_t1. auto.
+    + rewrite <- single_subs_is_sub.
+      apply subs_does_not_create_ftv.
+      * apply not_ftv_app_not_left in Hftv_t1. auto. eapply ftv_lam_negative; eauto.
+      * unfold ftv_keys_env. simpl. apply not_in_cons. split.
+        -- auto.
+        -- apply not_ftv_app_not_right in Hftv_t1. rewrite app_nil_r. auto.
+  - specialize (IHHstep (not_ftv_app_not_left Hftv_t1)).
+    intros Hcontra.
+    simpl in Hcontra.
+    apply in_app_or in Hcontra.
+    destruct Hcontra.
+    + apply IHHstep in H.
+      contradiction.
+    + apply not_ftv_app_not_right in Hftv_t1.
+      contradiction.
+  - specialize (IHHstep (not_ftv_app_not_right Hftv_t1)).
+    intros Hcontra.
+    simpl in Hcontra.
+    apply in_app_or in Hcontra.
+    destruct Hcontra.
+    + apply not_ftv_app_not_left in Hftv_t1.
+      contradiction.
+    + apply IHHstep in H.
+      contradiction.
+  - destr_eqb_eq x0 x.
+    + apply ftv_lam_no_binder.
+    + intros Hcontra.
+      apply ftv_lam_helper in Hcontra.
+      apply ftv_lam_negative in Hftv_t1.
+      specialize (IHHstep Hftv_t1).
+      contradiction. auto.   
+Qed.
+
+Lemma step_naive_preserves_nc_ctx s t1 t2 x :
+  step_naive t1 t2 -> NC s ((x, t1)::nil) -> NC s ((x, t2)::nil).
+Proof.
+  intros Hstep Hnc.
+  inversion Hnc; subst.
+  constructor.
+  - constructor.
+  - intros y Hbtv.
+    specialize (H4 y Hbtv).
+    destruct H4 as [Hynotx Hftv_t].
+    split; auto.
+    eapply step_naive_preserves_no_ftv. eauto. auto.
+Qed.
 
 Lemma gu_app_l {s t} :
   GU (tmapp s t) -> GU s.

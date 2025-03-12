@@ -69,15 +69,95 @@ Fixpoint uniqueRHs_ (acc : list string) (R : list (string * string)) :=
 (* this is not exactly uniqueness as it allows for identical pairs, but that's ok for alpha, but not for uniqueness!*)
 Definition UniqueRhs (R : list (string * string)) := uniqueRHs_ nil R.
 
-Definition KindOfUniqueRhs (R : list (string * string)) (s : term) := 
+Definition KindOfUniqueRhs (R : list (string * string))  := 
   forall x y, lookup x R = Some y -> AlphaVar R x y.
 
 (* fresh generates something not in R*)
 Lemma uniqueRhs_fresh x R used : UniqueRhs R -> UniqueRhs ((x, fresh_to_GU_ used R x)::R).
 Admitted.
 
+
+Lemma KindOfUniqueRhsFresh x R used : KindOfUniqueRhs R -> KindOfUniqueRhs ((x, fresh_to_GU_ used R x)::R).
+Admitted.
 (* by unique we have that (x, y) is the only pair with y. by lookup x, it is the leftmost x pair*)
 Lemma uniqueRhs_lookup_Some x y R : UniqueRhs R -> lookup x R = Some y -> AlphaVar R x y.
+Admitted.
+
+Lemma used_never_removed used binders s s' used' binders' :
+  ((used', binders'), s') = to_GU_ used binders s -> forall x, In x used -> In x used'.
+Admitted.
+
+Lemma to_GU__alpha_' s R used : KindOfUniqueRhs R -> (forall x, In x (ftv s) -> lookup x R = None -> AlphaVar R x x) -> (forall x, In x (tv s) -> In x used) -> Alpha R s (snd (to_GU_ used R s)).
+Proof.
+  generalize dependent R.
+  generalize dependent used.
+  induction s; intros.
+  - simpl. destruct (lookup s R) eqn:lookup_x_R.
+    + constructor.
+      unfold KindOfUniqueRhs in H. eapply H. eauto.
+    + constructor.
+      specialize (H0 s).
+      assert (In s (ftv (tmvar s))) by now apply ftv_var_eq.
+      eauto.
+  - simpl. remember (to_GU_ used ((s,
+fresh_to_GU_
+  used R s)
+:: R)
+  s0) as p.
+    simpl. destruct p as [ [used' binders'] s'].
+    simpl.
+    constructor.
+    specialize (IHs used ((s, fresh_to_GU_ used R s) :: R)).
+    rewrite <- Heqp in IHs. 
+    simpl in IHs.
+    eapply IHs.
+    + eapply KindOfUniqueRhsFresh. auto.
+    + intros.
+      destruct_match.
+      assert (Hftvlam: In x (ftv (tmlam s t s0))) by admit. (* x <> s)*)
+      apply alpha_var_diff. auto.
+      {
+        rewrite <- String.eqb_neq. auto.
+      }
+      specialize (H0 x).
+      specialize (H0 Hftvlam).
+      * (* by x in used *) admit.
+      * eapply H0; auto.
+    + intros.
+      eapply H1.
+      apply tv_c_lam. auto.
+  - simpl. 
+    remember (to_GU_ used R s1) as p1.
+    destruct p1 as [ [used1 binders] s1'].
+    simpl. 
+    remember (to_GU_ used1 R s2) as p2.
+    destruct p2 as [ [used2 binders'] s2'].
+    simpl.
+    constructor.
+    + specialize (IHs1 used R).
+      simpl in IHs1.
+      rewrite <- Heqp1 in IHs1.
+      simpl in IHs1.
+      eapply IHs1.
+      * assumption.
+      * intros.
+        eapply H0.
+        apply ftv_c_appl. auto. 
+        auto.
+      * intros. eapply H1. apply tv_c_appl. auto.
+    + specialize (IHs2 used1 R).
+      rewrite <- Heqp2 in IHs2.
+      simpl in IHs2.
+      eapply IHs2.
+      * assumption.
+      * intros.
+        eapply H0.
+        apply ftv_c_appr. auto.
+        auto.
+      * intros.
+        eapply used_never_removed; eauto.
+        eapply H1.
+        apply tv_c_appr. auto.
 Admitted.
 
 Lemma to_GU__alpha_ s R used : UniqueRhs R -> (forall x, In x (ftv s) -> {y & In (x, y) R}) -> Alpha R s (snd (to_GU_ used R s)).
@@ -158,14 +238,14 @@ Proof.
   rewrite Heqs'.
   assert (R ⊢ s ~ (to_GU_ (tv s) R s).2).
   {
-    eapply to_GU__alpha_.
-    - (* ftvs are unique *) admit.
+    eapply to_GU__alpha_'.
+    - (* id kindofunique *) admit.
     - (* by constructino of R *) 
+
       intros.
-      exists x.
-      apply lookup_In.
-      subst.    
+      (* R is only identity substs, so by alpha_extend_ids*)
       admit.
+    - intros. auto.
   }
   eapply alpha_weaken_ids with (idCtx := R).
   - subst.
@@ -350,11 +430,6 @@ Proof.
 Admitted.
 
 
-Lemma used_never_removed used binders s s' used' binders' :
-  ((used', binders'), s') = to_GU_ used binders s -> forall x, In x used -> In x used'.
-Admitted.
-
-
 Lemma no_btv_in_binders used binders s s' used' binders' :
   ((used', binders'), s') = to_GU_ used binders s -> (forall x, In x (btv s') -> ~ In x (map snd binders)).
 Admitted.
@@ -526,15 +601,14 @@ Proof.
   rewrite Heqs'.
   assert (R ⊢ s ~ (to_GU_ (X :: tv T ++ tv s) R s).2).
   {
-    eapply to_GU__alpha_.
-    - (* ftvs are unique *) admit.
-    - (* by constructino of R *) 
+    eapply to_GU__alpha_'.
+    - (* id kind of unique *) admit.
+    - (* *)
       intros.
-      exists x.
-      apply lookup_In.
-      subst.    
-      (* by x in ftv s => x in tv s => Hence (x, x) in R*)
+      (* by R is id subst*)
       admit.
+    - intros.
+      intuition.
   }
   eapply alpha_weaken_ids with (idCtx := R).
   - subst.
@@ -619,14 +693,14 @@ intros.
   assert (R ⊢ s ~ idk).
   {
     rewrite H0.
-    eapply to_GU__alpha_.
-    - (* by identity renamings AND no duplicates*) admit.
-    - intros.
-      exists x.
-      (* x in ftv s, hence x in (tv s ++ tv t), hence (x, x) in the map.
-        remove_dups can not cause list lookup to start failing... done.
-      *)
+    eapply to_GU__alpha_'.
+    - (* by id TODO: by new KindOfUniqueRHS, maybe we can remove removve_dups*)
       admit.
+    - intros.
+      (* by ids*)
+      admit.
+    - intros.
+      intuition.
   }
   eapply alpha_weaken_ids with (idCtx := R).
   + (* construction *) admit.
@@ -800,31 +874,88 @@ Fixpoint strip_R' (R : list (string * string)) (acc : list (string * string)) :=
                     end
   end.
 
+Fixpoint strip_R'' (R : list (string * string)) (lhs : list string) (rhs : list string) :=
+  match R with
+  | nil => nil
+  | (x, y) :: R' => if in_dec string_dec x lhs || in_dec string_dec y rhs then
+                      strip_R'' R' (x::lhs) (y::rhs)   (* do not include if shadowed*)  
+                    else
+                      (x, y) :: (strip_R'' R' (x::lhs) (y::rhs))
+  end.
+
 Require Import Coq.Program.Equality.
 
+(* The original R used in R ⊢ s ~ s' could also contain random variables not occuring in s or s'.*)
 Definition strip_R (R : list (string * string)) :=
-  snd (strip_R' R nil).
+  strip_R'' R nil nil.
 
-Lemma strip_R_preserves_alpha R s s' :
-  Alpha R s s' -> Alpha (strip_R R) s s'.
+Lemma KindOfUniqueSmaller R1 R2 :
+  (* if R1 a superset of R2 *)
+  (forall x y, In (x, y) R2 -> In (x, y) R1) ->
+  KindOfUniqueRhs R1 -> KindOfUniqueRhs R2.
+Admitted.
+
+Lemma strip_R_KindOfUnique R :
+  KindOfUniqueRhs (strip_R R).
+Proof.
+  induction R.
+  - simpl. unfold strip_R. unfold strip_R''. unfold KindOfUniqueRhs. intros. inversion H.
+  - (*
+      strip_R (a :: R). We know it will keep a, because lhs and rhs are empty.
+      then we have strip_R R, but with a nonempty lhs and rhs. We know that his will become a subset of
+      strip_R R.  Call it R'.
+
+      Then we have to prove KindOfUniqueRhs (a :: R').
+
+      and we know KindOfUniqueRhs R'
+
+      and also that a not in R'.
+    *)
+Admitted.
+
+
+Lemma strip_R_preserves_alpha_split R1 R2 s s' :
+  Alpha (R1 ++ R2) s s' -> Alpha (R1 ++ (strip_R R2)) s s'.
 Proof.
   intros.
-  generalize dependent R.
+  generalize dependent R1.
+  generalize dependent R2.
   generalize dependent s'.
   induction s; intros.
   - inversion H; subst.
     constructor.
-    (* no clue*)
+    (*
+      Three possibilities:
+         (s, y) in R1.
+         (s, y) in R2.
+
+         s = y   and  not (s, y) in R1   and  not (s, y) in R2.
+
+
+         If (s, y) in front in R1, then also in R1 ++ (strip_R R2).
+
+         Suppose (s, y) in the front of R2 => lookup s R2 = y    and   lookup y   (swap R2) = s
+         Then also (s, y) in strip_R R2.   By some unproven lemma.
+
+         Suppose (s, y) not in (R1 ++ R2). Then s = y.
+         Then also not (s, y) in (R1 ++ strip_R R2) and AlphaVar [] s y
+    *)
     admit.
   - inversion H; subst.
     constructor.
-    (* no clue*)
-    admit.
+    change ((s, y) :: R1 ++ strip_R R2) with (((s, y):: R1) ++ strip_R R2).
+    eapply IHs; eauto.
   - inversion H; subst.
     constructor.
     + eapply IHs1; eauto.
     + eapply IHs2; eauto.
 Admitted.
+
+Lemma strip_R_preserves_alpha R s s' :
+  Alpha R s s' -> Alpha (strip_R R) s s'.
+Proof.
+  eapply strip_R_preserves_alpha_split with (R1 := nil); eauto.
+Qed.
 
 (* forall ftvs in s, lookup that in R, to get (x, y) and add that to the new R*)
 
@@ -837,20 +968,44 @@ Definition a_R_constr R (s s' : term) t : list (string * string) :=
 
       This also means we can easily add Rfr in front of R and still keep s-alpha
   *)
-  let Rfr := (map (fun x => (x, fresh18 used)) (list_diff string_dec (ftv t) (ftv s))) in
-  let R_u := strip_R R in
-  let R_id := map (fun x => (x, x)) (ftv t) in
-  Rfr ++ R_u ++ R_id.
+  let to_freshen := list_diff string_dec (ftv t) (ftv s) in
+  let Rfr := (map (fun x => (x, fresh18 used)) to_freshen) in
+  Rfr ++ (strip_R R).
+
+Lemma a_R_constr_UniqueRHS R R' s s' t :
+  R' = @a_R_constr R s s' t ->
+  KindOfUniqueRhs R'.
+Proof.
+  intros.
+  unfold KindOfUniqueRhs.
+  intros.
+  unfold a_R_constr in H.
+  remember (map
+  (pair^~ (fresh18
+  (tv s ++
+tv s' ++
+tv t ++
+map fst R ++ map snd R)))
+  (list_diff string_dec (ftv t) (ftv s))) as Rfr.
+  (* 
+    Rfr:
+      all fresh, so no clash, so lookup y (swap R') = x (y (by freshness) cannot have occured before)
+    R:
+      suppose x in (strip_R R). Then the y that we find cannot be in rhs Rfr by freshness.
+      Hence that is also in R. Hence we can forget about Rfr for now.
+
+      We need to prove lookup y (swap R') = Some x.
+
+      suppose lookup y (swap R') = z <> x. Then (z, y) is in front of (x, y) inside of R'. not possible by
+        strip_R: that would not have allowed (x, y) to be added, since y is then already in the rhs.
+      certainly not by vacuous faulty stuff in front of R that has no effect on s.
+  *)
+Admitted.
 
 Definition a_constr {R} {s s' : term} t : prod (list (string * string)) (term) :=
   let R' := @a_R_constr R s s' t in
   let used' := tv s ++ tv s' ++ tv t ++ (map fst R') ++ (map snd R') in 
   (R', snd (to_GU_ used' R' t)).
-
-Lemma a_R_constr_UniqueRHS R R' s s' t :
-  R' = @a_R_constr R s s' t ->
-  UniqueRhs R'.
-Admitted.
 
 Lemma a_R_constr_alpha_s R s s' t R' :
   R' = a_R_constr R s s' t ->
@@ -866,18 +1021,23 @@ Proof.
   unfold a_constr.
   intros.
   inversion H.
-  apply to_GU__alpha_.
+  apply to_GU__alpha_'.
   - eapply a_R_constr_UniqueRHS. eauto.
   - intros.
-    exists x.
-    apply in_app_iff.
-    right.
-    apply in_app_iff.
-    right.
-    eapply in_map with (f := (fun x0 : string =>
-(x0, x0))) in H0.
-    eauto.
-Qed.
+  (* x in RHS of Rfr, R or R_id?
+    Rfr: RHS only has fresh over (tv t), and x in (tv t)
+    R: We (can) know Alpha R s s'.
+      By x in ftv t and not x in (a_R_constr): In x (ftv s).
+      Then also (In x (ftv s')) by ftv preserved and lookup x R = None.
+      Hence we must have lookup x (swap R) = None. If we would find any, then ftv x in s'
+        would have to be mapped to that, and we would have a clash.
+
+    *)
+    admit.
+  - intros.
+    apply in_or_app.
+    intuition.
+Admitted.
 
 Lemma a_constr__s_alpha {R s s' t R' t'} :
   (R', t') = @a_constr R s s' t ->
@@ -987,16 +1147,17 @@ Proof.
   remember (tv t ++ tv s ++ tv_keys_env sigma) as used.
   remember (map (pair^~ (fresh18 used)) (btv s ++ btv_env sigma)) as binders.
   inversion H.
-  apply to_GU__alpha_.
-  - (* we will do that by construction
-        AH, here we need to NOT add (x, x) for x that is already in lhs of binders
+  apply to_GU__alpha_'.
+  - admit.
+  - intros.
+    rewrite <- H2 in *.
+    (* by lookup x R = None, we know x not in btvs of s or sigma, hence not mapped to fresh.
+      thereafter, it cannot be in the rhs of R, since the remainder is only id substs
     *)
     admit.
   - intros.
-    exists x.
-    apply in_app_iff.
-    right.
-    (* x in ftv t, so (x, x) in (map (x -> (x,x)) (ftv t))*)
+    subst.
+    intuition.
 Admitted.
 
 Lemma t_constr__fresh_X_btv_t' {t t' R s sigma X} :

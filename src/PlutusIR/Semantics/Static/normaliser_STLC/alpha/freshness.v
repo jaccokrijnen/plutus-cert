@@ -371,3 +371,11 @@ Lemma tv_c_appr {X t1 t2} :
 Admitted.
 
 (* FTV *)
+
+Lemma ftv_c_appl {X t1 t2} :
+  In X (ftv t1) -> In X (ftv (tmapp t1 t2)).
+Admitted.
+
+Lemma ftv_c_appr {X t1 t2} :
+  In X (ftv t2) -> In X (ftv (tmapp t1 t2)).
+Admitted.

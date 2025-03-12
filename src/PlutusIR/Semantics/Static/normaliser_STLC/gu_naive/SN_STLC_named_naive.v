@@ -518,6 +518,11 @@ Fixpoint remove_ids (sigma : list (string * term)) : list (string * term) :=
   | (x, t)::sigma' => (x, t)::(remove_ids sigma')
   end.
 
+Lemma remove_ids_subset sigma :
+  incl (remove_ids sigma) sigma.
+Proof.
+Admitted.
+
 Inductive ParSeq : list (string * term) -> Set :=
 | ParSeq_nil : ParSeq []
 | ParSeq_cons x t sigma :
@@ -640,6 +645,16 @@ Lemma ftv_keys_env_helper sigma x :
     -> ~ In x (ftv_keys_env sigma).
 Admitted.
 
+
+Lemma subs_does_not_create_btv sigma x s :
+  ~ In x (btv s) -> ~ In x (btv_env sigma) -> ~ In x (btv (subs sigma s)).
+Admitted.
+
+Lemma btv_env_subset a sigma' sigma :
+  incl sigma' sigma ->
+  ~ In a (btv_env sigma) -> ~ In a (btv_env sigma').
+Admitted.
+
 Lemma psubs_to_subs {s sigma} :
   ParSeq sigma -> subs sigma s = psubs sigma s.
 Proof.
@@ -682,12 +697,13 @@ Proof.
           repeat rewrite H1.
           apply sub_vac. (* NOTE: Because this also talks about btvs, that is why we needed to add the btv condeition in parseq*)
           inversion H; subst.
-          - 
-            (* by a1 not s, and a1 not in ftv keys env sigma and subs 
-              does not introduce new ftv*) admit.
+          - apply subs_does_not_create_ftv; auto.
+            intros Hcontra.
+            apply ftv_var in Hcontra. subst. apply String.eqb_neq in H0. contradiction.
           - inversion H; subst. 
-            (* by a1 not in btv_env sigma and subs does 
-              not introduce new btv*) admit.
+            apply subs_does_not_create_btv; auto.
+            eapply btv_env_subset in H7; eauto.
+            apply remove_ids_subset.
         }
         rewrite H1.
         eapply IHsigma.
@@ -725,7 +741,7 @@ Proof.
            inversion IHsigma.
            auto.
         -- eauto.
-Admitted.
+Qed.
 
 Lemma single_parseq x t : ParSeq [(x, t)].
 Proof.
@@ -1700,7 +1716,7 @@ Proof with eauto with α_eq_db gu_nc_db.
     eapply H10.
     + econstructor...
     + assumption.
-    + eapply step_naive_pererves_nc_ctx with (s := s0); eauto.
+    + eapply step_naive_preserves_nc_ctx with (s := s0); eauto.
       eapply alpha_preserves_nc_ctx; eauto.
     +  
       assert ({ a & prod 
@@ -1709,7 +1725,7 @@ Proof with eauto with α_eq_db gu_nc_db.
       { (* this has a lot of repetition with the above *)
         apply red_beta...
         - econstructor...
-        - eapply step_naive_pererves_nc_ctx with (s := s0); eauto.
+        - eapply step_naive_preserves_nc_ctx with (s := s0); eauto.
           eapply alpha_preserves_nc_ctx; eauto.
       }
       destruct H as [a [Hred_a Ha_a] ].

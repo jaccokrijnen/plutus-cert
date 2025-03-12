@@ -110,11 +110,9 @@ src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/SN_STLC_named2.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/STLC_named_typing.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/STLC_named.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/STLC_normalisation.v
-src/PlutusIR/Semantics/Static/normaliser_STLC/SN_STLC_named.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/alpha.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/alpha_ctx_sub.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/alpha_rename.v
-src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/alpha_step.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/alpha_typing.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/freshness.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/alpha_freshness.v
