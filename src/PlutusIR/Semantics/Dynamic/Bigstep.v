@@ -78,6 +78,7 @@ Inductive eval : term -> term -> nat -> Prop :=
       Constr T i nil =[0]=> Constr T i nil
   | E_Constr_cons : forall i T k_t k_ts t ts v vs,
       t =[k_t]=> v ->
+      ~ is_error v ->
       Constr T i ts =[k_ts]=> Constr T i vs ->
       Constr T i (t :: ts) =[k_t + k_ts]=> Constr T i (v :: vs)
 
@@ -122,6 +123,9 @@ Inductive eval : term -> term -> nat -> Prop :=
   | E_Error_Unwrap : forall t0 j0 T,
       t0 =[j0]=> Error T ->
       Unwrap t0 =[j0 + 1]=> Error T
+  | E_Constr_Error : forall i T k_t k_ts t ts T',
+      t =[k_t]=> Error T' ->
+      Constr T i (t :: ts) =[k_t + k_ts]=> Error T'
 
   (** let (non-recursive)*)
   | E_Let : forall bs t v j,
