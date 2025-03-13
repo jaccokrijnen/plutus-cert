@@ -11,24 +11,23 @@ Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Strings.String.
 Local Open Scope string_scope.
+From Coq Require Import Lia.
 
 Definition Ty_int : ty := Ty_Builtin DefaultUniInteger.
 Definition int_to_int : ty := Ty_Fun Ty_int Ty_int.
 
 
-
-Ltac dec_fully_applied :=
-  match goal with
-    | |- ~ fully_applied ?t =>
-           assert (H := sumboolOut (fully_applied_dec t));
-           assumption
-    | |- fully_applied ?t =>
-           assert (H := sumboolOut (fully_applied_dec t));
-           assumption
-    | |- partially_applied ?t =>
-           assert (H := sumboolOut (partially_applied_dec t));
-           assumption
-  end.
+Lemma partial_plus : <{ (+) ⋅ CInt 3 }> =[ 0 ]=> <{ (+) ⋅ CInt 3}>.
+Proof.
+  assert (Heq : (0 = 0 + 0)%nat) by reflexivity.
+  rewrite Heq.
+  - eapply E_Apply_Builtin_Partial.
+    + eapply E_Builtin. unfold arity. lia.
+    + eapply A_Builtin.
+    + econstructor.
+    + econstructor.
+    + unfold args_len, arity. lia.
+Qed.
 
 Example test_addInteger : forall x, exists k,
   <{ (λ x :: (ℤ → ℤ), {Var x} ⋅ CInt 17) ⋅ ({Builtin AddInteger} ⋅ CInt 3) }>
@@ -38,22 +37,19 @@ Proof.
   intros.
   eexists.
   eapply E_Apply...
-  - dec_fully_applied.
   - apply E_LamAbs.
-  - eapply E_Builtin_Apply_Eta.
-    + admit.
-    + eapply E_Builtin_Eta_Apply.
-      * eapply E_Builtin_Eta with (f := AddInteger).
+  - apply partial_plus.
   - inversion 1.
   - simpl.
     rewrite eqb_refl.
-    eapply E_Apply.
-    + dec_fully_applied.
-    + apply E_LamAbs.
-    + apply E_Constant.
-    + inversion 1.
-    + simpl.
-      apply E_Builtin_Apply.
-      * dec_fully_applied.
-      * reflexivity.
-Admitted.
+    eapply E_Apply_Builtin_Full.
+    + eapply partial_plus.
+    + eapply A_Apply.
+      * econstructor.
+      * apply A_Builtin.
+    + econstructor.
+    + econstructor.
+    + unfold args_len, arity.
+      lia.
+    + reflexivity.
+Qed.

@@ -726,6 +726,136 @@ Section Folds_Alt.
   .
 End Folds_Alt.
 
+Section REL_SUBTERMS.
+
+(* General pattern for working with relations that are closed/compatible/decomposable/...
+ * with the term structure. see section COMPATIBLE for one instantiation
+ *)
+
+Context
+  (R : Prop * Prop -> Prop) (* could be instantiated to ->, <-, <-> *)
+  (P : term -> Prop)
+  (Q : binding -> Prop)
+.
+
+Definition subterms_bs (rel_sub_b : binding -> Prop) : list binding -> Prop := fix subterms_bs bs :=
+  match bs with
+  | nil => True
+  | b :: bs => rel_sub_b b /\ subterms_bs bs
+  end
+.
+
+Definition subterms_ts  (rel_sub_t : term -> Prop) : list term -> Prop := fix subterms_ts ts :=
+  match ts with
+  | nil => True
+  | t :: ts => rel_sub_t t /\ subterms_ts ts
+  end
+.
+
+Fixpoint subterms (t : term) : Prop :=
+  match t with
+  | Let rec bs t  => subterms_bs subterms_b bs /\ P t
+  | Var x         => True
+  | TyAbs X K t   => P t
+  | LamAbs x T t  => P t
+  | Apply s t     => P s /\ P t
+  | Constant c    => True
+  | Builtin f     => True
+  | TyInst t T    => P t
+  | Error T       => True
+  | IWrap F T t   => P t
+  | Unwrap t      => P t
+  | Constr T i ts => subterms_ts subterms ts
+  | Case T t ts   => P t /\ subterms_ts subterms ts
+  end
+with subterms_b (b : binding) : Prop :=
+  match b with
+  | DatatypeBind dtd  => True
+  | TypeBind X K      => True
+  | TermBind str vd t => subterms t
+  end
+.
+
+Definition rel_sub_bs  (rel_sub_b : binding -> Prop) : list binding -> Prop := fix rel_sub_bs bs :=
+  match bs with
+  | nil => True
+  | b :: bs => rel_sub_b b /\ rel_sub_bs bs
+  end
+.
+
+Definition rel_sub_ts  (rel_sub_t : term -> Prop) : list term -> Prop := fix rel_sub_ts ts :=
+  match ts with
+  | nil => True
+  | t :: ts => rel_sub_t t /\ rel_sub_ts ts
+  end
+.
+
+Fixpoint rel_sub (t : term) : Prop :=
+  R
+  match t with
+  | Let rec bs t  => (P (Let rec bs t)  , rel_sub_bs rel_sub_b bs /\ P t)
+  | Var x         => (P (Var x)         , True)
+  | TyAbs X K t   => (P (TyAbs X K t)   , P t)
+  | LamAbs x T t  => (P (LamAbs x T t)  , P t)
+  | Apply s t     => (P (Apply s t)     , P s /\ P t)
+  | Constant c    => (P (Constant c)    , True)
+  | Builtin f     => (P (Builtin f)     , True)
+  | TyInst t T    => (P (TyInst t T)    , P t)
+  | Error T       => (P (Error T)       , True)
+  | IWrap F T t   => (P (IWrap F T t)   , P t)
+  | Unwrap t      => (P (Unwrap t)      , P t)
+  | Constr T i ts => (P (Constr T i ts) , rel_sub_ts rel_sub ts)
+  | Case T t ts   => (P (Case T t ts)   , P t /\ rel_sub_ts rel_sub ts)
+  end
+with rel_sub_b (b : binding) : Prop :=
+  R
+  match b with
+  | DatatypeBind dtd  => (Q (DatatypeBind dtd)  ,True)
+  | TypeBind X K      => (Q (TypeBind X K)      ,True)
+  | TermBind str vd t => (Q (TermBind str vd t) ,rel_sub t)
+  end
+.
+
+
+
+End REL_SUBTERMS.
+
+Section COMPATIBLE.
+
+(* compatibility of terms/bindings with a relation *)
+
+Context
+  (P : term -> Prop)
+  (Q : binding -> Prop)
+.
+
+(* compatibility for term predicates only, e.g.
+    compatible P (Apply s t) = P s /\ P t -> P (Apply s t)
+*)
+Definition compatible (t : term) :=
+  rel_sub (fun '(whole, parts) => parts -> whole) P (fun b => True) t.
+
+(* More general version that accepts a predicate on bindings *)
+Definition compatible' (t : term) :=
+  rel_sub (fun '(whole, parts) => parts -> whole) P Q t.
+
+End COMPATIBLE.
+
+Section DECOMPOSABLE.
+
+  Context
+    (P : term -> Prop)
+    (Q : binding -> Prop)
+  .
+
+  (* e.g. decomposable P (Apply s t) = P (Apply s t) -> P s /\ P t *)
+  Definition decomposable (t : term) :=
+    rel_sub (fun '(whole, parts) => whole -> parts) P (fun b => True) t.
+
+  Definition decomp (t : term) := P t -> subterms P t.
+End DECOMPOSABLE.
+
+
 (* A transformation algebra returns the original types for ty, sums and products *)
 (* Definition ty_alg_transform T : Set := ty_alg ty (list (list ty)) (list ty) T. *)
 Definition ty_alg_transform T : Set := ty_alg ty T.
@@ -772,6 +902,15 @@ Fixpoint splitTy (T : ty) : list ty * ty :=
   | Ty_Fun Targ T' => (cons Targ (fst (splitTy T')), snd (splitTy T'))
   | Tr => (nil, Tr)
   end.
+
+(* Application spine *)
+Fixpoint spine (t : term) : term * list (term + ty) :=
+  match t with
+  | Apply s t  => let '(f, args) := spine s in (f, inl t :: args)
+  | TyInst t T => let '(f, args) := spine t in (f, inr T :: args)
+  | t          => (t, [])
+  end
+.
 
 
 

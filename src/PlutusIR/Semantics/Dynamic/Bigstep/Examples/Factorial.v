@@ -82,17 +82,6 @@ Admitted.
 Ltac finish :=
   match goal with
 
-  (* fully_applied *)
-    | |- ~ fully_applied ?t =>
-           assert (H := sumboolOut (fully_applied_dec t));
-           assumption
-    | |- fully_applied ?t -> False =>
-           assert (H := sumboolOut (fully_applied_dec t));
-           assumption
-    | |- fully_applied ?t =>
-           assert (H := sumboolOut (fully_applied_dec t));
-           assumption
-
   (* bindings_nonstrict *)
     | |- bindings_nonstrict ?bs ?bs' => auto using bindings_nonstrict
 
@@ -121,89 +110,13 @@ Proof with (simpl; auto; try solve [finish]).
     constructor.
   }
   { constructor. }
-  { inversion 1. }
   {
     simpl.
 
     eapply E_Apply...
     {
       eapply eval_ifthenelse_false.
-      - eapply E_Builtin_Apply...
-      - constructor.
-      - constructor.
-      } {
-      constructor. } {
-        inversion 1.
-      }
-
-      simpl.
-
-      eapply E_Apply...
-      - eapply E_Apply...
-        + apply E_Builtin.
-          eapply E_Builtin_Eta with (f := MultiplyInteger)...
-        + constructor.
-        + inversion 1.
-        + cbn. constructor.
-      - eapply E_Apply...
-        + eapply E_LetRec.
-          { auto using bindings_nonstrict. }
-          constructor.
-          simpl.
-          eapply E_LetRec_Nil.
-          constructor.
-        + eapply E_Builtin_Apply...
-        + inversion 1.
-        + simpl.
-          eapply E_Apply...
-          { eapply eval_ifthenelse_false.
-            - constructor...
-              { admit. } (* TODO: decision procedure partially_applied *)
-              { admit. } (* TODO *)
-            - constructor...
-            - constructor...
-          }
-          { constructor... }
-          { finish.  }
-          { simpl.
-            eapply E_Apply...
-            - eapply E_Apply...
-              + apply E_Builtin.
-                apply E_Builtin_Eta with (f := MultiplyInteger).
-              + constructor...
-              + finish.
-              + simpl.
-                constructor...
-            - eapply E_Apply...
-              + econstructor...
-                constructor.
-                simpl.
-                constructor.
-                constructor.
-              + constructor...
-                { admit. } (* TODO: decision procedure partially_applied *)
-                { admit. } (* TODO *)
-              + admit.
-              + simpl.
-                eapply E_Apply...
-                * eapply eval_ifthenelse_true...
-                  ** constructor...
-                { admit. } (* TODO: decision procedure partially_applied *)
-                { admit. } (* TODO *)
-
-                  ** constructor...
-                  ** constructor...
-                * constructor...
-                * finish.
-                * constructor...
-            - finish.
-            - constructor...
-                { admit. } (* TODO: decision procedure partially_applied *)
-                { admit. } (* TODO *)
-          }
-          - admit.
-          - constructor...
-                { admit. } (* TODO: decision procedure partially_applied *)
-                { admit. } (* TODO *)
-          }
+      - eapply E_Apply_Builtin_Full...
+        admit.
+        (* TODO: use new big-step for builtins *)
 Admitted.

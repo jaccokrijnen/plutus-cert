@@ -109,8 +109,8 @@ Proof with eauto_LR.
 
       eapply RV_condition...
       eapply RV_unfolded_to_RV.
-      split. eapply eval_to_result in Hev'__e_f. inversion Hev'__e_f. assumption.
-      split. eapply eval_to_result in Hev__e'_f. inversion Hev__e'_f. assumption.
+      split. eapply eval_to_result in Hev'__e_f. inversion Hev'__e_f. apply <- result__IWrap. eassumption.
+      split. eapply eval_to_result in Hev__e'_f. inversion Hev__e'_f. apply <- result__IWrap. eassumption.
       eapply Hunwr...
 
       eapply closing_preserves_kinding_1...

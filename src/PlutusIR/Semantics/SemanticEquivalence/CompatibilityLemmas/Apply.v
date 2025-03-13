@@ -16,6 +16,7 @@ Require Import Coq.Program.Equality.
 Import ListNotations.
 Import PlutusNotations.
 
+(*
 Lemma fully_applied__arg_value : forall s v,
   fully_applied (Apply s v) -> v =[0]=> v.
 Admitted.
@@ -76,7 +77,7 @@ Lemma fully_applied__RC k s t s' t' :
   fully_applied <{ s' ⋅ t' }>
 .
 *)
-
+*)
 
 
 (* Notation for closing substitutions *)
@@ -141,6 +142,8 @@ Proof with eauto_LR.
 
       apply RV_monotone with (i := k - j_1 - j_2 - 1) (ck := Delta)  in HRV2...
 
+      admit.
+      (*
       apply Hfe with (i := k - j_1 - j_2 - 1) in HRV2 as HRC0...
 
       assert (k - (j_1 + j_2 + 1 + j_3) = k - j_1 - j_2 - 1 - j_3)...
@@ -150,37 +153,6 @@ Proof with eauto_LR.
       apply RC_to_RV with (j := j_3) (e_f := e_f) in HRC0 as temp...
       destruct temp as [e'_f [j'_3 [Hev__e'_f HRV0]]].
 
-      match goal with | |- exists _ _, eval ?t _ _ /\ _ => destruct (dec_fully_applied t) end.
-      (* TODO: fix duplication in branches *)
-      {
-        eexists. eexists.
-        split.
-        { eapply E_Builtin_partial...
-          apply fully_applied__arg_value in f .
-          assert (H : close env' (msyn2 rho) e2' = e'_f2 /\ 0 = j'_2). {
-            eapply eval__deterministic...
-          }
-          destruct H. subst.
-          eassumption.
-        }
-        {
-          split. eapply RV_typable_empty_1...
-          split. eapply RV_typable_empty_2...
-          eapply RV_condition...
-        }
-      }
-      {
-        {
-          eexists. eexists.
-          split.
-          eapply E_Apply...
-          apply RV_error in HRV2... destruct HRV2 as [ [Hnerr0 Hnerr0'] | [Herr0 Herr0']]...
-          split. eapply RV_typable_empty_1...
-          split. eapply RV_typable_empty_2...
-          eapply RV_condition...
-        }
-      }
-
       assert (~ is_error e'_f2). {
         apply RV_error in HRV2.
         destruct HRV2.
@@ -188,48 +160,20 @@ Proof with eauto_LR.
           - destruct H. contradiction.
           - lia.
         }
-      auto.
+      admit.
+        *)
     + destruct temp as [Herr Herr'].
       inversion Herr.
-  - (* E_Builtin_Apply_Eta*)
+
+  - (* E_Apply_Builtin_Full *)
     admit.
-  - (* E_Builtin_Apply *)
+  - (* E_Builtin_Apply_Partial *)
 
     specialize (IH1 _ _ _ _ H_RD H_RG).
     specialize (IH2 _ _ _ _ H_RD H_RG).
     clear H_RG H_RD.
 
-    match goal with | |- exists _ _, eval ?t _ _ /\ _ => destruct (dec_fully_applied t) end.
-    { (* fully_applied *)
-      eexists. eexists.
-      split.
-      {
-      (*
-        TODO: By lemma full_applied__Apply, close _ _ e1 and close _ _ e2 both evaluate to lambdas (with
-         respectively a property of substituting equality), use
-         IH1 with those lambdas and then rewrite the substitution using those equalities.
-      *)
-      admit.
-      }
-      { admit.
-      (* TODO: typing, similar to E_Apply cases *)
-      }
-    }
-    { (* ~fully_applied *)
-      eexists.
-      eexists.
-      split.
-      {
-        eapply E_Apply... (* TODO: *)
-        { (* from IH1 and fact that fully_applied implies e1 will evaluate to lambda *) admit. }
-        { (* from IH2 and fact that fully_aplied implies e2 will be a value *) admit. }
-        { (* auto, using existential proven above *) admit. }
-        { (* from IH1 *) admit. }
-      }
-      {
-      admit. (* TODO: similar to E_Apply case *)
-      }
-    }
+    admit.
   - (* E_Error_Apply1 *)
     rename j1 into j_1.
 
@@ -449,7 +393,7 @@ Ltac RV_no_error H HR :=
   try solve [contradiction]
 .
 
-
+(*
 Lemma H_fully_applied e1 e2 e1' e2' T1 T2 k Δ ρ:
   RD Δ ρ ->
   fully_applied <{e1 ⋅ e2}> ->
@@ -491,9 +435,9 @@ all: try solve [eauto | lia].
 autorewrite with applied_args in *. lia.
 - autorewrite with applied_args in *. lia.
 Admitted.
+*)
 
-
-
+(*
 Lemma builtin__RC s t s' t' r T ρ k :
   fully_applied (Apply s t) ->
   compute_defaultfun (Apply s t) = Some r ->
@@ -511,7 +455,8 @@ subst r' j.
 
 (* run_C H_RC r' j' H_eval' H_res'. *)
 Admitted.
-
+  *)
+(*
 Lemma compat_Apply_builtin Δ Γ e1 e2 e1' e2' T1 T2 :
     fully_applied <{e1 ⋅ e2}> ->
     approx Δ Γ e1 e1' (Ty_Fun T1 T2) ->
@@ -527,7 +472,7 @@ Proof.
   destruct H_approx_e1 as [_ [ _ H_RC_e1]].
   destruct H_approx_e2 as [_ [ _ H_RC_e2]].
 Admitted.
-
+*)
 
 Lemma compat_Apply Δ Γ e1 e2 e1' e2' T1 T2 :
     approx Δ Γ e1 e1' <{T1 → T2}> ->
@@ -574,9 +519,9 @@ Proof with eauto_LR.
     (* related arguments go to related results, use j0 steps *)
     admit.
 
-  - (* E_Builtin_Apply_Eta *)
+  - (* E_Apply_Builtin_Partial *)
     admit.
-  - (* E_Builtin_Apply *)
+  - (* E_Apply_Builtin_Full *)
 
     use_approx IH_LR1 k
       H_C_e1.
@@ -595,55 +540,7 @@ Proof with eauto_LR.
     remember (close γ (msyn1 ρ) e2) as c_e2.
     remember (close γ' (msyn2 ρ) e2') as c_e2'.
 
-    autorewrite with applied_args in *.
-
-    destruct (dec_fully_applied <{ c_e1' ⋅ c_e2' }>) as [H_FA | H_FA].
-    + (* fully_applied *)
-
-      (* c_e1 evaluates to a value (eta expansion with partially applied builtin) *)
-      apply fully_applied__Apply in H1 as [x [T [s [Hev Heq]]]].
-      apply fully_applied__Apply in H_FA as [x' [T' [s' [Hev' Heq']]]].
-      run_C H_C_e1
-        r1' j_1' H_ev__e1' H_V_f...
-      RV_no_error H_V_f H_V_f.
-      replace (k - 0) with k in H_V_f; try solve [lia].
-      assert (value c_e2) by admit.
-      assert (value c_e2') by admit.
-      apply C_values_to_V in H_C_e2 as H_V_e2...
-
-      (* Related arguments to related results *)
-      destruct (RV_apply (k - 1) H_RD H_V_f H_V_e2 ltac:(lia) ltac:(lia))
-        as [x0 [b [b' [T1v [T1v' [Heq'' [Heq''' HRC0]]]]]]].
-      inversion Heq''.
-      subst x0 s r1'.
-      assert (Heq_res : <{ λ x' :: T', s' }> = <{ λ x :: T1v', b' }>). {
-        eauto using eval__deterministic_result.
-      }
-      inversion Heq_res.
-      subst x s' T'.
-      rewrite Heq' in HRC0.
-      rewrite Heq in HRC0.
-
-      clear - HRC0 Hev__app.
-
-      run_C HRC0
-        r' j' H_eval' H_res'...
-
-      all: admit.
-    + (* ~fully_applied *)
-      eexists.
-      eexists.
-      split.
-      {
-        eapply E_Apply... (* TODO: *)
-        { (* from IH1 and fact that fully_applied implies e1 will evaluate to lambda *) admit. }
-        { (* from IH2 and fact that fully_aplied implies e2 will be a value *) admit. }
-        { (* auto, using existential proven above *) admit. }
-        { (* from IH1 *) admit. }
-      }
-      {
-      admit. (* TODO: similar to E_Apply case *)
-      }
+    admit.
 
 
   - (* E_Error_Apply1 *)

@@ -121,6 +121,8 @@ Section Substitution.
 
 End Substitution.
 
+
+(*
 Lemma alpha__fully_applied t t' :
   alpha [] t t' ->
   fully_applied t ->
@@ -128,6 +130,7 @@ Lemma alpha__fully_applied t t' :
 .
 Proof.
 Admitted.
+*)
 
 Lemma alpha__compute_defaultfun {t t' v} :
   alpha [] t t' ->
@@ -136,8 +139,10 @@ Lemma alpha__compute_defaultfun {t t' v} :
 .
 Admitted.
 
+(*
 Lemma alpha__applied_args t t' : alpha [] t t' -> applied_args t = applied_args t'.
 Admitted.
+*)
 
 Lemma alpha__value v v' :
   alpha [] v v' ->
@@ -196,14 +201,10 @@ Proof.
     exists r'.
     split.
     + eapply E_Apply.
-      * intro.
-        apply H.
-        apply alpha_sym with (ys := []) in H_alpha; try constructor.
-        eauto using alpha__fully_applied.
       * exact H_t1'_eval.
       * exact H_t2'_eval.
       * intro.
-        apply H0.
+        apply H.
         apply alpha_sym with (ys := []) in H_t2'_alpha; try constructor.
         eauto using alpha__is_error.
       * assumption.
@@ -212,19 +213,4 @@ Proof.
     inversion H_alpha; subst.
     (* Prove that partially_applied respects alpha. *)
     admit.
-  - (* E_Builtin_Apply *)
-    inversion H_alpha; subst.
-    specialize (alpha__compute_defaultfun H_alpha H0) as [ r' [H_compute H_alpha_r]].
-    exists r'.
-    split.
-    + eauto using alpha__fully_applied, eval.
-    + eauto.
-  - (* E_Error_Apply1 *)
-    inversion H_alpha; subst.
-    specialize (IHH_eval t1' H2) as [r' [H_eval_t' H_alpha_r']].
-    inversion H_alpha_r'.
-  - (* E_Error_Apply2 *)
-    inversion H_alpha; subst.
-    specialize (IHH_eval t2' H4) as [r' [H_eval_t' H_alpha_r']].
-    inversion H_alpha_r'.
-Admitted.
+Admitted. (* TODO: builtins *)

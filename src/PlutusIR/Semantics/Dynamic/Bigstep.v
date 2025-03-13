@@ -1,5 +1,6 @@
 Require Import PlutusCert.PlutusIR.
 Import PlutusNotations.
+Require Export PlutusCert.PlutusIR.Semantics.Static.Builtins.Arity.
 Require Export PlutusCert.PlutusIR.Semantics.Dynamic.Builtins.
 Require Export PlutusCert.PlutusIR.Semantics.Dynamic.AnnotationSubstitution.
 Require Export PlutusCert.PlutusIR.Semantics.Dynamic.Datatypes.
@@ -29,26 +30,10 @@ Inductive bindings_nonstrict : list binding -> list binding -> Prop :=
       bindings_nonstrict (TermBind s vd t :: bs) (TermBind NonStrict vd t :: bs')
 .
 
-Inductive eval_partial_builtin : term -> term -> Prop :=
-  | E_Builtin_Eta : forall f,
-      Builtin f =η=> eta_expand f
-
-  | E_Builtin_Eta_Apply : forall s v x T b,
-      s =η=> LamAbs x T b ->
-      Apply s v =η=> <{  [x := v] b }>
-
-  | E_Builtin_Eta_TyInst : forall s X K T b,
-      s =η=> TyAbs X K b ->
-      TyInst s T =η=> <{ :[X := T] b }>
-
-where "t '=η=>' v" := (eval_partial_builtin t v)
-.
-
 Inductive eval : term -> term -> nat -> Prop :=
   | E_LamAbs : forall x T t,
       LamAbs x T t =[0]=> LamAbs x T t
   | E_Apply : forall t1 t2 x T t0 v2 v0 j1 j2 j0,
-      ~ fully_applied (Apply t1 t2) ->
       t1 =[j1]=> LamAbs x T t0 ->
       t2 =[j2]=> v2 ->
       ~ is_error v2 ->
@@ -58,7 +43,6 @@ Inductive eval : term -> term -> nat -> Prop :=
   | E_TyAbs : forall X K t,
       TyAbs X K t =[0]=> TyAbs X K t
   | E_TyInst : forall t1 T2 X K t0 v0 j1 j0,
-      ~ fully_applied (TyInst t1 T2) ->
       t1 =[j1]=> TyAbs X K t0 ->
       <{ :[X := T2] t0 }> =[j0]=> v0 ->
       TyInst t1 T2 =[j1 + 1 + j0]=> v0
@@ -82,28 +66,38 @@ Inductive eval : term -> term -> nat -> Prop :=
       Constr T i ts =[k_ts]=> Constr T i vs ->
       Constr T i (t :: ts) =[k_t + k_ts]=> Constr T i (v :: vs)
 
-  (** Builtins: partially applied *)
-  | E_Builtin f v :
-      Builtin f =η=> v ->
-      Builtin f =[0]=> v
-  | E_Builtin_Apply_Eta : forall s t v,
-      partially_applied (Apply s t) ->
-      Apply s t =η=> v ->
-      Apply s t =[0]=> v
-  | E_Builtin_TyInst_Eta : forall t T v,
-      partially_applied (TyInst t T) ->
-      TyInst t T =η=> v ->
-      TyInst t T =[0]=> v
+  (** Builtins: partial application *)
+  | E_Builtin f :
+      arity f > 0 ->
+      Builtin f =[0]=> Builtin f
+  | E_Apply_Builtin_Partial : forall f s t vb v j0 j1,
+      s =[j0]=> vb ->
+      applied f vb ->
+      t =[j1]=> v ->
+      value v ->
+      args_len (Apply vb v) < arity f ->
+      Apply s t =[j0 + j1]=> Apply vb v
+  | E_TyInst_Builtin_Partial : forall t T j0 f vb,
+      t =[j0]=> vb ->
+      applied f vb ->
+      args_len (TyInst vb T) < arity f -> (* Applying to one more argument is still a partial application *)
+      TyInst t T =[j0]=> TyInst vb T
 
-  (** Builtins: fully applied **)
-  | E_Builtin_Apply : forall s t v,
-      fully_applied (Apply s t) ->
-      compute_defaultfun (Apply s t) = Some v ->
-      Apply s t =[1]=> v
-  | E_Builtin_TyInst : forall t T v,
-      fully_applied (TyInst t T) ->
-      compute_defaultfun (TyInst t T) = Some v ->
-      TyInst t T =[1]=> v
+  (* Builtins fully applied *)
+  | E_Apply_Builtin_Full : forall f s t vb v j0 j1 r,
+      s =[j0]=> vb ->
+      applied f vb ->
+      t =[j1]=> v ->
+      value v ->
+      args_len (Apply vb v) = arity f ->
+      compute_defaultfun (Apply vb v) = Some r ->
+      Apply s t =[j0 + j1 + 1]=> r
+  | E_TyInst_Builtin_Full : forall t T f vb r j0,
+      t =[j0]=> vb ->
+      applied f vb ->
+      args_len (TyInst vb T) = arity f ->
+      compute_defaultfun (TyInst vb T) = Some r ->
+      TyInst t T =[j0 + 1]=> r
 
   (* Errors and their propagation *)
   | E_Error : forall T,
@@ -228,6 +222,11 @@ Create HintDb hintdb__eval_no_error.
   E_IWrap
   E_Unwrap
   E_Constant
+  E_Builtin
+  E_Apply_Builtin_Partial
+  E_TyInst_Builtin_Partial
+  E_Apply_Builtin_Full
+  E_TyInst_Builtin_Full
   E_Let
   E_LetRec
   E_Let_Nil

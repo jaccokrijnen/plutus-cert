@@ -85,8 +85,8 @@ Proof with eauto_LR.
 
   left.
 
-  split... intros Hcon. inversion Hcon.
-  split... intros Hcon. inversion Hcon.
+  split...
+  split...
 
   eexists. eexists. eexists. eexists. eexists.
 
