@@ -118,7 +118,7 @@ Equations? substituteTCA (X : string) (U T : ty) : ty by wf (size T) :=
               let T' := rename Y Y' T in
               Ty_Forall Y' K (substituteTCA X U T')
             else
-              Ty_Forall Y K T ;
+              Ty_Forall Y K (substituteTCA X U T) ;
   substituteTCA X U (Ty_Builtin u) =>
       Ty_Builtin u ;
   substituteTCA X U (Ty_Lam Y K T) =>
