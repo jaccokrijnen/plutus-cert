@@ -368,69 +368,79 @@ Admitted.
 Lemma sn_ty_fun {B s t} : B <> App -> SN_na s -> SN_na t -> SN_na (@tmapp B s t).
 Proof.
   intros HnotApp HSN_s HSN_t.
+  generalize dependent t.
   induction HSN_s.
 
   (* now the other IH *)
-  revert HSN_t.
+  intros t.
   elim=> {}. intros.
 
   apply SNI.
   intros.
-  inv H.
-  inv H0.
-  inv H2.
+  inversion H; subst.
+  inversion H0; subst.
+  inversion H2; subst.
   - (* B not App : contradiction *)
     contradiction.
-  - eapply step_naive_preserves_alpha2 with (s' := to_GU x) (R := nil) in H5 as [C [Hstep_C Ha_C] ].
-    + eapply α_preserves_SN_R with (R := []) (s := @tmapp B C t); eauto.
+  - eapply step_naive_preserves_alpha2 with (s' := to_GU x) (R := nil) in H7 as [C [Hstep_C Ha_C] ].
+    + eapply α_preserves_SN_R with (R := []) (s := @tmapp B C t2); eauto.
       * eauto with α_eq_db.
       * eapply X with (y := C).
         apply step_gu_naive_intro with (s' := to_GU x); eauto.
         -- eapply to_GU__alpha.
         -- eapply to_GU__GU.
-        -- eauto.
-    + admit.
-    + admit.
-    + admit.
-  - eapply step_naive_preserves_alpha2 with (s' := to_GU x0) (R := nil) in H6 as [B [Hstep_B Ha_B] ].
-    + eapply α_preserves_SN_R with (R := []) (s := Ty_Fun x B); eauto.
-      * admit.
-      * eapply H0 with (y := B).
+        -- eapply α_preserves_SN_R with (s := x0). eauto. constructor. auto.
+    + eapply gu_app_l. eauto.
+    + eapply to_GU__GU.
+    + eapply @alpha_trans with (t := x).
+      -- repeat constructor.
+      -- eauto with α_eq_db.
+      -- eapply to_GU__alpha.
+  - eapply step_naive_preserves_alpha2 with (s' := to_GU x0) (R := nil) in H7 as [C [Hstep_C Ha_C] ].
+    + eapply α_preserves_SN_R with (R := []) (s := @tmapp B x C); eauto.
+      * eauto with α_eq_db.
+      * eapply X0 with (y := C).
         apply step_gu_naive_intro with (s' := to_GU x0); eauto.
-        -- admit.
-        -- admit.
-    + admit.
-    + admit.
-    + admit.
-Admitted.
+        -- eapply to_GU__alpha.
+        -- eapply to_GU__GU.
+    + eapply gu_app_r. eauto.
+    + eapply to_GU__GU. 
+    + eapply @alpha_trans with (t := x0).
+      -- repeat constructor.
+      -- eauto with α_eq_db.
+      -- eapply to_GU__alpha.
+Qed.
 
-Lemma sn_ty_forall {X K T} : SN_na T -> SN_na (Ty_Forall X K T).
+Lemma sn_ty_forall {B X K T} : SN_na T -> SN_na (@tmlam B X K T).
 Proof.
-  intros.
-  induction H.
+  intros HSN_T.
+  induction HSN_T.
   apply SNI.
   intros y Hstep.
   inversion Hstep; subst.
-  inversion H0; subst.
-  inversion H2; subst.
+  inversion H; subst.
+  inversion H1; subst.
 
-  eapply step_naive_preserves_alpha2 with (s' := to_GU x) (R := ((y0, X)::nil)) in H7 as [B [Hstep_B Hα_B] ].
+  eapply step_naive_preserves_alpha2 with (s' := to_GU x) (R := ((y0, X)::nil)) in H7 as [C [Hstep_C Hα_C] ].
   - 
-    assert (Alpha [] (Ty_Forall y0 K T'0) (Ty_Forall X K B) * step_gu_naive x B)%type as [Hα Hstep_BForall].
+    assert (Alpha [] (@tmlam B y0 K s0) (@tmlam B X K C) * step_gu_naive x C)%type as [Hα Hstep_BForall].
     {
       split.
       - constructor; eauto.
       - apply step_gu_naive_intro with (s' := to_GU x); eauto.
-        + (* to_GU alpha *) admit.
-        + (* to_GU GU *) admit.
+        + eapply to_GU__alpha.
+        + eapply to_GU__GU.
     }
-    eapply α_preserves_SN_R with (R := []) (s := Ty_Forall X K B) in H; eauto.
-    (* alpha sym*) admit.
+    eapply α_preserves_SN_R with (R := []) (s := @tmlam B X K C) in X0; eauto.
+    eauto with α_eq_db.
   
-  - (* Gu_forall *) admit.
-  - (* gu to go *) admit.
-  - (* x alpha to_Gu x, and transitivity*) admit.
-Admitted.
+  - eapply gu_lam. eauto.
+  - eapply to_GU__GU.
+  - eapply @alpha_trans with (t := x).
+    + repeat constructor.
+    + eauto with α_eq_db.
+    + eapply alpha_extend_ids. constructor. constructor. apply to_GU__alpha.
+Qed.
 
 Lemma sn_closedL {B} t s : SN_na (@tmapp B s t) -> SN_na s.
 Proof.
@@ -1873,12 +1883,82 @@ Proof with eauto using L_sn.
     intros.
     rewrite subs_tmapp.
     unfold L.
-
-    admit.
+    eapply sn_ty_fun.
+    + unfold not. intros Hcontra. inversion Hcontra.
+    + eapply X; eauto with gu_nc_db.
+      eapply Uhm_appl; eauto.
+    + eapply X0; eauto with gu_nc_db.
+      eapply Uhm_appr; eauto.
   - (* IFix *)
-    admit.
+    intros.
+    rewrite subs_tmapp.
+    unfold L.
+    eapply sn_ty_fun.
+    + unfold not. intros Hcontra. inversion Hcontra.
+    + eapply L_sn.
+      eapply X0; eauto with gu_nc_db.
+      eapply Uhm_appl; eauto.
+    + eapply L_sn.
+      eapply X; eauto with gu_nc_db.
+      eapply Uhm_appr; eauto.
   - (* Forall *)
-    admit.
+    intros.
+    rewrite subs_tmlam.
+    unfold L.
+    eapply sn_ty_forall.
+    assert (subs sigma T = subs ((X, tmvar X)::sigma) T).
+    {
+      simpl.
+      rewrite <- single_subs_is_sub.
+      remember (subs sigma T) as T'.
+      erewrite id_subst__id. auto.
+      constructor. constructor.
+    }
+    rewrite H3.
+    eapply X0 with (sigma := ((X, tmvar X)::sigma)); eauto with gu_nc_db.
+    + eapply Uhm_lam; eauto.
+      * inversion H; subst.
+        intros.
+        intros HContra.
+        destr_eqb_eq X y.
+        -- contradiction.
+        -- unfold ftv in HContra. inversion HContra. subst. contradiction. contradiction.
+      * constructor.
+      * intros.
+        unfold Uhm in H0.
+        destruct H0 as [ [uhm1 uhm2] uhm3].
+        specialize (uhm1 y H4).
+        destr_eqb_eq y X.
+        -- simpl in uhm1. apply de_morgan2 in uhm1. destruct uhm1 as [uhm1 _]. contradiction.
+        -- unfold ftv. simpl. intuition.
+      * inversion H; subst.
+        auto.
+    + constructor; auto.
+      * eapply nc_lam; eauto.
+      * intros.
+        destr_eqb_eq y X.
+        -- exfalso.
+           inversion H; subst.
+           contradiction.
+        -- split; auto.
+           unfold ftv. simpl. unfold not. intros Hcontra. intuition.
+    + unfold Uhm in H0.
+      destruct H0 as [ [uhm1 uhm2] uhm3].
+      constructor; auto.
+      * assert (~ In X (ftv_keys_env sigma)).
+        {
+          intros contra.
+          eapply nc_ftv_env with (x := X) in H1.
+          contradiction.
+          apply btv_lam.
+        }
+        intros Hcontra.
+        apply ftv_keys_env_sigma_remove in Hcontra. contradiction.
+      * intros Hcontra.
+        apply uhm1 in Hcontra; auto.
+        simpl in Hcontra.
+        intuition.
+    + eapply extend_EL. eauto. apply L_var.
   - intros.
     unfold L.
     rewrite subs_builtin.
@@ -1962,7 +2042,7 @@ Proof with eauto using L_sn.
     unfold L in ih1. fold L in ih1.
     specialize (ih1 (subs sigma t) ih2).
     assumption.
-Admitted.
+Qed.
 
 (* The identity substitution is in the EL relation *)
 Lemma id_subst__EL E :
