@@ -102,6 +102,7 @@ src/PlutusIR/Semantics/Static/normaliser_STLC/Context.v
 
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/port_plut.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/port_plut2.v
+src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/plutus_kinding_set.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/pre.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/constructions.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/SN_STLC_named_naive.v
@@ -109,7 +110,6 @@ src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/SN_STLC_named2.v
 
 src/PlutusIR/Semantics/Static/normaliser_STLC/STLC_named_typing.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/STLC_named.v
-src/PlutusIR/Semantics/Static/normaliser_STLC/STLC_normalisation.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/alpha.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/alpha_ctx_sub.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/alpha_rename.v

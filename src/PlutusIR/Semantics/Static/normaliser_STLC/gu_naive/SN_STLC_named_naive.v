@@ -580,6 +580,12 @@ Fixpoint remove_ids (sigma : list (string * term)) : list (string * term) :=
 Lemma remove_ids_subset sigma :
   incl (remove_ids sigma) sigma.
 Proof.
+  unfold incl.
+  intros.
+  induction sigma.
+  - inversion H.
+  - (* need lemma to rewrite a in remove_ids a0 :: sigma to a in a0 :: remove_ids sigma*)
+    admit.
 Admitted.
 
 Inductive ParSeq : list (string * term) -> Set :=

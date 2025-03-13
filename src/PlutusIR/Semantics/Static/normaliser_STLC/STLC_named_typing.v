@@ -7,37 +7,7 @@ Local Open Scope list_scope.
 
 From PlutusCert Require Import PlutusIR.
 
-
-Reserved Notation "'|-*_uni' T ':' K" (at level 40, T at level 0, K at level 0).
-Inductive has_kind_uni : DefaultUni -> kind -> Set :=
-  | K_DefaultUniInteger :
-      |-*_uni DefaultUniInteger : Kind_Base
-  | K_DefaultUniByteString :
-      |-*_uni DefaultUniByteString : Kind_Base
-  | K_DefaultUniString :
-      |-*_uni DefaultUniString : Kind_Base
-  | K_DefaultUniUnit :
-      |-*_uni DefaultUniUnit : Kind_Base
-  | K_DefaultUniBool :
-      |-*_uni DefaultUniBool : Kind_Base
-  | K_DefaultUniData :
-      |-*_uni DefaultUniData : Kind_Base
-  | K_DefaultUniBLS12_381_G1_Element :
-      |-*_uni DefaultUniBLS12_381_G1_Element : Kind_Base
-  | K_DefaultUniBLS12_381_G2_Element :
-      |-*_uni DefaultUniBLS12_381_G2_Element : Kind_Base
-  | K_DefaultUniBLS12_381_MlResult :
-      |-*_uni DefaultUniBLS12_381_MlResult : Kind_Base
-  | K_DefaultUniApply k k' t t':
-      |-*_uni t : (Kind_Arrow k k') ->
-      |-*_uni t' : k ->
-      |-*_uni (DefaultUniApply t t') : k'
-  | K_DefaultUniProtoPair :
-      |-*_uni DefaultUniProtoPair : (Kind_Arrow Kind_Base (Kind_Arrow Kind_Base Kind_Base))
-  | K_DefaultUniProtoList :
-      |-*_uni DefaultUniProtoList : (Kind_Arrow Kind_Base Kind_Base)
-  where "'|-*_uni' T ':' K" := (has_kind_uni T K)
-.
+From PlutusCert Require plutus_kinding_set.
 
 
 (* Example ill-kinded:
@@ -54,6 +24,8 @@ No way to unify (KB -> KB) -> K2 with KB -> KB
 
 *)
 
+
+(* For Uni uses our own set kinding version for plutusIR*)
 (** Kinding of types *)
 Reserved Notation "Δ '|-*' T ':' K" (at level 40, T at level 0, K at level 0).
 Inductive has_kind : list (binderTyname * kind) -> STLC_named.term -> kind -> Set :=
@@ -72,7 +44,7 @@ Inductive has_kind : list (binderTyname * kind) -> STLC_named.term -> kind -> Se
       ((X, K) :: Δ) |-* T : Kind_Base ->
       Δ |-* (@tmlam ForAll X K T) : Kind_Base
   | K_Builtin : forall Δ T,
-      |-*_uni T : Kind_Base ->
+      plutus_kinding_set.has_kind_uni T Kind_Base ->
       Δ |-* (@tmbuiltin T) : Kind_Base (* DefaultUni built in types must be fully applied with K_DefaultUniApply *)
   | K_Lam : forall Δ X K1 T K2,
       ((X, K1) :: Δ) |-* T : K2 ->
