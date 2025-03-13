@@ -10,7 +10,9 @@ Require Import Lia.
 Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Arith.
 
-From PlutusCert Require Import STLC_named util alpha freshness alpha_freshness alpha_ctx_sub.
+From PlutusCert Require Import STLC_named util alpha.alpha freshness alpha_freshness alpha_ctx_sub.
+
+From PlutusCert Require PlutusIR.
 
 
 
@@ -47,31 +49,22 @@ Fixpoint sub (X : string) (U T : term) : term :=
   match T with
   | tmvar Y =>
     if X =? Y then U else tmvar Y
-  | tmlam Y K1 T' =>
-    tmlam Y K1 (sub X U T')
-  | tmapp T1 T2 =>
-    tmapp (sub X U T1) (sub X U T2)
-  end.
-
-Fixpoint subCA (X : string) (U T : term) : term :=
-  match T with
-  | tmvar Y =>
-    if X =? Y then U else tmvar Y
-  | tmlam Y K1 T' =>
-    if X =? Y then tmlam Y K1 T' else tmlam Y K1 (subCA X U T')
-  | tmapp T1 T2 =>
-    tmapp (subCA X U T1) (subCA X U T2)
+  | @tmlam B Y K1 T' =>
+    @tmlam B Y K1 (sub X U T')
+  | @tmapp B T1 T2 =>
+    @tmapp B (sub X U T1) (sub X U T2)
+  | tmbuiltin d => tmbuiltin d
   end.
 
 Inductive step_naive : term -> term -> Set :=
-| step_beta (x : string) (A : type) (s t : term) :
-    step_naive (tmapp (tmlam x A s) t) ( sub x t s)
-| step_appL s1 s2 t :
-    step_naive s1 s2 -> step_naive (tmapp s1 t) (tmapp s2 t)
-| step_appR s t1 t2 :
-    step_naive t1 t2 -> step_naive (tmapp s t1) (tmapp s t2)
-| step_abs x A s1 s2 :
-    step_naive s1 s2 -> step_naive (tmlam x A s1) (tmlam x A s2).
+| step_beta (x : string) (A : PlutusIR.kind) (s t : term) :
+    step_naive (@tmapp App (@tmlam Lam x A s) t) ( sub x t s)
+| step_appL B s1 s2 t :
+    step_naive s1 s2 -> step_naive (@tmapp B s1 t) (@tmapp B s2 t)
+| step_appR B s t1 t2 :
+    step_naive t1 t2 -> step_naive (@tmapp B s t1) (@tmapp B s t2)
+| step_abs B x A s1 s2 :
+    step_naive s1 s2 -> step_naive (@tmlam B x A s1) (@tmlam B x A s2).
 
     
 
@@ -96,8 +89,9 @@ Fixpoint psubs (sigma : list (string * term)) (T : term) : term :=
               | Some t => t
               | None => tmvar x
               end
-  | tmlam x A s => tmlam x A (psubs sigma s)
-  | tmapp s t => tmapp (psubs sigma s) (psubs sigma t)
+  | @tmlam B x A s => @tmlam B x A (psubs sigma s)
+  | @tmapp B s t => @tmapp B (psubs sigma s) (psubs sigma t)
+  | tmbuiltin d => tmbuiltin d
   end.
 
 Lemma single_subs_is_psub X T s :
@@ -108,19 +102,14 @@ Proof.
     reflexivity.
   - simpl. f_equal. apply IHs.
   - simpl. f_equal. apply IHs1. apply IHs2.
+  - simpl. reflexivity.
 Qed.
 
 (* parallel substitution *)
 
-Fixpoint subsCA (sigma : list (string * term)) (T : term) : term :=
-  match sigma with
-  | nil => T
-  | cons (x, t) sigma' => subCA x t (subsCA sigma' T) (* or the other way around?*)
-  end.
-
 (* Define the rewrite rules *)
-Lemma subs_tmapp : forall sigma s1 s2,
-  subs sigma (tmapp s1 s2) = tmapp (subs sigma s1) (subs sigma s2).
+Lemma subs_tmapp {B} : forall sigma s1 s2,
+  subs sigma (@tmapp B s1 s2) = @tmapp B (subs sigma s1) (subs sigma s2).
 Proof.
   intros sigma s1 s2.
   induction sigma as [| [x t] sigma' IHsigma'].
@@ -128,8 +117,8 @@ Proof.
   - simpl. rewrite IHsigma'. reflexivity.
 Qed.
 
-Lemma subs_tmlam : forall sigma x A s,
-  subs sigma (tmlam x A s) = tmlam x A (subs sigma s).
+Lemma subs_tmlam {B} : forall sigma x A s,
+  subs sigma (@tmlam B x A s) = @tmlam B x A (subs sigma s).
 Proof.
   intros sigma x A s.
   induction sigma as [| [y t] sigma' IHsigma'].
@@ -137,13 +126,20 @@ Proof.
   - simpl. rewrite IHsigma'. reflexivity.
 Qed.
 
-Hint Rewrite
-  (* Rewrite rule for application *)
-  subs_tmapp : subs_db.
+Lemma subs_builtin : forall sigma d,
+  subs sigma (tmbuiltin d) = tmbuiltin d.
+Proof.
+  intros.
+  induction sigma as [| [x t] sigma' IHsigma'].
+  - reflexivity.
+  - simpl. rewrite IHsigma'. reflexivity.
+Qed.
 
-Hint Rewrite
-  (* Rewrite rule for lambda abstraction *)
-  subs_tmlam : subs_db.
+Hint Rewrite (@subs_tmapp App) : subs_db.
+Hint Rewrite (@subs_tmapp Fun) : subs_db.
+Hint Rewrite (@subs_tmapp IFix) : subs_db.
+Hint Rewrite (@subs_tmlam Lam) : subs_db.
+Hint Rewrite (@subs_tmlam ForAll) : subs_db.
 
 (* Add the lemmas to the hint database *)
 Hint Resolve subs_tmapp : subs_db.
@@ -155,16 +151,18 @@ Hint Extern 1 => simpl sub : subs_db.
 Inductive GU : term -> Set :=
 | GU_var x : GU (tmvar x)
 (* in app, if s and t do not share GU_vars: *)
-| GU_app s t : 
+| GU_app {B} s t : 
     GU s -> 
     GU t -> 
     forall (H_btv_btv_empty : forall x, In x (btv t) -> ~ In x (tv s)),
     forall (H_btv_ftv_empty : forall x, In x (btv s) -> ~ In x (tv t)),
-    GU (tmapp s t)
-| GU_lam x A s : 
+    GU (@tmapp B s t)
+| GU_lam {B} x A s : 
     GU s -> 
     ~ In x (btv s) ->
-    GU (tmlam x A s).
+    GU (@tmlam B x A s)
+| GU_builtin d :
+    GU (tmbuiltin d).
 
 (* Not sure how to call this yet.
 if we have NC t sigma
@@ -191,16 +189,16 @@ Qed.
   NC: forall btv in s, not in sigma
   we remove a binder, thenw e should still have that all remaining btvs are not in the original sigma.
 *)
-Lemma nc_lam {x A s sigma} :
-  NC (tmlam x A s) sigma -> NC s sigma.
+Lemma nc_lam {B x A s sigma} :
+  NC (@tmlam B x A s) sigma -> NC s sigma.
 Admitted.
 
-Lemma nc_app_l {s t sigma} :
-  NC (tmapp s t) sigma -> NC s sigma.
+Lemma nc_app_l {B s t sigma} :
+  NC (@tmapp B s t) sigma -> NC s sigma.
 Admitted.
 
-Lemma nc_app_r {s t sigma} :
-  NC (tmapp s t) sigma -> NC t sigma.
+Lemma nc_app_r {B s t sigma} :
+  NC (@tmapp B s t) sigma -> NC t sigma.
 Admitted.
 
 (* No free vars are changed *)
@@ -236,6 +234,7 @@ Proof.
   - simpl. apply not_in_app. split.
     + apply IHs1.
     + apply IHs2.
+  - simpl. auto.
 Qed.
 
 
@@ -273,12 +272,13 @@ Proof.
           apply not_in_app. split.
           + apply IHt0_1. auto. eapply not_ftv_app_not_left; eauto.
           + apply IHt0_2. auto. eapply not_ftv_app_not_right; eauto.
+        - auto.
 
         }
         
 
 
-  - autorewrite with subs_db.
+  - rewrite subs_tmlam.
     destr_eqb_eq x s.
     + apply ftv_lam_no_binder.
     + intros Hcontra.
@@ -286,11 +286,12 @@ Proof.
       apply ftv_lam_negative in Hftv_s.
       specialize (IHs Hftv_s).
       contradiction. auto.
-  - autorewrite with subs_db.
+  - rewrite subs_tmapp.
     simpl.
     apply not_in_app. split.
     + apply IHs1. auto. eapply not_ftv_app_not_left; eauto.
     + apply IHs2. auto; eapply not_ftv_app_not_right; eauto.
+  - rewrite subs_builtin. auto.
 Qed.
 
 Lemma step_naive_preserves_no_ftv x t1 t2 :
@@ -347,20 +348,20 @@ Proof.
     eapply step_naive_preserves_no_ftv. eauto. auto.
 Qed.
 
-Lemma gu_app_l {s t} :
-  GU (tmapp s t) -> GU s.
+Lemma gu_app_l {B s t} :
+  GU (@tmapp B s t) -> GU s.
 Admitted.
 
-Lemma gu_app_r {s t} :
-  GU (tmapp s t) -> GU t.
+Lemma gu_app_r {B s t} :
+  GU (@tmapp B s t) -> GU t.
 Admitted.
 
-Lemma gu_lam {x A s} :
-  GU (tmlam x A s) -> GU s.
+Lemma gu_lam {B x A s} :
+  GU (@tmlam B x A s) -> GU s.
   Admitted.
 
-Lemma gu_applam_to_nc s t x A :
-  GU (tmapp (tmlam x A s) t) -> NC s [(x, t)].
+Lemma gu_applam_to_nc {BA} {BL} s t x A :
+  GU (@tmapp BA (@tmlam BL x A s) t) -> NC s [(x, t)].
 Admitted.
 
 Lemma nc_ftv_env s sigma :
@@ -435,8 +436,8 @@ Proof.
 Qed.
 
 
-Lemma Uhm_appl {s t sigma} :
-  Uhm sigma (tmapp s t) -> Uhm sigma s.
+Lemma Uhm_appl {B s t sigma} :
+  Uhm sigma (@tmapp B s t) -> Uhm sigma s.
 Proof.
   intros.
   unfold Uhm in H.
@@ -447,18 +448,18 @@ Proof.
     apply not_tv_dc_appl in uhm1. auto.
   - specialize (uhm2 x H). auto.
   - specialize (uhm3 x).
-    assert (In x (btv (tmapp s t))).
+    assert (In x (btv (@tmapp B s t))).
     { apply btv_c_appl. auto. }
     specialize (uhm3 H0).
     auto.
 Qed.
 
-Lemma Uhm_appr {s t sigma} :
-  Uhm sigma (tmapp s t) -> Uhm sigma t.
+Lemma Uhm_appr {B s t sigma} :
+  Uhm sigma (@tmapp B s t) -> Uhm sigma t.
 Proof.
 Admitted.
 
-Lemma Uhm_lam {x A s sigma t} :
+Lemma Uhm_lam {B x A s sigma t} :
 (* we changed Uhm. Maybe we need more conditions! *)
   (* by GU s we have x not in btv s.*)
 
@@ -472,7 +473,7 @@ Lemma Uhm_lam {x A s sigma t} :
   (~ In x (btv s)) -> (* uhm9 *)
 
   (* cannot combine uhm3 and uhm1: free vars in t can still be free vars in s*)
-  Uhm sigma (tmlam x A s) -> Uhm ((x, t)::sigma) s.
+  Uhm sigma (@tmlam B x A s) -> Uhm ((x, t)::sigma) s.
 Proof.
   intros uhm1' uhm2' uhm3' uhm6' uhm7' uhm8' uhm9' HUhm.
   unfold Uhm.

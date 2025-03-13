@@ -117,7 +117,6 @@ src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/alpha_typing.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/freshness.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/alpha_freshness.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/rename.v
-src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/step.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/util.v
 
 src/PlutusIR/Semantics/Static/TypingTyForallFix.v

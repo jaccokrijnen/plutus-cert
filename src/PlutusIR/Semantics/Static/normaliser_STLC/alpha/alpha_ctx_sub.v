@@ -1,7 +1,7 @@
 Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Strings.String.
-From PlutusCert Require Import STLC_named alpha Util.List.
+From PlutusCert Require Import STLC_named alpha.alpha Util.List.
 
 (* One subsitution is related to the other through the alpha context*)
 Inductive αCtxSub : list (string * string) -> list (string * term) -> list (string * term) -> Prop :=

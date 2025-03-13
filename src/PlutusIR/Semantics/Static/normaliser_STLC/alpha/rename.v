@@ -3,15 +3,15 @@ Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
 Local Open Scope string_scope.
 
-Lemma ren_lam_vacuous x x' t s0 :
-  rename x x' (tmlam x t s0) = tmlam x t s0.
+Lemma ren_lam_vacuous B x x' t s0 :
+  rename x x' (@tmlam B x t s0) = @tmlam B x t s0.
 Proof.
   unfold rename.
   simpl. rewrite String.eqb_refl. rewrite mren_id. reflexivity.
 Qed.
 
-Lemma ren_lam x x' t s s0 :
-  x <> s -> rename x x' (tmlam s t s0) = tmlam s t (rename x x' s0).
+Lemma ren_lam B x x' t s s0 :
+  x <> s -> rename x x' (@tmlam B s t s0) = @tmlam B s t (rename x x' s0).
 Proof.
   intros Hnotxs.
   unfold rename.
@@ -63,6 +63,7 @@ Proof.
     rewrite IHs1.
     rewrite IHs2.
     reflexivity.
+  - constructor.
 Qed.
 
 Lemma ren_two_vacuous {x Y' Y s }:
@@ -91,12 +92,9 @@ Proof.
       rewrite IHs.
       reflexivity.
       intros HContra.
-      assert (In X (ftv (tmlam s t s0))).
-      {
-        unfold ftv. fold ftv.
-        apply Util.List.in_remove. split; auto.
-      }
-      contradiction.
+      contradiction HXnotIns.
+      unfold ftv. fold ftv.
+      apply Util.List.in_remove. split; auto.
   - unfold rename. unfold mren. fold mren. simpl.
     unfold ftv in HXnotIns. fold ftv in HXnotIns.
     apply not_in_app in HXnotIns as [HXnotIns1 HXnotIns2].
@@ -107,4 +105,5 @@ Proof.
     rewrite IHs1.
     rewrite IHs2.
     reflexivity.
+  - constructor.
 Qed.

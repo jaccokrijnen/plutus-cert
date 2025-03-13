@@ -10,9 +10,9 @@ Require Import Lia.
 Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Arith.
 
-From PlutusCert Require Import STLC_named pre alpha freshness util alpha_ctx_sub.
+From PlutusCert Require Import STLC_named gu_naive.pre alpha.alpha freshness util alpha_ctx_sub.
 
-
+From PlutusCert Require PlutusIR.
 
 Definition fresh_to_GU_ (ftvs : list string) (binders : list (string * string)) (x : string) := 
   String.concat "" (ftvs ++ map fst binders ++ map snd binders ++ x::nil ++ "a"::nil).
@@ -24,21 +24,22 @@ Fixpoint to_GU_ (used : list string) (binders : list (string * string)) (s : ter
               | Some y => (used, binders, tmvar y) (* this was bound and (possibly) renamed, or free and renamed to itself*)
               | None => ((x::used), binders, tmvar x) (* this branch should never happen: all binders and ftvs should be in the map. *)
               end
-  | tmlam x A s => (* we can freshen regardless *)
+  | @tmlam B x A s => (* we can freshen regardless *)
                     let x' := fresh_to_GU_ used binders x in
                     let (acc, term_body) := to_GU_ used ((x, x')::binders) s in
-                    ((fst acc ++ (x::x'::nil)), binders, tmlam x' A term_body)
-  | tmapp s t => let (acc_s, s') := to_GU_ used binders s in
+                    ((fst acc ++ (x::x'::nil)), binders, @tmlam B x' A term_body)
+  | @tmapp B s t => let (acc_s, s') := to_GU_ used binders s in
                  let (acc_t, t') := to_GU_ (fst acc_s) binders t in (* stuff in s cannot cause us to be suddenly under more binders in t*)
-                 (acc_t, tmapp s' t')
+                 (acc_t, @tmapp B s' t')
+  | tmbuiltin d => (used, binders, tmbuiltin d)
   end.
 
-Compute (to_GU_ nil nil (tmlam "x" tp_base (tmvar "x"))). (* should be λxa . xa*)
+Compute (to_GU_ nil nil (tmlam "x" PlutusIR.Kind_Base (tmvar "x"))). (* should be λxa . xa*)
 Compute (to_GU_ nil nil (tmapp (tmvar "x") (tmvar "y"))). (* should be xy*)
-Compute (to_GU_ nil nil (tmapp (tmlam "y" tp_base (tmapp (tmvar "x") (tmvar "y"))) (tmvar "y"))). 
-Compute (to_GU_ nil nil (tmapp (tmlam "y" tp_base (tmvar "y")) (tmvar "y"))). (* should be x(λya . ya)*)
-Compute (to_GU_ nil nil (tmapp (tmlam "y" tp_base (tmapp (tmvar "x") (tmvar "y"))) (tmvar "x"))).
-Compute (to_GU_ nil nil (tmlam "x" tp_base (tmapp (tmlam "y" tp_base (tmapp (tmvar "x") (tmvar "y"))) (tmvar "x")))).
+Compute (to_GU_ nil nil (tmapp (tmlam "y" PlutusIR.Kind_Base (tmapp (tmvar "x") (tmvar "y"))) (tmvar "y"))). 
+Compute (to_GU_ nil nil (tmapp (tmlam "y" PlutusIR.Kind_Base (tmvar "y")) (tmvar "y"))). (* should be x(λya . ya)*)
+Compute (to_GU_ nil nil (tmapp (tmlam "y" PlutusIR.Kind_Base (tmapp (tmvar "x") (tmvar "y"))) (tmvar "x"))).
+Compute (to_GU_ nil nil (tmlam "x" PlutusIR.Kind_Base (tmapp (tmlam "y" PlutusIR.Kind_Base (tmapp (tmvar "x") (tmvar "y"))) (tmvar "x")))).
 
 
 Definition remove_dups (l : list (string * string)) := l.
@@ -57,8 +58,8 @@ let tvs := tv s in
   *)
 snd (to_GU_ tvs (remove_dups (map (fun x => (x, x)) tvs)) s).
 
-Compute (to_GU (tmapp (tmlam "y" tp_base (tmvar "y")) (tmvar "ya"))). 
-Compute (to_GU (tmapp (tmvar "ya") (tmlam "y" tp_base (tmvar "y")))). 
+Compute (to_GU (tmapp (tmlam "y" PlutusIR.Kind_Base (tmvar "y")) (tmvar "ya"))). 
+Compute (to_GU (tmapp (tmvar "ya") (tmlam "y" PlutusIR.Kind_Base (tmvar "y")))). 
 
 Fixpoint uniqueRHs_ (acc : list string) (R : list (string * string)) :=
   match R with
@@ -114,7 +115,7 @@ fresh_to_GU_
     + eapply KindOfUniqueRhsFresh. auto.
     + intros.
       destruct_match.
-      assert (Hftvlam: In x (ftv (tmlam s t s0))) by admit. (* x <> s)*)
+      assert (Hftvlam: In x (ftv (@tmlam USort s k s0))) by admit. (* x <> s)*)
       apply alpha_var_diff. auto.
       {
         rewrite <- String.eqb_neq. auto.
@@ -158,6 +159,8 @@ fresh_to_GU_
         eapply used_never_removed; eauto.
         eapply H1.
         apply tv_c_appr. auto.
+  - simpl. 
+    constructor.
 Admitted.
 
 Lemma to_GU__alpha_ s R used : UniqueRhs R -> (forall x, In x (ftv s) -> {y & In (x, y) R}) -> Alpha R s (snd (to_GU_ used R s)).
@@ -193,7 +196,7 @@ fresh_to_GU_
       * exists (fresh_to_GU_ used R s).
         simpl. intuition.
       * specialize (H0 x).
-        assert (In x (ftv (tmlam s t s0))) by admit. (* x <> s)*)
+        assert (In x (ftv (@tmlam USort s k s0))) by admit. (* x <> s)*)
         specialize (H0 H3).
         destruct H0 as [y H4].
         exists y.
@@ -214,7 +217,7 @@ fresh_to_GU_
       eapply IHs1.
       * assumption.
       * intros.
-        assert (In x (ftv (tmapp s1 s2))) by admit. (* In ftv composes*)
+        assert (In x (ftv (@tmapp BSort s1 s2))) by admit. (* In ftv composes*)
         specialize (H0 x H2).
         assumption.
     + specialize (IHs2 used1 R).
@@ -223,9 +226,10 @@ fresh_to_GU_
       eapply IHs2.
       * assumption.
       * intros.
-        assert (In x (ftv (tmapp s1 s2))) by admit. (* In ftv composes*)
+        assert (In x (ftv (@tmapp BSort s1 s2))) by admit. (* In ftv composes*)
         specialize (H0 x H2).
         assumption.
+  - simpl. constructor.
 Admitted.   
 
 
@@ -295,6 +299,9 @@ Proof.
     split.
     + eapply IHs1; eauto.
     + eapply IHs2; eauto.
+  - simpl in H.
+    inversion H; subst.
+    auto.
 Admitted.
 
 (* to_GU_ creates binders that are not in used*)
@@ -364,7 +371,7 @@ Proof.
       destr_eqb_eq y s.
       -exists (fresh_to_GU_ used binders s).
        simpl. left. auto.
-      - assert (In y (ftv (tmlam s t s0))).
+      - assert (In y (ftv (@tmlam USort s k s0))).
         {
           (* by In y ftv s0 and y <> s*)
           admit.
@@ -400,7 +407,7 @@ Proof.
       {
         intros.
         specialize (H y).
-        assert (In y (ftv (tmapp s1 s2))).
+        assert (In y (ftv (@tmapp BSort s1 s2))).
         {
           admit. (* in ftv composes over app*)
         }
@@ -416,7 +423,7 @@ Proof.
       {
         intros.
         specialize (H y).
-        assert (In y (ftv (tmapp s1 s2))).
+        assert (In y (ftv (@tmapp BSort s1 s2))).
         {
           admit. (* in ftv composes over app*)
         }
@@ -427,6 +434,10 @@ Proof.
       }
       specialize (IHs2 H2 used1 Heqp2).
       auto.
+  - simpl in H0.
+    inversion H0.
+    subst.
+    inversion H1.
 Admitted.
 
 
@@ -461,7 +472,7 @@ Proof.
            exists (fresh_to_GU_ used R x).
            left. reflexivity.
         -- specialize (H x).
-           assert (In x (ftv (tmlam s t s0))) by admit. (* x <> s*)
+           assert (In x (ftv (@tmlam USort s k s0))) by admit. (* x <> s*)
            specialize (H H3).
            destruct H as [y H].
            exists y.
@@ -543,7 +554,7 @@ Proof.
           contradiction. assumption.
         - intros.
           specialize (H y).
-          assert (In y (ftv (tmapp s1 s2))).
+          assert (In y (ftv (@tmapp BSort s1 s2))).
           {
             admit. (* In ftv composes over app*)
           }
@@ -554,6 +565,8 @@ Proof.
       (* Not in ftv and not in btv: done *)
     
       admit.
+    - simpl. 
+      constructor.
 Admitted.
 
 Lemma to_GU__GU s : GU (to_GU s).
@@ -660,8 +673,8 @@ Qed.
 
 
 (* TODO: probably we don't need this and can do inversion once we haqve defined to_GU_app? *)
-Lemma to_GU_app_unfold {s t st} :
-  st = to_GU (tmapp s t) -> {s' & { t' & (st = tmapp s' t') * Alpha [] s s' * Alpha [] t t'} }%type.
+Lemma to_GU_app_unfold {B s t st} :
+  st = to_GU (@tmapp B s t) -> {s' & { t' & (st = @tmapp B s' t') * Alpha [] s s' * Alpha [] t t'} }%type.
 Proof.
 intros.
   unfold to_GU in H.
@@ -726,7 +739,7 @@ Admitted.
     Then we know X not in ftv s and X not in btv s.
     So then GU (tmlam X A (to_GU'' X s)) by also GU (to_GU'' X s).
 *)
-Lemma to_GU''__GU_lam X A s : GU (tmlam X A (to_GU'' X s)).
+Lemma to_GU''__GU_lam {B} X A s : GU (@tmlam B X A (to_GU'' X s)).
 Proof.
   constructor.
   - apply to_GU'__GU.
@@ -773,9 +786,9 @@ Lemma sconstr1_alpha_t s x x0 p sub_s sub_t t :
   Alpha [] sub_t (subs ((x, p)::nil) t).
 Admitted.
 
-Lemma sconstr1_gu A s x x0 p sub_s sub_t t :
+Lemma sconstr1_gu {BA BL} A s x x0 p sub_s sub_t t :
   (sub_s, sub_t) = sconstr1 x x0 p s t ->
-  GU (tmapp (tmlam x0 A sub_s) sub_t).
+  GU (@tmapp BA (@tmlam BL x0 A sub_s) sub_t).
 Admitted.
 
 
@@ -949,6 +962,8 @@ Proof.
     constructor.
     + eapply IHs1; eauto.
     + eapply IHs2; eauto.
+  - inversion H; subst.
+    constructor.
 Admitted.
 
 Lemma strip_R_preserves_alpha R s s' :
@@ -1194,6 +1209,7 @@ Proof.
   - apply alpha_extend_ids.
     (* R2 is always ids *)
     admit.
+    apply alpha_refl. constructor.
 Admitted.
 
 (* here we probably need Uhm requirements*)
@@ -1336,6 +1352,8 @@ Proof.
     split; eauto.
     + eapply IHt'1; eauto; eapply not_btv_dc_appl; eauto.
     + eapply IHt'2; eauto; eapply not_btv_dc_appr; eauto.
+  - intros Hcontra.
+    inversion Hcontra.
 Qed.
 
 Lemma map_helper x s sigma (fr : string) :

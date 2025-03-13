@@ -12,22 +12,24 @@ Require Import Coq.Arith.PeanoNat.
 Import ListNotations.
 Require Import Ascii.
 
-From PlutusCert Require Import Util.List. (* I don't understand why we need this for ftv defintion*)
+From PlutusCert Require Import Util.List Kinding.Kinding. (* I don't understand why we need this for ftv defintion*)
+From PlutusCert Require PlutusIR.
 
-(** Types, kinds and substitutions *)
-(** kinds *)
-Inductive type :=
-  | tp_base : type
-  | tp_arrow : type -> type -> type.
+Inductive USort := Lam | ForAll.
+Inductive BSort := App | IFix | Fun.
 
 (** Types *)
 Inductive term :=
   | tmvar : string -> term
-  | tmlam : string -> type -> term -> term
-  | tmapp : term -> term -> term
+  | tmlam {USort : USort} : string -> PlutusIR.kind -> term -> term
+  | tmapp {BSort : BSort} : term -> term -> term
+  | tmbuiltin : PlutusIR.DefaultUni -> term
 .
 
+
 Set Implicit Arguments.
+
+(* Set Implicit Arguments. *)
 
 (** Substitutions *)
 Function ftv (T : term) : list string :=
@@ -38,6 +40,7 @@ Function ftv (T : term) : list string :=
         remove string_dec X (ftv T')
     | tmapp T1 T2 =>
         ftv T1 ++ ftv T2
+    | tmbuiltin _ => []
     end.
 
 Fixpoint btv (T : term) : list string :=
@@ -48,6 +51,7 @@ Fixpoint btv (T : term) : list string :=
       X :: btv T'
     | tmapp T1 T2 =>
         btv T1 ++ btv T2
+    | tmbuiltin _ => []
     end.
 
 (* Bound and free type variables *)
@@ -56,16 +60,7 @@ Fixpoint tv (s : term) : list string :=
   | tmvar x => x::nil
   | tmlam x A s => x :: tv s
   | tmapp s t => tv s ++ tv t
-  end.
-
-Fixpoint substituteT (X : string) (U T : term) : term :=
-  match T with
-  | tmvar Y =>
-    if X =? Y then U else tmvar Y
-  | tmlam Y K1 T' =>
-    if X =? Y then tmlam Y K1 T' else tmlam Y K1 (substituteT X U T')
-  | tmapp T1 T2 =>
-    tmapp (substituteT X U T1) (substituteT X U T2)
+  | tmbuiltin _ => nil
   end.
 
 (** * Capture-avoiding substitution of types *)
@@ -110,9 +105,10 @@ Fixpoint mren (rho : list (string * string)) (T : term) : term :=
               | Some Z => tmvar Z
               | None => tmvar Y
               end
-  | tmlam Y K1 T_body => let rho' := drop Y rho in (* What if Y in rhs of rho*)
-                        tmlam Y K1 (mren rho' T_body)
-  | tmapp T1 T2 => tmapp (mren rho T1) (mren rho T2)
+  | @tmlam B Y K1 T_body => let rho' := drop Y rho in (* What if Y in rhs of rho*)
+                        @tmlam B Y K1 (mren rho' T_body)
+  | @tmapp B T1 T2 => @tmapp B (mren rho T1) (mren rho T2)
+  | tmbuiltin d => tmbuiltin d
 end.
 
 Definition rename (X Y : string) (T : term) := mren [(X, Y)] T.
@@ -124,6 +120,7 @@ Fixpoint size (T : term) : nat :=
   | tmvar Y => 1
   | tmlam bX K T0 => 1 + size T0
   | tmapp T1 T2 => 1 + size T1 + size T2
+  | tmbuiltin _ => 1
   end.
 
 Lemma mren_id s : mren nil s = s.
@@ -146,162 +143,24 @@ Proof.
     reflexivity.
 Qed.
 
-(** Capture avoiding parallel multi-substitutions *)
-    (* We always rename in the lambda, which has two advantages:
-      1. We don't have to check if Y a key in sigma, 
-      since Y won't exist in T_body after renaming, 
-      so the subst will be irrelevant. Hence no "dropping"
-      2. We don't have to check if Y in a value of sigma,
-         because we will simply always rename.
-
-      We need a new fresh function, since we have multisubstitutions
-      fresh' sigma T_body := variable not in
-                            - any key of sigma
-                            - any value of sigma
-                            - T_body
-      *)
-
-      (* Idea/problem: Because of the above, identity substitutions refresh variables.
-        we could solve this by wrapping this in capms' and removing identity substitutions.
-
-        Not well thought out! TODO
-        *)
-Equations? capms (sigma : list (string * term)) (T : term) : term by wf (size T) :=
-  capms sigma (tmvar Y) := match lookup Y sigma with
-                          | Some t => t
-                          | None => tmvar Y
-                          end;
-  capms sigma (tmlam Y K1 T_body) := let Y' := fresh2 ((Y, tmvar Y)::sigma) T_body in (* TODO: should include Y! *)
-                                    let T_body' := rename Y Y' T_body in
-                                    tmlam Y' K1 (capms sigma T_body');
-  capms sigma (tmapp T1 T2) := tmapp (capms sigma T1) (capms sigma T2).
-Proof.
-  all: try solve
-    [ lia
-    || replace T_body' with (rename Y Y' T_body); eauto; rewrite <- rename_preserves_size; eauto
-    ].
-Defined.
-
-Equations substituteTs (sigma : list (string * term)) (T : term) : term :=
-  substituteTs sigma (tmvar Y) =>
-      match lookup Y sigma with
-      | Some t => t
-      | None => tmvar Y
-      end;
-  substituteTs sigma (tmlam Y K T) =>
-      tmlam Y K (substituteTs sigma T); (* no check on Y in keys of sigma, should nto be necessary by global uniqueness? *)
-  substituteTs sigma (tmapp T1 T2) =>
-      tmapp (substituteTs sigma T1) (substituteTs sigma T2).
-
-(** **** Notations *)
-(* Notation for substitution *)
-Notation "'[' x ':=' s ']' t" := (capms [(x, s)] t) (at level 20).
-
-Notation "sigma [[ t ]]" := (capms sigma t) (at level 20).
-
-Lemma capms_var_helper x sigma t :
-  ((x, t)::sigma) [[tmvar x]] = t.
-Admitted.
-
-Lemma capms_var_single_not x y t :
-  x <> y -> ((x, t)::nil) [[tmvar y]] = tmvar y.
-Admitted.
-
-Lemma capms_var_multi_not x y t sigma :
-  x <> y -> ((x, t)::sigma ) [[tmvar y]] = sigma [[tmvar y]].
-Admitted.
-
-
-
-(* Require Import Coq.Program.Equality. *)
-
-(* Equations? capmsfr_rename X X' T : term by wf (size T) :=
-  capmsfr_rename X X' (tmvar Y) := if X =? Y then tmvar X' else tmvar Y;
-  capmsfr_rename X X' (tmlam Y K1 T_body) := let Y' := fresh2 [(X, tmvar X')] T_body in
-                                        let T_body' := capmsfr_rename Y Y' T_body in
-                                        tmlam Y' K1 (capmsfr_rename X X' T_body');
-  capmsfr_rename X X' (tmapp T1 T2) := tmapp (capmsfr_rename X X' T1) (capmsfr_rename X X' T2).
-Proof.
-  all: try solve
-    [ lia
-    || replace T_body' with (capmsfr_rename Y Y' T_body); eauto; rewrite <- rename_preserves_size; eauto
-    ].
-    (* still to prove: size T_body' < S (size T_body)
-    *) *)
-
-(* 
-Lemma capmsfr_rename_preserves_size : forall T X X',
-    size T = size (capmsfr_rename X X' T).
-Proof.
-  intros T X X'.
-  induction T; simpl; eauto.
-  - destruct (X =? s) eqn:xs; eauto.
-    + rewrite capmsfr_rename_equation_1.
-      rewrite xs.
-      reflexivity.
-    + rewrite capmsfr_rename_equation_1.
-      rewrite xs.
-      reflexivity.
-  - rewrite capmsfr_rename_equation_2. simpl.
-    rewrite IHT.
-    reflexivity.
-  - rewrite capmsfr_rename_equation_3. simpl.
-    rewrite IHT1, IHT2.
-    reflexivity.
-Qed. *)
-
-(* 
-Since we are working up to alhpa equivalence, why not also freshen the lambda again?
-
-Idea: [x to x'] (\x.\x.x) in the previous definition became
-  Y' is fresh.
-  T_body' = rename x Y' (\x.x) = \x.x
-  ->   \Y'. [x to x'] (\x.x) = \Y'.\Y''.Y''
-
-  but also 
-
-  [x to x'] (\x.\y.y)
-  Y' is fresh
-  T_body' = rename x Y' (\y.y) = (\y. (rename x Y' y)) = \y. y
-  ->    \Y'. [x to x'] (\y. y) = \Y' . \Y''. Y''
-
-  In the new definition:
-
-  [x to x'] (\x.\y.y)
-  Y' is fresh
-  \Y'. [x to Y', x to x'] (\y.y) = \Y' . \Y''. [y to Y'', x to Y', x to x'] y = \Y'. \Y''. Y''
-
-  
-
-*)
-(* Equations capmsfr (sigma : list (string * term)) (T : term) : term :=
-  capmsfr sigma (tmvar Y) := match lookup Y sigma with
-                          | Some t => t
-                          | None => tmvar Y
-                          end;
-  capmsfr sigma (tmlam Y K1 T_body) := let Y' := fresh2 sigma T_body in
-                                    tmlam Y' K1 (capmsfr ((Y, tmvar Y')::sigma) T_body); 
-  capmsfr sigma (tmapp T1 T2) := tmapp (capmsfr sigma T1) (capmsfr sigma T2).
-
-*)
-
 Equations? substituteTCA (X : string) (U T : term) : term by wf (size T) :=
   substituteTCA X U (tmvar Y) =>
       if X =? Y then U else tmvar Y ;
-  substituteTCA X U (tmlam Y K T) =>
+  substituteTCA X U (@tmlam B Y K T) =>
       if X =? Y
         then
-          tmlam Y K T
+          @tmlam B Y K T
         else
           if existsb (String.eqb Y) (ftv U)
             then
               let Y' := fresh2 ((Y, tmvar Y)::(X, U)::nil) T in
               let T' := rename Y Y' T in
-              tmlam Y' K (substituteTCA X U T')
+              @tmlam B Y' K (substituteTCA X U T')
             else
-              tmlam Y K (substituteTCA X U T) ;
-  substituteTCA X U (tmapp T1 T2) =>
-      tmapp (substituteTCA X U T1) (substituteTCA X U T2)
+              @tmlam B Y K (substituteTCA X U T) ;
+  substituteTCA X U (@tmapp B T1 T2) =>
+      @tmapp B (substituteTCA X U T1) (substituteTCA X U T2) ;
+  substituteTCA X U (tmbuiltin d) => tmbuiltin d
   .
 Proof.
   all: try solve
