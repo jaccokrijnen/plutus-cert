@@ -318,20 +318,24 @@ Corollary RV_functional_extensionality : forall k T1n T2n rho v v',
 Proof. intros. eapply RV_condition in H. all: eauto. Qed.
 
 
-Corollary V_functional_extensionality : forall k T1n T2n rho v v',
-    V k (Ty_Fun T1n T2n) rho v v' ->
-    exists x e_body e'_body T1 T1',
-      v = LamAbs x T1 e_body /\
-      v' = LamAbs x T1' e'_body /\
-      forall i (Hlt_i : i < k) v_0 v'_0,
-        V i T1n rho v_0 v'_0 ->
-        C i T2n rho <{ [x := v_0] e_body }> <{ [x := v'_0] e'_body }>
+Corollary V_functional_extensionality  {i k T1 T2 rho v v' w w'} :
+  i < k ->
+  V k (Ty_Fun T1 T2) rho v v' ->
+  V i T1 rho w w' ->
+  (forall x T1 e_body,
+    v = <{λ x :: T1 , e_body}> ->
+    C i T2 rho <{ [x := w] e_body }> <{ v' ⋅ w' }>)
+  /\
+  (forall f,
+    applied f v ->
+    C i T2 rho <{ v ⋅ w }> <{ v' ⋅ w' }>
+  )
 .
 Proof.
-  intros.
-  autorewrite with R in H.
+  intros H_lt H_V1 H_V2.
+  autorewrite with R in H_V1.
   destruct_hypos.
-  repeat eexists ; try apply H7; eauto.
+  eauto.
 Qed.
 
 Corollary RV_unwrap : forall k Fn Tn rho v v' ,

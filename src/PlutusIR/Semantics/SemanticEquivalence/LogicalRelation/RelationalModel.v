@@ -376,12 +376,14 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
             v = v'
 
       | Ty_Fun T1n T2n =>
-          exists x e_body e'_body T1 T1',
-            v = LamAbs x T1 e_body /\
-            v' = LamAbs x T1' e'_body /\
             ∀ i (Hlt_i : i < k) v_0 v'_0,
               R I_V i T1n rho v_0 v'_0 ->
-              R I_C i T2n rho <{ [x := v_0] e_body }> <{ [x := v'_0] e'_body }>
+              (∀ x T1 e_body, v = <{λ x :: T1 , e_body}> ->
+                R I_C i T2n rho <{ [x := v_0] e_body }> <{ v' ⋅ v'_0 }>)
+              /\
+              (∀ f, applied f v ->
+                R I_C i T2n rho <{ v ⋅ v_0 }> <{ v' ⋅ v'_0 }>
+              )
 
       | Ty_IFix Fn Tn =>
           exists v_0 v'_0 F F' T T',

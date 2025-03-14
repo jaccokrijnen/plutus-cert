@@ -16,70 +16,6 @@ Require Import Coq.Program.Equality.
 Import ListNotations.
 Import PlutusNotations.
 
-(*
-Lemma fully_applied__arg_value : forall s v,
-  fully_applied (Apply s v) -> v =[0]=> v.
-Admitted.
-
-Lemma eta_expand__LamAbs_TyAbs : forall f,
-  (exists x T t, eta_expand f = LamAbs x T t) \/
-  (exists X K t, eta_expand f = TyAbs X K t).
-Proof.
-  destruct f; cbv;
-    try (solve [left; repeat eexists]).
-  right; repeat eexists.
-Qed.
-
-Lemma fully_applied__Apply t v :
-  fully_applied <{ t ⋅ v }> ->
-    exists x T s,
-      t =[ 0 ]=> LamAbs x T s
-      /\ <{ [x := v] s }> = <{ t ⋅ v }>
-.
-Admitted.
-
-(*
-In a round-about way, a fully applied built-in can also be evaluated by first evaluating its
-partial application without the final argument (which will result in a lambda). And then evaluating
-in the usual way. Compare for example:
-
-  ------------ E_Builtin (direct, using operational semantics)
-  (+) 2 3 => 5
-
-and
-
-  (+) 2 => \x. (+) 2 x
-  3     => 3
-  -------------------- E_Builtin_partial (derived rule)
-  (+) 2 3 => 5
-
-E_Builtin_partial is a "derived" rule, and implemented in terms of a single beta
-reduction and then using the standard E_Builtin rule.
-
-*)
-Lemma E_Builtin_partial : forall s v i x T t w j,
-  fully_applied <{s ⋅ v}>
-  -> s =[i]=> LamAbs x T t
-  -> <{ [x := v] t }> =[j]=> w
-  -> <{ s ⋅ v }> =[i + 1 + j]=> w
-.
-Proof.
-Admitted.
-
-Axiom dec_fully_applied : forall t, {fully_applied t} + {~(fully_applied t)}.
-
-
-(*
-Lemma fully_applied__RC k s t s' t' :
-  RC k <{ T1 → T2 }> rho s s'
-  RC k <{ T1 }> rho t t'
-  fully_applied <{ s ⋅ t }>
-  fully_applied <{ s' ⋅ t' }>
-.
-*)
-*)
-
-
 (* Notation for closing substitutions *)
 Notation close γ ρ t := (msubst γ (msubstA ρ t)).
 
@@ -277,6 +213,7 @@ HRV1 : V (k - j_1) <{ T1 → T2 }> ρ <{ λ x :: T, t0 }> r1'
 HRV2 : V (k - j_1 - j_2) T1 ρ r2 r2'
 *)
 
+(*
 (* Related arguments go to related results
 *)
 Lemma RV_apply {j T1 T2 Δ ρ f f' k v v'} i :
@@ -285,20 +222,16 @@ Lemma RV_apply {j T1 T2 Δ ρ f f' k v v'} i :
   V k T1 ρ v v' ->
   i < j ->
   i <= k ->
-  exists (x : binderName) (b b' : term) (T1v T1v' : ty),
-    f = <{ λ x :: T1v, b }> /\
-    f' = <{ λ x :: T1v', b' }> /\
-    C i T2 ρ <{ [x := v] b }> <{ [x := v'] b' }>.
+    C i T2 ρ <{ f ⋅ v }> <{ f' ⋅ v' }>.
 Proof with eauto_LR.
   intros H_RD H_V_f H_V_v H_j H_k.
-  apply V_functional_extensionality in H_V_f
-    as [ x [ b [ b' [ T1v [T1v' [H_v [H_v' H_ext ]]]]]]].
-  exists x, b, b', T1v, T1v'.
-  split; try assumption.
+  apply V_functional_extensionality with (k := i) (T2 := T2) (v := v) (v' := v') in H_V_f.
+  - try assumption.
   split; try assumption.
   (* prepare argument *)
   apply V_monotone with (i := i) (Δ := Δ) in H_V_v...
 Qed.
+*)
 
 (* There should be a lemma that can compute a new step-index for the result *)
 Lemma RV_apply_min {j T1 T2 Δ ρ f f' k v v'} :
@@ -393,86 +326,76 @@ Ltac RV_no_error H HR :=
   try solve [contradiction]
 .
 
-(*
-Lemma H_fully_applied e1 e2 e1' e2' T1 T2 k Δ ρ:
-  RD Δ ρ ->
-  fully_applied <{e1 ⋅ e2}> ->
-  fully_applied <{e1' ⋅ e2'}> ->
-  applied_args <{ e1 ⋅ e2 }> < k -> (* we can make at least applied_args <{e1 ⋅ e2}> steps *)
-  C k <{ T1 → T2 }> ρ e1 e1' ->
-  C k T1 ρ e2 e2' ->
-  C (k - applied_args <{ e1 ⋅ e2 }>) T2 ρ <{e1 ⋅ e2}> <{e1' ⋅ e2'}>
+Lemma value__Ty_Fun {v T1 T2} :
+  value v ->
+  [] ,, [] |-+ v : <{ T1 → T2 }>  ->
+  (exists x T t,  v = LamAbs x T t) \/ (exists f, applied f v)
 .
 Proof.
-  intros H_RD H_FA H_FA' H_lt H_RC_e1 H_RC_e2 .
-  (* e1 terminates as a lambda *)
-  apply fully_applied__Apply in H_FA as [x [T [b [H_ev_e1 H_eq_subst]]]].
-  autorewrite with R in H_RC_e1.
-  apply H_RC_e1 in H_ev_e1 as [r' [j' [ H_ev H_RV_r ]]]; clear H_RC_e1.
-  - destruct H_RV_r as [H_RV_r | [H_err _] ]; [ | inversion H_err].
-    apply V_functional_extensionality in H_RV_r as [x' [e_body [b' [T3 [T' [H_eq [H_eq_r' H_RV_r']]]]]]].
-    subst.
-    symmetry in H_eq.
-    inversion H_eq; subst; clear H_eq.
+  intros H_val H_ty.
+  inversion H_val; try solve [inversion H_ty; subst; discriminate].
+  - eauto.
+  - eauto.
+Qed.
 
-    (* Convert C to V *)
-    assert (H_RV_e2 : V k T1 ρ e2 e2'). {
-      assert (0 < k). autorewrite with applied_args in H_lt; lia.
-      assert (value e2). admit.
-      assert (value e2'). admit.
-      eauto using C_values_to_V.
-    }
-    apply V_monotone with (i := k - (applied_args <{e1 ⋅ e2}>)) (Δ := Δ) in H_RV_e2.
-    apply H_RV_r' in H_RV_e2; clear H_RV_r'.
-    rewrite H_eq_subst in H_RV_e2. clear H_eq_subst.
-    apply fully_applied__Apply in H_FA' as [x' [T'' [b'' [H_ev_e1' H_eq_subst']]]].
-    assert (H_e1'_r' := eval__deterministic _ _ _ H_ev _ _ H_ev_e1').
-    destruct H_e1'_r' as [H_eq_lam H_eq_args].
-    inversion H_eq_lam; subst.
-    rewrite H_eq_subst' in H_RV_e2.
-    assumption.
-all: try solve [eauto | lia].
-autorewrite with applied_args in *. lia.
-- autorewrite with applied_args in *. lia.
-Admitted.
-*)
-
-(*
-Lemma builtin__RC s t s' t' r T ρ k :
-  fully_applied (Apply s t) ->
-  compute_defaultfun (Apply s t) = Some r ->
-  C 1 T ρ (Apply s t) (Apply s' t') ->
-  C k T ρ (Apply s t) (Apply s' t').
+Lemma V__Ty_Fun_r {i T1 T2 ρ v v'} :
+  V i <{ T1 → T2 }> ρ v v' ->
+  (exists x T t,  v' = LamAbs x T t) \/ (exists f, applied f v')
+.
 Proof.
-intros H_FA H_compute H_RC.
-assert (H_eval : (Apply s t) =[1]=> r). eapply E_Builtin_Apply; auto.
+  intros HV.
+  assert (exists T1n T2n, [] ,, [] |-+ v' : <{ T1n → T2n }>).
+  {
+    apply V_typable_empty_2 in HV as [T' [Hnorm Hty]].
+    rewrite msubstT_TyFun in Hnorm.
+    inversion Hnorm; subst.
+    eauto.
+  }
+  destruct_hypos.
+  eapply value__Ty_Fun.
+  - eauto using V_value_2.
+  - apply H.
+Qed.
 
-autorewrite with R.
-intros j H_lt r' H_eval'.
-assert (j = 1) by admit.
-assert (r = r') by admit.
-subst r' j.
 
-(* run_C H_RC r' j' H_eval' H_res'. *)
-Admitted.
-  *)
-(*
-Lemma compat_Apply_builtin Δ Γ e1 e2 e1' e2' T1 T2 :
-    fully_applied <{e1 ⋅ e2}> ->
-    approx Δ Γ e1 e1' (Ty_Fun T1 T2) ->
-    approx Δ Γ e2 e2' T1 ->
-    approx Δ Γ (Apply e1 e2) (Apply e1' e2') T2.
+Lemma beta__app {x v t k r} T :
+  value v ->
+  <{ [x := v] t        }> =[ k ]=> r <->
+  <{ (λ x :: T , t) ⋅ v}> =[ 1 + k ]=> r
+.
 Proof.
-  intros H_FA H_approx_e1 H_approx_e2.
-  unfold approx.
-  split; [ admit | split; [admit | ]].
-
-  intros ? ? ? ?.
-  intros H_RD H_RG.
-  destruct H_approx_e1 as [_ [ _ H_RC_e1]].
-  destruct H_approx_e2 as [_ [ _ H_RC_e2]].
-Admitted.
-*)
+  intros H_val.
+  split.
+  - intros H_beta.
+    assert (H_eq : 1 + k = 0 + 0 + 1 + k) by lia.
+    rewrite H_eq.
+    eapply E_Apply; try eauto using eval_value.
+  - intros H_app.
+    inversion H_app.
+    + inversion H2; subst.
+      specialize (eval_value _ H_val) as H_e_v.
+      assert (H_det : v = v2 /\ 0 = j2) by (eapply eval__deterministic; eauto).
+      destruct H_det.
+      subst v2.
+      subst j2.
+      assert (j0 = k) by lia.
+      subst j0.
+      assumption.
+    + inversion H2; subst.
+      inversion H3.
+    + inversion H2; subst.
+      inversion H3.
+    + inversion H2; subst.
+    + 
+      specialize (eval_value _ H_val) as H_e_v.
+      assert (H_det : v = Error T0 /\ 0 = j2) by (eapply eval__deterministic; eauto).
+      destruct H_det.
+      subst v.
+      subst t2.
+      subst r.
+      inversion H_val.
+      inversion H1.
+Qed.
 
 Lemma compat_Apply Δ Γ e1 e2 e1' e2' T1 T2 :
     approx Δ Γ e1 e1' <{T1 → T2}> ->
@@ -510,14 +433,44 @@ Proof with eauto_LR.
     RV_no_error R_e1 V_e1.
 
     run_C C_e2
-      r2' j2' E_e2' R_e2...
+      v2' j2' E_e2' R_e2...
     RV_no_error R_e2 V_e2.
 
     (* Lower the step-index of e2 *)
     apply V_monotone with (i := k - (j1 + j2 + 1)) (Δ := Δ) in V_e2...
 
-    (* related arguments go to related results, use j0 steps *)
-    admit.
+    (* Related arguments go to related values *)
+    assert (H_lt : k - (j1 + j2 + 1) < k - j1) by lia.
+
+
+    specialize (V_functional_extensionality H_lt V_e1 V_e2) as [C_app _].
+    specialize (C_app x T t0 eq_refl).
+    assert (j0 < (k - (j1 + j2 + 1))) by lia.
+
+    run_C C_app
+      r' j' E_app' R_app...
+
+    (* is r1' a lambda or a partially applied builtin? *)
+    destruct (V__Ty_Fun_r V_e1) as [ | f H_applied].
+    + (* it's a lambda *)
+        destruct_hypos.
+        subst r1'.
+        eexists. eexists.
+        split.
+        (* eval *)
+        * eapply E_Apply; try eauto.
+          all: admit. (* by inversion on E_app' *)
+        * assert ((k - (j1 + j2 + 1 + j0)) = (k - (j1 + j2 + 1) - j0)) by lia.
+          rewrite H0.
+          apply R_app.
+    + (*it's a partially applied built-in*)
+      assert ((k - (j1 + j2 + 1 + j0)) = (k - (j1 + j2 + 1) - j0)) by lia.
+      rewrite H0.
+      eexists. eexists.
+      split.
+      * admit. (* Either E_Apply_Builtin_Full or E_APply_Builtin_Partial based
+                * on arity of r' ⋅ v2' *)
+      * eassumption.
 
   - (* E_Apply_Builtin_Partial *)
     admit.
