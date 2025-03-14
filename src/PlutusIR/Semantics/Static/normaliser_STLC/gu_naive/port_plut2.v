@@ -87,7 +87,12 @@ Proof.
   induction T; simpl; try f_equal; auto.
 Qed.
 
-(* Not true currently*)
+(* Not true currently
+Little research:
+Removing the first (x, fs) will be easy.
+Hence the only difference is ftv vs tv.
+
+*)
 Lemma f_preserves_fresh2 x y s s' T :
   fresh2 ((x, f s)::(y, f s')::nil) (f T) = TypeSubstitution.fresh y s' T.
 Proof.
@@ -275,7 +280,7 @@ Proof.
   apply f_preserves_step.
 Qed.
 
-Corollary sn_step_plut2 s Δ K : plutus_kinding_set.has_kind Δ s K -> @sn PlutusIR.ty Type_reduction.step s.
+Corollary plutus_ty_strong_normalization s Δ K : plutus_kinding_set.has_kind Δ s K -> @sn PlutusIR.ty Type_reduction.step s.
 Proof.
   intros Hwk.
   eapply sn_preimage2. 

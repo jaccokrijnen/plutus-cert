@@ -13,7 +13,7 @@ Require Import Coq.Arith.Arith.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From PlutusCert Require Import STLC_named STLC_named_typing ARS gu_naive.pre gu_naive.constructions.
+From PlutusCert Require Import alpha_typing STLC_named STLC_named_typing ARS gu_naive.pre gu_naive.constructions.
 From PlutusCert Require Import alpha.alpha alpha_rename rename util alpha_ctx_sub freshness alpha_freshness.
 
 
@@ -327,41 +327,29 @@ Lemma step_gu_naive_app_l {B} s1 s2 t1 :
   {t1' & Alpha [] t1 t1' * {s2' & Alpha [] s2 s2' * step_gu_naive (@tmapp B s1 s2) (@tmapp B t1' s2')}%type }%type.
 Proof.
   intros.
-  assert ({s1' & { s2' & Alpha [] (@tmapp B s1 s2) (@tmapp B s1' s2') * GU (@tmapp B s1' s2')}}%type).
-  {
-    (* just renaming binders *)
-    admit.
-  }
-  destruct H0 as [s1' [s2' [Ha_app H_gu] ] ].
-  (* I think we then need a step_gu_naive_alpha*)
-  assert (Alpha [] s1 s1') by now inv Ha_app.
-  assert (Alpha [] s2 s2') by now inv Ha_app.
-  apply (step_gu_naive_preserves_alpha H0) in H.
-  destruct H as [t' [Hstep_s1' Ha_t1] ].
-  inv Hstep_s1'.
-  assert (Alpha [] s1 s').
-  {
-    eapply alpha_trans; eauto. constructor.
-  }
-  assert (Alpha [] (@tmapp B s1 s2) (@tmapp B s' s2')).
-  {
-    constructor; eauto.
-  }
-  clear Ha_app.
 
-  (* tbh, i don't understand the flow of this, but it's all just renaming binders ;)*)
+  (* We cannot directly invert the (step_gu_naive s1 t1), because we need something to be GU over s2 as well!*)
+  remember (to_GU (@tmapp B s1 s2)) as app.
+  remember Heqapp as Heqapp'. clear HeqHeqapp'.
+  apply to_GU_app_unfold in Heqapp.
+  destruct Heqapp as [s1' [s2' [ [Happ Ha_s1] Ha_s2] ] ].
 
-  exists t'.
-  split; auto.
-  assert ({s2'' & GU (@tmapp B s' s2'') * Alpha [] s2 s2''}%type) by admit. (* just renaming binders*)
-  destruct H6 as [s2'' [Hgu_app Ha_s2'] ].
-  exists s2''.
-  split; auto.
-  clear H5.
-  econstructor; eauto.
-  - constructor; eauto.
-  - apply step_appL. auto.
-Admitted.
+  inv H.
+
+  (* From step_naive s' t1, it then also follows that there must exist a t1' s.t. step_naive s1' t1'.*)
+  apply step_naive_preserves_alpha2 with (s' := s1') (R := nil) in H2 as [t1' [Hstep_s1' Ha_t1] ].
+  - exists t1'.
+    split; auto.
+    exists s2'.
+    split; auto.
+    apply step_gu_naive_intro with (s' := (@tmapp B s1' s2')); auto.
+    + rewrite Heqapp'. apply to_GU__alpha.
+    + rewrite Heqapp'. apply to_GU__GU.
+    + constructor. auto.
+  - assumption.
+  - eapply gu_app_l. erewrite Heqapp'. apply to_GU__GU.
+  - eauto with α_eq_db.
+Qed.
 
 
 (* This would NOT work for app because of beta reduction*)
@@ -584,7 +572,8 @@ Proof.
   intros.
   induction sigma.
   - inversion H.
-  - (* need lemma to rewrite a in remove_ids a0 :: sigma to a in a0 :: remove_ids sigma*)
+  - 
+    (* need lemma to rewrite a in remove_ids a0 :: sigma to a in a0 :: remove_ids sigma*)
     admit.
 Admitted.
 
@@ -639,41 +628,12 @@ Fixpoint id_subst (E : list (string * PlutusIR.kind)) : list (string * term) :=
   end.
 
 
-Inductive IdSubst : list (string * term) -> Set :=
-  | id_subst_nil : IdSubst nil
-  | id_subst_cons : forall x sigma , IdSubst sigma -> IdSubst ((x, tmvar x)::sigma).
-
-
 Lemma id_subst_is_IdSubst E :
   IdSubst (id_subst E).
 Proof.
   induction E.
   - constructor.
   - simpl. destruct a. constructor. assumption.
-Qed.
-
-Lemma id_subst__id s σ :
-  (* NC s σ ->  *)
-  IdSubst σ -> 
-  subs σ s = s. (* even when this capturs, it doesnt matter, since it captures something and then substiutes it for the same name*)
-Proof.
-  intros.
-  induction s.
-  - induction σ.
-    + reflexivity.
-    + simpl. destruct a as [x1 x2].
-      inversion H; subst.
-      specialize (IHσ H1).
-      rewrite IHσ.
-      destr_eqb_eq x1 s.
-      * simpl. rewrite String.eqb_refl. reflexivity.
-      * simpl. rewrite <- String.eqb_neq in H0. rewrite H0. reflexivity.
-  - rewrite subs_tmlam.
-    f_equal.
-    apply IHs.
-  - rewrite subs_tmapp.
-    f_equal; eauto.
-  - rewrite subs_builtin. auto.
 Qed.
 
 Lemma remove_id_subs_no_effect sigma s :
@@ -698,29 +658,6 @@ Proof.
     + simpl. f_equal. auto.
     + simpl. f_equal. auto.
 Qed.
-
-Lemma ftv_keys_env__no_keys sigma x :
-  ~ In x (ftv_keys_env sigma) -> ~ In x (map fst sigma).
-Admitted.
-
-Lemma ftv_keys_env__no_values sigma x :
-  ~ In x (ftv_keys_env sigma) -> (forall val, In val (map snd sigma) -> ~ In x (ftv val)).
-Admitted.
-
-Lemma ftv_keys_env_helper sigma x :
-  ~ In x (map fst sigma) -> (forall ftvs, In ftvs (map snd sigma) -> ~ In x (ftv ftvs)) 
-    -> ~ In x (ftv_keys_env sigma).
-Admitted.
-
-
-Lemma subs_does_not_create_btv sigma x s :
-  ~ In x (btv s) -> ~ In x (btv_env sigma) -> ~ In x (btv (subs sigma s)).
-Admitted.
-
-Lemma btv_env_subset a sigma' sigma :
-  incl sigma' sigma ->
-  ~ In a (btv_env sigma) -> ~ In a (btv_env sigma').
-Admitted.
 
 Lemma psubs_to_subs {s sigma} :
   ParSeq sigma -> subs sigma s = psubs sigma s.
@@ -951,6 +888,13 @@ Proof with eauto with gu_nc_db.
     constructor.
 Qed.
 
+Lemma gu_app_st__gu_app_ts {B} s1 s2 :
+  GU (@tmapp B s1 s2) -> GU (@tmapp B s2 s1).
+Proof.
+  intros.
+  inversion H; subst.
+  constructor; auto.
+Qed.
 
 
 Lemma step_subst_single R {x p s t t' } :
@@ -993,7 +937,7 @@ Proof with eauto with sconstr2_db.
           repeat rewrite <- single_subs_is_sub.
           repeat rewrite psubs_to_subs; try apply single_parseq.
           eapply subs_preserves_alpha_σ_R with (R := nil).
-          -- eapply gu_applam_to_nc. eapply sconstr1_gu. eauto.
+          -- apply @gu_applam_to_nc with (A := A) (BL := Lam) (BA := App). eapply sconstr1_gu. eauto.
           -- eapply sconstr2_nc_sub; eauto.
           -- rewrite <- psubs_to_subs; [|apply single_parseq].
              eapply @alpha_trans. constructor. 
@@ -1097,7 +1041,44 @@ Proof with eauto with sconstr2_db.
         eapply subs_preserves_alpha_σ_R; eauto.
         -- exact (nc_app_r H1).
         -- exact (nc_app_r H4).
-  - (* analogous*) admit.
+  - (* TODO: cleanup, because this is completely analogous to case above*) 
+    inversion H2; subst.
+    specialize (IHHstep (gu_app_r H0) (nc_app_r H1) R H3 t3 H10 (nc_app_r H4)) as [sigS1 [HstepS1 HalphaS1] ].
+    repeat rewrite subs_tmapp.
+    inv HstepS1.
+
+    remember (to_GU (@tmapp B s' (subs ((x, p)::nil) s))) as st_gu.
+    
+    destruct (to_GU_app_unfold Heqst_gu) as [sigS1Alpha [sigtalpha [ [Happ Ha_s] Ha_t ] ] ].
+
+    (* like lam case, we then alpha step *)
+    assert ({s''step & step_naive sigS1Alpha s''step * Alpha [] sigS1 s''step}%type).
+    {
+      eapply step_naive_preserves_alpha2 with (s := s') (t := sigS1); eauto.
+      - eapply gu_app_l; eauto.
+        rewrite Heqst_gu in Happ.
+        rewrite <- Happ.
+        eapply to_GU__GU.
+    }
+    destruct H7 as [s''step [Halpha_s'' Hstep_s'' ] ].
+
+    exists (@tmapp B sigtalpha s''step).
+    split.
+    + econstructor; auto.
+      * constructor.
+        -- eauto.
+        -- eapply @alpha_trans. constructor. eauto. eauto.
+        
+      * apply gu_app_st__gu_app_ts. rewrite <- Happ. rewrite Heqst_gu. apply to_GU__GU.
+      * constructor. eauto.
+    + eapply @alpha_trans with (ren := ctx_id_left R) (ren' := R) (t := tmapp (subs ((x, p)::nil) s) (sigS1)). 
+      * eapply id_left_trans. 
+      * apply alpha_extend_ids. apply ctx_id_left_is_id. constructor. eapply alpha_sym. constructor. eauto. eapply alpha_sym. constructor. eauto.
+      * constructor; eauto. 
+        repeat rewrite psubs_to_subs; try apply single_parseq.
+        eapply subs_preserves_alpha_σ_R; eauto.
+        -- exact (nc_app_l H1).
+        -- exact (nc_app_l H4).
   - inversion H2; subst.
     autorewrite with subs_db.
     specialize (IHHstep (gu_lam H0)).
@@ -1125,7 +1106,7 @@ Proof with eauto with sconstr2_db.
     assert ({s''step & step_naive s'' s''step * Alpha [] subSigmaS2 s''step }%type).
     {
       eapply step_naive_preserves_alpha2 with (s := s'); eauto.
-      - eapply gu_lam; eauto.
+      - apply @gu_lam with (B := B) (x := x0) (A := A); eauto.
         subst.
         eapply to_GU''__GU_lam.
       - subst.
@@ -1146,7 +1127,7 @@ Proof with eauto with sconstr2_db.
       * eapply id_left_trans.
       * apply alpha_extend_ids. apply ctx_id_left_is_id. eapply @alpha_sym. eauto. constructor. eauto.
       * assumption.
-Admitted.
+Qed.
 
 Create HintDb to_GU'_db.
 Hint Resolve to_GU'__alpha to_GU'__GU to_GU'__NC : to_GU'_db.
@@ -1390,10 +1371,6 @@ Proof.
     + assumption.
 Qed.
 
-(* NOTE: Proof already in alpha_typing*)
-Lemma alpha_preserves_typing s t A Gamma :
-  Alpha nil s t -> Gamma |-* s : A -> Gamma |-* t : A.
-Admitted.
 
 Lemma step_gu_na_lam_fold {B} x A s s' :
   step_gu_naive s s' -> {lams' & step_gu_naive (@tmlam B x A s) lams' * Alpha [] lams' (@tmlam B x A s')}%type.
@@ -2147,17 +2124,20 @@ Proof.
   intros Htype.
   assert (HEL: EL E (id_subst E)) by apply id_subst__EL.
   remember (s_constr s (id_subst E)) as s'.
-  eapply alpha_preserves_typing with (t := s') in Htype; eauto.
-  eapply soundness in Htype; eauto.
-  - rewrite id_subst__id in Htype; [|apply id_subst_is_IdSubst]. 
-    rewrite id_subst__id; [|apply id_subst_is_IdSubst].
-    eapply α_preserves_L_R with (s := s'); eauto.
-    eapply alpha_sym. eapply alpha_sym_nil. eapply s_constr__a_s; eauto.
-  - eapply s_constr__gu; eauto.
-  - apply id_subst__nc_uhm. eapply s_constr__nc_s; eauto.
-  - eapply s_constr__nc_s; eauto.
-  - apply id_subst__ParSeq. apply id_subst_is_IdSubst.
+  eapply alpha_preserves_typing with (t := s') (sigma := nil) (Gamma := E) in Htype; eauto.
+  {
+    eapply soundness in Htype; eauto.
+    - rewrite id_subst__id in Htype; [|apply id_subst_is_IdSubst]. 
+      rewrite id_subst__id; [|apply id_subst_is_IdSubst].
+      eapply α_preserves_L_R with (s := s'); eauto.
+      eapply alpha_sym. eapply alpha_sym_nil. eapply s_constr__a_s; eauto.
+    - eapply s_constr__gu; eauto.
+    - apply id_subst__nc_uhm. eapply s_constr__nc_s; eauto.
+    - eapply s_constr__nc_s; eauto.
+    - apply id_subst__ParSeq. apply id_subst_is_IdSubst.
+  }
   - eapply s_constr__a_s; eauto.
+  - constructor.
 Qed.
 
 

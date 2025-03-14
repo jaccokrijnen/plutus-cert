@@ -148,6 +148,39 @@ Hint Resolve subs_tmlam : subs_db.
 (* So sub is also rewritten when rewriting subs *)
 Hint Extern 1 => simpl sub : subs_db.
 
+Fixpoint btv_env (sigma : list (string * term)) : list string :=
+  match sigma with
+  | nil => nil
+  | (x, t)::sigma' => (btv t) ++ (btv_env sigma')
+  end.
+
+  Definition set_diff (l1 l2 : list string) : list string :=
+  filter (fun x => negb (existsb (String.eqb x) l2)) l1.
+
+
+Lemma ftv_keys_env__no_keys sigma x :
+  ~ In x (ftv_keys_env sigma) -> ~ In x (map fst sigma).
+Admitted.
+
+Lemma ftv_keys_env__no_values sigma x :
+  ~ In x (ftv_keys_env sigma) -> (forall val, In val (map snd sigma) -> ~ In x (ftv val)).
+Admitted.
+
+Lemma ftv_keys_env_helper sigma x :
+  ~ In x (map fst sigma) -> (forall ftvs, In ftvs (map snd sigma) -> ~ In x (ftv ftvs)) 
+    -> ~ In x (ftv_keys_env sigma).
+Admitted.
+
+
+Lemma subs_does_not_create_btv sigma x s :
+  ~ In x (btv s) -> ~ In x (btv_env sigma) -> ~ In x (btv (subs sigma s)).
+Admitted.
+
+Lemma btv_env_subset a sigma' sigma :
+  incl sigma' sigma ->
+  ~ In a (btv_env sigma) -> ~ In a (btv_env sigma').
+Admitted.
+
 Inductive GU : term -> Set :=
 | GU_var x : GU (tmvar x)
 (* in app, if s and t do not share GU_vars: *)
@@ -391,15 +424,6 @@ Admitted.
     What about ftv in t that are also ftv in s? they are not renamed and thus in t'. Can they be btv in sigma? No by the first argument
 
 *)
-
-Fixpoint btv_env (sigma : list (string * term)) : list string :=
-  match sigma with
-  | nil => nil
-  | (x, t)::sigma' => (btv t) ++ (btv_env sigma')
-  end.
-
-  Definition set_diff (l1 l2 : list string) : list string :=
-  filter (fun x => negb (existsb (String.eqb x) l2)) l1.
 
 Fixpoint fresh18 (l : list string) : string :=
   match l with

@@ -93,6 +93,11 @@ Lemma lookup_no_key_then_none X (sigma : list (string * term)) :
   ~ In X (map fst sigma) -> lookup X sigma = None.
 Admitted.
 
+(* lookup is left-aligned, there could be another y in there.*)
+Lemma in_then_lookup_some_and_in {A : Type} y t (sigma : list (string * A)) :
+  In (y, t) sigma -> {t' & (lookup y sigma = Some t') * In (y, t') sigma}%type.
+Admitted.
+
 Lemma not_existsb_not_in y U' : 
   existsb (eqb y) (ftv U') = false -> ~ In y (ftv U').
 Proof.

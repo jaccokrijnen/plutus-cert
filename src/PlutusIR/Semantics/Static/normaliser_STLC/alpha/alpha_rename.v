@@ -20,7 +20,9 @@ Also, we need a freshness condition since renaming is not capture-avoiding.
 Correspondence between alpha contexts and renamings on syntactically equal terms.
  *)
 Lemma alphaRename x x' s :
-  (* x' can be equal to x., but then x=x' not in s, so the renaming doesnt do anything. *)
+  (* x' can be equal to x., but then x=x' not in s, so the renaming doesnt do anything. 
+    Cannot easily be restricted to ftv: say s = λ x' . x. Then x' not free in s, but rename x x' s, will cause capture
+  *)
   ~ (In x' (tv s)) -> Alpha [(x, x')] s (rename x x' s).
 Proof.
   intros Hfresh.

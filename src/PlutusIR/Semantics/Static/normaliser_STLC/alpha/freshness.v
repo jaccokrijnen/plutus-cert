@@ -50,6 +50,12 @@ Proof.
   simpl. intuition.
 Qed.
 
+Lemma tv_var x x' :
+  In x (tv (tmvar x')) -> x = x'.
+Proof.
+  simpl. intuition.
+Qed.
+
 Lemma not_in_ftv_var x x' :
   ~ In x (ftv (tmvar x')) -> x <> x'.
 Proof.
@@ -92,6 +98,10 @@ Proof.
   assumption.
 Qed.
 
+Lemma ftv_c_lam {B : USort} X Y A t :
+  In X (ftv t) -> Y <> X -> In X (ftv (@tmlam B Y A t)).
+Admitted.
+
 Lemma ftv_lam_negative {B : USort} X Y A t :
   ~ In X (ftv (@tmlam B Y A t)) -> X <> Y -> ~ In X (ftv t).
 Admitted.
@@ -133,6 +143,15 @@ Qed.
 Lemma extend_ftv_to_tv x s :
   In x (ftv s) -> In x (tv s).
 Proof.
+Admitted.
+
+Lemma extend_btv_to_tv x s :
+  In x (btv s) -> In x (tv s).
+Proof.
+Admitted.
+
+Lemma not_ftv_btv_then_not_tv x s :
+  ~ In x (ftv s) -> ~ In x (btv s) -> ~ In x (tv s).
 Admitted.
 
 Lemma tv_rename_vacuous_helper {X Y Y' t} :
@@ -317,6 +336,11 @@ Admitted.
 
 (* BTV *)
 
+Lemma btv_var_contradiction {x x'} :
+  In x (btv (tmvar x')) -> False.
+Admitted.
+
+
 Lemma btv_lam {B X A t} :
   In X (btv (@tmlam B X A t)).
 Proof.
@@ -373,6 +397,10 @@ Lemma tv_c_appr {B X t1 t2} :
   In X (tv t2) -> In X (tv (@tmapp B t1 t2)).
 Admitted.
 
+Lemma tv_dc_lam {B X Y A t} :
+  In X (tv (@tmlam B Y A t)) -> X <> Y -> In X (tv t).
+Admitted.
+
 (* FTV *)
 
 Lemma ftv_c_appl {B X t1 t2} :
@@ -382,3 +410,5 @@ Admitted.
 Lemma ftv_c_appr {B X t1 t2} :
   In X (ftv t2) -> In X (ftv (@tmapp B t1 t2)).
 Admitted.
+
+

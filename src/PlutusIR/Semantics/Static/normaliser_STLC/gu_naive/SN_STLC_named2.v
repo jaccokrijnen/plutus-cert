@@ -14,7 +14,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 From PlutusCert Require Import STLC_named STLC_named_typing ARS.
-From PlutusCert Require Import alpha.alpha alpha_rename rename util alpha_ctx_sub freshness alpha_freshness.
+From PlutusCert Require Import alpha_typing alpha.alpha alpha_rename rename util alpha_ctx_sub freshness alpha_freshness.
 From PlutusCert Require Import SN_STLC_named_naive gu_naive.pre gu_naive.constructions.
 
 (* Define an infix operator for bind *)
@@ -111,36 +111,6 @@ Proof.
     - apply step_appL. auto. inversion HGU_vars; auto.
     - apply step_appR. auto. inversion HGU_vars; auto.
     - apply step_abs. auto. inversion HGU_vars; auto.
-Qed.
-
-Lemma substituteTCA_vacuous X T s s' R : Alpha R s s' -> ~ In X (ftv s) -> Alpha R (substituteTCA X T s) s'.
-Proof.
-  intros Ha_s H.
-  generalize dependent s.
-  generalize dependent R.
-  induction s'; intros; simpl; 
-      inversion Ha_s; subst; 
-      autorewrite with substituteTCA.
-  - apply not_in_ftv_var in H. 
-    rewrite <- String.eqb_neq in H.
-    rewrite H. constructor. auto.
-  - destr_eqb_eq X x; auto.
-    destruct (existsb (eqb x) (ftv T)).
-    + apply ftv_lam_negative in H; auto.
-      remember (fresh2 [(x, tmvar x); (X, T)] s1) as Y'; simpl.
-      constructor.
-      apply IHs'; eauto.
-      * eapply alpha_trans_rename_left; eauto.
-      * apply ftv_not_in_rename; auto.
-        symmetry. 
-        eapply fresh2_over_key_sigma; intuition.
-    + constructor.
-      eapply IHs'; auto.
-      eapply ftv_lam_negative; eauto.
-  - constructor.
-    + eapply IHs'1; eauto. eapply not_ftv_app_not_left; eauto.
-    + eapply IHs'2; eauto. eapply not_ftv_app_not_right; eauto.
-  - constructor.
 Qed.
 
 Lemma subs_preserves_alpha' X T i : forall s s' R1 R2 R,

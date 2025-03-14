@@ -97,8 +97,7 @@ Lemma fresh__T : forall X U T,
     ~ In (fresh X U T) (ftv T).
 Proof. Abort.
 
-(* TODO: Should we add the assumption that we are always substing in fresh stuff? *)
-(* TODO: Fresh with respect to what? *)
+(* TODO: REMOVE MREN, WE NEVER HAVE MULTIPLE RENAMINGS*)
 Fixpoint mren (rho : list (string * string)) (T : term) : term :=
   match T with
   | tmvar Y => match lookup Y rho with
