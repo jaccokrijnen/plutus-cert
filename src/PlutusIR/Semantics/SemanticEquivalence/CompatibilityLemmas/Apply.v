@@ -45,7 +45,7 @@ Proof with eauto_LR.
     rename v2 into e_f2.
     rename j1 into j_1.
     rename j2 into j_2.
-    rename j0 into j_3.
+    rename j3 into j_3.
 
     assert (HRC1 :
       RC k (Ty_Fun T1 T2) rho
@@ -385,7 +385,7 @@ Proof.
       inversion H3.
     + inversion H2; subst.
       inversion H3.
-    + inversion H2; subst.
+    + inversion H4; subst.
     + 
       specialize (eval_value _ H_val) as H_e_v.
       assert (H_det : v = Error T0 /\ 0 = j2) by (eapply eval__deterministic; eauto).
@@ -394,7 +394,7 @@ Proof.
       subst t2.
       subst r.
       inversion H_val.
-      inversion H1.
+      inversion H2.
 Qed.
 
 Lemma compat_Apply Δ Γ e1 e2 e1' e2' T1 T2 :
@@ -445,7 +445,7 @@ Proof with eauto_LR.
 
     specialize (V_functional_extensionality H_lt V_e1 V_e2) as [C_app _].
     specialize (C_app x T t0 eq_refl).
-    assert (j0 < (k - (j1 + j2 + 1))) by lia.
+    assert (j3 < (k - (j1 + j2 + 1))) by lia.
 
     run_C C_app
       r' j' E_app' R_app...
@@ -460,11 +460,11 @@ Proof with eauto_LR.
         (* eval *)
         * eapply E_Apply; try eauto.
           all: admit. (* by inversion on E_app' *)
-        * assert ((k - (j1 + j2 + 1 + j0)) = (k - (j1 + j2 + 1) - j0)) by lia.
+        * assert ((k - (j1 + j2 + 1 + j3)) = (k - (j1 + j2 + 1) - j3)) by lia.
           rewrite H0.
           apply R_app.
     + (*it's a partially applied built-in*)
-      assert ((k - (j1 + j2 + 1 + j0)) = (k - (j1 + j2 + 1) - j0)) by lia.
+      assert ((k - (j1 + j2 + 1 + j3)) = (k - (j1 + j2 + 1) - j3)) by lia.
       rewrite H0.
       eexists. eexists.
       split.

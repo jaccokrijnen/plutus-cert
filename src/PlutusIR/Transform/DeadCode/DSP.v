@@ -99,12 +99,12 @@ Proof.
     + (* E_Let_TermBind *)
       Set Diffs "on".
 
-      rewrite btvbs_cons in H16.
-      unfold btvb in H16.
-      rewrite app_nil_l in H16.
+      rewrite btvbs_cons in H17.
+      unfold btvb in H17.
+      rewrite app_nil_l in H17.
       (* Pull substitutions out *)
-      rewrite <- msubst_LetNonRec in H16.
-      rewrite <- msubstA_LetNonRec in H16.
+      rewrite <- msubst_LetNonRec in H17.
+      rewrite <- msubstA_LetNonRec in H17.
 
       (* Simplify disjoint assumptions *)
       simpl in H0, H.

@@ -93,9 +93,9 @@ Proof with eauto_LR.
   - clear Hev__e_f.
     rename v1 into vb.
     rename j1 into jb.
-    rename H6 into Hev__vb.
-    rename H7 into Hnerr__vb.
-    rename H8 into Hev__e_f.
+    rename H7 into Hev__vb.
+    rename H8 into Hnerr__vb.
+    rename H9 into Hev__e_f.
 
     assert (HRC__tb :
       RC k Tbn rho
@@ -142,7 +142,7 @@ Proof with eauto_LR.
       eexists. eexists.
       split. {
         eapply E_Apply...
-        - eapply E_LamAbs.
+        - eapply E_LamAbs. reflexivity.
         - eapply RV_error in HRV__vb as temp...
           destruct temp as [ [Herr Herr'] | [Hnerr Hnerr']]...
         - rewrite <- subst_msubst...
@@ -221,7 +221,7 @@ Proof with eauto_LR.
       }
   - clear Hev__e_f.
     rename j1 into jb.
-    rename H6 into Hev__vb.
+    rename H7 into Hev__vb.
 
     assert (HRC__tb :
       RC k Tbn rho

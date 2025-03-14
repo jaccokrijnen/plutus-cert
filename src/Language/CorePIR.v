@@ -98,7 +98,7 @@ Proof.
   (* Literal *)
   -
     repeat eexists.
-    + econstructor.
+    + econstructor. reflexivity.
     + econstructor.
     + unfold not. inversion 1.
 Qed.

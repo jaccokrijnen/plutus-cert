@@ -37,9 +37,9 @@ Proof with eauto_LR.
   intros j Hlt__j e_f Hev__e_f.
   inversion Hev__e_f. subst.
   inversion H3. subst.
-  rename j0 into j_1.
+  rename j1 into j_1.
   rename H3 into Hev'__e_f.
-  rename H0 into Hev''__e_f.
+  rename H1 into Hev''__e_f.
 
   assert (HRC__t : RC k Tn rho
     (msubst env (msubstA (msyn1 rho) t))
@@ -92,9 +92,9 @@ Proof with eauto_LR.
 
   inversion Hev__e_f. subst.
   inversion H3. subst.
-  rename j0 into j_1.
+  rename j1 into j_1.
   rename H3 into Hev'__e_f.
-  rename H0 into Hev''__e_f.
+  rename H1 into Hev''__e_f.
 
 
   assert (HRC__t : RC k Tn rho

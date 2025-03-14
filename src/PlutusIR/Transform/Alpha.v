@@ -175,7 +175,7 @@ Proof.
     exists t'.
     inversion H_alpha; subst.
     split.
-    + apply E_LamAbs.
+    + apply E_LamAbs. reflexivity.
     + assumption.
   - (* E_Apply *)
     rename t0 into t.
@@ -201,10 +201,11 @@ Proof.
     exists r'.
     split.
     + eapply E_Apply.
+      * reflexivity.
       * exact H_t1'_eval.
       * exact H_t2'_eval.
       * intro.
-        apply H.
+        apply H0.
         apply alpha_sym with (ys := []) in H_t2'_alpha; try constructor.
         eauto using alpha__is_error.
       * assumption.

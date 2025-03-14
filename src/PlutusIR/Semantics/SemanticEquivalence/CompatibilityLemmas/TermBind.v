@@ -127,8 +127,8 @@ Proof with eauto_LR.
     clear Hev__e_f.
     rename v1 into vb.
     rename j1 into jb.
-    rename H7 into Hev__vb.
-    rename H9 into Hev__e_f.
+    rename H8 into Hev__vb.
+    rename H10 into Hev__e_f.
 
     assert (HRC__tb :
     RC k Tbn rho
@@ -315,7 +315,7 @@ Proof with eauto_LR.
       }
   - (* E_Error_Let_TermBind*)
     rename j1 into jb.
-    rename H7 into Hev__Err.
+    rename H8 into Hev__Err.
 
     assert (HRC__tb :
       RC k Tbn rho
