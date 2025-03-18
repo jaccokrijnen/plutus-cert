@@ -1,10 +1,10 @@
 Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Strings.String.
-From PlutusCert Require Import STLC_named alpha.alpha Util.List.
+From PlutusCert Require Import STLC_named alpha.alpha Util.List util.
 
 (* One subsitution is related to the other through the alpha context*)
-Inductive αCtxSub : list (string * string) -> list (string * term) -> list (string * term) -> Prop :=
+Inductive αCtxSub : list (string * string) -> list (string * term) -> list (string * term) -> Set :=
   | alpha_ctx_nil R : αCtxSub R [] []
   | alpha_ctx_cons R σ σ' x y t t' :
   (* TODO: what about sigma and sigma'? no conditions?*)
@@ -13,13 +13,6 @@ Inductive αCtxSub : list (string * string) -> list (string * term) -> list (str
     Alpha R t t' ->
     αCtxSub R ((x, t)::σ) ((y, t')::σ').
 
-(* One subsitution is related to the other through the alpha context*)
-Inductive αCtxSubSingle : list (string * string) -> list (string * term) -> list (string * term) -> Prop :=
-  | alpha_ctx_single_nil : αCtxSubSingle [] [] []
-  | alpha_ctx_single_cons ren x y t t' :
-    AlphaVar ren x y ->
-    Alpha ren t t' ->
-    αCtxSubSingle ren ((x, t)::nil) ((y, t')::nil).
 
 Lemma alpha_ctx_found ren sigma sigma' x x' t t' :
   αCtxSub ren sigma sigma' ->
@@ -44,7 +37,20 @@ Lemma alpha_ctx_right_ex {ren sigma sigma' x x' t }:
   lookup x sigma = Some t ->
   {t' & prod (lookup x' sigma' = Some t') (Alpha ren t t')}.
 Proof.
-Admitted.
+  intros.
+  induction H; try inversion H1.
+  destr_eqb_eq x0 x.
+  - inversion H3. subst. clear H3.
+    apply (alphavar_unique_right a) in H0. subst.
+    exists t'. split; auto.
+    simpl. rewrite String.eqb_refl. auto.
+  - remember H0 as Hav_xx'; clear HeqHav_xx'.
+    apply (alphavar_unique_not_left H2 a) in H0.
+    simpl in H1. rewrite <- String.eqb_neq in H2. rewrite H2 in H1.
+    specialize (IHαCtxSub Hav_xx' H1) as [t'0 [Hlookup Ha_t]].
+    exists t'0. split; auto.
+    simpl. rewrite <- String.eqb_neq in H0. rewrite H0. auto.
+Qed.
 
 Lemma alpha_ctx_left_nex {ren sigma sigma' x x'}:
   αCtxSub ren sigma sigma' ->

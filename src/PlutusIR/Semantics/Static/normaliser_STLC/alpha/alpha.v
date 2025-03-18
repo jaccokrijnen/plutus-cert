@@ -910,3 +910,8 @@ Lemma alpha_extend_vacuous_single {x x' s}:
   ~ (In x (ftv s)) -> ~ (In x' (tv s)) -> Alpha ((x, x')::nil) s s.
 Proof.
 Admitted.
+
+
+Lemma alphavar_refl_weaken_vacuouss {x R} :
+  ~ In x (map fst R) -> ~ In x (map snd R) -> AlphaVar R x x.
+Admitted.

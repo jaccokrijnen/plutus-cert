@@ -289,3 +289,5 @@ Proof.
     eapply f_preserves_kind.
     auto.
 Qed.
+
+Print Assumptions plutus_ty_strong_normalization.

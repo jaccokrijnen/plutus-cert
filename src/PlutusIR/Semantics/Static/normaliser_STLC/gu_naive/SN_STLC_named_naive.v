@@ -914,51 +914,56 @@ Proof with eauto with sconstr2_db.
       *)
       
       autorewrite with subs_db. 
-      remember (sconstr1 x x0 p s t) as sconstr1_.
-      destruct sconstr1_ as [sub_s sub_t].
 
-      exists (sub x0 sub_t sub_s).
+      assert ({x' : string & {s' & { t' & ((to_GU (@tmapp App (@tmlam Lam x0 A (subs [(x, p)] s))
+  (subs [(x, p)] t))) = @tmapp App (@tmlam Lam x' A s') t') * Alpha ((x0, x')::nil) (subs [(x, p)] s) s' * Alpha [] (subs [(x, p)] t) t'} } }%type).
+      {
+        eapply to_GU_applam_unfold. auto.
+      }
+      destruct H as [x0' [sub_s [ sub_t [ [pr_eq Ha_subs] Ha_subt]]]].
+      
+      exists (sub x0' sub_t sub_s).
       split.
-      + eapply step_gu_naive_intro with (s' := (tmapp (tmlam x0 A sub_s) sub_t)).
-        * constructor. 
-          -- constructor. eapply alpha_extend_ids. constructor. constructor. eapply @alpha_sym; eauto. constructor.
-             eapply sconstr1_alpha_s. eauto.
-          -- eapply @alpha_sym. constructor. eauto. eapply sconstr1_alpha_t. eauto.
-        * eapply sconstr1_gu. eauto.
+      + eapply step_gu_naive_intro with (s' := (tmapp (tmlam x0' A sub_s) sub_t)).
+        * constructor. constructor. auto. auto.
+        * rewrite <- pr_eq. apply to_GU__GU.
         * apply step_beta.
-      + (* Invert some stuff to end up with a single sub *)
+      + (* Invert some stuff to end up with a single sub 
+          We need to freshen s t and p to be able to use commute subst
+        *)
         remember (sconstr2 x0 t x p s ) as sconstr2_.
         destruct sconstr2_ as [ [s' t'0] p'].
 
-        eapply @alpha_trans with (ren := ctx_id_left R) (ren' := R) (t := sub x0 (subs ((x, p')::nil) t'0) (subs ((x, p')::nil) s')).
+        eapply @alpha_trans with (ren := ctx_id_left R) (ren' := R) 
+            (t := sub x0 (subs ((x, p')::nil) t'0) (subs ((x, p')::nil) s')).
         * eapply id_left_trans.
         * eapply alpha_extend_ids.
           eapply ctx_id_left_is_id.
-          repeat rewrite <- single_subs_is_sub.
-          repeat rewrite psubs_to_subs; try apply single_parseq.
-          eapply subs_preserves_alpha_σ_R with (R := nil).
-          -- apply @gu_applam_to_nc with (A := A) (BL := Lam) (BA := App). eapply sconstr1_gu. eauto.
-          -- eapply sconstr2_nc_sub; eauto.
-          -- rewrite <- psubs_to_subs; [|apply single_parseq].
-             eapply @alpha_trans. constructor. 
-             ++ eapply sconstr1_alpha_s. eauto.
-             ++ repeat rewrite psubs_to_subs; try apply single_parseq.
-                eapply subs_preserves_alpha_σ_R.
-                ** exact (nc_lam (nc_app_l H1)).
-                ** eapply sconstr2_nc_s; eauto.
-                ** eapply sconstr2_alpha_s; eauto.
-                ** constructor. constructor. constructor.
-                   eapply sconstr2_alpha_p; eauto.
-          -- constructor. constructor. constructor.
-             eapply @alpha_trans. constructor.
-             ++ eapply sconstr1_alpha_t. eauto.
-             ++ repeat rewrite psubs_to_subs; try apply single_parseq.
-                eapply subs_preserves_alpha_σ_R.
-                ** exact (nc_app_r H1).
-                ** eapply sconstr2_nc_t; eauto.
-                ** eapply sconstr2_alpha_t; eauto.
-                ** constructor. constructor. constructor.
-                   eapply sconstr2_alpha_p; eauto.
+
+          eapply alpha_rename_binder_stronger with (Rs := ((x0', x0)::nil)).
+          -- eapply @alpha_trans with (t := subs ((x, p)::nil) s) (ren := ((x0', x0)::nil)).
+            ++ eapply id_right_trans.
+            ++ eauto with α_eq_db.
+            ++ eapply alpha_extend_ids. constructor. constructor.
+               repeat rewrite psubs_to_subs; try apply single_parseq.
+               eapply subs_preserves_alpha_σ_R.
+               ** apply (nc_lam (nc_app_l H1)).
+               ** eapply sconstr2_nc_s. eauto.
+               ** eapply sconstr2_alpha_s. eauto.
+               ** constructor. constructor. constructor. eapply sconstr2_alpha_p. eauto.            
+          -- eapply @alpha_trans with (t := subs ((x, p)::nil) t).
+              ++ constructor.
+              ++ eauto with α_eq_db.
+              ++ repeat rewrite psubs_to_subs; try apply single_parseq.
+                 eapply subs_preserves_alpha_σ_R.
+                 ** apply (nc_app_r H1).
+                 ** eapply sconstr2_nc_t. eauto.
+                 ** eapply sconstr2_alpha_t. eauto.
+                 ** constructor. constructor. constructor. eapply sconstr2_alpha_p. eauto.
+          -- constructor. constructor.
+          -- eapply gu_applam_to_nc. rewrite <- pr_eq. apply to_GU__GU.
+          -- repeat rewrite psubs_to_subs; try apply single_parseq.
+             eapply sconstr2_nc_sub; eauto.
         * 
         repeat rewrite psubs_to_subs; try apply single_parseq.
         {

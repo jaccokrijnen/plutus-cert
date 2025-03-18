@@ -63,6 +63,24 @@ Lemma in_cons_sum {A : Type} (x y : A) (l : list A) :
 Proof.
 Admitted. 
 
+(* I really do not understand universes*)
+Lemma in_map_iff_sigma {A : Type} (x : string) (sigma : list (string * A)) :
+  In x (map fst sigma) -> {y & In (x, y) sigma}.
+Proof.
+  intros.
+  induction sigma.
+  - inversion H.
+  - destruct a.
+    simpl in H.
+    destr_eqb_eq s x.
+    + exists a. simpl. left. auto.
+    + destruct (in_dec string_dec x (map fst sigma)).
+      * specialize (IHsigma i). destruct IHsigma as [y Hy].
+        exists y. simpl. right. auto.
+      * exfalso.
+        destruct H; contradiction.
+Qed.
+
 (* Analogous to in_app_or, but for set *)
 Lemma in_app_sum {A : Type} (x : A) (l1 l2 : list A) :
   In x (l1 ++ l2) -> sum (In x l1) (In x l2).
@@ -85,17 +103,25 @@ Lemma lookup_some_then_in y t (sigma : list (string * term)) :
   lookup y sigma = Some t -> In (y, t) sigma.
 Admitted.
 
-Lemma lookup_some_then_in_values y t (sigma : list (string * term)) :
+Lemma lookup_some_then_in_values {A : Type} y t (sigma : list (string * A)) :
   lookup y sigma = Some t -> In t (map snd sigma).
 Admitted.
 
-Lemma lookup_no_key_then_none X (sigma : list (string * term)) :
+Lemma lookup_no_key_then_none {A : Type} X (sigma : list (string * A)) :
   ~ In X (map fst sigma) -> lookup X sigma = None.
+Admitted.
+
+Lemma lookup_none_then_no_key {A : Type} X (sigma : list (string * A)) :
+  lookup X sigma = None -> ~ In X (map fst sigma).
 Admitted.
 
 (* lookup is left-aligned, there could be another y in there.*)
 Lemma in_then_lookup_some_and_in {A : Type} y t (sigma : list (string * A)) :
   In (y, t) sigma -> {t' & (lookup y sigma = Some t') * In (y, t') sigma}%type.
+Admitted.
+
+Lemma lookup_app_or {A : Type} y t (R1 R2 : list (string * A)) :
+  lookup y (R1 ++ R2) = Some t -> sum (lookup y R1 = Some t) (lookup y R2 = Some t).
 Admitted.
 
 Lemma not_existsb_not_in y U' : 
