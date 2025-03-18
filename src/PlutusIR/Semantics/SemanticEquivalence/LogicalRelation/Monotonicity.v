@@ -4,6 +4,7 @@ Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RV.Helpers.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RD.Helpers.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.RC.Helpers.
+Require Import PlutusCert.Util.Tactics.
 
 Import PlutusNotations.
 
