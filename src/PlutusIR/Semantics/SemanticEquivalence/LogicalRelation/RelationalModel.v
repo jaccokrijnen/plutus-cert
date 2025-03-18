@@ -29,6 +29,15 @@ Definition Rel (T T' : ty) (χ : nat -> term -> term -> Prop) : Prop :=
       (∀ i, i <= j -> χ i v v')
 .
 
+Definition Rel' (T T' : ty) (χ : nat -> term -> term -> Prop) : Prop :=
+  forall j v v',
+    χ j v v' ->
+      value v /\ value v' /\
+      (∃ Tn, normalise T Tn /\ ([] ,, [] |-+ v : Tn)) /\
+      (∃ Tn', normalise T' Tn' /\ ([] ,, [] |-+ v' : Tn')) /\
+      (∀ i, i <= j -> χ i v v')
+.
+
 
 
 (** Relation interpational of types as computations and values.
@@ -234,6 +243,19 @@ Inductive RD : kass -> tymapping -> Prop :=
       RD ck rho ->
       RD ((X, K) :: ck) ((X, (Chi, T1, T2)) :: rho).
 
+
+(** D = Interpretation of kind contexts as type mappings *)
+Inductive D : list (string * kind) -> tymapping -> Prop :=
+  | D_nil :
+      D nil nil
+  | D_cons : forall ck rho T1 T2 Chi X K,
+      [] |-* T1 : K ->
+      [] |-* T2 : K ->
+      Rel' T1 T2 Chi ->
+      D ck rho ->
+      D ((X, K) :: ck) ((X, (Chi, T1, T2)) :: rho)
+.
+
 (** Term environment *)
 Definition env := list (string * term).
 (** Type assignments *)
@@ -351,11 +373,13 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
         (R I_V (k - j) T rho r r' \/ (is_error r /\ is_error r'));
 
   R I_V k T rho v v' :=
-    ∃ Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([] ,, [] |-+ v : Tn) /\
-    ∃ Tn', normalise (msubstT (msyn2 rho) T) Tn' /\  ([] ,, [] |-+ v' : Tn') /\
+    ( (∃ Tn,
+        normalise (msubstT (msyn1 rho) T) Tn /\ ([] ,, [] |-+ v : Tn)) /\
+      (∃ Tn',
+        normalise (msubstT (msyn2 rho) T) Tn' /\  ([] ,, [] |-+ v' : Tn'))
+    ) /\
 
-    value v /\
-    value v' /\
+    (value v /\ value v') /\
     (
       match T with
       | Ty_Var a =>
@@ -454,7 +478,7 @@ Definition approx Δ Γ e e' T :=
     (Δ ,, Γ |-+ e : T) /\
     (Δ ,, Γ |-+ e' : T) /\
     forall k ρ γ γ',
-      RD Δ ρ ->
+      D Δ ρ ->
       G ρ k Γ γ γ' ->
       C k T ρ (close γ (msyn1 ρ) e) (close γ' (msyn2 ρ) e').
 

@@ -264,35 +264,11 @@ Ltac use_RC :=
   end
 .
 
-(* Run an C(e, e') by looking in the context for an evaluation of e, and use that
-* amount of steps
-* binds the resulting
-*    r' : result
-*    j' : nat
-*    H_eval' : eval e' ... 
-*    H_res' : V(r, r')
-*)
-Ltac run_C H_RC r' j' H_eval' H_res':=
-  match type of H_RC with
-  | C ?k ?T ?ρ ?e1 ?e2 =>
-    match goal with
-    | H : e1 =[ ?i ]=> ?v1 |- _ =>
-        let H_temp := fresh "H" in
-        assert (H_temp := H_RC);
-        autorewrite with R in H_temp;
-        assert (H' := H);
-        apply H_temp in H' as [r' [j' [H_eval' H_res']]];
-        clear H_temp
-    | _ =>
-      fail 1 "Could not find required hypothesis of type eval"
-    end
-  end
-.
 
 Lemma use_approx {Δ ρ Γ γ γ' e e' T }:
   approx Δ Γ e e' T ->
   forall k,
-  RD Δ ρ ->
+  D Δ ρ ->
   G ρ k Γ γ γ' ->
   C k T ρ (close γ (msyn1 ρ) e) (close γ' (msyn2 ρ) e')
 .
@@ -307,7 +283,7 @@ Ltac use_approx H_approx k H_RC :=
 match type of H_approx with
 | approx ?Δ ?Γ _ _ _ =>
   match goal with
-  | H_RD : RD Δ _
+  | H_RD : D Δ _
   , H_RG : G _ k Γ _ _
   |- _ => assert (H_RC := use_approx H_approx k H_RD H_RG)
   end
@@ -367,9 +343,7 @@ Proof.
   intros H_val.
   split.
   - intros H_beta.
-    assert (H_eq : 1 + k = 0 + 0 + 1 + k) by lia.
-    rewrite H_eq.
-    eapply E_Apply; try eauto using eval_value.
+    eapply E_Apply; try eauto using eval_value; lia.
   - intros H_app.
     inversion H_app.
     + inversion H2; subst.
@@ -404,10 +378,8 @@ Lemma compat_Apply Δ Γ e1 e2 e1' e2' T1 T2 :
 Proof with eauto_LR.
   intros IH_LR1 IH_LR2.
 
-  split...
-  admit. (* typing *)
-  split...
-  admit. (* typing *)
+  split... admit. (* typing *)
+  split... admit. (* typing *)
 
   intros k ρ γ γ' H_RD H_RG.
 
@@ -415,18 +387,20 @@ Proof with eauto_LR.
   autorewrite with multi_subst.
 
   intros j Hlt__j r Hev__app.
+
+  use_approx IH_LR1 k
+    C_e1.
+  remember (close γ (msyn1 ρ) e1) as c_e1.
+  remember (close γ' (msyn2 ρ) e1') as c_e1'.
+
+  use_approx IH_LR2 k
+    C_e2.
+  remember (close γ (msyn1 ρ) e2) as c_e2.
+  remember (close γ' (msyn2 ρ) e2') as c_e2'.
+
   inversion Hev__app; subst.
 
   - (* E_Apply *)
-    use_approx IH_LR1 k
-      C_e1.
-    remember (close γ (msyn1 ρ) e1) as c_e1.
-    remember (close γ' (msyn2 ρ) e1') as c_e1'.
-
-    use_approx IH_LR2 k
-      C_e2.
-    remember (close γ (msyn1 ρ) e2) as c_e2.
-    remember (close γ' (msyn2 ρ) e2') as c_e2'.
 
     run_C C_e1
       r1' j1' E_e1' R_e1...
@@ -445,7 +419,6 @@ Proof with eauto_LR.
 
     specialize (V_functional_extensionality H_lt V_e1 V_e2) as [C_app _].
     specialize (C_app x T t0 eq_refl).
-    assert (j3 < (k - (j1 + j2 + 1))) by lia.
 
     run_C C_app
       r' j' E_app' R_app...
@@ -461,11 +434,11 @@ Proof with eauto_LR.
         * eapply E_Apply; try eauto.
           all: admit. (* by inversion on E_app' *)
         * assert ((k - (j1 + j2 + 1 + j3)) = (k - (j1 + j2 + 1) - j3)) by lia.
-          rewrite H0.
+          rewrite H.
           apply R_app.
     + (*it's a partially applied built-in*)
       assert ((k - (j1 + j2 + 1 + j3)) = (k - (j1 + j2 + 1) - j3)) by lia.
-      rewrite H0.
+      rewrite H.
       eexists. eexists.
       split.
       * admit. (* Either E_Apply_Builtin_Full or E_APply_Builtin_Partial based
@@ -497,7 +470,6 @@ Proof with eauto_LR.
 
 
   - (* E_Error_Apply1 *)
-    rename j1 into j_1.
 
     assert (HRC1 :
       C k (Ty_Fun T1 T2) ρ (close γ (msyn1 ρ) e1) (close γ' (msyn2 ρ) e1')

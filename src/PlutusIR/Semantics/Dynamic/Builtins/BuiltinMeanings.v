@@ -106,6 +106,8 @@ Section ByteString.
     .
 
   Axiom verify_Ed25519_signature : list byte -> list byte -> list byte -> bool.
+  Axiom sha2_256 : list byte -> list byte.
+  Axiom sha3_256 : list byte -> list byte.
 
 End ByteString.
 
@@ -141,8 +143,8 @@ Definition compute_defaultfun (t : term) : option term :=
   | <{ ifthenelse @ T ⋅ CBool b ⋅ s ⋅ t }> => Some (if b then s else t)
 
   (* Cryptography primitives *)
-  | <{ {Builtin Sha2_256} }> => None
-  | <{ {Builtin Sha3_256} }> => None
+  | <{ {Builtin Sha2_256} ⋅ CBS bs }> => Some <{CBS {sha2_256 bs} }>
+  | <{ {Builtin Sha3_256} ⋅ CBS bs }> => Some <{CBS {sha3_256 bs} }>
   | <{ {Builtin Blake2b_256} }> => None
   | <{ {Builtin VerifyEd25519Signature} ⋅ CBS xs ⋅ CBS ys ⋅ CBS zs}> => Some <{ CBool {verify_Ed25519_signature xs ys zs} }>
   | <{ {Builtin VerifyEcdsaSecp256k1Signature} }> => None

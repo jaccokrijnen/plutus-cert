@@ -44,8 +44,8 @@ Lemma V_typable_empty : forall k T rho v v',
 Proof.
   intros k T rho v v' H.
   autorewrite with R in H.
-  destruct H as [Tn [ ? [? [Tn' [? [? ?]]]] ] ].
-  split; eauto.
+  destruct H as [[H1 H2] _ ].
+  auto.
 Qed.
 
 Lemma RV_typable_empty_1 : forall k T rho v v',

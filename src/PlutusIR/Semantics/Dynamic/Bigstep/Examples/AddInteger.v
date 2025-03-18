@@ -19,11 +19,9 @@ Definition int_to_int : ty := Ty_Fun Ty_int Ty_int.
 
 Lemma partial_plus : <{ (+) ⋅ CInt 3 }> =[ 0 ]=> <{ (+) ⋅ CInt 3}>.
 Proof with (eauto using eval).
-  assert (Heq : (0 = 0 + 0)%nat) by reflexivity.
-  rewrite Heq.
-  - eapply E_Apply_Builtin_Partial...
+  - eapply E_Apply_Builtin_Partial with (j0 := 0%nat)...
     + econstructor...
-    unfold args_len, arity. lia.
+    + econstructor... unfold args_len, arity. lia.
 Qed.
 
 Example test_addInteger : forall x, exists k,
