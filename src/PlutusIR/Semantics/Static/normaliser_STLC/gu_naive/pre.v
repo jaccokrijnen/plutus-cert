@@ -401,6 +401,10 @@ Lemma nc_ftv_env s sigma :
   NC s sigma -> forall x, In x (btv s) -> ~ In x (ftv_keys_env sigma).
 Admitted.
 
+Lemma gu_ftv_then_no_btv s x :
+  GU s -> In x (ftv s) -> ~ In x (btv s).
+Admitted.
+
 
 
 (* Two properties: stopping clash between sigma and s:
