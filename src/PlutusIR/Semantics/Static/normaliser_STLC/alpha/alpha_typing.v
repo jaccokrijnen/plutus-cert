@@ -218,7 +218,7 @@ Proof.
       * eapply alpha_trans_rename_left; eauto.
       * apply ftv_not_in_rename; auto.
         eapply fresh2_over_key_sigma in HeqY. symmetry. eauto.
-        apply in_cons. apply in_eq.
+        apply in_eq.
     + constructor; auto.
   - constructor.
     + eapply IHT'1; eauto. 

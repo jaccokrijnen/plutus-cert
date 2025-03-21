@@ -181,17 +181,17 @@ Proof.
            ++ eapply alpha_extend_fresh; auto.
               ** eapply fresh2_over_key_sigma with (X := X) in HeqY'.
                  intros Hcontra. apply ftv_var in Hcontra.  subst. contradiction.
-                 apply in_cons. apply in_eq.
+                 apply in_eq.
               ** eapply fresh2_over_key_sigma with (X := X) in HeqY''.
                  intros Hcontra. apply ftv_var in Hcontra.  subst. contradiction.
-                 apply in_cons. apply in_eq.
+                 apply in_eq.
            ++ eapply alpha_extend_fresh; auto.
               ** eapply fresh2_over_tv_value_sigma with (X := X) (s := T) in HeqY'.
                  intros Hcontra. apply extend_ftv_to_tv in Hcontra. contradiction.
-                 apply in_cons. apply in_eq.
+                 apply in_eq.
               ** eapply fresh2_over_tv_value_sigma with (X := X) (s := T) in HeqY''.
                  intros Hcontra. apply extend_ftv_to_tv in Hcontra. contradiction.
-                 apply in_cons. apply in_eq.
+                 apply in_eq.
            ++ constructor; eauto.
            ++ eapply alpha_trans_rename_left; eauto.
            ++ eapply alpha_trans_rename_right; eauto.
@@ -202,13 +202,13 @@ Proof.
             ++ eapply alpha_extend_fresh; auto.
               ** eapply fresh2_over_key_sigma with (X := X) in HeqY'.
                  intros Hcontra. apply ftv_var in Hcontra.  subst. contradiction.
-                 apply in_cons. apply in_eq.
+                 apply in_eq.
               ** intros Hcontra. apply ftv_var in Hcontra. subst.
                  rewrite String.eqb_neq in H2. contradiction.
             ++ eapply alpha_extend_fresh; auto.
               ** eapply fresh2_over_tv_value_sigma with (X := X) (s := T) in HeqY'.
                  intros Hcontra. apply extend_ftv_to_tv in Hcontra. contradiction.
-                 apply in_cons. apply in_eq.
+                 apply in_eq.
               ** eapply not_in_ftv_existsb_false. auto.
             ++ eauto with α_eq_db.
             ++ eapply alpha_trans_rename_left; eauto.
@@ -222,13 +222,13 @@ Proof.
               **  
                 eapply fresh2_over_key_sigma with (X := X) in HeqY'.
                  intros Hcontra. apply ftv_var in Hcontra.  subst. contradiction.
-                 apply in_cons. apply in_eq.
+                 apply in_eq.
 
            ++ eapply alpha_extend_fresh; auto.
               eapply not_in_ftv_existsb_false. auto.
               eapply fresh2_over_tv_value_sigma with (X := X) (s := T) in HeqY'.
               intros Hcontra. apply extend_ftv_to_tv in Hcontra. contradiction.
-              apply in_cons. apply in_eq.
+              apply in_eq.
            ++ constructor; eauto.
            ++ eapply alpha_trans_rename_right; eauto.
         -- constructor; eapply IHbi; eauto.

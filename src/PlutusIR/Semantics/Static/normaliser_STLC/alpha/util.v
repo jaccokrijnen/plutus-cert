@@ -136,3 +136,18 @@ Definition bind {A B : Type} (xx : option A) (f : A -> option B) : option B :=
   | None => None
   | Some a => f a
   end.
+
+
+(* string concat util *)
+Lemma string_concat_app (a b : list string) :
+  String.concat "" (a ++ b) = ((String.concat "" a) ++ (String.concat "" b))%string.
+Admitted.
+
+Lemma string_concat_cons (a : string) (b : list string) :
+  String.concat "" (a :: b) = (a ++ (String.concat "" b))%string.
+Proof.
+Admitted.
+
+Lemma string_app_assoc (a b c : string) :
+  (a ++ b ++ c)%string = ((a ++ b) ++ c)%string.
+Admitted.

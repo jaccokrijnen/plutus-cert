@@ -65,6 +65,20 @@ Import ListNotations.
     end.
 
 
+Fixpoint plutusTv (t : PlutusIRSOP.ty) : list string :=
+  match t with
+  | PlutusIRSOP.Ty_Var x => [x]
+  | PlutusIRSOP.Ty_Lam x A t => x :: (plutusTv t)
+  | PlutusIRSOP.Ty_Forall x A t => x :: (plutusTv t)
+  | PlutusIRSOP.Ty_Fun t1 t2 => plutusTv t1 ++ plutusTv t2
+  | PlutusIRSOP.Ty_App t1 t2 => plutusTv t1 ++ plutusTv t2
+  | PlutusIRSOP.Ty_IFix f1 t1 => plutusTv f1 ++ plutusTv t1
+  | PlutusIRSOP.Ty_Builtin d => []
+  | PlutusIRSOP.Ty_SOP Tss => 
+      List.flat_map plutusTv Tss
+  end.
+
+
 (** Assume that we compute the substitution of U for X in (LamAbs Y K T).
     We reduce the  problem of generating a fresh type variable to generating
     a type variable A such that:
@@ -82,7 +96,7 @@ Import ListNotations.
     formally as well.
 *)
 Definition fresh (X : string) (U T : ty) : string :=
-  "a" ++ X ++ (Coq.Strings.String.concat EmptyString (ftv U)) ++ (Coq.Strings.String.concat EmptyString (ftv T)).
+  "a" ++ X ++ (Coq.Strings.String.concat EmptyString (plutusTv U)) ++ (Coq.Strings.String.concat EmptyString (plutusTv T)).
 
 Lemma fresh__X : forall X U T,
     X <> fresh X U T.

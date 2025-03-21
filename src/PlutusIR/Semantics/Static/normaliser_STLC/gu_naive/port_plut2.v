@@ -64,60 +64,40 @@ Qed.
 
 Require Import Coq.Arith.Wf_nat.
 
-(* TODO: This tv definition should be somewhere else! *)
-Fixpoint plutusTv (t : PlutusIRSOP.ty) : list string :=
-  match t with
-  | PlutusIRSOP.Ty_Var x => [x]
-  | PlutusIRSOP.Ty_Lam x A t => x :: (plutusTv t)
-  | PlutusIRSOP.Ty_Forall x A t => x :: (plutusTv t)
-  | PlutusIRSOP.Ty_Fun t1 t2 => plutusTv t1 ++ plutusTv t2
-  | PlutusIRSOP.Ty_App t1 t2 => plutusTv t1 ++ plutusTv t2
-  | PlutusIRSOP.Ty_IFix f1 t1 => plutusTv f1 ++ plutusTv t1
-  | PlutusIRSOP.Ty_Builtin d => []
-  | PlutusIRSOP.Ty_SOP Tss => 
-      List.flat_map plutusTv Tss
-  end.
-
 Lemma f_preserves_tv T :
-  tv (f T) = plutusTv T.
+  tv (f T) = TypeSubstitutionSOP.plutusTv T.
 Proof.
   (* With custom induction principle*)
-  apply PlutusIRSOP.ty__ind with (P := fun T => tv (f T) = plutusTv T); intros.
+  apply PlutusIRSOP.ty__ind with (P := fun T => tv (f T) = TypeSubstitutionSOP.plutusTv T); intros.
   all: try solve [simpl; f_equal; auto]. 
   induction H; auto; simpl.
   f_equal; auto.
 Qed.
 
-(* Not true currently
-Little research:
-Removing the first (x, fs) will be easy.
-Hence the only difference is ftv vs tv.
 
-*)
-Lemma f_preserves_fresh2 x y s s' T :
-  fresh2 ((x, f s)::(y, f s')::nil) (f T) = TypeSubstitutionSOP.fresh y s' T.
+Lemma f_preserves_fresh2 y s' T :
+  fresh2 ((y, f s')::nil) (f T) = TypeSubstitutionSOP.fresh y s' T.
 Proof.
   simpl.
   unfold fresh2.
   unfold TypeSubstitutionSOP.fresh.
   rewrite f_preserves_tv.
   assert (Htv_keys_env: (tv_keys_env
-    [(x, f s); (y, f s')] = x :: (plutusTv s) ++ (y :: (plutusTv s')))).
+    [(y, f s')] = (y :: (TypeSubstitutionSOP.plutusTv s')))).
   {
     unfold tv_keys_env.
     f_equal.
     rewrite f_preserves_tv.
-    f_equal.
-    rewrite f_preserves_tv.
-    f_equal.
     rewrite app_nil_r.
     reflexivity.
   }
   rewrite Htv_keys_env.
-  (* Not true, but we can imagine we can change the definition*)
-Admitted.
-
-
+  f_equal.
+  rewrite string_concat_app.
+  rewrite string_concat_cons.
+  rewrite string_app_assoc.
+  auto.
+Qed.
 
 Lemma f_preserves_substituteTCA X U T :
   (f (TypeSubstitutionSOP.substituteTCA X U T)) = (substituteTCA X (f U) (f T)).
@@ -159,7 +139,6 @@ Proof.
               simpl.
               auto.
             }
-            rewrite H1.
             eapply f_preserves_fresh2.
           }
           rewrite Hfr_pres.
@@ -196,7 +175,6 @@ Proof.
               simpl.
               auto.
             }
-            rewrite H1.
             eapply f_preserves_fresh2.
           }
           rewrite Hfr_pres.
@@ -319,3 +297,5 @@ Proof.
     eapply f_preserves_kind.
     auto.
 Qed.
+
+Print Assumptions plutus_ty_strong_normalization.

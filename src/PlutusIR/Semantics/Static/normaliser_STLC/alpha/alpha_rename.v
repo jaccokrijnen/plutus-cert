@@ -151,7 +151,7 @@ Proof.
 Qed.
 
 Lemma alpha_trans_rename_right u v b'' s'' s ren sigma :
-  b'' = fresh2 ((s'', tmvar s'')::sigma) v ->
+  b'' = fresh2 sigma v ->
   Alpha ((s, s'')::ren) u v ->
   Alpha ((s, b'')::ren) u (rename s'' b'' v).
 Proof.
@@ -164,7 +164,7 @@ Proof.
 Qed.
 
 Lemma alpha_trans_rename_left u v b' s' s ren sigma :
-  b' = fresh2 ((s', tmvar s')::sigma) u ->
+  b' = fresh2 sigma u ->
   Alpha ((s', s)::ren) u v ->
   Alpha ((b', s)::ren) (rename s' b' u) v.
 Proof.
