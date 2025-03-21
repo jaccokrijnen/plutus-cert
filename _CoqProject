@@ -102,6 +102,11 @@ src/PlutusIR/Semantics/Static/normaliser_STLC/Context.v
 
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/port_plut.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/port_plut2.v
+src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/PlutusIRSOP.v
+src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/TypeSubstitutionSOP.v
+src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/TypeReductionSOP.v
+src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/NormalisationSOP.v
+src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/plutus_util.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/plutus_kinding_set.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/pre.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/constructions.v

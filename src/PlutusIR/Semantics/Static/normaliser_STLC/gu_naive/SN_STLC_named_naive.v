@@ -621,7 +621,7 @@ Proof.
 Qed.
 
 (* Identity substitutions: Given a typing context E, give a list of term substitutions matching this E*)
-Fixpoint id_subst (E : list (string * PlutusIR.kind)) : list (string * term) :=
+Fixpoint id_subst (E : list (string * PlutusIRSOP.kind)) : list (string * term) :=
   match E with
   | nil => nil
   | cons (x, A) E' => cons (x, tmvar x) (id_subst E')
@@ -1214,10 +1214,10 @@ Hence only if t is globally unique with respect to s. We can enforce that by cha
 JACCO and WOUTER think it is a bad idea to change the LR and that using L_preserves_alpha will allow us to use original LR.
 
 *)
-Fixpoint L (T : PlutusIR.kind) : cand :=
+Fixpoint L (T : PlutusIRSOP.kind) : cand :=
 match T with
-  | PlutusIR.Kind_Base => SN_na 
-  | PlutusIR.Kind_Arrow A B => fun s => forall t, L A t -> L B (@tmapp App s t)
+  | PlutusIRSOP.Kind_Base => SN_na 
+  | PlutusIRSOP.Kind_Arrow A B => fun s => forall t, L A t -> L B (@tmapp App s t)
 end.
 
 
@@ -1348,13 +1348,13 @@ Proof.
   - assumption.
 Qed.
 
-Definition EL (Gamma : list (string * PlutusIR.kind)) 
+Definition EL (Gamma : list (string * PlutusIRSOP.kind)) 
           (sigma : list (string * term)) : Type :=
   forall x T, lookup x Gamma = Some T ->
     { t & prod (lookup x sigma = Some t) (L T t)}.
 
 (* is true! *)
-Lemma extend_EL (Gamma : list (string * PlutusIR.kind)) (sigma : list (string * term)) x T t :
+Lemma extend_EL (Gamma : list (string * PlutusIRSOP.kind)) (sigma : list (string * term)) x T t :
   EL Gamma sigma -> L T t -> EL ((x, T) :: Gamma) ((x, t) :: sigma).
 Proof.
   intros.
@@ -2124,7 +2124,7 @@ Proof.
 Qed.
 
 (* The fundamental theorem for named variables. *)
-Corollary type_L (E : list (string * PlutusIR.kind)) s T : has_kind E s T -> L T (subs (id_subst E) s).
+Corollary type_L (E : list (string * PlutusIRSOP.kind)) s T : has_kind E s T -> L T (subs (id_subst E) s).
 Proof.
   intros Htype.
   assert (HEL: EL E (id_subst E)) by apply id_subst__EL.

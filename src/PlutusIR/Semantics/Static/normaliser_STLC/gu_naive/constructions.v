@@ -13,7 +13,7 @@ Require Import Coq.Bool.Bool.
 
 From PlutusCert Require Import util STLC_named gu_naive.pre alpha.alpha freshness util alpha_ctx_sub alpha_freshness.
 
-From PlutusCert Require PlutusIR.
+From PlutusCert Require PlutusIRSOP.
 
 Inductive IdSubst : list (string * term) -> Set :=
   | id_subst_nil : IdSubst nil
@@ -87,12 +87,12 @@ Fixpoint to_GU_ (used : list string) (binders : list (string * string)) (s : ter
   | tmbuiltin d => (used, binders, tmbuiltin d)
   end.
 
-Compute (to_GU_ nil nil (tmlam "x" PlutusIR.Kind_Base (tmvar "x"))). (* should be λxa . xa*)
+Compute (to_GU_ nil nil (tmlam "x" PlutusIRSOP.Kind_Base (tmvar "x"))). (* should be λxa . xa*)
 Compute (to_GU_ nil nil (tmapp (tmvar "x") (tmvar "y"))). (* should be xy*)
-Compute (to_GU_ nil nil (tmapp (tmlam "y" PlutusIR.Kind_Base (tmapp (tmvar "x") (tmvar "y"))) (tmvar "y"))). 
-Compute (to_GU_ nil nil (tmapp (tmlam "y" PlutusIR.Kind_Base (tmvar "y")) (tmvar "y"))). (* should be x(λya . ya)*)
-Compute (to_GU_ nil nil (tmapp (tmlam "y" PlutusIR.Kind_Base (tmapp (tmvar "x") (tmvar "y"))) (tmvar "x"))).
-Compute (to_GU_ nil nil (tmlam "x" PlutusIR.Kind_Base (tmapp (tmlam "y" PlutusIR.Kind_Base (tmapp (tmvar "x") (tmvar "y"))) (tmvar "x")))).
+Compute (to_GU_ nil nil (tmapp (tmlam "y" PlutusIRSOP.Kind_Base (tmapp (tmvar "x") (tmvar "y"))) (tmvar "y"))). 
+Compute (to_GU_ nil nil (tmapp (tmlam "y" PlutusIRSOP.Kind_Base (tmvar "y")) (tmvar "y"))). (* should be x(λya . ya)*)
+Compute (to_GU_ nil nil (tmapp (tmlam "y" PlutusIRSOP.Kind_Base (tmapp (tmvar "x") (tmvar "y"))) (tmvar "x"))).
+Compute (to_GU_ nil nil (tmlam "x" PlutusIRSOP.Kind_Base (tmapp (tmlam "y" PlutusIRSOP.Kind_Base (tmapp (tmvar "x") (tmvar "y"))) (tmvar "x")))).
 
 
 (* By precalculating ftvs, we cannot get that a binder is accidentally renamed to an ftv later in the term
@@ -108,8 +108,8 @@ let tvs := tv s in
   *)
 snd (to_GU_ tvs  (map (fun x => (x, x)) tvs) s).
 
-Compute (to_GU (tmapp (tmlam "y" PlutusIR.Kind_Base (tmvar "y")) (tmvar "ya"))). 
-Compute (to_GU (tmapp (tmvar "ya") (tmlam "y" PlutusIR.Kind_Base (tmvar "y")))). 
+Compute (to_GU (tmapp (tmlam "y" PlutusIRSOP.Kind_Base (tmvar "y")) (tmvar "ya"))). 
+Compute (to_GU (tmapp (tmvar "ya") (tmlam "y" PlutusIRSOP.Kind_Base (tmvar "y")))). 
 
 Definition KindOfUniqueRhs (R : list (string * string))  := 
   forall x y, lookup x R = Some y -> AlphaVar R x y.

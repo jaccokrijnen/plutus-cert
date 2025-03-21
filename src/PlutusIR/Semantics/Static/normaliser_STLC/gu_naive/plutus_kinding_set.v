@@ -1,8 +1,9 @@
 
-Require Import PlutusCert.PlutusIR.
+From PlutusCert Require Import PlutusIRSOP.
 Require Import PlutusCert.Util.List.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
+From PlutusCert Require Import plutus_util.
 
 Reserved Notation "'|-*_uni' T ':' K" (at level 40, T at level 0, K at level 0).
 Inductive has_kind_uni : DefaultUni -> kind -> Set :=
@@ -50,6 +51,7 @@ No way to unify (KB -> KB) -> K2 with KB -> KB
 
 *)
 
+
 (** Kinding of types *)
 Reserved Notation "Δ '|-*' T ':' K" (at level 40, T at level 0, K at level 0).
 Inductive has_kind : list (binderName * kind) -> ty -> kind -> Set :=
@@ -69,7 +71,7 @@ Inductive has_kind : list (binderName * kind) -> ty -> kind -> Set :=
       Δ |-* (Ty_Forall X K T) : Kind_Base
   | K_Builtin : forall Δ T,
       |-*_uni T : Kind_Base ->
-      Δ |-* (Ty_Builtin T) : Kind_Base (* DefaultUni built in types must be fully applied with K_DefaultUniApply *)
+      Δ |-* (Ty_Builtin T) : Kind_Base
   | K_Lam : forall Δ X K1 T K2,
       ((X, K1) :: Δ) |-* T : K2 ->
       Δ |-* (Ty_Lam X K1 T) : (Kind_Arrow K1 K2)
@@ -77,4 +79,23 @@ Inductive has_kind : list (binderName * kind) -> ty -> kind -> Set :=
       Δ |-* T1 : (Kind_Arrow K1 K2) ->
       Δ |-* T2 : K1 ->
       Δ |-* (Ty_App T1 T2) : K2
+  | K_SOP : forall Δ Tss,
+      ForallSet_has_kind Δ Tss ->
+      Δ |-* (Ty_SOP Tss) : Kind_Base
+with ForallSet_has_kind : list (binderName * kind) -> list ty -> Set :=
+  | ForallSet_nil : forall Δ,
+      ForallSet_has_kind Δ nil
+  | ForallSet_cons : forall Δ T Ts,
+      Δ |-* T : Kind_Base ->
+      ForallSet_has_kind Δ Ts ->
+      ForallSet_has_kind Δ (T :: Ts)
 where "Δ '|-*' T ':' K" := (has_kind Δ T K).
+
+Scheme has_kind__ind := Minimality for has_kind Sort Set
+  with ForallSet_has_kind__ind := Minimality for ForallSet_has_kind Sort Set.
+
+
+Combined Scheme has_kind__multind from
+  has_kind__ind,
+  ForallSet_has_kind__ind.
+

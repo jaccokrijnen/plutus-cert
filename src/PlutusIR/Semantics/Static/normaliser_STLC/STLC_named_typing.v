@@ -5,7 +5,7 @@ Import ListNotations.
 Local Open Scope string_scope.
 Local Open Scope list_scope.
 
-From PlutusCert Require Import PlutusIR.
+From PlutusCert Require Import PlutusIRSOP.
 
 From PlutusCert Require plutus_kinding_set.
 

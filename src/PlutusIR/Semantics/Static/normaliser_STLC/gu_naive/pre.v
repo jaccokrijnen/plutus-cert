@@ -12,7 +12,7 @@ Require Import Coq.Arith.Arith.
 
 From PlutusCert Require Import STLC_named util alpha.alpha freshness alpha_freshness alpha_ctx_sub.
 
-From PlutusCert Require PlutusIR.
+From PlutusCert Require PlutusIRSOP.
 
 
 
@@ -57,7 +57,7 @@ Fixpoint sub (X : string) (U T : term) : term :=
   end.
 
 Inductive step_naive : term -> term -> Set :=
-| step_beta (x : string) (A : PlutusIR.kind) (s t : term) :
+| step_beta (x : string) (A : PlutusIRSOP.kind) (s t : term) :
     step_naive (@tmapp App (@tmlam Lam x A s) t) ( sub x t s)
 | step_appL B s1 s2 t :
     step_naive s1 s2 -> step_naive (@tmapp B s1 t) (@tmapp B s2 t)

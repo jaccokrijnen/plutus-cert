@@ -13,17 +13,17 @@ Import ListNotations.
 Require Import Ascii.
 
 From PlutusCert Require Import Util.List Kinding.Kinding. (* I don't understand why we need this for ftv defintion*)
-From PlutusCert Require PlutusIR.
+From PlutusCert Require PlutusIRSOP.
 
 Inductive USort := Lam | ForAll.
 Inductive BSort := App | IFix | Fun.
 
-(** Types *)
+(** Types, maybe rename app and lam, since they are now generic *)
 Inductive term :=
   | tmvar : string -> term
-  | tmlam {USort : USort} : string -> PlutusIR.kind -> term -> term
+  | tmlam {USort : USort} : string -> PlutusIRSOP.kind -> term -> term
   | tmapp {BSort : BSort} : term -> term -> term
-  | tmbuiltin : PlutusIR.DefaultUni -> term
+  | tmbuiltin : PlutusIRSOP.DefaultUni -> term
 .
 
 
@@ -152,7 +152,7 @@ Equations? substituteTCA (X : string) (U T : term) : term by wf (size T) :=
         else
           if existsb (String.eqb Y) (ftv U)
             then
-              let Y' := fresh2 ((Y, tmvar Y)::(X, U)::nil) T in
+              let Y' := fresh2 ((X, U)::nil) T in
               let T' := rename Y Y' T in
               @tmlam B Y' K (substituteTCA X U T')
             else

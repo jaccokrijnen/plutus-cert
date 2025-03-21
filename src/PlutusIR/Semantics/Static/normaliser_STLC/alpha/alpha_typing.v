@@ -5,12 +5,12 @@ From PlutusCert Require Import freshness util alpha.alpha STLC_named STLC_named_
 Local Open Scope string_scope.
 Local Open Scope list_scope.
 
-From PlutusCert Require PlutusIR.
+From PlutusCert Require PlutusIRSOP.
 
 (* Alpha equivalence of types *)
 
 (* Contextual alpha equivalence: kinding contexts that match alpha contexts*)
-Inductive CAlpha : list (string * string) -> list (string * PlutusIR.kind) -> list (string * PlutusIR.kind) -> Prop :=
+Inductive CAlpha : list (string * string) -> list (string * PlutusIRSOP.kind) -> list (string * PlutusIRSOP.kind) -> Prop :=
   | calpha_nil D : CAlpha [] D D (* Non-empty kinding enviornments because id renamings are like no renamings. TODO: think whether we want to allow that or want to enforce that id renamings are in the alpha enviornment always*)
   | calpha_cons x y K sigma Gamma Gamma' :
     CAlpha sigma Gamma Gamma' ->

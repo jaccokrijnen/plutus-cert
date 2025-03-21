@@ -23,7 +23,7 @@ Infix ">>=" := bind (at level 50, left associativity).
 
 
 Inductive step_nd : term -> term -> Set :=
-| step_beta_nd (x : string) (A : PlutusIR.kind) (s t : term) :
+| step_beta_nd (x : string) (A : PlutusIRSOP.kind) (s t : term) :
     step_nd (@tmapp App (@tmlam Lam x A s) t) (substituteTCA x t s) (* capture avoiding conservative substitutions *)
 | step_appL_nd B s1 s2 t :
     step_nd s1 s2 -> step_nd (@tmapp B s1 t) (@tmapp B s2 t)
@@ -404,5 +404,3 @@ Theorem strong_normalization E s T : STLC_named_typing.has_kind E s T -> (@sn te
   apply SN_na_to_SN_nd.
   assumption.
 Qed.
-
-Print Assumptions strong_normalization.
