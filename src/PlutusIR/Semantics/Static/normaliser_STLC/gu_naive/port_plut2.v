@@ -28,14 +28,20 @@ Fixpoint f (t : PlutusIRSOP.ty) : term :=
   | PlutusIRSOP.Ty_App t1 t2 => @tmapp App (f t1) (f t2)
   | PlutusIRSOP.Ty_IFix f1 t1 => @tmapp IFix (f f1) (f t1)
   | PlutusIRSOP.Ty_SOP Tss => 
-      (* Two fold_lefts isntead of concatting somewhere to help termination checker*)
-      
-        fold_right (fun T acc => @tmapp Fun (f T) acc) (tmbuiltin PlutusIRSOP.DefaultUniInteger) Tss
-        
+  (* Two fold rights instead of concat/map to help termination checking*)
+      fold_right (fun Ts acc => 
+        (fold_right (fun T acc2 => @tmapp Fun (f T) acc2) acc Ts))
+        (tmbuiltin PlutusIRSOP.DefaultUniInteger) Tss
+  
       (* Instead of checking for the length, we just start with something of Base Kind*)
 
   | PlutusIRSOP.Ty_Builtin d => tmbuiltin d
   end.
+
+Compute (f (PlutusIRSOP.Ty_SOP [[PlutusIRSOP.Ty_Var "a"; PlutusIRSOP.Ty_Var "b"]; [PlutusIRSOP.Ty_Var "c"; PlutusIRSOP.Ty_Var "d"]])).
+
+(*
+  The following lemmas are used to prove that the translation preserves the properties of the original terms. *)
 
 Require Import Coq.Program.Equality.
 
@@ -49,7 +55,8 @@ Proof.
   all: try solve [simpl; f_equal; auto]. (* all cases without binders or lists *)
   all: try solve [simpl; destr_eqb_eq s X; try rewrite mren_id; simpl; f_equal; auto]. (* all cases with binders/vars *)
   induction H; auto.
-  simpl in IHForallP. simpl. unfold rename. simpl. unfold rename in H. rewrite H. f_equal.
+  induction H; auto.
+  simpl in IHForallP22. simpl. simpl. rewrite H. f_equal.
   apply IHForallP.
 Qed.
 
@@ -59,6 +66,8 @@ Proof.
   apply PlutusIRSOP.ty__ind with (P := fun T => ftv (f T) = TypeSubstitutionSOP.ftv T); intros.
   all: try solve [simpl; f_equal; auto]. 
   induction H; auto; simpl.
+  induction H; auto; simpl.
+  rewrite <- app_assoc.
   f_equal; auto.
 Qed.
 
@@ -70,7 +79,9 @@ Proof.
   (* With custom induction principle*)
   apply PlutusIRSOP.ty__ind with (P := fun T => tv (f T) = TypeSubstitutionSOP.plutusTv T); intros.
   all: try solve [simpl; f_equal; auto]. 
-  induction H; auto; simpl.
+  induction H; auto; subst.
+  induction H; auto; subst; simpl.
+  rewrite <- app_assoc.
   f_equal; auto.
 Qed.
 
@@ -116,8 +127,13 @@ Proof.
       Now we need to invert again I guess.
     *)
     exfalso.
+    simpl in HeqfT.
+    induction l.
+    * inversion HeqfT.
+    * induction a.
+      -- simpl in HeqfT. eapply IHl; auto.
+      -- eapply IHa; inversion HeqfT; auto.
     (* The fold_left in H1 will become a long Fun term, so never equal to tmvar*)
-    induction l; simpl in H1; inversion H1.
   + induction T; subst; inversion HeqfT; subst.
     
     {
@@ -191,6 +207,18 @@ Proof.
 
     (* Again a new case because of Ty_SOP*)
     induction l; simpl in H1; inversion H1.
+    induction a; simpl in H2; inversion H2.
+    assert (f
+      (TypeSubstitutionSOP.substituteTCA X U
+      (PlutusIRSOP.Ty_SOP ([] :: l))) = f
+      (TypeSubstitutionSOP.substituteTCA X U
+      (PlutusIRSOP.Ty_SOP (l)))).
+    {
+      autorewrite with substituteTCA. simpl. reflexivity.
+    }
+    rewrite H0; clear H0.
+    eapply IHl; intros; auto.
+    inversion Heqn. lia.
          
     
   + induction T; subst; inversion HeqfT; subst.
@@ -198,35 +226,104 @@ Proof.
     * autorewrite with substituteTCA; simpl; f_equal; eauto; eapply H; auto; simpl; lia. 
     * autorewrite with substituteTCA; simpl; f_equal; eauto; eapply H; auto; simpl; lia. 
     * (* The interesting SOP case*)
-    
-      induction l; simpl in H1; inversion H1.
+       induction l; subst.
+       -- inversion HeqfT. 
+       -- induction a; subst.
+          ++ simpl.
+             assert (f
+            (TypeSubstitutionSOP.substituteTCA X U
+            (PlutusIRSOP.Ty_SOP ([] :: l))) = f
+            (TypeSubstitutionSOP.substituteTCA X U
+            (PlutusIRSOP.Ty_SOP (l)))).
+            {
+              autorewrite with substituteTCA.
+              simpl.
+              auto.
+            }
+            rewrite H0; clear H0.
+            eapply IHl; intros; auto.
+            ** inversion Heqn. lia.
+            ** inversion Heqn. lia.
+          ++ autorewrite with substituteTCA.
+             simpl.
+             inversion HeqfT; subst.
+             f_equal.
+             ** eauto.
+                eapply H; eauto; simpl. lia.
+             ** assert (@fold_right term PlutusIRSOP.ty
+                  (fun (T : PlutusIRSOP.ty) (acc2 : term) =>
+                @tmapp Fun (f T) acc2)
+                  (@fold_right term (list PlutusIRSOP.ty)
+                  (fun (Ts : list PlutusIRSOP.ty) (acc : term) =>
+                @fold_right term PlutusIRSOP.ty
+                  (fun (T : PlutusIRSOP.ty) (acc2 : term) =>
+                @tmapp Fun (f T) acc2)
+                  acc
+                  Ts)
+                  (tmbuiltin PlutusIRSOP.DefaultUniInteger)
+                  (@TypeSubstitutionSOP.map' (list PlutusIRSOP.ty)
+                  (list PlutusIRSOP.ty) l
+                  (fun (y : list PlutusIRSOP.ty) (_ : y ∈ l) =>
+                @TypeSubstitutionSOP.map' PlutusIRSOP.ty
+                  PlutusIRSOP.ty y
+                  (fun (T : PlutusIRSOP.ty) (_ : T ∈ y) =>
+                TypeSubstitutionSOP.substituteTCA X U T))))
+                  (@TypeSubstitutionSOP.map' PlutusIRSOP.ty PlutusIRSOP.ty
+                  a0
+                  (fun (y : PlutusIRSOP.ty) (_ : y ∈ a0) =>
+                TypeSubstitutionSOP.substituteTCA X U y)) = f (TypeSubstitutionSOP.substituteTCA X U (PlutusIRSOP.Ty_SOP (a0::l)))).
+    {
       autorewrite with substituteTCA.
-      remember ((@fold_right term PlutusIRSOP.ty
-        (fun (T : PlutusIRSOP.ty) (acc : term) => @tmapp Fun (f T) acc)
-        (tmbuiltin PlutusIRSOP.DefaultUniInteger) l)) as fr.
       simpl.
-      f_equal.
-      - eapply H; eauto; simpl. rewrite <- H3. lia.
-      - assert (@fold_right term PlutusIRSOP.ty
-          (fun (T : PlutusIRSOP.ty) (acc : term) => @tmapp Fun (f T) acc)
-          (tmbuiltin PlutusIRSOP.DefaultUniInteger)
-          (@TypeSubstitutionSOP.map' PlutusIRSOP.ty PlutusIRSOP.ty l
-          (fun (y : PlutusIRSOP.ty) (_ : y ∈ l) =>
-           TypeSubstitutionSOP.substituteTCA X U y))
-         = f (TypeSubstitutionSOP.substituteTCA X U (PlutusIRSOP.Ty_SOP l))) 
-         by now autorewrite with substituteTCA.
-      
-        rewrite H0.
-        eapply H; eauto; simpl. rewrite H4. lia.
-
+      auto.
+    }
+    rewrite H0.
+             
+        assert  (@fold_right term PlutusIRSOP.ty
+            (fun (T : PlutusIRSOP.ty) (acc2 : term) =>
+          @tmapp Fun (f T) acc2)
+            (@fold_right term (list PlutusIRSOP.ty)
+            (fun (Ts : list PlutusIRSOP.ty) (acc : term) =>
+          @fold_right term PlutusIRSOP.ty
+            (fun (T : PlutusIRSOP.ty) (acc2 : term) =>
+          @tmapp Fun (f T) acc2)
+            acc
+            Ts)
+            (tmbuiltin PlutusIRSOP.DefaultUniInteger)
+            l)
+            a0
+         = f ((PlutusIRSOP.Ty_SOP (a0::l)))).
+         {
+            simpl. auto.
+         }
+         rewrite H2.
+         eapply H; eauto.
+         clear.
+         simpl.
+         lia.
   + induction T; subst; inversion HeqfT; subst.
     * subst.
       autorewrite with substituteTCA.
       simpl. auto.
-    * induction l; simpl in H1; inversion H1.
-      autorewrite with substituteTCA.
-      simpl. auto.
+    * (* todo: inversion stuff, should be possible to automate, or at least to do that not in this function *)
+      induction l; subst; inversion HeqfT.
+      - autorewrite with substituteTCA. simpl. auto.
+      - induction a; subst; inversion H2.
+        
+        assert (f
+          (TypeSubstitutionSOP.substituteTCA X U
+          (PlutusIRSOP.Ty_SOP ([] :: l))) = f
+          (TypeSubstitutionSOP.substituteTCA X U
+          (PlutusIRSOP.Ty_SOP (l)))).
+        {
+          autorewrite with substituteTCA.
+          simpl.
+          auto.
+        }
+        rewrite H0; clear H0.
+        eapply IHl; intros; auto.
 Qed.
+
         
 Theorem f_preserves_step s s' :
   TypeReductionSOP.step s s' -> step_nd (f s) (f s').
@@ -235,7 +332,15 @@ Proof.
   induction H; simpl; eauto; try solve [constructor; eauto].
   - rewrite f_preserves_substituteTCA.
     constructor.
-  - induction f0; constructor; auto.
+  - induction f0. 
+    + simpl. induction f1.
+      * simpl. constructor. auto.
+      * simpl. constructor. auto.
+    + simpl. 
+      induction x.
+      * simpl. auto.
+      * simpl. constructor. apply IHx.
+        inversion f0; subst. auto.
 Qed.
 
 Set Printing Implicit.
@@ -248,13 +353,22 @@ Proof.
   intros.
   induction H using plutus_kinding_set.has_kind__ind
     with (P := fun Δ s K => STLC_named_typing.has_kind Δ (f s) K)
-         (P0 := fun Δ Tss => plutus_util.ForallSet (fun T => STLC_named_typing.has_kind Δ (f T) PlutusIRSOP.Kind_Base) Tss).
+         (P0 := fun Δ Tss => plutus_util.ForallSet2 (fun T => STLC_named_typing.has_kind Δ (f T) PlutusIRSOP.Kind_Base) Tss)
+         (P1 := fun Δ Tss => plutus_util.ForallSet (fun T => STLC_named_typing.has_kind Δ (f T) PlutusIRSOP.Kind_Base) Tss).
   all: try solve [econstructor; eauto].
   simpl.
-  induction Tss; repeat constructor; inversion IHhas_kind; subst; auto.
-  apply IHTss; auto.
-  inversion H; auto.
-Qed.  
+  induction Tss.
+  - repeat constructor; induction IHhas_kind; subst; auto.
+  - induction IHhas_kind; subst. simpl. constructor. constructor.
+    induction f0.
+    + auto. simpl. eapply IHIHhas_kind. inversion H; subst. auto.
+    + simpl. constructor.
+      * auto.
+      * apply IHf0. clear IHf0. clear IHTss. clear IHIHhas_kind.
+        inversion H; subst.
+        inversion H3; subst.
+        constructor; auto.
+Qed.
 
 
 (*

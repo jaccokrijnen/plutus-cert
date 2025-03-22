@@ -2,6 +2,8 @@ Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
 Local Open Scope string_scope.
 
+From PlutusCert Require Import Util.
+
 Definition map2 {A B : Type} (f : A -> B) (ll : list (list A)) : list (list B) :=
   List.map (List.map f) ll.
 
@@ -12,6 +14,13 @@ Inductive NoneSetPair {A B : Type} (P : A -> B -> Prop) : list A -> list B -> Pr
 Inductive ForallSet {A : Type} (P : A -> Type) : list A -> Type :=
 | ForallS_nil : ForallSet P nil
 | ForallS_cons : forall x xs, P x -> ForallSet P xs -> ForallSet P (x :: xs).
+
+
+(* ForallT for Props *)
+Inductive ForallP22 {A : Type} (P : A -> Prop) : list (list A) -> Prop :=
+  | ForallP2_nil : ForallP22 P (nil : list (list A))
+  | ForallP2_cons : forall {x : list A} {l : list (list A)},
+                  ForallP P x -> ForallP22 P l -> ForallP22 P (x :: l).
 
 Inductive ForallSet2 {A : Type} (P : A -> Set) : list (list A) -> Type :=
 | ForallS2_nil : ForallSet2 P nil
@@ -30,6 +39,10 @@ Definition concat2 {A : Type} (l : list (list (list A))) : list A :=
 
 (* Using convoluted fold_left version so that termination checker has a good time*)
 Definition flatmap2 {A B : Type} (f : A -> list B) (l : list (list A)) : list B :=
-  fold_left (fun (acc : list (B)) (Ts : (list (A))) => List.app acc 
-                    (fold_left (fun (acc2 : list (B)) (T : A) => List.app acc2 (f T)) Ts (nil : list (B)))
-                ) l (nil : list (B)).
+  fold_right (fun (Ts : (list (A))) (acc : list (B)) => List.app
+
+                    ((fold_right (fun (T : A) (acc2 : list (B))  => List.app (f T) acc2) (nil : list (B) )) Ts) acc
+                ) (nil : list (B)) l.
+
+Definition fold_right2 {A B : Type} (f : A -> B -> B) (acc : B) (l : list (list A)) : B :=
+  fold_right (fun (Ts : list A) (acc2 : B) => fold_right f acc2 Ts) acc l.

@@ -80,8 +80,15 @@ Inductive has_kind : list (binderName * kind) -> ty -> kind -> Set :=
       Δ |-* T2 : K1 ->
       Δ |-* (Ty_App T1 T2) : K2
   | K_SOP : forall Δ Tss,
-      ForallSet_has_kind Δ Tss ->
+      ForallSet2_has_kind Δ Tss ->
       Δ |-* (Ty_SOP Tss) : Kind_Base
+with ForallSet2_has_kind : list (binderName * kind) -> list (list ty) -> Set :=
+  | ForallSet2_nil : forall Δ,
+      ForallSet2_has_kind Δ nil
+  | ForallSet2_cons : forall Δ Ts Tss,
+      ForallSet_has_kind Δ Ts ->
+      ForallSet2_has_kind Δ Tss ->
+      ForallSet2_has_kind Δ (Ts :: Tss)
 with ForallSet_has_kind : list (binderName * kind) -> list ty -> Set :=
   | ForallSet_nil : forall Δ,
       ForallSet_has_kind Δ nil
@@ -92,10 +99,12 @@ with ForallSet_has_kind : list (binderName * kind) -> list ty -> Set :=
 where "Δ '|-*' T ':' K" := (has_kind Δ T K).
 
 Scheme has_kind__ind := Minimality for has_kind Sort Set
+  with ForallSet2_has_kind__ind := Minimality for ForallSet2_has_kind Sort Set
   with ForallSet_has_kind__ind := Minimality for ForallSet_has_kind Sort Set.
 
 
 Combined Scheme has_kind__multind from
   has_kind__ind,
+  ForallSet2_has_kind__ind,
   ForallSet_has_kind__ind.
 

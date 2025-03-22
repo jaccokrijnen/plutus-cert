@@ -29,7 +29,7 @@ Fixpoint substituteT (X : string) (U T : ty) : ty :=
   | Ty_App T1 T2 =>
     Ty_App (substituteT X U T1) (substituteT X U T2)
   | Ty_SOP Tss =>
-    Ty_SOP (map (substituteT X U) Tss)
+    Ty_SOP (map2 (substituteT X U) Tss)
   end.
 
 (** Multi-substitutions of types*)
@@ -61,7 +61,7 @@ Import ListNotations.
     | Ty_App T1 T2 =>
         ftv T1 ++ ftv T2
     | Ty_SOP Tss =>
-        concat (map ftv Tss)
+        flatmap2 ftv Tss
     end.
 
 
@@ -75,8 +75,10 @@ Fixpoint plutusTv (t : PlutusIRSOP.ty) : list string :=
   | PlutusIRSOP.Ty_IFix f1 t1 => plutusTv f1 ++ plutusTv t1
   | PlutusIRSOP.Ty_Builtin d => []
   | PlutusIRSOP.Ty_SOP Tss => 
-      List.flat_map plutusTv Tss
+      flatmap2 plutusTv Tss
   end.
+
+Compute (plutusTv (Ty_SOP [[Ty_Var "a"; Ty_Var "b"]; [Ty_Var "c"; Ty_Var "d"]])).
 
 
 (** Assume that we compute the substitution of U for X in (LamAbs Y K T).
@@ -126,37 +128,43 @@ Fixpoint size (T : ty) : nat :=
   | Ty_Builtin u => 1
   | Ty_Lam bX K T0 => 1 + size T0
   | Ty_App T1 T2 => 1 + size T1 + size T2
-  (* | Ty_SOP Tss => 1 + fold_left (fun acc Ts => acc + fold_left (fun acc T => size T + acc) Ts 0) Tss 0 *)
-  | Ty_SOP Tss => 1 + fold_right (fun T acc => size T + acc) 0 Tss
+  | Ty_SOP Tss => 1 + fold_right2 (fun T acc => size T + acc) 0 Tss
   (* NOTE: Using fold_right: easier to prove with in how it "spits" out a term that is "outside of"  the recursive fold_right*)
   end.
 
-Lemma ty_sop_smaller : forall Tss T,
-  size T < size (Ty_SOP (T::Tss)).
+Lemma ty_sop_smaller : forall Tss Ts T,
+  In T Ts -> size T < size (Ty_SOP (Ts::Tss)).
 Proof.
-  simpl. lia.
+  intros. simpl. simpl.
+  induction Ts.
+  - inversion H.
+  - destruct H.
+    + subst. simpl. lia.
+    + simpl. specialize (IHTs H). lia.
 Qed.
 
 Lemma ty_sop_le2 : forall Tss T,
   size (Ty_SOP Tss) <= size (Ty_SOP (T::Tss)).
 Proof.
   intros. simpl. simpl.
-  remember ((fold_right
-  (fun (T0 : ty) (acc : nat) =>
-size T0 + acc)
-  0
-  Tss)) as fr.
+  induction T; simpl; auto.
   lia.
-Qed.
+Qed. 
 
-Lemma size_list_smaller : forall (T : ty) (Tss : list ty),
-  In T Tss -> size T < size (Ty_SOP Tss).
+
+
+Lemma size_list_smaller : forall (T : ty) (Ts : list ty) (Tss : list (list ty)),
+  In T Ts -> In Ts Tss -> size T < size (Ty_SOP Tss).
 Proof.
-  intros. induction Tss.
-  - inversion H.
-  - destruct H.
-    + subst. simpl. lia.
-    + specialize (IHTss H).
+  intros T Ts Tss Hin_Ts Hin_Tss. 
+  
+  induction Tss.
+  - inversion Hin_Tss.
+  - destruct Hin_Tss.
+    + subst. induction Ts.
+      * inversion Hin_Ts.
+      * apply ty_sop_smaller. auto.
+    +  specialize (IHTss H).
       assert (size (Ty_SOP Tss) <= size (Ty_SOP (a :: Tss))).
       { apply ty_sop_le2. }
       lia.
@@ -170,7 +178,12 @@ Proof.
   apply PlutusIRSOP.ty__ind with (P := fun T => size T = size (substituteT X (Ty_Var Y) T)); intros; simpl; eauto.
   all: try solve [destruct (X =? X0); simpl; eauto].
   induction H; auto.
-  f_equal; simpl; auto. 
+  inversion IHForallP22.
+  induction H; auto.
+  inversion IHForallP.
+  simpl. 
+  f_equal.
+  auto.
 Qed.
 
 (* A version of map that remembers list membership. Necessary in termination argument of substituteTCA*)
@@ -180,6 +193,10 @@ Fixpoint map' {A B : Type} (xs : list A) : (forall x : A, In x xs -> B) -> list 
   | x :: xs => fun f =>
       f x ((or_introl (eq_refl : x = x)) : In x (x::xs)) :: map' xs (fun (y : A) (Hin : In y xs) => f y (or_intror Hin : In y (x :: xs)))
   end.
+
+
+
+(* A version of map2 that remembers list membership. Necessary in termination argument of substituteTCA*)
 
 Equations? substituteTCA (X : string) (U T : ty) : ty by wf (size T) :=
   substituteTCA X U (Ty_Var Y) =>
@@ -216,14 +233,18 @@ Equations? substituteTCA (X : string) (U T : ty) : ty by wf (size T) :=
               Ty_Lam Y K (substituteTCA X U T) ;
   substituteTCA X U (Ty_App T1 T2) =>
       Ty_App (substituteTCA X U T1) (substituteTCA X U T2);
-  substituteTCA X U (Ty_SOP Tss) => Ty_SOP (map' Tss (fun T Hin => substituteTCA X U T))
+  substituteTCA X U (Ty_SOP Tss) => Ty_SOP (map' Tss
+         (fun (Ts : list ty) (Hin' : In Ts Tss) => 
+            map' Ts
+            (fun T Hin => substituteTCA X U T)
+          )
+         )
   .
 Proof.
-
-
   all: try solve
     [ lia
     || replace T' with (rename Y Y' T); eauto; rewrite <- rename_preserves_size; eauto
     ].
-    apply size_list_smaller. auto.
+
+    eapply size_list_smaller; eauto.
 Qed.

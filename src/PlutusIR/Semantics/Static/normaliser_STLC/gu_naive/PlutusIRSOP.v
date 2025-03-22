@@ -15,6 +15,7 @@ Require Import Coq.Program.Basics.
 Import ListNotations.
 
 
+
 From QuickChick Require Import QuickChick.
 (*
   Simplification of the names in the AST
@@ -267,8 +268,10 @@ Inductive ty :=
   | Ty_Builtin : DefaultUni -> ty
   | Ty_Lam : binderTyname -> kind -> ty -> ty
   | Ty_App : ty -> ty -> ty
-  | Ty_SOP : (list ty) -> ty
+  | Ty_SOP : (list (list ty)) -> ty
 .
+
+From PlutusCert Require Import plutus_util.
 
 Section ty__ind.
   Unset Implicit Arguments.
@@ -285,15 +288,21 @@ Section ty__ind.
     (H_Builtin : forall (T : DefaultUni), P (Ty_Builtin T))
     (H_Lam : forall (X : binderTyname) (K : kind) (T : ty), P T -> P (Ty_Lam X K T))
     (H_App : forall (T1 T2 : ty), P T1 -> P T2 -> P (Ty_App T1 T2))
-    (H_SOP : forall (Tss : list ty), ForallP P Tss -> P (Ty_SOP Tss)).
+    (H_SOP : forall (Tss : list (list ty)), ForallP22 P Tss -> P (Ty_SOP Tss)).
 
-  Definition tys__ind (ty_rect : forall (t : ty), P t) :=
-    fix ty_rect' ts :=
-    match ts as p return ForallP P p with
-      | nil       => ForallP_nil
-      | cons t ts => ForallP_cons (ty_rect t) (ty_rect' ts)
+  Definition tyss__ind (tys_rect : forall (ts : list ty), ForallP P ts) (ty_rect : forall (t : ty), P t) :=
+    fix tyss_rect' (tss : list (list ty)) :=
+    match tss as p return ForallP22 P p with
+      | nil       => ForallP2_nil P
+      | cons ts tss => ForallP2_cons P (tys_rect ts) (tyss_rect' tss)
     end.
 
+  Definition tys__ind (ty_rect : forall (t : ty), P t) :=
+    fix tys_rect (ts : list ty) : ForallP P ts :=
+    match ts as p return ForallP P p with
+      | nil       => ForallP_nil
+      | cons t ts => ForallP_cons (ty_rect t) (tys_rect ts)
+    end.
 
   (* Main induction principle for `ty` *)
   Fixpoint ty__ind (T : ty) : P T :=
@@ -305,7 +314,7 @@ Section ty__ind.
     | Ty_Builtin T => H_Builtin T
     | Ty_Lam X K T => H_Lam X K T (ty__ind T)
     | Ty_App T1 T2 => H_App T1 T2 (ty__ind T1) (ty__ind T2)
-    | Ty_SOP Tss => H_SOP Tss (tys__ind ty__ind Tss)
+    | Ty_SOP Tss => H_SOP Tss (tyss__ind (tys__ind ty__ind) ty__ind Tss)
     end.
 
 End ty__ind.

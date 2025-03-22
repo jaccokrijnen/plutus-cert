@@ -23,8 +23,8 @@ Inductive normal_Ty : ty -> Prop :=
       normal_Ty (Ty_IFix F T)
   | NO_TyBuiltin : forall st,
       normal_Ty (Ty_Builtin st)
-  | NO_TySOP : forall (Tss : (list ty)),
-      ForallSet (fun T => normal_Ty T) Tss ->
+  | NO_TySOP : forall (Tss : (list (list ty))),
+      ForallSet2 (fun T => normal_Ty T) Tss ->
       normal_Ty (Ty_SOP Tss)
 
 with neutral_Ty : ty -> Prop :=
@@ -74,8 +74,8 @@ Inductive normalise : ty -> ty -> Set :=
       normalise (Ty_IFix F T) (Ty_IFix Fn Tn)
   | N_TyBuiltin : forall (st : DefaultUni),
       normalise (Ty_Builtin st) (Ty_Builtin st)
-  | N_TySOP : forall (Tss Tss' : (list ty)),
-      ForallSetPair normalise Tss Tss' ->
+  | N_TySOP : forall (Tss Tss' : (list (list ty))),
+      ForallSetPair2 normalise Tss Tss' ->
       normalise (Ty_SOP Tss) (Ty_SOP Tss')
   .
 
