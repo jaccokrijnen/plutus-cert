@@ -47,3 +47,20 @@ Ltac run_C H_RC r' j' H_eval' H_res':=
     end
   end
 .
+
+(*
+  Simplifies an assumption
+
+    V k T ρ r r' \/ (is_error r /\ is_error r')
+
+  to
+
+    V k T ρ r r'
+
+  by searching for ~is_error r or ~is_error r'
+*)
+Ltac no_err H HR :=
+  destruct H as [HR | [H_err H_err'] ];
+  try solve [inversion H_err; inversion H_err'];
+  try solve [contradiction]
+.

@@ -82,6 +82,11 @@ Proof with eauto_LR.
       eapply map_normalise__app'...
       (* ADMIT: Should hold since map_normalise is total for well-kinded types. *)
       admit.
+    - econstructor...
+      econstructor...
+      all: admit.
+      (* ADMIT: Add NoDup and well-kinded assumptions from W_Data as arguments (assumptions)
+      * to this lemma *)
     - rewrite List.app_assoc in H7. eapply H7.
     - (* ADMIT: Should follow from uniqueness property. *)
       admit.
@@ -99,6 +104,11 @@ Proof with eauto_LR.
       eapply map_normalise__app'...
       (* ADMIT: Should hold since map_normalise is total for well-kinded types. *)
       admit.
+    - econstructor...
+      econstructor...
+      all: admit.
+      (* ADMIT: Add NoDup and well-kinded assumptions from W_Data as arguments (assumptions)
+      * to this lemma *)
     - rewrite List.app_assoc in H7. eapply H7.
     - (* ADMIT: Should follow from uniqueness property. *)
       admit.

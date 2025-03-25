@@ -903,6 +903,17 @@ Fixpoint splitTy (T : ty) : list ty * ty :=
   | Tr => (nil, Tr)
   end.
 
+Fixpoint returnTy (T : ty) : ty :=
+  match T with
+  | Ty_Fun _ T' => returnTy T'
+  | _           => T
+  end.
+
+Lemma splitTy__returnTy T : snd (splitTy T) = returnTy T.
+Proof.
+  induction T; simpl; intuition.
+Qed.
+
 (* Application spine *)
 Fixpoint spine (t : term) : term * list (term + ty) :=
   match t with

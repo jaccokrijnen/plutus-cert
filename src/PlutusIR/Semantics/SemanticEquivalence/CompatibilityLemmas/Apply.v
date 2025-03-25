@@ -305,7 +305,7 @@ Ltac RV_no_error H HR :=
 Lemma value__Ty_Fun {v T1 T2} :
   value v ->
   [] ,, [] |-+ v : <{ T1 → T2 }>  ->
-  (exists x T t,  v = LamAbs x T t) \/ (exists f, applied f v)
+  (exists x T t,  v = LamAbs x T t) \/ (exists f, args_len v < arity f /\ applied f v)
 .
 Proof.
   intros H_val H_ty.
@@ -316,7 +316,7 @@ Qed.
 
 Lemma V__Ty_Fun_r {i T1 T2 ρ v v'} :
   V i <{ T1 → T2 }> ρ v v' ->
-  (exists x T t,  v' = LamAbs x T t) \/ (exists f, applied f v')
+  (exists x T t,  v' = LamAbs x T t) \/ (exists f , args_len v' < arity f /\ applied f v')
 .
 Proof.
   intros HV.
@@ -413,10 +413,9 @@ Proof with eauto_LR.
     (* Lower the step-index of e2 *)
     apply V_monotone with (i := k - (j1 + j2 + 1)) (Δ := Δ) in V_e2...
 
-    (* Related arguments go to related values *)
     assert (H_lt : k - (j1 + j2 + 1) < k - j1) by lia.
 
-
+    (* Related arguments go to related values *)
     specialize (V_functional_extensionality H_lt V_e1 V_e2) as [C_app _].
     specialize (C_app x T t0 eq_refl).
 
@@ -424,7 +423,7 @@ Proof with eauto_LR.
       r' j' E_app' R_app...
 
     (* is r1' a lambda or a partially applied builtin? *)
-    destruct (V__Ty_Fun_r V_e1) as [ | f H_applied].
+    destruct (V__Ty_Fun_r V_e1) as [ | [f [H_arity H_applied]]].
     + (* it's a lambda *)
         destruct_hypos.
         subst r1'.

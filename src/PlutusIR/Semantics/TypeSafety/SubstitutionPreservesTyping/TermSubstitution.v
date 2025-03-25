@@ -73,6 +73,16 @@ Proof with eauto.
     all: eauto using subst_b__preserves_bindsG.
 Qed.
 
+
+Lemma NoDup__btvbs bs x v :
+  NoDup (btvbs bs) ->
+  NoDup (btvbs (subst_br x v bs)).
+Admitted.
+
+Lemma NoDup__bvbs bs x v :
+  NoDup (bvbs bs) ->
+  NoDup (bvbs (subst_br x v bs)).
+Admitted.
 (** * Propositions *)
 
 Definition P_Term (t : term) :=
@@ -218,11 +228,11 @@ Proof with eauto.
         apply In_bvbs_bindsG in HIn.
         eapply In__map_normalise in HIn...
         eapply T_LetRec...
-        -- apply Typing.weakening in H12.
-           apply H12.
-           all: auto using inclusion_refl, append_shadow.
         -- apply Typing.weakening in H14.
            apply H14.
+           all: auto using inclusion_refl, append_shadow.
+        -- apply Typing.weakening in H16.
+           apply H16.
            all: auto using inclusion_refl, append_shadow.
       * eapply Util.existsb_nexists in Hexb.
         assert (~ In x (bvbs bs)). {
@@ -235,17 +245,19 @@ Proof with eauto.
         apply notIn_bvbs_bindsG in H4...
         eapply notIn__map_normalise in H4...
         eapply T_LetRec...
+        -- eauto using NoDup__btvbs.
+        -- eauto using NoDup__bvbs.
         -- rewrite subst_br__preserves_bindsG...
         -- rewrite subst_br__preserves_bindsD...
            eapply SPT__Bindings_Rec...
-           apply Typing.weakening in H12.
-           apply H12.
+           apply Typing.weakening in H14.
+           apply H14.
            all: auto using inclusion_refl, append_permute.
         -- rewrite subst_br__preserves_bindsD...
            eapply H0.
            ++
-              apply Typing.weakening in H14.
-              apply H14.
+              apply Typing.weakening in H16.
+              apply H16.
               all: auto using inclusion_refl, append_permute.
            ++ apply H2.
            ++ assumption.

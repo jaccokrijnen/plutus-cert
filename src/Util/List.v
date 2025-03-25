@@ -137,12 +137,13 @@ Proof with auto.
   unfold inclusion...
 Qed.
 
-Lemma inclusion_cons A (m m' : list (string * A)) x vx :
-  inclusion m m' -> inclusion ((x, vx) :: m) ((x, vx) :: m').
+Lemma inclusion_cons A (m m' : list (string * A)) kv :
+  inclusion m m' -> inclusion (kv :: m) (kv :: m').
 Proof with auto.
   intros H_incl.
   unfold inclusion.
   intros y vy H_lookup_y.
+  destruct kv as [x v].
   destruct (eqb x y) eqn:H_eqb.
   all: simpl in *; rewrite H_eqb in *...
 Qed.

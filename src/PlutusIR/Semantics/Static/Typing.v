@@ -1,5 +1,6 @@
 Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.Util.List.
+From PlutusCert Require Import Analysis.BoundVars.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.Auxiliary.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
@@ -121,6 +122,10 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ |-* Tn : Kind_Base ->
       Δ ,, Γ |-+ (Let NonRec bs t) : Tn
   | T_LetRec : forall Δ Γ bs t Tn Δ' Γ' bsGn,
+      (* There can be no duplicate bound variables in a let-rec *)
+      NoDup (btvbs bs) ->
+      NoDup (bvbs bs) ->
+
       Δ' = flatten (map binds_Delta bs) ++ Δ ->
       map_normalise (flatten (map binds_Gamma bs)) bsGn ->
       Γ' = bsGn ++ Γ->
@@ -130,12 +135,15 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ ,, Γ |-+ (Let Rec bs t) : Tn
 
 (* Constructors are well-formed if their result type equals the fully applied
- * datatype (the last index), and all parameter types are well-kinded
+ * datatype (e.g. Either a b), and all parameter types are well-kinded
 *)
 with constructor_well_formed : list (string * kind) -> vdecl -> ty -> Prop :=
-  | W_Con : forall Δ x T Targs Tr,
-      (Targs, Tr) = splitTy T ->
-      (forall U, In U Targs -> Δ |-* U : Kind_Base) ->
+  | W_Con : forall Δ x T Targs Tr Tres,
+      (Targs, Tres) = splitTy T ->
+      (* We don't check the well-kindedness of Tres, this happens in
+         W_Data (since the kind context needs to be slightly larger) *)
+      (forall Ta, In Ta Targs -> Δ |-* Ta : Kind_Base) ->
+      Tres = Tr ->
       Δ |-ok_c (VarDecl x T) : Tr
 
 with bindings_well_formed_nonrec : list (string * kind) -> list (string * ty) -> list binding -> Prop :=
@@ -164,10 +172,30 @@ with binding_well_formed : list (string * kind) -> list (string * ty) -> binding
   | W_Type : forall Δ Γ X K T,
       Δ |-* T : K ->
       Δ ,, Γ |-ok_b (TypeBind (TyVarDecl X K) T)
-  | W_Data : forall Δ Γ X YKs cs matchFunc Δ',
+  | W_Data : forall Δ Γ dtd XK YKs matchFunc cs X Ys Δ' Tres,
+      dtd = Datatype XK YKs matchFunc cs ->
+      X = tvdecl_name XK ->
+      Ys = map tvdecl_name YKs ->
+
+      (* No duplicate bound type variables *)
+      NoDup (X :: Ys) ->
+
+      (* No duplicate constructor names*)
+      NoDup (map vdecl_name cs) ->
+
+      (* Well-formedness of constructors *)
       Δ' = rev (map fromDecl YKs) ++ Δ ->
-      (forall c, In c cs -> Δ' |-ok_c c : (constrLastTyExpected (Datatype X YKs matchFunc cs))) ->
-      Δ ,, Γ |-ok_b (DatatypeBind (Datatype X YKs matchFunc cs))
+      Tres = constrLastTyExpected dtd -> (* The expected result type for each constructor *)
+      (forall c, In c cs -> Δ' |-ok_c c : Tres) ->
+
+      (* The expected result type is well-kinded *)
+      (* In the case that this DatatypeBind is in a let-rec, X will already be
+       * in Δ, but it is not problematic to add it another time. It is needed
+       * for non-recursive DatatypeBinds
+       *)
+      (fromDecl XK :: Δ') |-* Tres : Kind_Base ->
+
+      Δ ,, Γ |-ok_b (DatatypeBind dtd)
 
   where "Δ ',,' Γ '|-+' t ':' T" := (has_type Δ Γ t T)
   and  "Δ '|-ok_c' c ':' T" := (constructor_well_formed Δ c T)
