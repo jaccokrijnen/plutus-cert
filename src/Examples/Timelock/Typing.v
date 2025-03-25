@@ -1,5 +1,5 @@
 From PlutusCert Require Import PlutusIR.
-From PlutusCert Require Import PlutusIR.Semantics.Static.
+Require Import Strings.String.
 From PlutusCert Require Import Util.
 
 Require Import Lists.List.

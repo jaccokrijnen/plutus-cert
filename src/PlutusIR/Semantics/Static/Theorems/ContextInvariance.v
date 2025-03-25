@@ -164,18 +164,18 @@ Module Typing.
     - (* T_LetRec *) admit.
       (* subst.
       eapply T_LetRec...
-      + apply H3.
+      + apply H5.
         intros.
-        assert ({In x (bvbs bs)} + {~ In x (bvbs bs)}) by eauto using in_dec, string_dec.
-        destruct H1.
+        assert (H_In : {In x (bvbs bs)} + {~ In x (bvbs bs)}) by eauto using in_dec, string_dec.
+        destruct H_In.
         * apply In_bvbs_bindsG in i.
           eapply In__map_normalise in i...
           apply In__lookup_append...
         * apply lookup_append_cong...
-      + apply H5.
+      + apply H7.
         intros.
-        assert ({In x (bvbs bs)} + {~ In x (bvbs bs)}) by eauto using in_dec, string_dec.
-        destruct H1.
+        assert (H_In : {In x (bvbs bs)} + {~ In x (bvbs bs)}) by eauto using in_dec, string_dec.
+        destruct H_In.
         * apply In_bvbs_bindsG in i.
           eapply In__map_normalise in i...
           apply In__lookup_append...

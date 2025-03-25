@@ -37,15 +37,15 @@ Proof.
   auto.
 Qed.
 
-Lemma R_V_typable_empty : forall k T rho v v',
-    R_V k T rho v v' ->
+Lemma V_typable_empty : forall k T rho v v',
+    V k T rho v v' ->
     (exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([],, [] |-+ v : Tn)) /\
     (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\  ([],, [] |-+ v' : Tn')).
 Proof.
   intros k T rho v v' H.
   autorewrite with R in H.
-  destruct H as [Tn [ ? [? [Tn' [? [? ?]]]] ] ].
-  split; eauto.
+  destruct H as [[H1 H2] _ ].
+  auto.
 Qed.
 
 Lemma RV_typable_empty_1 : forall k T rho v v',
@@ -54,10 +54,10 @@ Lemma RV_typable_empty_1 : forall k T rho v v',
     (exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([],, [] |-+ v : Tn)).
 Proof. intros. destruct (RV_typable_empty _ _ _ _ _ H H0) as [Htyp__v Htyp__v']. eauto. Qed.
 
-Lemma R_V_typable_empty_1 : forall k T rho v v',
-    R_V k T rho v v' ->
+Lemma V_typable_empty_1 : forall k T rho v v',
+    V k T rho v v' ->
     (exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([],, [] |-+ v : Tn)).
-Proof. intros. destruct (R_V_typable_empty _ _ _ _ _ H) as [Htyp__v Htyp__v']. eauto. Qed.
+Proof. intros. destruct (V_typable_empty _ _ _ _ _ H) as [Htyp__v Htyp__v']. eauto. Qed.
 
 Lemma RV_typable_empty_2 : forall k T rho v v',
     RV k T rho v v' ->
@@ -65,10 +65,10 @@ Lemma RV_typable_empty_2 : forall k T rho v v',
     (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\ ([],, [] |-+ v' : Tn')).
 Proof. intros. destruct (RV_typable_empty _ _ _ _ _ H H0) as [Htyp__v Htyp__v']. eauto. Qed.
 
-Lemma R_V_typable_empty_2 : forall k T rho v v',
-    R_V k T rho v v' ->
+Lemma V_typable_empty_2 : forall k T rho v v',
+    V k T rho v v' ->
     (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\ ([],, [] |-+ v' : Tn')).
-Proof. intros. destruct (R_V_typable_empty _ _ _ _ _ H) as [Htyp__v Htyp__v']. eauto. Qed.
+Proof. intros. destruct (V_typable_empty _ _ _ _ _ H) as [Htyp__v Htyp__v']. eauto. Qed.
 
 (** Closedness *)
 
@@ -84,12 +84,12 @@ Proof with eauto.
   all: eapply typable_empty__closed...
 Qed.
 
-Lemma R_V_closed : forall k T rho v v',
-    R_V k T rho v v' ->
+Lemma V_closed : forall k T rho v v',
+    V k T rho v v' ->
     closed v /\ closed v'.
 Proof with eauto.
   intros.
-  eapply R_V_typable_empty in H...
+  eapply V_typable_empty in H...
   destruct H as [ [Tn [Hnorm__Tn Htyp__v]] [Tn' [Hnorm__Tn' Htyp__v']]].
   split.
   all: eapply typable_empty__closed...
@@ -102,10 +102,10 @@ Lemma RV_closed_1 : forall k T rho v v',
 Proof with eauto. apply RV_closed. Qed.
 
 
-Lemma R_V_closed_1 : forall k T rho v v',
-    R_V k T rho v v' ->
+Lemma V_closed_1 : forall k T rho v v',
+    V k T rho v v' ->
     closed v.
-Proof with eauto. apply R_V_closed. Qed.
+Proof with eauto. apply V_closed. Qed.
 
 Lemma RV_closed_2 : forall k T rho v v',
     RV k T rho v v' ->
@@ -113,10 +113,10 @@ Lemma RV_closed_2 : forall k T rho v v',
     closed v'.
 Proof with eauto. apply RV_closed. Qed.
 
-Lemma R_V_closed_2 : forall k T rho v v',
-    R_V k T rho v v' ->
+Lemma V_closed_2 : forall k T rho v v',
+    V k T rho v v' ->
     closed v'.
-Proof with eauto. apply R_V_closed. Qed.
+Proof with eauto. apply V_closed. Qed.
 
 (** Equivalence of step-index implies equivalence of RV *)
 
@@ -127,10 +127,10 @@ Lemma RV_equiv : forall k k' T rho e e',
 Proof. intros. subst. eauto. Qed.
 
 
-Lemma R_V_equiv : forall k k' T rho e e',
-    R_V k T rho e e' ->
+Lemma V_equiv : forall k k' T rho e e',
+    V k T rho e e' ->
     k = k' ->
-    R_V k' T rho e e'.
+    V k' T rho e e'.
 Proof. intros. subst. eauto. Qed.
 
 (** Easy access to the RV conditions *)
@@ -144,8 +144,8 @@ Lemma RV_error : forall k T rho v v',
 Proof.
   intros.
   destruct H as [Hval__v [Hval__v' HRC]].
-  apply eval_result__result in Hval__v as Hev__v.
-  apply eval_result__result in Hval__v' as Hev__v'.
+  apply eval_result in Hval__v as Hev__v.
+  apply eval_result in Hval__v' as Hev__v'.
   autorewrite with RC in HRC.
   apply HRC in Hev__v as temp; eauto.
   clear HRC.
@@ -155,8 +155,8 @@ Proof.
   all: eauto.
 Qed.
 
-Lemma R_V_value : forall k T rho v v',
-    R_V k T rho v v' ->
+Lemma V_value : forall k T rho v v',
+    V k T rho v v' ->
     value v /\ value v'.
 Proof.
   intros.
@@ -165,22 +165,22 @@ Proof.
   auto.
 Qed.
 
-Corollary R_V_value_1 : forall k T rho v v',
-    R_V k T rho v v' ->
+Corollary V_value_1 : forall k T rho v v',
+    V k T rho v v' ->
     value v.
 Proof.
   intros.
   eapply proj1.
-  eauto using R_V_value.
+  eauto using V_value.
 Qed.
 
-Corollary R_V_value_2 : forall k T rho v v',
-    R_V k T rho v v' ->
+Corollary V_value_2 : forall k T rho v v',
+    V k T rho v v' ->
     value v'.
 Proof.
   intros.
   eapply proj2.
-  eauto using R_V_value.
+  eauto using V_value.
 Qed.
 
 Lemma RV_condition : forall k T rho v v',
@@ -264,8 +264,8 @@ Lemma RV_condition : forall k T rho v v',
 Proof.
   intros.
   destruct H as [Hval__v [Hval__v' HRC]].
-  apply eval_result__result in Hval__v as Hev__v.
-  apply eval_result__result in Hval__v' as Hev__v'.
+  apply eval_result in Hval__v as Hev__v.
+  apply eval_result in Hval__v' as Hev__v'.
   autorewrite with RC in HRC.
   apply HRC in Hev__v as temp; eauto.
   clear HRC.
@@ -318,20 +318,24 @@ Corollary RV_functional_extensionality : forall k T1n T2n rho v v',
 Proof. intros. eapply RV_condition in H. all: eauto. Qed.
 
 
-Corollary R_V_functional_extensionality : forall k T1n T2n rho v v',
-    R_V k (Ty_Fun T1n T2n) rho v v' ->
-    exists x e_body e'_body T1 T1',
-      v = LamAbs x T1 e_body /\
-      v' = LamAbs x T1' e'_body /\
-      forall i (Hlt_i : i < k) v_0 v'_0,
-        R_V i T1n rho v_0 v'_0 ->
-        R_C i T2n rho <{ [x := v_0] e_body }> <{ [x := v'_0] e'_body }>
+Corollary V_functional_extensionality  {i k T1 T2 rho v v' w w'} :
+  i < k ->
+  V k (Ty_Fun T1 T2) rho v v' ->
+  V i T1 rho w w' ->
+  (forall x T1 e_body,
+    v = <{λ x :: T1 , e_body}> ->
+    C i T2 rho <{ [x := w] e_body }> <{ v' ⋅ w' }>)
+  /\
+  (forall f,
+    applied f v ->
+    C i T2 rho <{ v ⋅ w }> <{ v' ⋅ w' }>
+  )
 .
 Proof.
-  intros.
-  autorewrite with R in H.
+  intros H_lt H_V1 H_V2.
+  autorewrite with R in H_V1.
   destruct_hypos.
-  repeat eexists ; try apply H7; eauto.
+  eauto.
 Qed.
 
 Corollary RV_unwrap : forall k Fn Tn rho v v' ,
@@ -391,14 +395,14 @@ Proof with eauto.
   remember H as H0.
   clear HeqH0.
   destruct H0 as [Hval__v [Hval__v' HRC]].
-  apply eval_result__result in Hval__v as Hev__v.
+  apply eval_result in Hval__v as Hev__v.
   unfold RV.
   split... split...
   autorewrite with RC.
   intros j Hlt__j e_f Hev__e_f.
   assert (e_f = v /\ j = 0) by (eapply eval__deterministic; eauto).
   destruct H0. subst.
-  exists v', 0. split. eapply eval_result__result...
+  exists v', 0. split. eapply eval_result...
   apply RV_condition in H...
 (* ADMIT: We admit this, but this is not entirely correct. This lemma
    is only correct if X does not appear
@@ -417,9 +421,9 @@ Admitted.
 
 
 
-Lemma R_V_extend_rho : forall X Chi T1 T2 rho k T v v',
-    R_V k T rho v v' ->
-    R_V k T ((X, (Chi, T1, T2)) :: rho) v v'.
+Lemma V_extend_rho : forall X Chi T1 T2 rho k T v v',
+    V k T rho v v' ->
+    V k T ((X, (Chi, T1, T2)) :: rho) v v'.
 (* ADMIT: We admit this, but this is not entirely correct. This lemma
    is only correct if X does not appear
    freely in the type annotations and types of v and v'.

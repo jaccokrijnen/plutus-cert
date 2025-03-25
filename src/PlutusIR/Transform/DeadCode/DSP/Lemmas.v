@@ -467,7 +467,7 @@ Section Purity.
     - constructor.
     - constructor.
       destruct H.
-      assert (v1 =[0]=> v1). { apply eval_result__result. assumption. }
+      assert (v1 =[0]=> v1). { apply eval_result. assumption. }
       + repeat eexists.
         all: eassumption.
       + assumption.

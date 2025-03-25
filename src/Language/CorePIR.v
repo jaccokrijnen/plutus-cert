@@ -9,7 +9,7 @@ From PlutusCert Require Import
 Require Import Utf8_core.
 Require Import Strings.String.
 
-
+(* Translation relation from core (subset) to PIR *)
 Inductive ctp : Expr string -> term -> Prop :=
   | ctp_app : ∀ s t s' t',
       ctp s s' ->
@@ -37,10 +37,6 @@ Module Core := Core.BigStep.
 From PlutusCert Require Import PlutusIR.Semantics.Dynamic.Bigstep.
 Module PIR := Dynamic.Bigstep.
 
-
-(* ctp does not create fully applied builtins *)
-Lemma no_builtins t t' : ctp t t' -> ~ (fully_applied t').
-Admitted.
 
 Lemma subst_preserves_ctp : ∀ t1 t1' t2 t2' x,
   t1 ▷ t1' ->
@@ -81,7 +77,6 @@ Proof.
   (* Lam *)
   - repeat eexists.
     all: eauto using eval.
-    unfold not. inversion 1.
 
   (* Apply *)
   - rename s' into t1'.
@@ -97,13 +92,13 @@ Proof.
     eexists.
     eexists.
     split.
-    + econstructor. all: try eauto using no_builtins.
+    + econstructor. all: try eauto.
     + assumption.
 
   (* Literal *)
   -
     repeat eexists.
-    + econstructor.
+    + econstructor. reflexivity.
     + econstructor.
     + unfold not. inversion 1.
 Qed.

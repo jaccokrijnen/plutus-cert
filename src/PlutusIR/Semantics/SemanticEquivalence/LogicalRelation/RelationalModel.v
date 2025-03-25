@@ -15,17 +15,28 @@ Require Import Coq.Strings.String.
 
 Local Open Scope list_scope.
 Local Open Scope string_scope.
+Require Import Utf8_core.
 
-
-Definition Rel (T T' : ty) (Chi : nat -> term -> term -> Prop) : Prop :=
+(* Rel:
+Any step-indexed relation χ on values, that is closed w.r.t. a decreasing step-index
+*)
+Definition Rel (T T' : ty) (χ : nat -> term -> term -> Prop) : Prop :=
   forall j v v',
-    Chi j v v' -> 0 < j ->
-      result v /\ result v' /\
-      (exists Tn, normalise T Tn /\ ([] ,, [] |-+ v : Tn)) /\
-      (exists Tn', normalise T' Tn' /\ ([] ,, [] |-+ v' : Tn')) /\
-      forall i,
-        i <= j ->
-        Chi i v v'.
+    χ j v v' -> 0 < j ->
+      result v /\ result v' /\ (* TODO: change to value? The use-site should already enforce this*)
+      (∃ Tn, normalise T Tn /\ ([] ,, [] |-+ v : Tn)) /\
+      (∃ Tn', normalise T' Tn' /\ ([] ,, [] |-+ v' : Tn')) /\
+      (∀ i, i <= j -> χ i v v')
+.
+
+Definition Rel' (T T' : ty) (χ : nat -> term -> term -> Prop) : Prop :=
+  forall j v v',
+    χ j v v' ->
+      value v /\ value v' /\
+      (∃ Tn, normalise T Tn /\ ([] ,, [] |-+ v : Tn)) /\
+      (∃ Tn', normalise T' Tn' /\ ([] ,, [] |-+ v' : Tn')) /\
+      (∀ i, i <= j -> χ i v v')
+.
 
 
 
@@ -152,12 +163,12 @@ Proof with auto.
       autorewrite with RC in H_RC.
       assert (H_lt : 0 < k - j).
         { lia. }
-      assert (H_eval := eval_result__result _ H_val_e_f).
+      assert (H_eval := eval_result _ H_val_e_f).
       assert (H__ := H_RC 0 H_lt e_f H_eval); clear H_RC.
       destruct H__ as [e'f0 [j'' [H_eval_e'_f HH]]].
 
       (* Since j is e'_f is a value, we should know that e'f0 = e'_f*)
-      assert (H_eval_e'_f_val := eval_result__result _ H_val_e'_f).
+      assert (H_eval_e'_f_val := eval_result _ H_val_e'_f).
       assert (H_eqs := eval__deterministic _ _ _ H_eval_e'_f _ _ H_eval_e'_f_val).
       destruct H_eqs; subst.
 
@@ -180,19 +191,19 @@ Proof.
   destruct temp as [e'_f [j' [Hev__e'_f [Htyp__e_f [Htyp__e'_f H]]]]].
   eexists. eexists.
   split. eauto.
-  split. eauto using eval_result__result, eval_to_result__eval.
-  split. eauto using eval_result__result, eval_to_result__eval.
+  split. eauto using eval_result, eval_to_result__eval.
+  split. eauto using eval_result, eval_to_result__eval.
   autorewrite with RC.
   intros.
   assert (e_f =[0]=> e_f). {
-    eapply eval_result__result.
+    eapply eval_result.
     eapply eval_to_result__eval.
     eauto.
   }
   assert (e_f0 = e_f /\ j0 = 0) by (eapply eval__deterministic; eauto).
   destruct H2. subst.
   eexists. eexists.
-  split. eapply eval_result__result. eapply eval_to_result__eval. eauto.
+  split. eapply eval_result. eapply eval_to_result__eval. eauto.
   rewrite <- minus_n_O.
   eauto.
 Qed.
@@ -231,6 +242,19 @@ Inductive RD : kass -> tymapping -> Prop :=
       Rel T1 T2 Chi ->
       RD ck rho ->
       RD ((X, K) :: ck) ((X, (Chi, T1, T2)) :: rho).
+
+
+(** D = Interpretation of kind contexts as type mappings *)
+Inductive D : list (string * kind) -> tymapping -> Prop :=
+  | D_nil :
+      D nil nil
+  | D_cons : forall ck rho T1 T2 Chi X K,
+      [] |-* T1 : K ->
+      [] |-* T2 : K ->
+      Rel' T1 T2 Chi ->
+      D ck rho ->
+      D ((X, K) :: ck) ((X, (Chi, T1, T2)) :: rho)
+.
 
 (** Term environment *)
 Definition env := list (string * term).
@@ -318,9 +342,16 @@ Require Import Coq.Arith.Wf_nat.
     RV = Relational interpretation for values
     RC = Relation interpretation for computations
 *)
-Inductive interpretation := C | V.
+Inductive interpretation := I_C | I_V.
 
 
+(* Termination argument of R
+
+In recursive calls of R:
+  - either the step-index decreases
+  - or a R V calls R C
+We express this in a measure on naturals
+*)
 Definition measure : (interpretation * nat) -> nat :=
   fun '(i, n) => n * 10 + if i then 1 else 0.
 
@@ -331,26 +362,28 @@ Qed.
 
 Instance wf_pair : WellFounded (ltof _ measure) := lt_pair_wf.
 
+(* Logical relation for closed values and computations *)
 Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : term) : Prop by wf (i, k) (ltof _ measure) :=
 
-  R C k T rho e e' :=
-    forall j (Hlt_j : j < k) r,
+  R I_C k T rho e e' :=
+    ∀ j (Hlt_j : j < k) r,
       e =[j]=> r ->
-      exists r' j',
+      ∃ r' j',
         e' =[j']=> r' /\
-        (R V (k - j) T rho r r' \/
-        (is_error r /\ is_error r'));
+        (R I_V (k - j) T rho r r' \/ (is_error r /\ is_error r'));
 
-  R V k T rho v v' :=
-    exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([] ,, [] |-+ v : Tn) /\
-    exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\  ([] ,, [] |-+ v' : Tn') /\
+  R I_V k T rho v v' :=
+    ( (∃ Tn,
+        normalise (msubstT (msyn1 rho) T) Tn /\ ([] ,, [] |-+ v : Tn)) /\
+      (∃ Tn',
+        normalise (msubstT (msyn2 rho) T) Tn' /\  ([] ,, [] |-+ v' : Tn'))
+    ) /\
 
-    value v /\
-    value v' /\
+    (value v /\ value v') /\
     (
       match T with
       | Ty_Var a =>
-          forall Chi,
+          ∀ Chi,
             sem rho a = Datatypes.Some Chi ->
             Chi k v v'
 
@@ -367,48 +400,50 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
             v = v'
 
       | Ty_Fun T1n T2n =>
-          exists x e_body e'_body T1 T1',
-            v = LamAbs x T1 e_body /\
-            v' = LamAbs x T1' e'_body /\
-            forall i (Hlt_i : i < k) v_0 v'_0,
-              R V i T1n rho v_0 v'_0 ->
-              R C i T2n rho <{ [x := v_0] e_body }> <{ [x := v'_0] e'_body }>
+            ∀ i (Hlt_i : i < k) v_0 v'_0,
+              R I_V i T1n rho v_0 v'_0 ->
+              (∀ x T1 e_body, v = <{λ x :: T1 , e_body}> ->
+                R I_C i T2n rho <{ [x := v_0] e_body }> <{ v' ⋅ v'_0 }>)
+              /\
+              (∀ f, applied f v ->
+                R I_C i T2n rho <{ v ⋅ v_0 }> <{ v' ⋅ v'_0 }>
+              )
 
       | Ty_IFix Fn Tn =>
           exists v_0 v'_0 F F' T T',
             v = IWrap F T v_0 /\
             v' = IWrap F' T' v'_0 /\
-            forall i (Hlt_i : i < k) K T0n,
+            ∀ i (Hlt_i : i < k) K T0n,
               [] |-* (msubstT (msyn1 rho) Tn) : K ->
               [] |-* (msubstT (msyn2 rho) Tn) : K ->
               normalise (unwrapIFix Fn K Tn) T0n ->
-              R V i T0n rho v_0 v'_0
+              R I_V i T0n rho v_0 v'_0
 
       | Ty_Forall X K Tn =>
           exists e_body e'_body,
             v = TyAbs X K e_body /\
             v' = TyAbs X K e'_body /\
-            forall T1 T2 Chi,
+            ∀ T1 T2 Chi,
               [] |-* T1 : K ->
               [] |-* T2 : K ->
               Rel T1 T2 Chi ->
-              forall i (Hlt_i : i < k),
-                R C i Tn ((X, (Chi, T1, T2)) :: rho) <{ :[X := T1] e_body }> <{ :[X := T2] e'_body }>
+              ∀ i (Hlt_i : i < k),
+                R I_C i Tn ((X, (Chi, T1, T2)) :: rho) <{ :[X := T1] e_body }> <{ :[X := T2] e'_body }>
       end
   ).
 Proof.
   all: unfold ltof; simpl; lia.
 Qed.
 
-Notation R_C := (R C).
-Notation R_V := (R V).
+Notation C := (R I_C).
+Notation V := (R I_V).
 
-Corollary R_C_values_to_R_V k T rho v v' :
+Corollary C_values_to_V k T rho v v' :
     0 < k ->
     value v ->
     value v' ->
-    R_C k T rho v v' ->
-    R_V k T rho v v'.
+    C k T rho v v' ->
+    V k T rho v v'.
 Proof.
   intros H_gt H_v H_v' H_RC.
   autorewrite with R in H_RC.
@@ -429,21 +464,21 @@ Proof.
   - assumption.
 Qed.
 
-Inductive R_G (rho : tymapping) (k : nat) : tass -> env -> env -> Prop :=
-  | R_G_nil :
-      R_G rho k nil nil nil
-  | R_G_cons : forall x T v1 v2 c e1 e2,
-      R_V k T rho v1 v2 ->
+Inductive G (rho : tymapping) (k : nat) : tass -> env -> env -> Prop :=
+  | G_nil :
+      G rho k nil nil nil
+  | G_cons : forall x T v1 v2 c e1 e2,
+      V k T rho v1 v2 ->
       normal_Ty T ->
-      R_G rho k c e1 e2 ->
-      R_G rho k ((x, T) :: c) ((x, v1) :: e1) ((x, v2) :: e2)
+      G rho k c e1 e2 ->
+      G rho k ((x, T) :: c) ((x, v1) :: e1) ((x, v2) :: e2)
 .
 
 Definition approx Δ Γ e e' T :=
     (Δ ,, Γ |-+ e : T) /\
     (Δ ,, Γ |-+ e' : T) /\
     forall k ρ γ γ',
-      RD Δ ρ ->
-      R_G ρ k Γ γ γ' ->
-      R C k T ρ (close γ (msyn1 ρ) e) (close γ' (msyn2 ρ) e').
+      D Δ ρ ->
+      G ρ k Γ γ γ' ->
+      C k T ρ (close γ (msyn1 ρ) e) (close γ' (msyn2 ρ) e').
 

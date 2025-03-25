@@ -28,28 +28,4 @@ Example test_ifThenElse : forall x y, exists k,
   }>
       =[k]=> <{ CInt 17 }>.
 Proof with (eauto with hintdb__eval_no_error || (try solve [decide_error])).
-  intros.
-  eexists.
-  eapply E_Apply...
-  - admit. (* TODO: decide fully_applied *)
-  - eapply E_Apply...
-    + admit.
-    + eapply E_TyInst...
-      * admit.
-      * eapply E_Apply...
-        ** admit.
-        ** simpl.
-          eapply E_Builtin with (f := IfThenElse).
-          admit.
-      * admit.
-    + admit.
-  - inversion 1.
-    admit.
-  - cbn.
-    rewrite eqb_refl.
-    eapply E_Apply...
-    + admit.
-    + eapply E_Apply...
-      * admit.
-      * cbn.
 Admitted.

@@ -57,8 +57,8 @@ Proof with eauto_LR.
   intros j Hlt__j e_f Hev__e_f.
 
   inversion Hev__e_f; subst.
-  - rename j0 into j_1.
-    rename H0 into Hev'__e_f.
+  - rename j1 into j_1.
+    rename H1 into Hev'__e_f.
 
     assert (HRC :
       RC k (Ty_IFix Fn Tn) rho
@@ -109,15 +109,15 @@ Proof with eauto_LR.
 
       eapply RV_condition...
       eapply RV_unfolded_to_RV.
-      split. eapply eval_to_result in Hev'__e_f. inversion Hev'__e_f. assumption.
-      split. eapply eval_to_result in Hev__e'_f. inversion Hev__e'_f. assumption.
+      split. eapply eval_to_result in Hev'__e_f. inversion Hev'__e_f. apply <- result__IWrap. eassumption.
+      split. eapply eval_to_result in Hev__e'_f. inversion Hev__e'_f. apply <- result__IWrap. eassumption.
       eapply Hunwr...
 
       eapply closing_preserves_kinding_1...
       eapply closing_preserves_kinding_2...
     + destruct temp as [Herr Herr'].
       inversion Herr.
-  - rename j0 into j_0.
+  - rename j1 into j_1.
 
     assert (HRC :
       RC k (Ty_IFix Fn Tn) rho
@@ -125,8 +125,8 @@ Proof with eauto_LR.
         (msubst env' (msubstA (msyn2 rho) e'))
     )...
 
-    apply RC_to_RV with (j := j_0) (e_f := Error T) in HRC as temp...
-    destruct temp as [e'_f [j'_0 [Hev__e'_f HRV]]].
+    apply RC_to_RV with (j := j_1) (e_f := Error T) in HRC as temp...
+    destruct temp as [e'_f [j'_1 [Hev__e'_f HRV]]].
     apply RV_error in HRV as temp...
     destruct temp as [temp | temp].
     + destruct temp.
@@ -134,10 +134,10 @@ Proof with eauto_LR.
       apply H.
       econstructor.
     + destruct temp.
-      inversion H1. subst.
+      inversion H. subst.
 
       eexists. eexists.
-      split. eapply E_Error_Unwrap...
+      split. admit. (* eapply E_Error_Unwrap... *)
 
       split... admit. (* ADMIT: I had no time to finish this. Should hold. *)
       split... admit. (* ADMIT: I had no time to finish this. Should hold. *)

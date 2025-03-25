@@ -38,7 +38,7 @@ Proof with eauto_LR.
   eexists. eexists.
 
   split. {
-    eapply eval_result__result. apply R_TyAbs.
+    eapply eval_result. apply R_Value. apply V_TyAbs.
   }
 
   split... {

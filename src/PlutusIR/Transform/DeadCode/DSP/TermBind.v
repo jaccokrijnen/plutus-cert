@@ -197,7 +197,7 @@ Proof.
 
   (* Find that we have terminating bindings *)
   inversion H_let_terminates as
-    [ | | | | | | | | | | | | | | | | | | | | ? ? ? ? H_b_bs_terminate | ].
+    [ | | | | | | | | | | | | | | | | | | | | | ? ? ? ? H_b_bs_terminate | | ].
   subst.
   clear H_let_terminates.
 
@@ -206,7 +206,7 @@ Proof.
   rewrite msubstA_BindingsNonRec_cons, msubst_bnr_cons in H_b_bs_terminate.
   rewrite msubstA_TermBind, msubst_TermBind in H_b_bs_terminate.
   inversion H_b_bs_terminate as
-    [ | ? ? ? k_v vb k_bs ? ? ? H_eval_tb H_tb_no_error H_eval_bs | | | ]. subst.
+    [ | ? ? ? ? k_v vb k_bs ? ? ? ? H_eval_tb H_tb_no_error H_eval_bs | | | ]. subst.
 
   (* case E_Let_TermBind *)
   {
@@ -388,7 +388,7 @@ Proof.
     destruct H_pure_closed as [l [vb [H_eval H_not_err]]].
     apply eval__deterministic in H_eval.
     unfold P_eval in H_eval.
-    apply H_eval in H as [H_v_Error _].
+    apply H_eval in H0 as [H_v_Error _].
     subst vb.
     assert (is_error (Error T')) by constructor.
     contradiction.

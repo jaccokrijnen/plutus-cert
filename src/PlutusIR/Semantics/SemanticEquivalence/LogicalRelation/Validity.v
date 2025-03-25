@@ -27,19 +27,16 @@ Proof with (try solve [eauto with typing || lia]).
 Qed.
 
 
-Lemma validity' : forall ck rho T,
-    RD ck rho ->
-    Rel (msubstT (msyn1 rho) T) (msubstT (msyn2 rho) T) (fun k e e' => R_V k T rho e e').
+Lemma validity' : forall Δ ρ T,
+    D Δ ρ ->
+    Rel' (msubstT (msyn1 ρ) T) (msubstT (msyn2 ρ) T) (fun k e e' => V k T ρ e e').
 Proof with (try solve [eauto with typing || lia]).
   intros.
-  unfold Rel.
-  intros.
-  split. apply R_V_value in H0. apply value__result. apply H0.
-  split. apply R_V_value in H0. apply value__result. apply H0.
-  apply R_V_typable_empty in H0 as H2...
+  split. apply V_value in H0. apply H0.
+  split. apply V_value in H0. apply H0.
+  apply V_typable_empty in H0 as H2...
   destruct H2. destruct H2. destruct H2.
-  destruct H3. destruct H3.
   split... split...
   intros.
-  eapply R_V_monotone...
+  eapply V_monotone...
 Qed.

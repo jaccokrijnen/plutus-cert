@@ -10,6 +10,17 @@ Import Utf8_core.
 
 Require Import FunctionalExtensionality.
 
+Lemma binds_Gamma__bvbs bs bs' :
+  map binds_Gamma bs = map binds_Gamma bs' ->
+  bvbs bs = bvbs bs'
+.
+Admitted.
+
+Lemma binds_Delta__btvbs bs bs' :
+  map binds_Delta bs = map binds_Delta bs' ->
+  btvbs bs = btvbs bs'
+.
+Admitted.
 
 Definition P_CNR_Term t t' := ∀ Δ Γ T,
   has_type Δ Γ t T ->
@@ -125,7 +136,7 @@ admit.
   - (* CNR_LetRec *)
     (* unfold P_CNR_Term, P_CNR_LetRec_compat.
     intros ? ? ? ? _ IH_t_body _ IH_bs ? ? ? H_typing.
-    inversion H_typing using inv_T_LetRec. intros ? ? ? ? H_mn_bs ? H_bs H_t_body.
+    inversion H_typing using inv_T_LetRec. intros ? ? ? ? ? ? H_mn_bs ? H_bs H_t_body H_kinding.
     specialize (IH_bs _ _ H_bs).
     destruct IH_bs as [H_bs' [H_eq_Gamma H_eq_Delta]].
     rewrite H_eq_Gamma in H_mn_bs.

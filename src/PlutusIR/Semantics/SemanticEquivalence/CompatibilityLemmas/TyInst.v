@@ -52,7 +52,7 @@ Proof with eauto_LR.
   inversion Hev__e_f. all: subst.
   - (* E_TyInst *)
     rename j1 into j_1.
-    rename j0 into j_0.
+    rename j2 into j_2.
 
     assert (HRC :
       RC k (Ty_Forall X K2 T1n) rho
@@ -85,15 +85,13 @@ Proof with eauto_LR.
           <{ :[X := {msubstT (msyn2 rho) T2}] e'_body }>
       ). eapply r...
 
-      eapply RC_to_RV with (j := j_0) (e_f := e_f) in HRC2 as temp...
-      destruct temp as [e'_f [j'_0 [Hev__e'_f HRV2]]].
+      eapply RC_to_RV with (j := j_2) (e_f := e_f) in HRC2 as temp...
+      destruct temp as [e'_f [j'_2 [Hev__e'_f HRV2]]].
 
 
       eexists. eexists.
       split.
       eapply E_TyInst...
-      admit. (* TODO: Similar to Apply compatibility lemma *)
-
       split. {
         (* ADMIT: I had no time to finish this. Should follow from the uniqueness property
            and commutativity of substitution and normalisation. *)

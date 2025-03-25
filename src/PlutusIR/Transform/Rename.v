@@ -488,7 +488,7 @@ Proof.
     inversion H_ren; subst.
     eexists.
     split.
-    + econstructor.
+    + econstructor. reflexivity.
     + assumption.
   - (* E_Apply *)
     rename t1 into s, t2 into t, t0 into u, v0 into r.

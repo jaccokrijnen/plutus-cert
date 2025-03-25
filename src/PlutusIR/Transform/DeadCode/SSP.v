@@ -350,7 +350,7 @@ Proof with (eauto with typing).
     inversion H_typing_Let; subst.
     (* eapply IH_t in H7;
       try (solve [eassumption | reflexivity]).
-    eapply IH_Rec in H4.
+    eapply IH_Rec in H6.
     econstructor; eauto.
     eauto using has_type, bindings_well_formed_rec. *)
 

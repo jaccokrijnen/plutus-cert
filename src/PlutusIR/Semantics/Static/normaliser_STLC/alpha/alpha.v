@@ -4,7 +4,7 @@ From mathcomp Require Import ssreflect ssrbool eqtype ssrnat.
 From Coq Require Import ssrfun.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
-From PlutusCert Require Import List AutosubstSsr.
+From PlutusCert Require Import Util.List AutosubstSsr.
 Import ListNotations.
 Local Open Scope string_scope.
 Local Open Scope list_scope.

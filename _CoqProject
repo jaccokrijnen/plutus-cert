@@ -70,7 +70,6 @@ src/PlutusIR/Semantics/Dynamic/Bigstep/Examples/AddInteger.v
 src/PlutusIR/Semantics/Dynamic/Bigstep/Examples/Factorial.v
 src/PlutusIR/Semantics/Dynamic/Bigstep/Examples/IfThenElse.v
 src/PlutusIR/Semantics/Dynamic/Builtins.v
-src/PlutusIR/Semantics/Dynamic/Builtins/FullyApplied.v
 src/PlutusIR/Semantics/Dynamic/Builtins/BuiltinMeanings.v
 src/PlutusIR/Semantics/Dynamic/Datatypes.v
 src/PlutusIR/Semantics/Dynamic/Substitution.v
@@ -80,6 +79,7 @@ src/PlutusIR/Semantics/Dynamic/Values.v
 src/PlutusIR/Semantics/Static.v
 src/PlutusIR/Semantics/Static/Auxiliary.v
 src/PlutusIR/Semantics/Static/Context.v
+src/PlutusIR/Semantics/Static/Builtins/Arity.v
 src/PlutusIR/Semantics/Static/Builtins/Signatures.v
 src/PlutusIR/Semantics/Static/Util.v
 

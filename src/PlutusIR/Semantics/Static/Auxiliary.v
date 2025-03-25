@@ -1,5 +1,6 @@
 Require Import PlutusCert.PlutusIR.
 From PlutusCert Require Import Util.
+From PlutusCert Require Import FreeVars.
 
 Require Import Coq.Lists.List.
 Import ListNotations.
@@ -50,28 +51,41 @@ Definition Ty_Lams (xs : list tvdecl) (t : ty) : ty :=
   fold_right (fun YK t' => Ty_Lam (getTyname YK) (getKind YK) t') t xs
 .
 
-(* Type of a branch in a match. The result type of the constructor is replaced
- * by some result type.
- *)
-Definition branchTy (c : vdecl) (R : ty) : ty :=
-  match c with
-  | VarDecl x T =>
-    let
-      fix branchTy' S :=
-        match S with
-        | Ty_Fun S1 S2 => Ty_Fun S1 (branchTy' S2)
-        | _ => R
-        end
-    in
-      branchTy' T
+(* Replace the return type of T with R, e.g.
+   replaceRetTy (A -> B) C = A -> B -> C
+*)
+Fixpoint replaceRetTy (T R : ty) : ty :=
+  match T with
+   | Ty_Fun S1 S2 => Ty_Fun S1 (replaceRetTy S2 R)
+   | _ => R
   end.
 
-Definition dataTy (d : dtdecl) : ty :=
+Example replaceRetTy_bin A B C :
+  replaceRetTy (Ty_Fun (Ty_Var A) (Ty_Var B)) (Ty_Var C) = Ty_Fun (Ty_Var A) (Ty_Var C).
+Proof. reflexivity. Qed.
+
+
+(* Used as binder in the type of matchTy *)
+Definition dtdecl_freshR (d : dtdecl) : string :=
+  match d with
+  | Datatype XK YKs matchFunc cs =>
+      concat ""
+        (List.concat (map (fun c => Ty.ftv (vdecl_ty c)) cs))
+  end
+.
+
+(* The type of match function, in the case of
+     data Either a b = Left : a -> Either a b | Right : b -> Either a b
+   the match function will have type
+     ∀R. (a -> R) -> (b -> R) -> R
+*)
+Definition matchTy (d : dtdecl) : ty :=
+  let R := dtdecl_freshR d in
   match d with
   | Datatype X YKs matchFunc cs =>
-      let branchTypes : list ty := map (fun c => branchTy c (Ty_Var "R")) cs in
-      let branchTypesFolded := fold_right Ty_Fun (Ty_Var "R") branchTypes in
-      Ty_Lams YKs (Ty_Forall "R" Kind_Base branchTypesFolded)
+      let branchTypes := map (fun c => replaceRetTy (vdecl_ty c) (Ty_Var R)) cs in
+      let branchTypesFolded := fold_right Ty_Fun (Ty_Var R) branchTypes in
+      Ty_Forall R Kind_Base branchTypesFolded
   end.
 
 
@@ -85,15 +99,13 @@ Compute (fold_right Ty_Fun (Ty_Var "R") [Ty_Var "A"; Ty_Var "B"; Ty_Var "C"]).
    Ty_Apps (Ty_Var (getTyName ("List", * -> * )) (Ty_Var (getTyName ("T", * )))
    which is just List T
  *)
-Definition constrLastTyExpected (d : dtdecl) : ty :=
-  match d with
-  | Datatype X YKs _ cs =>
-      let tyParamVars := map (Ty_Var ∘ getTyname) YKs in
-      Ty_Apps (Ty_Var (getTyname X)) tyParamVars
+Definition constrLastTyExpected dtd : ty :=
+  match dtd with
+  | Datatype XK YKs _ _ =>
+      let X := tvdecl_name XK in
+      let Ys := map tvdecl_name YKs in
+      Ty_Apps (Ty_Var X) (map Ty_Var Ys)
   end.
-
-Compute (Ty_Apps (Ty_Var "either") [Ty_Var "a"; Ty_Var "b"]). (* nesting into the left side of Ty_Apps*)
-
 
 (* The type of a constructor is not just its annotation,
  * it requires Ty_Forall for all of the datatype's type parameters
@@ -102,17 +114,6 @@ Definition constrTy (d : dtdecl) (c : vdecl) : ty :=
   match d, c with
   | Datatype _ YKs _ _, VarDecl _ T =>
       Ty_Foralls YKs T
-  end.
-
-Definition matchTy (d : dtdecl) : ty :=
-  match d with
-  | Datatype X YKs matchFunc cs =>
-      let tyParamVars := map (Ty_Var ∘ getTyname) YKs in
-      (* Richard: Why have Ty_Apps (dataTy d) Yks,
-          dataTy d has TyLams Yks
-          it feels like we could remove both the apps and lams and just have dataTy d.
-          *)
-      Ty_Foralls YKs (Ty_Fun (constrLastTyExpected d) (Ty_Apps (dataTy d) tyParamVars))
   end.
 
 (** Binder functions *)

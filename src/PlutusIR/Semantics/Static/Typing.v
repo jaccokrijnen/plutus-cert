@@ -1,5 +1,6 @@
 Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.Util.List.
+From PlutusCert Require Import Analysis.BoundVars.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.Auxiliary.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
@@ -44,16 +45,6 @@ Proof.
   rewrite app_nil_r.
   reflexivity.
 Qed.
-
-(* Split off the last type of nested Ty_Funs to get list of parameter types and return type
-  e.g. splitTy (Ty_Fun A (Ty_Fun B C)) = ([A; B], C)
-*)
-Fixpoint splitTy (T : ty) : list ty * ty :=
-  match T with
-  | Ty_Fun Targ T' => (cons Targ (fst (splitTy T')), snd (splitTy T'))
-  | Tr => (nil, Tr)
-  end.
-Compute (splitTy (Ty_Fun (Ty_Var "A") (Ty_Fun (Ty_Var "B") (Ty_Var "C")))).
 
 Definition fromDecl (tvd : tvdecl) : string * kind :=
   match tvd with
@@ -219,6 +210,10 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ |-* Tn : Kind_Base ->
       Δ ,, Γ |-+ (Let NonRec bs t) : Tn
   | T_LetRec : forall Δ Γ bs t Tn Δ' Γ' bsGn,
+      (* There can be no duplicate bound variables in a let-rec *)
+      NoDup (btvbs bs) ->
+      NoDup (bvbs bs) ->
+
       Δ' = flatten (map binds_Delta bs) ++ Δ ->
       map_normalise (flatten (map binds_Gamma bs)) bsGn -> (* TODO: Why do we need this to be normalised? Create a counterexample that shows things go wrong without normalisation here*)
       Γ' = bsGn ++ Γ->
@@ -228,16 +223,15 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ ,, Γ |-+ (Let Rec bs t) : Tn
 
 (* Constructors are well-formed if their result type equals the fully applied
- * datatype (the last index), and all parameter types are well-kinded
+ * datatype (e.g. Either a b), and all parameter types are well-kinded
 *)
 with constructor_well_formed : list (string * kind) -> vdecl -> ty -> Prop :=
-  | W_Con : forall Δ x T Targs Tr,
-      (Targs, Tr) = splitTy T ->
-      (* TODO: Is Tr well-kinded? *)
-
-      (* Richard: Added this to be able to prove well kindedness of let statements*)
-      (* Δ |-* Tr : Kind_Base ->   *)
-      (forall U, In U Targs -> Δ |-* U : Kind_Base) ->
+  | W_Con : forall Δ x T Targs Tr Tres,
+      (Targs, Tres) = splitTy T ->
+      (* We don't check the well-kindedness of Tres, this happens in
+         W_Data (since the kind context needs to be slightly larger) *)
+      (forall Ta, In Ta Targs -> Δ |-* Ta : Kind_Base) ->
+      Tres = Tr ->
       Δ |-ok_c (VarDecl x T) : Tr
 
 with bindings_well_formed_nonrec : list (string * kind) -> list (string * ty) -> list binding -> Prop :=
@@ -266,15 +260,30 @@ with binding_well_formed : list (string * kind) -> list (string * ty) -> binding
   | W_Type : forall Δ Γ X K T,
       Δ |-* T : K ->
       Δ ,, Γ |-ok_b (TypeBind (TyVarDecl X K) T)
-  | W_Data : forall Δ Γ X YKs cs matchFunc Δ',
-      Δ' = rev (map fromDecl YKs) ++ Δ ->
-      
+  | W_Data : forall Δ Γ dtd XK YKs matchFunc cs X Ys Δ' Tres,
+      dtd = Datatype XK YKs matchFunc cs ->
+      X = tvdecl_name XK ->
+      Ys = map tvdecl_name YKs ->
 
-      (* We not only require the requirements from |-c, but the type of each constructor must
-        be equal to the expected type : i.e. that all constructors have the same type. (so no GADTs?)
-      *)
-      (forall c, In c cs -> Δ' |-ok_c c : (constrLastTyExpected (Datatype X YKs matchFunc cs))) ->
-      Δ ,, Γ |-ok_b (DatatypeBind (Datatype X YKs matchFunc cs))
+      (* No duplicate bound type variables *)
+      NoDup (X :: Ys) ->
+
+      (* No duplicate constructor names*)
+      NoDup (map vdecl_name cs) ->
+
+      (* Well-formedness of constructors *)
+      Δ' = rev (map fromDecl YKs) ++ Δ ->
+      Tres = constrLastTyExpected dtd -> (* The expected result type for each constructor *)
+      (forall c, In c cs -> Δ' |-ok_c c : Tres) ->
+
+      (* The expected result type is well-kinded *)
+      (* In the case that this DatatypeBind is in a let-rec, X will already be
+       * in Δ, but it is not problematic to add it another time. It is needed
+       * for non-recursive DatatypeBinds
+       *)
+      (fromDecl XK :: Δ') |-* Tres : Kind_Base ->
+
+      Δ ,, Γ |-ok_b (DatatypeBind dtd)
 
   where "Δ ',,' Γ '|-+' t ':' T" := (has_type Δ Γ t T)
   and  "Δ '|-ok_c' c ':' T" := (constructor_well_formed Δ c T)
@@ -319,12 +328,17 @@ Lemma either_ill_formed :
     ).
 Proof.
   eapply W_Data; eauto.
-  intros.
-  inversion H; clear H.
-  - simpl.
-    unfold Basics.compose; simpl.
-    subst.
-    (* This is not allowed by W_Data instantiate W_Con with constrLastTyExpected*)
+  - admit.
+  - admit.
+  - intros.
+    inversion H; clear H.
+    + simpl.
+      unfold Basics.compose; simpl.
+      subst.
+      (* This is not allowed by W_Data instantiate W_Con with constrLastTyExpected*)
+      admit.
+    + admit.
+  - admit.
 Admitted.
 
 
@@ -341,6 +355,10 @@ Lemma either_well_formed :
     ).
 Proof.
   eapply W_Data; eauto.
+  - simpl. constructor. intuition. inversion H. inversion H0. inversion H0. inversion H1. inversion H1.
+    constructor. intuition. inversion H. inversion H0. inversion H0. constructor. intuition. constructor.
+  - simpl. 
+    constructor. intuition. inversion H. inversion H0. inversion H0. constructor. intuition. constructor.
   - intros.
     inversion H; clear H.
     + subst.
@@ -352,6 +370,7 @@ Proof.
       * simpl.
         intros. inversion H. subst. constructor.
         simpl. auto. inversion H0.
+      * simpl. f_equal.
     + inversion H0; clear H0.
       subst.
       eapply W_Con; eauto.
@@ -362,33 +381,13 @@ Proof.
         inversion H; try contradiction.
         subst. constructor. simpl. auto.
       * inversion H.
+  - simpl. eapply K_App.
+    + eapply K_App.
+      * constructor. simpl. eauto.
+      * constructor. simpl. eauto.
+    + constructor. simpl. auto.
 Qed.
 
-
-(* show that we can do arbitrarily ill-kinded matchfunc types*)
-Lemma example_binding_well_formed_that_shouldnt_be :
-  [("List", Kind_Base)],,[] |-ok_b
-
-      (DatatypeBind 
-        (Datatype (TyVarDecl "List" (Kind_Arrow (Kind_Base) (Kind_Base))) 
-        [TyVarDecl "T" Kind_Base] 
-        "matchList" 
-        [(VarDecl "Nil" (Ty_App (Ty_Var "List") (Ty_Var "T"))); 
-         (VarDecl "Cons" (Ty_Fun (Ty_Var "T") (Ty_Fun (Ty_Var "List") (Ty_App (Ty_Var "List") (Ty_Var "T")))))]
-    )).
-Proof.
-  apply W_Data with (Δ' := ("T", Kind_Base)::("List", Kind_Base)::nil).
-  - auto.
-  - intros.
-    simpl.
-    unfold Basics.compose.
-    simpl.
-    destruct c.
-    eapply W_Con.
-    + admit.
-    + 
-
-Admitted.
 
 Lemma lookupBuiltinTy__well_kinded f Δ :
   Δ |-* (lookupBuiltinTy f) : Kind_Base.
@@ -396,38 +395,12 @@ Proof.
   destruct f; repeat constructor.
 Qed.
 
-Lemma apps_lams_rewrite_helper aX aK T T' TS' YKs :
-  Ty_Apps (Ty_Lams ((TyVarDecl aX aK )::YKs) T) (T'::TS') =
-     Ty_App (Ty_Lam aX aK ((Ty_Apps (Ty_Lams YKs T) TS'))) T'.
-Proof.
-Admitted.
-
-
-
-Lemma apps_lams_helper Δ T K YKs :
-  (forall bx bt, lookup bx (rev (map fromDecl YKs)) = Some bt -> lookup bx Δ = Some bt) -> (Δ |-* T : K) -> (Δ |-* (Ty_Apps (Ty_Lams YKs T) (map (Basics.compose Ty_Var getTyname) YKs)) : K).
-Proof.
-  intros.
-  generalize dependent Δ.
-  remember (rev YKs) as revYKs.
-  generalize dependent YKs.
-  induction revYKs; intros.
-  - simpl. auto. induction YKs.
-    + simpl. auto.
-    + simpl in HeqrevYKs. symmetry in HeqrevYKs. apply app_eq_nil in HeqrevYKs. destruct HeqrevYKs. discriminate.
-  - unfold Basics.compose.
-    simpl map.
-    destruct a.
-      
-      
-    
-Admitted.
 
 (* Prototype with only one type variable*)
 Lemma b_wf__wk' Δ Γ b :
   Δ ,, Γ |-ok_b b -> forall T _x, In (_x, T) (binds_Gamma b) -> exists K Δ', Δ' |-* T : K.
 Proof.
-  intros.
+  (* intros.
   inversion H; subst.
   - admit.
   - admit.
@@ -490,7 +463,7 @@ Proof.
       }
       eexists.
       constructor.
-      destruct YK; eauto.
+      destruct YK; eauto. *)
 Admitted.
 
 (* We need this because we need to normalise every type in binds_Gamma b, and for normalisation we
@@ -499,7 +472,7 @@ Admitted.
 Lemma b_wf__wk Δ Γ b :
   Δ ,, Γ |-ok_b b -> forall T _x, In (_x, T) (binds_Gamma b) -> exists K Δ', Δ' |-* T : K.
 Proof.
-  intros.
+  (* intros.
   inversion H; subst.
   - inversion H0; intuition.
     inversion H4; subst; clear H4.
@@ -605,7 +578,7 @@ Proof.
         *)
         admit.
       }
-
+ *)
 
 
 Admitted.
@@ -643,7 +616,7 @@ Proof.
     eapply H0.
     right.
     eauto. auto. 
-Qed.
+Admitted.
 
 Lemma bs_wf_r__map_wk Δ Γ bs :
   Δ ,, Γ |-oks_r bs -> map_wk (insert_deltas_rec (flatten (map (binds_Gamma) bs)) Δ).

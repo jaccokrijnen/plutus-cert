@@ -84,7 +84,7 @@ Module Typing.
     all: try (intros Delta'_0 Gamma'_0 HinclD HinclG).
     all: try (intros Delta'_0 HinclD).
     all: try solve [econstructor; subst; eauto using Kinding.weakening, inclusion_cons, inclusion_append].
-    - (* W_Con *)
+    - (* W_Data *)
       econstructor...
       subst.
       intros.
