@@ -38,7 +38,7 @@ Fixpoint f (t : PlutusIRSOP.ty) : term :=
   | PlutusIRSOP.Ty_Builtin d => tmbuiltin d
   end.
 
-Compute (f (PlutusIRSOP.Ty_SOP [[PlutusIRSOP.Ty_Var "a"; PlutusIRSOP.Ty_Var "b"]; [PlutusIRSOP.Ty_Var "c"; PlutusIRSOP.Ty_Var "d"]])).
+Compute (f (PlutusIRSOP.Ty_SOP [[PlutusIRSOP.Ty_Var "a"; PlutusIRSOP.Ty_Var "b"]; [PlutusIRSOP.Ty_Var "c"]])).
 
 (*
   The following lemmas are used to prove that the translation preserves the properties of the original terms. *)
@@ -405,11 +405,10 @@ Qed.
 Corollary plutus_ty_strong_normalization s Δ K : plutus_kinding_set.has_kind Δ s K -> @sn PlutusIRSOP.ty TypeReductionSOP.step s.
 Proof.
   intros Hwk.
-  eapply sn_preimage2. 
-  - apply f_preserves_step.
-  - eapply strong_normalization with (E := Δ) (T := K).
-    eapply f_preserves_kind.
-    auto.
+  apply f_preserves_kind in Hwk.
+  apply strong_normalization in Hwk.
+  apply sn_step_plut.
+  auto.
 Qed.
 
 Print Assumptions plutus_ty_strong_normalization.

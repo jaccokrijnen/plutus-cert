@@ -75,15 +75,24 @@ Definition dataTy (d : dtdecl) : ty :=
   end.
 
 
+Compute (fold_right Ty_Fun (Ty_Var "R") [Ty_Var "A"; Ty_Var "B"; Ty_Var "C"]).
+
 (* The expected return type of a constructor, i.e. the Datatype applied to all
  * its type parameters. For example: Either a b
+
+ Richard: All constructors should end with the same type! That is what we use this for
+ in the case of List, this will be
+   Ty_Apps (Ty_Var (getTyName ("List", * -> * )) (Ty_Var (getTyName ("T", * )))
+   which is just List T
  *)
 Definition constrLastTyExpected (d : dtdecl) : ty :=
   match d with
-  | Datatype X YKs matchFunc cs =>
+  | Datatype X YKs _ cs =>
       let tyParamVars := map (Ty_Var ∘ getTyname) YKs in
       Ty_Apps (Ty_Var (getTyname X)) tyParamVars
   end.
+
+Compute (Ty_Apps (Ty_Var "either") [Ty_Var "a"; Ty_Var "b"]). (* nesting into the left side of Ty_Apps*)
 
 
 (* The type of a constructor is not just its annotation,
@@ -99,6 +108,10 @@ Definition matchTy (d : dtdecl) : ty :=
   match d with
   | Datatype X YKs matchFunc cs =>
       let tyParamVars := map (Ty_Var ∘ getTyname) YKs in
+      (* Richard: Why have Ty_Apps (dataTy d) Yks,
+          dataTy d has TyLams Yks
+          it feels like we could remove both the apps and lams and just have dataTy d.
+          *)
       Ty_Foralls YKs (Ty_Fun (constrLastTyExpected d) (Ty_Apps (dataTy d) tyParamVars))
   end.
 

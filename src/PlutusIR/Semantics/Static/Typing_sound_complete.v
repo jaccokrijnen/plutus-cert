@@ -227,7 +227,7 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
             else None
     | _ => None (* TODO: Case and Constr?? *)
     end.
-(* 
+
 Section term_recursivity_rect.
   Variable (P : term -> Type).
   Variable (Q : binding -> Type).
@@ -248,7 +248,7 @@ Section term_recursivity_rect.
     (H_Error   : forall t : ty, P (Error t))
     (H_IWrap   : forall (t t0 : ty) (t1 : term), P t1 -> P (IWrap t t0 t1))
     (H_Unwrap  : forall t : term, P t -> P (Unwrap t))
-    (H_Constr  : forall (i : nat) T (ts : list (term)), ForallT P ts -> P (Constr i T ts))
+    (H_Constr  : forall (i : nat) T (ts : list (term)), ForallT P ts -> P (Constr T i ts))
     (H_Case   : forall T t, P t -> forall ts, ForallT P ts -> P (Case T t ts)).
 
   Context
@@ -299,7 +299,7 @@ Section term_recursivity_rect.
       | Error ty        => @H_Error ty
       | Constant c      => @H_Constant c
       | Builtin f       => @H_Builtin f
-      | Constr i T ts     => @H_Constr i T ts (terms_rect'' term_rect'' ts)
+      | Constr i T ts     => @H_Constr T i ts (terms_rect'' term_rect'' ts)
       | Case T t ts      => @H_Case T t (term_rect'' t) ts (terms_rect'' term_rect'' ts)
     end
   with binding_rect'' (b : binding) : Q b :=
@@ -372,16 +372,16 @@ Qed.
 Lemma insert_remove_deltas_nr_id xs Δ :
   flatten (map binds_Gamma xs) = remove_deltas (insert_deltas_bind_Gamma_nr xs Δ).
 Proof.
-  induction xs.
+  generalize dependent Δ.
+  induction xs; intros.
   - reflexivity.
   - simpl.
     rewrite flatten_cons.
     rewrite remove_deltas_app.
 
     rewrite <- insert_remove_deltas_id.
-
-    admit. (* need some more stuff that is trivial*)
-Admitted.
+    f_equal; auto.
+Qed.
 
 Theorem type_checking_sound : 
  forall Δ Γ t ty, type_check Δ Γ t = Some ty -> (Δ ,, Γ |-+ t : ty).
@@ -427,7 +427,6 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
       eapply T_Let with (Δ' := flatten (map binds_Delta rec) ++ Δ).
       * reflexivity.
       * apply (map_normaliser_sound) in Heqo. 
-
         rewrite <- insert_remove_deltas_nr_id in Heqo.
         exact Heqo.
       * reflexivity.
@@ -773,4 +772,4 @@ Print Assumptions type_checking_sound.
 Print Assumptions type_checking_complete.
       
       
-       *)
+      

@@ -45,11 +45,15 @@ Proof.
   reflexivity.
 Qed.
 
+(* Split off the last type of nested Ty_Funs to get list of parameter types and return type
+  e.g. splitTy (Ty_Fun A (Ty_Fun B C)) = ([A; B], C)
+*)
 Fixpoint splitTy (T : ty) : list ty * ty :=
   match T with
   | Ty_Fun Targ T' => (cons Targ (fst (splitTy T')), snd (splitTy T'))
   | Tr => (nil, Tr)
   end.
+Compute (splitTy (Ty_Fun (Ty_Var "A") (Ty_Fun (Ty_Var "B") (Ty_Var "C")))).
 
 Definition fromDecl (tvd : tvdecl) : string * kind :=
   match tvd with
@@ -120,7 +124,7 @@ Proof.
     (* By definition of freshUnwrapIFix *)
     subst.
     apply unwrapIFixFresh_ftv_helper.
-Admitted.
+Qed.
 
 (** Typing of terms *)
 Reserved Notation "Delta ',,' Gamma '|-+' t ':' T" (at level 101, t at level 0, T at level 0, no associativity).
@@ -230,6 +234,9 @@ with constructor_well_formed : list (string * kind) -> vdecl -> ty -> Prop :=
   | W_Con : forall Δ x T Targs Tr,
       (Targs, Tr) = splitTy T ->
       (* TODO: Is Tr well-kinded? *)
+
+      (* Richard: Added this to be able to prove well kindedness of let statements*)
+      (* Δ |-* Tr : Kind_Base ->   *)
       (forall U, In U Targs -> Δ |-* U : Kind_Base) ->
       Δ |-ok_c (VarDecl x T) : Tr
 
@@ -261,6 +268,11 @@ with binding_well_formed : list (string * kind) -> list (string * ty) -> binding
       Δ ,, Γ |-ok_b (TypeBind (TyVarDecl X K) T)
   | W_Data : forall Δ Γ X YKs cs matchFunc Δ',
       Δ' = rev (map fromDecl YKs) ++ Δ ->
+      
+
+      (* We not only require the requirements from |-c, but the type of each constructor must
+        be equal to the expected type : i.e. that all constructors have the same type. (so no GADTs?)
+      *)
       (forall c, In c cs -> Δ' |-ok_c c : (constrLastTyExpected (Datatype X YKs matchFunc cs))) ->
       Δ ,, Γ |-ok_b (DatatypeBind (Datatype X YKs matchFunc cs))
 
@@ -282,27 +294,297 @@ Combined Scheme has_type__multind from
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
 
+
+Definition interestingTerm := Let NonRec [TypeBind (TyVarDecl "List" Kind_Base) (Ty_Builtin DefaultUniInteger)] (
+    Let NonRec [
+      DatatypeBind 
+        (Datatype (TyVarDecl "List" (Kind_Arrow (Kind_Base) (Kind_Base))) 
+        [TyVarDecl "T" Kind_Base] 
+        "matchList" 
+        [(VarDecl "Nil" (Ty_App (Ty_Var "List") (Ty_Var "T"))); 
+         (VarDecl "Cons" (Ty_Fun (Ty_Var "T") (Ty_Fun (Ty_Var "List") (Ty_App (Ty_Var "List") (Ty_Var "T")))))]
+    )] (Var "List")
+  ).
+
+Lemma either_ill_formed :
+  [],,[] |-ok_b
+    (
+      DatatypeBind (
+        Datatype (TyVarDecl "Either" (Kind_Arrow Kind_Base (Kind_Arrow Kind_Base Kind_Base)))
+        [TyVarDecl "L" Kind_Base; TyVarDecl "R" Kind_Base]
+        "matchEither"
+        [(VarDecl "Left" (Ty_Fun (Ty_Var "L") (Ty_App (Ty_Var "Either") (Ty_Var "L")) ));
+        (VarDecl "Right" (Ty_Fun (Ty_Var "R") (Ty_App (Ty_Var "Either") (Ty_Var "L"))))]
+      )
+    ).
+Proof.
+  eapply W_Data; eauto.
+  intros.
+  inversion H; clear H.
+  - simpl.
+    unfold Basics.compose; simpl.
+    subst.
+    (* This is not allowed by W_Data instantiate W_Con with constrLastTyExpected*)
+Admitted.
+
+
+Lemma either_well_formed :
+  [],,[] |-ok_b
+    (
+      DatatypeBind (
+        Datatype (TyVarDecl "Either" (Kind_Arrow Kind_Base (Kind_Arrow Kind_Base Kind_Base)))
+        [TyVarDecl "L" Kind_Base; TyVarDecl "R" Kind_Base]
+        "matchEither"
+        [(VarDecl "Left" (Ty_Fun (Ty_Var "L") (Ty_App (Ty_App (Ty_Var "Either") (Ty_Var "L")) (Ty_Var "R"))));
+        (VarDecl "Right" (Ty_Fun (Ty_Var "R") (Ty_App (Ty_App (Ty_Var "Either") (Ty_Var "L")) (Ty_Var "R"))))]
+      )
+    ).
+Proof.
+  eapply W_Data; eauto.
+  - intros.
+    inversion H; clear H.
+    + subst.
+      eapply W_Con.
+      * simpl.
+        unfold splitTy.
+        simpl.
+        reflexivity.
+      * simpl.
+        intros. inversion H. subst. constructor.
+        simpl. auto. inversion H0.
+    + inversion H0; clear H0.
+      subst.
+      eapply W_Con; eauto.
+      * simpl.
+        unfold Basics.compose; simpl.
+        eauto.
+      * simpl. intros.
+        inversion H; try contradiction.
+        subst. constructor. simpl. auto.
+      * inversion H.
+Qed.
+
+
+(* show that we can do arbitrarily ill-kinded matchfunc types*)
+Lemma example_binding_well_formed_that_shouldnt_be :
+  [("List", Kind_Base)],,[] |-ok_b
+
+      (DatatypeBind 
+        (Datatype (TyVarDecl "List" (Kind_Arrow (Kind_Base) (Kind_Base))) 
+        [TyVarDecl "T" Kind_Base] 
+        "matchList" 
+        [(VarDecl "Nil" (Ty_App (Ty_Var "List") (Ty_Var "T"))); 
+         (VarDecl "Cons" (Ty_Fun (Ty_Var "T") (Ty_Fun (Ty_Var "List") (Ty_App (Ty_Var "List") (Ty_Var "T")))))]
+    )).
+Proof.
+  apply W_Data with (Δ' := ("T", Kind_Base)::("List", Kind_Base)::nil).
+  - auto.
+  - intros.
+    simpl.
+    unfold Basics.compose.
+    simpl.
+    destruct c.
+    eapply W_Con.
+    + admit.
+    + 
+
+Admitted.
+
 Lemma lookupBuiltinTy__well_kinded f Δ :
   Δ |-* (lookupBuiltinTy f) : Kind_Base.
 Proof.
   destruct f; repeat constructor.
 Qed.
 
+Lemma apps_lams_rewrite_helper aX aK T T' TS' YKs :
+  Ty_Apps (Ty_Lams ((TyVarDecl aX aK )::YKs) T) (T'::TS') =
+     Ty_App (Ty_Lam aX aK ((Ty_Apps (Ty_Lams YKs T) TS'))) T'.
+Proof.
+Admitted.
+
+
+
+Lemma apps_lams_helper Δ T K YKs :
+  (forall bx bt, lookup bx (rev (map fromDecl YKs)) = Some bt -> lookup bx Δ = Some bt) -> (Δ |-* T : K) -> (Δ |-* (Ty_Apps (Ty_Lams YKs T) (map (Basics.compose Ty_Var getTyname) YKs)) : K).
+Proof.
+  intros.
+  generalize dependent Δ.
+  remember (rev YKs) as revYKs.
+  generalize dependent YKs.
+  induction revYKs; intros.
+  - simpl. auto. induction YKs.
+    + simpl. auto.
+    + simpl in HeqrevYKs. symmetry in HeqrevYKs. apply app_eq_nil in HeqrevYKs. destruct HeqrevYKs. discriminate.
+  - unfold Basics.compose.
+    simpl map.
+    destruct a.
+      
+      
+    
+Admitted.
+
+(* Prototype with only one type variable*)
+Lemma b_wf__wk' Δ Γ b :
+  Δ ,, Γ |-ok_b b -> forall T _x, In (_x, T) (binds_Gamma b) -> exists K Δ', Δ' |-* T : K.
+Proof.
+  intros.
+  inversion H; subst.
+  - admit.
+  - admit.
+  - clear H.
+    unfold binds_Gamma in H0.
+    destruct H0.
+    + inversion H.
+      exists Kind_Base.
+      clear H1.
+                eexists.
+      constructor.
+      constructor.
+      * instantiate (1 := (getTyname X, getKind X)::Δ). (* X <> YK ?*) admit.
+      * unfold Basics.compose.
+        simpl.
+        apply K_App with (K1 := getKind YK).
+        -- constructor.
+           constructor.
+
+           assert (forall c, In c cs -> ((("R", Kind_Base) :: fromDecl YK :: Δ)
+              |-* (Ty_Fun (Ty_Var "R") (branchTy c (Ty_Var "R")))
+              : Kind_Base)).
+            {
+              intros.
+              constructor.
+              - constructor. auto.
+              - unfold branchTy; fold branchTy.
+                destruct c.
+                (* By constructor well formed,
+                  we have that if the type of the branch is a Fun
+                  then all the arguments are base-kinded
+                  so this should hold
+                *)
+
+                admit.
+            }
+
+           admit.
+        -- constructor. simpl. rewrite String.eqb_refl. reflexivity.
+
+    + unfold constrBinds in H.
+      rewrite <- in_rev in H.
+      apply in_map_iff in H.
+      destruct H as [c [HconstrBind Hxincs]].
+      specialize (H2 c Hxincs).
+      remember (Datatype X [YK] matchFunc cs) as d.
+      unfold constrBind in HconstrBind.
+      destruct_match; subst.
+      (* unfold constrTy in HconstrBind. *)
+      inversion HconstrBind; subst.
+      exists Kind_Base. (* Ty_Forall always has Kind_Base, so also Ty_Foralls *)
+      inversion H2; subst.
+      assert (((fromDecl YK) :: Δ) |-* t : Kind_Base).
+      {
+        (* By H1 we know t = Fun targ1 (Fun targ2 ... (Fun targ_n (Ty_Var (getTyname X))))
+          And by H5, all Targs are Kind_Base. Hence by type rule of Fun, the whole Fun is Tybased
+          if X : Kind_Base, which we can add to Delta'.
+        *)
+        admit.
+      }
+      eexists.
+      constructor.
+      destruct YK; eauto.
+Admitted.
+
+(* We need this because we need to normalise every type in binds_Gamma b, and for normalisation we
+    need well-kindedness
+*)
 Lemma b_wf__wk Δ Γ b :
-  Δ ,, Γ |-ok_b b -> forall T _x, In (_x, T) (binds_Gamma b) -> exists K, Δ |-* T : K.
+  Δ ,, Γ |-ok_b b -> forall T _x, In (_x, T) (binds_Gamma b) -> exists K Δ', Δ' |-* T : K.
 Proof.
   intros.
   inversion H; subst.
   - inversion H0; intuition.
     inversion H4; subst; clear H4.
-    now exists Kind_Base.
+    exists Kind_Base.
+    exists Δ.
+    auto.
   - inversion H0; intuition.
   - clear H.
-    inversion H0; clear H0.
+    unfold binds_Gamma in H0.
+    destruct H0.
     + inversion H.
       exists Kind_Base.
+      clear H1.
+      
+      assert ((rev (map fromDecl YKs) ++ Δ) |-* (Ty_Fun
+          (Ty_Apps (Ty_Var (getTyname X))
+          (map (Basics.compose Ty_Var getTyname) YKs))
+          (Ty_Apps
+          (Ty_Lams YKs
+          (Ty_Forall "R" Kind_Base
+          (fold_right Ty_Fun (Ty_Var "R")
+          (map
+          (fun c : vdecl =>
+        branchTy c (Ty_Var "R"))
+          cs))))
+          (map (Basics.compose Ty_Var getTyname) YKs))) : Kind_Base).
+      {
+          constructor.
+          - 
+          (* hmm. what is the X *) admit.
+          - assert ((rev (map fromDecl YKs) ++ Δ) |-* (Ty_Forall "R" Kind_Base
+  (fold_right Ty_Fun (Ty_Var "R")
+  (map (fun c : vdecl => branchTy c (Ty_Var "R"))
+  cs))) : Kind_Base).
+          {
+            constructor.
+            assert (forall c, In c cs -> ((("R", Kind_Base) :: rev (map fromDecl YKs) ++ Δ)
+              |-* (Ty_Fun (Ty_Var "R") (branchTy c (Ty_Var "R")))
+              : Kind_Base)).
+            {
+              intros.
+              constructor.
+              - constructor. auto.
+              - unfold branchTy; fold branchTy.
+                destruct c.
+                (* By constructor well formed,
+                  we have that if the type of the branch is a Fun
+                  then all the arguments are base-kinded
+                  so this should hold
+                *)
 
-      admit. 
+                admit.
+            }
+
+            (* Having proven it for one constructor, we prove it for all constructors folded together*)
+
+            clear H.
+            clear H2.
+            clear H3.
+            induction cs.
+            - simpl. now constructor.
+            - simpl.
+              constructor.
+              + specialize (H0 a).
+                assert (a ∈ (a :: cs)).
+                {
+                  left. auto.
+                }
+                specialize (H0 H).
+                inversion H0; subst.
+                auto.
+              + apply IHcs; auto.
+                intros.
+                specialize (H0 c).
+                eapply H0.
+                apply in_cons. auto.
+          }
+      
+
+          (* I feel like here we can remove the Ty_Apps and Ty_Lams
+          *) 
+          
+          admit.
+      }
+
     + unfold constrBinds in H.
       rewrite <- in_rev in H.
       apply in_map_iff in H.
@@ -311,43 +593,56 @@ Proof.
       remember (Datatype X YKs matchFunc cs) as d.
       unfold constrBind in HconstrBind.
       destruct_match; subst.
+      (* unfold constrTy in HconstrBind. *)
       inversion HconstrBind; subst.
-      inversion H2; subst.
-      inversion H3; subst.
       exists Kind_Base. (* Ty_Forall always has Kind_Base, so also Ty_Foralls *)
+      inversion H2; subst.
+      assert ((rev (map fromDecl YKs) ++ Δ) |-* t : Kind_Base).
+      {
+        (* By H3 we know t = Fun targ1 (Fun targ2 ... (Fun targ_n (Ty_Var (getTyname X))))
+          And by H5, all Targs are Kind_Base. Hence by type rule of Fun, the whole Fun is Tybased
+          if X : Kind_Base, which we can add to Delta'.
+        *)
+        admit.
+      }
+
+
+
 Admitted.
 
 Require Import Coq.Program.Equality.
 
+(* TODO: maybe we need to change map_wk to also just say : exists Δ.*)
 Lemma b_wf__map_wk Δ Γ b :
   Δ ,, Γ |-ok_b b -> map_wk (insert_deltas_rec (binds_Gamma b) Δ).
 Proof.
   intros.
 
-    assert ((forall x T, In (x, T) (binds_Gamma b) -> exists K, Δ |-* T : K)).
+    assert ((forall x T, In (x, T) (binds_Gamma b) -> exists K Δ, Δ |-* T : K)).
     {
       intros.
       eapply b_wf__wk; eauto.
     }
-  induction (binds_Gamma b).
+    generalize dependent Δ.
+  induction (binds_Gamma b); intros.
   - simpl.
     constructor.
   - simpl.
     destruct a as [a1 a2].
-    assert(exists K, Δ |-* a2 : K).
+    assert(exists K Δ, Δ |-* a2 : K).
     { 
       eapply H0.
       left.
       auto.
     }
-    destruct H1 as [K H1].
+    destruct H1 as [K [Δ' H1] ].
     apply MW_cons with (K := K); auto.
     apply IHl.
     simpl in H0.
     intros.
     eapply H0.
     right.
-    eauto.
+    eauto. auto. 
 Qed.
 
 Lemma bs_wf_r__map_wk Δ Γ bs :
@@ -366,7 +661,8 @@ Qed.
 Fixpoint insert_deltas_bind_Gamma_nr (bs : list binding) (Δ : list (binderTyname * kind)) : list (binderName * ty * list (binderTyname * kind)) :=
   match bs with
   | [] => []
-  | (b :: bs') => (insert_deltas_rec (binds_Gamma b) Δ) ++ (insert_deltas_bind_Gamma_nr bs' (binds_Delta b ++ Δ))
+  | (b :: bs') => (insert_deltas_bind_Gamma_nr bs' (binds_Delta b ++ Δ)) ++ (insert_deltas_rec (binds_Gamma b) Δ)
+  (* we do it in reverse to match the "flatten" from the definition of T_Let*)
   end.
 
 Lemma bs_wf_nr__map_wk Δ Γ bs :
@@ -376,10 +672,8 @@ Proof.
   induction H.
   - constructor.
   - simpl.
-    apply map_wk_app.
-    + apply b_wf__map_wk in H.
-      auto.
-    + now apply IHbindings_well_formed_nonrec.
+    apply map_wk_app; auto.
+    apply b_wf__map_wk in H; auto.
 Qed.
 
 
