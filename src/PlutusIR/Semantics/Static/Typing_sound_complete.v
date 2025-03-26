@@ -63,13 +63,12 @@ Proof.
       right. assumption.
 Qed.
 
-Fixpoint no_dup_fun' (xs : list string) (acc : list string) := 
+(* Find instead of in_dec for performance?*)
+Fixpoint no_dup_fun (xs : list string) := 
   match xs with
   | nil => true
-  | (x::xs) => if in_dec string_dec x acc then false else no_dup_fun' xs (x::acc)
+  | (x::xs) => if in_dec string_dec x xs then false else no_dup_fun xs
   end.
-
-Definition no_dup_fun (xs : list string) := no_dup_fun' xs [].
 
 Lemma no_dup_fun_sound : forall xs, no_dup_fun xs = true -> NoDup xs.
 Proof.

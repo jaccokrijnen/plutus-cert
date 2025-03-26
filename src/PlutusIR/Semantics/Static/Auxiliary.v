@@ -74,6 +74,8 @@ Definition dtdecl_freshR (d : dtdecl) : string :=
   end
 .
 
+Opaque dtdecl_freshR.
+
 (* The type of match function, in the case of
      data Either a b = Left : a -> Either a b | Right : b -> Either a b
    the match function will have type
