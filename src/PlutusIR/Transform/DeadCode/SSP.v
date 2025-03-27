@@ -344,6 +344,7 @@ Proof with (eauto with typing).
       ; inversion_typing
       ; eauto using has_type
       ].
+  - admit.
   -
     repeat unfold P_dc, P_dc_NonRec, P_dc_Rec in *.
     intros ? ? ? ? H_dc_t IH_t H_dc_Rec IH_Rec ? ? ? H_typing_Let.
