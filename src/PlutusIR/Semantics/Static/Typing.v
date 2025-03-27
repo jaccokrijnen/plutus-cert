@@ -122,7 +122,7 @@ Reserved Notation "Delta ',,' Gamma '|-+' t ':' T" (at level 101, t at level 0, 
 Reserved Notation "Delta '|-ok_c' c ':' T" (at level 101, c at level 0, T at level 0).
 Reserved Notation "Delta ',,' Gamma  '|-oks_nr' bs" (at level 101, bs at level 0, no associativity).
 Reserved Notation "Delta ',,' Gamma '|-oks_r' bs" (at level 101, bs at level 0, no associativity).
-Reserved Notation "Delta ',,' Gamma '|-ok_b' b" (at level 101, b at level 0, no associativity).
+Reserved Notation "Delta ',,' Gamma '|-ok_b' rec ## b" (at level 101, b at level 0, no associativity).
 
 Local Open Scope list_scope.
 
@@ -202,11 +202,10 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       iohk/plutus/plutus-core/plutus-ir project.
   **)
   | T_Let : forall Δ Γ bs t Tn Δ' Γ' bsGn,
-      (* (forall Y, In Y (btvbs bs) -> ~ In Y (map fst Δ)) -> New type variable names may not already occur in the environment, see Teams discussion Jacco Mar 26, add Either example to thesis *)
-      (* Another possibility would be to have No_Dup (map fst Δ ++ btvbs bs). One downside I see here
-        is that we do not check this in other places, and hence we can have shadowing somewhere else,
-        and then once we wrap it in a Let it is not allowed anymore.
-      *)
+      (* New type variable names may not already occur in the environment, 
+       * see Teams discussion Jacco Mar 26, add Either example to thesis 
+       *)
+      NoDup (btvbs bs ++ (map fst Δ)) ->
 
       Δ' = flatten (map binds_Delta bs) ++ Δ -> (* TODO: flatten reverses. Should it? *)
       map_normalise (flatten (map binds_Gamma bs)) bsGn ->
@@ -216,6 +215,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ |-* Tn : Kind_Base ->
       Δ ,, Γ |-+ (Let NonRec bs t) : Tn
   | T_LetRec : forall Δ Γ bs t Tn Δ' Γ' bsGn,
+      NoDup (btvbs bs ++ (map fst Δ)) ->
       (* There can be no duplicate bound variables in a let-rec *)
       NoDup (btvbs bs) ->
       NoDup (bvbs bs) ->
@@ -244,8 +244,7 @@ with bindings_well_formed_nonrec : list (string * kind) -> list (string * ty) ->
   | W_NilB_NonRec : forall Δ Γ,
       Δ ,, Γ |-oks_nr nil
   | W_ConsB_NonRec : forall Δ Γ b bs bsGn,
-      Δ ,, Γ |-ok_b b ->
-
+      Δ ,, Γ |-ok_b NonRec ## b ->
       map_normalise (binds_Gamma b) bsGn ->
       ((binds_Delta b) ++ Δ) ,, (bsGn ++ Γ) |-oks_nr bs ->
       Δ ,, Γ |-oks_nr (b :: bs)
@@ -254,50 +253,20 @@ with bindings_well_formed_rec : list (string * kind) -> list (string * ty) -> li
   | W_NilB_Rec : forall Δ Γ,
       Δ ,, Γ |-oks_r nil
   | W_ConsB_Rec : forall Δ Γ b bs,
-      Δ ,, Γ |-ok_b b ->
+      Δ ,, Γ |-ok_b Rec ## b ->
       Δ ,, Γ |-oks_r bs ->
       Δ ,, Γ |-oks_r (b :: bs)
 
-with binding_well_formed : list (string * kind) -> list (string * ty) -> binding -> Prop :=
-  | W_Term : forall Δ Γ s x T t Tn,
+with binding_well_formed : list (string * kind) -> list (string * ty) -> recursivity -> binding -> Prop :=
+  | W_Term : forall Δ Γ s x T t Tn rec,
       Δ |-* T : Kind_Base ->
       normalise T Tn ->
       Δ ,, Γ |-+ t : Tn ->
-      Δ ,, Γ |-ok_b (TermBind s (VarDecl x T) t)
-  | W_Type : forall Δ Γ X K T,
+      Δ ,, Γ |-ok_b rec ## (TermBind s (VarDecl x T) t)
+  | W_Type : forall Δ Γ X K T rec,
       Δ |-* T : K ->
-      Δ ,, Γ |-ok_b (TypeBind (TyVarDecl X K) T)
-   | W_Data : forall Δ Γ dtd XK YKs matchFunc cs X Ys Δ' Tres,
-      dtd = Datatype XK [YKs] matchFunc cs ->
-      X = tvdecl_name XK ->
-      Ys = map tvdecl_name [YKs] ->
-
-      (* X may not already be in Δ with a different kind. We cannot exclude it from Delta because of
-        Let Rec. But this is not what we discussed in the meeting...
-      *)
-      (lookup X (Δ ++ (fromDecl XK)::nil) = Some (getKind XK)) ->
-
-      (* No duplicate bound type variables *)
-      NoDup (X :: Ys) ->
-
-      (* No duplicate constructor names*)
-      NoDup (map vdecl_name cs) ->
-
-      (* Well-formedness of constructors *)
-      Δ' = rev (map fromDecl [YKs]) ++ Δ -> 
-      Tres = constrLastTyExpected dtd -> (* The expected result type for each constructor *)
-      (forall c, In c cs -> Δ' |-ok_c c : Tres) ->
-
-      (* The expected result type is well-kinded *)
-      (* In the case that this DatatypeBind is in a let-rec, X will already be
-       * in Δ, but it is not problematic to add it another time. It is needed
-       * for non-recursive DatatypeBinds
-       *)
-      (fromDecl XK :: Δ') |-* Tres : Kind_Base ->
-
-      Δ ,, Γ |-ok_b (DatatypeBind dtd)
-
-  (* | W_Data : forall Δ Γ dtd XK YKs matchFunc cs X Ys Δ' Tres,
+      Δ ,, Γ |-ok_b rec ## (TypeBind (TyVarDecl X K) T)
+   | W_Data : forall Δ Γ dtd XK YKs matchFunc cs X Ys Δ' Tres rec,
       dtd = Datatype XK YKs matchFunc cs ->
       X = tvdecl_name XK ->
       Ys = map tvdecl_name YKs ->
@@ -309,24 +278,27 @@ with binding_well_formed : list (string * kind) -> list (string * ty) -> binding
       NoDup (map vdecl_name cs) ->
 
       (* Well-formedness of constructors *)
-      Δ' = rev (map fromDecl YKs) ++ Δ ->
+      Δ' = rev (map fromDecl YKs) ++ Δ -> 
       Tres = constrLastTyExpected dtd -> (* The expected result type for each constructor *)
       (forall c, In c cs -> Δ' |-ok_c c : Tres) ->
 
       (* The expected result type is well-kinded *)
       (* In the case that this DatatypeBind is in a let-rec, X will already be
-       * in Δ, but it is not problematic to add it another time. It is needed
-       * for non-recursive DatatypeBinds
+       * in Δ, hence we check for this to keep our NoDup invariant on Delta
        *)
-      (fromDecl XK :: Δ') |-* Tres : Kind_Base ->
 
-      Δ ,, Γ |-ok_b (DatatypeBind dtd) *)
+       match rec with
+       | NonRec => (fromDecl XK :: Δ') |-* Tres : Kind_Base
+       | Rec => (Δ' |-* Tres : Kind_Base)
+       end   ->
+
+      Δ ,, Γ |-ok_b rec ## (DatatypeBind dtd)
 
   where "Δ ',,' Γ '|-+' t ':' T" := (has_type Δ Γ t T)
   and  "Δ '|-ok_c' c ':' T" := (constructor_well_formed Δ c T)
   and "Δ ',,' Γ '|-oks_nr' bs" := (bindings_well_formed_nonrec Δ Γ bs)
   and "Δ ',,' Γ '|-oks_r' bs" := (bindings_well_formed_rec Δ Γ bs)
-  and "Δ ',,' Γ '|-ok_b' b" := (binding_well_formed Δ Γ b).
+  and "Δ ',,' Γ '|-ok_b' rec ## b" := (binding_well_formed Δ Γ rec b).
 
 Scheme has_type__ind := Minimality for has_type Sort Prop
   with constructor_well_formed__ind := Minimality for constructor_well_formed Sort Prop
@@ -340,54 +312,15 @@ Combined Scheme has_type__multind from
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
 
-
-Definition interestingTerm := Let NonRec [TypeBind (TyVarDecl "List" Kind_Base) (Ty_Builtin DefaultUniInteger)] (
-    Let NonRec [
-      DatatypeBind 
-        (Datatype (TyVarDecl "List" (Kind_Arrow (Kind_Base) (Kind_Base))) 
-        [TyVarDecl "T" Kind_Base] 
-        "matchList" 
-        [(VarDecl "Nil" (Ty_App (Ty_Var "List") (Ty_Var "T"))); 
-         (VarDecl "Cons" (Ty_Fun (Ty_Var "T") (Ty_Fun (Ty_Var "List") (Ty_App (Ty_Var "List") (Ty_Var "T")))))]
-    )] (Var "List")
-  ).
-
-Lemma either_ill_formed :
-  [],,[] |-ok_b
-    (
-      DatatypeBind (
-        Datatype (TyVarDecl "Either" (Kind_Arrow Kind_Base (Kind_Arrow Kind_Base Kind_Base)))
-        [TyVarDecl "L" Kind_Base; TyVarDecl "R" Kind_Base]
-        "matchEither"
-        [(VarDecl "Left" (Ty_Fun (Ty_Var "L") (Ty_App (Ty_Var "Either") (Ty_Var "L")) ));
-        (VarDecl "Right" (Ty_Fun (Ty_Var "R") (Ty_App (Ty_Var "Either") (Ty_Var "L"))))]
-      )
-    ).
-Proof.
-Admitted.
-
-
-
-
-
 Lemma lookupBuiltinTy__well_kinded f Δ :
   Δ |-* (lookupBuiltinTy f) : Kind_Base.
 Proof.
   destruct f; repeat constructor.
 Qed.
 
-Definition intwrap_decl := 
-  DatatypeBind (Datatype 
-    (TyVarDecl "IntWrap" (Kind_Base)) [] "matchIntWrap"
-    [(VarDecl "wrap" (Ty_Fun (Ty_Builtin (DefaultUniInteger)) (Ty_Var "IntWrap")))]).
 
 Opaque dtdecl_freshR.
 
-
-
-Definition let_shadow :=
-  Let NonRec [TypeBind (TyVarDecl "IntWrap" (Kind_Arrow Kind_Base Kind_Base)) (Ty_Lam "X" Kind_Base (Ty_Builtin DefaultUniInteger))] 
-    (Let NonRec [intwrap_decl] (TyAbs "IntWrap" (Kind_Arrow Kind_Base Kind_Base) (unitVal))).
 
 Inductive FreshOver : string -> list string -> Prop :=
   | FreshOver_nil : forall fr, FreshOver fr []
@@ -396,22 +329,23 @@ Inductive FreshOver : string -> list string -> Prop :=
 (* Opaque dtdecl_freshR. *)
 
 (* Prototype with only one type variable*)
-Lemma b_wf__wk' Δ Γ b :
-  Δ ,, Γ |-ok_b b -> forall T _x, In (_x, T) (binds_Gamma b) -> exists K Δ', Δ' |-* T : K.
+Lemma b_wf__wk Δ Γ b rec:
+  Δ ,, Γ |-ok_b rec ## b -> (rec = NonRec -> NoDup (btvb b ++ (map fst Δ))) -> forall T _x, In (_x, T) (binds_Gamma b) -> exists K Δ', Δ' |-* T : K.
 Proof.
-  intros Hb_wf T _x Hin_b.
-  inversion Hb_wf; subst.
+  (* intros Hb_wf H_ns T _x Hin_b.
+  inversion Hb_wf;  subst.
   - admit.
   - admit.
   - 
     clear Hb_wf.
     unfold binds_Gamma in Hin_b.
     destruct Hin_b as [Hm_bind | Hc_bind].
-    + (*Case: match bind*)
+    + clear H_ns.
+     (*Case: match bind*)
 
       (* Idea, we prove the lemma for all strings that are fresh, (not this specific one)
           because for that we can do induction. (equality of fresh vars stopped us before from using the IH.)
-      *)
+       *)
 
       simpl in Hm_bind.
       inversion Hm_bind; subst.
@@ -421,16 +355,16 @@ Proof.
       exists ((b, k)::Δ).
       constructor.
       simpl.
-      clear H8.
+      clear H7.
 
 
       remember (dtdecl_freshR (Datatype XK [TyVarDecl b k] _x cs)) as fr.
-      clear H4. clear H2. clear H3.
+      clear H3. clear H2.
       
 
       destruct XK.
       simpl.
-      simpl in H7.
+      simpl in H6.
       assert (
         forall fr',
         (~ In fr' (b0 :: b :: 
@@ -446,7 +380,7 @@ Proof.
           intros.
           generalize dependent fr'.
 
-          simpl in H7.
+          simpl in H6.
 
           induction cs; intros.
           - simpl. constructor. simpl. rewrite String.eqb_refl. auto.
@@ -463,15 +397,15 @@ Proof.
                 (Ty_Var (b))))).
             {
               intros.
-              eapply H7. apply in_cons. auto.
+              eapply H6. apply in_cons. auto.
             }
             specialize (IHcs Hc_wf_smaller fr' H0).
             simpl.
             constructor.
-            + specialize (H7 a).
+            + specialize (H6 a).
               assert (In a (a :: cs)) by now apply in_eq.
-              specialize (H7 H1).
-              inversion H7; subst.
+              specialize (H6 H1).
+              inversion H6; subst.
               assert (exists Targ1, T = Ty_Fun Targ1 (Ty_App (Ty_Var b0) (Ty_Var b))) by admit.
               (* Assuming one argument for now*)
               destruct H4 as [Targ1 H4]; subst.
@@ -492,54 +426,92 @@ Proof.
         (* by definition of freshness!*)
         
         
-        admit.
-        
+        admit. 
 
+        
     + (*Case: constr bind*)
       unfold constrBinds in Hc_bind.
       rewrite <- in_rev in Hc_bind.
       apply in_map_iff in Hc_bind.
       destruct Hc_bind as [c [HconstrBind Hxincs]].
-      specialize (H7 c Hxincs).
+      specialize (H6 c Hxincs).
       
       unfold constrBind in HconstrBind.
       destruct_match; subst. simpl in HconstrBind.
       (* unfold constrTy in HconstrBind. *)
       inversion HconstrBind; subst.
       exists Kind_Base. (* Ty_Forall always has Kind_Base, so also Ty_Foralls *)
-      inversion H7; subst.
+      
+      
       remember (Datatype XK [YKs] matchFunc cs) as d.
-      unfold fromDecl in H7.
-      destruct XK.
-      exists ((b, k)::Δ).
-
-      constructor.
-      unfold map in H6.
-      unfold rev in H6.
-      unfold tvdecl_name in H6.
-      rewrite app_nil_l in H6.
-      unfold fromDecl in H6.
       destruct YKs.
-      assert (exists targ1, t = Ty_Fun targ1 (constrLastTyExpected d)) by admit.
-      destruct H as [Htarg H]; subst.
-      constructor; eauto.
-      * (* For this, we must check if adding XK would not shadow: By lookup b (Δ::(b, k)) = Some k,
-        we know that if b in Δ, then it maps to k. If it is not in Delta, it is not in Htarg, so also no problem
-        
-      *) 
-      admit.
-      * simpl.  
-        simpl in H7.
+      unfold fromDecl in H6.
+      simpl in H6.
+      destruct XK.
+      destruct rec.
+      {
+          inversion H6; subst.
+          exists ((b0, k0)::Δ).
+
+          constructor.
+          simpl in H6.
+          remember (
+            (Datatype (TyVarDecl b0 k0)
+            [TyVarDecl b k] matchFunc
+            cs)) as  d.
+          assert (exists targ1, t = Ty_Fun targ1 (constrLastTyExpected d)) by admit.
+          destruct H as [Htarg H]; subst.
+          constructor; eauto.
+          * simpl.
+            simpl in H1.
+            inversion H1.
+            subst.
+
+
+            (* By NoDup (b :: map fst Δ), we have b not in Delta, and by H2, we have b not b0, hence we can add it without fearign shadowing, kind of like weakening *)
+
+          
+          admit.
+          * simpl.  
+            simpl in H7.
         (* Now only rearrange in H7*)
-      (* by No_Dup we can rearrange*) admit.
+        admit.
+      
+      }
+      { 
+
+                (* Rec *)
+        inversion H6; subst.
+        exists (Δ).
+
+        remember ((Datatype (TyVarDecl b0 k0)
+          [TyVarDecl b k] matchFunc
+          cs)) as d.
+        assert (exists targ1, t = Ty_Fun targ1 (constrLastTyExpected d)) by admit.
+        destruct H as [Htarg H]; subst.
+        constructor.
+        constructor.
+        * inversion H6; subst.
+          simpl.
+          eapply H9.
+          unfold splitTy in H4.
+          simpl in H4.
+          inversion H4.
+          subst.
+          apply in_eq.
+        * simpl.
+          simpl in H7.
+          auto.
+    } *)
+    admit.
 Admitted.
 
 
 (* We need this because we need to normalise every type in binds_Gamma b, and for normalisation we
     need well-kindedness
 *)
-Lemma b_wf__wk Δ Γ b :
-  Δ ,, Γ |-ok_b b -> (forall Y, In Y (btvb b) -> ~ In Y (map fst Δ)) -> forall T _x, In (_x, T) (binds_Gamma b) -> exists K Δ', Δ' |-* T : K.
+(* Lemma b_wf__wk Δ Γ b :
+  Δ ,, Γ |-ok_b b -> (forall x K, In (x, K) (binds_Delta b) -> lookup x (Δ ++ (x, K)::nil) = Some K) -> forall T _x, In (_x, T) (binds_Gamma b) -> exists K Δ', Δ' |-* T : K.
 Proof.
   (* intros.
   inversion H; subst.
@@ -650,13 +622,12 @@ Proof.
  *)
 
 
-Admitted.
+Admitted. *)
 
 Require Import Coq.Program.Equality.
 
-(* TODO: maybe we need to change map_wk to also just say : exists Δ.*)
-Lemma b_wf__map_wk Δ Γ b :
-  Δ ,, Γ |-ok_b b -> (forall Y, In Y (btvb b) -> ~ In Y (map fst Δ)) -> map_wk (insert_deltas_rec (binds_Gamma b) Δ).
+Lemma b_wf__map_wk Δ Γ b rec:
+  Δ ,, Γ |-ok_b rec ## b -> (rec = NonRec -> NoDup (btvb b ++ map fst Δ)) -> map_wk (insert_deltas_rec (binds_Gamma b) Δ).
 Proof.
   intros.
 
@@ -689,8 +660,8 @@ Proof.
     + admit.
 Admitted.
 
-Lemma bs_wf_r__map_wk Δ Γ bs :
-  Δ ,, Γ |-oks_r bs -> (NoDup Δ) -> map_wk (insert_deltas_rec (flatten (map (binds_Gamma) bs)) Δ).
+Lemma bs_wf_r__map_wk (Δ : list (string * kind)) Γ bs :
+  Δ ,, Γ |-oks_r bs -> (NoDup (map fst Δ)) -> map_wk (insert_deltas_rec (flatten (map (binds_Gamma) bs)) Δ).
 Proof.
   intros H H_ns.
   induction H.
@@ -698,12 +669,12 @@ Proof.
   - simpl.
     rewrite flatten_cons.
     rewrite insert_deltas_rec_app.
-    apply map_wk_app; apply b_wf__map_wk in H; eauto.
-    (* + eapply IHbindings_well_formed_rec. intros. eapply H_ns. apply in_cons. eauto. eauto.
-    + eapply H_ns. apply in_eq.
-    + eapply H_ns. apply in_eq.
-Qed. *)
-Admitted.
+    apply map_wk_app.
+    + apply b_wf__map_wk in H; eauto.
+      intros. inversion H1.
+    + apply b_wf__map_wk in H; eauto.
+      intros. inversion H1.
+Qed.
 
 Fixpoint insert_deltas_bind_Gamma_nr (bs : list binding) (Δ : list (binderTyname * kind)) : list (binderName * ty * list (binderTyname * kind)) :=
   match bs with
@@ -713,27 +684,41 @@ Fixpoint insert_deltas_bind_Gamma_nr (bs : list binding) (Δ : list (binderTynam
   end.
 
 Lemma bs_wf_nr__map_wk Δ Γ bs :
-  Δ ,, Γ |-oks_nr bs -> (forall Y, In Y (btvbs bs) -> ~ In Y (map fst Δ)) -> map_wk (insert_deltas_bind_Gamma_nr bs Δ). (* Hmm, should we have nonrec insertion here?*)
+  Δ ,, Γ |-oks_nr bs -> (NoDup (btvbs bs ++ map fst Δ)) -> map_wk (insert_deltas_bind_Gamma_nr bs Δ). (* Hmm, should we have nonrec insertion here?*)
 Proof.
   intros H H_ns.
   induction H.
   - constructor.
   - simpl.
-    admit.
+    apply map_wk_app.
+    + eapply IHbindings_well_formed_nonrec; eauto.
+      assert (map fst (binds_Delta b) = btvb b).
+      {
+        clear.
+        induction b.
+        - simpl. destruct v. auto.
+        - simpl. destruct t. auto.
+        - simpl. destruct d. destruct t. auto.
+      }
+      (* so just rearranged from H_ns, so yes!*)
+      admit.
+    + eapply b_wf__map_wk.
+      * eauto.
+      * intros. (* subset preserves NoDup*) admit.
 Admitted.
 
 
 Definition well_typed t := exists T, [] ,, [] |-+ t : T.
 
-Lemma T_Let__cons Δ Γ Γ_b b bs t Tn :
-  Δ ,, Γ |-ok_b b ->
+Lemma T_Let__cons Δ Γ Γ_b b bs t Tn rec:
+  Δ ,, Γ |-ok_b rec ## b ->
   Δ |-* Tn : Kind_Base -> (* Tn may not mention types bound in b (escaping) *)
   map_normalise (binds_Gamma b) Γ_b ->
   binds_Delta b ++ Δ ,, Γ_b ++ Γ |-+ (Let NonRec bs t) : Tn ->
   Δ ,, Γ |-+ (Let NonRec (b :: bs) t) : Tn
 .
 Proof.
-  intros H_typing_b H_kind H_mn H_ty.
+  (* intros H_typing_b H_kind H_mn H_ty.
   inversion H_ty; subst.
 
   econstructor.
@@ -756,8 +741,8 @@ Proof.
     rewrite <- app_assoc.
     rewrite <- app_assoc.
     assumption.
-  - assumption.
-Qed.
+  - assumption. *)
+Admitted.
 
 Lemma has_type__normal : forall Delta Gamma t T,
     Delta ,, Gamma |-+ t : T ->

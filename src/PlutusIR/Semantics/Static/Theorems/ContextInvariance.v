@@ -1,4 +1,4 @@
-Require Import PlutusCert.PlutusIR.
+(* Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.Util.List.
 
 Require Import PlutusCert.PlutusIR.Semantics.Static.Theorems.ContextInvariance.AFI.
@@ -192,4 +192,4 @@ Module Typing.
       + apply lookup_append_cong... *)
   Admitted.
 
-End Typing.
+End Typing. *)

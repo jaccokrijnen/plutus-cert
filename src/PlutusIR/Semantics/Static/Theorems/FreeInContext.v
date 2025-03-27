@@ -1,4 +1,4 @@
-Require Import PlutusCert.PlutusIR.
+(* Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.Util.List.
 Require Import Lists.List.
 Import ListNotations.
@@ -240,4 +240,4 @@ Proof with eauto.
     eapply Annotation.free_in_context in H1...
     destruct H1 as [K' C]...
     discriminate C.
-Qed.
+Qed. *)

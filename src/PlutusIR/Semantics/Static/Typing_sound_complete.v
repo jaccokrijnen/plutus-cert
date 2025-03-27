@@ -95,7 +95,7 @@ Make another version that already has type_check as argument after type_check is
 *)
 Definition binding_well_formed_check 
   (type_check' : ((list (binderTyname * kind)) -> (list (binderName * ty)) -> term -> option ty)) 
-  (Δ : list (binderTyname * kind)) (Γ : list (binderName * ty)) binding : bool :=
+  (Δ : list (binderTyname * kind)) (Γ : list (binderName * ty)) (rec : recursivity) binding : bool :=
     match binding with
     | (TypeBind (TyVarDecl X K) T) => match kind_check Δ T with
                                       | Some K' => Kind_eqb K K' (* is this K the same as in the pattern match to the left? it should be*)
@@ -120,16 +120,22 @@ Definition binding_well_formed_check
         let Δ' := rev (map fromDecl YKs) ++ Δ in
         let Tres := constrLastTyExpected dtd in
         allbmap (fun c => constructor_well_formed_check Δ' c Tres) cs
-          && match kind_check (fromDecl XK :: Δ') Tres with
-              | Some Kind_Base => true
-              | _ => false
-              end
+          && match rec with
+             | NonRec => match kind_check (fromDecl XK :: Δ') Tres with
+                        | Some Kind_Base => true
+                        | _ => false
+                        end
+             | Rec =>   match kind_check (Δ') Tres with
+                        | Some Kind_Base => true
+                        | _ => false
+                        end
+             end
       else false
     end.
 
 (* first argument represents binding_well_formed with the type_check already passed in *)
 Definition bindings_well_formed_nonrec_check : 
-  ((list (binderTyname * kind)) -> (list (binderName * ty)) -> binding -> bool) ->
+  ((list (binderTyname * kind)) -> (list (binderName * ty)) -> recursivity -> binding -> bool) ->
   list (binderTyname * kind) -> (list (binderName * ty)) -> (list binding) -> bool :=
   fun b_wf =>
   fix f Δ Γ bs :=
@@ -137,7 +143,7 @@ Definition bindings_well_formed_nonrec_check :
       | (b::bs') =>
             match (map_normaliser (insert_deltas_rec (binds_Gamma b) Δ)) with
             | Some bsGn =>
-              b_wf Δ Γ b && f ((binds_Delta b) ++ Δ) (bsGn ++ Γ) bs'
+              b_wf Δ Γ NonRec b && f ((binds_Delta b) ++ Δ) (bsGn ++ Γ) bs'
             | _ => false
             end
       | _ => true
@@ -227,31 +233,35 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
         | _ => None
         end
     | Let NonRec bs t =>
-        let Δ' := flatten (map binds_Delta bs) ++ Δ in
-        let xs := (insert_deltas_bind_Gamma_nr bs Δ) in
-        
-          map_normaliser xs >>= fun bsgn => (* TODO:  Δ' ?*) (* TODO different Δ*)
-          let Γ' := bsgn ++ Γ in
-          if (bindings_well_formed_nonrec_check (binding_well_formed_check type_check) Δ Γ bs) then 
-            type_check Δ' Γ' t >>= fun T =>
-              match kind_check Δ T with
-              | Some Kind_Base => Some T
-              | _ => None
-              end
-          else None
-    | Let Rec bs t => 
-        if no_dup_fun (btvbs bs) && no_dup_fun (bvbs bs) then
+        if no_dup_fun (btvbs bs ++ (map fst Δ)) then
           let Δ' := flatten (map binds_Delta bs) ++ Δ in
-          let xs := (insert_deltas_rec (flatten (map binds_Gamma bs)) Δ') in
-            map_normaliser xs >>= fun bsgn =>
+          let xs := (insert_deltas_bind_Gamma_nr bs Δ) in
+          
+            map_normaliser xs >>= fun bsgn => (* TODO:  Δ' ?*) (* TODO different Δ*)
             let Γ' := bsgn ++ Γ in
-              if (bindings_well_formed_rec_check (binding_well_formed_check type_check Δ' Γ') bs) then 
-                type_check Δ' Γ' t >>= fun T =>
-                  match kind_check Δ T with
-                  | Some Kind_Base => Some T
-                  | _ => None
-                    end 
-              else None
+            if (bindings_well_formed_nonrec_check (binding_well_formed_check type_check) Δ Γ bs) then 
+              type_check Δ' Γ' t >>= fun T =>
+                match kind_check Δ T with
+                | Some Kind_Base => Some T
+                | _ => None
+                end
+            else None
+        else None
+    | Let Rec bs t => 
+        if no_dup_fun (btvbs bs ++ (map fst Δ)) then
+          if no_dup_fun (btvbs bs) && no_dup_fun (bvbs bs) then
+            let Δ' := flatten (map binds_Delta bs) ++ Δ in
+            let xs := (insert_deltas_rec (flatten (map binds_Gamma bs)) Δ') in
+              map_normaliser xs >>= fun bsgn =>
+              let Γ' := bsgn ++ Γ in
+                if (bindings_well_formed_rec_check (binding_well_formed_check type_check Δ' Γ' Rec) bs) then 
+                  type_check Δ' Γ' t >>= fun T =>
+                    match kind_check Δ T with
+                    | Some Kind_Base => Some T
+                    | _ => None
+                      end 
+                else None
+            else None
           else None
     | _ => None (* TODO: Case and Constr?? *)
     end.
@@ -416,8 +426,8 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
   revert Δ Γ ty.
   eapply term_rect'' with 
     (P := fun t => forall Δ Γ ty, type_check Δ Γ t = Some ty -> Δ,, Γ |-+ t : ty)
-    (Q := fun b => forall Δ Γ, binding_well_formed_check type_check Δ Γ b = true -> binding_well_formed Δ Γ b)
-    (R := fun bs => forall Δ Γ, bindings_well_formed_rec_check (binding_well_formed_check type_check Δ Γ) bs = true -> bindings_well_formed_rec Δ Γ bs)
+    (Q := fun b => forall Δ Γ rec, binding_well_formed_check type_check Δ Γ rec b = true -> binding_well_formed Δ Γ rec b)
+    (R := fun bs => forall Δ Γ, bindings_well_formed_rec_check (binding_well_formed_check type_check Δ Γ Rec) bs = true -> bindings_well_formed_rec Δ Γ bs)
     (S := fun bs => forall Δ Γ, bindings_well_formed_nonrec_check (binding_well_formed_check type_check) Δ Γ bs = true -> bindings_well_formed_nonrec Δ Γ bs).
     repeat destruct_match.
   - (* Case: Let Rec*)
@@ -427,42 +437,40 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
       inversion H.
       unfold bind in H1.
       repeat destruct_match.
-      apply andb_true_iff in Heqb. destruct Heqb.
-      eapply T_LetRec.
+      apply andb_true_iff in Heqb0. destruct Heqb0.
+      eapply T_LetRec; auto.
       * apply no_dup_fun_sound. auto.
       * apply no_dup_fun_sound. auto.
-      * reflexivity.
+      * apply no_dup_fun_sound. auto.
       * eapply map_normaliser_sound in Heqo.
         rewrite <- insert_remove_deltas_id in Heqo.
         eauto.
       * apply (map_normaliser_sound) in Heqo; eauto.
-      * eapply t0. assumption.
       * eapply P; eauto.
         inversion H1.
         subst.
         auto.
-      * 
-        inversion H1.
+      * inversion H1.
         subst.
         apply kind_checking_sound in Heqo1.
         assumption.
   - (* Case Let NONRec*)
-    intros rec bs t0.
+    intros bs t0.
     intros P.
+    intros Q.
     intros.
       inversion H.
       unfold bind in H1.
       repeat destruct_match.
-      eapply T_Let with (Δ' := flatten (map binds_Delta rec) ++ Δ).
-      * reflexivity.
+      eapply T_Let with (Δ' := flatten (map binds_Delta bs) ++ Δ); auto.
+      * apply no_dup_fun_sound; auto.
+      
       * apply (map_normaliser_sound) in Heqo. 
         rewrite <- insert_remove_deltas_nr_id in Heqo.
         exact Heqo.
-      * reflexivity.
-      * eapply t0. auto. 
       * inversion H1.
         subst.
-        eapply P. auto.
+        eapply Q. auto.
       * inversion H1.
         subst.
         apply kind_checking_sound in Heqo1.  auto.
@@ -587,27 +595,48 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
     subst.
     apply andb_true_iff in H1. destruct H1 as [Hc_wf Hwk_ret].
     apply andb_true_iff in Heqb0 as [Hdup1 Hdup2].
-    eapply W_Data.
-    * reflexivity.
-    * reflexivity.
-    * reflexivity.
-    * apply no_dup_fun_sound. auto.
-    * apply no_dup_fun_sound. auto.
-    * reflexivity.
-    * reflexivity.
-    * intros.
-      simpl.
-      
-      assert (constructor_well_formed_check (rev (map fromDecl l) ++ Δ) c (Ty_Apps (Ty_Var (tvdecl_name t0)) (map Ty_Var (map tvdecl_name l))) = true).
-      { eapply (allb_element_true) in Hc_wf.
-        - exact Hc_wf.
-        - assumption.
-       }
-      now apply constructor_well_formed_sound.
-    * repeat destruct_match.
-      simpl.
-      apply kind_checking_sound in Heqo.
-      auto.
+    destruct rec.
+    + repeat destruct_match; subst.
+      eapply W_Data.
+      * eauto.
+      * reflexivity.
+      * reflexivity.
+      * constructor.
+        -- auto.
+        -- apply no_dup_fun_sound; auto.
+      * apply no_dup_fun_sound. auto.
+      * reflexivity.
+      * reflexivity.
+      * intros.
+        simpl.
+        
+        assert (constructor_well_formed_check (rev (map fromDecl l) ++ Δ) c (Ty_Apps (Ty_Var (tvdecl_name t0)) (map Ty_Var (map tvdecl_name l))) = true).
+        { eapply (allb_element_true) in Hc_wf.
+          - exact Hc_wf.
+          - assumption.
+        }
+        now apply constructor_well_formed_sound.
+      * repeat destruct_match.
+        simpl.
+        apply kind_checking_sound in Heqo.
+        auto.
+    + repeat destruct_match; subst.
+      eapply W_Data; eauto.
+      * constructor; auto.
+        apply no_dup_fun_sound; auto.
+      * apply no_dup_fun_sound; auto.
+      * intros.
+        simpl.
+        assert (constructor_well_formed_check (rev (map fromDecl l) ++ Δ) c (Ty_Apps (Ty_Var (tvdecl_name t0)) (map Ty_Var (map tvdecl_name l))) = true).
+        { eapply (allb_element_true) in Hc_wf.
+          - exact Hc_wf.
+          - assumption.
+        }
+        now apply constructor_well_formed_sound.
+      * repeat destruct_match.
+        simpl.
+        apply kind_checking_sound in Heqo.
+        auto.
   - intros.
     apply W_ConsB_Rec.
     + apply H.
@@ -667,15 +696,21 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma bool_if {A} (b : bool) (x y : A) :
+  b = true -> (if b then x else y) = x.
+Proof. intros ->; reflexivity. Qed.
+
+
+
 Theorem type_checking_complete : forall Δ Γ t ty,
     (Δ ,, Γ |-+ t : ty) -> type_check Δ Γ t = Some ty.
 Proof.
   intros.
   apply has_type_mut_ind with         
         (P := fun Δ Γ t T _ => type_check Δ Γ t = Some T)
-        (P0 := fun Δ Γ l _ => bindings_well_formed_rec_check (binding_well_formed_check type_check Δ Γ) l = true) 
-        (P1 := fun Δ Γ l _ => bindings_well_formed_nonrec_check (binding_well_formed_check type_check) Δ Γ l = true )
-        (P2 := fun Δ Γ b _ => binding_well_formed_check type_check Δ Γ b = true) 
+        (P0 := fun Δ Γ l _ => bindings_well_formed_rec_check (binding_well_formed_check type_check Δ Γ Rec) l = true) 
+        (P1 := fun Δ Γ l _ => (NoDup (btvbs l ++ (map fst Δ))) -> bindings_well_formed_nonrec_check (binding_well_formed_check type_check) Δ Γ l = true )
+        (P2 := fun Δ Γ rec b  _ => binding_well_formed_check type_check Δ Γ rec b = true) 
         ; simpl; auto; intros.
   - (*Case T_Var *)
     rewrite e. simpl. 
@@ -765,45 +800,66 @@ Proof.
     rewrite H0.
     rewrite H1.
     apply kind_checking_complete in h0; rewrite h0.
-    reflexivity.
+    apply no_dup_fun_complete in n.
+    + rewrite (bool_if _ _ _ n). auto. (* I don't understand Coq yet.*)
+    + auto.
+    + auto.
   - (* Case: T_LetRec *)
     destruct (no_dup_fun (btvbs bs) &&
 no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
     {
       intros. simpl. subst.
       apply bs_wf_r__map_wk in b.
-      assert ( (* insert then remove deltas is id*)
-      (flatten (map binds_Gamma bs)) = remove_deltas (insert_deltas_rec (flatten (map binds_Gamma bs)) (flatten (map binds_Delta bs) ++
-  Δ0))).
-      {
-        apply insert_remove_deltas_id.
-      }
-      rewrite H2 in m.
-      apply (map_normaliser_complete b) in m.
-      unfold bind.
-      rewrite m.
-      rewrite H0.
-      rewrite H1.
-      apply kind_checking_complete in h0; rewrite h0.
-      reflexivity.
+      - assert ( (* insert then remove deltas is id*)
+        (flatten (map binds_Gamma bs)) = remove_deltas (insert_deltas_rec (flatten (map binds_Gamma bs)) (flatten (map binds_Delta bs) ++
+    Δ0))).
+        {
+          apply insert_remove_deltas_id.
+        }
+        rewrite H2 in m.
+        apply (map_normaliser_complete b) in m.
+        unfold bind.
+        rewrite m.
+        rewrite H0.
+        rewrite H1.
+        apply kind_checking_complete in h0; rewrite h0.
+        apply no_dup_fun_complete in n.
+        rewrite (bool_if _ _ _ n). reflexivity.
+      - assert (map fst (flatten (map binds_Delta bs)) = rev (btvbs bs)).
+        {
+          admit.
+        }
+        (* no dup reverse lemmas *)
+        admit.
     }
-    apply andb_false_iff in no_dup_eqn.
+    apply andb_false_iff in no_dup_eqn. exfalso.
     destruct no_dup_eqn.
-    + apply no_dup_fun_complete in n. exfalso. rewrite n in H2. discriminate H2.
-    + apply no_dup_fun_complete in n0. exfalso. rewrite n0 in H2. discriminate H2.
+    + apply no_dup_fun_complete in n0. rewrite n0 in H2. discriminate H2.
+    + apply no_dup_fun_complete in n1. rewrite n1 in H2. discriminate H2.
   - (* Case: ? *)
     intros. simpl. rewrite H0. auto.
   - (* Case: ? *)
-    apply b_wf__map_wk in b0.
+
+    
     assert (binds_Gamma b = remove_deltas (insert_deltas_rec (binds_Gamma b) Δ0)).
     {
       apply insert_remove_deltas_id.
     }
-    rewrite H2 in m.
-    apply (map_normaliser_complete b0) in m.
-    unfold bind.
-    rewrite m.
-    intuition.
+    rewrite H3 in m.
+    apply (map_normaliser_complete) in m.
+    + unfold bind.
+      rewrite m.
+      apply andb_true_iff.
+      split.
+      * auto.
+      * eapply H1.
+        (* Yes by relation between btvbs and binds_Delta, and by order irrelevant*)
+
+       admit.
+    + apply b_wf__map_wk in b0; auto.
+      intros.
+      (* By Nodup subset *)
+      admit.
   - intros. simpl. rewrite H0.
     apply (normaliser_Jacco_complete h) in n; rewrite n.
     rewrite Ty_eqb_refl.
@@ -811,11 +867,19 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
     auto.
   - intros. simpl. apply kind_checking_complete in h; rewrite h. auto. apply Kind_eqb_eq. reflexivity.
   - destruct dtd.
-    destruct (no_dup_fun (tvdecl_name t0 :: map tvdecl_name l) &&
+    destruct rec.
+    {
+         simpl.
+    destruct (no_dup_fun (map tvdecl_name l) &&
 no_dup_fun (map vdecl_name l0)) eqn:no_dup.
-    + apply andb_true_intro; split.
+    + inversion e; subst.
+      apply no_dup_fun_complete in n.
+      simpl in n.
+      destruct_match.
+      rewrite (bool_if _ _ _ no_dup). auto. 
+      apply andb_true_intro; split.
       * subst.
-        inversion e; subst; clear e; clear h. clear n. clear n0. clear no_dup.
+        clear e. clear n. clear n0. clear y. clear no_dup.
         induction cs; intros.
         -- simpl. reflexivity.
         -- simpl. apply andb_true_intro. split.
@@ -825,21 +889,53 @@ no_dup_fun (map vdecl_name l0)) eqn:no_dup.
           ++ eapply IHcs.
              intros. eapply c. apply in_cons. auto.
       * subst.
-        inversion e; subst.
-        simpl in h.
-        apply kind_checking_complete in h.
-        rewrite h. auto.
+        simpl in y.
+        apply kind_checking_complete in y.
+        rewrite y. auto.
+
     + exfalso.
       subst.
       inversion e; subst.
       apply andb_false_iff in no_dup.
       destruct no_dup as [DupTV | DUPV].
-      * apply no_dup_fun_complete in n. rewrite n in DupTV. discriminate DupTV.
-      * apply no_dup_fun_complete in n0. rewrite n0 in DUPV. discriminate DUPV.
-Qed.
+      * apply no_dup_fun_complete in n. simpl in n. destruct_match. rewrite n in DupTV. inversion DupTV.
+      * apply no_dup_fun_complete in n0. rewrite n0 in DUPV. inversion DUPV.
+    }
+    {
+            simpl.
+    destruct (no_dup_fun (map tvdecl_name l) &&
+no_dup_fun (map vdecl_name l0)) eqn:no_dup.
+    + inversion e; subst.
+      apply no_dup_fun_complete in n.
+      simpl in n.
+      destruct_match.
+      rewrite (bool_if _ _ _ no_dup). auto. 
+      apply andb_true_intro; split.
+      * subst.
+        clear e. clear n. clear n0. clear y. clear no_dup.
+        induction cs; intros.
+        -- simpl. reflexivity.
+        -- simpl. apply andb_true_intro. split.
+          ++ eapply constructor_well_formed_complete.
+             eapply c.
+             apply in_eq.
+          ++ eapply IHcs.
+             intros. eapply c. apply in_cons. auto.
+      * subst.
+        simpl in y.
+        apply kind_checking_complete in y.
+        rewrite y. auto.
 
-Print Assumptions type_checking_sound.
-Print Assumptions type_checking_complete.
+    + exfalso.
+      subst.
+      inversion e; subst.
+      apply andb_false_iff in no_dup.
+      destruct no_dup as [DupTV | DUPV].
+      * apply no_dup_fun_complete in n.  simpl in n. destruct_match. rewrite n in DupTV. inversion DupTV.
+      * apply no_dup_fun_complete in n0. rewrite n0 in DUPV. inversion DUPV.
+    }
+Admitted.
+
       
       
       
