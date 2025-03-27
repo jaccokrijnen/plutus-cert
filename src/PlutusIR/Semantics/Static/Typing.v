@@ -364,66 +364,10 @@ Lemma either_ill_formed :
       )
     ).
 Proof.
-  eapply W_Data; eauto.
-  - admit.
-  - admit.
-  - intros.
-    inversion H; clear H.
-    + simpl.
-      unfold Basics.compose; simpl.
-      subst.
-      (* This is not allowed by W_Data instantiate W_Con with constrLastTyExpected*)
-      admit.
-    + admit.
-  - admit.
 Admitted.
 
 
-Lemma either_well_formed :
-  [],,[] |-ok_b
-    (
-      DatatypeBind (
-        Datatype (TyVarDecl "Either" (Kind_Arrow Kind_Base (Kind_Arrow Kind_Base Kind_Base)))
-        [TyVarDecl "L" Kind_Base; TyVarDecl "R" Kind_Base]
-        "matchEither"
-        [(VarDecl "Left" (Ty_Fun (Ty_Var "L") (Ty_App (Ty_App (Ty_Var "Either") (Ty_Var "L")) (Ty_Var "R"))));
-        (VarDecl "Right" (Ty_Fun (Ty_Var "R") (Ty_App (Ty_App (Ty_Var "Either") (Ty_Var "L")) (Ty_Var "R"))))]
-      )
-    ).
-Proof.
-  eapply W_Data; eauto.
-  - simpl. constructor. intuition. inversion H. inversion H0. inversion H0. inversion H1. inversion H1.
-    constructor. intuition. inversion H. inversion H0. inversion H0. constructor. intuition. constructor.
-  - simpl. 
-    constructor. intuition. inversion H. inversion H0. inversion H0. constructor. intuition. constructor.
-  - intros.
-    inversion H; clear H.
-    + subst.
-      eapply W_Con.
-      * simpl.
-        unfold splitTy.
-        simpl.
-        reflexivity.
-      * simpl.
-        intros. inversion H. subst. constructor.
-        simpl. auto. inversion H0.
-      * simpl. f_equal.
-    + inversion H0; clear H0.
-      subst.
-      eapply W_Con; eauto.
-      * simpl.
-        unfold Basics.compose; simpl.
-        eauto.
-      * simpl. intros.
-        inversion H; try contradiction.
-        subst. constructor. simpl. auto.
-      * inversion H.
-  - simpl. eapply K_App.
-    + eapply K_App.
-      * constructor. simpl. eauto.
-      * constructor. simpl. eauto.
-    + constructor. simpl. auto.
-Qed.
+
 
 
 Lemma lookupBuiltinTy__well_kinded f Δ :
@@ -437,79 +381,19 @@ Definition intwrap_decl :=
     (TyVarDecl "IntWrap" (Kind_Base)) [] "matchIntWrap"
     [(VarDecl "wrap" (Ty_Fun (Ty_Builtin (DefaultUniInteger)) (Ty_Var "IntWrap")))]).
 
+Opaque dtdecl_freshR.
 
-Lemma illkinded_datadecl_intwrap :
-  (("IntWrap", Kind_Arrow (Kind_Base) (Kind_Base))::nil),,[] |-ok_b intwrap_decl.
-Proof.
-  unfold intwrap_decl.
-  eapply W_Data; eauto.
-  - simpl. constructor. auto. constructor.
-  - simpl. constructor. auto. constructor.
-  - simpl. intros. destruct H; try contradiction.
-    destruct c.
-    inversion H; subst.
-    eapply W_Con; eauto.
-    + simpl. eauto.
-    + simpl.
-      intros.
-      inversion H0; try contradiction.
-      subst.
-      constructor.
-      constructor.
-  - simpl. constructor. simpl. auto.
-Qed.
 
 
 Definition let_shadow :=
   Let NonRec [TypeBind (TyVarDecl "IntWrap" (Kind_Arrow Kind_Base Kind_Base)) (Ty_Lam "X" Kind_Base (Ty_Builtin DefaultUniInteger))] 
     (Let NonRec [intwrap_decl] (TyAbs "IntWrap" (Kind_Arrow Kind_Base Kind_Base) (unitVal))).
 
-Lemma let_shadow__has_type :
-  [],,[] |-+ let_shadow : (Ty_Var "IntWrap").
-Proof.
-  unfold let_shadow.
-  eapply T_Let; eauto.
-  - eapply W_ConsB_NonRec.
-    + eapply W_Type; eauto.
-      constructor. apply K_Builtin. constructor.
-    + eauto.
-    + eapply W_NilB_NonRec.
-  - simpl. unfold intwrap_decl. simpl.
-    eapply T_Let with (bsGn := (flatten
-  [[("matchIntWrap",
-Ty_Forall "IntWrap" Kind_Base
-  (Ty_Fun
-  (Ty_Fun
-  (Ty_Builtin
-  DefaultUniInteger)
-  (Ty_Var "IntWrap"))
-  (Ty_Var "IntWrap")));
-("wrap",
-Ty_Fun
-  (Ty_Builtin
-  DefaultUniInteger)
-  (Ty_Var "IntWrap"))]])); eauto.
-    + simpl. repeat constructor.
-    + eapply W_ConsB_NonRec.
-      * eapply W_Data; eauto.
-        -- simpl. admit.
-        -- simpl. admit.
-        -- simpl. intros.
-           inversion H; try contradiction.
-           inversion H0.
-           eapply W_Con.
-           ++ unfold splitTy.
-              eauto.
-           ++ intros. inversion H2. subst. apply K_Builtin. constructor. inversion H3.
-           ++ simpl. auto.
-        -- simpl. constructor. simpl. auto.
-      * simpl. repeat constructor.
-      * simpl. constructor.
-    + simpl.
-      simpl.
-Admitted.
+Inductive FreshOver : string -> list string -> Prop :=
+  | FreshOver_nil : forall fr, FreshOver fr []
+  | FreshOver_cons : forall fr x xs, ~ In fr (x :: xs) -> FreshOver fr xs -> FreshOver fr (x :: xs).
 
-Opaque dtdecl_freshR.
+(* Opaque dtdecl_freshR. *)
 
 (* Prototype with only one type variable*)
 Lemma b_wf__wk' Δ Γ b :
@@ -524,62 +408,92 @@ Proof.
     unfold binds_Gamma in Hin_b.
     destruct Hin_b as [Hm_bind | Hc_bind].
     + (*Case: match bind*)
+
+      (* Idea, we prove the lemma for all strings that are fresh, (not this specific one)
+          because for that we can do induction. (equality of fresh vars stopped us before from using the IH.)
+      *)
+
       simpl in Hm_bind.
       inversion Hm_bind; subst.
       clear Hm_bind.
       exists Kind_Base.
-      eexists.
+      destruct YKs.
+      exists ((b, k)::Δ).
       constructor.
       simpl.
-      clear H7. (* Not used in this case!*)
-      induction cs.
-      * instantiate (1 := (drop (tvdecl_name XK)
-      (rev (map fromDecl [YKs]) ++ Δ))).  (* required in case(s) below*)
-        destruct (fromDecl YKs).
-        destruct XK.
-        unfold tvdecl_name.
-        unfold map.
-        unfold rev.
-        rewrite app_nil_l.
-        unfold fromDecl.
-        destruct YKs.
-        remember (Datatype (TyVarDecl b k0) [TyVarDecl b0 k1]
-            _x []) as fr_empty.
-        unfold fold_right.
-        constructor.
-        simpl.
-        rewrite String.eqb_refl. auto.
-      * simpl.
-        remember ((dtdecl_freshR
-          (Datatype XK [YKs] _x (a :: cs)))) as fr_acs.
-        remember (Datatype XK [YKs] _x (cs)) as fr_cs.
-        constructor.
-        -- 
-           destruct a.
-           simpl.
-           specialize (H6 (VarDecl b t)).
-           assert (VarDecl b t ∈ (VarDecl b t :: cs)) by now apply in_eq.
-           specialize (H6 H).
-           inversion H6; subst.
-           remember (dtdecl_freshR (Datatype XK [YKs] _x (VarDecl b t :: cs))) as fr_bcs.
-           
-          (* by split_ty and all Targs Kind_Base, and return type is Kind_Base, we have that the whole type (bunch of Funs) is Kind_Base*)
-           admit.
-        -- assert (fr_acs = dtdecl_freshR fr_cs).
-           {
-              (* Different fresh vars, but they are both fresh enough!*)
-               admit. (* not true*)
+      clear H8.
 
-           }
-           rewrite H.
-           eapply IHcs. 
-           ++ inversion H3; subst. auto.
-           ++ intros.
-              rewrite Heqfr_cs.
-              eapply H6.
-              apply in_cons. auto.
-              admit.
-              ++ admit.
+
+      remember (dtdecl_freshR (Datatype XK [TyVarDecl b k] _x cs)) as fr.
+      clear H4. clear H2. clear H3.
+      
+
+      destruct XK.
+      simpl.
+      simpl in H7.
+      assert (
+        forall fr',
+        (~ In fr' (b0 :: b :: 
+            flat_map (fun c => Ty.ftv (vdecl_ty c)) cs))
+        -> ((fr', Kind_Base) :: (b, k) :: Δ)
+              |-* (fold_right Ty_Fun (Ty_Var fr')
+              (map (fun c : vdecl => replaceRetTy (vdecl_ty c) (Ty_Var fr')) cs))
+            : Kind_Base)
+        .
+        {
+          clear Heqfr.
+          clear fr.
+          intros.
+          generalize dependent fr'.
+
+          simpl in H7.
+
+          induction cs; intros.
+          - simpl. constructor. simpl. rewrite String.eqb_refl. auto.
+          - assert (fr'
+              ∉ (b0
+              :: b
+              :: flat_map
+                (fun c : vdecl => Ty.ftv (vdecl_ty c))
+                (cs))) by admit.
+            assert (Hc_wf_smaller: (forall c : vdecl,
+              c ∈ cs ->
+              (b, k) :: Δ |-ok_c c
+              : (Ty_App (Ty_Var (b0))
+                (Ty_Var (b))))).
+            {
+              intros.
+              eapply H7. apply in_cons. auto.
+            }
+            specialize (IHcs Hc_wf_smaller fr' H0).
+            simpl.
+            constructor.
+            + specialize (H7 a).
+              assert (In a (a :: cs)) by now apply in_eq.
+              specialize (H7 H1).
+              inversion H7; subst.
+              assert (exists Targ1, T = Ty_Fun Targ1 (Ty_App (Ty_Var b0) (Ty_Var b))) by admit.
+              (* Assuming one argument for now*)
+              destruct H4 as [Targ1 H4]; subst.
+              simpl.
+              constructor.
+              * inversion H2. subst.
+                specialize (H3 Targ1). 
+                (* fr' fresh over Δ? We can see it cannot be in Targ1 by fr' not in ftv Targ1
+                  it can be in Δ, but that is no issue
+                *)
+
+                admit.
+              * constructor. simpl. rewrite String.eqb_refl. auto.
+            + eapply IHcs.
+        }
+
+        eapply H.
+        (* by definition of freshness!*)
+        
+        
+        admit.
+        
 
     + (*Case: constr bind*)
       unfold constrBinds in Hc_bind.
@@ -785,11 +699,11 @@ Proof.
     rewrite flatten_cons.
     rewrite insert_deltas_rec_app.
     apply map_wk_app; apply b_wf__map_wk in H; eauto.
-    + eapply IHbindings_well_formed_rec. intros. eapply H_ns. apply in_cons. eauto. eauto.
+    (* + eapply IHbindings_well_formed_rec. intros. eapply H_ns. apply in_cons. eauto. eauto.
     + eapply H_ns. apply in_eq.
     + eapply H_ns. apply in_eq.
-Qed.
-
+Qed. *)
+Admitted.
 
 Fixpoint insert_deltas_bind_Gamma_nr (bs : list binding) (Δ : list (binderTyname * kind)) : list (binderName * ty * list (binderTyname * kind)) :=
   match bs with
@@ -806,7 +720,7 @@ Proof.
   - constructor.
   - simpl.
     admit.
-Qed.
+Admitted.
 
 
 Definition well_typed t := exists T, [] ,, [] |-+ t : T.
