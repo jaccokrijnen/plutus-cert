@@ -267,9 +267,9 @@ with binding_well_formed : list (string * kind) -> list (string * ty) -> recursi
       Δ |-* T : K ->
       Δ ,, Γ |-ok_b rec ## (TypeBind (TyVarDecl X K) T)
    | W_Data : forall Δ Γ dtd XK YKs matchFunc cs X Ys Δ' Tres rec,
-      dtd = Datatype XK YKs matchFunc cs ->
+      dtd = Datatype XK [YKs] matchFunc cs ->
       X = tvdecl_name XK ->
-      Ys = map tvdecl_name YKs ->
+      Ys = map tvdecl_name [YKs] ->
 
       (* No duplicate bound type variables *)
       NoDup (X :: Ys) ->
@@ -278,7 +278,7 @@ with binding_well_formed : list (string * kind) -> list (string * ty) -> recursi
       NoDup (map vdecl_name cs) ->
 
       (* Well-formedness of constructors *)
-      Δ' = rev (map fromDecl YKs) ++ Δ -> 
+      Δ' = rev (map fromDecl [YKs]) ++ Δ -> 
       Tres = constrLastTyExpected dtd -> (* The expected result type for each constructor *)
       (forall c, In c cs -> Δ' |-ok_c c : Tres) ->
 
@@ -332,7 +332,7 @@ Inductive FreshOver : string -> list string -> Prop :=
 Lemma b_wf__wk Δ Γ b rec:
   Δ ,, Γ |-ok_b rec ## b -> (rec = NonRec -> NoDup (btvb b ++ (map fst Δ))) -> forall T _x, In (_x, T) (binds_Gamma b) -> exists K Δ', Δ' |-* T : K.
 Proof.
-  (* intros Hb_wf H_ns T _x Hin_b.
+  intros Hb_wf H_ns T _x Hin_b.
   inversion Hb_wf;  subst.
   - admit.
   - admit.
@@ -340,7 +340,7 @@ Proof.
     clear Hb_wf.
     unfold binds_Gamma in Hin_b.
     destruct Hin_b as [Hm_bind | Hc_bind].
-    + clear H_ns.
+    + 
      (*Case: match bind*)
 
       (* Idea, we prove the lemma for all strings that are fresh, (not this specific one)
@@ -351,82 +351,181 @@ Proof.
       inversion Hm_bind; subst.
       clear Hm_bind.
       exists Kind_Base.
-      destruct YKs.
-      exists ((b, k)::Δ).
-      constructor.
-      simpl.
-      clear H7.
-
-
-      remember (dtdecl_freshR (Datatype XK [TyVarDecl b k] _x cs)) as fr.
-      clear H3. clear H2.
-      
-
       destruct XK.
-      simpl.
-      simpl in H6.
-      assert (
-        forall fr',
-        (~ In fr' (b0 :: b :: 
-            flat_map (fun c => Ty.ftv (vdecl_ty c)) cs))
-        -> ((fr', Kind_Base) :: (b, k) :: Δ)
-              |-* (fold_right Ty_Fun (Ty_Var fr')
-              (map (fun c : vdecl => replaceRetTy (vdecl_ty c) (Ty_Var fr')) cs))
-            : Kind_Base)
-        .
-        {
-          clear Heqfr.
-          clear fr.
-          intros.
-          generalize dependent fr'.
+      destruct YKs.
+      destruct rec.
+      {
+        exists (((b, k)::Δ)).
 
-          simpl in H6.
 
-          induction cs; intros.
-          - simpl. constructor. simpl. rewrite String.eqb_refl. auto.
-          - assert (fr'
-              ∉ (b0
-              :: b
-              :: flat_map
-                (fun c : vdecl => Ty.ftv (vdecl_ty c))
-                (cs))) by admit.
-            assert (Hc_wf_smaller: (forall c : vdecl,
-              c ∈ cs ->
-              (b, k) :: Δ |-ok_c c
-              : (Ty_App (Ty_Var (b0))
-                (Ty_Var (b))))).
-            {
-              intros.
-              eapply H6. apply in_cons. auto.
-            }
-            specialize (IHcs Hc_wf_smaller fr' H0).
-            simpl.
-            constructor.
-            + specialize (H6 a).
-              assert (In a (a :: cs)) by now apply in_eq.
-              specialize (H6 H1).
-              inversion H6; subst.
-              assert (exists Targ1, T = Ty_Fun Targ1 (Ty_App (Ty_Var b0) (Ty_Var b))) by admit.
-              (* Assuming one argument for now*)
-              destruct H4 as [Targ1 H4]; subst.
+      
+        (* exists ((b, k)::Δ). *)
+        constructor.
+        simpl.
+
+
+        remember (dtdecl_freshR (Datatype (TyVarDecl b k) [TyVarDecl b0 k0] _x cs)) as fr.
+        
+        
+        constructor.
+        { admit. }
+        simpl in H7.
+        assert (
+          forall fr',
+          (~ In fr' (b0 :: b :: 
+              flat_map (fun c => Ty.ftv (vdecl_ty c)) cs))
+          -> ((fr', Kind_Base) :: (b0, k0) :: Δ)
+                |-* (fold_right Ty_Fun (Ty_Var fr')
+                (map (fun c : vdecl => replaceRetTy (vdecl_ty c) (Ty_Var fr')) cs))
+              : Kind_Base)
+          .
+          {
+            clear Heqfr.
+            clear H_ns.
+            clear fr.
+            intros.
+            generalize dependent fr'.
+
+            simpl in H6.
+
+            induction cs; intros.
+            - simpl. constructor. simpl. rewrite String.eqb_refl. auto.
+            - assert (fr'
+                ∉ (b0
+                :: b
+                :: flat_map
+                  (fun c : vdecl => Ty.ftv (vdecl_ty c))
+                  (cs))) by admit.
+              assert (Hc_wf_smaller: (forall c : vdecl,
+                c ∈ cs ->
+                (b0, k0) :: Δ |-ok_c c
+                : (Ty_App (Ty_Var (b))
+                  (Ty_Var (b0))))).
+              {
+                intros.
+                eapply H6. apply in_cons. auto.
+              }
+              assert (Hno_dup_smaller: NoDup (map vdecl_name cs)) by admit.
+              specialize (IHcs Hno_dup_smaller Hc_wf_smaller fr' H0).
               simpl.
               constructor.
-              * inversion H2. subst.
-                specialize (H3 Targ1). 
-                (* fr' fresh over Δ? We can see it cannot be in Targ1 by fr' not in ftv Targ1
-                  it can be in Δ, but that is no issue
-                *)
+              + specialize (H6 a).
+                assert (In a (a :: cs)) by now apply in_eq.
+                specialize (H6 H1).
+                inversion H6; subst.
+                assert (HExists: exists Targ1, T = Ty_Fun Targ1 (Ty_App (Ty_Var b) (Ty_Var b0))) by admit.
+                (* Assuming one argument for now*)
+                destruct HExists as [Targ1 HExists]; subst.
+                simpl.
+                constructor.
+                * 
+                  inversion H4. subst.
+                  specialize (H5 Targ1). 
+                  (* fr' fresh over Δ? We can see it cannot be in Targ1 by fr' not in ftv Targ1
+                    it can be in Δ, but that is no issue
+                  *)
 
-                admit.
-              * constructor. simpl. rewrite String.eqb_refl. auto.
-            + eapply IHcs.
-        }
+                  admit.
+                * constructor. simpl. rewrite String.eqb_refl. auto.
+              + eapply IHcs.
+          }
+          constructor.
 
-        eapply H.
-        (* by definition of freshness!*)
+          (* NOT TRUE: But we can savely remove the b, it doesn shadow*)
+          assert (Hremove_vac: (fr, Kind_Base) :: (b0, k0) :: (b, k) :: Δ = (fr, Kind_Base) :: (b0, k0) :: Δ) by admit.
+          assert (((fr, Kind_Base) :: (b0, k0) :: Δ)
+              |-* (fold_right Ty_Fun (Ty_Var fr)
+                (map
+                (fun c : vdecl =>
+              replaceRetTy (vdecl_ty c) (Ty_Var fr))
+                cs))
+              : Kind_Base).
+              {
+
+                        eapply H.
+                        admit.
+              }
+          (* by definition of freshness!  *)
+          admit.
+      }
+      {
+        (* REC case *)
+
+        exists (Δ).
+        constructor.
+        constructor.
+        - simpl.
+          simpl in H7.
+          auto.
+        -
         
-        
-        admit. 
+          constructor.
+          simpl.
+          remember (dtdecl_freshR
+            (Datatype (TyVarDecl b k) [TyVarDecl b0 k0] _x
+            cs)) as fr.
+            assert (
+          forall fr',
+          (~ In fr' (b0 :: b :: 
+              flat_map (fun c => Ty.ftv (vdecl_ty c)) cs))
+          -> ((fr', Kind_Base) :: (b0, k0) :: Δ)
+                |-* (fold_right Ty_Fun (Ty_Var fr')
+                (map (fun c : vdecl => replaceRetTy (vdecl_ty c) (Ty_Var fr')) cs))
+              : Kind_Base)
+          .
+          {
+            clear Heqfr.
+            clear H_ns.
+            clear fr.
+            intros.
+            generalize dependent fr'.
+
+            simpl in H6.
+            clear H7.
+            induction cs; intros.
+            - simpl. constructor. simpl. rewrite String.eqb_refl. auto.
+            - assert (fr'
+                ∉ (b0
+                :: b
+                :: flat_map
+                  (fun c : vdecl => Ty.ftv (vdecl_ty c))
+                  (cs))) by admit.
+              assert (Hc_wf_smaller: (forall c : vdecl,
+                c ∈ cs ->
+                (b0, k0) :: Δ |-ok_c c
+                : (Ty_App (Ty_Var (b))
+                  (Ty_Var (b0))))).
+              {
+                intros.
+                eapply H6. apply in_cons. auto.
+              }
+              assert (Hno_dup_smaller: NoDup (map vdecl_name cs)) by admit.
+              specialize (IHcs Hno_dup_smaller Hc_wf_smaller fr' H0).
+              simpl.
+              constructor.
+              + specialize (H6 a).
+                assert (In a (a :: cs)) by now apply in_eq.
+                specialize (H6 H1).
+                inversion H6; subst.
+                assert (HExists: exists Targ1, T = Ty_Fun Targ1 (Ty_App (Ty_Var b) (Ty_Var b0))) by admit.
+                (* Assuming one argument for now*)
+                destruct HExists as [Targ1 HExists]; subst.
+                simpl.
+                constructor.
+                * 
+                  inversion H4. subst.
+                  specialize (H5 Targ1). 
+                  (* fr' fresh over Δ? We can see it cannot be in Targ1 by fr' not in ftv Targ1
+                    it can be in Δ, but that is no issue
+                  *)
+
+                  admit.
+                * constructor. simpl. rewrite String.eqb_refl. auto.
+              + eapply IHcs.
+          }
+          eapply H.
+          admit.
+      }
 
         
     + (*Case: constr bind*)
@@ -502,8 +601,7 @@ Proof.
         * simpl.
           simpl in H7.
           auto.
-    } *)
-    admit.
+    }
 Admitted.
 
 
