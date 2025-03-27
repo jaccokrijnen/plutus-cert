@@ -75,6 +75,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
   (* Universal types *)
   | T_TyAbs : forall Δ Γ X K t Tn,
       ((X, K) :: Δ) ,, Γ |-+ t : Tn ->
+      ~ In X (btv t) -> (* No shadowing, see PlutusCert::Issue 16. Without we can type const programs incorrectly *)
       Δ ,, Γ |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
   | T_TyInst : forall Δ Γ t1 T2 T1n X K2 T0n T2n,
       Δ ,, Γ |-+ t1 : (Ty_Forall X K2 T1n) ->

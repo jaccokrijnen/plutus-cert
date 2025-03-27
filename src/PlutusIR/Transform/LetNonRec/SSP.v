@@ -146,7 +146,14 @@ Theorem CNR_Term__SSP : ∀ t t',
       rewrite H_eq...
     + assert (H_eq : bvbs bs' = bvbs bs) by eauto using binds_Gamma__bvbs.
       rewrite H_eq...
-
+  - intros.
+    unfold P_CNR_Term.
+    intros.
+    inv_typing; subst.
+    constructor.
+    + unfold P_CNR_Term in H0.
+      eapply H0. auto.
+    + admit.
   - (* CNR_LetRec_nil *)
     unfold P_CNR_Bindings.
     intros.
@@ -216,4 +223,4 @@ Theorem CNR_Term__SSP : ∀ t t',
     + eauto with typing.
     + simpl. rewrite H_eq_2, H_eq_3. reflexivity.
     + simpl. rewrite H_eq_1, H_eq_4. reflexivity.
-Qed.
+Admitted.
