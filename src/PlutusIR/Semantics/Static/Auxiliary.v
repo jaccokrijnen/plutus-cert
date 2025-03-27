@@ -74,21 +74,6 @@ Definition dtdecl_freshR (d : dtdecl) : string :=
   end
 .
 
-(* The type of match function, in the case of
-     data Either a b = Left : a -> Either a b | Right : b -> Either a b
-   the match function will have type
-     ∀R. (a -> R) -> (b -> R) -> R
-*)
-Definition matchTy (d : dtdecl) : ty :=
-  let R := dtdecl_freshR d in
-  match d with
-  | Datatype X YKs matchFunc cs =>
-      let branchTypes := map (fun c => replaceRetTy (vdecl_ty c) (Ty_Var R)) cs in
-      let branchTypesFolded := fold_right Ty_Fun (Ty_Var R) branchTypes in
-      Ty_Forall R Kind_Base branchTypesFolded
-  end.
-
-
 (* The expected return type of a constructor, i.e. the Datatype applied to all
  * its type parameters. For example: Either a b
  *)
@@ -99,6 +84,25 @@ Definition constrLastTyExpected dtd : ty :=
       let Ys := map tvdecl_name YKs in
       Ty_Apps (Ty_Var X) (map Ty_Var Ys)
   end.
+
+(* The type of match function, in the case of
+     data Either a b = Left : a -> Either a b | Right : b -> Either a b
+   the match function will have type
+     ∀a b. Either a b -> ∀R. (a -> R) -> (b -> R) -> R
+*)
+Definition matchTy (d : dtdecl) : ty :=
+  let R := dtdecl_freshR d in
+  match d with
+  | Datatype X YKs matchFunc cs =>
+      let branchTypes := map (fun c => replaceRetTy (vdecl_ty c) (Ty_Var R)) cs in
+      let branchTypesFolded := fold_right Ty_Fun (Ty_Var R) branchTypes in
+      Ty_Foralls YKs
+        (Ty_Fun (constrLastTyExpected d)
+          (Ty_Forall R Kind_Base branchTypesFolded)
+        )
+  end.
+
+
 
 (* The type of a constructor is not just its annotation,
  * it requires Ty_Forall for all of the datatype's type parameters
@@ -144,3 +148,40 @@ Definition binds_Gamma (b : binding) : list (string * ty) :=
       let matchB := matchBind d in
       matchB :: constrBs
   end.
+
+Section EXAMPLE_EITHER.
+
+Local Open Scope string_scope.
+
+
+Notation "X '→' Y" := (Ty_Fun X Y) (at level 49, right associativity).
+
+Definition either_kind := Kind_Arrow Kind_Base (Kind_Arrow Kind_Base Kind_Base).
+Definition either_applied := Ty_App (Ty_App (Ty_Var "Either") (Ty_Var "a")) (Ty_Var "b").
+
+Definition dtd_either :=
+  Datatype
+    (TyVarDecl "Either" either_kind)
+    [ TyVarDecl "a" Kind_Base
+    ; TyVarDecl "b" Kind_Base
+    ]
+    "matchEither"
+    [ VarDecl "Left" (Ty_Fun (Ty_Var "a") (either_applied))
+    ; VarDecl "Right" (Ty_Fun (Ty_Var "b") (either_applied))
+    ]
+.
+
+Compute (matchTy dtd_either).
+
+Example either_matchTy : matchTy dtd_either =
+  Ty_Forall "a" Kind_Base
+    (Ty_Forall "b" Kind_Base
+       (Ty_App (Ty_App (Ty_Var "Either") (Ty_Var "a")) (Ty_Var "b")
+        → Ty_Forall "aEitherabbEitherab" Kind_Base
+            ((Ty_Var "a" → Ty_Var "aEitherabbEitherab")
+             → (Ty_Var "b" → Ty_Var "aEitherabbEitherab")
+               → Ty_Var "aEitherabbEitherab")))
+               .
+Proof. reflexivity. Qed.
+
+End EXAMPLE_EITHER.
