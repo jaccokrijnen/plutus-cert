@@ -328,6 +328,8 @@ Inductive FreshOver : string -> list string -> Prop :=
 
 (* Opaque dtdecl_freshR. *)
 
+(* Discuss with Jacco that because of constrLastTyExpected in matchTy we now need different Deltas. Or do we? We basically only differentiate on Rec/NonRec *)
+
 (* Prototype with only one type variable*)
 Lemma b_wf__wk Δ Γ b rec:
   Δ ,, Γ |-ok_b rec ## b -> (rec = NonRec -> NoDup (btvb b ++ (map fst Δ))) -> forall T _x, In (_x, T) (binds_Gamma b) -> exists K Δ', Δ' |-* T : K.
