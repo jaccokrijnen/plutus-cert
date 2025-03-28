@@ -348,9 +348,9 @@ Proof with (eauto with typing).
     repeat unfold P_dc, P_dc_NonRec, P_dc_Rec in *.
     intros ? ? ? ? H_dc_t IH_t H_dc_Rec IH_Rec ? ? ? H_typing_Let.
     inversion H_typing_Let; subst.
-    eapply IH_t in H9;
+    eapply IH_t in H10;
       try (solve [eassumption | reflexivity]).
-    eapply IH_Rec in H6.
+    eapply IH_Rec in H7.
     econstructor; eauto.
     eauto using has_type, bindings_well_formed_rec.
 

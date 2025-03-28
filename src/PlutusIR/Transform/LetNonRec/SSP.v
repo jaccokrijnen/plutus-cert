@@ -128,7 +128,7 @@ Theorem CNR_Term__SSP : ∀ t t',
     unfold P_CNR_Term, P_CNR_Term, P_CNR_Bindings in *.
     intros Δ Γ T H_typing_let.
 
-    inversion H_typing_let using inv_T_Let. intros ? ? ? ? ? ? ? H_t_body ?.
+    inversion H_typing_let using inv_T_Let. intros ? ? ? ? ? ? ? ? H_t_body ?.
     apply IH_t_body in H_t_body as H_t_body'; clear H_t_body IH_t_body.
     subst.
     apply IH_bs in H_t_body'; assumption.
@@ -136,7 +136,7 @@ Theorem CNR_Term__SSP : ∀ t t',
   - (* CNR_LetRec *)
     unfold P_CNR_Term, P_CNR_LetRec_compat.
     intros ? ? ? ? _ IH_t_body _ IH_bs ? ? ? H_typing.
-    inversion H_typing using inv_T_LetRec. intros ? ? ? ? ? ? H_mn_bs ? H_bs H_t_body H_kinding.
+    inversion H_typing using inv_T_LetRec. intros ? ? ? ? ? ? ? H_mn_bs ? H_bs H_t_body H_kinding.
     specialize (IH_bs _ _ H_bs).
     destruct IH_bs as [H_bs' [H_eq_Gamma H_eq_Delta]].
     rewrite H_eq_Gamma in H_mn_bs.

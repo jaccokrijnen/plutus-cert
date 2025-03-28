@@ -33,29 +33,39 @@ Module Typing.
 
   Definition P_has_type Delta Gamma t T : Prop :=
     forall Delta' Gamma',
+      kctx_wf Delta ->
+      kctx_wf Delta' ->
       inclusion Delta Delta' ->
       inclusion Gamma Gamma' ->
       Delta' ,, Gamma' |-+ t : T.
 
   Definition P_constructor_well_formed Delta c T : Prop :=
     forall Delta',
+      kctx_wf Delta ->
+      kctx_wf Delta' ->
       inclusion Delta Delta' ->
       Delta' |-ok_c c : T.
 
   Definition P_bindings_well_formed_nonrec Delta Gamma bs : Prop :=
     forall Delta' Gamma',
+      kctx_wf Delta ->
+      kctx_wf Delta' ->
       inclusion Delta Delta' ->
       inclusion Gamma Gamma' ->
       Delta' ,, Gamma' |-oks_nr bs.
 
   Definition P_bindings_well_formed_rec Delta Gamma bs : Prop :=
     forall Delta' Gamma',
+      kctx_wf Delta ->
+      kctx_wf Delta' ->
       inclusion Delta Delta' ->
       inclusion Gamma Gamma' ->
       Delta' ,, Gamma' |-oks_r bs.
 
   Definition P_binding_well_formed Delta Gamma b : Prop :=
     forall Delta' Gamma',
+      kctx_wf Delta ->
+      kctx_wf Delta' ->
       inclusion Delta Delta' ->
       inclusion Gamma Gamma' ->
       Delta' ,, Gamma' |-ok_b b.
@@ -84,27 +94,39 @@ Module Typing.
     all: try (intros Delta'_0 Gamma'_0 HinclD HinclG).
     all: try (intros Delta'_0 HinclD).
     all: try solve [econstructor; subst; eauto using Kinding.weakening, inclusion_cons, inclusion_append].
-    - (* Ty_Abs *)
+    - (* Ty_Forall *)
       econstructor...
-      + subst.
-        intros.
-        admit. (* No Dup needs additional assumptions*)
+      + apply H0...
+        simpl.
+        admit. (* holds via inclusion *)
+      +
+        admit. (* holds via inclusion *)
+    - (* LetNonRec *)
+      admit. (* TODO: add constraints in typing rules of LetRec and LetNonRec *)
+    - (* LetRec *)
+      admit. (* TODO: add constraints in typing rules of LetRec and LetNonRec *)
+    - (* oks_nr *)
+      admit. (* TODO: add constraints in typing rules of LetRec and LetNonRec *)
     - (* W Data*)
       econstructor...
       + subst.
         intros.
         eapply H7...
+        all: admit. (* TODO: add constraints in typing rules of LetRec and LetNonRec *)
       + subst...
   Admitted.
 
   Lemma weakening_empty : forall Delta Gamma t T,
+      kctx_wf Delta ->
       [] ,, [] |-+ t : T ->
       Delta ,, Gamma |-+ t : T.
   Proof.
-    intros Delta Gamma t T Ht.
+    intros Delta Gamma t H_NoDup T Ht.
     apply weakening in Ht.
     unfold P_has_type in Ht.
     apply Ht.
+    - unfold kctx_wf in *. auto using NoDup.
+    - assumption.
     - apply inclusion_empty.
     - apply inclusion_empty.
   Qed.
@@ -112,6 +134,8 @@ Module Typing.
   Corollary weakening_term Delta Delta' Gamma Gamma' t T
     (incl_Delta : inclusion Delta Delta')
     (incl_Gamma : inclusion Gamma Gamma') :
+      kctx_wf Delta ->
+      kctx_wf Delta' ->
       Delta ,, Gamma |-+ t : T ->
       Delta' ,, Gamma' |-+ t : T.
   Proof.

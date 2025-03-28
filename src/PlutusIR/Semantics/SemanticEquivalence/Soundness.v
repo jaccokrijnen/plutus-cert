@@ -20,10 +20,11 @@ Ltac destruct_hypos := repeat (match goal with
 
 
 Theorem LR_sound : forall Δ Γ e e' T,
+  kctx_wf Δ ->
   LR_logically_approximate Δ Γ e e' T ->
   Δ ,, Γ |- e ⪯-ctx e' : T.
 Proof with eauto.
-  intros Δ Γ e e' T H_approx_e_e'.
+  intros Δ Γ e e' T H_kctx H_approx_e_e'.
   unfold contextually_approximate.
   repeat split.
 
@@ -64,13 +65,16 @@ Proof with eauto.
     eexists x0.
     eauto.
   - inversion H2.
+  - constructor.
+  - assumption.
 Qed.
 
 Corollary LR_equivalent_sound : forall Δ Γ e e' T,
+  kctx_wf Δ ->
   LR_logically_equivalent Δ Γ e e' T ->
   Δ ,, Γ |- e ≃-ctx e' : T.
 Proof with eauto using LR_sound.
-  intros Δ Γ e e' T H.
+  intros Δ Γ e e' T H_kctx H.
   unfold LR_logically_equivalent in H.
   destruct_hypos.
   split...

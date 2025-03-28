@@ -49,14 +49,17 @@ Proof with eauto_LR.
 
   split. {
     inversion Htyp__ih. subst.
-    rewrite <- append_flatten in H7.
+    rewrite <- append_flatten in H8.
 
     eapply T_Let...
+    - admit. (* kctx_wf reorder *)
     - unfold flatten.
       simpl.
       simpl in Hmapnorm__bsGn.
       rewrite List.concat_app.
       eapply map_normalise__app'...
+    - econstructor...
+      admit. (* kctx sublist *)
     - rewrite <- app_assoc...
   }
 
@@ -244,36 +247,40 @@ Proof with eauto_LR.
 
       split. {
         inversion Htyp__ih. subst.
-        simpl in H9.
-        eapply closing_preserves_kinding_1 in H9 as H10...
-        eapply strong_normalisation in H10 as H11...
-        destruct H11.
+        simpl in H10.
+        eapply closing_preserves_kinding_1 in H10 as H11...
+        eapply strong_normalisation in H11 as H12...
+        destruct H12.
 
         eexists. split...
       }
 
       split. {
         inversion Htyp__ih. subst.
-        simpl in H9.
-        eapply closing_preserves_kinding_2 in H9 as H10...
-        eapply strong_normalisation in H10 as H11...
-        destruct H11.
+        simpl in H10.
+        eapply closing_preserves_kinding_2 in H10 as H12...
+        eapply strong_normalisation in H12 as H13...
+        destruct H13.
 
         eexists. split...
       }
       right...
-Qed.
+Admitted.
 
 (** ** Predicates *)
 
 Definition P_has_type Delta Gamma t T : Prop :=
   forall t',
+    kctx_wf Delta ->
     CNR_Term t t' ->
     LR_logically_approximate Delta Gamma t t' T.
 
-Definition P_constructor_well_formed Delta c Tr : Prop := Delta |-ok_c c : Tr.
+Definition P_constructor_well_formed Delta c Tr : Prop :=
+  kctx_wf Delta ->
+  Delta |-ok_c c : Tr.
 
 Definition P_bindings_well_formed_nonrec Delta Gamma bs : Prop :=
+  kctx_wf Delta ->
   (
     forall bs',
       Compat.Compat_Bindings CNR_Term bs bs' ->
@@ -296,9 +303,12 @@ Definition P_bindings_well_formed_nonrec Delta Gamma bs : Prop :=
         LR_logically_approximate Delta Gamma (Let NonRec bs t) (fold_right apply t' fbs') Tn
   ).
 
-Definition P_bindings_well_formed_rec Delta Gamma bs1 : Prop := Delta ,, Gamma |-oks_r bs1.
+Definition P_bindings_well_formed_rec Delta Gamma bs1 : Prop :=
+  kctx_wf Delta ->
+  Delta ,, Gamma |-oks_r bs1.
 
 Definition P_binding_well_formed Delta Gamma b : Prop :=
+  kctx_wf Delta ->
   (
     forall b',
       Compat.Compat_Binding CNR_Term b b' ->
@@ -360,12 +370,12 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
   all : try solve [eauto with typing].
   - (* T_Let *)
     inv_CNR...
-    + eapply H3...
+    + eapply H4...
 
   - (* W_NilB_NonRec *)
     split. all: intros. all: subst.
     + inv_Compat.
-      inversion H1...
+      inversion H2...
     + inv_CNR.
       match goal with
         | H : map_normalise _ _ |- _ => inversion H; subst; simpl in H
@@ -387,7 +397,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
       inv_Compat.
 
       eapply H0...
-      eapply H3...
+      eapply H4...
       * eapply Kinding.weakening; eauto.
         destruct b.
         -- simpl. eapply inclusion_refl.
@@ -398,9 +408,9 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
             ++ eapply eqb_eq in Heqb as Heq.
                 subst.
                 assert (appears_bound_in_ann x (Let NonRec (TypeBind (TyVarDecl x k) t1 :: bs) t)) by eauto.
-                eapply uniqueness' in H5.
-                rewrite H5 in H1.
-                inversion H5.
+                eapply uniqueness' in H7.
+                rewrite H7 in H1.
+                inversion H7.
             ++ apply eqb_neq in Heqb as Hneq.
               simpl. rewrite Heqb...
         -- destruct d.
@@ -412,9 +422,9 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
             ++ eapply eqb_eq in Heqb as Heq.
                 subst.
                 assert (appears_bound_in_ann x (Let NonRec (DatatypeBind (Datatype (TyVarDecl x k) l b l0) :: bs) t)) by eauto.
-                eapply uniqueness' in H5.
-                rewrite H5 in H1.
-                inversion H5.
+                eapply uniqueness' in H7.
+                rewrite H7 in H1.
+                inversion H7.
             ++ apply eqb_neq in Heqb as Hneq.
                simpl. rewrite Heqb...
       * rewrite app_assoc.
@@ -431,10 +441,10 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
       eapply map_normalise__deterministic in H1...
       subst.
 
-      inversion H4. subst.
+      inversion H6. subst.
 
       eapply H0...
-      eapply H3...
+      eapply H4...
       * eapply Kinding.weakening; eauto.
         destruct b.
         -- simpl. eapply inclusion_refl.
@@ -445,9 +455,9 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
             ++ eapply eqb_eq in Heqb as Heq.
                 subst.
                 assert (appears_bound_in_ann x (Let NonRec (TypeBind (TyVarDecl x k) t1 :: bs) t)) by eauto.
-                eapply uniqueness' in H5.
-                rewrite H5 in H1.
-                inversion H5.
+                eapply uniqueness' in H7.
+                rewrite H7 in H1.
+                inversion H7.
             ++ apply eqb_neq in Heqb as Hneq.
                simpl. rewrite Heqb...
         -- destruct d.
@@ -459,9 +469,9 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
             ++ eapply eqb_eq in Heqb as Heq.
                 subst.
                 assert (appears_bound_in_ann x (Let NonRec (DatatypeBind (Datatype (TyVarDecl x k) l b l0) :: bs) t)) by eauto.
-                eapply uniqueness' in H5.
-                rewrite H5 in H1.
-                inversion H5.
+                eapply uniqueness' in H7.
+                rewrite H7 in H1.
+                inversion H7.
             ++ apply eqb_neq in Heqb as Hneq.
                simpl. rewrite Heqb...
       * rewrite app_assoc.

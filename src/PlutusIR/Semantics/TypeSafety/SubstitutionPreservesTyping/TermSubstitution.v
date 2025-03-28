@@ -88,6 +88,7 @@ Admitted.
 Definition P_Term (t : term) :=
   forall Delta Gamma x U Un v T,
     Delta ,, ((x, U) :: Gamma) |-+ t : T ->
+    kctx_wf Delta ->
     normalise U Un ->
     [] ,, [] |-+ v : Un ->
     Delta ,, Gamma |-+ <{ [x := v] t }> : T.
@@ -95,6 +96,7 @@ Definition P_Term (t : term) :=
 Definition P_Binding (b : binding) : Prop :=
   forall Delta Gamma x U Un v,
     Delta ,, ((x, U) :: Gamma) |-ok_b b ->
+    kctx_wf Delta ->
     normalise U Un ->
     [] ,, [] |-+ v : Un ->
     Delta ,, Gamma |-ok_b <{ [x := v]b b }>.
@@ -123,22 +125,26 @@ Proof with (eauto with typing).
     + eapply W_ConsB_NonRec...
       * eapply Util.ForallP_hd in H.
         eapply H...
+        admit. (* kctx sublist *)
       * rewrite subst_b__preserves_bindsG...
+      * rewrite subst_b__preserves_bindsD...
       * rewrite subst_b__preserves_bindsD...
         eapply existsb_exists in Hexb.
         destruct Hexb as [x0 [HIn Heqb]].
         apply eqb_eq in Heqb as Heq.
         subst.
         apply In_bvb_bindsG in HIn.
-        eapply In__map_normalise in H8...
-        eapply Typing.weakening in H9.
-        unfold Typing.P_bindings_well_formed_nonrec in H9.
-        apply H9...
+        eapply In__map_normalise in H6...
+        eapply Typing.weakening in H10.
+        unfold Typing.P_bindings_well_formed_nonrec in H10.
+        apply H10...
         all: auto using inclusion_refl, append_shadow.
     + eapply W_ConsB_NonRec...
       * eapply Util.ForallP_hd in H.
         eapply H...
+        admit. (* kctx sublist *)
       * rewrite subst_b__preserves_bindsG...
+      * rewrite subst_b__preserves_bindsD...
       * rewrite subst_b__preserves_bindsD...
         eapply IHbs...
         -- eapply Util.ForallP_tl...
@@ -151,16 +157,17 @@ Proof with (eauto with typing).
              apply eqb_refl.
            }
            apply notIn_bvb_bindsG in H3.
-           eapply notIn__map_normalise in H8...
-           apply Typing.weakening in H9.
-           apply H9.
+           eapply notIn__map_normalise in H6...
+           apply Typing.weakening in H10.
+           apply H10.
            all: auto using inclusion_refl, append_permute.
-Qed.
+Admitted.
 
 Lemma SPT__Bindings_Rec : forall bs,
     Util.ForallP P_Binding bs ->
     forall Delta Gamma x U Un v,
       Delta ,, ((x, U) :: Gamma) |-oks_r bs ->
+      kctx_wf Delta ->
       normalise U Un ->
       [] ,, [] |-+ v : Un ->
       Delta ,, Gamma |-oks_r <{ [x := v]br bs }>.
@@ -189,6 +196,7 @@ Proof with eauto.
     + simpl.
       destruct (existsb (eqb x) (bvbs bs)) eqn:Hexb.
       * eapply T_Let...
+        -- admit. (* kctx_wf from assumption (subst_bnr' does not change binds_Delta) *)
         -- rewrite subst_bnr__preserves_bindsG...
         -- eapply SPT__Bindings_NonRec...
         -- rewrite subst_bnr__preserves_bindsD...
@@ -198,10 +206,11 @@ Proof with eauto.
             subst.
             apply In_bvbs_bindsG in HIn.
             eapply In__map_normalise in HIn...
-            apply Typing.weakening in H14.
-            apply H14.
+            apply Typing.weakening in H16.
+            apply H16.
             all: auto using inclusion_refl, append_shadow.
       * eapply T_Let...
+        -- admit. (* kctx_wf from assumption (subst_bnr' does not change binds_Delta) *)
         -- rewrite subst_bnr__preserves_bindsG...
         -- eapply SPT__Bindings_NonRec...
         -- rewrite subst_bnr__preserves_bindsD...
@@ -214,10 +223,10 @@ Proof with eauto.
               split...
               apply eqb_refl.
             }
-            apply notIn_bvbs_bindsG in H4.
-            eapply notIn__map_normalise in H4...
-            apply Typing.weakening in H14.
-            apply H14.
+            apply notIn_bvbs_bindsG in H5.
+            eapply notIn__map_normalise in H5...
+            apply Typing.weakening in H16.
+            apply H16.
             all: auto using inclusion_refl, append_permute.
     + simpl.
       destruct (existsb (eqb x) (bvbs bs)) eqn:Hexb.
@@ -228,11 +237,11 @@ Proof with eauto.
         apply In_bvbs_bindsG in HIn.
         eapply In__map_normalise in HIn...
         eapply T_LetRec...
-        -- apply Typing.weakening in H14.
-           apply H14.
-           all: auto using inclusion_refl, append_shadow.
         -- apply Typing.weakening in H16.
            apply H16.
+           all: auto using inclusion_refl, append_shadow.
+        -- apply Typing.weakening in H18.
+           apply H18.
            all: auto using inclusion_refl, append_shadow.
       * eapply Util.existsb_nexists in Hexb.
         assert (~ In x (bvbs bs)). {
@@ -242,24 +251,24 @@ Proof with eauto.
           split...
           rewrite eqb_refl...
         }
-        apply notIn_bvbs_bindsG in H4...
-        eapply notIn__map_normalise in H4...
+        apply notIn_bvbs_bindsG in H5...
+        eapply notIn__map_normalise in H5...
         eapply T_LetRec...
         -- eauto using NoDup__btvbs.
         -- eauto using NoDup__bvbs.
+        -- rewrite subst_br__preserves_bindsD...
         -- rewrite subst_br__preserves_bindsG...
-        -- rewrite subst_br__preserves_bindsD...
-           eapply SPT__Bindings_Rec...
-           apply Typing.weakening in H14.
-           apply H14.
+        -- eapply SPT__Bindings_Rec...
+           apply Typing.weakening in H16.
+           apply H16.
            all: auto using inclusion_refl, append_permute.
-        -- rewrite subst_br__preserves_bindsD...
-           eapply H0.
+        -- eapply H0.
            ++
-              apply Typing.weakening in H16.
-              apply H16.
+              apply Typing.weakening in H18.
+              apply H18.
               all: auto using inclusion_refl, append_permute.
-           ++ apply H2.
+           ++ assumption.
+           ++ apply H3.
            ++ assumption.
   - (* Var *)
     simpl.
@@ -268,18 +277,18 @@ Proof with eauto.
       subst.
       inversion H.
       subst.
-      simpl in H3.
-      rewrite Heqb in H3.
+      simpl in H4.
+      rewrite Heqb in H4.
       assert (U = T0) by congruence. subst.
-      inversion H3. subst.
+      inversion H4. subst.
       assert (Un = T) by eauto using normalisation__deterministic.
       subst.
       eapply Typing.weakening_empty; eauto.
     + apply eqb_neq in Heqb as Hneq.
       inversion H. subst.
       eapply T_Var...
-      simpl in H3.
-      rewrite Heqb in H3...
+      simpl in H4.
+      rewrite Heqb in H4...
   - (* LamAbs *)
     inversion H0. subst.
     simpl.
@@ -287,11 +296,11 @@ Proof with eauto.
     + apply eqb_eq in Heqb as Heq.
       subst.
       apply T_LamAbs...
-      apply Typing.weakening_term with (Delta' := Delta) (Gamma' := ((s, T1n) :: Gamma)) in H11 .
+      apply Typing.weakening_term with (Delta' := Delta) (Gamma' := ((s, T1n) :: Gamma)) in H12 .
       all: auto using inclusion_refl, cons_shadow.
     + apply eqb_neq in Heqb as Hneq.
       apply T_LamAbs...
-      apply Typing.weakening_term with (Delta' := Delta) (Gamma' := (x, U) :: (s, T1n) :: Gamma) in H11.
+      apply Typing.weakening_term with (Delta' := Delta) (Gamma' := (x, U) :: (s, T1n) :: Gamma) in H12.
       all: auto using inclusion_refl, cons_permute...
 
   - admit. (* Constr *)
@@ -300,6 +309,7 @@ Admitted.
 
 Corollary substitution_preserves_typing__Term : forall t Delta Gamma x U Un v T,
     Delta ,, ((x, U) :: Gamma)  |-+ t : T ->
+    kctx_wf Delta ->
     normalise U Un ->
     [] ,, [] |-+ v : Un ->
     Delta ,, Gamma |-+ <{ [x := v] t }> : T.
@@ -307,6 +317,7 @@ Proof. apply substitution_preserves_typing. Qed.
 
 Corollary substitution_preserves_typing__Binding : forall b Delta Gamma x U Un v,
     Delta ,, ((x, U) :: Gamma) |-ok_b b ->
+    kctx_wf Delta ->
     normalise U Un ->
     [] ,, [] |-+ v : Un ->
     Delta ,, Gamma |-ok_b <{ [x := v]b b }>.

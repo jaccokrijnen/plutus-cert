@@ -82,28 +82,34 @@ Proof with eauto_LR.
 
   split. {
     inversion Htyp__ih. subst.
-    rewrite <- append_flatten in H7.
+    rewrite <- append_flatten in H8.
 
     eapply T_Let...
+    - admit. (*kctx_wf reorder *)
     - unfold flatten.
       simpl.
       simpl in Hmapnorm__bsGn.
       rewrite List.concat_app.
       eapply map_normalise__app'...
-    - rewrite app_assoc in H7. eapply H7.
+    - econstructor...
+      admit. (*kctx_wf sublist*)
+    - rewrite app_assoc in H8. eapply H8.
   }
 
   split. {
     inversion Htyp__ih'. subst.
-    rewrite <- append_flatten in H7.
+    rewrite <- append_flatten in H8.
 
     eapply T_Let...
+    - admit. (*kctx_wf reorder *)
     - unfold flatten.
       simpl.
       simpl in Hmapnorm__bsGn.
       rewrite List.concat_app.
       eapply map_normalise__app'...
-    - rewrite app_assoc in H7. eapply H7.
+    - econstructor...
+      admit. (* kctx_wf sublist *)
+    - rewrite app_assoc in H8. eapply H8.
   }
 
   intros k rho env env' HRD HRG.
@@ -350,22 +356,22 @@ Proof with eauto_LR.
 
       split. {
         inversion Htyp__ih. subst.
-        simpl in H9.
-        eapply closing_preserves_kinding_1 in H9 as H10...
-        eapply strong_normalisation in H10 as H11...
-        destruct H11.
+        simpl in H10.
+        eapply closing_preserves_kinding_1 in H10 as H11...
+        eapply strong_normalisation in H11 as H12...
+        destruct H12.
 
         eexists. split...
       }
 
       split. {
         inversion Htyp__ih. subst.
-        simpl in H9.
-        eapply closing_preserves_kinding_2 in H9 as H10...
-        eapply strong_normalisation in H10 as H11...
-        destruct H11.
+        simpl in H10.
+        eapply closing_preserves_kinding_2 in H10 as H11...
+        eapply strong_normalisation in H11 as H12...
+        destruct H12.
 
         eexists. split...
       }
       right...
-Qed.
+Admitted.

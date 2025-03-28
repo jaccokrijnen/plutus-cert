@@ -63,9 +63,10 @@ Lemma compat_TermBind_typing Δ Γ b x Tb tb Tbn bs t Tn :
   normalise Tb Tbn ->
   (Δ ,, Γ |-+ tb : Tbn) ->
   (Δ ,, (x, Tbn) :: Γ |-+ (Let NonRec       bs  t) : Tn) ->
+  kctx_wf (flatten (map binds_Delta (b :: bs)) ++ Δ) ->
   (Δ ,,             Γ |-+ (Let NonRec (b :: bs) t) : Tn).
 Proof.
-  intros H_eq H_kind_base H_norm H_ty_tb H_ty_let_bs.
+  intros H_eq H_kind_base H_norm H_ty_tb H_ty_let_bs H_kctx.
 
   assert (H_b_wf : Δ ,, Γ |-ok_b b). {
     subst b.
@@ -75,6 +76,7 @@ Proof.
   inversion H_ty_let_bs.
   eapply T_Let with (bsGn := bsGn ++ [(x, Tbn)]).
   - reflexivity.
+  - assumption.
   - subst b.
     rewrite flatten_app.
     apply MN_snoc; auto.
@@ -85,6 +87,7 @@ Proof.
       eapply MN_cons.
         * constructor.
         * exact H_norm.
+    + admit. (* kctx subset*)
     + subst b; simpl.
       assumption.
   - subst b; simpl.
@@ -93,16 +96,17 @@ Proof.
     rewrite <- app_assoc.
     assumption.
   - assumption.
-Qed.
+Admitted.
 
 Lemma compat_nil Δ Γ T t t' :
+  kctx_wf Δ ->
   LR_logically_approximate Δ Γ           t  t' T ->
   LR_logically_approximate Δ Γ (Let NonRec [] t) t' T.
 Proof.
-  intros.
+  intros H_kctx H_approx.
   assert (Δ |-* T : Kind_Base). {
     eapply has_type__basekinded.
-    destruct H as [H _].
+    destruct H_approx as [H _].
     exact H.
     }
   apply compatibility_LetNonRec_Nil'; assumption.
@@ -170,6 +174,7 @@ Proof.
       (x := x) (Tbn := Tbn).
 
     all: subst; auto.
+    admit. (* kctx_wf *)
 
   (** Typing of post-term in smaller Γ *)
   -
@@ -219,8 +224,9 @@ Proof.
          (close (msyn1 ρ) γ  tb)
          (close (msyn2 ρ) γ' tb)).
     {
+      assert (H_kctx : kctx_wf Δ) by admit. (* kctx_wf *)
       assert (H_LR_tb : LR_logically_approximate Δ Γ tb tb Tbn).
-      { auto using LR_reflexivity. }
+      { apply LR_reflexivity; assumption. }
       destruct H_LR_tb as [_ [_ H_approx]].
       eauto.
     }

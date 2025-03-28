@@ -16,10 +16,11 @@ Require Import Coq.Lists.List.
 
 Lemma compatibility_LetNonRec_Nil' : forall Delta Gamma t t' Tn,
     Delta |-* Tn : Kind_Base ->
+    kctx_wf Delta ->
     LR_logically_approximate Delta Gamma t t' Tn ->
     LR_logically_approximate Delta Gamma (Let NonRec nil t) t' Tn.
 Proof with eauto_LR.
-  intros Delta Gamma t t' Tn Hkind__T IHLR__t.
+  intros Delta Gamma t t' Tn Hkind__T H_kctx IHLR__t.
   unfold LR_logically_approximate.
 
   destruct IHLR__t as [Htyp__t [Htyp__t' IH__t]].
@@ -66,10 +67,11 @@ Lemma compatibility_LetNonRec_Nil : forall Delta Gamma t t' Tn,
     forall bsGn,
       map_normalise nil bsGn ->
       Delta |-* Tn : Kind_Base ->
+      kctx_wf Delta ->
       LR_logically_approximate Delta (bsGn ++ Gamma) t t' Tn ->
       LR_logically_approximate Delta Gamma (Let NonRec nil t) (Let NonRec nil t') Tn.
 Proof with eauto_LR.
-  intros Delta Gamma t t' Tn bsGn Hmapnorm__bsGn Hkind__T IHLR__t.
+  intros Delta Gamma t t' Tn bsGn Hmapnorm__bsGn Hkind__T H_kctx IHLR__t.
   unfold LR_logically_approximate.
 
   inversion Hmapnorm__bsGn. subst.

@@ -341,9 +341,10 @@ Proof.
     + simpl in H.
       rewrite mgsubst_absorbs_msubstT in H.
       eauto.
+    + admit. (* kctx_wf empty *)
     + eauto.
     + eauto.
-Qed.
+Admitted.
 
 Lemma msubst_preserves_typing_2 : forall rho k c e1 e2,
     RG rho k c e1 e2 ->
@@ -365,9 +366,10 @@ Proof.
     + simpl in H.
       rewrite mgsubst_absorbs_msubstT in H.
       eauto.
+    + admit. (* kctx_wf empty *)
     + eauto.
     + eauto.
-Qed.
+Admitted.
 
 Lemma msubstT_preserves_kinding_1 : forall ck rho,
   RD ck rho ->

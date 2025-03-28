@@ -187,7 +187,7 @@ Proof.
     apply map_normalise__app in H2 as [Γ_bs [Γ_b [H_mapnorm_b [H_mapnorm_bs H_eq]]]].
     simpl in H_mapnorm_bs. rewrite app_nil_r in H_mapnorm_bs.
 
-    pose proof (map_normalise__deterministic _ _ _ H_mapnorm_bs H10); subst.
+    pose proof (map_normalise__deterministic _ _ _ H_mapnorm_bs H8); subst.
 
     apply H with
       (t := t) (T := T)

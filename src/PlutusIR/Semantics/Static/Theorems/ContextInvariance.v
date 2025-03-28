@@ -120,10 +120,10 @@ Module Typing.
     - (* T_Let *)
       subst.
       eapply T_Let...
-      apply H5.
+      apply H6.
       intros.
-      assert ({In x (bvbs bs)} + {~ In x (bvbs bs)}) by eauto using in_dec, string_dec.
-      destruct H1.
+      assert (H_in : {In x (bvbs bs)} + {~ In x (bvbs bs)}) by eauto using in_dec, string_dec.
+      destruct H_in as [i | ].
       + apply In_bvbs_bindsG in i.
         eapply In__map_normalise in i...
         apply In__lookup_append...
@@ -131,7 +131,7 @@ Module Typing.
     - (* T_LetRec *)
       subst.
       eapply T_LetRec...
-      + apply H5.
+      + apply H6.
         intros.
         assert (H_In : {In x (bvbs bs)} + {~ In x (bvbs bs)}) by eauto using in_dec, string_dec.
         destruct H_In.
@@ -139,7 +139,7 @@ Module Typing.
           eapply In__map_normalise in i...
           apply In__lookup_append...
         * apply lookup_append_cong...
-      + apply H7.
+      + apply H8.
         intros.
         assert (H_In : {In x (bvbs bs)} + {~ In x (bvbs bs)}) by eauto using in_dec, string_dec.
         destruct H_In.
@@ -149,10 +149,10 @@ Module Typing.
         * apply lookup_append_cong...
     - (* W_ConsB_NonRec *)
       eapply W_ConsB_NonRec...
-      eapply H3.
+      eapply H4.
       intros.
-      assert ({In x (bvb b)} + {~ In x (bvb b)}) by eauto using in_dec, string_dec.
-      destruct H6.
+      assert (H_in : {In x (bvb b)} + {~ In x (bvb b)}) by eauto using in_dec, string_dec.
+      destruct H_in as [i | ].
       + apply In_bvb_bindsG in i.
         eapply In__map_normalise in i...
         apply In__lookup_append...

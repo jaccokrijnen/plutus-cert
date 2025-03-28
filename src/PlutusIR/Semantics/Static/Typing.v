@@ -57,6 +57,8 @@ Reserved Notation "Delta ',,' Gamma '|-ok_b' b" (at level 101, b at level 0, no 
 
 Local Open Scope list_scope.
 
+Definition kctx_wf (Δ : list (string * kind)) := NoDup (map fst Δ).
+
 Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty -> Prop :=
   (* Simply typed lambda caclulus *)
   | T_Var : forall Γ Δ x T Tn,
@@ -75,7 +77,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
   (* Universal types *)
   | T_TyAbs : forall Δ Γ X K t Tn,
       ((X, K) :: Δ) ,, Γ |-+ t : Tn ->
-      NoDup (X :: map fst Δ) ->
+      kctx_wf ((X, K) :: Δ) ->
       Δ ,, Γ |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
   | T_TyInst : forall Δ Γ t1 T2 T1n X K2 T0n T2n,
       Δ ,, Γ |-+ t1 : (Ty_Forall X K2 T1n) ->
@@ -116,6 +118,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
   **)
   | T_Let : forall Δ Γ bs t Tn Δ' Γ' bsGn,
       Δ' = flatten (map binds_Delta bs) ++ Δ ->
+      kctx_wf Δ' ->
       map_normalise (flatten (map binds_Gamma bs)) bsGn ->
       Γ' = bsGn ++ Γ ->
       Δ ,, Γ |-oks_nr bs ->
@@ -123,6 +126,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ |-* Tn : Kind_Base ->
       Δ ,, Γ |-+ (Let NonRec bs t) : Tn
   | T_LetRec : forall Δ Γ bs t Tn Δ' Γ' bsGn,
+      kctx_wf Δ' ->
       (* There can be no duplicate bound variables in a let-rec *)
       NoDup (btvbs bs) ->
       NoDup (bvbs bs) ->
@@ -153,6 +157,7 @@ with bindings_well_formed_nonrec : list (string * kind) -> list (string * ty) ->
   | W_ConsB_NonRec : forall Δ Γ b bs bsGn,
       Δ ,, Γ |-ok_b b ->
       map_normalise (binds_Gamma b) bsGn ->
+      kctx_wf ((binds_Delta b) ++ Δ) ->
       ((binds_Delta b) ++ Δ) ,, (bsGn ++ Γ) |-oks_nr bs ->
       Δ ,, Γ |-oks_nr (b :: bs)
 
@@ -231,6 +236,8 @@ Proof.
 
   econstructor.
   - exact eq_refl.
+  - simpl in *.
+    admit. (* reordering and assumption *)
   - unfold flatten.
     simpl.
     rewrite concat_app.
@@ -243,6 +250,7 @@ Proof.
   - econstructor.
     + assumption.
     + eassumption.
+    + admit. (* sublist of assumption *)
     + eassumption.
   - simpl.
     rewrite flatten_cons.
@@ -250,7 +258,7 @@ Proof.
     rewrite <- app_assoc.
     assumption.
   - assumption.
-Qed.
+Admitted.
 
 Lemma has_type__normal : forall Delta Gamma t T,
     Delta ,, Gamma |-+ t : T ->
