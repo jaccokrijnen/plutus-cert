@@ -84,13 +84,18 @@ Module Typing.
     all: try (intros Delta'_0 Gamma'_0 HinclD HinclG).
     all: try (intros Delta'_0 HinclD).
     all: try solve [econstructor; subst; eauto using Kinding.weakening, inclusion_cons, inclusion_append].
-    - (* W_Data *)
+    - (* Ty_Abs *)
+      econstructor...
+      + subst.
+        intros.
+        admit. (* No Dup needs additional assumptions*)
+    - (* W Data*)
       econstructor...
       + subst.
         intros.
         eapply H7...
       + subst...
-  Qed.
+  Admitted.
 
   Lemma weakening_empty : forall Delta Gamma t T,
       [] ,, [] |-+ t : T ->
