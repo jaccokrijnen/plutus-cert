@@ -320,9 +320,9 @@ Lemma context_has_type__hole_normal : forall Δ₁ Γ₁ C Δ Γ T T₁,
 Proof.
   intros Δ₁ Γ₁ C Δ Γ T T₁ Cty.
   Require Import Coq.Program.Equality.
-  (* dependent induction Cty.
-  all: eauto. *)
-Admitted.
+  dependent induction Cty.
+  all: eauto.
+Qed.
 
 
 Lemma context_has_type__apply : forall C t Δ₁ Γ₁ Δ Γ T T₁,

@@ -9,27 +9,23 @@ Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservatio
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
 
 Require Import Arith.
+Require Import Lists.List.
 
 
 
 
 Lemma compatibility_TyAbs: forall Delta Gamma bX K T e e',
+    NoDup (bX :: map fst Delta) ->
     LR_logically_approximate ((bX, K) :: Delta) Gamma e e' T ->
     LR_logically_approximate Delta Gamma (TyAbs bX K e) (TyAbs bX K e') (Ty_Forall bX K T).
 Proof with eauto_LR.
-  intros Delta Gamma bX K T e e' IH_LR.
+  intros Delta Gamma bX K T e e' H_NoDup IH_LR.
   unfold LR_logically_approximate.
 
   destruct IH_LR as [Htyp__e [Htyp__e' IH__e]].
 
   split... 
-  { constructor...
-    (* This shows we probably need to add NoDup to all typing rules *)
-    admit. }
-  split...
-  { constructor...
-    (* This shows we probably need to add NoDup to all typing rules *)
-    admit. }
+  split... 
 
   intros k rho env env' HRD HRG.
 
@@ -49,7 +45,7 @@ Proof with eauto_LR.
   }
 
   split... {
-    apply T_TyAbs in Htyp__e.
+    apply T_TyAbs in Htyp__e...
     eapply has_type__basekinded in Htyp__e as H...
     eapply closing_preserves_kinding_1 in H as H0...
     rewrite msubstT_TyForall in H0.
@@ -65,11 +61,9 @@ Proof with eauto_LR.
     rewrite msubstA_TyAbs in Htyp__e.
     rewrite msubst_TyAbs in Htyp__e.
     eauto.
-    (* Should follow from typing rule*)
-    admit.
   }
   split... {
-    apply T_TyAbs in Htyp__e'.
+    apply T_TyAbs in Htyp__e'...
     eapply has_type__basekinded in Htyp__e' as H...
     eapply closing_preserves_kinding_2 in H as H0...
     rewrite msubstT_TyForall in H0.
@@ -85,8 +79,6 @@ Proof with eauto_LR.
     rewrite msubstA_TyAbs in Htyp__e'.
     rewrite msubst_TyAbs in Htyp__e'.
     eauto.
-    (* Should follow from typing rule*)
-    admit.
   }
 
   left. split. intros Hcon. inversion Hcon. split. intros Hcon. inversion Hcon.
@@ -108,4 +100,4 @@ Proof with eauto_LR.
     rewrite <- minus_n_O in Hlt_i.
     apply Nat.lt_le_incl.
     assumption.
-Admitted.
+Qed.

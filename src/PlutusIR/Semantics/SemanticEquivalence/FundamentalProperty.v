@@ -135,5 +135,4 @@ Proof with eauto with hintdb_compat_context.
 
   all: intros Δ₁ Γ₁ Δ Γ T T₁ H_C_ty.
   all: inversion H_C_ty; subst...
-  (* Idk *)
-Admitted.
+Qed.
