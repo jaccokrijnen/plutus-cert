@@ -215,6 +215,8 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ |-* Tn : Kind_Base ->
       Δ ,, Γ |-+ (Let NonRec bs t) : Tn
   | T_LetRec : forall Δ Γ bs t Tn Δ' Γ' bsGn,
+      
+
       NoDup (btvbs bs ++ (map fst Δ)) ->
       (* There can be no duplicate bound variables in a let-rec *)
       NoDup (btvbs bs) ->
@@ -267,9 +269,9 @@ with binding_well_formed : list (string * kind) -> list (string * ty) -> recursi
       Δ |-* T : K ->
       Δ ,, Γ |-ok_b rec ## (TypeBind (TyVarDecl X K) T)
    | W_Data : forall Δ Γ dtd XK YKs matchFunc cs X Ys Δ' Tres rec,
-      dtd = Datatype XK [YKs] matchFunc cs ->
+      dtd = Datatype XK YKs matchFunc cs ->
       X = tvdecl_name XK ->
-      Ys = map tvdecl_name [YKs] ->
+      Ys = map tvdecl_name YKs ->
 
       (* No duplicate bound type variables *)
       NoDup (X :: Ys) ->
@@ -278,7 +280,7 @@ with binding_well_formed : list (string * kind) -> list (string * ty) -> recursi
       NoDup (map vdecl_name cs) ->
 
       (* Well-formedness of constructors *)
-      Δ' = rev (map fromDecl [YKs]) ++ Δ -> 
+      Δ' = rev (map fromDecl YKs) ++ Δ -> 
       Tres = constrLastTyExpected dtd -> (* The expected result type for each constructor *)
       (forall c, In c cs -> Δ' |-ok_c c : Tres) ->
 
@@ -326,7 +328,21 @@ Inductive FreshOver : string -> list string -> Prop :=
   | FreshOver_nil : forall fr, FreshOver fr []
   | FreshOver_cons : forall fr x xs, ~ In fr (x :: xs) -> FreshOver fr xs -> FreshOver fr (x :: xs).
 
-(* Opaque dtdecl_freshR. *)
+Lemma K_TyForalls_constructor : forall Δ T YKs,
+      (rev (map fromDecl YKs) ++ Δ) |-* T : Kind_Base ->
+      Δ |-* (Ty_Foralls YKs T) : Kind_Base.
+Proof.
+Admitted.
+
+Lemma TyApps_replaceReturnTy x T2s T3 : 
+  (replaceRetTy (Ty_Apps (Ty_Var x) T2s) T3) = T3.
+Proof.
+  induction T2s.
+  - simpl. reflexivity.
+  - simpl. admit.
+Admitted.
+
+Compute (Ty_Apps (Ty_Var "b") [(Ty_Var "c"); (Ty_Var "d")]).
 
 (* Discuss with Jacco that because of constrLastTyExpected in matchTy we now need different Deltas. Or do we? We basically only differentiate on Rec/NonRec *)
 
@@ -335,7 +351,7 @@ Lemma b_wf__wk Δ Γ b rec:
   Δ ,, Γ |-ok_b rec ## b -> (rec = NonRec -> NoDup (btvb b ++ (map fst Δ))) -> forall T _x, In (_x, T) (binds_Gamma b) -> exists K Δ', Δ' |-* T : K.
 Proof.
   intros Hb_wf H_ns T _x Hin_b.
-  inversion Hb_wf;  subst.
+  inversion Hb_wf as [| | ];  subst.
   - admit.
   - admit.
   - 
@@ -353,30 +369,28 @@ Proof.
       inversion Hm_bind; subst.
       clear Hm_bind.
       exists Kind_Base.
-      destruct XK.
-      destruct YKs.
+      destruct XK as [x x_k].
       destruct rec.
       {
-        exists (((b, k)::Δ)).
-
-
-      
-        (* exists ((b, k)::Δ). *)
-        constructor.
+        exists (((x, x_k)::Δ)).
+        apply K_TyForalls_constructor.
         simpl.
 
 
-        remember (dtdecl_freshR (Datatype (TyVarDecl b k) [TyVarDecl b0 k0] _x cs)) as fr.
+        remember (dtdecl_freshR (Datatype (TyVarDecl x x_k) YKs _x cs)) as fr.
         
-        
-        constructor.
-        { admit. }
         simpl in H7.
+        constructor.
+        { 
+          (* By rearrange H7 *)  
+          admit. 
+        }
+
         assert (
           forall fr',
-          (~ In fr' (b0 :: b :: 
+          (~ In fr' ((map getTyname YKs) ++ x :: 
               flat_map (fun c => Ty.ftv (vdecl_ty c)) cs))
-          -> ((fr', Kind_Base) :: (b0, k0) :: Δ)
+          -> ((fr', Kind_Base) :: (rev (map fromDecl YKs)) ++ Δ)
                 |-* (fold_right Ty_Fun (Ty_Var fr')
                 (map (fun c : vdecl => replaceRetTy (vdecl_ty c) (Ty_Var fr')) cs))
               : Kind_Base)
@@ -393,49 +407,58 @@ Proof.
             induction cs; intros.
             - simpl. constructor. simpl. rewrite String.eqb_refl. auto.
             - assert (fr'
-                ∉ (b0
-                :: b
+                ∉ ((map getTyname YKs) ++ x
                 :: flat_map
                   (fun c : vdecl => Ty.ftv (vdecl_ty c))
                   (cs))) by admit.
+
               assert (Hc_wf_smaller: (forall c : vdecl,
-                c ∈ cs ->
-                (b0, k0) :: Δ |-ok_c c
-                : (Ty_App (Ty_Var (b))
-                  (Ty_Var (b0))))).
+                  c ∈ cs ->
+                  rev (map fromDecl YKs) ++ Δ
+                  |-ok_c c
+                  : (Ty_Apps (Ty_Var x)
+                    (map Ty_Var
+                    (map tvdecl_name YKs))))).
               {
                 intros.
                 eapply H6. apply in_cons. auto.
               }
               assert (Hno_dup_smaller: NoDup (map vdecl_name cs)) by admit.
               specialize (IHcs Hno_dup_smaller Hc_wf_smaller fr' H0).
+              clear Hno_dup_smaller Hc_wf_smaller.
+              simpl.
+              constructor; eauto. (* RHS of Fun with IH*)
+              specialize (H6 a).
+              assert (In a (a :: cs)) by now apply in_eq.
+              specialize (H6 H1).
+              inversion H6; subst.
+              assert (HExists: exists Targ1, T = Ty_Fun Targ1 (Ty_Apps (Ty_Var x)
+                    (map Ty_Var
+                    (map tvdecl_name YKs)))) by admit.
+              (* Assuming one argument for now*)
+              destruct HExists as [Targ1 HExists]; subst.
               simpl.
               constructor.
-              + specialize (H6 a).
-                assert (In a (a :: cs)) by now apply in_eq.
-                specialize (H6 H1).
-                inversion H6; subst.
-                assert (HExists: exists Targ1, T = Ty_Fun Targ1 (Ty_App (Ty_Var b) (Ty_Var b0))) by admit.
-                (* Assuming one argument for now*)
-                destruct HExists as [Targ1 HExists]; subst.
-                simpl.
-                constructor.
-                * 
-                  inversion H4. subst.
-                  specialize (H5 Targ1). 
-                  (* fr' fresh over Δ? We can see it cannot be in Targ1 by fr' not in ftv Targ1
-                    it can be in Δ, but that is no issue
-                  *)
+              * 
+                inversion H4. subst. clear H4. clear H10.
+                specialize (H5 Targ1). 
+                (* fr' fresh over Δ? We can see it cannot be in Targ1 by fr' not in ftv Targ1
+                  it can be in Δ, but that is no issue
+                *)
 
-                  admit.
-                * constructor. simpl. rewrite String.eqb_refl. auto.
-              + eapply IHcs.
+                admit.
+              * simpl. rewrite TyApps_replaceReturnTy. constructor. simpl. rewrite String.eqb_refl. auto.
           }
           constructor.
 
-          (* NOT TRUE: But we can savely remove the b, it doesn shadow*)
-          assert (Hremove_vac: (fr, Kind_Base) :: (b0, k0) :: (b, k) :: Δ = (fr, Kind_Base) :: (b0, k0) :: Δ) by admit.
-          assert (((fr, Kind_Base) :: (b0, k0) :: Δ)
+          (* NOT TRUE: But we can safely add the x, it doesn shadow by H_ns*)
+          assert (Hrewrite_noshadow: ((fr, Kind_Base)
+:: rev (map fromDecl YKs) ++
+(x, x_k) :: Δ) 
+                = (fr, Kind_Base) :: rev (map fromDecl YKs) ++ Δ) by admit.
+
+          (* rewrite Hrewrite_noshadow. I dont understand why I cannot rewrite *)
+          assert (((fr, Kind_Base) :: rev (map fromDecl YKs) ++ Δ)
               |-* (fold_right Ty_Fun (Ty_Var fr)
                 (map
                 (fun c : vdecl =>
@@ -445,16 +468,17 @@ Proof.
               {
 
                         eapply H.
+                        (* By freshness definition*)
                         admit.
               }
-          (* by definition of freshness!  *)
+              
           admit.
       }
       {
         (* REC case *)
 
         exists (Δ).
-        constructor.
+        (* constructor.
         constructor.
         - simpl.
           simpl in H7.
@@ -526,6 +550,7 @@ Proof.
               + eapply IHcs.
           }
           eapply H.
+          admit. *)
           admit.
       }
 
@@ -543,22 +568,17 @@ Proof.
       inversion HconstrBind; subst.
       exists Kind_Base. (* Ty_Forall always has Kind_Base, so also Ty_Foralls *)
       
-      
-      remember (Datatype XK [YKs] matchFunc cs) as d.
-      destruct YKs.
-      unfold fromDecl in H6.
-      simpl in H6.
-      destruct XK.
+      remember (Datatype XK YKs matchFunc cs) as d.
+      destruct XK as [x x_k].
       destruct rec.
       {
           inversion H6; subst.
-          exists ((b0, k0)::Δ).
-
-          constructor.
+          exists ((x, x_k)::Δ).
+          apply K_TyForalls_constructor.
           simpl in H6.
           remember (
-            (Datatype (TyVarDecl b0 k0)
-            [TyVarDecl b k] matchFunc
+            (Datatype (TyVarDecl x x_k)
+            YKs matchFunc
             cs)) as  d.
           assert (exists targ1, t = Ty_Fun targ1 (constrLastTyExpected d)) by admit.
           destruct H as [Htarg H]; subst.
@@ -569,7 +589,7 @@ Proof.
             subst.
 
 
-            (* By NoDup (b :: map fst Δ), we have b not in Delta, and by H2, we have b not b0, hence we can add it without fearign shadowing, kind of like weakening *)
+            (* By NoDup (b :: map fst Δ), we have x not in Delta, and by H2, we have x not YKs, hence we can add it without fearign shadowing, kind of like weakening *)
 
           
           admit.
@@ -585,12 +605,14 @@ Proof.
         inversion H6; subst.
         exists (Δ).
 
-        remember ((Datatype (TyVarDecl b0 k0)
-          [TyVarDecl b k] matchFunc
+        remember ((Datatype (TyVarDecl x x_k)
+          YKs matchFunc
           cs)) as d.
         assert (exists targ1, t = Ty_Fun targ1 (constrLastTyExpected d)) by admit.
         destruct H as [Htarg H]; subst.
-        constructor.
+
+        apply K_TyForalls_constructor.
+        
         constructor.
         * inversion H6; subst.
           simpl.
