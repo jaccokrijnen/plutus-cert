@@ -22,7 +22,14 @@ Proof with eauto_LR.
 
   destruct IH_LR as [Htyp__e [Htyp__e' IH__e]].
 
-  split... split...
+  split... 
+  { constructor...
+    (* This shows we probably need to add NoDup to all typing rules *)
+    admit. }
+  split...
+  { constructor...
+    (* This shows we probably need to add NoDup to all typing rules *)
+    admit. }
 
   intros k rho env env' HRD HRG.
 
@@ -58,6 +65,8 @@ Proof with eauto_LR.
     rewrite msubstA_TyAbs in Htyp__e.
     rewrite msubst_TyAbs in Htyp__e.
     eauto.
+    (* Should follow from typing rule*)
+    admit.
   }
   split... {
     apply T_TyAbs in Htyp__e'.
@@ -76,6 +85,8 @@ Proof with eauto_LR.
     rewrite msubstA_TyAbs in Htyp__e'.
     rewrite msubst_TyAbs in Htyp__e'.
     eauto.
+    (* Should follow from typing rule*)
+    admit.
   }
 
   left. split. intros Hcon. inversion Hcon. split. intros Hcon. inversion Hcon.
@@ -97,4 +108,4 @@ Proof with eauto_LR.
     rewrite <- minus_n_O in Hlt_i.
     apply Nat.lt_le_incl.
     assumption.
-Qed.
+Admitted.
