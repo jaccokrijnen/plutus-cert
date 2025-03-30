@@ -57,9 +57,12 @@ Reserved Notation "Delta ',,' Gamma '|-ok_b' b" (at level 101, b at level 0, no 
 
 Local Open Scope list_scope.
 
+Definition kctx_wf (Δ : list (string * kind)) := NoDup (map fst Δ).
+
 Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty -> Prop :=
   (* Simply typed lambda caclulus *)
   | T_Var : forall Γ Δ x T Tn,
+      kctx_wf Δ ->
       lookup x Γ = Coq.Init.Datatypes.Some T ->
       normalise T Tn ->
       Δ ,, Γ |-+ (Var x) : Tn
@@ -98,12 +101,15 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ ,, Γ |-+ (Unwrap M) : T0n
   (* Additional constructs *)
   | T_Constant : forall Δ Γ T a,
+      kctx_wf Δ ->
       Δ ,, Γ |-+ (Constant (ValueOf T a)) : (Ty_Builtin T)
   | T_Builtin : forall Δ Γ f T Tn,
+      kctx_wf Δ ->
       T = lookupBuiltinTy f ->
       normalise T Tn ->
       Δ ,, Γ |-+ (Builtin f) : Tn
   | T_Error : forall Δ Γ S T Tn,
+      kctx_wf Δ ->
       Δ |-* T : Kind_Base ->
       normalise T Tn ->
       Δ ,, Γ |-+ (Error S) : Tn
@@ -148,6 +154,7 @@ with constructor_well_formed : list (string * kind) -> vdecl -> ty -> Prop :=
 
 with bindings_well_formed_nonrec : list (string * kind) -> list (string * ty) -> list binding -> Prop :=
   | W_NilB_NonRec : forall Δ Γ,
+      kctx_wf Δ ->
       Δ ,, Γ |-oks_nr nil
   | W_ConsB_NonRec : forall Δ Γ b bs bsGn,
       Δ ,, Γ |-ok_b b ->
@@ -258,6 +265,34 @@ Proof with eauto.
   induction 1; intros; eauto using normalise_to_normal...
   - inversion IHhas_type1; subst...
     inversion H1.
+Qed.
+
+Lemma kctx_wf__cons X K Δ : 
+  kctx_wf ((X, K) :: Δ) ->
+  kctx_wf Δ.
+Proof.
+  unfold kctx_wf in *.
+  inversion 1. assumption.
+Qed.
+
+Lemma kctx_wf__append_r Δ' Δ :
+  kctx_wf (Δ' ++ Δ) ->
+  kctx_wf Δ.
+Proof.
+  unfold kctx_wf.
+  rewrite map_app.
+  intros H. eapply NoDup_app_remove_l. eauto.
+Qed.
+
+Lemma has_type__kctx_wf : forall Δ Γ t T,
+  Δ ,, Γ |-+ t : T ->
+  kctx_wf Δ.
+Proof.
+  induction 1; intros.
+  all: try assumption. (*base cases*)
+  - eapply kctx_wf__cons. eauto. (* TyAbs *)
+  - subst Δ'. eapply kctx_wf__append_r. eauto.
+  - subst Δ'. eapply kctx_wf__append_r. eauto.
 Qed.
 
 

@@ -7,21 +7,21 @@ Import ListNotations.
 
 Module Kinding.
 
-  Lemma weakening : forall Delta Delta' T K,
-      inclusion Delta Delta' ->
-      Delta |-* T : K ->
-      Delta' |-* T : K.
+  Lemma weakening : forall Δ Δ' T K,
+      inclusion Δ Δ' ->
+      Δ |-* T : K ->
+      Δ' |-* T : K.
   Proof.
-    intros Delta Delta' T K H HT.
-    generalize dependent Delta'.
+    intros Δ Δ' T K H HT.
+    generalize dependent Δ'.
     induction HT.
-    all: intros Delta' Hincl.
+    all: intros Δ' Hincl.
     all: try solve [econstructor; eauto using inclusion_cons].
   Qed.
 
-  Lemma weakening_empty : forall Delta T K,
+  Lemma weakening_empty : forall Δ T K,
       [] |-* T : K ->
-      Delta |-* T : K.
+      Δ |-* T : K.
   Proof.
     intros.
     eapply weakening; eauto using inclusion_empty.
@@ -31,34 +31,58 @@ End Kinding.
 
 Module Typing.
 
-  Definition P_has_type Delta Gamma t T : Prop :=
-    forall Delta' Gamma',
-      inclusion Delta Delta' ->
-      inclusion Gamma Gamma' ->
-      Delta' ,, Gamma' |-+ t : T.
+  Lemma kctx_wf__inclusion Δ Δ':
+     inclusion Δ Δ' ->
+     kctx_wf Δ' ->
+     kctx_wf Δ.
+  Proof.
+    intros H_incl H_kctx.
+    induction Δ.
+    - admit.
+    - unfold kctx_wf in *.
+      inversion H_incl.
+      simpl.
 
-  Definition P_constructor_well_formed Delta c T : Prop :=
-    forall Delta',
-      inclusion Delta Delta' ->
-      Delta' |-ok_c c : T.
+  Qed.
 
-  Definition P_bindings_well_formed_nonrec Delta Gamma bs : Prop :=
-    forall Delta' Gamma',
-      inclusion Delta Delta' ->
+  Definition P_has_type Δ Gamma t T : Prop :=
+    forall Δ' Gamma',
+      kctx_wf Δ ->
+      kctx_wf Δ' ->
+      inclusion Δ Δ' ->
       inclusion Gamma Gamma' ->
-      Delta' ,, Gamma' |-oks_nr bs.
+      Δ' ,, Gamma' |-+ t : T.
 
-  Definition P_bindings_well_formed_rec Delta Gamma bs : Prop :=
-    forall Delta' Gamma',
-      inclusion Delta Delta' ->
-      inclusion Gamma Gamma' ->
-      Delta' ,, Gamma' |-oks_r bs.
+  Definition P_constructor_well_formed Δ c T : Prop :=
+    forall Δ',
+      kctx_wf Δ ->
+      kctx_wf Δ' ->
+      inclusion Δ Δ' ->
+      Δ' |-ok_c c : T.
 
-  Definition P_binding_well_formed Delta Gamma b : Prop :=
-    forall Delta' Gamma',
-      inclusion Delta Delta' ->
+  Definition P_bindings_well_formed_nonrec Δ Gamma bs : Prop :=
+    forall Δ' Gamma',
+      kctx_wf Δ ->
+      kctx_wf Δ' ->
+      inclusion Δ Δ' ->
       inclusion Gamma Gamma' ->
-      Delta' ,, Gamma' |-ok_b b.
+      Δ' ,, Gamma' |-oks_nr bs.
+
+  Definition P_bindings_well_formed_rec Δ Gamma bs : Prop :=
+    forall Δ' Gamma',
+      kctx_wf Δ ->
+      kctx_wf Δ' ->
+      inclusion Δ Δ' ->
+      inclusion Gamma Gamma' ->
+      Δ' ,, Gamma' |-oks_r bs.
+
+  Definition P_binding_well_formed Δ Gamma b : Prop :=
+    forall Δ' Gamma',
+      kctx_wf Δ ->
+      kctx_wf Δ' ->
+      inclusion Δ Δ' ->
+      inclusion Gamma Gamma' ->
+      Δ' ,, Gamma' |-ok_b b.
 
   #[export] Hint Unfold
     P_has_type
@@ -69,10 +93,10 @@ Module Typing.
     : core.
 
   Lemma weakening :
-    (forall Delta Gamma t T, Delta ,, Gamma |-+ t : T -> P_has_type Delta Gamma t T) /\
-    (forall Delta Gamma bs, Delta ,, Gamma |-oks_nr bs -> P_bindings_well_formed_nonrec Delta Gamma bs) /\
-    (forall Delta Gamma bs, Delta ,, Gamma |-oks_r bs -> P_bindings_well_formed_rec Delta Gamma bs) /\
-    (forall  Delta Gamma b, Delta ,, Gamma |-ok_b b -> P_binding_well_formed Delta Gamma b).
+    (forall Δ Gamma t T, Δ ,, Gamma |-+ t : T -> P_has_type Δ Gamma t T) /\
+    (forall Δ Gamma bs, Δ ,, Gamma |-oks_nr bs -> P_bindings_well_formed_nonrec Δ Gamma bs) /\
+    (forall Δ Gamma bs, Δ ,, Gamma |-oks_r bs -> P_bindings_well_formed_rec Δ Gamma bs) /\
+    (forall  Δ Gamma b, Δ ,, Gamma |-ok_b b -> P_binding_well_formed Δ Gamma b).
   Proof with eauto using Kinding.weakening, inclusion_cons, inclusion_append.
     apply has_type__multind with
       (P := P_has_type)
@@ -81,34 +105,55 @@ Module Typing.
       (P2 := P_bindings_well_formed_rec)
       (P3 := P_binding_well_formed).
     all: intros; autounfold.
-    all: try (intros Delta'_0 Gamma'_0 HinclD HinclG).
-    all: try (intros Delta'_0 HinclD).
+    all: try (intros Δ'_0 Gamma'_0 HinclD HinclG).
+    all: try (intros Δ'_0 HinclD).
     all: try solve [econstructor; subst; eauto using Kinding.weakening, inclusion_cons, inclusion_append].
-    - (* W_Data *)
+    - (* Ty_Forall *)
+      unfold P_has_type in *.
+      econstructor...
+      apply H0...
+      unfold P_has_type in *.
+        simpl.
+        admit. (* holds via inclusion *)
+      +
+        admit. (* holds via inclusion *)
+    - (* LetNonRec *)
+      admit. (* TODO: add constraints in typing rules of LetRec and LetNonRec *)
+    - (* LetRec *)
+      admit. (* TODO: add constraints in typing rules of LetRec and LetNonRec *)
+    - (* oks_nr *)
+      admit. (* TODO: add constraints in typing rules of LetRec and LetNonRec *)
+    - (* W Data*)
       econstructor...
       + subst.
         intros.
         eapply H7...
+        all: admit. (* TODO: add constraints in typing rules of LetRec and LetNonRec *)
       + subst...
-  Qed.
+  Admitted.
 
-  Lemma weakening_empty : forall Delta Gamma t T,
+  Lemma weakening_empty : forall Δ Gamma t T,
+      kctx_wf Δ ->
       [] ,, [] |-+ t : T ->
-      Delta ,, Gamma |-+ t : T.
+      Δ ,, Gamma |-+ t : T.
   Proof.
-    intros Delta Gamma t T Ht.
+    intros Δ Gamma t H_NoDup T Ht.
     apply weakening in Ht.
     unfold P_has_type in Ht.
     apply Ht.
+    - unfold kctx_wf in *. auto using NoDup.
+    - assumption.
     - apply inclusion_empty.
     - apply inclusion_empty.
   Qed.
 
-  Corollary weakening_term Delta Delta' Gamma Gamma' t T
-    (incl_Delta : inclusion Delta Delta')
+  Corollary weakening_term Δ Δ' Gamma Gamma' t T
+    (incl_Δ : inclusion Δ Δ')
     (incl_Gamma : inclusion Gamma Gamma') :
-      Delta ,, Gamma |-+ t : T ->
-      Delta' ,, Gamma' |-+ t : T.
+      kctx_wf Δ ->
+      kctx_wf Δ' ->
+      Δ ,, Gamma |-+ t : T ->
+      Δ' ,, Gamma' |-+ t : T.
   Proof.
     intros.
     eapply weakening.
