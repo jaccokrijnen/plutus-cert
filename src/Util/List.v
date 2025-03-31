@@ -109,6 +109,28 @@ Proof with auto.
     all: simpl; rewrite H_eqb...
 Qed.
 
+Lemma lookup__not_in {K} x (xs : list (string * K)) :
+  lookup x xs = None -> ~ In x (map fst xs).
+Proof.
+  intros H_lookup H_in.
+  induction xs.
+  - inversion H_in.
+  - destruct a as [k v] eqn:H_eq.
+    destruct (string_dec x k).
+    + subst x.
+      rewrite lookup_eq in H_lookup.
+      discriminate.
+    + rewrite lookup_neq in H_lookup; try assumption.
+      simpl in H_in.
+      destruct H_in.
+      * symmetry in H. auto.
+      * auto.
+Qed.
+
+Lemma not_in__lookup {K} x (xs : list (string * K)) :
+  ~ In x (map fst xs) -> lookup x xs = None.
+Admitted.
+
 Definition inclusion {A : Type} (m m' : list (string * A)) :=
   forall x v, lookup x m = Some v -> lookup x m' = Some v.
 
@@ -158,6 +180,19 @@ Proof with auto.
   destruct (eqb s x) eqn:H_eqb.
   all: simpl in *;
     rewrite H_eqb in *...
+Qed.
+
+Lemma inclusion_contra {K} x (xs ys : list (string * K)) :
+  inclusion xs ys ->
+  lookup x ys = None ->
+  lookup x xs = None.
+Proof.
+  intros H_incl H_ys.
+  destruct (lookup x xs) eqn:H_xs.
+  - apply H_incl in H_xs.
+    rewrite H_ys in H_xs.
+    discriminate.
+  - reflexivity.
 Qed.
 
 Lemma cons_shadow {A} k (x y : A) xs:
