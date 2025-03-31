@@ -378,14 +378,19 @@ Compute (Ty_Apps (Ty_Var "b") [(Ty_Var "c"); (Ty_Var "d")]).
 
 (* Discuss with Jacco that because of constrLastTyExpected in matchTy we now need different Deltas. Or do we? We basically only differentiate on Rec/NonRec *)
 
-(* Prototype with only one type variable*)
-Lemma b_wf__wk Δ Γ b rec:
-  Δ ,, Γ |-ok_b rec ## b -> (rec = NonRec -> NoDup (btvb b ++ (map fst Δ))) -> forall T _x, In (_x, T) (binds_Gamma b) -> exists K Δ', Δ' |-* T : K.
+
+Lemma b_wf__wk_r Δ Γ b :
+  Δ ,, Γ |-ok_b Rec ## b -> forall T _x, In (_x, T) (binds_Gamma b) -> exists K, Δ |-* T : K.
 Proof.
-  intros Hb_wf H_ns T _x Hin_b.
+  intros Hb_wf T _x Hin_b.
   inversion Hb_wf as [| | ];  subst.
-  - admit.
-  - admit.
+  - inversion Hin_b.
+    + inversion H2; subst.
+      exists Kind_Base.
+      auto.
+    + inversion H2.
+  - simpl in Hin_b.
+    inversion Hin_b.
   - 
     clear Hb_wf.
     unfold binds_Gamma in Hin_b.
@@ -402,9 +407,7 @@ Proof.
       clear Hm_bind.
       exists Kind_Base.
       destruct XK as [x x_k].
-      destruct rec.
-      {
-        exists (((x, x_k)::Δ)).
+      
         apply K_TyForalls_constructor.
         simpl.
 
@@ -412,11 +415,7 @@ Proof.
         remember (dtdecl_freshR (Datatype (TyVarDecl x x_k) YKs _x cs)) as fr.
         
         simpl in H7.
-        constructor.
-        { 
-          (* By rearrange H7 *)  
-          admit. 
-        }
+        constructor; auto.
 
         assert (
           forall fr',
@@ -429,7 +428,6 @@ Proof.
           .
           {
             clear Heqfr.
-            clear H_ns.
             clear fr.
             intros.
             generalize dependent fr'.
@@ -485,9 +483,175 @@ Proof.
                 constructor.
                 * (* fr' not in a by H *) admit.
                 * apply IHTargs.
-                  -- admit.
+                  -- (* freshness *) admit.
                   -- intros. apply H5. apply in_cons. auto.
           }
+          constructor.
+          eapply H.
+         (* By freshness definition*)
+          admit.
+
+        
+    + (*Case: constr bind*)
+      unfold constrBinds in Hc_bind.
+      rewrite <- in_rev in Hc_bind.
+      apply in_map_iff in Hc_bind.
+      destruct Hc_bind as [c [HconstrBind Hxincs]].
+      specialize (H6 c Hxincs).
+      
+      unfold constrBind in HconstrBind.
+      destruct_match; subst. simpl in HconstrBind.
+      (* unfold constrTy in HconstrBind. *)
+      inversion HconstrBind; subst.
+      exists Kind_Base. (* Ty_Forall always has Kind_Base, so also Ty_Foralls *)
+      
+      remember (Datatype XK YKs matchFunc cs) as d.
+      destruct XK as [x x_k].
+      
+
+                (* Rec *)
+        inversion H6; subst.
+
+        remember ((Datatype (TyVarDecl x x_k)
+          YKs matchFunc
+          cs)) as d.
+
+          (* First cleanup extending this to multiple targs above*)
+        assert (exists targ1, t = Ty_Fun targ1 (constrLastTyExpected d)) by admit.
+        destruct H as [Htarg H]; subst.
+
+        apply K_TyForalls_constructor.
+        
+        constructor.
+        * inversion H6; subst.
+          simpl.
+          eapply H9.
+          unfold splitTy in H4.
+          simpl in H4.
+          inversion H4.
+          subst.
+          apply in_eq.
+        * simpl.
+          simpl in H7.
+          auto.
+Admitted.
+
+Lemma b_wf__wk_nr Δ Γ b:
+  Δ ,, Γ |-ok_b NonRec ## b -> NoDup (btvb b ++ (map fst Δ)) -> forall T _x, In (_x, T) (binds_Gamma b) 
+    -> exists K, (binds_Delta b ++ Δ) |-* T : K.
+Proof.
+intros Hb_wf H_nd T _x Hin_b.
+  inversion Hb_wf as [| | ];  subst.
+  - inversion Hin_b.
+    + inversion H2; subst.
+      exists Kind_Base.
+      
+      auto.
+    + inversion H2.
+  - simpl in Hin_b.
+    inversion Hin_b.
+  - 
+    clear Hb_wf.
+    unfold binds_Gamma in Hin_b.
+    destruct Hin_b as [Hm_bind | Hc_bind].
+    + 
+     (*Case: match bind*)
+
+      (* Idea, we prove the lemma for all strings that are fresh, (not this specific one)
+          because for that we can do induction. (equality of fresh vars stopped us before from using the IH.)
+       *)
+
+      simpl in Hm_bind.
+      inversion Hm_bind; subst.
+      clear Hm_bind.
+      exists Kind_Base.
+      destruct XK as [x x_k].
+      
+        apply K_TyForalls_constructor.
+        simpl.
+
+
+        remember (dtdecl_freshR (Datatype (TyVarDecl x x_k) YKs _x cs)) as fr.
+        
+        simpl in H7.
+        constructor.
+        {
+          (* By rearrange H7*)
+          admit.
+        } 
+
+        assert (
+          forall fr',
+          (~ In fr' ((map getTyname YKs) ++ x :: 
+              flat_map (fun c => Ty.ftv (vdecl_ty c)) cs))
+          -> ((fr', Kind_Base) :: (rev (map fromDecl YKs)) ++ Δ)
+                |-* (fold_right Ty_Fun (Ty_Var fr')
+                (map (fun c : vdecl => replaceRetTy (vdecl_ty c) (Ty_Var fr')) cs))
+              : Kind_Base)
+          .
+          {
+            clear Heqfr.
+            clear H_nd.
+            clear fr.
+            intros.
+            generalize dependent fr'.
+
+            simpl in H6.
+
+            induction cs; intros.
+            - simpl. constructor. simpl. rewrite String.eqb_refl. auto.
+            - assert (fr'
+                ∉ ((map getTyname YKs) ++ x
+                :: flat_map
+                  (fun c : vdecl => Ty.ftv (vdecl_ty c))
+                  (cs))) by admit.
+
+              assert (Hc_wf_smaller: (forall c : vdecl,
+                  c ∈ cs ->
+                  rev (map fromDecl YKs) ++ Δ
+                  |-ok_c c
+                  : (Ty_Apps (Ty_Var x)
+                    (map Ty_Var
+                    (map tvdecl_name YKs))))).
+              {
+                intros.
+                eapply H6. apply in_cons. auto.
+              }
+              assert (Hno_dup_smaller: NoDup (map vdecl_name cs)) by admit.
+              specialize (IHcs Hno_dup_smaller Hc_wf_smaller fr' H0).
+              clear Hno_dup_smaller Hc_wf_smaller.
+              simpl.
+              constructor; eauto. (* RHS of Fun with IH*)
+              specialize (H6 a).
+              assert (In a (a :: cs)) by now apply in_eq.
+              specialize (H6 H1).
+              inversion H6; subst.
+              simpl.
+              assert (T = fold_right Ty_Fun (Ty_Apps (Ty_Var x)
+  (map Ty_Var (map tvdecl_name YKs))) Targs).
+              {
+                admit.
+              }
+              rewrite H8.
+              rewrite H8 in H.
+              clear H4.
+              clear H8.
+              induction Targs.
+              + {
+                simpl.
+                rewrite TyApps_replaceReturnTy.
+                constructor.
+                simpl. rewrite String.eqb_refl. auto.
+              }
+              + simpl.
+                constructor.
+                * (* fr' not in a by H *) admit.
+                * apply IHTargs.
+                  -- (* freshness *) admit.
+                  -- intros. apply H5. apply in_cons. auto.
+          }
+
+
           constructor.
 
           (* NOT TRUE: But we can safely add the x, it doesn shadow by H_ns*)
@@ -512,87 +676,6 @@ Proof.
               }
               
           admit.
-      }
-      {
-        (* REC case *)
-
-        exists (Δ).
-        (* constructor.
-        constructor.
-        - simpl.
-          simpl in H7.
-          auto.
-        -
-        
-          constructor.
-          simpl.
-          remember (dtdecl_freshR
-            (Datatype (TyVarDecl b k) [TyVarDecl b0 k0] _x
-            cs)) as fr.
-            assert (
-          forall fr',
-          (~ In fr' (b0 :: b :: 
-              flat_map (fun c => Ty.ftv (vdecl_ty c)) cs))
-          -> ((fr', Kind_Base) :: (b0, k0) :: Δ)
-                |-* (fold_right Ty_Fun (Ty_Var fr')
-                (map (fun c : vdecl => replaceRetTy (vdecl_ty c) (Ty_Var fr')) cs))
-              : Kind_Base)
-          .
-          {
-            clear Heqfr.
-            clear H_ns.
-            clear fr.
-            intros.
-            generalize dependent fr'.
-
-            simpl in H6.
-            clear H7.
-            induction cs; intros.
-            - simpl. constructor. simpl. rewrite String.eqb_refl. auto.
-            - assert (fr'
-                ∉ (b0
-                :: b
-                :: flat_map
-                  (fun c : vdecl => Ty.ftv (vdecl_ty c))
-                  (cs))) by admit.
-              assert (Hc_wf_smaller: (forall c : vdecl,
-                c ∈ cs ->
-                (b0, k0) :: Δ |-ok_c c
-                : (Ty_App (Ty_Var (b))
-                  (Ty_Var (b0))))).
-              {
-                intros.
-                eapply H6. apply in_cons. auto.
-              }
-              assert (Hno_dup_smaller: NoDup (map vdecl_name cs)) by admit.
-              specialize (IHcs Hno_dup_smaller Hc_wf_smaller fr' H0).
-              simpl.
-              constructor.
-              + specialize (H6 a).
-                assert (In a (a :: cs)) by now apply in_eq.
-                specialize (H6 H1).
-                inversion H6; subst.
-                assert (HExists: exists Targ1, T = Ty_Fun Targ1 (Ty_App (Ty_Var b) (Ty_Var b0))) by admit.
-                (* Assuming one argument for now*)
-                destruct HExists as [Targ1 HExists]; subst.
-                simpl.
-                constructor.
-                * 
-                  inversion H4. subst.
-                  specialize (H5 Targ1). 
-                  (* fr' fresh over Δ? We can see it cannot be in Targ1 by fr' not in ftv Targ1
-                    it can be in Δ, but that is no issue
-                  *)
-
-                  admit.
-                * constructor. simpl. rewrite String.eqb_refl. auto.
-              + eapply IHcs.
-          }
-          eapply H.
-          admit. *)
-          admit.
-      }
-
         
     + (*Case: constr bind*)
       unfold constrBinds in Hc_bind.
@@ -609,42 +692,10 @@ Proof.
       
       remember (Datatype XK YKs matchFunc cs) as d.
       destruct XK as [x x_k].
-      destruct rec.
-      {
-          inversion H6; subst.
-          exists ((x, x_k)::Δ).
-          apply K_TyForalls_constructor.
-          simpl in H6.
-          remember (
-            (Datatype (TyVarDecl x x_k)
-            YKs matchFunc
-            cs)) as  d.
-
-            (* TODO: First cleanup extendign this to multipel targs above*)
-          assert (exists targ1, t = Ty_Fun targ1 (constrLastTyExpected d)) by admit.
-          destruct H as [Htarg H]; subst.
-          constructor; eauto.
-          * simpl.
-            simpl in H1.
-            inversion H1.
-            subst.
-
-
-            (* By NoDup (b :: map fst Δ), we have x not in Delta, and by H2, we have x not YKs, hence we can add it without fearign shadowing, kind of like weakening *)
-
-          
-          admit.
-          * simpl.  
-            simpl in H7.
-        (* Now only rearrange in H7*)
-        admit.
       
-      }
-      { 
 
                 (* Rec *)
         inversion H6; subst.
-        exists (Δ).
 
         remember ((Datatype (TyVarDecl x x_k)
           YKs matchFunc
@@ -657,55 +708,76 @@ Proof.
         apply K_TyForalls_constructor.
         
         constructor.
-        * inversion H6; subst.
+        * simpl.
+          inversion H6; subst.
           simpl.
-          eapply H9.
-          unfold splitTy in H4.
-          simpl in H4.
-          inversion H4.
-          subst.
-          apply in_eq.
+          (* x, xk not in YKs or Delta, hence we can weaken*)
+          admit.
         * simpl.
           simpl in H7.
-          auto.
-    }
+          (* By rearrange H7*)
 Admitted.
 
 Require Import Coq.Program.Equality.
 
-Lemma b_wf__map_wk Δ Γ b rec:
-  Δ ,, Γ |-ok_b rec ## b -> (rec = NonRec -> NoDup (btvb b ++ map fst Δ)) -> map_wk (insert_deltas_rec (binds_Gamma b) Δ).
+(* Insert_deltas_rec because only one binder: have the same Delta *)
+Lemma b_wf__map_wk_nr Δ Γ b :
+  Δ ,, Γ |-ok_b NonRec ## b -> (NoDup (btvb b ++ map fst Δ)) -> 
+    map_wk (insert_deltas_rec (binds_Gamma b) (binds_Delta b ++ Δ)).
 Proof.
   intros.
 
-  assert ((forall x T, In (x, T) (binds_Gamma b) -> exists K Δ, Δ |-* T : K)).
+  assert ((forall x T, In (x, T) (binds_Gamma b) -> exists K, (binds_Delta b ++ Δ) |-* T : K)).
   {
     intros.
-    eapply b_wf__wk; eauto.
+    eapply b_wf__wk_nr; eauto.
   }
-  generalize dependent Δ.
   induction (binds_Gamma b); intros.
   - simpl.
     constructor.
   - simpl.
     destruct a as [a1 a2].
-    assert(exists K Δ, Δ |-* a2 : K).
-    { 
-      eapply H1.
-      left.
-      auto.
-    }
-    destruct H2 as [K [Δ' H2] ].
-    apply MW_cons with (K := K); auto.
-    + apply IHl.
-      * simpl in H1.
-        intros.
-        eapply H1.
-        right. eauto.
-      * auto.
-      * auto.
-    + admit.
-Admitted.
+    remember H1 as H1_copy.
+    clear HeqH1_copy.
+    specialize (H1 a1 a2).
+    assert (In (a1, a2) ((a1, a2) :: l)) by apply in_eq.
+    specialize (H1 H2).
+    destruct H1 as [K H1].
+
+    eapply MW_cons; auto.
+    + eapply IHl; intros.
+      eapply H1_copy; apply in_cons. eauto.
+    + eauto.
+Qed.
+
+Lemma b_wf__map_wk_r Δ Γ b :
+  Δ ,, Γ |-ok_b Rec ## b -> (NoDup (map fst Δ)) -> 
+    map_wk (insert_deltas_rec (binds_Gamma b) (Δ)).
+Proof.
+ intros.
+
+  assert ((forall x T, In (x, T) (binds_Gamma b) -> exists K, (Δ) |-* T : K)).
+  {
+    intros.
+    eapply b_wf__wk_r; eauto.
+  }
+  induction (binds_Gamma b); intros.
+  - simpl.
+    constructor.
+  - simpl.
+    destruct a as [a1 a2].
+    remember H1 as H1_copy.
+    clear HeqH1_copy.
+    specialize (H1 a1 a2).
+    assert (In (a1, a2) ((a1, a2) :: l)) by apply in_eq.
+    specialize (H1 H2).
+    destruct H1 as [K H1].
+
+    eapply MW_cons; auto.
+    + eapply IHl; intros.
+      eapply H1_copy; apply in_cons. eauto.
+    + eauto.
+Qed.
 
 Lemma bs_wf_r__map_wk (Δ : list (string * kind)) Γ bs :
   Δ ,, Γ |-oks_r bs -> (NoDup (map fst Δ)) -> map_wk (insert_deltas_rec (flatten (map (binds_Gamma) bs)) Δ).
@@ -717,16 +789,14 @@ Proof.
     rewrite flatten_cons.
     rewrite insert_deltas_rec_app.
     apply map_wk_app.
-    + apply b_wf__map_wk in H; eauto.
-      intros. inversion H1.
-    + apply b_wf__map_wk in H; eauto.
-      intros. inversion H1.
+    + apply b_wf__map_wk_r in H; eauto.
+    + apply b_wf__map_wk_r in H; eauto.
 Qed.
 
 Fixpoint insert_deltas_bind_Gamma_nr (bs : list binding) (Δ : list (binderTyname * kind)) : list (binderName * ty * list (binderTyname * kind)) :=
   match bs with
   | [] => []
-  | (b :: bs') => (insert_deltas_bind_Gamma_nr bs' (binds_Delta b ++ Δ)) ++ (insert_deltas_rec (binds_Gamma b) Δ)
+  | (b :: bs') => (insert_deltas_bind_Gamma_nr bs' (binds_Delta b ++ Δ)) ++ (insert_deltas_rec (binds_Gamma b) (binds_Delta b ++ Δ))
   (* we do it in reverse to match the "flatten" from the definition of T_Let*)
   end.
 
@@ -749,7 +819,7 @@ Proof.
       }
       (* so just rearranged from H_ns, so yes!*)
       admit.
-    + eapply b_wf__map_wk.
+    + eapply b_wf__map_wk_nr.
       * eauto.
       * intros. (* subset preserves NoDup*) admit.
 Admitted.

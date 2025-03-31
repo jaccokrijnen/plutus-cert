@@ -141,7 +141,7 @@ Definition bindings_well_formed_nonrec_check :
   fix f Δ Γ bs :=
     match bs with
       | (b::bs') =>
-            match (map_normaliser (insert_deltas_rec (binds_Gamma b) Δ)) with
+            match (map_normaliser (insert_deltas_rec (binds_Gamma b) (binds_Delta b ++ Δ))) with
             | Some bsGn =>
               b_wf Δ Γ NonRec b && f ((binds_Delta b) ++ Δ) (bsGn ++ Γ) bs'
             | _ => false
@@ -841,7 +841,7 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
   - (* Case: ? *)
 
     
-    assert (binds_Gamma b = remove_deltas (insert_deltas_rec (binds_Gamma b) Δ0)).
+    assert (binds_Gamma b = remove_deltas (insert_deltas_rec (binds_Gamma b) (binds_Delta b ++ Δ0))).
     {
       apply insert_remove_deltas_id.
     }
@@ -856,10 +856,10 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
         (* Yes by relation between btvbs and binds_Delta, and by order irrelevant*)
 
        admit.
-    + apply b_wf__map_wk in b0; auto.
+    + apply b_wf__map_wk_nr in b0; auto.
       intros.
-      (* By Nodup subset *)
       admit.
+
   - intros. simpl. rewrite H0.
     apply (normaliser_Jacco_complete h) in n; rewrite n.
     rewrite Ty_eqb_refl.

@@ -107,4 +107,3 @@ Combined Scheme has_kind__multind from
   has_kind__ind,
   ForallSet2_has_kind__ind,
   ForallSet_has_kind__ind.
-

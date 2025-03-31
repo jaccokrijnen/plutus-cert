@@ -336,6 +336,12 @@ Qed.
 
 Require Import Coq.Program.Equality.
 
+(* This is problematic. Now how to get the deltas back? It for sure does not hold for all deltas...*)
+Lemma map_normaliser_complete_e {xs : list (string * ty * (list (string * kind)))} {xs'} :
+  map_wk_e (remove_deltas xs) -> map_normalise (remove_deltas xs) xs' -> map_normaliser xs = Some xs'.
+Proof.
+Admitted.
+
 (* Basically we need a map_wellkinded argument *)
 Lemma map_normaliser_complete {xs : list (string * ty * (list (string * kind)))} {xs'} :
   map_wk xs -> map_normalise (remove_deltas xs) xs' -> map_normaliser xs = Some xs'.
