@@ -1,21 +1,18 @@
 From PlutusCert Require Import PlutusIR.
 From PlutusCert Require Import PlutusIR.Semantics.Static.Typing.
 From PlutusCert Require Import PlutusIR.Semantics.Dynamic.Bigstep.
+From PlutusCert Require Import SemanticEquivalence.Validator.
+From PlutusCert Require Import Util.Tactics.
 
 Require Import Lists.List.
 Import ListNotations.
 
 
 
-Definition val_unit : term :=
-  Constant (ValueOf DefaultUniUnit tt)
-.
-
 Definition ty_unit : ty :=
   Ty_Builtin DefaultUniUnit.
 
 Definition eval' t v := exists j, eval t v j.
-Notation "t '==>' v" := (eval' t v) (at level 10).
 
 Definition contextually_approximate
   (e e' : term) Δ Γ T
@@ -24,8 +21,8 @@ Definition contextually_approximate
   (Δ ,, Γ |-+ e' : T) /\
   forall (C : context),
     ([] ,, [] |- C : (Δ, Γ, T) ↪ ty_unit) ->
-      context_fill C e ==> val_unit ->
-      context_fill C e' ==> val_unit
+      (context_fill C e ==> val_unit -> context_fill C e' ==> val_unit) /\
+      (context_fill C e ==>e -> context_fill C e' ==>e )
 .
 
 Notation "Δ ',,' Γ '|-' e1 ≤-ctx e2 ':' T" := (contextually_approximate e1 e2 Δ Γ T)
@@ -48,6 +45,54 @@ Notation "Δ ',,' Γ '|-' e1 =ctx e2 ':' T" := (contextually_equivalent e1 e2 Δ
   , e2 at level 0
   , T at level 0
   , no associativity).
+
+Lemma ctx_instantiate Δ Γ s t T C :
+  Δ ,, Γ |- s =ctx t : T ->
+  ([] ,, [] |- C : (Δ, Γ, T) ↪ ty_unit) ->
+    (context_fill C s ==> val_unit <-> context_fill C t ==> val_unit) /\
+    (context_fill C s ==>e <-> context_fill C t ==>e)
+.
+Proof.
+Admitted.
+
+Lemma type_respecting_l Δ Γ s t T :
+  Δ ,, Γ |- s =ctx t : T ->
+  Δ ,, Γ |-+ s : T.
+Proof.
+  unfold contextually_equivalent, contextually_approximate.
+  intros H.
+  destruct_hypos.
+  assumption.
+Qed.
+
+Lemma type_respecting_r Δ Γ s t T :
+  Δ ,, Γ |- s =ctx t : T ->
+  Δ ,, Γ |-+ t : T.
+Proof.
+  unfold contextually_equivalent, contextually_approximate.
+  intros H.
+  destruct_hypos.
+  assumption.
+Qed.
+
+Lemma ctx_consistent s t :
+  ([] ,, [] |- s =ctx t : ty_validator) ->
+  s =val t
+.
+Proof.
+  intros H_ctx.
+  unfold validator_equivalent.
+  split; eauto using type_respecting_l.
+  split; eauto using type_respecting_r.
+  intros d i H_i.
+  apply ctx_instantiate with (C := C_Apply_L C_Hole i) in H_ctx.
+  simpl in H_ctx.
+  - assumption.
+  - (* C is well-typed *)
+    unfold ty_unit.
+    subst i.
+    eauto using context_has_type, has_type.
+Qed.
 
 Section contextually_approximate_lemmas.
 

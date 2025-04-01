@@ -25,7 +25,7 @@ Theorem LR_sound : forall Δ Γ e e' T,
 Proof with eauto.
   intros Δ Γ e e' T H_approx_e_e'.
   unfold contextually_approximate.
-  repeat split.
+  split; [ | split].
 
   1,2:
     unfold LR_logically_approximate in *;
@@ -33,37 +33,75 @@ Proof with eauto.
     auto.
 
 
-  intros C H_C_Ty H_C_e_terminates.
-  destruct H_C_e_terminates as [j H_steps_C_e].
+  intros C H_C_Ty.
+  split.
 
-  (* apply fundamental theorem of contexts (reflexivity) *)
-  apply LR_reflexivity_context in H_C_Ty as H_approx_C_C.
+  - intros H_C_e_terminates.
+    destruct H_C_e_terminates as [j H_steps_C_e].
 
-  unfold LR_logically_approximate_context in *.
-  assert (H_approx_C_e_C_e' := H_approx_C_C _ _ H_approx_e_e').
-  clear H_approx_C_C.
+    (* apply fundamental theorem of contexts (reflexivity) *)
+    apply LR_reflexivity_context in H_C_Ty as H_approx_C_C.
 
-  unfold LR_logically_approximate in H_approx_C_e_C_e'.
-  repeat (apply proj2 in H_approx_C_e_C_e').
-  assert (H_RC_C_e_C_e' := H_approx_C_e_C_e' (S j) nil nil nil RD_nil (RG_nil _ _)).
-  clear H_approx_C_e_C_e'.
-  simpl in H_RC_C_e_C_e'.
+    unfold LR_logically_approximate_context in *.
+    assert (H_approx_C_e_C_e' := H_approx_C_C _ _ H_approx_e_e').
+    clear H_approx_C_C.
 
-  autorewrite with RC in *.
+    unfold LR_logically_approximate in H_approx_C_e_C_e'.
+    repeat (apply proj2 in H_approx_C_e_C_e').
+    assert (H_RC_C_e_C_e' := H_approx_C_e_C_e' (S j) nil nil nil RD_nil (RG_nil _ _)).
+    clear H_approx_C_e_C_e'.
+    simpl in H_RC_C_e_C_e'.
 
-  assert (H4 := H_RC_C_e_C_e' _ (PeanoNat.Nat.lt_succ_diag_r j) _ H_steps_C_e).
-  clear H_RC_C_e_C_e'.
+    autorewrite with RC in *.
 
-  unfold terminates.
-  destruct_hypos...
-  simpl in H2.
-  intuition.
-  - destruct H7 as [k [k' [H_eq1 [H_eq2 H_eq3]]]].
-    subst.
-    rewrite <- H_eq3 in H.
-    eexists x0.
-    eauto.
-  - inversion H2.
+    assert (H4 := H_RC_C_e_C_e' _ (PeanoNat.Nat.lt_succ_diag_r j) _ H_steps_C_e).
+    clear H_RC_C_e_C_e'.
+
+    unfold terminates.
+    destruct_hypos...
+    simpl in H2.
+    intuition.
+    + destruct H7 as [k [k' [H_eq1 [H_eq2 H_eq3]]]].
+      subst.
+      rewrite <- H_eq3 in H.
+      eexists x0.
+      eauto.
+    + inversion H2.
+
+  - (* TODO: refactor. almost complete duplication with previous branch *)
+    intros H_fails.
+    destruct H_fails as [Terror [j H_steps_C_e]].
+    (* apply fundamental theorem of contexts (reflexivity) *)
+    apply LR_reflexivity_context in H_C_Ty as H_approx_C_C.
+
+    unfold LR_logically_approximate_context in *.
+    assert (H_approx_C_e_C_e' := H_approx_C_C _ _ H_approx_e_e').
+    clear H_approx_C_C.
+
+    unfold LR_logically_approximate in H_approx_C_e_C_e'.
+    repeat (apply proj2 in H_approx_C_e_C_e').
+    assert (H_RC_C_e_C_e' := H_approx_C_e_C_e' (S j) nil nil nil RD_nil (RG_nil _ _)).
+    clear H_approx_C_e_C_e'.
+    simpl in H_RC_C_e_C_e'.
+
+    autorewrite with RC in *.
+
+    assert (H4 := H_RC_C_e_C_e' _ (PeanoNat.Nat.lt_succ_diag_r j) _ H_steps_C_e).
+    clear H_RC_C_e_C_e'.
+
+    unfold Validator.eval'.
+    destruct_hypos...
+    simpl in H2.
+    destruct H2.
+    + (* impossible, contradiction in assumption *)
+      destruct H2.
+      assert (H123 := IsError Terror).
+      contradiction.
+    + (* *)
+      destruct H2.
+        inversion H5.
+        subst x.
+        eauto.
 Qed.
 
 Corollary LR_equivalent_sound : forall Δ Γ e e' T,
