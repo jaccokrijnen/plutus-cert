@@ -1,4 +1,4 @@
-From PlutusCert Require Import STLC_named alpha.alpha util rename alpha.alpha_ctx_sub Util.List.
+From PlutusCert Require Import STLC_named alpha.alpha util rename Util.List.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
 
@@ -142,11 +142,6 @@ Qed.
 
 Lemma extend_ftv_to_tv x s :
   In x (ftv s) -> In x (tv s).
-Proof.
-Admitted.
-
-Lemma extend_ftv_keys_env_to_tv x sigma :
-  In x (ftv_keys_env sigma) -> In x (tv_keys_env sigma).
 Proof.
 Admitted.
 
@@ -315,13 +310,7 @@ Proof.
   - inversion HXftvt.
 Qed.
 
-Lemma alpha_extend_fresh {x x' ren t t'}:
-  ~ In x (ftv t) ->
-  ~ In x' (ftv t') ->
-  Alpha ren t t' ->
-  Alpha ((x, x')::ren) t t'.
-Proof.
-Admitted.
+
 
 (* Idk, but must be true. *)
 Lemma tv_keys_env_helper y s sigma sigma_:
@@ -403,7 +392,7 @@ Lemma tv_c_appr {B X t1 t2} :
 Admitted.
 
 Lemma tv_dc_lam {B X Y A t} :
-  In X (tv (@tmlam B Y A t)) -> X <> Y -> In X (tv t).
+  In X (tv (@tmlam B Y A t)) -> In X (tv t).
 Admitted.
 
 (* FTV *)

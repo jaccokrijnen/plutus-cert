@@ -388,11 +388,26 @@ Qed.
 
 Lemma lrs_trans ren1 ren2 ren3 :
   LegalRenSwap ren1 ren2 -> LegalRenSwap ren2 ren3 -> LegalRenSwap ren1 ren3.
+Proof.
+  intros Hlrs1 Hlrs2.
+  generalize dependent ren3.
+  induction Hlrs1; intros.
+  - assumption.
+  - inversion Hlrs2; subst.
+    + apply lrs_cons. eapply IHHlrs1. auto.
+    + admit.
+  - admit.
 Admitted.
 
 Lemma lrs_sym ren1 ren2 :
   LegalRenSwap ren1 ren2 -> LegalRenSwap ren2 ren1.
-Admitted.
+Proof.
+  intros Hlrs.
+  induction Hlrs.
+  - apply legalRenSwap_id.
+  - apply lrs_cons. assumption.
+  - apply lrs_start; auto.
+Qed.
 
 Lemma alphavar_weaken {v w ren s t} :
   v <> s -> w <> t -> AlphaVar ((v, w)::ren) s t -> AlphaVar ren s t.
@@ -759,7 +774,14 @@ Qed.
 Lemma alphavar_extend_ids idCtx s t:
   IdCtx idCtx -> AlphaVar nil s t -> AlphaVar idCtx s t.
 Proof.
-Admitted.
+  intros Hid Hav.
+  inversion Hav; subst.
+  induction Hid.
+  - auto.
+  - destr_eqb_eq x t.
+    + constructor.
+    + constructor; auto.
+Qed.
 
 Lemma alpha_extend_ids idCtx s t:
   IdCtx idCtx -> Alpha nil s t -> Alpha idCtx s t.
@@ -770,6 +792,14 @@ Qed.
 Lemma alpha_weaken_ids idCtx s t:
   IdCtx idCtx -> Alpha idCtx s t -> Alpha nil s t.
 Proof.
+  intros Hid Hav.
+  induction Hav.
+  - induction a; subst.
+    + constructor. auto. constructor.
+    + inversion Hid; subst.
+      constructor. constructor.
+    + eapply IHa. inversion Hid; subst. auto.
+  - (* classic.. *)
 Admitted.
 
 Lemma alpha_ids s idCtx :
@@ -914,4 +944,17 @@ Admitted.
 
 Lemma alphavar_refl_weaken_vacuouss {x R} :
   ~ In x (map fst R) -> ~ In x (map snd R) -> AlphaVar R x x.
-Admitted.
+Proof.
+  intros H_Rl H_Rr.
+  induction R.
+  - constructor.
+  - destruct a as [a1 a2].
+    constructor.
+    + simpl in H_Rl.
+      apply de_morgan2 in H_Rl as [Hneq _]. auto.
+    + simpl in H_Rr.
+      apply de_morgan2 in H_Rr as [Hneq _]. auto.
+    + eapply IHR.
+      * simpl in H_Rl. apply de_morgan2 in H_Rl as [_ H_Rl]. auto.
+      * simpl in H_Rr. apply de_morgan2 in H_Rr as [_ H_Rr]. auto.
+Qed.

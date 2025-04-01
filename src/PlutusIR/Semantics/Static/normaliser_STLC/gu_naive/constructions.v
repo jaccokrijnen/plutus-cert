@@ -2751,3 +2751,151 @@ Qed.
 
 Opaque to_GU'.
 Opaque to_GU''.
+
+Lemma alpha_extend_fresh_tv {x x' ren t t'}:
+  ~ In x (tv t) ->
+  ~ In x' (tv t') ->
+  Alpha ren t t' ->  
+
+  Alpha ((x, x')::ren) t t'.
+Proof.
+  intros.
+  induction H1.
+  - constructor.
+    constructor.
+    + simpl in H. auto.
+    + simpl in H0. auto.
+    + auto.
+  - constructor.
+    eapply alpha_swap with (ren := ((x, x')::(x0, y)::sigma)).
+    + constructor.
+      * simpl in H. auto.
+      * simpl in H0. auto.
+      * apply legalRenSwap_id.
+    + apply IHAlpha.
+      apply not_tv_dc_lam in H. auto.
+      apply not_tv_dc_lam in H0. auto.
+  - constructor.
+    + apply IHAlpha1; auto. 
+      apply not_tv_dc_appl in H. auto.
+      apply not_tv_dc_appl in H0. auto.
+    + apply IHAlpha2; auto.
+      apply not_tv_dc_appr in H. auto.
+      apply not_tv_dc_appr in H0. auto.
+  - constructor.
+Qed.
+
+  (* 
+
+It feels weird to have these ones here, but they use constructions, so they have to!
+
+  Idea: move to some GU term that has no problematic bniders
+  Alpha ren (to_GU_ x [] t) (to_GU_ x [] t')  
+  ->  Alpha ((x, x')::ren) (to_GU_ x t) (to_GU_ x t')
+  
+  Idea works perfectly! Thanks brain :).
+  *)
+Lemma alpha_extend_fresh {x x' ren t t'}:
+  ~ In x (ftv t) ->
+  ~ In x' (ftv t') ->
+  Alpha ren t t' ->  
+
+  Alpha ((x, x')::ren) t t'.
+Proof.
+  intros H_nxt H_nx't' Ha_t.
+  remember (to_GU'' x t) as tgu.
+  remember (to_GU'' x' t') as t'gu.
+  assert (ren ⊢ tgu ~ t'gu) as Ht.
+  {
+    eapply @alpha_trans with (t := t) (ren := ctx_id_left ren); eauto.
+    eapply id_left_trans.
+    eapply alpha_extend_ids.
+    apply ctx_id_left_is_id.
+    subst.
+    apply @alpha_sym with (ren := nil); eauto.
+    constructor.
+    eapply to_GU''__alpha.
+
+    eapply @alpha_trans with (t := t') (ren' := ctx_id_right ren); eauto.
+    eapply id_right_trans. eapply alpha_extend_ids. apply ctx_id_right_is_id.
+    subst.
+    eapply to_GU''__alpha.
+  }
+  assert (~ In x (tv tgu)).
+  {
+    apply not_ftv_btv_then_not_tv; auto.
+    - subst.
+      eapply alpha_preserves_no_ftv.
+      exact H_nxt.
+      eapply to_GU''__alpha.
+      constructor.
+    - subst.
+      apply to_GU''__btv.
+  }
+  assert (~ In x' (tv t'gu)).
+  {
+    apply not_ftv_btv_then_not_tv; auto.
+    - subst.
+      eapply alpha_preserves_no_ftv.
+      exact H_nx't'.
+      eapply to_GU''__alpha.
+      constructor.
+    - subst.
+      apply to_GU''__btv.
+  }
+
+  assert (((x, x')::ren) ⊢ tgu ~ t'gu).
+  {
+    apply alpha_extend_fresh_tv; auto.
+
+  }
+
+  eapply @alpha_trans with (t := tgu) (ren := (ctx_id_left ((x, x')::ren))).
+  eapply id_left_trans. eapply alpha_extend_ids. apply ctx_id_left_is_id.
+  subst.
+  eapply to_GU''__alpha.
+
+  eapply @alpha_trans with (t := t'gu) (ren' := (ctx_id_right ((x, x')::ren))); eauto.
+  eapply id_right_trans. eapply alpha_extend_ids. apply ctx_id_right_is_id.
+  subst.
+  eapply @alpha_sym with (ren := nil); eauto. constructor.
+  eapply to_GU''__alpha.
+Qed.
+
+  (*
+
+  We know αCtxSub ren sigma sigma'.
+  g2 and g3 are both fresh over sigma and sigma', so no issue.
+
+  But what if g2 and g3 not fresh over ren?
+
+  well, let's look at a simpler case where sigma = [Z := t] and sigma' = [Z' := t']
+  Suppose now g2 in ren. We have αCtxSub ren sigma sigma'. Since g2 not in Z or t, we cannot have that there is a (g2, B) term with B in Z or t.
+  Hence it is a vacuous one, and we can remove it.
+  Do this for every g2 or g3 and we are left with a ren that does not contain any g2 or g3.
+  Now we can add it and it does nott break shadowing :)
+*)
+Lemma alpha_ctx_ren_extend_fresh_ftv sigma sigma' x x' ren:
+  ~ In x (ftv_keys_env sigma) ->
+  ~ In x' (ftv_keys_env sigma') ->
+  αCtxSub ren sigma sigma' ->
+  αCtxSub ((x, x')::ren) sigma sigma'.
+Proof.
+  intros H_nxσ H_nx'σ' H_α.
+  induction H_α.
+  - constructor.
+  - constructor.
+    + apply IHH_α. auto. simpl in H_nxσ. 
+      * apply de_morgan2 in H_nxσ. destruct H_nxσ as [_ H_nxσ].
+        apply not_in_app in H_nxσ as [_ H_nxσ]. auto.
+      * apply de_morgan2 in H_nx'σ'. destruct H_nx'σ' as [_ H_nx'σ'].
+        apply not_in_app in H_nx'σ' as [_ H_nx'σ']. auto.
+    + constructor; auto.
+      * apply de_morgan2 in H_nxσ as [H_nxσ _]; auto.
+      * apply de_morgan2 in H_nx'σ' as [H_nx'σ' _]; auto.
+    + apply alpha_extend_fresh; auto.
+      * apply de_morgan2 in H_nxσ. destruct H_nxσ as [_ H_nxσ].
+        apply not_in_app in H_nxσ as [H_nxσ _]. auto.
+      * apply de_morgan2 in H_nx'σ'. destruct H_nx'σ' as [_ H_nx'σ'].
+        apply not_in_app in H_nx'σ' as [H_nx'σ' _]. auto.
+Qed.

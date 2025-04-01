@@ -1,7 +1,7 @@
 Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Strings.String.
-From PlutusCert Require Import STLC_named alpha.alpha Util.List util.
+From PlutusCert Require Import STLC_named alpha.alpha Util.List util freshness.
 
 (* One subsitution is related to the other through the alpha context*)
 Inductive αCtxSub : list (string * string) -> list (string * term) -> list (string * term) -> Set :=
@@ -77,25 +77,8 @@ Proof.
     + apply alpha_refl. apply alpha_refl_nil.
 Qed.
 
-  (*
 
-  We know αCtxSub ren sigma sigma'.
-  g2 and g3 are both fresh over sigma and sigma', so no issue.
 
-  But what if g2 and g3 not fresh over ren?
-
-  well, let's look at a simpler case where sigma = [Z := t] and sigma' = [Z' := t']
-  Suppose now g2 in ren. We have αCtxSub ren sigma sigma'. Since g2 not in Z or t, we cannot have that there is a (g2, B) term with B in Z or t.
-  Hence it is a vacuous one, and we can remove it.
-  Do this for every g2 or g3 and we are left with a ren that does not contain any g2 or g3.
-  Now we can add it and it does nott break shadowing :)
-*)
-Lemma alpha_ctx_ren_extend_fresh sigma sigma' x x' ren:
-  ~ In x (tv_keys_env sigma) ->
-  ~ In x' (tv_keys_env sigma') ->
-  αCtxSub ren sigma sigma' ->
-  αCtxSub ((x, x')::ren) sigma sigma'.
-Admitted.
 
 
 Fixpoint ftv_keys_env (sigma : list (string * term)) : list string :=
@@ -104,31 +87,31 @@ Fixpoint ftv_keys_env (sigma : list (string * term)) : list string :=
   | (x, t)::sigma' => x :: (ftv t) ++ (ftv_keys_env sigma')
   end.
 
-Lemma alpha_ctx_ren_extend_fresh_ftv sigma sigma' x x' ren:
-  ~ In x (ftv_keys_env sigma) ->
-  ~ In x' (ftv_keys_env sigma') ->
-  αCtxSub ren sigma sigma' ->
-  αCtxSub ((x, x')::ren) sigma sigma'.
-Admitted.
 
-(* TODO: SUPERSEDED BY alpha_ctx_ren_extend_fresh. The statements are almost identical (with respect to what we use them for) *)
-(* TODO: t and t' are totall unrelevant here, how do I make them placeholders or something? *)
-Lemma extend_alpha_ctx_fresh {x x' sigma sigma' sigma_ sigma_' ren t t'}:
-  x = fresh2 (sigma_ ++ sigma) t ->
-  x' = fresh2 (sigma_' ++ sigma') t' ->
-  αCtxSub ren sigma sigma' ->
-  αCtxSub ((x, x')::ren) sigma sigma'.
-Admitted.
-
-Lemma αctx_sym σ σ' :
-  αCtxSub [] σ σ' -> αCtxSub [] σ' σ.
-Admitted.
+Require Import Coq.Program.Equality.
 
 Lemma αctx_trans R1 R2 R σ σ' σ'' :
   αCtxTrans R1 R2 R -> 
   αCtxSub R1 σ σ' -> αCtxSub R2 σ' σ'' -> αCtxSub R σ σ''.
-Admitted.
+Proof.
+  intros.
+  dependent induction σ.
+  - inversion H0; subst.
+    inversion H1; subst.
+    constructor.
+  - inversion H0; subst.
+    inversion H1; subst.
+    constructor.
+    + eapply IHσ; eauto.
+    + eapply alpha_var_trans; eauto.
+    + eapply alpha_trans; eauto.
+Qed.
 
 Lemma αctx_ids idCtx σ σ' :
   IdCtx idCtx -> αCtxSub nil σ σ' -> αCtxSub idCtx σ σ'.
+Admitted.
+
+Lemma extend_ftv_keys_env_to_tv x sigma :
+  In x (ftv_keys_env sigma) -> In x (tv_keys_env sigma).
+Proof.
 Admitted.
