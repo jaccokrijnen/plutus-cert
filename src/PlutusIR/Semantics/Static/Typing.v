@@ -261,44 +261,42 @@ Proof with eauto.
 Qed.
 
 
-
-(* Notation for types of holes *)
-Notation "Δ ',,' Γ '▷' T" := (Δ, Γ, T) (at level 101).
-
-Reserved Notation "Δ₁ ',,' Γ₁ '|-C' C ':' HTy ↝ T₁" (at level 101, C at level 0, T₁ at level 0, no associativity).
+(* ↪ = \hookrightarrow *)
+Reserved Notation "Δ1 ',,' Γ1 '|-' C ':' HTy ↪ T1"
+  (at level 101, C at level 0, T1 at level 0, no associativity).
 
 (* Typing rules for one-hole contexts *)
 Inductive context_has_type : list (string * kind) -> list (string * ty) -> context -> ((list (string * kind)) * list (string * ty) * ty) -> ty -> Prop :=
 
   | T_C_Hole : forall Δ Γ Tn,
       normal_Ty Tn ->
-      Δ ,, Γ |-C C_Hole : (Δ ,, Γ ▷ Tn) ↝ Tn
+      Δ ,, Γ |- C_Hole : (Δ, Γ, Tn) ↪ Tn
 
-  | T_C_LamAbs : forall Δ₁ Γ₁ x T1 C Δ Γ Tn T2n T1n,
-      Δ₁ |-* T1 : Kind_Base ->
+  | T_C_LamAbs : forall Δ1 Γ1 x T1 C Δ Γ Tn T2n T1n,
+      Δ1 |-* T1 : Kind_Base ->
       normalise T1 T1n ->
-      Δ₁ ,, (x, T1n) :: Γ₁ |-C C                 : (Δ ,, Γ ▷ Tn) ↝ T2n ->
-      Δ₁ ,,             Γ₁ |-C (C_LamAbs x T1 C) : (Δ ,, Γ ▷ Tn) ↝ (Ty_Fun T1n T2n)
+      Δ1 ,, (x, T1n) :: Γ1 |- C                 : (Δ , Γ, Tn) ↪ T2n ->
+      Δ1 ,,             Γ1 |- (C_LamAbs x T1 C) : (Δ , Γ, Tn) ↪ (Ty_Fun T1n T2n)
 
-  | T_C_Apply_L : forall Δ₁ Γ₁ Δ Γ C t Tn T1n T2n,
-      Δ₁ ,, Γ₁ |-C C : (Δ ,, Γ ▷ Tn) ↝ (Ty_Fun T1n T2n) ->
-      Δ₁ ,, Γ₁ |-+ t : T1n ->
-      Δ₁ ,, Γ₁ |-C (C_Apply_L C t) : (Δ ,, Γ ▷ Tn) ↝ T2n
+  | T_C_Apply_L : forall Δ1 Γ1 Δ Γ C t Tn T1n T2n,
+      Δ1 ,, Γ1 |- C : (Δ , Γ, Tn) ↪ (Ty_Fun T1n T2n) ->
+      Δ1 ,, Γ1 |-+ t : T1n ->
+      Δ1 ,, Γ1 |- (C_Apply_L C t) : (Δ , Γ, Tn) ↪ T2n
 
-  | T_C_Apply_R : forall Δ₁ Γ₁ Δ Γ C t Tn T1n T2n,
-      Δ₁ ,, Γ₁ |-+ t : (Ty_Fun T1n T2n) ->
-      Δ₁ ,, Γ₁ |-C C : (Δ ,, Γ ▷ Tn) ↝ T1n ->
-      Δ₁ ,, Γ₁ |-C (C_Apply_R t C) : (Δ ,, Γ ▷ Tn) ↝ T2n
+  | T_C_Apply_R : forall Δ1 Γ1 Δ Γ C t Tn T1n T2n,
+      Δ1 ,, Γ1 |-+ t : (Ty_Fun T1n T2n) ->
+      Δ1 ,, Γ1 |- C : (Δ , Γ, Tn) ↪ T1n ->
+      Δ1 ,, Γ1 |- (C_Apply_R t C) : (Δ , Γ, Tn) ↪ T2n
 
   where
-    "Δ₁ ',,' Γ₁ '|-C' C ':' Hty ↝ T₁" := (context_has_type Δ₁ Γ₁ C Hty T₁)
+    "Δ1 ',,' Γ1 '|-' C ':' Hty ↪ T1" := (context_has_type Δ1 Γ1 C Hty T1)
 .
 
-Lemma context_has_type__normal : forall Δ₁ Γ₁ C Δ Γ T T₁,
-    Δ₁ ,, Γ₁ |-C C : (Δ ,, Γ ▷ T) ↝ T₁ ->
-    normal_Ty T₁.
+Lemma context_has_type__normal : forall Δ1 Γ1 C Δ Γ T T1,
+    Δ1 ,, Γ1 |- C : (Δ , Γ, T) ↪ T1 ->
+    normal_Ty T1.
 Proof with eauto using normalise_to_normal.
-  intros Δ₁ Γ₁ C Δ Γ T T₁ Cty.
+  intros Δ1 Γ1 C Δ Γ T T1 Cty.
   induction Cty...
 
   (* C_App_L *)
@@ -313,19 +311,25 @@ Proof with eauto using normalise_to_normal.
     + inversion H0.
 Qed.
 
-Lemma context_has_type__hole_normal : forall Δ₁ Γ₁ C Δ Γ T T₁,
-    Δ₁ ,, Γ₁ |-C C : (Δ ,, Γ ▷ T) ↝ T₁ ->
+Lemma context_has_type__hole_normal : forall Δ1 Γ1 C Δ Γ T T1,
+    Δ1 ,, Γ1 |- C : (Δ , Γ, T) ↪ T1 ->
     normal_Ty T.
 Proof.
-  intros Δ₁ Γ₁ C Δ Γ T T₁ Cty.
+  intros Δ1 Γ1 C Δ Γ T T1 Cty.
   Require Import Coq.Program.Equality.
   dependent induction Cty.
   all: eauto.
 Qed.
 
 
-Lemma context_has_type__apply : forall C t Δ₁ Γ₁ Δ Γ T T₁,
-  (Δ₁ ,, Γ₁ |-C C : (Δ ,, Γ ▷ T) ↝ T₁) ->
-  (Δ ,, Γ |-+ t : T) ->
-  (Δ₁ ,, Γ₁ |-+ (context_apply C t) : T₁).
-Admitted.
+Local Open Scope contexts.
+
+Lemma context_has_type__fill C t Δ1 Γ1 Δ Γ T T1 :
+  Δ1 ,, Γ1 |- C : (Δ, Γ, T) ↪ T1 ->
+  Δ ,, Γ |-+ t : T ->
+  Δ1 ,, Γ1 |-+ (context_fill C t) : T1.
+Proof.
+  intros H_C H_t.
+  dependent induction H_C;
+  eauto using has_type.
+Qed.

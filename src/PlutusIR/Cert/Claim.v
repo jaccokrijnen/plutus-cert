@@ -20,7 +20,7 @@ Section Claims.
   (* Interpret a claim as a Prop on terms *)
   Definition claim_prop : claim -> (term -> term -> Prop) := fun c t t' =>
     match c with
-    | Verified rv => forall Δ Γ T, Δ ,, Γ |- t ≃-ctx t' : T
+    | Verified rv => forall Δ Γ T, Δ ,, Γ |- t =ctx t' : T
     | AccordingToSpec rd  => rd_rel rd t t'
     | Unchecked     => True
     end

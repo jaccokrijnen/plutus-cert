@@ -1,6 +1,7 @@
 Require Import
   Strings.String
   Lists.List
+  Program.Basics
 .
 From PlutusCert Require Import
   PlutusIR
@@ -8,6 +9,8 @@ From PlutusCert Require Import
 .
 Import PlutusNotations.
 Import ListNotations.
+
+Open Scope program_scope.
 
 (* Constructing constructor functions from their type signature *)
 
@@ -39,6 +42,8 @@ Section SOP_CONSTRUCTOR.
    *
    *    Λ α_0. ... Λ α_1. λ0. ... λ n. Constr τ_SOP ix [0, ... n]
   *)
+  Import Program.Basics.
+  Open Scope program_scope.
 
   Context
     (ix : nat)     (* Index of the constructor *)

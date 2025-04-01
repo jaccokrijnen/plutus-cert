@@ -488,5 +488,5 @@ From PlutusCert Require Import Contextual.
 
 Theorem CNR_Term__sem : ∀ t t',
     CNR_Term t t' ->
-    ∀ Δ Γ T, Δ ,, Γ |- t ≃-ctx t' : T.
+    ∀ Δ Γ T, Δ ,, Γ |- t =ctx t' : T.
 Admitted.

@@ -275,9 +275,6 @@ Definition zip_with {A B C} (f : A -> B -> C) :=
       | _, _ => []
     end.
 
-Notation " g ∘ f " := (compose g f)
-  (at level 40, left associativity).
-
 From Coq Require Import Strings.String.
 Open Scope string_scope.
 

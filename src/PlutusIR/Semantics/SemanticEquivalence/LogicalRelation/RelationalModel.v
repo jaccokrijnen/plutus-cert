@@ -321,7 +321,7 @@ Logical approximation of one-hole contexts
 Definition LR_logically_approximate_context Δ₁ Γ₁ C C' Δ Γ T T₁ :=
   forall e e',
     Δ ,, Γ |- e ≤ e' : T ->
-    Δ₁ ,, Γ₁ |- (context_apply C e) ≤ (context_apply C' e') : T₁
+    Δ₁ ,, Γ₁ |- (context_fill C e) ≤ (context_fill C' e') : T₁
 .
 
 

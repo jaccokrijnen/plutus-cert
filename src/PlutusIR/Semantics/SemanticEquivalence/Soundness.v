@@ -21,7 +21,7 @@ Ltac destruct_hypos := repeat (match goal with
 
 Theorem LR_sound : forall Δ Γ e e' T,
   LR_logically_approximate Δ Γ e e' T ->
-  Δ ,, Γ |- e ⪯-ctx e' : T.
+  Δ ,, Γ |- e ≤-ctx e' : T.
 Proof with eauto.
   intros Δ Γ e e' T H_approx_e_e'.
   unfold contextually_approximate.
@@ -68,55 +68,10 @@ Qed.
 
 Corollary LR_equivalent_sound : forall Δ Γ e e' T,
   LR_logically_equivalent Δ Γ e e' T ->
-  Δ ,, Γ |- e ≃-ctx e' : T.
+  Δ ,, Γ |- e =ctx e' : T.
 Proof with eauto using LR_sound.
   intros Δ Γ e e' T H.
   unfold LR_logically_equivalent in H.
   destruct_hypos.
   split...
 Qed.
-
-(*
-Due to new ctx equiv definition these are admitted, unclear if they can be
-easily proven, but it doesn't seem necessary for proving validator equivalence.
-
-The current version of contextual equivalence imply the old version of
-contextual equivalence: if either C[e] terminates with an error, the other will
-also terminate with an error (when t has type unit, and t ⇓ v , then v can only
-be unit constant or an error).
-*)
-
-(*
-
-Lemma LR_approximate_sound_ciu : forall e e' T,
-  normal_Ty T ->
-  [],, [] |- e ⪯-ctx e' : T ->
-  e  ⇓ ->
-  e' ⇓.
-Proof.
-  intros e e' T H_norm_T H_approx_e_e' e_terminates.
-  unfold contextually_approximate in *.
-  destruct H_approx_e_e' as [H_ty_e [H_ty_e' H_steps]].
-  assert (H := H_steps C_Hole).
-  eexists val_unit.
-  eexists.
-  eauto using context_has_type.
-Qed.
-
-
-
-Corollary LR_equivalent_sound_ciu : forall e e' T,
-  normal_Ty T ->
-  LR_logically_equivalent [] [] e e' T ->
-  ciu_equivalent e e' T.
-Proof with eauto using LR_approximate_sound_ciu.
-  intros e e' T H_normal_T H.
-  apply LR_equivalent_sound in H.
-  assert (H' := H).
-  unfold contextually_equivalent in *.
-  unfold contextually_approximate in H.
-  unfold ciu_equivalent.
-  destruct_hypos.
-  repeat split...
-Qed.
-*)

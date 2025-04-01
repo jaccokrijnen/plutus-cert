@@ -25,12 +25,12 @@ Record rel_verified : Type :=
   mk_rel_verified {
     rv_rd : rel_decidable;
     rv_correct : ∀ s t,
-      rv_rd.(rd_rel) s t -> ∀ Δ Γ T, Δ ,, Γ |- s ≃-ctx t : T
+      rv_rd.(rd_rel) s t -> ∀ Δ Γ T, Δ ,, Γ |- s =ctx t : T
   }
 .
 
 Definition rv_dec (rv : rel_verified) (t t' : term)
-: option (∀ Δ Γ T, Δ ,, Γ |- t ≃-ctx t' : T) :=
+: option (∀ Δ Γ T, Δ ,, Γ |- t =ctx t' : T) :=
   match rd_dec (rv_rd rv) t t' with
     | Some deriv => Some (rv_correct rv t t' deriv)
     | None => None
@@ -39,7 +39,7 @@ Definition rv_dec (rv : rel_verified) (t t' : term)
 
 Definition dec_correct (rd : rel_verified) t t' :
   rd_decb (rv_rd rd) t t' = true ->
-  ∀ Δ Γ T, Δ ,, Γ |- t ≃-ctx t' : T :=
+  ∀ Δ Γ T, Δ ,, Γ |- t =ctx t' : T :=
   fun H =>
         let deriv := proj1 (rd_equiv (rv_rd rd) _ _) H in
         let ctx_equiv := (rv_correct rd) _ _ deriv in

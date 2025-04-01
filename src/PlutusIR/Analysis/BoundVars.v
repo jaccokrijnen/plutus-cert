@@ -18,6 +18,8 @@ From PlutusCert Require Import
 
 Require Import Utf8_core.
 
+Open Scope program_scope.
+
 
 
 Inductive appears_bound_in_ty (X : string) : ty -> Prop :=
@@ -318,8 +320,6 @@ with bound_vars_binding (b : binding) : list name := match b with
   | DatatypeBind (Datatype _ _ matchf constructors ) => [matchf] ++ map vdecl_name constructors
   | _                          => []
   end.
-
-Definition bound_vars_bindings := @concat _ ∘ map bound_vars_binding.
 
 Definition btvc (c : vdecl) : list tyname :=
   match c with

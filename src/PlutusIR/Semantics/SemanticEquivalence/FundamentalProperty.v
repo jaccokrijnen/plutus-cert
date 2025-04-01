@@ -127,12 +127,12 @@ Hint Resolve
 #[global]
 Hint Unfold P_has_type : hintdb_compat_context.
 
-Lemma LR_reflexivity_context : forall C Δ₁ Γ₁ Δ Γ T T₁,
-  Δ₁ ,, Γ₁ |-C C : (Δ ,, Γ ▷ T) ↝ T₁ ->
-  LR_logically_approximate_context Δ₁ Γ₁ C C Δ Γ T T₁.
+Lemma LR_reflexivity_context : forall C Δ1 Γ1 Δ Γ T T1,
+  Δ1 ,, Γ1 |- C : (Δ , Γ, T) ↪ T1 ->
+  LR_logically_approximate_context Δ1 Γ1 C C Δ Γ T T1.
 Proof with eauto with hintdb_compat_context.
   induction C.
 
-  all: intros Δ₁ Γ₁ Δ Γ T T₁ H_C_ty.
+  all: intros Δ1 Γ1 Δ Γ T T1 H_C_ty.
   all: inversion H_C_ty; subst...
 Qed.
