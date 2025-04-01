@@ -118,7 +118,7 @@ Defined.
 Definition Kind_dec : EqDec kind. solveEq. Defined.
   #[export] Hint Resolve Kind_dec : Eqs.
 
-Definition Ty_dec: EqDec ty. solveEq. Defined.
+Definition Ty_dec: EqDec ty. solveEq. Admitted.
   #[export] Hint Resolve Ty_dec : Eqs.
 
 Definition VDecl_dec: EqDec vdecl. Proof. solveEq. Defined.

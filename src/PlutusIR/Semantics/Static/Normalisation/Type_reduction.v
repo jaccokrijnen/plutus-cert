@@ -1,6 +1,8 @@
-From PlutusCert Require Import PlutusIR Normalisation.Normalisation.
+From PlutusCert Require Import PlutusIR Normalisation.Normalisation plutus_util.
 
 Require Import Coq.Strings.String.
+Require Import Coq.Lists.List.
+
 
 (* Deterministic step function for PlutusIR type system *)
 Inductive step : ty -> ty -> Set :=
@@ -26,5 +28,13 @@ Inductive step : ty -> ty -> Set :=
         step F1 F2 -> step (Ty_IFix F1 T) (Ty_IFix F2 T)
     | step_ifixR F T1 T2 :
         normal_Ty F ->
-        step T1 T2 -> step (Ty_IFix F T1) (Ty_IFix F T2).
+        step T1 T2 -> step (Ty_IFix F T1) (Ty_IFix F T2)
+    | step_SOP Tss_normal Tss_sub_normal Tss_sub1 Tss_sub2 Tss_sub_remainder Tss_remainder :
+        (* List of list of types, we can reduce if only one of them steps, and everything "before" it is normal *)
+        ForallSet2 normal_Ty Tss_normal ->  (* Tss_normal can be empty, so this allows all reductions*)
+        ForallSet normal_Ty Tss_sub_normal -> (* The inner list should also have normal types before the type that is stepping*)
+        step Tss_sub1 Tss_sub2 ->
+        step (Ty_SOP (Tss_normal ++ (Tss_sub_normal ++ Tss_sub1 :: Tss_sub_remainder) :: Tss_remainder)) 
+             (Ty_SOP (Tss_normal ++ (Tss_sub_normal ++ Tss_sub2 :: Tss_sub_remainder) :: Tss_remainder))
+    .
     

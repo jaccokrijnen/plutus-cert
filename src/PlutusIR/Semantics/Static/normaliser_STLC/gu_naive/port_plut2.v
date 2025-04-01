@@ -13,32 +13,32 @@ Import ListNotations.
 Require Import Ascii.
 
 From PlutusCert Require Import SN_STLC_named_naive SN_STLC_named2 util Util.List STLC_named STLC_named_typing plutus_kinding_set. (* I don't understand why we need this for ftv defintion*)
-From PlutusCert Require PlutusIRSOP TypeSubstitutionSOP TypeReductionSOP plutus_util.
+From PlutusCert Require Import PlutusIR plutus_util.
 
 
 (** Substitutions *)
 
 (* from plut to annotated stlc*)
-Fixpoint f (t : PlutusIRSOP.ty) : term :=
+Fixpoint f (t : ty) : STLC_named.term :=
   match t with
-  | PlutusIRSOP.Ty_Var x => tmvar x
-  | PlutusIRSOP.Ty_Lam x A t => @tmlam Lam x A (f t)
-  | PlutusIRSOP.Ty_Forall x A t => @tmlam ForAll x A (f t)
-  | PlutusIRSOP.Ty_Fun t1 t2 => @tmapp Fun (f t1) (f t2)
-  | PlutusIRSOP.Ty_App t1 t2 => @tmapp App (f t1) (f t2)
-  | PlutusIRSOP.Ty_IFix f1 t1 => @tmapp IFix (f f1) (f t1)
-  | PlutusIRSOP.Ty_SOP Tss => 
+  | Ty_Var x => tmvar x
+  | Ty_Lam x A t => @tmlam Lam x A (f t)
+  | Ty_Forall x A t => @tmlam ForAll x A (f t)
+  | Ty_Fun t1 t2 => @tmapp Fun (f t1) (f t2)
+  | Ty_App t1 t2 => @tmapp App (f t1) (f t2)
+  | Ty_IFix f1 t1 => @tmapp IFix (f f1) (f t1)
+  | Ty_SOP Tss => 
   (* Two fold rights instead of concat/map to help termination checking*)
       fold_right (fun Ts acc => 
         (fold_right (fun T acc2 => @tmapp Fun (f T) acc2) acc Ts))
-        (tmbuiltin PlutusIRSOP.DefaultUniInteger) Tss
+        (tmbuiltin PlutusIR.DefaultUniInteger) Tss
   
       (* Instead of checking for the length, we just start with something of Base Kind*)
 
-  | PlutusIRSOP.Ty_Builtin d => tmbuiltin d
+  | Ty_Builtin d => tmbuiltin d
   end.
 
-Compute (f (PlutusIRSOP.Ty_SOP [[PlutusIRSOP.Ty_Var "a"; PlutusIRSOP.Ty_Var "b"]; [PlutusIRSOP.Ty_Var "c"]])).
+Compute (f (Ty_SOP [[PlutusIR.Ty_Var "a"; PlutusIR.Ty_Var "b"]; [PlutusIR.Ty_Var "c"]])).
 
 (*
   The following lemmas are used to prove that the translation preserves the properties of the original terms. *)
@@ -47,11 +47,13 @@ Require Import Coq.Program.Equality.
 
 Set Printing Implicit.
 
+From PlutusCert Require Static.TypeSubstitution.
+
 Lemma f_preserves_rename s fr T :
-  rename s fr (f T) = f (TypeSubstitutionSOP.rename s fr T).
+  rename s fr (f T) = f (TypeSubstitution.rename s fr T).
 Proof.
-  unfold rename; unfold TypeSubstitutionSOP.rename.
-  apply PlutusIRSOP.ty__ind with (P := fun T => mren [(s, fr)] (f T) = f (TypeSubstitutionSOP.substituteT s (PlutusIRSOP.Ty_Var fr) T)); intros.
+  unfold rename; unfold TypeSubstitution.rename.
+  apply PlutusIR.ty__ind with (P := fun T => mren [(s, fr)] (f T) = f (TypeSubstitution.substituteT s (PlutusIR.Ty_Var fr) T)); intros.
   all: try solve [simpl; f_equal; auto]. (* all cases without binders or lists *)
   all: try solve [simpl; destr_eqb_eq s X; try rewrite mren_id; simpl; f_equal; auto]. (* all cases with binders/vars *)
   induction H; auto.
@@ -61,9 +63,9 @@ Proof.
 Qed.
 
 Lemma f_preserves_ftv T :
-  ftv (f T) = TypeSubstitutionSOP.ftv T.
+  ftv (f T) = TypeSubstitution.ftv T.
 Proof.
-  apply PlutusIRSOP.ty__ind with (P := fun T => ftv (f T) = TypeSubstitutionSOP.ftv T); intros.
+  apply PlutusIR.ty__ind with (P := fun T => ftv (f T) = TypeSubstitution.ftv T); intros.
   all: try solve [simpl; f_equal; auto]. 
   induction H; auto; simpl.
   induction H; auto; simpl.
@@ -74,10 +76,10 @@ Qed.
 Require Import Coq.Arith.Wf_nat.
 
 Lemma f_preserves_tv T :
-  tv (f T) = TypeSubstitutionSOP.plutusTv T.
+  tv (f T) = TypeSubstitution.plutusTv T.
 Proof.
   (* With custom induction principle*)
-  apply PlutusIRSOP.ty__ind with (P := fun T => tv (f T) = TypeSubstitutionSOP.plutusTv T); intros.
+  apply PlutusIR.ty__ind with (P := fun T => tv (f T) = TypeSubstitution.plutusTv T); intros.
   all: try solve [simpl; f_equal; auto]. 
   induction H; auto; subst.
   induction H; auto; subst; simpl.
@@ -87,14 +89,14 @@ Qed.
 
 
 Lemma f_preserves_fresh2 y s' T :
-  fresh2 ((y, f s')::nil) (f T) = TypeSubstitutionSOP.fresh y s' T.
+  fresh2 ((y, f s')::nil) (f T) = TypeSubstitution.fresh y s' T.
 Proof.
   simpl.
   unfold fresh2.
-  unfold TypeSubstitutionSOP.fresh.
+  unfold TypeSubstitution.fresh.
   rewrite f_preserves_tv.
   assert (Htv_keys_env: (tv_keys_env
-    [(y, f s')] = (y :: (TypeSubstitutionSOP.plutusTv s')))).
+    [(y, f s')] = (y :: (TypeSubstitution.plutusTv s')))).
   {
     unfold tv_keys_env.
     f_equal.
@@ -110,8 +112,10 @@ Proof.
   auto.
 Qed.
 
+From PlutusCert Require Type_reduction.
+
 Lemma f_preserves_substituteTCA X U T :
-  (f (TypeSubstitutionSOP.substituteTCA X U T)) = (substituteTCA X (f U) (f T)).
+  (f (TypeSubstitution.substituteTCA X U T)) = (substituteTCA X (f U) (f T)).
 Proof.
   remember (f T) as fT.
   remember (size fT) as n.
@@ -133,7 +137,7 @@ Proof.
     * induction a.
       -- simpl in HeqfT. eapply IHl; auto.
       -- eapply IHa; inversion HeqfT; auto.
-    (* The fold_left in H1 will become a long Fun term, so never equal to tmvar*)
+    (* The fold_left in H1 will become a long Fun STLC_named.term, so never equal to tmvar*)
   + induction T; subst; inversion HeqfT; subst.
     
     {
@@ -144,13 +148,13 @@ Proof.
       -- 
           simpl.
           remember (fresh2 _ _) as fr.
-          remember (TypeSubstitutionSOP.fresh _ _ _) as fr'.
+          remember (TypeSubstitution.fresh _ _ _) as fr'.
           assert (Hfr_pres: fr' = fr).
           {
             (* Not currently true, but probably possible to change on both sides*)
             subst.
             symmetry.
-            assert (tmvar b = f (PlutusIRSOP.Ty_Var b)).
+            assert (tmvar b = f (PlutusIR.Ty_Var b)).
             {
               simpl.
               auto.
@@ -180,13 +184,13 @@ Proof.
       -- 
           simpl.
           remember (fresh2 _ _) as fr.
-          remember (TypeSubstitutionSOP.fresh _ _ _) as fr'.
+          remember (TypeSubstitution.fresh _ _ _) as fr'.
           assert (Hfr_pres: fr' = fr).
           {
             (* Not currently true, but probably possible to change on both sides*)
             subst.
             symmetry.
-            assert (tmvar b = f (PlutusIRSOP.Ty_Var b)).
+            assert (tmvar b = f (PlutusIR.Ty_Var b)).
             {
               simpl.
               auto.
@@ -209,10 +213,10 @@ Proof.
     induction l; simpl in H1; inversion H1.
     induction a; simpl in H2; inversion H2.
     assert (f
-      (TypeSubstitutionSOP.substituteTCA X U
-      (PlutusIRSOP.Ty_SOP ([] :: l))) = f
-      (TypeSubstitutionSOP.substituteTCA X U
-      (PlutusIRSOP.Ty_SOP (l)))).
+      (TypeSubstitution.substituteTCA X U
+      (PlutusIR.Ty_SOP ([] :: l))) = f
+      (TypeSubstitution.substituteTCA X U
+      (PlutusIR.Ty_SOP (l)))).
     {
       autorewrite with substituteTCA. simpl. reflexivity.
     }
@@ -231,10 +235,10 @@ Proof.
        -- induction a; subst.
           ++ simpl.
              assert (f
-            (TypeSubstitutionSOP.substituteTCA X U
-            (PlutusIRSOP.Ty_SOP ([] :: l))) = f
-            (TypeSubstitutionSOP.substituteTCA X U
-            (PlutusIRSOP.Ty_SOP (l)))).
+            (TypeSubstitution.substituteTCA X U
+            (PlutusIR.Ty_SOP ([] :: l))) = f
+            (TypeSubstitution.substituteTCA X U
+            (PlutusIR.Ty_SOP (l)))).
             {
               autorewrite with substituteTCA.
               simpl.
@@ -250,28 +254,28 @@ Proof.
              f_equal.
              ** eauto.
                 eapply H; eauto; simpl. lia.
-             ** assert (@fold_right term PlutusIRSOP.ty
-                  (fun (T : PlutusIRSOP.ty) (acc2 : term) =>
+             ** assert (@fold_right STLC_named.term PlutusIR.ty
+                  (fun (T : PlutusIR.ty) (acc2 : STLC_named.term) =>
                 @tmapp Fun (f T) acc2)
-                  (@fold_right term (list PlutusIRSOP.ty)
-                  (fun (Ts : list PlutusIRSOP.ty) (acc : term) =>
-                @fold_right term PlutusIRSOP.ty
-                  (fun (T : PlutusIRSOP.ty) (acc2 : term) =>
+                  (@fold_right STLC_named.term (list PlutusIR.ty)
+                  (fun (Ts : list PlutusIR.ty) (acc : STLC_named.term) =>
+                @fold_right STLC_named.term PlutusIR.ty
+                  (fun (T : PlutusIR.ty) (acc2 : STLC_named.term) =>
                 @tmapp Fun (f T) acc2)
                   acc
                   Ts)
-                  (tmbuiltin PlutusIRSOP.DefaultUniInteger)
-                  (@TypeSubstitutionSOP.map' (list PlutusIRSOP.ty)
-                  (list PlutusIRSOP.ty) l
-                  (fun (y : list PlutusIRSOP.ty) (_ : y ∈ l) =>
-                @TypeSubstitutionSOP.map' PlutusIRSOP.ty
-                  PlutusIRSOP.ty y
-                  (fun (T : PlutusIRSOP.ty) (_ : T ∈ y) =>
-                TypeSubstitutionSOP.substituteTCA X U T))))
-                  (@TypeSubstitutionSOP.map' PlutusIRSOP.ty PlutusIRSOP.ty
+                  (tmbuiltin PlutusIR.DefaultUniInteger)
+                  (@TypeSubstitution.map' (list PlutusIR.ty)
+                  (list PlutusIR.ty) l
+                  (fun (y : list PlutusIR.ty) (_ : y ∈ l) =>
+                @TypeSubstitution.map' PlutusIR.ty
+                  PlutusIR.ty y
+                  (fun (T : PlutusIR.ty) (_ : T ∈ y) =>
+                TypeSubstitution.substituteTCA X U T))))
+                  (@TypeSubstitution.map' PlutusIR.ty PlutusIR.ty
                   a0
-                  (fun (y : PlutusIRSOP.ty) (_ : y ∈ a0) =>
-                TypeSubstitutionSOP.substituteTCA X U y)) = f (TypeSubstitutionSOP.substituteTCA X U (PlutusIRSOP.Ty_SOP (a0::l)))).
+                  (fun (y : PlutusIR.ty) (_ : y ∈ a0) =>
+                TypeSubstitution.substituteTCA X U y)) = f (TypeSubstitution.substituteTCA X U (PlutusIR.Ty_SOP (a0::l)))).
     {
       autorewrite with substituteTCA.
       simpl.
@@ -279,20 +283,20 @@ Proof.
     }
     rewrite H0.
              
-        assert  (@fold_right term PlutusIRSOP.ty
-            (fun (T : PlutusIRSOP.ty) (acc2 : term) =>
+        assert  (@fold_right STLC_named.term PlutusIR.ty
+            (fun (T : PlutusIR.ty) (acc2 : STLC_named.term) =>
           @tmapp Fun (f T) acc2)
-            (@fold_right term (list PlutusIRSOP.ty)
-            (fun (Ts : list PlutusIRSOP.ty) (acc : term) =>
-          @fold_right term PlutusIRSOP.ty
-            (fun (T : PlutusIRSOP.ty) (acc2 : term) =>
+            (@fold_right STLC_named.term (list PlutusIR.ty)
+            (fun (Ts : list PlutusIR.ty) (acc : STLC_named.term) =>
+          @fold_right STLC_named.term PlutusIR.ty
+            (fun (T : PlutusIR.ty) (acc2 : STLC_named.term) =>
           @tmapp Fun (f T) acc2)
             acc
             Ts)
-            (tmbuiltin PlutusIRSOP.DefaultUniInteger)
+            (tmbuiltin PlutusIR.DefaultUniInteger)
             l)
             a0
-         = f ((PlutusIRSOP.Ty_SOP (a0::l)))).
+         = f ((PlutusIR.Ty_SOP (a0::l)))).
          {
             simpl. auto.
          }
@@ -311,10 +315,10 @@ Proof.
       - induction a; subst; inversion H2.
         
         assert (f
-          (TypeSubstitutionSOP.substituteTCA X U
-          (PlutusIRSOP.Ty_SOP ([] :: l))) = f
-          (TypeSubstitutionSOP.substituteTCA X U
-          (PlutusIRSOP.Ty_SOP (l)))).
+          (TypeSubstitution.substituteTCA X U
+          (PlutusIR.Ty_SOP ([] :: l))) = f
+          (TypeSubstitution.substituteTCA X U
+          (PlutusIR.Ty_SOP (l)))).
         {
           autorewrite with substituteTCA.
           simpl.
@@ -324,9 +328,11 @@ Proof.
         eapply IHl; intros; auto.
 Qed.
 
+
+
         
 Theorem f_preserves_step s s' :
-  TypeReductionSOP.step s s' -> step_nd (f s) (f s').
+  Type_reduction.step s s' -> step_nd (f s) (f s').
 Proof.
   intros H.
   induction H; simpl; eauto; try solve [constructor; eauto].
@@ -348,13 +354,13 @@ Set Printing Implicit.
 Require Import Coq.Program.Equality.
 
 Theorem f_preserves_kind Δ s K :
-  plutus_kinding_set.has_kind Δ s K -> STLC_named_typing.has_kind Δ (f s) K.
+  Kinding.has_kind Δ s K -> STLC_named_typing.has_kind Δ (f s) K.
 Proof.
   intros.
-  induction H using plutus_kinding_set.has_kind__ind
+  induction H using Kinding.has_kind__ind
     with (P := fun Δ s K => STLC_named_typing.has_kind Δ (f s) K)
-         (P0 := fun Δ Tss => plutus_util.ForallSet2 (fun T => STLC_named_typing.has_kind Δ (f T) PlutusIRSOP.Kind_Base) Tss)
-         (P1 := fun Δ Tss => plutus_util.ForallSet (fun T => STLC_named_typing.has_kind Δ (f T) PlutusIRSOP.Kind_Base) Tss).
+         (P0 := fun Δ Tss => plutus_util.ForallSet2 (fun T => STLC_named_typing.has_kind Δ (f T) PlutusIR.Kind_Base) Tss)
+         (P1 := fun Δ Tss => plutus_util.ForallSet (fun T => STLC_named_typing.has_kind Δ (f T) PlutusIR.Kind_Base) Tss).
   all: try solve [econstructor; eauto].
   simpl.
   induction Tss.
@@ -374,8 +380,8 @@ Qed.
 (*
 Jacco: Dit is blijkbaar een forward simulation
 *)
-Lemma sn_preimage2 {e2 : PlutusIRSOP.ty -> PlutusIRSOP.ty -> Type} {e : term -> term -> Type} (h : PlutusIRSOP.ty -> term) (x : PlutusIRSOP.ty) :
-  (forall x y, e2 x y -> e (h x) (h y)) -> @sn term e (h x) -> @sn PlutusIRSOP.ty e2 x.
+Lemma sn_preimage2 {e2 : PlutusIR.ty -> PlutusIR.ty -> Type} {e : STLC_named.term -> STLC_named.term -> Type} (h : PlutusIR.ty -> STLC_named.term) (x : PlutusIR.ty) :
+  (forall x y, e2 x y -> e (h x) (h y)) -> @sn STLC_named.term e (h x) -> @sn PlutusIR.ty e2 x.
 Proof.
   intros A B.
   remember (h x) as v. (* this allows us to keep B : sn v as an hypothesis*)
@@ -395,14 +401,14 @@ Proof.
   - reflexivity.
 Qed.
 
-Theorem sn_step_plut : forall s, @sn term step_nd (f s) -> @sn PlutusIRSOP.ty TypeReductionSOP.step s.
+Theorem sn_step_plut : forall s, @sn STLC_named.term step_nd (f s) -> @sn PlutusIR.ty Type_reduction.step s.
 Proof.
   intros s.
-  eapply @sn_preimage2 with (h := f) (e2 := TypeReductionSOP.step) (e := step_nd).
+  eapply @sn_preimage2 with (h := f) (e2 := Type_reduction.step) (e := step_nd).
   apply f_preserves_step.
 Qed.
 
-Corollary plutus_ty_strong_normalization s Δ K : plutus_kinding_set.has_kind Δ s K -> @sn PlutusIRSOP.ty TypeReductionSOP.step s.
+Corollary plutus_ty_strong_normalization s Δ K : Kinding.has_kind Δ s K -> @sn PlutusIR.ty Type_reduction.step s.
 Proof.
   intros Hwk.
   apply f_preserves_kind in Hwk.

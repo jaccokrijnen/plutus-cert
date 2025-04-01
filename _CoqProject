@@ -84,13 +84,13 @@ src/PlutusIR/Semantics/Static/Builtins/Signatures.v
 src/PlutusIR/Semantics/Static/Util.v
 
 src/PlutusIR/Semantics/Static/Typing.v
+src/PlutusIR/Semantics/Static/Typing_Set.v
 src/PlutusIR/Semantics/Static/Typing_sound_complete.v
 
 src/PlutusIR/Semantics/Static/Kinding/Checker.v
 src/PlutusIR/Semantics/Static/Kinding/Kinding.v
 
 src/PlutusIR/Semantics/Static/Normalisation/Normalisation.v
-src/PlutusIR/Semantics/Static/Normalisation/Strong_normalisation.v
 src/PlutusIR/Semantics/Static/Normalisation/Type_reduction.v
 src/PlutusIR/Semantics/Static/Normalisation/Norm_sound_complete.v
 src/PlutusIR/Semantics/Static/Normalisation/CpdtTactics.v
@@ -102,10 +102,6 @@ src/PlutusIR/Semantics/Static/normaliser_STLC/Context.v
 
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/port_plut.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/port_plut2.v
-src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/PlutusIRSOP.v
-src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/TypeSubstitutionSOP.v
-src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/TypeReductionSOP.v
-src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/NormalisationSOP.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/plutus_util.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/plutus_kinding_set.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/pre.v

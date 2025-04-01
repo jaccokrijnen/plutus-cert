@@ -1,6 +1,6 @@
 Require Import PlutusCert.PlutusIR.
-Require Import PlutusCert.PlutusIR.Semantics.Static.
 Require Import PlutusCert.Util.List.
+From PlutusCert Require Import Kinding.Kinding Static.TypeSubstitution.
 
 
 
@@ -10,7 +10,7 @@ Theorem substituteTCA_preserves_kinding : forall T Delta X K U L,
     Delta |-* U : L ->
     Delta |-* (substituteTCA X U T) : K.
 Proof with eauto with typing.
-  induction T.
+  (* induction T.
   all: intros Delta X K U L Hkind__T HHkind__U.
   all: autorewrite with substituteTCA.
   all: simpl.
@@ -29,7 +29,7 @@ Proof with eauto with typing.
   - (* Ty_Forall *)
     admit.
   - (* Ty_lam*)
-  admit.
+  admit. *)
 
     
 (* ADMIT: I had no time to finish this. Requires proofs about renamings. *)

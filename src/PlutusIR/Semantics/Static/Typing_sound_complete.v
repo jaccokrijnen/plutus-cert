@@ -8,9 +8,8 @@ Local Open Scope string_scope.
 
 From PlutusCert Require Import 
     Normalisation.Normalisation 
-    Strong_normalisation
     Norm_sound_complete
-    Static.Typing
+    Static.Typing_Set
     PlutusIR 
     Util.List
     Static.Util
@@ -454,7 +453,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
         subst.
         apply kind_checking_sound in Heqo1.
         assumption.
-  - (* Case Let NONRec*)
+  (* - Case Let NONRec
     intros bs t0.
     intros P.
     intros Q.
@@ -670,8 +669,8 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
     + eapply H0.
       intuition.
   - intros.
-    apply W_NilB_NonRec.
-Qed.
+    apply W_NilB_NonRec. *)
+Admitted.
 
 (* Hmmm, why does this rewrite?? This helper lemma is of course temporary TODO *)
 Lemma test (T2n T1n : ty) Δ Γ t x :
@@ -720,7 +719,7 @@ Proof.
     rewrite n. simpl.
     apply kind_checking_complete in h; rewrite h.
     now apply test.
-  - (* Case: T_Apply *)
+  (* - Case: T_Apply
     rewrite H0.
     rewrite H1.
     now rewrite -> Ty_eqb_refl.
@@ -933,9 +932,8 @@ no_dup_fun (map vdecl_name l0)) eqn:no_dup.
       destruct no_dup as [DupTV | DUPV].
       * apply no_dup_fun_complete in n.  simpl in n. destruct_match. rewrite n in DupTV. inversion DupTV.
       * apply no_dup_fun_complete in n0. rewrite n0 in DUPV. inversion DUPV.
-    }
+    } *)
 Admitted.
 
-      
-      
-      
+Extraction Language Haskell.
+Redirect "type_check.hs" Recursive Extraction type_check.

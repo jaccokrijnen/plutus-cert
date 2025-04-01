@@ -13,7 +13,6 @@ Import ListNotations.
 Require Import Ascii.
 
 From PlutusCert Require Import Util.List Kinding.Kinding. (* I don't understand why we need this for ftv defintion*)
-From PlutusCert Require PlutusIRSOP.
 
 Inductive USort := Lam | ForAll.
 Inductive BSort := App | IFix | Fun.
@@ -21,9 +20,9 @@ Inductive BSort := App | IFix | Fun.
 (** Types, maybe rename app and lam, since they are now generic *)
 Inductive term :=
   | tmvar : string -> term
-  | tmlam {USort : USort} : string -> PlutusIRSOP.kind -> term -> term
+  | tmlam {USort : USort} : string -> PlutusIR.kind -> term -> term
   | tmapp {BSort : BSort} : term -> term -> term
-  | tmbuiltin : PlutusIRSOP.DefaultUni -> term
+  | tmbuiltin : PlutusIR.DefaultUni -> term
 .
 
 

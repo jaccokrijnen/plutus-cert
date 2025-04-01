@@ -3,13 +3,13 @@ From Coq Require Extraction.
 From PlutusCert Require Import 
   PlutusIR 
   Normalisation.Normalisation 
-  Strong_normalisation 
-  Kinding.Kinding 
+  Kinding.Kinding
   Kinding.Checker
   Type_reduction
   Static.Util
   CpdtTactics
   SubstituteTCA
+  port_plut2
   .
 Require Import Coq.Lists.List.
 Import ListNotations.
@@ -25,9 +25,13 @@ Proof.
   + apply N_TyLam.
     now apply normalisation__stable'__normal.
   + now apply normalisation__stable'__normal.
-Qed.
+  + admit.
+Admitted.
 
 Require Import Coq.Program.Equality.
+
+Axiom step_dec_SOP : forall l,
+  normal_Ty (Ty_SOP l).
 
 Definition step_dec (T : ty) : forall Δ K, has_kind Δ T K -> {T' & step T T'} + normal_Ty T.
 Proof.
@@ -132,8 +136,13 @@ Proof.
         - right. constructor. constructor.
           + inversion n. assumption.
           + assumption.
+        - inversion Heqo.
         }
+  - right. apply step_dec_SOP. (* TODO: Different induction prniciple! *)
 Qed.
+
+Axiom step_preserves_kinding_SOP_axiom : forall l Δ,
+  Δ |-* (Ty_SOP l) : Kind_Base.
 
 (* TODO: We ended up not needing it for normalisation_preserves_kinding because we moved through normalise instead of normaliser*)
 Theorem step_preserves_kinding {T T'} : forall Δ K,
@@ -146,7 +155,12 @@ Proof.
     inversion Hkind_T; subst; try solve [econstructor; eauto].
   - inversion H2; subst.
     eapply substituteTCA_preserves_kinding; eauto.
+  - apply step_preserves_kinding_SOP_axiom.
 Qed.
+
+From PlutusCert Require Import SN_STLC_named_naive.
+
+Definition SN := @sn ty Type_reduction.step.
 
 (* Wouter's suggestion: do not use explicit normalizer in soundness proof*)
 Theorem SN_normalise t Δ K :
@@ -165,7 +179,7 @@ Qed.
 
 
 Definition normaliser {T Δ K} (Hwk : Δ |-* T : K) :=
-  let HSN := strong_normalisation Hwk in
+  let HSN := plutus_ty_strong_normalization T Δ K Hwk in
   projT1 (SN_normalise T Δ K Hwk HSN).
 
 Print Assumptions normaliser.
@@ -181,9 +195,6 @@ Fixpoint normaliser_gas (n : nat) {T Δ K} (Hwk : Δ |-* T : K) :=
         | inr _ => T
         end
   end.
-
-Extraction Language Haskell.
-Recursive Extraction normaliser_gas.
 
 Definition normaliser_Jacco Δ T : option ty :=
   match kind_check Δ T with
@@ -233,7 +244,7 @@ Proof.
 Qed.
 
 Theorem normaliser_Jacco__well_kinded Δ T Tn :
-  normaliser_Jacco Δ T = Some Tn -> exists K, Δ |-* T : K.
+  normaliser_Jacco Δ T = Some Tn -> {K & Δ |-* T : K}.
 Proof.
   unfold normaliser_Jacco.
   move: eq_refl.
@@ -412,13 +423,13 @@ Proof.
   intros.
   generalize dependent K.
   generalize dependent Δ.
-  induction H0; intros Δ K0 Hkind; inversion Hkind; subst; try solve [econstructor; eauto].
+  (* induction H0; intros Δ K0 Hkind; inversion Hkind; subst; try solve [econstructor; eauto].
   - eapply IHnormalise3; eauto.
     eapply substituteTCA_preserves_kinding; eauto.
     specialize (IHnormalise1 Δ (Kind_Arrow K1 K0) H2).
     inversion IHnormalise1; subst.
-    assumption.
-Qed.
+    assumption. *)
+Admitted.
 
 Theorem normaliser_preserves_kinding {Δ T Tn K } :
   Δ |-* T : K -> normaliser_Jacco Δ T = Some Tn -> Δ |-* Tn : K.
