@@ -937,3 +937,5 @@ Admitted.
 
 Extraction Language Haskell.
 Redirect "type_check.hs" Recursive Extraction type_check.
+
+(* Compute (type_check nil (cons ((EmptyString, (Ty_App (Ty_Lam EmptyString Kind_Base (Ty_Var EmptyString)) (Ty_Builtin DefaultUniInteger)))) nil) (Var EmptyString)). *)

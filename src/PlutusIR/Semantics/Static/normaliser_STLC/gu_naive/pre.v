@@ -220,17 +220,38 @@ Qed.
   NC: forall btv in s, not in sigma
   we remove a binder, thenw e should still have that all remaining btvs are not in the original sigma.
 *)
-Lemma nc_lam {B x A s sigma} :
+Lemma nc_lam {B x s A sigma} : 
   NC (@tmlam B x A s) sigma -> NC s sigma.
-Admitted.
+Proof.
+  induction sigma; [constructor|]; intros Hnc.
+  inversion Hnc; subst.
+  constructor.
+  + eapply IHsigma. auto.
+  + intros y H_btvs.
+    eapply btv_c_lam in H_btvs; eauto.
+Qed.
 
 Lemma nc_app_l {B s t sigma} :
   NC (@tmapp B s t) sigma -> NC s sigma.
-Admitted.
+Proof.
+  induction sigma; [constructor|]; intros Hnc.
+  inversion Hnc; subst.
+  constructor.
+  + eapply IHsigma. auto.
+  + intros y H_btvs.
+    eapply btv_c_appl in H_btvs; eauto.
+Qed.
 
 Lemma nc_app_r {B s t sigma} :
   NC (@tmapp B s t) sigma -> NC t sigma.
-Admitted.
+Proof.
+  induction sigma; [constructor|]; intros Hnc.
+  inversion Hnc; subst.
+  constructor.
+  + eapply IHsigma. auto.
+  + intros y H_btvs.
+    eapply btv_c_appr in H_btvs; eauto.
+Qed.
 
 (* No free vars are changed *)
 Lemma alpha_preserves_nc_ctx s x t t':
@@ -381,19 +402,35 @@ Qed.
 
 Lemma gu_app_l {B s t} :
   GU (@tmapp B s t) -> GU s.
-Admitted.
+Proof.
+  inversion 1; auto.
+Qed.
 
 Lemma gu_app_r {B s t} :
   GU (@tmapp B s t) -> GU t.
-Admitted.
+Proof.
+  inversion 1; auto.
+Qed.
 
 Lemma gu_lam {B x A s} :
   GU (@tmlam B x A s) -> GU s.
-  Admitted.
+Proof.
+  inversion 1; auto.
+Qed.
 
 Lemma gu_applam_to_nc {BA} {BL} s t x A :
   GU (@tmapp BA (@tmlam BL x A s) t) -> NC s [(x, t)].
-Admitted.
+Proof.
+  intros Hgu.
+  inversion Hgu as [ | ? ? ? Hgu_lam Hgu_t Hgu_P1 Hgu_P2 | | ]; subst.
+  repeat constructor.
+  - intros Hcontra; subst.
+    inversion Hgu_lam; subst.
+    contradiction.
+  - intros Hcontra; apply extend_ftv_to_tv in Hcontra; revert Hcontra.
+    apply Hgu_P2.
+    apply btv_c_lam; auto.
+Qed.
 
 Lemma nc_ftv_env s sigma :
   NC s sigma -> forall x, In x (btv s) -> ~ In x (ftv_keys_env sigma).
@@ -564,31 +601,4 @@ Proof.
         t : by uhm3'
         sigma: By uhm3
     *)
-Admitted.
-
-
-(* defined for arbitrary substitution, while below we only need it for identity substituiosn
-  maybe we can then reuse this in other parts of the code. 
-  
-  this is simply to_GU', but with more subsitutions.
-  *)
-Definition s_constr (s : term) (sigma : list (string * term)) : term :=
-  s.
-
-Opaque s_constr.
-
-(* Only need to rename binders*)
-Lemma s_constr__a_s {s s' sigma} :
-  s' = s_constr s sigma ->
-  Alpha [] s s'.
-Admitted.
-
-Lemma s_constr__nc_s {s s' sigma} :
-  s' = s_constr s sigma ->
-  NC s' sigma.
-Admitted.
-
-Lemma s_constr__gu {s s' sigma} :
-  s' = s_constr s sigma ->
-  GU s'.
 Admitted.

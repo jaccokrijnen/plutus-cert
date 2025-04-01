@@ -177,13 +177,6 @@ Proof.
     now apply normalisation__stable'__normal.
 Qed.
 
-
-Definition normaliser {T Δ K} (Hwk : Δ |-* T : K) :=
-  let HSN := plutus_ty_strong_normalization T Δ K Hwk in
-  projT1 (SN_normalise T Δ K Hwk HSN).
-
-Print Assumptions normaliser.
-
 Fixpoint normaliser_gas (n : nat) {T Δ K} (Hwk : Δ |-* T : K) :=
   match n with
     | O => T
@@ -195,6 +188,13 @@ Fixpoint normaliser_gas (n : nat) {T Δ K} (Hwk : Δ |-* T : K) :=
         | inr _ => T
         end
   end.
+
+Definition normaliser {T Δ K} (Hwk : Δ |-* T : K) :=
+  (* normaliser_gas 100 Hwk. *)
+  let HSN := plutus_ty_strong_normalization T Δ K Hwk in
+  projT1 (SN_normalise T Δ K Hwk HSN).
+
+Print Assumptions normaliser.
 
 Definition normaliser_Jacco Δ T : option ty :=
   match kind_check Δ T with
@@ -346,12 +346,6 @@ Proof.
 Qed.
 
 Require Import Coq.Program.Equality.
-
-(* This is problematic. Now how to get the deltas back? It for sure does not hold for all deltas...*)
-Lemma map_normaliser_complete_e {xs : list (string * ty * (list (string * kind)))} {xs'} :
-  map_wk_e (remove_deltas xs) -> map_normalise (remove_deltas xs) xs' -> map_normaliser xs = Some xs'.
-Proof.
-Admitted.
 
 (* Basically we need a map_wellkinded argument *)
 Lemma map_normaliser_complete {xs : list (string * ty * (list (string * kind)))} {xs'} :

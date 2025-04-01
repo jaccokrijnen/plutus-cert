@@ -1065,8 +1065,6 @@ Proof.
     apply in_eq.
 Qed.
 
-Opaque to_GU'.
-Opaque to_GU''.
 
 
 
@@ -2636,3 +2634,120 @@ Proof.
 Admitted.
 
 Opaque t_constr.
+
+
+(* defined for arbitrary substitution, while below we only need it for identity substituiosn
+  maybe we can then reuse this in other parts of the code. 
+  
+  this is simply to_GU', but with more subsitutions.
+  *)
+
+Definition s_constr (s : term) (sigma : list (string * term)) : term := 
+  (* By adding tvs in X and T, no binders in the resulting term can be equal to tvs in X and T.
+    We do tv, because mostly tv is easier to reason about than ftv*)
+  let tvs := tv_keys_env sigma ++ tv s in
+  (* again we need to remove duplicates *)
+  snd (to_GU_ tvs (map (fun x => (x, x)) tvs) s).
+
+
+(* Only need to rename binders*)
+Lemma s_constr__a_s {s s' sigma} :
+  s' = s_constr s sigma ->
+  Alpha [] s s'.
+Proof.
+  intros Heqs'.
+  unfold s_constr in Heqs'.
+  remember (map (fun x => (x, x)) (_)) as R.
+  rewrite Heqs'.
+  assert (R ⊢ s ~ s').
+  {
+    rewrite Heqs'.
+    eapply to_GU__alpha_'.
+    - apply IdCtx__KindOfUniqueRhs.
+      rewrite HeqR.
+      apply map_creates_IdCtx.
+    - intros.
+      apply id_ctx_alphavar_refl; auto.
+      subst. apply map_creates_IdCtx.
+    - intros.
+      intuition.
+  }
+  eapply alpha_weaken_ids with (idCtx := R).
+  - subst.
+    clear H.
+    induction (tv_keys_env sigma ++ tv s); simpl; constructor; auto.
+  - subst. auto.
+Qed.
+
+Lemma s_constr__gu {s s' sigma} :
+  s' = s_constr s sigma ->
+  GU s'.
+Proof.
+  intros Heqs'.
+  unfold s_constr in Heqs'.
+  subst.
+  eapply to_GU__GU_; auto.
+  - intros.
+    assert (In x (tv_keys_env sigma ++ tv s)).
+    {
+      apply extend_ftv_to_tv in H.
+      auto.
+      intuition.
+    }
+    apply in_map_iff.
+    exists (x, x); intuition.
+    apply id_map_helper. auto.
+  - intros. (* x in tv s, then also x in supserset of tv s*)
+    intuition.
+Qed.
+
+(* Fundamental property NC is trying to capture *)
+Lemma nc_helper {s sigma} :
+  (forall x, In x (btv s) -> ~ In x (ftv_keys_env sigma)) ->
+  NC s sigma.
+Proof.
+  intros Hnc_eq.
+  induction sigma.
+  - constructor.
+  - destruct a as [a1 a2].
+    constructor.
+    + intros.
+      apply IHsigma.
+      intros x Hbtv_s.
+      specialize (Hnc_eq x Hbtv_s).
+      simpl in Hnc_eq.
+      rewrite de_morgan2 in Hnc_eq.
+      destruct Hnc_eq as [_ Hnc_eq].
+      apply not_in_app in Hnc_eq as [_ Hnc_eq].
+      auto.
+    + intros x Hbtv_s.
+      specialize (Hnc_eq x Hbtv_s).
+      simpl in Hnc_eq.
+      rewrite de_morgan2 in Hnc_eq.
+      destruct Hnc_eq as [H_n_a1_x Hnc_eq].
+      apply not_in_app in Hnc_eq as [Hnc_eq _].
+      auto.
+Qed.
+
+Lemma s_constr__nc_s {s s' sigma} :
+  s' = s_constr s sigma ->
+  NC s' sigma.
+Proof.
+  intros Heqs'; subst.
+  unfold s_constr.
+  remember (to_GU_ (_) (map (fun x => (x, x)) (_)) s) as p.
+  destruct p as [ [used' binders'] s'2].
+  subst.
+  apply nc_helper.
+  intros.
+ 
+  apply no_binder_used with (x := x) in Heqp; auto.
+  intros Hcontra. apply extend_ftv_keys_env_to_tv in Hcontra.
+  apply not_in_app in Heqp.
+  destruct Heqp as [Heqp _].
+  contradiction.
+Qed.
+
+
+Opaque to_GU'.
+Opaque to_GU''.

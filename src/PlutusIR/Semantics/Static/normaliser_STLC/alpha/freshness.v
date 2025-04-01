@@ -145,6 +145,11 @@ Lemma extend_ftv_to_tv x s :
 Proof.
 Admitted.
 
+Lemma extend_ftv_keys_env_to_tv x sigma :
+  In x (ftv_keys_env sigma) -> In x (tv_keys_env sigma).
+Proof.
+Admitted.
+
 Lemma extend_btv_to_tv x s :
   In x (btv s) -> In x (tv s).
 Proof.
