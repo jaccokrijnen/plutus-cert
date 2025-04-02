@@ -5,6 +5,25 @@ Require Import Coq.Strings.String.
 
 Require Import Coq.Program.Equality.
 
+Lemma alpha_not_in_tv_helper {X X' ren t} :
+  ~ In X (tv t) -> ~ In X' (tv t) -> Alpha ren t t -> Alpha ((X, X')::ren) t t.
+Proof.
+Admitted.
+
+Lemma alpha_not_in_ftv_helper2 {X X' ren t t'} :
+  ~ In X (ftv t) -> Alpha ((X, X')::ren) t t' -> ~ In X' (ftv t') .
+Admitted.
+
+Lemma alpha_in_ftv_helper2 {X X' ren t t'} :
+  In X (ftv t) -> Alpha ((X, X')::ren) t t' -> In X' (ftv t') .
+Admitted.
+
+Lemma weaken_vacuous_alpha {X X' ren t t'} :
+  Alpha ((X, X')::ren) t t' -> ~ In X (ftv t) -> ~ In X' (ftv t') -> Alpha ren t t'.
+Proof.
+  (* Proof will go something similar to alphaRenameStronger *)
+Admitted.
+
 Lemma alpha_preserves_ftv' {x s s' ren} :
   In x (ftv s) -> Alpha ren s s' -> { x' & prod (AlphaVar ren x x') (In x' (ftv s')) }.
 Proof.

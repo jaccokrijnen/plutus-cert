@@ -1,4 +1,4 @@
-From PlutusCert Require Import STLC_named alpha.alpha util rename Util.List.
+From PlutusCert Require Import STLC_named util rename Util.List.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
 
@@ -23,25 +23,6 @@ Admitted.
 Lemma fresh2_over_tv_value_sigma X s t Y sigma :
   Y = fresh2 sigma t ->
   In (X, s) sigma -> ~ In Y (tv s).
-Admitted.
-
-Lemma alpha_not_in_tv_helper {X X' ren t} :
-  ~ In X (tv t) -> ~ In X' (tv t) -> Alpha ren t t -> Alpha ((X, X')::ren) t t.
-Proof.
-Admitted.
-
-Lemma alpha_not_in_ftv_helper2 {X X' ren t t'} :
-  ~ In X (ftv t) -> Alpha ((X, X')::ren) t t' -> ~ In X' (ftv t') .
-Admitted.
-
-Lemma alpha_in_ftv_helper2 {X X' ren t t'} :
-  In X (ftv t) -> Alpha ((X, X')::ren) t t' -> In X' (ftv t') .
-Admitted.
-
-Lemma weaken_vacuous_alpha {X X' ren t t'} :
-  Alpha ((X, X')::ren) t t' -> ~ In X (ftv t) -> ~ In X' (ftv t') -> Alpha ren t t'.
-Proof.
-  (* Proof will go something similar to alphaRenameStronger *)
 Admitted.
 
 Lemma ftv_var x x' :

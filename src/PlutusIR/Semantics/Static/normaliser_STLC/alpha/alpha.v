@@ -4,7 +4,7 @@ From mathcomp Require Import ssreflect ssrbool eqtype ssrnat.
 From Coq Require Import ssrfun.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
-From PlutusCert Require Import Util.List AutosubstSsr.
+From PlutusCert Require Import Util.List AutosubstSsr freshness.
 Import ListNotations.
 Local Open Scope string_scope.
 Local Open Scope list_scope.
@@ -913,37 +913,30 @@ Proof.
   - constructor.
 Qed.
 
-(* WHY DO WE HAVE THIS? WHY NOT FTV?*)
-Lemma alpha_extend_vacuous {x x' s s' ren}:
-  ~ (In x (ftv s)) -> ~ (In x' (tv s')) -> Alpha ren s s' -> Alpha ((x, x')::ren) s s'.
+Lemma alpha_extend_vacuous {x x' s s' R}:
+  ~ (In x (tv s)) -> ~ (In x' (tv s')) -> Alpha R s s' -> Alpha ((x, x')::R) s s'.
 Proof.
-Admitted.
-
-Lemma alpha_extend_vacuous_ftv {x x' s s' ren}:
-  ~ (In x (ftv s)) -> ~ (In x' (ftv s')) -> Alpha ren s s' -> Alpha ((x, x')::ren) s s'.
-Proof.
-Admitted.
-
-Lemma alpha_vacuous_R {s s' R1 R2}:
-  (forall x, In x (map fst R1) -> (~ In x (ftv s))) -> (forall x', In x' (map snd R1) -> ~ In x' (ftv s')) -> Alpha R2 s s' -> Alpha (R1 ++ R2) s s'.
-Proof.
-  intros.
-  induction R1.
-  - rewrite app_nil_l. auto.
-  - destruct a as [a1 a2].
-Admitted.
-
-(* definitions for that? *)
-Lemma alpha_extend_vacuous_right {s s' R R'}:
-  (forall x, In x (map fst R') -> ~ In x (ftv s)) -> 
-  (forall x, In x (map snd R') -> ~ In x (ftv s')) -> Alpha R s s' -> Alpha (R ++ R') s s'.
-Proof.
-Admitted.
-
-Lemma alpha_extend_vacuous_single {x x' s}:
-  ~ (In x (ftv s)) -> ~ (In x' (tv s)) -> Alpha ((x, x')::nil) s s.
-Proof.
-Admitted.
+  intros Hftv_s Hftv_s' Ha_s.
+  induction Ha_s.
+  - repeat constructor; auto.
+    + simpl in Hftv_s. auto.
+    + simpl in Hftv_s'. auto.
+  - constructor; auto.
+    apply alpha_swap with (ren := ((x, x')::(x0, y)::sigma)).
+    + constructor; auto.
+      * simpl in Hftv_s. auto.
+      * simpl in Hftv_s'. auto.
+      * apply legalRenSwap_id.
+    + eapply IHHa_s.
+      * eapply not_tv_dc_lam; eauto.
+      * eapply not_tv_dc_lam; eauto.
+  - constructor.
+    + apply IHHa_s1; auto;
+      eapply not_tv_dc_appl; eauto.
+    + apply IHHa_s2; auto;
+      eapply not_tv_dc_appr; eauto.
+  - constructor.
+Qed.
 
 
 Lemma alphavar_refl_weaken_vacuouss {x R} :

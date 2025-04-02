@@ -115,46 +115,6 @@ Lemma αctx_sub_extend_ids_right σ σ' R1 R2 :
   IdCtx R2 -> αCtxSub R1 σ σ' -> αCtxSub (R1 ++ R2) σ σ'.
 Admitted.
 
-Lemma αctx_vacuous_R R σ σ' :
-  (forall x, In x (map fst R) -> (~ In x (ftv_keys_env σ))) -> (forall x', In x' (map snd R) -> ~ In x' (ftv_keys_env σ')) -> αCtxSub [] σ σ' -> αCtxSub R σ σ'.
-Proof.
-  intros Hvac1 Hvac2 Ha.
-  dependent induction σ.
-  - inversion Ha; subst. constructor.
-  - inversion Ha; subst.
-    constructor.
-    + eapply IHσ; eauto; intros.
-      * 
-        specialize (Hvac1 x0 H).
-        simpl in Hvac1. apply de_morgan2 in Hvac1 as [_ Hvac1].
-        apply not_in_app in Hvac1 as [_ Hvac1]. auto.
-      * specialize (Hvac2 x' H).
-        simpl in Hvac2. apply de_morgan2 in Hvac2 as [_ Hvac2].
-          apply not_in_app in Hvac2 as [_ Hvac2]. auto.
-    + inversion H3; subst.
-      apply alphavar_refl_weaken_vacuouss. 
-      * intros Hcontra.
-        apply Hvac1 in Hcontra. simpl in Hcontra. 
-        apply de_morgan2 in Hcontra as [Hcontra _].
-        contradiction.
-      * intros Hcontra.
-        apply Hvac2 in Hcontra. simpl in Hcontra. 
-        apply de_morgan2 in Hcontra as [Hcontra _].
-        contradiction.
-    + assert ((R ++ nil) ⊢ t ~ t').
-      { apply alpha_vacuous_R.
-        - intros.
-        apply Hvac1 in H. simpl in H. apply de_morgan2 in H as [_ H].
-        apply not_in_app in H as [H _]. auto.
-        - intros.
-        apply Hvac2 in H. simpl in H. apply de_morgan2 in H as [_ H].
-        apply not_in_app in H as [H _]. auto.
-        - auto.
-      }
-      rewrite app_nil_r in H.
-      auto.
-Qed.
-
 Lemma extend_ftv_keys_env_to_tv x sigma :
   In x (ftv_keys_env sigma) -> In x (tv_keys_env sigma).
 Proof.

@@ -25,7 +25,7 @@ Proof.
   + apply N_TyLam.
     now apply normalisation__stable'__normal.
   + now apply normalisation__stable'__normal.
-  + admit.
+  + (* TY_SOP *) admit.
 Admitted.
 
 Require Import Coq.Program.Equality.

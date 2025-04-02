@@ -30,8 +30,8 @@ opaque constant bodies have been accessed
   alpha_ctx_sub.alpha_ctx_right_ex constructions.R_constr__a_s
   constructions.to_GU_applam_unfold alpha.alphavar_refl_weaken_vacuouss
   constructions.to_GU_app_unfold SN_STLC_named_naive.step_gu_na_lam_fold
-  constructions.to_GU__alpha_' constructions.R_constr_R2_IdCtx
-  alpha_rename.alpha_trans_rename_right
+  alpha.alpha_vacuous_R constructions.to_GU__alpha_'
+  constructions.R_constr_R2_IdCtx alpha_rename.alpha_trans_rename_right
   constructions.a_R_constr_KindOfUniqueRHS step_dec pre.gu_applam_to_nc
   alpha.alpha_extend_id constructions.s_constr__a_s
   constructions.lookup_some_then_alphavar alpha.alpha_swap alpha.alpha_refl
@@ -80,10 +80,9 @@ opaque constant bodies have been accessed
  [extraction-opaque-accessed,extraction,default]
 File "./src/PlutusIR/Semantics/Static/Typing_sound_complete.v", line 939, characters 0-57:
 Warning: The following axioms must be realized in the extracted
-code: constructions.t_constr__nc_subs alpha.lrs_trans alpha.alpha_vacuous_R
-      alpha.alpha_weaken_ids constructions.a_R_constr_alpha_s
-      alpha.alpha_extend_id'' Ty_dec alpha.alpha_extend_vacuous_ftv
-      alpha_ctx_sub.αctx_sub_extend_ids_right.
+code: constructions.t_constr__nc_subs alpha.lrs_trans alpha.alpha_weaken_ids
+      constructions.a_R_constr_alpha_s alpha.alpha_extend_id'' Ty_dec
+      alpha.alpha_extend_vacuous_ftv alpha_ctx_sub.αctx_sub_extend_ids_right.
  [extraction-axiom-to-realize,extraction,default]
 File "./src/PlutusIR/Semantics/Static/Typing_sound_complete.v", line 939, characters 0-57:
 Warning: The identifier has_kind_set__ind contains __ which is reserved for
@@ -2244,8 +2243,17 @@ alpha_extend_vacuous_ftv =
 
 alpha_vacuous_R :: Term0 -> Term0 -> (List (Prod String String)) -> (List
                    (Prod String String)) -> Alpha -> Alpha
-alpha_vacuous_R =
-  Prelude.error "AXIOM TO BE REALIZED"
+alpha_vacuous_R s s' r1 r2 x =
+  list_rec (\_ _ -> eq_rec_r r2 x (app Nil r2)) (\a r3 iHR1 _ _ ->
+    case a of {
+     Pair s0 s1 ->
+      alpha_extend_vacuous_ftv s0 s1 s s'
+        (let {
+          app0 l m =
+            case l of {
+             Nil -> m;
+             Cons a0 l1 -> Cons a0 (app0 l1 m)}}
+         in app0 r3 r2) (iHR1 __ __)}) r1 __ __
 
 alphavar_refl_weaken_vacuouss :: String -> (List (Prod String String)) ->
                                  AlphaVar

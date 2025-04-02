@@ -2101,6 +2101,109 @@ Lemma lookup_r__extend y t (R1 R2 : list (string * string)) :
    (lookup_r y R1 = None) -> (lookup_r y R2 = Some t) -> lookup_r y (R1 ++ R2) = Some t.
 Admitted.
 
+
+
+(*
+THE FOLLOWING DEPENDS ON SOME CONSTRUCTIONS SO THAT IS WHY IT IS HERE:
+*)
+
+Lemma not_ftv_to_not_tv {x s}:
+  ~ (In x (ftv s)) -> prod (~ (In x (tv (to_GU'' x s)))) (Alpha [] s (to_GU'' x s)).
+Proof.
+  intros.
+  split.
+  - apply not_ftv_btv_then_not_tv.
+    + eapply @alpha_preserves_no_ftv with (x := x) (s := s); auto.
+      apply to_GU''__alpha. constructor.
+    + apply to_GU''__btv.
+  - apply to_GU''__alpha.
+Qed.
+
+Lemma alpha_trans3 {R s s' s'' s'''}:
+  Alpha [] s s' -> Alpha R s' s'' -> Alpha [] s'' s''' -> Alpha R s s'''.
+Proof.
+  intros.
+  eapply @alpha_trans with (ren := ctx_id_left R) (ren' := R).
+  - { apply id_left_trans. } 
+  - apply alpha_extend_ids. apply ctx_id_left_is_id. eauto.
+  - eapply @alpha_trans with (ren := R) (ren' := ctx_id_right R).
+    + apply id_right_trans.
+    + eauto.
+    + apply alpha_extend_ids. apply ctx_id_right_is_id. eauto.
+Qed.
+
+Lemma alpha_extend_vacuous_ftv {x x' s s' R}:
+  ~ (In x (ftv s)) -> ~ (In x' (ftv s')) -> Alpha R s s' -> Alpha ((x, x')::R) s s'.
+Proof.
+  intros.
+  apply not_ftv_to_not_tv in H as [Htv_s Ha_s].
+  apply not_ftv_to_not_tv in H0 as [Htv_s' Ha_s'].
+  assert (R ⊢ (to_GU'' x s) ~ (to_GU'' x' s')). {
+    apply @alpha_trans3 with (s' := s) (s'' := s'); auto.
+    eapply @alpha_sym. constructor. auto.
+  }
+  apply @alpha_trans3 with (s' := to_GU'' x s) (s'' := to_GU'' x' s') (s''' := s'); auto.
+  - apply alpha_extend_vacuous; auto.
+  - eapply @alpha_sym. constructor. auto.
+Qed.
+
+Lemma alpha_vacuous_R {s s' R1 R2}:
+  (forall x, In x (map fst R1) -> (~ In x (ftv s))) -> (forall x', In x' (map snd R1) -> ~ In x' (ftv s')) -> Alpha R2 s s' -> Alpha (R1 ++ R2) s s'.
+Proof.
+  intros.
+  induction R1.
+  - rewrite app_nil_l. auto.
+  - destruct a as [a1 a2].
+    apply alpha_extend_vacuous_ftv.
+    + apply H. apply in_eq.
+    + apply H0. apply in_eq.
+    + apply IHR1.
+      * intros. eapply H. apply in_cons. auto.
+      * intros. eapply H0. apply in_cons. auto.
+Qed.
+
+Lemma αctx_vacuous_R R σ σ' :
+  (forall x, In x (map fst R) -> (~ In x (ftv_keys_env σ))) -> (forall x', In x' (map snd R) -> ~ In x' (ftv_keys_env σ')) -> αCtxSub [] σ σ' -> αCtxSub R σ σ'.
+Proof.
+  intros Hvac1 Hvac2 Ha.
+  dependent induction σ.
+  - inversion Ha; subst. constructor.
+  - inversion Ha; subst.
+    constructor.
+    + eapply IHσ; eauto; intros.
+      * 
+        specialize (Hvac1 x0 H).
+        simpl in Hvac1. apply de_morgan2 in Hvac1 as [_ Hvac1].
+        apply not_in_app in Hvac1 as [_ Hvac1]. auto.
+      * specialize (Hvac2 x' H).
+        simpl in Hvac2. apply de_morgan2 in Hvac2 as [_ Hvac2].
+          apply not_in_app in Hvac2 as [_ Hvac2]. auto.
+    + inversion H3; subst.
+      apply alphavar_refl_weaken_vacuouss. 
+      * intros Hcontra.
+        apply Hvac1 in Hcontra. simpl in Hcontra. 
+        apply de_morgan2 in Hcontra as [Hcontra _].
+        contradiction.
+      * intros Hcontra.
+        apply Hvac2 in Hcontra. simpl in Hcontra. 
+        apply de_morgan2 in Hcontra as [Hcontra _].
+        contradiction.
+    + assert ((R ++ nil) ⊢ t ~ t').
+      { apply alpha_vacuous_R.
+        - intros.
+        apply Hvac1 in H. simpl in H. apply de_morgan2 in H as [_ H].
+        apply not_in_app in H as [H _]. auto.
+        - intros.
+        apply Hvac2 in H. simpl in H. apply de_morgan2 in H as [_ H].
+        apply not_in_app in H as [H _]. auto.
+        - auto.
+      }
+      rewrite app_nil_r in H.
+      auto.
+Qed.
+(* END OF THAT*)
+
+
 Lemma a_R_constr_KindOfUniqueRHS R R' s s' t :
   R' = @a_R_constr R s s' t ->
   KindOfUniqueRhs R'.
