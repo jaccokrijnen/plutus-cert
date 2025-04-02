@@ -925,8 +925,12 @@ Proof.
 Admitted.
 
 Lemma alpha_vacuous_R {s s' R1 R2}:
-  (forall x x', In (x, x') R1 -> prod (~ In x (ftv s)) (~ In x' (ftv s')) ) -> Alpha R2 s s' -> Alpha (R1 ++ R2) s s'.
+  (forall x, In x (map fst R1) -> (~ In x (ftv s))) -> (forall x', In x' (map snd R1) -> ~ In x' (ftv s')) -> Alpha R2 s s' -> Alpha (R1 ++ R2) s s'.
 Proof.
+  intros.
+  induction R1.
+  - rewrite app_nil_l. auto.
+  - destruct a as [a1 a2].
 Admitted.
 
 (* definitions for that? *)

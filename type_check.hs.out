@@ -4,17 +4,20 @@ opaque constant bodies have been accessed
 : pre.gu_lam alpha_rename.alphaRename alpha.legalRenSwap_id
   SN_STLC_named_naive.L_var SN_STLC_named_naive.α_preserves_SN_R
   alpha_ctx_sub.αctx_trans SN_STLC_named_naive.L_sn SN_STLC_named_naive.L_nc
-  SN_STLC_named_naive.L_cl SN_STLC_named_naive.sn_ty_fun
+  SN_STLC_named_naive.L_cl alpha_ctx_sub.αctx_vacuous_R
+  SN_STLC_named_naive.sn_ty_fun
   SN_STLC_named_naive.step_naive_preserves_alpha2
-  SN_STLC_named_naive.step_gu_na_appr_fold constructions.s_constr__gu
-  SN_STLC_named_naive.step_gu_na_appl_fold constructions.sconstr2_nc_s_t
+  SN_STLC_named_naive.step_gu_na_appr_fold alpha.alphavar_extend_ids
+  constructions.s_constr__gu SN_STLC_named_naive.step_gu_na_appl_fold
+  constructions.sconstr2_nc_sub constructions.sconstr2_nc_s_t
   SN_STLC_named_naive.L_reducible port_plut2.sn_step_plut pre.nc_app_r
   pre.nc_app_l alpha.alphaIdShadowsVacuous
-  constructions.KindOfUniqueRhsFreshMultiple kind_checking_default_uni_sound
+  constructions.KindOfUniqueRhsFreshMultiple
   SN_STLC_named_naive.step_gu_naive_preserves_alpha
   SN_STLC_named_naive.sn_ty_forall pre.gu_app_r pre.gu_app_l
-  constructions.to_GU__GU SN_STLC_named2.step_nd_implies_step_gu_na
-  pre.alpha_preserves_nc_ctx constructions.sconstr2_nc_s
+  constructions.to_GU__GU kind_checking_sound_set
+  SN_STLC_named2.step_nd_implies_step_gu_na pre.alpha_preserves_nc_ctx
+  constructions.sconstr2_nc_t constructions.sconstr2_nc_s
   alpha.sym_alpha_ctx_left_is_sym SN_normalise constructions.to_GU__alpha_
   alpha.alphavar_extend_id_split SN_STLC_named_naive.id_subst__EL
   alpha.ctx_id_left_is_id SN_STLC_named2.SN_na_to_SN_nd
@@ -27,34 +30,38 @@ opaque constant bodies have been accessed
   alpha_ctx_sub.alpha_ctx_right_ex constructions.R_constr__a_s
   constructions.to_GU_applam_unfold alpha.alphavar_refl_weaken_vacuouss
   constructions.to_GU_app_unfold SN_STLC_named_naive.step_gu_na_lam_fold
-  constructions.to_GU__alpha_' alpha_rename.alpha_trans_rename_right step_dec
-  pre.gu_applam_to_nc alpha.alpha_extend_id constructions.s_constr__a_s
-  alpha.alpha_swap alpha.alpha_refl SN_STLC_named_naive.red_gu_na_lam_fold
+  constructions.to_GU__alpha_' constructions.R_constr_R2_IdCtx
+  alpha_rename.alpha_trans_rename_right
+  constructions.a_R_constr_KindOfUniqueRHS step_dec pre.gu_applam_to_nc
+  alpha.alpha_extend_id constructions.s_constr__a_s
+  constructions.lookup_some_then_alphavar alpha.alpha_swap alpha.alpha_refl
+  SN_STLC_named_naive.red_gu_na_lam_fold
   SN_STLC_named2.substituteTCA_preserves_alpha alpha.alpha_sym
   constructions.KindOfUniqueRhsFresh SN_STLC_named2.strong_normalization
-  alpha.alpha_extend_id_split alpha.alphavar_weaken kind_checking_sound
+  alpha.alpha_extend_id_split alpha.alphavar_weaken
   constructions.id_ctx_alphavar_refl SN_STLC_named2.subs_preserves_alpha'
   SN_STLC_named_naive.step_subst_single SN_STLC_named_naive.red_beta
-  SN_STLC_named_naive.id_subst_is_IdSubst alpha_typing.alpha_preserves_typing
-  SN_STLC_named2.alpha_capms_to_naive constructions.IdCtx__KindOfUniqueRhs
-  alpha_typing.substituteTCA_vacuous port_plut2.f_preserves_step
-  port_plut2.f_preserves_kind constructions.alpha_extend_fresh
-  alpha.cons_split_helper SN_STLC_named_naive.red_gu_na_appr_fold
-  constructions.to_GU__GU_ constructions.to_GU'__NC constructions.to_GU'__GU
+  constructions.R_constr__a_sigma SN_STLC_named_naive.id_subst_is_IdSubst
+  alpha_typing.alpha_preserves_typing SN_STLC_named2.alpha_capms_to_naive
+  constructions.IdCtx__KindOfUniqueRhs alpha_typing.substituteTCA_vacuous
+  port_plut2.f_preserves_step port_plut2.f_preserves_kind
+  constructions.alpha_extend_fresh alpha.cons_split_helper prop_to_type
+  SN_STLC_named_naive.red_gu_na_appr_fold constructions.to_GU__GU_
+  constructions.to_GU'__NC constructions.to_GU'__GU
   SN_STLC_named_naive.red_gu_na_appl_fold constructions.map_creates_IdCtx
   constructions.to_GU''__GU_lam
   SN_STLC_named_naive.red_gu_naive_preserves_alpha constructions.to_GU__alpha
   SN_STLC_named_naive.beta_expansion_subst SN_STLC_named_naive.reducible_sn
   SN_STLC_named_naive.subs_preserves_alpha_σ_R
-  SN_STLC_named2.α_preserves_sn_nd SN_STLC_named_naive.gu_app_st__gu_app_ts
-  alpha.alpha_extend_ids_right SN_STLC_named_naive.sn_preimage_α
-  alpha.alphavar_swap alpha.alphavar_refl alpha.id_left_trans
-  SN_STLC_named_naive.step_gu_naive_app_l alpha.shadow_helper_not_break
-  constructions.sconstr2_alpha_t constructions.sconstr2_alpha_s
-  constructions.sconstr2_alpha_p alpha.alpha_var_trans
-  SN_STLC_named_naive.sn_preimage_α' SN_STLC_named_naive.type_L
-  constructions.a_constr__t_alpha alpha.id_right_trans
-  SN_STLC_named_naive.id_subst__ParSeq
+  SN_STLC_named2.α_preserves_sn_nd constructions.t_constr__a_sigma
+  SN_STLC_named_naive.gu_app_st__gu_app_ts alpha.alpha_extend_ids_right
+  SN_STLC_named_naive.sn_preimage_α alpha.alphavar_swap alpha.alphavar_refl
+  alpha.id_left_trans SN_STLC_named_naive.step_gu_naive_app_l
+  alpha.shadow_helper_not_break constructions.sconstr2_alpha_t
+  constructions.sconstr2_alpha_s constructions.sconstr2_alpha_p
+  alpha.alpha_var_trans alpha.lrs_sym SN_STLC_named_naive.sn_preimage_α'
+  SN_STLC_named_naive.type_L constructions.a_constr__t_alpha
+  alpha.id_right_trans SN_STLC_named_naive.id_subst__ParSeq
   SN_STLC_named_naive.alpha_rename_binder_stronger
   SN_STLC_named_naive.reducible_var SN_STLC_named2.step_nd_preserves_alpha
   alpha.alpha_extend_ids alpha.alpha_extend_id'
@@ -62,9 +69,9 @@ opaque constant bodies have been accessed
   alpha_ctx_sub.alpha_ctx_ren_nil
   constructions.alpha_ctx_ren_extend_fresh_ftv
   port_plut2.plutus_ty_strong_normalization constructions.to_GU'__alpha
-  constructions.to_GU''__alpha step_preserves_kinding
-  alpha.idCtxNotBreakShadowing alpha_rename.alpha_trans_rename_left
-  SN_STLC_named_naive.red_gu_na_app_fold SN_STLC_named_naive.sn_closedL
+  constructions.to_GU''__alpha alpha.idCtxNotBreakShadowing
+  alpha_rename.alpha_trans_rename_left SN_STLC_named_naive.red_gu_na_app_fold
+  SN_STLC_named_naive.sn_closedL util.lookup_app_or_extended
   SN_STLC_named_naive.commute_sub_naive alpha.ctx_id_right_is_id
   alpha.sym_alpha_ctx_is_sym SN_STLC_named_naive.beta_expansion'
   SN_STLC_named_naive.α_preserves_L_R constructions.nc_helper
@@ -73,17 +80,14 @@ opaque constant bodies have been accessed
  [extraction-opaque-accessed,extraction,default]
 File "./src/PlutusIR/Semantics/Static/Typing_sound_complete.v", line 939, characters 0-57:
 Warning: The following axioms must be realized in the extracted
-code: constructions.t_constr__nc_subs alpha.alphavar_extend_ids
-      constructions.sconstr2_nc_sub constructions.sconstr2_nc_t
-      substituteTCA_preserves_kinding constructions.a_R_constr_UniqueRHS
-      alpha.lrs_trans alpha.alpha_vacuous_R alpha.alpha_weaken_ids
-      constructions.t_constr__a_sigma constructions.a_R_constr_alpha_s
-      alpha.alpha_extend_id'' Ty_dec alpha.lrs_sym
-      alpha.alpha_extend_vacuous_ftv step_preserves_kinding_SOP_axiom.
+code: constructions.t_constr__nc_subs alpha.lrs_trans alpha.alpha_vacuous_R
+      alpha.alpha_weaken_ids constructions.a_R_constr_alpha_s
+      alpha.alpha_extend_id'' Ty_dec alpha.alpha_extend_vacuous_ftv
+      alpha_ctx_sub.αctx_sub_extend_ids_right.
  [extraction-axiom-to-realize,extraction,default]
 File "./src/PlutusIR/Semantics/Static/Typing_sound_complete.v", line 939, characters 0-57:
-Warning: The identifier has_kind__ind contains __ which is reserved for the
-extraction [extraction-reserved-identifier,extraction,default]
+Warning: The identifier has_kind_set__ind contains __ which is reserved for
+the extraction [extraction-reserved-identifier,extraction,default]
 File "./src/PlutusIR/Semantics/Static/Typing_sound_complete.v", line 939, characters 0-57:
 Warning: The identifier IdCtx__KindOfUniqueRhs contains __ which is reserved
 for the extraction [extraction-reserved-identifier,extraction,default]
@@ -132,6 +136,9 @@ extraction [extraction-reserved-identifier,extraction,default]
 File "./src/PlutusIR/Semantics/Static/Typing_sound_complete.v", line 939, characters 0-57:
 Warning: The identifier t_constr__a_s contains __ which is reserved for the
 extraction [extraction-reserved-identifier,extraction,default]
+File "./src/PlutusIR/Semantics/Static/Typing_sound_complete.v", line 939, characters 0-57:
+Warning: The identifier R_constr__a_sigma contains __ which is reserved for
+the extraction [extraction-reserved-identifier,extraction,default]
 File "./src/PlutusIR/Semantics/Static/Typing_sound_complete.v", line 939, characters 0-57:
 Warning: The identifier t_constr__a_sigma contains __ which is reserved for
 the extraction [extraction-reserved-identifier,extraction,default]
@@ -564,32 +571,6 @@ data DefaultUni =
  | DefaultUniBLS12_381_MlResult
  | DefaultUniApply DefaultUni DefaultUni
 
-defaultUni_rect :: a1 -> a1 -> a1 -> a1 -> a1 -> a1 -> a1 -> a1 -> a1 -> a1
-                   -> a1 -> (DefaultUni -> a1 -> DefaultUni -> a1 -> a1) ->
-                   DefaultUni -> a1
-defaultUni_rect f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 d =
-  case d of {
-   DefaultUniInteger -> f0;
-   DefaultUniByteString -> f1;
-   DefaultUniString -> f2;
-   DefaultUniUnit -> f3;
-   DefaultUniBool -> f4;
-   DefaultUniProtoList -> f5;
-   DefaultUniProtoPair -> f6;
-   DefaultUniData -> f7;
-   DefaultUniBLS12_381_G1_Element -> f8;
-   DefaultUniBLS12_381_G2_Element -> f9;
-   DefaultUniBLS12_381_MlResult -> f10;
-   DefaultUniApply d0 d1 ->
-    f11 d0 (defaultUni_rect f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 d0) d1
-      (defaultUni_rect f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 d1)}
-
-defaultUni_rec :: a1 -> a1 -> a1 -> a1 -> a1 -> a1 -> a1 -> a1 -> a1 -> a1 ->
-                  a1 -> (DefaultUni -> a1 -> DefaultUni -> a1 -> a1) ->
-                  DefaultUni -> a1
-defaultUni_rec =
-  defaultUni_rect
-
 type UniType = Any
 
 data Constant =
@@ -804,89 +785,84 @@ drop n nxs =
        True -> drop n nxs';
        False -> Cons (Pair n' x) (drop n nxs')}}}
 
-data Has_kind_uni =
-   K_DefaultUniInteger
- | K_DefaultUniByteString
- | K_DefaultUniString
- | K_DefaultUniUnit
- | K_DefaultUniBool
- | K_DefaultUniData
- | K_DefaultUniBLS12_381_G1_Element
- | K_DefaultUniBLS12_381_G2_Element
- | K_DefaultUniBLS12_381_MlResult
- | K_DefaultUniApply Kind Kind DefaultUni DefaultUni Has_kind_uni Has_kind_uni
- | K_DefaultUniProtoPair
- | K_DefaultUniProtoList
+data Has_kind_set =
+   K_Var_set (List (Prod String Kind)) String Kind
+ | K_Fun_set (List (Prod BinderTyname Kind)) Ty Ty Has_kind_set Has_kind_set
+ | K_IFix_set (List (Prod BinderTyname Kind)) Ty Ty Kind Has_kind_set 
+ Has_kind_set
+ | K_Forall_set (List (Prod BinderTyname Kind)) BinderTyname Kind Ty 
+ Has_kind_set
+ | K_Builtin_set (List (Prod BinderTyname Kind)) DefaultUni
+ | K_Lam_set (List (Prod BinderTyname Kind)) BinderTyname Kind Ty Kind 
+ Has_kind_set
+ | K_App_set (List (Prod BinderTyname Kind)) Ty Ty Kind Kind Has_kind_set 
+ Has_kind_set
+ | K_SOP_set (List (Prod BinderTyname Kind)) (List (List Ty)) ForallSet2_has_kind_set
+data ForallSet2_has_kind_set =
+   ForallSet2_nil_set (List (Prod BinderTyname Kind))
+ | ForallSet2_cons_set (List (Prod BinderTyname Kind)) (List Ty) (List
+                                                                 (List Ty)) 
+ ForallSet_has_kind_set ForallSet2_has_kind_set
+data ForallSet_has_kind_set =
+   ForallSet_nil_set (List (Prod BinderTyname Kind))
+ | ForallSet_cons_set (List (Prod BinderTyname Kind)) Ty (List Ty) Has_kind_set 
+ ForallSet_has_kind_set
 
-data Has_kind =
-   K_Var (List (Prod String Kind)) String Kind
- | K_Fun (List (Prod BinderName Kind)) Ty Ty Has_kind Has_kind
- | K_IFix (List (Prod BinderName Kind)) Ty Ty Kind Has_kind Has_kind
- | K_Forall (List (Prod BinderName Kind)) BinderName Kind Ty Has_kind
- | K_Builtin (List (Prod BinderName Kind)) DefaultUni Has_kind_uni
- | K_Lam (List (Prod BinderName Kind)) BinderName Kind Ty Kind Has_kind
- | K_App (List (Prod BinderName Kind)) Ty Ty Kind Kind Has_kind Has_kind
- | K_SOP (List (Prod BinderName Kind)) (List (List Ty)) ForallSet2_has_kind
-data ForallSet2_has_kind =
-   ForallSet2_nil (List (Prod BinderName Kind))
- | ForallSet2_cons (List (Prod BinderName Kind)) (List Ty) (List (List Ty)) 
- ForallSet_has_kind ForallSet2_has_kind
-data ForallSet_has_kind =
-   ForallSet_nil (List (Prod BinderName Kind))
- | ForallSet_cons (List (Prod BinderName Kind)) Ty (List Ty) Has_kind 
- ForallSet_has_kind
-
-has_kind__ind :: ((List (Prod String Kind)) -> String -> Kind -> () -> a1) ->
-                 ((List (Prod BinderName Kind)) -> Ty -> Ty -> Has_kind -> a1
-                 -> Has_kind -> a1 -> a1) -> ((List (Prod BinderName Kind))
-                 -> Ty -> Ty -> Kind -> Has_kind -> a1 -> Has_kind -> a1 ->
-                 a1) -> ((List (Prod BinderName Kind)) -> BinderName -> Kind
-                 -> Ty -> Has_kind -> a1 -> a1) -> ((List
-                 (Prod BinderName Kind)) -> DefaultUni -> Has_kind_uni -> a1)
-                 -> ((List (Prod BinderName Kind)) -> BinderName -> Kind ->
-                 Ty -> Kind -> Has_kind -> a1 -> a1) -> ((List
-                 (Prod BinderName Kind)) -> Ty -> Ty -> Kind -> Kind ->
-                 Has_kind -> a1 -> Has_kind -> a1 -> a1) -> ((List
-                 (Prod BinderName Kind)) -> (List (List Ty)) ->
-                 ForallSet2_has_kind -> a2 -> a1) -> ((List
-                 (Prod BinderName Kind)) -> a2) -> ((List
-                 (Prod BinderName Kind)) -> (List Ty) -> (List (List Ty)) ->
-                 ForallSet_has_kind -> a3 -> ForallSet2_has_kind -> a2 -> a2)
-                 -> ((List (Prod BinderName Kind)) -> a3) -> ((List
-                 (Prod BinderName Kind)) -> Ty -> (List Ty) -> Has_kind -> a1
-                 -> ForallSet_has_kind -> a3 -> a3) -> (List
-                 (Prod BinderName Kind)) -> Ty -> Kind -> Has_kind -> a1
-has_kind__ind f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 =
+has_kind_set__ind :: ((List (Prod String Kind)) -> String -> Kind -> () ->
+                     a1) -> ((List (Prod BinderTyname Kind)) -> Ty -> Ty ->
+                     Has_kind_set -> a1 -> Has_kind_set -> a1 -> a1) ->
+                     ((List (Prod BinderTyname Kind)) -> Ty -> Ty -> Kind ->
+                     Has_kind_set -> a1 -> Has_kind_set -> a1 -> a1) ->
+                     ((List (Prod BinderTyname Kind)) -> BinderTyname -> Kind
+                     -> Ty -> Has_kind_set -> a1 -> a1) -> ((List
+                     (Prod BinderTyname Kind)) -> DefaultUni -> () -> a1) ->
+                     ((List (Prod BinderTyname Kind)) -> BinderTyname -> Kind
+                     -> Ty -> Kind -> Has_kind_set -> a1 -> a1) -> ((List
+                     (Prod BinderTyname Kind)) -> Ty -> Ty -> Kind -> Kind ->
+                     Has_kind_set -> a1 -> Has_kind_set -> a1 -> a1) ->
+                     ((List (Prod BinderTyname Kind)) -> (List (List Ty)) ->
+                     ForallSet2_has_kind_set -> a2 -> a1) -> ((List
+                     (Prod BinderTyname Kind)) -> a2) -> ((List
+                     (Prod BinderTyname Kind)) -> (List Ty) -> (List
+                     (List Ty)) -> ForallSet_has_kind_set -> a3 ->
+                     ForallSet2_has_kind_set -> a2 -> a2) -> ((List
+                     (Prod BinderTyname Kind)) -> a3) -> ((List
+                     (Prod BinderTyname Kind)) -> Ty -> (List Ty) ->
+                     Has_kind_set -> a1 -> ForallSet_has_kind_set -> a3 ->
+                     a3) -> (List (Prod BinderTyname Kind)) -> Ty -> Kind ->
+                     Has_kind_set -> a1
+has_kind_set__ind f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 =
   let {
    f12 _ _ _ h =
      case h of {
-      K_Var _UU0394_ x k -> f0 _UU0394_ x k __;
-      K_Fun _UU0394_ t1 t2 h0 h1 ->
+      K_Var_set _UU0394_ x k -> f0 _UU0394_ x k __;
+      K_Fun_set _UU0394_ t1 t2 h0 h1 ->
        f1 _UU0394_ t1 t2 h0 (f12 _UU0394_ t1 Kind_Base h0) h1
          (f12 _UU0394_ t2 Kind_Base h1);
-      K_IFix _UU0394_ f15 t k h0 h1 ->
+      K_IFix_set _UU0394_ f15 t k h0 h1 ->
        f2 _UU0394_ f15 t k h0 (f12 _UU0394_ t k h0) h1
          (f12 _UU0394_ f15 (Kind_Arrow (Kind_Arrow k Kind_Base) (Kind_Arrow k
            Kind_Base)) h1);
-      K_Forall _UU0394_ x k t h0 ->
+      K_Forall_set _UU0394_ x k t h0 ->
        f3 _UU0394_ x k t h0 (f12 (Cons (Pair x k) _UU0394_) t Kind_Base h0);
-      K_Builtin _UU0394_ t h0 -> f4 _UU0394_ t h0;
-      K_Lam _UU0394_ x k1 t k2 h0 ->
+      K_Builtin_set _UU0394_ t -> f4 _UU0394_ t __;
+      K_Lam_set _UU0394_ x k1 t k2 h0 ->
        f5 _UU0394_ x k1 t k2 h0 (f12 (Cons (Pair x k1) _UU0394_) t k2 h0);
-      K_App _UU0394_ t1 t2 k1 k2 h0 h1 ->
+      K_App_set _UU0394_ t1 t2 k1 k2 h0 h1 ->
        f6 _UU0394_ t1 t2 k1 k2 h0 (f12 _UU0394_ t1 (Kind_Arrow k1 k2) h0) h1
          (f12 _UU0394_ t2 k1 h1);
-      K_SOP _UU0394_ tss f15 -> f7 _UU0394_ tss f15 (f13 _UU0394_ tss f15)};
+      K_SOP_set _UU0394_ tss f15 ->
+       f7 _UU0394_ tss f15 (f13 _UU0394_ tss f15)};
    f13 _ _ f15 =
      case f15 of {
-      ForallSet2_nil _UU0394_ -> f8 _UU0394_;
-      ForallSet2_cons _UU0394_ ts tss f16 f17 ->
+      ForallSet2_nil_set _UU0394_ -> f8 _UU0394_;
+      ForallSet2_cons_set _UU0394_ ts tss f16 f17 ->
        f9 _UU0394_ ts tss f16 (f14 _UU0394_ ts f16) f17
          (f13 _UU0394_ tss f17)};
    f14 _ _ f15 =
      case f15 of {
-      ForallSet_nil _UU0394_ -> f10 _UU0394_;
-      ForallSet_cons _UU0394_ t ts h f16 ->
+      ForallSet_nil_set _UU0394_ -> f10 _UU0394_;
+      ForallSet_cons_set _UU0394_ t ts h f16 ->
        f11 _UU0394_ t ts h (f12 _UU0394_ t Kind_Base h) f16
          (f14 _UU0394_ ts f16)}}
   in f12
@@ -1007,6 +983,17 @@ substituteTCA a a0 b =
        (substituteTCA1 x0 u t0 __);
       Tmbuiltin d -> Tmbuiltin d}}
   in fix_F ((,) a ((,) a0 b))
+
+lookup_app_or_extended :: String -> a1 -> (List (Prod String a1)) -> (List
+                          (Prod String a1)) -> Sum () ()
+lookup_app_or_extended y _ r1 _ =
+  list_rec (\_ -> Inr __) (\a _ iHR1 _ ->
+    case a of {
+     Pair s _ ->
+      let {b = eqb1 y s} in
+      case b of {
+       True -> eq_rec_r s (\_ _ -> Inl __) y __ iHR1;
+       False -> eq_rec_r False (iHR1 __) (eqb1 s y)}}) r1 __
 
 substituteT :: String -> Ty -> Ty -> Ty
 substituteT x u t =
@@ -1175,33 +1162,6 @@ kind_check_default_uni d =
      None -> None};
    _ -> Some Kind_Base}
 
-kind_checking_default_uni_sound :: DefaultUni -> Kind -> Has_kind_uni
-kind_checking_default_uni_sound d k =
-  defaultUni_rec (\_ _ -> K_DefaultUniInteger) (\_ _ ->
-    K_DefaultUniByteString) (\_ _ -> K_DefaultUniString) (\_ _ ->
-    K_DefaultUniUnit) (\_ _ -> K_DefaultUniBool) (\_ _ ->
-    K_DefaultUniProtoList) (\_ _ -> K_DefaultUniProtoPair) (\_ _ ->
-    K_DefaultUniData) (\_ _ -> K_DefaultUniBLS12_381_G1_Element) (\_ _ ->
-    K_DefaultUniBLS12_381_G2_Element) (\_ _ ->
-    K_DefaultUniBLS12_381_MlResult) (\d1 iHd1 d2 iHd2 k0 _ ->
-    let {o = kind_check_default_uni d1} in
-    case o of {
-     Some k1 ->
-      case k1 of {
-       Kind_Base -> false_rec;
-       Kind_Arrow k2 _ ->
-        let {o0 = kind_check_default_uni d2} in
-        case o0 of {
-         Some k3 ->
-          let {b = kind_eqb k3 k2} in
-          case b of {
-           True ->
-            eq_rec_r k2 (\_ iHd3 -> K_DefaultUniApply k2 k0 d1 d2
-              (iHd1 (Kind_Arrow k2 k0) __) (iHd3 k2 __)) k3 __ iHd2;
-           False -> false_rec};
-         None -> false_rec}};
-     None -> false_rec}) d k __
-
 kind_check :: (List (Prod BinderTyname Kind)) -> Ty -> Option Kind
 kind_check delta ty =
   case ty of {
@@ -1281,10 +1241,10 @@ kind_check delta ty =
      None -> None};
    Ty_SOP _ -> None}
 
-kind_checking_sound :: (List (Prod BinderTyname Kind)) -> Ty -> Kind ->
-                       Has_kind
-kind_checking_sound delta ty kind =
-  ty_rec (\t delta0 kind0 _ -> K_Var delta0 t kind0)
+kind_checking_sound_set :: (List (Prod BinderTyname Kind)) -> Ty -> Kind ->
+                           Has_kind_set
+kind_checking_sound_set delta ty kind =
+  ty_rec (\t delta0 kind0 _ -> K_Var_set delta0 t kind0)
     (\ty1 iHty1 ty2 iHty2 delta0 _ _ ->
     let {o = kind_check delta0 ty1} in
     case o of {
@@ -1295,7 +1255,7 @@ kind_checking_sound delta ty kind =
         case o0 of {
          Some k0 ->
           case k0 of {
-           Kind_Base -> K_Fun delta0 ty1 ty2 (iHty1 delta0 Kind_Base __)
+           Kind_Base -> K_Fun_set delta0 ty1 ty2 (iHty1 delta0 Kind_Base __)
             (iHty2 delta0 Kind_Base __);
            Kind_Arrow _ _ -> false_rec};
          None -> false_rec};
@@ -1322,7 +1282,7 @@ kind_checking_sound delta ty kind =
                  Kind_Base ->
                   let {b = andb (kind_eqb k k3) (kind_eqb k k5)} in
                   case b of {
-                   True -> K_IFix delta0 ty1 ty2 k (iHty2 delta0 k __)
+                   True -> K_IFix_set delta0 ty1 ty2 k (iHty2 delta0 k __)
                     (iHty1 delta0 (Kind_Arrow (Kind_Arrow k Kind_Base)
                       (Kind_Arrow k Kind_Base)) __);
                    False -> false_rec};
@@ -1334,7 +1294,7 @@ kind_checking_sound delta ty kind =
     case o of {
      Some k0 ->
       case k0 of {
-       Kind_Base -> K_Forall delta0 b k ty0
+       Kind_Base -> K_Forall_set delta0 b k ty0
         (iHty (Cons (Pair b k) delta0) Kind_Base __);
        Kind_Arrow _ _ -> false_rec};
      None -> false_rec}) (\d delta0 _ _ ->
@@ -1342,14 +1302,13 @@ kind_checking_sound delta ty kind =
     case o of {
      Some k ->
       case k of {
-       Kind_Base ->
-        let {heqo = kind_checking_default_uni_sound d Kind_Base} in
-        K_Builtin delta0 d heqo;
+       Kind_Base -> K_Builtin_set delta0 d;
        Kind_Arrow _ _ -> false_rec};
      None -> false_rec}) (\b k ty0 iHty delta0 _ _ ->
     let {o = kind_check (Cons (Pair b k) delta0) ty0} in
     case o of {
-     Some k0 -> K_Lam delta0 b k ty0 k0 (iHty (Cons (Pair b k) delta0) k0 __);
+     Some k0 -> K_Lam_set delta0 b k ty0 k0
+      (iHty (Cons (Pair b k) delta0) k0 __);
      None -> false_rec}) (\ty1 iHty1 ty2 iHty2 delta0 kind0 _ ->
     let {k1 = kind_check delta0 ty2} in
     case k1 of {
@@ -1362,11 +1321,15 @@ kind_checking_sound delta ty kind =
          Kind_Arrow k2 _ ->
           let {b = kind_eqb k2 k} in
           case b of {
-           True -> K_App delta0 ty1 ty2 k kind0
+           True -> K_App_set delta0 ty1 ty2 k kind0
             (iHty1 delta0 (Kind_Arrow k kind0) __) (iHty2 delta0 k __);
            False -> false_rec}};
        None -> false_rec};
      None -> false_rec}) (\_ _ _ _ -> false_rec) ty delta kind __
+
+prop_to_type :: (List (Prod BinderTyname Kind)) -> Ty -> Kind -> Has_kind_set
+prop_to_type =
+  kind_checking_sound_set
 
 data Step =
    Step_beta String Kind Ty Ty
@@ -1442,12 +1405,6 @@ solution_left _ x _ =
 solution_right :: a1 -> a2 -> a1 -> a2
 solution_right _ x _ =
   x
-
-substituteTCA_preserves_kinding :: Ty -> (List (Prod BinderName Kind)) ->
-                                   BinderName -> Kind -> Ty -> Kind ->
-                                   Has_kind -> Has_kind -> Has_kind
-substituteTCA_preserves_kinding =
-  Prelude.error "AXIOM TO BE REALIZED"
 
 data AlphaVar =
    Alpha_var_refl String
@@ -1898,8 +1855,10 @@ lrs_trans =
 
 lrs_sym :: (List (Prod String String)) -> (List (Prod String String)) ->
            LegalRenSwap -> LegalRenSwap
-lrs_sym =
-  Prelude.error "AXIOM TO BE REALIZED"
+lrs_sym ren1 ren2 hlrs =
+  legalRenSwap_rec (legalRenSwap_id Nil) (\x y ren3 ren1' _ iHHlrs ->
+    Lrs_cons x y ren1' ren3 iHHlrs) (\x y v w ren3 ren1' _ _ _ iHHlrs ->
+    Lrs_start v w x y ren1' ren3 iHHlrs) ren1 ren2 hlrs
 
 alphavar_weaken :: String -> String -> (List (Prod String String)) -> String
                    -> String -> AlphaVar -> AlphaVar
@@ -2195,8 +2154,20 @@ alpha_extend_ids_right s t ren idCtx hid halpha =
 
 alphavar_extend_ids :: (List (Prod String String)) -> String -> String ->
                        IdCtx -> AlphaVar -> AlphaVar
-alphavar_extend_ids =
-  Prelude.error "AXIOM TO BE REALIZED"
+alphavar_extend_ids idCtx s t hid hav =
+  case hav of {
+   Alpha_var_refl x ->
+    eq_rec_r s (\_ ->
+      eq_rec_r t
+        (eq_rec_r t (\hav0 ->
+          idCtx_rec hav0 (\x0 ren _ iHHid ->
+            let {b = eqb1 x0 t} in
+            case b of {
+             True -> eq_rec_r t (Alpha_var_cons t t ren) x0;
+             False -> Alpha_var_diff x0 x0 t t ren iHHid}) idCtx hid) s hav)
+        s) x __;
+   Alpha_var_cons _ _ _ -> false_rec __ __;
+   Alpha_var_diff _ _ _ _ _ x -> false_rec __ __ __ __ x}
 
 alpha_extend_ids :: (List (Prod String String)) -> Term0 -> Term0 -> IdCtx ->
                     Alpha -> Alpha
@@ -2283,55 +2254,52 @@ alphavar_refl_weaken_vacuouss x r =
     case a of {
      Pair s s0 -> Alpha_var_diff s s0 x x r0 (iHR __ __)}) r __ __
 
-data Has_kind0 =
-   K_Var0 (List (Prod String Kind)) String Kind
- | K_Fun0 (List (Prod BinderTyname Kind)) Term0 Term0 Has_kind0 Has_kind0
- | K_IFix0 (List (Prod BinderTyname Kind)) Term0 Term0 Kind Has_kind0 
- Has_kind0
- | K_Forall0 (List (Prod BinderTyname Kind)) BinderTyname Kind Term0 
- Has_kind0
- | K_Builtin0 (List (Prod BinderTyname Kind)) DefaultUni Has_kind_uni
- | K_Lam0 (List (Prod BinderTyname Kind)) BinderTyname Kind Term0 Kind 
- Has_kind0
- | K_App0 (List (Prod BinderTyname Kind)) Term0 Term0 Kind Kind Has_kind0 
- Has_kind0
+data Has_kind =
+   K_Var (List (Prod String Kind)) String Kind
+ | K_Fun (List (Prod BinderTyname Kind)) Term0 Term0 Has_kind Has_kind
+ | K_IFix (List (Prod BinderTyname Kind)) Term0 Term0 Kind Has_kind Has_kind
+ | K_Forall (List (Prod BinderTyname Kind)) BinderTyname Kind Term0 Has_kind
+ | K_Builtin (List (Prod BinderTyname Kind)) DefaultUni
+ | K_Lam (List (Prod BinderTyname Kind)) BinderTyname Kind Term0 Kind 
+ Has_kind
+ | K_App (List (Prod BinderTyname Kind)) Term0 Term0 Kind Kind Has_kind 
+ Has_kind
 
 has_kind_rect :: ((List (Prod String Kind)) -> String -> Kind -> () -> a1) ->
                  ((List (Prod BinderTyname Kind)) -> Term0 -> Term0 ->
-                 Has_kind0 -> a1 -> Has_kind0 -> a1 -> a1) -> ((List
+                 Has_kind -> a1 -> Has_kind -> a1 -> a1) -> ((List
                  (Prod BinderTyname Kind)) -> Term0 -> Term0 -> Kind ->
-                 Has_kind0 -> a1 -> Has_kind0 -> a1 -> a1) -> ((List
+                 Has_kind -> a1 -> Has_kind -> a1 -> a1) -> ((List
                  (Prod BinderTyname Kind)) -> BinderTyname -> Kind -> Term0
-                 -> Has_kind0 -> a1 -> a1) -> ((List
-                 (Prod BinderTyname Kind)) -> DefaultUni -> Has_kind_uni ->
-                 a1) -> ((List (Prod BinderTyname Kind)) -> BinderTyname ->
-                 Kind -> Term0 -> Kind -> Has_kind0 -> a1 -> a1) -> ((List
+                 -> Has_kind -> a1 -> a1) -> ((List (Prod BinderTyname Kind))
+                 -> DefaultUni -> () -> a1) -> ((List
+                 (Prod BinderTyname Kind)) -> BinderTyname -> Kind -> Term0
+                 -> Kind -> Has_kind -> a1 -> a1) -> ((List
                  (Prod BinderTyname Kind)) -> Term0 -> Term0 -> Kind -> Kind
-                 -> Has_kind0 -> a1 -> Has_kind0 -> a1 -> a1) -> (List
-                 (Prod BinderTyname Kind)) -> Term0 -> Kind -> Has_kind0 ->
-                 a1
+                 -> Has_kind -> a1 -> Has_kind -> a1 -> a1) -> (List
+                 (Prod BinderTyname Kind)) -> Term0 -> Kind -> Has_kind -> a1
 has_kind_rect f0 f1 f2 f3 f4 f5 f6 _ _ _ h =
   case h of {
-   K_Var0 _UU0394_ x k -> f0 _UU0394_ x k __;
-   K_Fun0 _UU0394_ t1 t2 h0 h1 ->
+   K_Var _UU0394_ x k -> f0 _UU0394_ x k __;
+   K_Fun _UU0394_ t1 t2 h0 h1 ->
     f1 _UU0394_ t1 t2 h0
       (has_kind_rect f0 f1 f2 f3 f4 f5 f6 _UU0394_ t1 Kind_Base h0) h1
       (has_kind_rect f0 f1 f2 f3 f4 f5 f6 _UU0394_ t2 Kind_Base h1);
-   K_IFix0 _UU0394_ f7 t k h0 h1 ->
+   K_IFix _UU0394_ f7 t k h0 h1 ->
     f2 _UU0394_ f7 t k h0
       (has_kind_rect f0 f1 f2 f3 f4 f5 f6 _UU0394_ t k h0) h1
       (has_kind_rect f0 f1 f2 f3 f4 f5 f6 _UU0394_ f7 (Kind_Arrow (Kind_Arrow
         k Kind_Base) (Kind_Arrow k Kind_Base)) h1);
-   K_Forall0 _UU0394_ x k t h0 ->
+   K_Forall _UU0394_ x k t h0 ->
     f3 _UU0394_ x k t h0
       (has_kind_rect f0 f1 f2 f3 f4 f5 f6 (Cons (Pair x k) _UU0394_) t
         Kind_Base h0);
-   K_Builtin0 _UU0394_ t h0 -> f4 _UU0394_ t h0;
-   K_Lam0 _UU0394_ x k1 t k2 h0 ->
+   K_Builtin _UU0394_ t -> f4 _UU0394_ t __;
+   K_Lam _UU0394_ x k1 t k2 h0 ->
     f5 _UU0394_ x k1 t k2 h0
       (has_kind_rect f0 f1 f2 f3 f4 f5 f6 (Cons (Pair x k1) _UU0394_) t k2
         h0);
-   K_App0 _UU0394_ t1 t2 k1 k2 h0 h1 ->
+   K_App _UU0394_ t1 t2 k1 k2 h0 h1 ->
     f6 _UU0394_ t1 t2 k1 k2 h0
       (has_kind_rect f0 f1 f2 f3 f4 f5 f6 _UU0394_ t1 (Kind_Arrow k1 k2) h0)
       h1 (has_kind_rect f0 f1 f2 f3 f4 f5 f6 _UU0394_ t2 k1 h1)}
@@ -2432,6 +2400,41 @@ _UU03b1_ctx_trans r1 r2 r _UU03c3_ _UU03c3_' _UU03c3_'' x x0 x1 =
                 x6 __ __) r3 __ __ x7 x8 x9}) _UU03c3_1) r0 __ __ x3 x4 x5})
     _UU03c3_ _UU03c3_' _UU03c3_'' x x0 x1
 
+_UU03b1_ctx_sub_extend_ids_right :: (List (Prod String Term0)) -> (List
+                                    (Prod String Term0)) -> (List
+                                    (Prod String String)) -> (List
+                                    (Prod String String)) -> IdCtx ->
+                                    Coq__UU03b1_CtxSub -> Coq__UU03b1_CtxSub
+_UU03b1_ctx_sub_extend_ids_right =
+  Prelude.error "AXIOM TO BE REALIZED"
+
+_UU03b1_ctx_vacuous_R :: (List (Prod String String)) -> (List
+                         (Prod String Term0)) -> (List (Prod String Term0))
+                         -> Coq__UU03b1_CtxSub -> Coq__UU03b1_CtxSub
+_UU03b1_ctx_vacuous_R r _UU03c3_ _UU03c3_' ha =
+  list_rec (\_ _ _ ha0 ->
+    case ha0 of {
+     Alpha_ctx_nil r0 -> eq_rec_r Nil (\_ _ -> Alpha_ctx_nil r) r0 __ __;
+     Alpha_ctx_cons r0 _ _ _ _ _ _ x x0 x1 ->
+      eq_rec_r Nil (\_ -> false_rec) r0 __ __ x x0 x1})
+    (\_ _UU03c3_0 iH_UU03c3_ _ _ _ ha0 ->
+    case ha0 of {
+     Alpha_ctx_nil r0 -> eq_rec_r Nil (\_ -> false_rec) r0 __ __;
+     Alpha_ctx_cons r0 _UU03c3_1 _UU03c3_'0 x y t t' x0 x1 x2 ->
+      eq_rec_r Nil (\_ ->
+        eq_rec_r _UU03c3_0 (\_ h1 h3 h5 -> Alpha_ctx_cons r _UU03c3_0
+          _UU03c3_'0 x y t t' (iH_UU03c3_ _UU03c3_'0 __ __ h1)
+          (case h3 of {
+            Alpha_var_refl x3 ->
+             eq_rec_r x (\_ ->
+               eq_rec_r y
+                 (eq_rec_r y (\_ _ _ -> alphavar_refl_weaken_vacuouss y r) x
+                   __ ha0 h3) x) x3 __;
+            Alpha_var_cons _ _ _ -> false_rec __ __;
+            Alpha_var_diff _ _ _ _ _ x3 -> false_rec __ __ __ __ x3})
+          (alpha_vacuous_R t t' r Nil h5)) _UU03c3_1) r0 __ __ x0 x1 x2})
+    _UU03c3_ _UU03c3_' __ __ ha
+
 alphaRename :: String -> String -> Term0 -> Alpha
 alphaRename x x' s =
   term_rec (\s0 _ ->
@@ -2506,36 +2509,36 @@ alpha_trans_rename_left u v b' s' s ren _ x =
 
 alpha_preserves_typing :: (List (Prod String String)) -> Term0 -> Term0 ->
                           Kind -> (List (Prod String Kind)) -> (List
-                          (Prod String Kind)) -> Alpha -> Has_kind0 ->
-                          Has_kind0
+                          (Prod String Kind)) -> Alpha -> Has_kind ->
+                          Has_kind
 alpha_preserves_typing sigma s t a gamma gamma' hAlpha =
   alpha_rec (\x y _ _ gamma'0 gamma0 _ a0 hType ->
     case hType of {
-     K_Var0 _UU0394_ x0 k ->
+     K_Var _UU0394_ x0 k ->
       eq_rec_r gamma0 (\_ ->
-        eq_rec_r x (\_ -> eq_rec_r a0 (\_ -> K_Var0 gamma'0 y a0) k) x0)
+        eq_rec_r x (\_ -> eq_rec_r a0 (\_ -> K_Var gamma'0 y a0) k) x0)
         _UU0394_ __ __ __;
-     K_Fun0 _UU0394_ _ _ x0 x1 ->
+     K_Fun _UU0394_ _ _ x0 x1 ->
       eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ x0 x1;
-     K_IFix0 _UU0394_ _ _ _ x0 x1 ->
+     K_IFix _UU0394_ _ _ _ x0 x1 ->
       eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ x0 x1;
-     K_Forall0 _UU0394_ _ _ _ x0 ->
+     K_Forall _UU0394_ _ _ _ x0 ->
       eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ x0;
-     K_Builtin0 _UU0394_ _ x0 ->
+     K_Builtin _UU0394_ _ ->
+      eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ __;
+     K_Lam _UU0394_ _ _ _ _ x0 ->
       eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ x0;
-     K_Lam0 _UU0394_ _ _ _ _ x0 ->
-      eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ x0;
-     K_App0 _UU0394_ _ _ _ _ x0 x1 ->
+     K_App _UU0394_ _ _ _ _ x0 x1 ->
       eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ x0 x1})
     (\_ x y a0 s1 s2 _ _ iHHAlpha gamma'0 gamma0 _ _ hType ->
     case hType of {
-     K_Var0 _UU0394_ _ _ ->
+     K_Var _UU0394_ _ _ ->
       eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ __;
-     K_Fun0 _UU0394_ _ _ x0 x1 ->
+     K_Fun _UU0394_ _ _ x0 x1 ->
       eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ x0 x1;
-     K_IFix0 _UU0394_ _ _ _ x0 x1 ->
+     K_IFix _UU0394_ _ _ _ x0 x1 ->
       eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ x0 x1;
-     K_Forall0 _UU0394_ x0 k t0 x1 ->
+     K_Forall _UU0394_ x0 k t0 x1 ->
       eq_rec_r gamma0 (\_ ->
         eq_rec_r x (\_ ->
           eq_rec_r a0 (\_ ->
@@ -2544,11 +2547,11 @@ alpha_preserves_typing sigma s t a gamma gamma' hAlpha =
                iHHAlpha0 = iHHAlpha (Cons (Pair y a0) gamma'0) (Cons (Pair x
                              a0) gamma0) __ Kind_Base h5}
               in
-              K_Forall0 gamma'0 y a0 s2 iHHAlpha0) t0) k) x0 __ __) _UU0394_
+              K_Forall gamma'0 y a0 s2 iHHAlpha0) t0) k) x0 __ __) _UU0394_
         __ __ x1;
-     K_Builtin0 _UU0394_ _ x0 ->
-      eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ x0;
-     K_Lam0 _UU0394_ x0 k1 t0 k2 x1 ->
+     K_Builtin _UU0394_ _ ->
+      eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ __;
+     K_Lam _UU0394_ x0 k1 t0 k2 x1 ->
       eq_rec_r gamma0 (\_ ->
         eq_rec_r x (\_ ->
           eq_rec_r a0 (\_ ->
@@ -2557,57 +2560,57 @@ alpha_preserves_typing sigma s t a gamma gamma' hAlpha =
                iHHAlpha0 = iHHAlpha (Cons (Pair y a0) gamma'0) (Cons (Pair x
                              a0) gamma0) __ k2 h5}
               in
-              K_Lam0 gamma'0 y a0 s2 k2 iHHAlpha0) t0) k1) x0 __ __) _UU0394_
+              K_Lam gamma'0 y a0 s2 k2 iHHAlpha0) t0) k1) x0 __ __) _UU0394_
         __ __ x1;
-     K_App0 _UU0394_ _ _ _ _ x0 x1 ->
+     K_App _UU0394_ _ _ _ _ x0 x1 ->
       eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ x0 x1})
     (\_ s1 s2 t1 t2 _ _ iHHAlpha1 _ iHHAlpha2 gamma'0 gamma0 _ a0 hType ->
     case hType of {
-     K_Var0 _UU0394_ _ _ ->
+     K_Var _UU0394_ _ _ ->
       eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ __;
-     K_Fun0 _UU0394_ t3 t4 x x0 ->
+     K_Fun _UU0394_ t3 t4 x x0 ->
       eq_rec_r gamma0 (\_ ->
         eq_rec_r s1 (\_ ->
-          eq_rec_r t1 (\_ h4 h5 -> K_Fun0 gamma'0 s2 t2
+          eq_rec_r t1 (\_ h4 h5 -> K_Fun gamma'0 s2 t2
             (iHHAlpha1 gamma'0 gamma0 __ Kind_Base h4)
             (iHHAlpha2 gamma'0 gamma0 __ Kind_Base h5)) t4) t3 __) _UU0394_
         __ __ x x0;
-     K_IFix0 _UU0394_ f0 t0 k x x0 ->
+     K_IFix _UU0394_ f0 t0 k x x0 ->
       eq_rec_r gamma0 (\_ ->
         eq_rec_r s1 (\_ ->
-          eq_rec_r t1 (\_ h4 h5 -> K_IFix0 gamma'0 s2 t2 k
+          eq_rec_r t1 (\_ h4 h5 -> K_IFix gamma'0 s2 t2 k
             (iHHAlpha2 gamma'0 gamma0 __ k h4)
             (iHHAlpha1 gamma'0 gamma0 __ (Kind_Arrow (Kind_Arrow k Kind_Base)
               (Kind_Arrow k Kind_Base)) h5)) t0) f0 __) _UU0394_ __ __ x x0;
-     K_Forall0 _UU0394_ _ _ _ x ->
+     K_Forall _UU0394_ _ _ _ x ->
       eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ x;
-     K_Builtin0 _UU0394_ _ x ->
+     K_Builtin _UU0394_ _ ->
+      eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ __;
+     K_Lam _UU0394_ _ _ _ _ x ->
       eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ x;
-     K_Lam0 _UU0394_ _ _ _ _ x ->
-      eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ x;
-     K_App0 _UU0394_ t3 t4 k1 k2 x x0 ->
+     K_App _UU0394_ t3 t4 k1 k2 x x0 ->
       eq_rec_r gamma0 (\_ ->
         eq_rec_r s1 (\_ ->
           eq_rec_r t1 (\_ ->
-            eq_rec_r a0 (\h4 h5 -> K_App0 gamma'0 s2 t2 k1 a0
+            eq_rec_r a0 (\h4 h5 -> K_App gamma'0 s2 t2 k1 a0
               (iHHAlpha1 gamma'0 gamma0 __ (Kind_Arrow k1 a0) h4)
               (iHHAlpha2 gamma'0 gamma0 __ k1 h5)) k2) t4) t3 __) _UU0394_ __
         __ x x0}) (\_ d gamma'0 gamma0 _ _ x ->
     case x of {
-     K_Var0 _UU0394_ _ _ ->
+     K_Var _UU0394_ _ _ ->
       eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ __;
-     K_Fun0 _UU0394_ _ _ x0 x1 ->
+     K_Fun _UU0394_ _ _ x0 x1 ->
       eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ x0 x1;
-     K_IFix0 _UU0394_ _ _ _ x0 x1 ->
+     K_IFix _UU0394_ _ _ _ x0 x1 ->
       eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ x0 x1;
-     K_Forall0 _UU0394_ _ _ _ x0 ->
+     K_Forall _UU0394_ _ _ _ x0 ->
       eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ x0;
-     K_Builtin0 _UU0394_ t0 x0 ->
-      eq_rec_r gamma0 (\_ ->
-        eq_rec_r d (\_ h2 -> K_Builtin0 gamma'0 d h2) t0) _UU0394_ __ __ x0;
-     K_Lam0 _UU0394_ _ _ _ _ x0 ->
+     K_Builtin _UU0394_ t0 ->
+      eq_rec_r gamma0 (\_ -> eq_rec_r d (\_ _ -> K_Builtin gamma'0 d) t0)
+        _UU0394_ __ __ __;
+     K_Lam _UU0394_ _ _ _ _ x0 ->
       eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ x0;
-     K_App0 _UU0394_ _ _ _ _ x0 x1 ->
+     K_App _UU0394_ _ _ _ _ x0 x1 ->
       eq_rec_r gamma0 (\_ -> false_rec) _UU0394_ __ __ x0 x1}) sigma s t
     hAlpha gamma' gamma __ a
 
@@ -3263,6 +3266,12 @@ to_GU''__GU_lam :: USort -> String -> Kind -> Term0 -> GU
 to_GU''__GU_lam b x a s =
   GU_lam b x a (to_GU'' x s) (to_GU'__GU x (Tmvar x) s)
 
+nc_helper :: Term0 -> (List (Prod String Term0)) -> NC
+nc_helper s sigma =
+  list_rec (\_ -> Nc_nil s) (\a sigma0 iHsigma _ ->
+    case a of {
+     Pair s0 t -> Nc_cons s s0 t sigma0 (iHsigma __)}) sigma __
+
 sconstr2 :: String -> Term0 -> String -> Term0 -> Term0 -> Prod
             (Prod Term0 Term0) Term0
 sconstr2 x0 t x p s =
@@ -3481,13 +3490,15 @@ sconstr2_nc_s_t x0 _ _ _ _ s' t' _ =
 
 sconstr2_nc_t :: String -> Term0 -> String -> Term0 -> Term0 -> Term0 ->
                  Term0 -> Term0 -> NC
-sconstr2_nc_t =
-  Prelude.error "AXIOM TO BE REALIZED"
+sconstr2_nc_t _ _ x _ _ _ t' p' =
+  Nc_cons t' x p' Nil (Nc_nil t')
 
 sconstr2_nc_sub :: String -> Term0 -> String -> Term0 -> Term0 -> Term0 ->
                    Term0 -> Term0 -> NC
-sconstr2_nc_sub =
-  Prelude.error "AXIOM TO BE REALIZED"
+sconstr2_nc_sub x0 _ x _ _ s' t' p' =
+  Nc_cons (psubs (Cons (Pair x p') Nil) s') x0
+    (psubs (Cons (Pair x p') Nil) t') Nil (Nc_nil
+    (psubs (Cons (Pair x p') Nil) s'))
 
 list_diff :: (a1 -> a1 -> Sumbool) -> (List a1) -> (List a1) -> List a1
 list_diff eq_dec l1 l2 =
@@ -3513,6 +3524,23 @@ strip_R :: (List (Prod String String)) -> List (Prod String String)
 strip_R r =
   strip_R'' r Nil Nil
 
+lookup_some_then_alphavar :: (List (Prod String String)) -> String -> String
+                             -> AlphaVar
+lookup_some_then_alphavar r s s' =
+  list_rec (\_ _ -> false_rec) (\a r0 iHR _ _ ->
+    case a of {
+     Pair s0 s1 ->
+      let {b = eqb1 s0 s} in
+      case b of {
+       True ->
+        eq_rec_r s (\_ _ ->
+          let {
+           _evar_0_ = \_ ->
+            eq_rec_r s' (eq_rec_r s' (\_ -> Alpha_var_cons s s' r0) s1 __) s1}
+          in
+          eq_rec_r True _evar_0_ (eqb1 s s) __) s0 __ __;
+       False -> Alpha_var_diff s0 s1 s s' r0 (iHR __ __)}}) r __ __
+
 freshen2 :: (List String) -> (List String) -> List (Prod String String)
 freshen2 used to_freshen =
   fold_right (\x acc ->
@@ -3528,11 +3556,60 @@ a_R_constr r s s' t =
   let {to_freshen = list_diff string_dec (ftv t) (ftv s)} in
   let {rfr = freshen2 used to_freshen} in app rfr (strip_R r)
 
-a_R_constr_UniqueRHS :: (List (Prod String String)) -> (List
-                        (Prod String String)) -> Term0 -> Term0 -> Term0 ->
-                        String -> String -> AlphaVar
-a_R_constr_UniqueRHS =
-  Prelude.error "AXIOM TO BE REALIZED"
+kindOfUniqueRhsFreshMultiple :: (List String) -> (List (Prod String String))
+                                -> (List String) -> KindOfUniqueRhs -> String
+                                -> String -> AlphaVar
+kindOfUniqueRhsFreshMultiple used r l x x0 y =
+  list_rec (\h -> h) (\a l0 iHl x1 ->
+    let {
+     _evar_0_ = let {
+                 r'' = fold_right (\x2 acc -> Cons (Pair x2
+                         (fresh_to_GU_
+                           (app used (app (map fst r) (map snd r))) acc x2))
+                         acc) Nil l0}
+                in
+                let {
+                 iHl0 = eq_rec_r
+                          (fold_right (\x2 acc -> Cons (Pair x2
+                            (fresh_to_GU_
+                              (app used (app (map fst r) (map snd r))) acc
+                              x2)) acc) Nil l0) iHl r''}
+                in
+                let {iHl1 = iHl0 x1} in
+                (\x2 x3 _ ->
+                kindOfUniqueRhsFresh a (app r'' r) r''
+                  (app used (app (map fst r) (map snd r))) iHl1 x2 x3)}
+    in
+    eq_rec_r
+      (fold_right (\x2 acc -> Cons (Pair x2
+        (fresh_to_GU_ (app used (app (map fst r) (map snd r))) acc x2)) acc)
+        (fold_right (\x2 acc -> Cons (Pair x2
+          (fresh_to_GU_ (app used (app (map fst r) (map snd r))) acc x2))
+          acc) Nil l0) (Cons a Nil)) _evar_0_
+      (fold_right (\x2 acc -> Cons (Pair x2
+        (fresh_to_GU_ (app used (app (map fst r) (map snd r))) acc x2)) acc)
+        Nil (app (Cons a Nil) l0))) l x x0 y __
+
+a_R_constr_KindOfUniqueRHS :: (List (Prod String String)) -> (List
+                              (Prod String String)) -> Term0 -> Term0 ->
+                              Term0 -> String -> String -> AlphaVar
+a_R_constr_KindOfUniqueRHS r r' s s' t x y =
+  let {
+   rfr = freshen2
+           (app (tv s)
+             (app (tv s') (app (tv t) (app (map fst r) (map snd r)))))
+           (list_diff string_dec (ftv t) (ftv s))}
+  in
+  let {
+   _evar_0_ = \_ ->
+    let {h0 = lookup_app_or_extended x y rfr (strip_R r)} in
+    case h0 of {
+     Inl _ ->
+      let {_evar_0_ = lookup_some_then_alphavar (app rfr (strip_R r)) x y} in
+      eq_rec_r (app rfr (strip_R r)) _evar_0_ r';
+     Inr _ -> lookup_some_then_alphavar r' x y}}
+  in
+  eq_rec_r (app rfr (strip_R r)) _evar_0_ r' __
 
 a_constr :: (List (Prod String String)) -> Term0 -> Term0 -> Term0 -> Prod
             (List (Prod String String)) Term0
@@ -3569,8 +3646,8 @@ a_constr__t_alpha r s s' t r' t' _ =
             (app (tv t)
               (app (map fst (a_R_constr r s s' t))
                 (map snd (a_R_constr r s s' t)))))) (\x x0 _ ->
-        a_R_constr_UniqueRHS r (a_R_constr r s s' t) s s' t x x0) (\x _ _ ->
-        alphavar_refl_weaken_vacuouss x r')) t') r' __
+        a_R_constr_KindOfUniqueRHS r (a_R_constr r s s' t) s s' t x x0)
+        (\x _ _ -> alphavar_refl_weaken_vacuouss x r')) t') r' __
 
 a_constr__s_alpha :: (List (Prod String String)) -> Term0 -> Term0 -> Term0
                      -> (List (Prod String String)) -> Term0 -> Alpha ->
@@ -3610,6 +3687,28 @@ r_constr t s sigma _ =
   let {r1 = freshen2 (app used (app (map fst r2) (map snd r2))) btvs} in
   Pair r1 r2
 
+r_constr_R2_IdCtx :: Term0 -> Term0 -> (List (Prod String Term0)) -> String
+                     -> (List (Prod String String)) -> (List
+                     (Prod String String)) -> IdCtx
+r_constr_R2_IdCtx t s sigma _ r1 r2 =
+  eq_rec_r
+    (freshen2
+      (app (app (tv t) (app (tv s) (tv_keys_env sigma)))
+        (app
+          (map fst
+            (map (\x -> Pair x x)
+              (list_diff string_dec (ftv t) (app (btv s) (btv_env sigma)))))
+          (map snd
+            (map (\x -> Pair x x)
+              (list_diff string_dec (ftv t) (app (btv s) (btv_env sigma)))))))
+      (app (btv s) (btv_env sigma))) (\_ ->
+    eq_rec_r
+      (map (\x -> Pair x x)
+        (list_diff string_dec (ftv t) (app (btv s) (btv_env sigma))))
+      (map_creates_IdCtx
+        (list_diff string_dec (ftv t) (app (btv s) (btv_env sigma)))) r2) r1
+    __
+
 t_constr :: Term0 -> Term0 -> (List (Prod String Term0)) -> String -> Prod
             Term0 (List (Prod String String))
 t_constr t s sigma x =
@@ -3618,40 +3717,6 @@ t_constr t s sigma x =
   let {used = app tv_t tvs} in
   case r_constr t s sigma x of {
    Pair r1 r2 -> Pair (snd (to_GU_ used (app r1 r2) t)) (app r1 r2)}
-
-kindOfUniqueRhsFreshMultiple :: (List String) -> (List (Prod String String))
-                                -> (List String) -> KindOfUniqueRhs -> String
-                                -> String -> AlphaVar
-kindOfUniqueRhsFreshMultiple used r l x x0 y =
-  list_rec (\h -> h) (\a l0 iHl x1 ->
-    let {
-     _evar_0_ = let {
-                 r'' = fold_right (\x2 acc -> Cons (Pair x2
-                         (fresh_to_GU_
-                           (app used (app (map fst r) (map snd r))) acc x2))
-                         acc) Nil l0}
-                in
-                let {
-                 iHl0 = eq_rec_r
-                          (fold_right (\x2 acc -> Cons (Pair x2
-                            (fresh_to_GU_
-                              (app used (app (map fst r) (map snd r))) acc
-                              x2)) acc) Nil l0) iHl r''}
-                in
-                let {iHl1 = iHl0 x1} in
-                (\x2 x3 _ ->
-                kindOfUniqueRhsFresh a (app r'' r) r''
-                  (app used (app (map fst r) (map snd r))) iHl1 x2 x3)}
-    in
-    eq_rec_r
-      (fold_right (\x2 acc -> Cons (Pair x2
-        (fresh_to_GU_ (app used (app (map fst r) (map snd r))) acc x2)) acc)
-        (fold_right (\x2 acc -> Cons (Pair x2
-          (fresh_to_GU_ (app used (app (map fst r) (map snd r))) acc x2))
-          acc) Nil l0) (Cons a Nil)) _evar_0_
-      (fold_right (\x2 acc -> Cons (Pair x2
-        (fresh_to_GU_ (app used (app (map fst r) (map snd r))) acc x2)) acc)
-        Nil (app (Cons a Nil) l0))) l x x0 y __
 
 t_constr__a_t :: Term0 -> Term0 -> (List (Prod String String)) -> Term0 ->
                  (List (Prod String Term0)) -> String -> Alpha
@@ -3734,11 +3799,26 @@ t_constr__a_s t t' r s sigma x x0 =
         (to_GU_ (app (tv t) (app (tv s) (tv_keys_env sigma))) (app l l0) t))
       (\_ -> eq_rec_r (app l l0) (r_constr__a_s l l0 t s sigma x x0) r) t' __}
 
+r_constr__a_sigma :: (List (Prod String String)) -> (List
+                     (Prod String String)) -> Term0 -> Term0 -> (List
+                     (Prod String Term0)) -> String -> Coq__UU03b1_CtxSub
+r_constr__a_sigma r1 r2 t s sigma x =
+  _UU03b1_ctx_sub_extend_ids_right sigma sigma r1 r2
+    (r_constr_R2_IdCtx t s sigma x r1 r2)
+    (_UU03b1_ctx_vacuous_R r1 sigma sigma (alpha_ctx_ren_nil sigma))
+
 t_constr__a_sigma :: Term0 -> Term0 -> (List (Prod String String)) -> Term0
                      -> (List (Prod String Term0)) -> String ->
                      Coq__UU03b1_CtxSub
-t_constr__a_sigma =
-  Prelude.error "AXIOM TO BE REALIZED"
+t_constr__a_sigma t t' r s sigma x =
+  let {p = r_constr t s sigma x} in
+  case p of {
+   Pair l l0 ->
+    eq_rec_r
+      (snd
+        (to_GU_ (app (tv t) (app (tv s) (tv_keys_env sigma))) (app l l0) t))
+      (\_ -> eq_rec_r (app l l0) (r_constr__a_sigma l l0 t s sigma x) r) t'
+      __}
 
 t_constr__nc_s :: Term0 -> Term0 -> (List (Prod String String)) -> Term0 ->
                   (List (Prod String Term0)) -> String -> NC -> NC
@@ -3819,12 +3899,6 @@ s_constr__gu s s' sigma =
         (map (\x -> Pair x x) (app (tv_keys_env sigma) (tv s))) s))
     (to_GU__GU_ s (map (\x -> Pair x x) (app (tv_keys_env sigma) (tv s)))
       (app (tv_keys_env sigma) (tv s))) s'
-
-nc_helper :: Term0 -> (List (Prod String Term0)) -> NC
-nc_helper s sigma =
-  list_rec (\_ -> Nc_nil s) (\a sigma0 iHsigma _ ->
-    case a of {
-     Pair s0 t -> Nc_cons s s0 t sigma0 (iHsigma __)}) sigma __
 
 s_constr__nc_s :: Term0 -> Term0 -> (List (Prod String Term0)) -> NC
 s_constr__nc_s s s' sigma =
@@ -6603,7 +6677,7 @@ beta_expansion_subst bA bL x t sigma s a b nc snt h =
          (alpha_refl (to_GU' x t (subs sigma s)) Nil Alpha_refl_nil))
        (to_GU'__GU x t (subs sigma s)) (to_GU'__NC x t (subs sigma s)) snt h0)
 
-soundness :: (List (Prod BinderTyname Kind)) -> Term0 -> Kind -> Has_kind0 ->
+soundness :: (List (Prod BinderTyname Kind)) -> Term0 -> Kind -> Has_kind ->
              GU -> (List (Prod String Term0)) -> NC -> ParSeq -> EL -> L
 soundness gamma s a _top_assumption_ x sigma x0 x1 x2 =
   let {
@@ -6641,7 +6715,7 @@ soundness gamma s a _top_assumption_ x sigma x0 x1 x2 =
         extend_EL _UU0394_ sigma0 x3 k (Tmvar x3) x8 (l_var k x3) x9 x10))}
   in
   let {
-   _evar_0_3 = \_ _ _ _ _ _ _ _ -> SNI (\_ _ -> Prelude.error "absurd case")}
+   _evar_0_3 = \_ _ _ _ _ _ _ -> SNI (\_ _ -> Prelude.error "absurd case")}
   in
   let {
    _evar_0_4 = \gamma0 x3 a0 s0 b _ ih gu sigma0 nc blabla eL t x4 ->
@@ -6711,8 +6785,8 @@ soundness gamma s a _top_assumption_ x sigma x0 x1 x2 =
     unsafeCoerce _evar_0_1 _UU0394_ f0 t k h x3 h0 x4 x5 sigma0 x6)
     (\_UU0394_ x3 k t h x4 x5 sigma0 _ x6 ->
     unsafeCoerce _evar_0_2 _UU0394_ x3 k t h x4 x5 sigma0 x6)
-    (\_UU0394_ t h x3 sigma0 _ x4 ->
-    unsafeCoerce _evar_0_3 _UU0394_ t h x3 sigma0 x4)
+    (\_UU0394_ t _ x3 sigma0 _ x4 ->
+    unsafeCoerce _evar_0_3 _UU0394_ t x3 sigma0 x4)
     (\gamma0 x3 a0 s0 b _H ih gu sigma0 _ nc ->
     unsafeCoerce _evar_0_4 gamma0 x3 a0 s0 b _H ih gu sigma0 nc)
     (\gamma0 s0 t a0 b _H ih1 _H0 ih2 gu sigma0 _ nc ->
@@ -6740,7 +6814,7 @@ id_subst__ParSeq _UU03c3_ x =
            eq_rec_r s (\_ _ -> eq_rec_r _UU03c3_0 (\h1 -> h1) sigma) x0 __ __
              x1}))}) _UU03c3_ x
 
-type_L :: (List (Prod String Kind)) -> Term0 -> Kind -> Has_kind0 -> L
+type_L :: (List (Prod String Kind)) -> Term0 -> Kind -> Has_kind -> L
 type_L e s t htype =
   let {hEL = \x x0 -> id_subst__EL e x x0} in
   let {s' = s_constr s (id_subst e)} in
@@ -6758,7 +6832,7 @@ type_L e s t htype =
     (alpha_sym s s' Nil Nil Alpha_sym_nil (s_constr__a_s s s' (id_subst e)))
     htype1
 
-sN_naive :: (List (Prod BinderTyname Kind)) -> Term0 -> Kind -> Has_kind0 ->
+sN_naive :: (List (Prod BinderTyname Kind)) -> Term0 -> Kind -> Has_kind ->
             Sn Term0 Step_gu_naive
 sN_naive e s t x =
   let {h = type_L e s t x} in l_sn t s h
@@ -7602,7 +7676,7 @@ sN_na_to_SN_nd t hsn_nd =
       hstep)
 
 strong_normalization :: (List (Prod BinderTyname Kind)) -> Term0 -> Kind ->
-                        Has_kind0 -> Sn Term0 Step_nd
+                        Has_kind -> Sn Term0 Step_nd
 strong_normalization e s t x =
   let {h = sN_naive e s t x} in sN_na_to_SN_nd s h
 
@@ -7675,20 +7749,20 @@ f_preserves_step s s' h =
              eq_rec_r a (\_ -> eq_rec_r x0 (\_ h3 -> h3) xs0) x1 __ __ x2})))
         x f2) tss_normal f0) s s' h
 
-f_preserves_kind :: (List (Prod BinderName Kind)) -> Ty -> Kind -> Has_kind
-                    -> Has_kind0
-f_preserves_kind _UU0394_ s k x =
-  has_kind__ind (\_UU0394_0 x0 k0 _ -> K_Var0 _UU0394_0 x0 k0)
-    (\_UU0394_0 t1 t2 _ iHhas_kind1 _ iHhas_kind2 -> K_Fun0 _UU0394_0
+f_preserves_kind :: (List (Prod BinderTyname Kind)) -> Ty -> Kind -> Has_kind
+f_preserves_kind _UU0394_ s k =
+  let {h = prop_to_type _UU0394_ s k} in
+  has_kind_set__ind (\_UU0394_0 x k0 _ -> K_Var _UU0394_0 x k0)
+    (\_UU0394_0 t1 t2 _ iHhas_kind_set1 _ iHhas_kind_set2 -> K_Fun _UU0394_0
     (let {
       f0 t =
         case t of {
-         Ty_Var x0 -> Tmvar x0;
+         Ty_Var x -> Tmvar x;
          Ty_Fun t3 t4 -> Tmapp Fun (f0 t3) (f0 t4);
          Ty_IFix f1 t3 -> Tmapp IFix (f0 f1) (f0 t3);
-         Ty_Forall x0 a t0 -> Tmlam ForAll x0 a (f0 t0);
+         Ty_Forall x a t0 -> Tmlam ForAll x a (f0 t0);
          Ty_Builtin d -> Tmbuiltin d;
-         Ty_Lam x0 a t0 -> Tmlam Lam x0 a (f0 t0);
+         Ty_Lam x a t0 -> Tmlam Lam x a (f0 t0);
          Ty_App t3 t4 -> Tmapp App (f0 t3) (f0 t4);
          Ty_SOP tss ->
           fold_right (\ts acc ->
@@ -7698,28 +7772,29 @@ f_preserves_kind _UU0394_ s k x =
     (let {
       f0 t =
         case t of {
-         Ty_Var x0 -> Tmvar x0;
+         Ty_Var x -> Tmvar x;
          Ty_Fun t3 t4 -> Tmapp Fun (f0 t3) (f0 t4);
          Ty_IFix f1 t3 -> Tmapp IFix (f0 f1) (f0 t3);
-         Ty_Forall x0 a t0 -> Tmlam ForAll x0 a (f0 t0);
+         Ty_Forall x a t0 -> Tmlam ForAll x a (f0 t0);
          Ty_Builtin d -> Tmbuiltin d;
-         Ty_Lam x0 a t0 -> Tmlam Lam x0 a (f0 t0);
+         Ty_Lam x a t0 -> Tmlam Lam x a (f0 t0);
          Ty_App t3 t4 -> Tmapp App (f0 t3) (f0 t4);
          Ty_SOP tss ->
           fold_right (\ts acc ->
             fold_right (\t0 acc2 -> Tmapp Fun (f0 t0) acc2) acc ts)
             (Tmbuiltin DefaultUniInteger) tss}}
-     in f0 t2) iHhas_kind1 iHhas_kind2)
-    (\_UU0394_0 f0 t k0 _ iHhas_kind1 _ iHhas_kind2 -> K_IFix0 _UU0394_0
+     in f0 t2) iHhas_kind_set1 iHhas_kind_set2)
+    (\_UU0394_0 f0 t k0 _ iHhas_kind_set1 _ iHhas_kind_set2 -> K_IFix
+    _UU0394_0
     (let {
       f1 t0 =
         case t0 of {
-         Ty_Var x0 -> Tmvar x0;
+         Ty_Var x -> Tmvar x;
          Ty_Fun t1 t2 -> Tmapp Fun (f1 t1) (f1 t2);
          Ty_IFix f2 t1 -> Tmapp IFix (f1 f2) (f1 t1);
-         Ty_Forall x0 a t1 -> Tmlam ForAll x0 a (f1 t1);
+         Ty_Forall x a t1 -> Tmlam ForAll x a (f1 t1);
          Ty_Builtin d -> Tmbuiltin d;
-         Ty_Lam x0 a t1 -> Tmlam Lam x0 a (f1 t1);
+         Ty_Lam x a t1 -> Tmlam Lam x a (f1 t1);
          Ty_App t1 t2 -> Tmapp App (f1 t1) (f1 t2);
          Ty_SOP tss ->
           fold_right (\ts acc ->
@@ -7729,60 +7804,61 @@ f_preserves_kind _UU0394_ s k x =
     (let {
       f1 t0 =
         case t0 of {
-         Ty_Var x0 -> Tmvar x0;
+         Ty_Var x -> Tmvar x;
          Ty_Fun t1 t2 -> Tmapp Fun (f1 t1) (f1 t2);
          Ty_IFix f2 t1 -> Tmapp IFix (f1 f2) (f1 t1);
-         Ty_Forall x0 a t1 -> Tmlam ForAll x0 a (f1 t1);
+         Ty_Forall x a t1 -> Tmlam ForAll x a (f1 t1);
          Ty_Builtin d -> Tmbuiltin d;
-         Ty_Lam x0 a t1 -> Tmlam Lam x0 a (f1 t1);
+         Ty_Lam x a t1 -> Tmlam Lam x a (f1 t1);
          Ty_App t1 t2 -> Tmapp App (f1 t1) (f1 t2);
          Ty_SOP tss ->
           fold_right (\ts acc ->
             fold_right (\t1 acc2 -> Tmapp Fun (f1 t1) acc2) acc ts)
             (Tmbuiltin DefaultUniInteger) tss}}
-     in f1 t) k0 iHhas_kind1 iHhas_kind2) (\_UU0394_0 x0 k0 t _ iHhas_kind ->
-    K_Forall0 _UU0394_0 x0 k0
+     in f1 t) k0 iHhas_kind_set1 iHhas_kind_set2)
+    (\_UU0394_0 x k0 t _ iHhas_kind_set -> K_Forall _UU0394_0 x k0
     (let {
       f0 t0 =
         case t0 of {
-         Ty_Var x1 -> Tmvar x1;
+         Ty_Var x0 -> Tmvar x0;
          Ty_Fun t1 t2 -> Tmapp Fun (f0 t1) (f0 t2);
          Ty_IFix f1 t1 -> Tmapp IFix (f0 f1) (f0 t1);
-         Ty_Forall x1 a t1 -> Tmlam ForAll x1 a (f0 t1);
+         Ty_Forall x0 a t1 -> Tmlam ForAll x0 a (f0 t1);
          Ty_Builtin d -> Tmbuiltin d;
-         Ty_Lam x1 a t1 -> Tmlam Lam x1 a (f0 t1);
+         Ty_Lam x0 a t1 -> Tmlam Lam x0 a (f0 t1);
          Ty_App t1 t2 -> Tmapp App (f0 t1) (f0 t2);
          Ty_SOP tss ->
           fold_right (\ts acc ->
             fold_right (\t1 acc2 -> Tmapp Fun (f0 t1) acc2) acc ts)
             (Tmbuiltin DefaultUniInteger) tss}}
-     in f0 t) iHhas_kind) (\_UU0394_0 t h -> K_Builtin0 _UU0394_0 t h)
-    (\_UU0394_0 x0 k1 t k2 _ iHhas_kind -> K_Lam0 _UU0394_0 x0 k1
+     in f0 t) iHhas_kind_set) (\_UU0394_0 t _ -> K_Builtin _UU0394_0 t)
+    (\_UU0394_0 x k1 t k2 _ iHhas_kind_set -> K_Lam _UU0394_0 x k1
     (let {
       f0 t0 =
         case t0 of {
-         Ty_Var x1 -> Tmvar x1;
+         Ty_Var x0 -> Tmvar x0;
          Ty_Fun t1 t2 -> Tmapp Fun (f0 t1) (f0 t2);
          Ty_IFix f1 t1 -> Tmapp IFix (f0 f1) (f0 t1);
-         Ty_Forall x1 a t1 -> Tmlam ForAll x1 a (f0 t1);
+         Ty_Forall x0 a t1 -> Tmlam ForAll x0 a (f0 t1);
          Ty_Builtin d -> Tmbuiltin d;
-         Ty_Lam x1 a t1 -> Tmlam Lam x1 a (f0 t1);
+         Ty_Lam x0 a t1 -> Tmlam Lam x0 a (f0 t1);
          Ty_App t1 t2 -> Tmapp App (f0 t1) (f0 t2);
          Ty_SOP tss ->
           fold_right (\ts acc ->
             fold_right (\t1 acc2 -> Tmapp Fun (f0 t1) acc2) acc ts)
             (Tmbuiltin DefaultUniInteger) tss}}
-     in f0 t) k2 iHhas_kind)
-    (\_UU0394_0 t1 t2 k1 k2 _ iHhas_kind1 _ iHhas_kind2 -> K_App0 _UU0394_0
+     in f0 t) k2 iHhas_kind_set)
+    (\_UU0394_0 t1 t2 k1 k2 _ iHhas_kind_set1 _ iHhas_kind_set2 -> K_App
+    _UU0394_0
     (let {
       f0 t =
         case t of {
-         Ty_Var x0 -> Tmvar x0;
+         Ty_Var x -> Tmvar x;
          Ty_Fun t3 t4 -> Tmapp Fun (f0 t3) (f0 t4);
          Ty_IFix f1 t3 -> Tmapp IFix (f0 f1) (f0 t3);
-         Ty_Forall x0 a t0 -> Tmlam ForAll x0 a (f0 t0);
+         Ty_Forall x a t0 -> Tmlam ForAll x a (f0 t0);
          Ty_Builtin d -> Tmbuiltin d;
-         Ty_Lam x0 a t0 -> Tmlam Lam x0 a (f0 t0);
+         Ty_Lam x a t0 -> Tmlam Lam x a (f0 t0);
          Ty_App t3 t4 -> Tmapp App (f0 t3) (f0 t4);
          Ty_SOP tss ->
           fold_right (\ts acc ->
@@ -7792,58 +7868,60 @@ f_preserves_kind _UU0394_ s k x =
     (let {
       f0 t =
         case t of {
-         Ty_Var x0 -> Tmvar x0;
+         Ty_Var x -> Tmvar x;
          Ty_Fun t3 t4 -> Tmapp Fun (f0 t3) (f0 t4);
          Ty_IFix f1 t3 -> Tmapp IFix (f0 f1) (f0 t3);
-         Ty_Forall x0 a t0 -> Tmlam ForAll x0 a (f0 t0);
+         Ty_Forall x a t0 -> Tmlam ForAll x a (f0 t0);
          Ty_Builtin d -> Tmbuiltin d;
-         Ty_Lam x0 a t0 -> Tmlam Lam x0 a (f0 t0);
+         Ty_Lam x a t0 -> Tmlam Lam x a (f0 t0);
          Ty_App t3 t4 -> Tmapp App (f0 t3) (f0 t4);
          Ty_SOP tss ->
           fold_right (\ts acc ->
             fold_right (\t0 acc2 -> Tmapp Fun (f0 t0) acc2) acc ts)
             (Tmbuiltin DefaultUniInteger) tss}}
-     in f0 t2) k1 k2 iHhas_kind1 iHhas_kind2) (\_UU0394_0 tss h iHhas_kind ->
-    list_rec (\_ _ -> K_Builtin0 _UU0394_0 DefaultUniInteger
-      K_DefaultUniInteger) (\a tss0 _ h0 iHhas_kind0 ->
+     in f0 t2) k1 k2 iHhas_kind_set1 iHhas_kind_set2)
+    (\_UU0394_0 tss h0 iHhas_kind_set ->
+    list_rec (\_ _ -> K_Builtin _UU0394_0 DefaultUniInteger)
+      (\a tss0 _ h1 iHhas_kind_set0 ->
       let {l = Cons a tss0} in
-      forallSet2_rec (\_ -> K_Builtin0 _UU0394_0 DefaultUniInteger
-        K_DefaultUniInteger) (\x0 xs f0 _ iHIHhas_kind h1 ->
-        forallSet_rec (\h2 ->
-          iHIHhas_kind
-            (case h2 of {
-              ForallSet2_nil _UU0394_1 ->
+      forallSet2_rec (\_ -> K_Builtin _UU0394_0 DefaultUniInteger)
+        (\x xs f0 _ iHIHhas_kind_set h2 ->
+        forallSet_rec (\h3 ->
+          iHIHhas_kind_set
+            (case h3 of {
+              ForallSet2_nil_set _UU0394_1 ->
                eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __;
-              ForallSet2_cons _UU0394_1 ts tss1 x1 x2 ->
+              ForallSet2_cons_set _UU0394_1 ts tss1 x0 x1 ->
                eq_rec_r _UU0394_0 (\_ ->
                  eq_rec_r Nil (\_ -> eq_rec_r xs (\_ h4 -> h4) tss1) ts __)
-                 _UU0394_1 __ x1 x2})) (\x1 xs0 p _ iHf0 h2 -> K_Fun0
-          _UU0394_0 (f x1)
+                 _UU0394_1 __ x0 x1})) (\x0 xs0 p _ iHf0 h3 -> K_Fun
+          _UU0394_0 (f x0)
           (fold_right (\t acc2 -> Tmapp Fun (f t) acc2)
             (fold_right (\ts acc ->
               fold_right (\t acc2 -> Tmapp Fun (f t) acc2) acc ts) (Tmbuiltin
               DefaultUniInteger) xs) xs0) p
           (iHf0
-            (case h2 of {
-              ForallSet2_nil _UU0394_1 ->
+            (case h3 of {
+              ForallSet2_nil_set _UU0394_1 ->
                eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __;
-              ForallSet2_cons _UU0394_1 ts tss1 x2 x3 ->
+              ForallSet2_cons_set _UU0394_1 ts tss1 x1 x2 ->
                eq_rec_r _UU0394_0 (\_ ->
-                 eq_rec_r (Cons x1 xs0) (\_ ->
-                   eq_rec_r xs (\h3 h4 ->
-                     case h3 of {
-                      ForallSet_nil _UU0394_2 ->
+                 eq_rec_r (Cons x0 xs0) (\_ ->
+                   eq_rec_r xs (\h4 h5 ->
+                     case h4 of {
+                      ForallSet_nil_set _UU0394_2 ->
                        eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_2 __;
-                      ForallSet_cons _UU0394_2 t ts0 x4 x5 ->
+                      ForallSet_cons_set _UU0394_2 t ts0 x3 x4 ->
                        eq_rec_r _UU0394_0 (\_ ->
-                         eq_rec_r x1 (\_ ->
-                           eq_rec_r xs0 (\_ h6 -> ForallSet2_cons _UU0394_0
-                             xs0 xs h6 h4) ts0) t __) _UU0394_2 __ x4 x5})
-                     tss1) ts __) _UU0394_1 __ x2 x3}))) x0 f0 h1) l
-        iHhas_kind0 h0) tss h iHhas_kind) (\_ -> ForallS2_nil)
-    (\_ ts tss _ iHhas_kind _ iHhas_kind0 -> ForallS2_cons ts tss iHhas_kind
-    iHhas_kind0) (\_ -> ForallS_nil) (\_ t ts _ iHhas_kind _ iHhas_kind0 ->
-    ForallS_cons t ts iHhas_kind iHhas_kind0) _UU0394_ s k x
+                         eq_rec_r x0 (\_ ->
+                           eq_rec_r xs0 (\_ h6 -> ForallSet2_cons_set
+                             _UU0394_0 xs0 xs h6 h5) ts0) t __) _UU0394_2 __
+                         x3 x4}) tss1) ts __) _UU0394_1 __ x1 x2}))) x f0 h2)
+        l iHhas_kind_set0 h1) tss h0 iHhas_kind_set) (\_ -> ForallS2_nil)
+    (\_ ts tss _ iHhas_kind_set _ iHhas_kind_set0 -> ForallS2_cons ts tss
+    iHhas_kind_set iHhas_kind_set0) (\_ -> ForallS_nil)
+    (\_ t ts _ iHhas_kind_set _ iHhas_kind_set0 -> ForallS_cons t ts
+    iHhas_kind_set iHhas_kind_set0) _UU0394_ s k h
 
 sn_preimage2 :: (Ty -> Term0) -> Ty -> (Ty -> Ty -> a1 -> a2) -> (Sn 
                 Term0 a2) -> Sn Ty a1
@@ -7856,36 +7934,34 @@ sn_step_plut :: Ty -> (Sn Term0 Step_nd) -> Sn Ty Step
 sn_step_plut s =
   sn_preimage2 f s f_preserves_step
 
-plutus_ty_strong_normalization :: Ty -> (List (Prod BinderName Kind)) -> Kind
-                                  -> Has_kind -> Sn Ty Step
-plutus_ty_strong_normalization s _UU0394_ k hwk =
-  let {hwk0 = f_preserves_kind _UU0394_ s k hwk} in
-  let {hwk1 = strong_normalization _UU0394_ (f s) k hwk0} in
-  sn_step_plut s hwk1
+plutus_ty_strong_normalization :: Ty -> (List (Prod BinderTyname Kind)) ->
+                                  Kind -> Sn Ty Step
+plutus_ty_strong_normalization s _UU0394_ k =
+  let {hwk = f_preserves_kind _UU0394_ s k} in
+  let {hwk0 = strong_normalization _UU0394_ (f s) k hwk} in
+  sn_step_plut s hwk0
 
-step_dec :: Ty -> (List (Prod BinderName Kind)) -> Kind -> Has_kind -> Sum
+step_dec :: Ty -> (List (Prod BinderTyname Kind)) -> Kind -> Sum
             (SigT Ty Step) ()
-step_dec t =
-  ty_rec (\_ _ _ _ -> Inr __) (\t1 iHT1 t2 iHT2 _UU0394_ _ _ ->
-    let {o = kind_check _UU0394_ t1} in
+step_dec t _UU0394_ k =
+  ty_rec (\_ _ _ _ -> Inr __) (\t1 iHT1 t2 iHT2 _UU0394_0 _ _ ->
+    let {o = kind_check _UU0394_0 t1} in
     case o of {
-     Some k ->
-      case k of {
+     Some k0 ->
+      case k0 of {
        Kind_Base ->
-        let {o0 = kind_check _UU0394_ t2} in
+        let {o0 = kind_check _UU0394_0 t2} in
         case o0 of {
-         Some k0 ->
-          case k0 of {
+         Some k1 ->
+          case k1 of {
            Kind_Base ->
-            let {heqo = kind_checking_sound _UU0394_ t1 Kind_Base} in
-            let {heqo0 = kind_checking_sound _UU0394_ t2 Kind_Base} in
-            let {s = iHT1 _UU0394_ Kind_Base heqo} in
+            let {s = iHT1 _UU0394_0 Kind_Base __} in
             case s of {
              Inl s0 -> Inl
               (case s0 of {
                 ExistT x s1 -> ExistT (Ty_Fun x t2) (Step_funL t1 x t2 s1)});
              Inr _ ->
-              let {s0 = iHT2 _UU0394_ Kind_Base heqo0} in
+              let {s0 = iHT2 _UU0394_0 Kind_Base __} in
               case s0 of {
                Inl s1 -> Inl
                 (case s1 of {
@@ -7894,38 +7970,32 @@ step_dec t =
            Kind_Arrow _ _ -> false_rec};
          None -> false_rec};
        Kind_Arrow _ _ -> false_rec};
-     None -> false_rec}) (\t1 iHT1 t2 iHT2 _UU0394_ _ _ ->
-    let {o = kind_check _UU0394_ t2} in
+     None -> false_rec}) (\t1 iHT1 t2 iHT2 _UU0394_0 _ _ ->
+    let {o = kind_check _UU0394_0 t2} in
     case o of {
-     Some k ->
-      let {o0 = kind_check _UU0394_ t1} in
+     Some k0 ->
+      let {o0 = kind_check _UU0394_0 t1} in
       case o0 of {
-       Some k0 ->
-        case k0 of {
+       Some k1 ->
+        case k1 of {
          Kind_Base -> false_rec;
-         Kind_Arrow k1 k2 ->
-          case k1 of {
+         Kind_Arrow k2 k3 ->
+          case k2 of {
            Kind_Base -> false_rec;
-           Kind_Arrow k3 k4 ->
-            case k4 of {
+           Kind_Arrow k4 k5 ->
+            case k5 of {
              Kind_Base ->
-              case k2 of {
+              case k3 of {
                Kind_Base -> false_rec;
-               Kind_Arrow k5 k6 ->
-                case k6 of {
+               Kind_Arrow k6 k7 ->
+                case k7 of {
                  Kind_Base ->
-                  let {b = andb (kind_eqb k k3) (kind_eqb k k5)} in
+                  let {b = andb (kind_eqb k0 k4) (kind_eqb k0 k6)} in
                   case b of {
                    True ->
-                    let {heqo = kind_checking_sound _UU0394_ t2 k} in
                     let {
-                     heqo0 = kind_checking_sound _UU0394_ t1 (Kind_Arrow
-                               (Kind_Arrow k3 Kind_Base) (Kind_Arrow k5
-                               Kind_Base))}
-                    in
-                    let {
-                     s = iHT1 _UU0394_ (Kind_Arrow (Kind_Arrow k3 Kind_Base)
-                           (Kind_Arrow k5 Kind_Base)) heqo0}
+                     s = iHT1 _UU0394_0 (Kind_Arrow (Kind_Arrow k4 Kind_Base)
+                           (Kind_Arrow k6 Kind_Base)) __}
                     in
                     case s of {
                      Inl s0 -> Inl
@@ -7933,7 +8003,7 @@ step_dec t =
                         ExistT x s1 -> ExistT (Ty_IFix x t2) (Step_ifixL t1 x
                          t2 s1)});
                      Inr _ ->
-                      let {s0 = iHT2 _UU0394_ k heqo} in
+                      let {s0 = iHT2 _UU0394_0 k0 __} in
                       case s0 of {
                        Inl s1 -> Inl
                         (case s1 of {
@@ -7944,68 +8014,62 @@ step_dec t =
                  Kind_Arrow _ _ -> false_rec}};
              Kind_Arrow _ _ -> false_rec}}};
        None -> false_rec};
-     None -> false_rec}) (\b k t0 iHT _UU0394_ _ _ ->
-    let {o = kind_check (Cons (Pair b k) _UU0394_) t0} in
+     None -> false_rec}) (\b k0 t0 iHT _UU0394_0 _ _ ->
+    let {o = kind_check (Cons (Pair b k0) _UU0394_0) t0} in
     case o of {
-     Some k0 ->
-      case k0 of {
+     Some k1 ->
+      case k1 of {
        Kind_Base ->
-        let {
-         heqo = kind_checking_sound (Cons (Pair b k) _UU0394_) t0 Kind_Base}
-        in
-        let {s = iHT (Cons (Pair b k) _UU0394_) Kind_Base heqo} in
+        let {s = iHT (Cons (Pair b k0) _UU0394_0) Kind_Base __} in
         case s of {
          Inl s0 -> Inl
           (case s0 of {
-            ExistT x s1 -> ExistT (Ty_Forall b k x) (Step_forall b k t0 x s1)});
+            ExistT x s1 -> ExistT (Ty_Forall b k0 x) (Step_forall b k0 t0 x
+             s1)});
          Inr _ -> Inr __};
        Kind_Arrow _ _ -> false_rec};
-     None -> false_rec}) (\_ _ _ _ -> Inr __) (\b k t0 iHT _UU0394_ _ _ ->
-    let {o = kind_check (Cons (Pair b k) _UU0394_) t0} in
+     None -> false_rec}) (\_ _ _ _ -> Inr __) (\b k0 t0 iHT _UU0394_0 _ _ ->
+    let {o = kind_check (Cons (Pair b k0) _UU0394_0) t0} in
     case o of {
-     Some k0 ->
-      let {heqo = kind_checking_sound (Cons (Pair b k) _UU0394_) t0 k0} in
-      let {s = iHT (Cons (Pair b k) _UU0394_) k0 heqo} in
+     Some k1 ->
+      let {s = iHT (Cons (Pair b k0) _UU0394_0) k1 __} in
       case s of {
        Inl s0 -> Inl
         (case s0 of {
-          ExistT x s1 -> ExistT (Ty_Lam b k x) (Step_abs b k t0 x s1)});
+          ExistT x s1 -> ExistT (Ty_Lam b k0 x) (Step_abs b k0 t0 x s1)});
        Inr _ -> Inr __};
-     None -> false_rec}) (\t1 iHT1 t2 iHT2 _UU0394_ _ _ ->
-    let {o = kind_check _UU0394_ t1} in
+     None -> false_rec}) (\t1 iHT1 t2 iHT2 _UU0394_0 _ _ ->
+    let {o = kind_check _UU0394_0 t1} in
     case o of {
-     Some k ->
-      case k of {
+     Some k0 ->
+      case k0 of {
        Kind_Base -> false_rec;
-       Kind_Arrow k0 k1 ->
-        let {o0 = kind_check _UU0394_ t2} in
+       Kind_Arrow k1 k2 ->
+        let {o0 = kind_check _UU0394_0 t2} in
         case o0 of {
-         Some k2 ->
-          let {b = kind_eqb k0 k2} in
+         Some k3 ->
+          let {b = kind_eqb k1 k3} in
           case b of {
            True ->
-            let {heqo = kind_checking_sound _UU0394_ t1 (Kind_Arrow k0 k1)}
-            in
-            let {s = iHT1 _UU0394_ (Kind_Arrow k0 k1) heqo} in
+            let {s = iHT1 _UU0394_0 (Kind_Arrow k1 k2) __} in
             case s of {
              Inl s0 -> Inl
               (case s0 of {
                 ExistT x s1 -> ExistT (Ty_App x t2) (Step_appL t1 x t2 s1)});
              Inr _ ->
-              let {o1 = kind_check _UU0394_ t1} in
+              let {o1 = kind_check _UU0394_0 t1} in
               case o1 of {
-               Some k3 ->
-                case k3 of {
+               Some k4 ->
+                case k4 of {
                  Kind_Base -> false_rec;
-                 Kind_Arrow k4 _ ->
-                  let {o2 = kind_check _UU0394_ t2} in
+                 Kind_Arrow k5 _ ->
+                  let {o2 = kind_check _UU0394_0 t2} in
                   case o2 of {
-                   Some k5 ->
-                    let {b0 = kind_eqb k4 k5} in
+                   Some k6 ->
+                    let {b0 = kind_eqb k5 k6} in
                     case b0 of {
                      True ->
-                      let {heqo2 = kind_checking_sound _UU0394_ t2 k5} in
-                      let {s0 = iHT2 _UU0394_ k5 heqo2} in
+                      let {s0 = iHT2 _UU0394_0 k6 __} in
                       case s0 of {
                        Inl s1 -> Inl
                         (case s1 of {
@@ -8017,332 +8081,70 @@ step_dec t =
                           (\_ _ _ _ _ _ _ _ _ _ -> false_rec)
                           (\_ _ _ _ _ _ _ _ _ _ -> false_rec)
                           (\_ _ _ _ _ _ _ -> false_rec)
-                          (\b1 k6 t3 _ _ _ _ _ _ _ -> Inl (ExistT
-                          (substituteTCA0 b1 t2 t3) (Step_beta b1 k6 t3 t2)))
-                          (\_ _ _ _ _ _ _ _ _ _ -> Inr __)
-                          (\l _ _ _ heqo0 _ _ ->
-                          case heqo0 of {
-                           K_Var _UU0394_0 _ _ ->
-                            eq_rec_r _UU0394_ (\_ -> false_rec) _UU0394_0 __
+                          (\b1 k7 t3 _ _ _ _ _ _ _ -> Inl (ExistT
+                          (substituteTCA0 b1 t2 t3) (Step_beta b1 k7 t3 t2)))
+                          (\_ _ _ _ _ _ _ _ _ _ -> Inr __) (\l _ _ _ _ _ _ ->
+                          let {
+                           heqo = prop_to_type _UU0394_0 (Ty_SOP l)
+                                    (Kind_Arrow k1 k2)}
+                          in
+                          case heqo of {
+                           K_Var_set _UU0394_1 _ _ ->
+                            eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __
                               __ __;
-                           K_Fun _UU0394_0 _ _ x x0 ->
-                            eq_rec_r _UU0394_ (\_ -> false_rec) _UU0394_0 __
+                           K_Fun_set _UU0394_1 _ _ x x0 ->
+                            eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __
                               __ x x0;
-                           K_IFix _UU0394_0 _ _ _ x x0 ->
-                            eq_rec_r _UU0394_ (\_ -> false_rec) _UU0394_0 __
+                           K_IFix_set _UU0394_1 _ _ _ x x0 ->
+                            eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __
                               __ x x0;
-                           K_Forall _UU0394_0 _ _ _ x ->
-                            eq_rec_r _UU0394_ (\_ -> false_rec) _UU0394_0 __
+                           K_Forall_set _UU0394_1 _ _ _ x ->
+                            eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __
                               __ x;
-                           K_Builtin _UU0394_0 _ x ->
-                            eq_rec_r _UU0394_ (\_ -> false_rec) _UU0394_0 __
+                           K_Builtin_set _UU0394_1 _ ->
+                            eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __
+                              __ __;
+                           K_Lam_set _UU0394_1 _ _ _ _ x ->
+                            eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __
                               __ x;
-                           K_Lam _UU0394_0 _ _ _ _ x ->
-                            eq_rec_r _UU0394_ (\_ -> false_rec) _UU0394_0 __
-                              __ x;
-                           K_App _UU0394_0 _ _ _ _ x x0 ->
-                            eq_rec_r _UU0394_ (\_ -> false_rec) _UU0394_0 __
+                           K_App_set _UU0394_1 _ _ _ _ x x0 ->
+                            eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __
                               __ x x0;
-                           K_SOP _UU0394_0 tss x ->
-                            eq_rec_r _UU0394_ (\_ ->
-                              eq_rec_r l (\_ -> false_rec) tss) _UU0394_0 __
-                              __ x}) t1 iHT1 __ __ heqo __ __};
+                           K_SOP_set _UU0394_1 tss x ->
+                            eq_rec_r _UU0394_0 (\_ ->
+                              eq_rec_r l (\_ -> false_rec) tss) _UU0394_1 __
+                              __ x}) t1 iHT1 __ __ __ __ __};
                      False -> false_rec};
                    None -> false_rec}};
                None -> false_rec}};
            False -> false_rec};
          None -> false_rec}};
-     None -> false_rec}) (\_ _ _ _ -> Inr __) t
-
-step_preserves_kinding_SOP_axiom :: (List (List Ty)) -> (List
-                                    (Prod BinderName Kind)) -> Has_kind
-step_preserves_kinding_SOP_axiom =
-  Prelude.error "AXIOM TO BE REALIZED"
-
-step_preserves_kinding :: Ty -> Ty -> (List (Prod BinderName Kind)) -> Kind
-                          -> Has_kind -> Step -> Has_kind
-step_preserves_kinding t t' _UU0394_ k x x0 =
-  step_rec (\x1 k0 s t0 _ _ _UU0394_0 k1 hkind_T ->
-    case hkind_T of {
-     K_Var _UU0394_1 _ _ ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ __;
-     K_Fun _UU0394_1 _ _ x2 x3 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x2 x3;
-     K_IFix _UU0394_1 _ _ _ x2 x3 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x2 x3;
-     K_Forall _UU0394_1 _ _ _ x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x2;
-     K_Builtin _UU0394_1 _ x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x2;
-     K_Lam _UU0394_1 _ _ _ _ x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x2;
-     K_App _UU0394_1 t1 t2 k2 k3 x2 x3 ->
-      eq_rec_r _UU0394_0 (\_ ->
-        eq_rec_r (Ty_Lam x1 k0 s) (\_ ->
-          eq_rec_r t0 (\_ ->
-            eq_rec_r k1 (\h2 h4 ->
-              case h2 of {
-               K_Var _UU0394_2 _ _ ->
-                eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_2 __ __ __;
-               K_Fun _UU0394_2 _ _ x4 x5 ->
-                eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_2 __ __ x4 x5;
-               K_IFix _UU0394_2 _ _ _ x4 x5 ->
-                eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_2 __ __ x4 x5;
-               K_Forall _UU0394_2 _ _ _ x4 ->
-                eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_2 __ __ x4;
-               K_Builtin _UU0394_2 _ x4 ->
-                eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_2 __ __ x4;
-               K_Lam _UU0394_2 x4 k4 t3 k5 x5 ->
-                eq_rec_r _UU0394_0 (\_ ->
-                  eq_rec_r x1 (\_ ->
-                    eq_rec_r k0 (\_ ->
-                      eq_rec_r s (\_ ->
-                        eq_rec_r k2 (\_ ->
-                          eq_rec_r k1 (\h1 ->
-                            eq_rec_r k2 (\_ _ ->
-                              substituteTCA_preserves_kinding s _UU0394_0 x1
-                                k1 t0 k2 h1 h4) k0 hkind_T h2) k5) k0 __) t3)
-                      k4) x4 __ __) _UU0394_2 __ __ x5;
-               K_App _UU0394_2 _ _ _ _ x4 x5 ->
-                eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_2 __ __ x4 x5;
-               K_SOP _UU0394_2 _ x4 ->
-                eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_2 __ __ x4}) k3)
-            t2) t1 __) _UU0394_1 __ __ x2 x3;
-     K_SOP _UU0394_1 _ x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x2})
-    (\s1 s2 t0 _ iHstep _UU0394_0 k0 hkind_T ->
-    case hkind_T of {
-     K_Var _UU0394_1 _ _ ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ __;
-     K_Fun _UU0394_1 _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_IFix _UU0394_1 _ _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_Forall _UU0394_1 _ _ _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_Builtin _UU0394_1 _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_Lam _UU0394_1 _ _ _ _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_App _UU0394_1 t1 t2 k1 k2 x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ ->
-        eq_rec_r s1 (\_ ->
-          eq_rec_r t0 (\_ ->
-            eq_rec_r k0 (\h3 h5 -> K_App _UU0394_0 s2 t0 k1 k0
-              (iHstep _UU0394_0 (Kind_Arrow k1 k0) h3) h5) k2) t2) t1 __)
-        _UU0394_1 __ __ x1 x2;
-     K_SOP _UU0394_1 _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1})
-    (\s t1 t2 _ _ iHstep _UU0394_0 k0 hkind_T ->
-    case hkind_T of {
-     K_Var _UU0394_1 _ _ ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ __;
-     K_Fun _UU0394_1 _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_IFix _UU0394_1 _ _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_Forall _UU0394_1 _ _ _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_Builtin _UU0394_1 _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_Lam _UU0394_1 _ _ _ _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_App _UU0394_1 t3 t4 k1 k2 x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ ->
-        eq_rec_r s (\_ ->
-          eq_rec_r t1 (\_ ->
-            eq_rec_r k0 (\h3 h5 -> K_App _UU0394_0 s t2 k1 k0 h3
-              (iHstep _UU0394_0 k1 h5)) k2) t4) t3 __) _UU0394_1 __ __ x1 x2;
-     K_SOP _UU0394_1 _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1})
-    (\s1 s2 t0 _ iHstep _UU0394_0 _ hkind_T ->
-    case hkind_T of {
-     K_Var _UU0394_1 _ _ ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ __;
-     K_Fun _UU0394_1 t1 t2 x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ ->
-        eq_rec_r s1 (\_ ->
-          eq_rec_r t0 (\_ h3 h5 -> K_Fun _UU0394_0 s2 t0
-            (iHstep _UU0394_0 Kind_Base h3) h5) t2) t1 __) _UU0394_1 __ __ x1
-        x2;
-     K_IFix _UU0394_1 _ _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_Forall _UU0394_1 _ _ _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_Builtin _UU0394_1 _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_Lam _UU0394_1 _ _ _ _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_App _UU0394_1 _ _ _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_SOP _UU0394_1 _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1})
-    (\s t1 t2 _ _ iHstep _UU0394_0 _ hkind_T ->
-    case hkind_T of {
-     K_Var _UU0394_1 _ _ ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ __;
-     K_Fun _UU0394_1 t3 t4 x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ ->
-        eq_rec_r s (\_ ->
-          eq_rec_r t1 (\_ h3 h5 -> K_Fun _UU0394_0 s t2 h3
-            (iHstep _UU0394_0 Kind_Base h5)) t4) t3 __) _UU0394_1 __ __ x1 x2;
-     K_IFix _UU0394_1 _ _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_Forall _UU0394_1 _ _ _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_Builtin _UU0394_1 _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_Lam _UU0394_1 _ _ _ _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_App _UU0394_1 _ _ _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_SOP _UU0394_1 _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1})
-    (\bX k0 s1 s2 _ iHstep _UU0394_0 _ hkind_T ->
-    case hkind_T of {
-     K_Var _UU0394_1 _ _ ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ __;
-     K_Fun _UU0394_1 _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_IFix _UU0394_1 _ _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_Forall _UU0394_1 x1 k1 t0 x2 ->
-      eq_rec_r _UU0394_0 (\_ ->
-        eq_rec_r bX (\_ ->
-          eq_rec_r k0 (\_ ->
-            eq_rec_r s1 (\_ h5 -> K_Forall _UU0394_0 bX k0 s2
-              (iHstep (Cons (Pair bX k0) _UU0394_0) Kind_Base h5)) t0) k1) x1
-          __ __) _UU0394_1 __ __ x2;
-     K_Builtin _UU0394_1 _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_Lam _UU0394_1 _ _ _ _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_App _UU0394_1 _ _ _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_SOP _UU0394_1 _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1})
-    (\bX k0 t1 t2 _ iHstep _UU0394_0 _ hkind_T ->
-    case hkind_T of {
-     K_Var _UU0394_1 _ _ ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ __;
-     K_Fun _UU0394_1 _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_IFix _UU0394_1 _ _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_Forall _UU0394_1 _ _ _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_Builtin _UU0394_1 _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_Lam _UU0394_1 x1 k1 t0 k2 x2 ->
-      eq_rec_r _UU0394_0 (\_ ->
-        eq_rec_r bX (\_ ->
-          eq_rec_r k0 (\_ ->
-            eq_rec_r t1 (\_ h5 -> K_Lam _UU0394_0 bX k0 t2 k2
-              (iHstep (Cons (Pair bX k0) _UU0394_0) k2 h5)) t0) k1) x1 __ __)
-        _UU0394_1 __ __ x2;
-     K_App _UU0394_1 _ _ _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_SOP _UU0394_1 _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1})
-    (\f1 f2 t0 _ iHstep _UU0394_0 _ hkind_T ->
-    case hkind_T of {
-     K_Var _UU0394_1 _ _ ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ __;
-     K_Fun _UU0394_1 _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_IFix _UU0394_1 f0 t1 k0 x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ ->
-        eq_rec_r f1 (\_ ->
-          eq_rec_r t0 (\_ h3 h5 -> K_IFix _UU0394_0 f2 t0 k0 h3
-            (iHstep _UU0394_0 (Kind_Arrow (Kind_Arrow k0 Kind_Base)
-              (Kind_Arrow k0 Kind_Base)) h5)) t1) f0 __) _UU0394_1 __ __ x1
-        x2;
-     K_Forall _UU0394_1 _ _ _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_Builtin _UU0394_1 _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_Lam _UU0394_1 _ _ _ _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_App _UU0394_1 _ _ _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_SOP _UU0394_1 _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1})
-    (\f0 t1 t2 _ _ iHstep _UU0394_0 _ hkind_T ->
-    case hkind_T of {
-     K_Var _UU0394_1 _ _ ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ __;
-     K_Fun _UU0394_1 _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_IFix _UU0394_1 f1 t0 k0 x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ ->
-        eq_rec_r f0 (\_ ->
-          eq_rec_r t1 (\_ h3 h5 -> K_IFix _UU0394_0 f0 t2 k0
-            (iHstep _UU0394_0 k0 h3) h5) t0) f1 __) _UU0394_1 __ __ x1 x2;
-     K_Forall _UU0394_1 _ _ _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_Builtin _UU0394_1 _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_Lam _UU0394_1 _ _ _ _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_App _UU0394_1 _ _ _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_SOP _UU0394_1 _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1})
-    (\tss_normal tss_sub_normal tss_sub1 tss_sub2 tss_sub_remainder tss_remainder _ _ _ _ _UU0394_0 _ hkind_T ->
-    case hkind_T of {
-     K_Var _UU0394_1 _ _ ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ __;
-     K_Fun _UU0394_1 _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_IFix _UU0394_1 _ _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_Forall _UU0394_1 _ _ _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_Builtin _UU0394_1 _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_Lam _UU0394_1 _ _ _ _ x1 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1;
-     K_App _UU0394_1 _ _ _ _ x1 x2 ->
-      eq_rec_r _UU0394_0 (\_ -> false_rec) _UU0394_1 __ __ x1 x2;
-     K_SOP _UU0394_1 tss x1 ->
-      eq_rec_r _UU0394_0 (\_ ->
-        eq_rec_r
-          (app tss_normal (Cons
-            (app tss_sub_normal (Cons tss_sub1 tss_sub_remainder))
-            tss_remainder)) (\_ _ ->
-          step_preserves_kinding_SOP_axiom
-            (app tss_normal (Cons
-              (app tss_sub_normal (Cons tss_sub2 tss_sub_remainder))
-              tss_remainder)) _UU0394_0) tss) _UU0394_1 __ __ x1}) t t' x0
-    _UU0394_ k x
+     None -> false_rec}) (\_ _ _ _ -> Inr __) t _UU0394_ k __
 
 type SN = Sn Ty Step
 
-sN_normalise :: Ty -> (List (Prod BinderName Kind)) -> Kind -> Has_kind -> SN
-                -> SigT Ty ()
-sN_normalise t _UU0394_ k hWK hSN =
-  sn_rec (\t0 _ h hWK0 ->
-    let {s0 = step_dec t0 _UU0394_ k hWK0} in
+sN_normalise :: Ty -> (List (Prod BinderTyname Kind)) -> Kind -> SN -> SigT
+                Ty ()
+sN_normalise t _UU0394_ k hSN =
+  sn_rec (\t0 _ h _ ->
+    let {s0 = step_dec t0 _UU0394_ k} in
     case s0 of {
      Inl s ->
       case s of {
        ExistT x s1 ->
-        let {ht'_kind = step_preserves_kinding t0 x _UU0394_ k hWK0 s1} in
-        let {h0 = h x s1 ht'_kind} in
-        case h0 of {
-         ExistT x0 _ -> ExistT x0 __}};
-     Inr _ -> ExistT t0 __}) t hSN hWK
+        let {h0 = h x s1 __} in case h0 of {
+                                 ExistT x0 _ -> ExistT x0 __}};
+     Inr _ -> ExistT t0 __}) t hSN __
 
-normaliser :: Ty -> (List (Prod BinderName Kind)) -> Kind -> Has_kind -> Ty
-normaliser t _UU0394_ k hwk =
-  let {hSN = plutus_ty_strong_normalization t _UU0394_ k hwk} in
-  projT1 (sN_normalise t _UU0394_ k hwk hSN)
+normaliser :: Ty -> (List (Prod BinderTyname Kind)) -> Kind -> Ty
+normaliser t _UU0394_ k =
+  let {hSN = plutus_ty_strong_normalization t _UU0394_ k} in
+  projT1 (sN_normalise t _UU0394_ k hSN)
 
 normaliser_Jacco :: (List (Prod BinderTyname Kind)) -> Ty -> Option Ty
 normaliser_Jacco _UU0394_ t =
   case kind_check _UU0394_ t of {
-   Some k -> Some
-    (normaliser t _UU0394_ k (kind_checking_sound _UU0394_ t k));
+   Some k -> Some (normaliser t _UU0394_ k);
    None -> None}
 
 map_normaliser :: (List (Prod (Prod String Ty) (List (Prod String Kind)))) ->

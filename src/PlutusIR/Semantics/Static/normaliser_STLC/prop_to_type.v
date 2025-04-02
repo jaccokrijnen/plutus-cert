@@ -25,14 +25,14 @@ Proof.
             * apply None.
 Defined.
 
-Lemma dec_complete : forall n m (pr : le_t n m), dec n m = Some pr -> le_t n m.
+Lemma dec_sound : forall n m (pr : le_t n m), dec n m = Some pr -> le_t n m.
 Proof.
     intros.
     destruct H.
     auto.
 Qed.
 
-Lemma dec_complete_none : forall n m, dec n m = None -> (le_p n m -> False).
+Lemma dec_sound_none : forall n m, dec n m = None -> (le_p n m -> False).
 Proof.
     intros n m Hdec Hle_p.
     induction Hle_p.
@@ -43,8 +43,8 @@ Theorem prop_to_type : forall n m, le_p n m -> le_t n m.
 Proof.
     intros n m H.
     destruct (dec n m) eqn:Heq.
-    - apply dec_complete in Heq. auto.
-    - exfalso. apply dec_complete_none in Heq; auto.
+    - apply dec_sound in Heq. auto.
+    - exfalso. apply dec_sound_none in Heq; auto.
 Qed.
 
 

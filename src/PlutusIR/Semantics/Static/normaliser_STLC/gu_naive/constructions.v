@@ -1066,7 +1066,33 @@ Proof.
 Qed.
 
 
-
+(* Fundamental property NC is trying to capture *)
+Lemma nc_helper {s sigma} :
+  (forall x, In x (btv s) -> ~ In x (ftv_keys_env sigma)) ->
+  NC s sigma.
+Proof.
+  intros Hnc_eq.
+  induction sigma.
+  - constructor.
+  - destruct a as [a1 a2].
+    constructor.
+    + intros.
+      apply IHsigma.
+      intros x Hbtv_s.
+      specialize (Hnc_eq x Hbtv_s).
+      simpl in Hnc_eq.
+      rewrite de_morgan2 in Hnc_eq.
+      destruct Hnc_eq as [_ Hnc_eq].
+      apply not_in_app in Hnc_eq as [_ Hnc_eq].
+      auto.
+    + intros x Hbtv_s.
+      specialize (Hnc_eq x Hbtv_s).
+      simpl in Hnc_eq.
+      rewrite de_morgan2 in Hnc_eq.
+      destruct Hnc_eq as [H_n_a1_x Hnc_eq].
+      apply not_in_app in Hnc_eq as [Hnc_eq _].
+      auto.
+Qed.
 
 
 
@@ -1285,23 +1311,81 @@ Proof.
     eapply alpha_preserves_ftv; eauto with α_eq_db.
 Qed.
 
+Lemma sconstr2_preserves_ftv_p x0 t x p s s' t' p' :
+  (s', t', p') = sconstr2 x0 t x p s ->
+  forall y, In y (ftv p') -> In y (ftv p).
+Proof.
+  intros.
+  unfold sconstr2 in H.
+  inv H.
+  remember (map (fun x1 : string => (x1, x1))
+    (ftv t ++ ftv p ++ ftv s ++ [x0; x])) as R.
+  remember ((to_GU_ (ftv t ++ ftv p ++ ftv s ++ [x0; x]) R p).2 
+    ) as p'.
+  assert (R ⊢ p ~ p').
+  - rewrite Heqp'.
+    eapply to_GU__alpha_.
+    + apply IdCtx__KindOfUniqueRhs.
+      subst.
+      apply map_creates_IdCtx.
+    + intros.
+      exists x1.
+      subst.
+      apply in_generator_then_in_id_map. auto.
+      apply in_app_iff. right. apply in_app_iff. left. auto.
+  - assert ([] ⊢ p ~ p').
+    {
+      eapply alpha_weaken_ids with (idCtx := R); eauto.
+      rewrite HeqR.
+      apply map_creates_IdCtx.
+    }
+    eapply alpha_preserves_ftv; eauto with α_eq_db.
+Qed.
+
 Lemma sconstr2_fresh_over_x0 y x0 t x p s s' t' p' :
   (s', t', p') = sconstr2 x0 t x p s ->
-  In y (btv s') ->
+  ((In y (btv s')) \/  In y (btv t') \/ In y (btv p')) ->
   y <> x0 /\ y <> x.
 Proof.
   intros.
-  inversion H; clear H3; clear H4.
+  inversion H.
   remember (to_GU_ _ _ s) as GU_s.
-  destruct GU_s as [ [used_s binders_s] s''].
-  inv H2.
-  simpl in H0.
-  assert (~ In y  (ftv t ++ ftv p ++ ftv s ++ [x0; x])).
-    { eapply no_binder_used; eauto. }
-  repeat apply not_in_app in H1 as [_ H1].
-  apply not_in_cons in H1 as [H1 H2]; auto.
-  apply not_in_cons in H2 as [H2 _].
-  split; auto.
+  destruct H0 as [H0_s' | [H0_t' | H0_p'] ].
+  {
+    destruct GU_s as [ [used_s binders_s] s''].
+    inv H2.
+    simpl in H0_s'.
+    assert (~ In y  (ftv t ++ ftv p ++ ftv s ++ [x0; x])).
+      { eapply no_binder_used; eauto. }
+    repeat apply not_in_app in H0 as [_ H0].
+    apply not_in_cons in H0 as [H0 H2]; auto.
+    apply not_in_cons in H2 as [H2 _].
+    split; auto.
+  }
+  {
+    remember (to_GU_ _ _ t) as GU_t.
+    destruct GU_t as [ [used_t binders_t] t''].
+    inv H2.
+    simpl in H0_t'.
+    assert (~ In y  (ftv t ++ ftv p ++ ftv s ++ [x0; x])).
+      { eapply no_binder_used; eauto. }
+    repeat apply not_in_app in H0 as [_ H0].
+    apply not_in_cons in H0 as [H0 H2]; auto.
+    apply not_in_cons in H2 as [H2 _].
+    split; auto.
+  }
+  {
+    remember (to_GU_ _ _ p) as GU_p.
+    destruct GU_p as [ [used_p binders_p] p''].
+    inv H2.
+    simpl in H0_p'.
+    assert (~ In y  (ftv t ++ ftv p ++ ftv s ++ [x0; x])).
+      { eapply no_binder_used; eauto. }
+    repeat apply not_in_app in H0 as [_ H0].
+    apply not_in_cons in H0 as [H0 H2]; auto.
+    apply not_in_cons in H2 as [H2 _].
+    split; auto.
+  }
 Qed.
 
 Lemma sconstr2_nc_s_t x0 t x p s s' t' p' :
@@ -1327,7 +1411,22 @@ Qed.
 Lemma sconstr2_nc_t x0 t x p s s' t' p' :
   (s', t', p') = sconstr2 x0 t x p s ->
   NC t' ((x, p')::nil).
-Admitted.
+Proof.
+  intros.
+  constructor. constructor.
+  intros.
+  split.
+  - eapply sconstr2_fresh_over_x0 in H as [_ Hnot_x].  eauto. right. auto.
+  - intros Hcontra.
+    assert (In y (ftv p)).
+    { eapply sconstr2_preserves_ftv_p; eauto. }
+    inversion H.
+    remember (to_GU_ _ _ t) as GU_t.
+    destruct GU_t as [ [used_t binders_t] t''].
+    inv H4.
+    eapply no_binder_used; eauto.
+    apply in_app_iff. right. apply in_app_iff. left. auto.
+Qed.
 
 (* We have control over all binders in s' and p' and subs does not introduce new binders,
   hence we can create a construction that satisfies this*)
@@ -1335,13 +1434,57 @@ Lemma sconstr2_nc_sub x0 t x p s s' t' p' :
   (s', t', p') = sconstr2 x0 t x p s ->
   NC (psubs ((x, p')::nil) s') ((x0, (psubs ((x, p')::nil) t'))::nil).
 Proof.
-  (*
-    We have to prove that no binder in p'++s' occurs free in x ++ x0 ++ p' ++ t'
-
-    then by sub does nto introduce new binders, and does not introduce new free variables, we are done
-  
-  *)
-Admitted.
+  intros.
+  constructor. constructor.
+  intros.
+  apply in_btv_psubs_then_in_constituents in H0 as [H_btv_s' | H_btv_p'].
+  - split.
+    + eapply sconstr2_fresh_over_x0 in H as [Hnot_x0 Hnot_x]; eauto.
+    + apply not_in_constitutents_then_not_in_ftv_psubs.
+      * intros Hcontra.
+        assert (In y (ftv t)).
+        { eapply sconstr2_preserves_ftv_t; eauto. }
+        inversion H.
+        remember (to_GU_ _ _ s) as GU_s.
+        destruct GU_s as [ [used_s binders_s] s''].
+        inv H2.
+        eapply no_binder_used; eauto.
+        apply in_app_iff. left. auto.
+      * simpl. rewrite app_nil_r.
+        intros Hcontra.
+        assert (In y (ftv p)).
+        { eapply sconstr2_preserves_ftv_p; eauto. }
+        inversion H.
+        remember (to_GU_ _ _ s) as GU_s.
+        destruct GU_s as [ [used_s binders_s] s''].
+        inv H4.
+        eapply no_binder_used; eauto.
+        apply in_app_iff. right. apply in_app_iff. left. auto.
+  - destruct H_btv_p' as [p'' [H_eq H_btv_p'] ].
+    inversion H_eq; try contradiction. simpl in H0. subst.
+    split.
+    + eapply sconstr2_fresh_over_x0 in H as [Hnot_x0 Hnot_x]; eauto.
+    + apply not_in_constitutents_then_not_in_ftv_psubs.
+      * intros Hcontra.
+        assert (In y (ftv t)).
+        { eapply sconstr2_preserves_ftv_t; eauto. }
+        inversion H.
+        remember (to_GU_ _ _ p) as GU_p.
+        destruct GU_p as [ [used_p binders_p] p'''].
+        inv H4.
+        eapply no_binder_used; eauto.
+        apply in_app_iff. left. auto.
+      * simpl. rewrite app_nil_r.
+        intros Hcontra.
+        assert (In y (ftv p)).
+        { eapply sconstr2_preserves_ftv_p; eauto. }
+        inversion H.
+        remember (to_GU_ _ _ p) as GU_p.
+        destruct GU_p as [ [used_p binders_p] p'''].
+        inv H4.
+        eapply no_binder_used; eauto.
+        apply in_app_iff. right. apply in_app_iff. left. auto.
+Qed.
 
 Opaque sconstr2.
 
@@ -1506,6 +1649,11 @@ Lemma lookup_r_cons_helper (R : list (string * string)) s s' x y :
   lookup_r s' ((x, y)::R) = Some s -> y <> s' -> lookup_r s' R = Some s.
 Admitted.
 
+Lemma lookup_r__app {A :Type} (k : string ) (v : A) (l1 l2 : list (A * string)) :
+  lookup_r k l1 = Some v -> lookup_r k (l1 ++ l2) = Some v.
+Proof.
+Admitted.
+
 Require Import Coq.Lists.List.
 Require Import Coq.Lists.ListDec.
 Import ListNotations.
@@ -1575,6 +1723,11 @@ Proof.
         rewrite H4.
         eapply IHR; eauto.    
 Qed.
+
+Lemma strip_R_lookup_some_not_removed R x y:
+  lookup x (strip_R R) = Some y -> In y (map snd R).
+Proof.
+Admitted.
 
 (* this is basically saying inclusion*)
 Lemma strip_R_lookup_none_helper R x LHS RHS:
@@ -1680,7 +1833,6 @@ Proof.
   auto.
 Qed.
 
-(* NOT DIFFICULT *)
 Lemma lookup_none_then_alpharefl R s :
   lookup s R = None -> lookup_r s R = None -> AlphaVar R s s.
 Proof.
@@ -1889,7 +2041,67 @@ Definition a_R_constr R (s s' : term) t : list (string * string) :=
   let Rfr := freshen2 used to_freshen in
   Rfr ++ (strip_R R).
 
-Lemma a_R_constr_UniqueRHS R R' s s' t :
+(* Must ahve implies, since alphavar does not imply that x and y in R.*)
+Lemma av_lookup_implies_right R x y :
+  AlphaVar R x y -> (lookup x R = Some y -> lookup_r y R = Some x).
+Proof.
+(*SEE alphavar_lookup_helper *)
+
+Admitted.
+
+Lemma KindOfUniqueRhsFreshMultiple used R l : 
+  KindOfUniqueRhs R -> KindOfUniqueRhs ((freshen2 (used ++ map fst R ++ map snd R) l ) ++ R).
+Proof.
+  unfold freshen.
+  induction l.
+  - simpl. auto.
+  - intros.
+    unfold freshen2.
+    change (a :: l) with ([a] ++ l).
+    rewrite fold_right_app.
+    simpl.
+    remember ((fold_right
+        (fun (x : string) (acc : list (string * string)) =>
+      (x,
+      fresh_to_GU_ (used ++ map fst R ++ map snd R) acc x)
+      :: acc)
+        []
+        l)) as R''.
+    unfold freshen2 in IHl.
+    rewrite <- HeqR'' in IHl.
+    specialize (IHl H).
+    change ((a, fresh_to_GU_ (used ++ map fst R ++ map snd R) R'' a) :: R'' ++ R) with ((a, fresh_to_GU_ (used ++ map fst R ++ map snd R) R'' a) :: (R'' ++ R)).
+
+    eapply KindOfUniqueRhsFresh; auto.
+    intros.
+    rewrite map_app in H0.
+    apply in_app_iff in H0.
+    rewrite map_app in H0.
+    destruct H0.
+    + apply in_app_iff in H0.
+      destruct H0; intuition.
+    + apply in_app_iff in H0.
+      destruct H0; intuition.
+Qed.
+
+Lemma freshen2__fresh {used x } {l : list (string)} {y : string} :
+  In (x, y) (freshen2 used l) -> ~ In y used.
+Admitted.
+
+Lemma freshen2__fresh_map_snd {used l } {y : string } :
+  In y (map snd (freshen2 used l)) -> ~ In y used.
+Proof.
+Admitted.
+
+Lemma not_ex__lookup_r_none (R : list (string * string)) y :
+  ~ In y (map snd R) -> lookup_r y R = None.
+Admitted.
+
+Lemma lookup_r__extend y t (R1 R2 : list (string * string)) :
+   (lookup_r y R1 = None) -> (lookup_r y R2 = Some t) -> lookup_r y (R1 ++ R2) = Some t.
+Admitted.
+
+Lemma a_R_constr_KindOfUniqueRHS R R' s s' t :
   R' = @a_R_constr R s s' t ->
   KindOfUniqueRhs R'.
 Proof.
@@ -1899,8 +2111,35 @@ Proof.
   unfold a_R_constr in H.
   remember (freshen2 _ _) as Rfr.
   rewrite H in H0.
-  apply lookup_app_or in H0 as [H_in_fresh | H_in_strip].
-  - admit.
+  remember H0 as H0'.
+  clear HeqH0'.
+  apply lookup_app_or_extended in H0 as [H_in_fresh | [H_ni_fresh H_in_strip] ].
+  - assert (lookup_r y (Rfr ++ strip_R R) = Some x).
+    {
+      apply lookup_r__app.
+      clear H0'.
+      assert (KindOfUniqueRhs Rfr).
+      {
+        subst.
+        rewrite <- app_nil_r.
+        remember (tv s ++
+            tv s' ++ tv t ++ map fst R ++ map snd R) as used.
+        assert((used) = (used ++ (map fst (nil : list (string * string))) ++ (map snd (nil : list (string * string))))).
+        {
+          rewrite app_nil_r. auto.
+        }
+        rewrite H.
+        eapply KindOfUniqueRhsFreshMultiple with (R := nil); eauto.
+        unfold KindOfUniqueRhs.
+        intros.
+        inversion H0.
+      }
+      unfold KindOfUniqueRhs in H0.
+      specialize (H0 x y H_in_fresh).
+      apply av_lookup_implies_right. auto. auto.
+    }
+    rewrite H.
+    eapply lookup_some_then_alphavar; eauto.
   - 
     assert (AlphaVar (strip_R R) x y).
     {
@@ -1908,21 +2147,51 @@ Proof.
       unfold KindOfUniqueRhs in H0.
       eapply H0; eauto.
     }
-    (* now we also have to conclude still that then x y cannot occur in Rfr*)
-  (* 
-    Rfr:
-      all fresh, so no clash, so lookup y (swap R') = x (y (by freshness) cannot have occured before)
-    R:
-      suppose x in (strip_R R). Then the y that we find cannot be in rhs Rfr by freshness.
-      Hence that is also in R. Hence we can forget about Rfr for now.
+    assert (lookup x R' = Some y).
+    {
+      subst. auto.
+    }
+    assert (lookup_r y R' = Some x).
+    {
+      assert (lookup_r y Rfr = None).
+      {
+        assert (In y (map snd R)).
+        {
+          eapply strip_R_lookup_some_not_removed. eauto.
+        }
+        assert (In y ((tv s ++
+            tv s' ++
+            tv t ++
+            map fst R ++
+            map snd R))).
+        {
 
-      We need to prove lookup y (swap R') = Some x.
-
-      suppose lookup y (swap R') = z <> x. Then (z, y) is in front of (x, y) inside of R'. not possible by
-        strip_R: that would not have allowed (x, y) to be added, since y is then already in the rhs.
-      certainly not by vacuous faulty stuff in front of R that has no effect on s.
-  *)
-Admitted.
+          apply in_app_iff. right. apply in_app_iff. right. apply in_app_iff. right. apply in_app_iff. right. auto.
+        }
+            remember ((tv s ++
+              tv s' ++
+              tv t ++
+              map fst R ++
+              map snd R)) as used.
+        assert (~ In y (map snd Rfr)).
+        {
+          rewrite HeqRfr.
+          intros Hcontra.
+          eapply freshen2__fresh_map_snd in Hcontra.
+          contradiction.
+        }
+        apply not_ex__lookup_r_none. auto.
+      }
+      subst.
+      eapply lookup_r__extend.
+      + auto.
+      + apply alphavar_lookup_helper in H0.
+        destruct H0.
+        * destruct p. auto.
+        * destruct p. destruct p. rewrite e0 in H_in_strip. inversion H_in_strip.
+    }
+    eapply lookup_some_then_alphavar; eauto.
+Qed.
 
 Definition a_constr {R} {s s' : term} t : prod (list (string * string)) (term) :=
   let R' := @a_R_constr R s s' t in
@@ -1940,10 +2209,10 @@ Proof.
   apply strip_R_preserves_alpha in H0.
   rewrite H.
   eapply alpha_vacuous_R.
-  intros.
-  - split.
-    + (* x not in ftv s  by list_diff*) admit.
-    + (* x' not in ftv s' by all ftv s' used in construction of fresh vars, and x' is a fresh var *) admit.
+  - intros. (* x not in ftv s  by list_diff*) admit.
+  - intros.
+    (* x' not in ftv s' by all ftv s' used in 
+      construction of fresh vars, and x' is a fresh var *) admit.
   - auto.
 Admitted.
 
@@ -2014,8 +2283,8 @@ Lemma fold_right_helper used  l y :
   In y (map fst (freshen2 used l)).
 Admitted.
 
-Lemma in_freshen2_then_in_generator used l x y :
-  In (x, y) (freshen2 used l) -> In x l.
+Lemma in_freshen2_then_in_generator used l x :
+  In x (map fst (freshen2 used l)) -> In x l.
 Admitted.
 
 Lemma map_pair_helper {A : Type} (x : string) l (f : A) :
@@ -2044,9 +2313,9 @@ Proof.
   intros.
   inversion H.
   apply to_GU__alpha_'.
-  - eapply a_R_constr_UniqueRHS. eauto.
+  - eapply a_R_constr_KindOfUniqueRHS. eauto.
   - intros.
-    assert (KindOfUniqueRhs R') by (eapply a_R_constr_UniqueRHS; eauto).
+    assert (KindOfUniqueRhs R') by (eapply a_R_constr_KindOfUniqueRHS; eauto).
     rewrite <- H2.
     apply lookup_none_then_no_key in H4.
 
@@ -2176,6 +2445,27 @@ Definition R_constr (t : term) (s : term) (sigma : list (string * term)) (X : st
   (* we rename those ftvs in t that are binders in s and sigma*)
   (R1, R2). 
 
+Lemma R_constr_freshen_helper {t s sigma X R1 R2} :
+  (R1, R2) = R_constr t s sigma X ->
+  forall x, In x (map fst R1) -> sum (In x (btv s)) (In x (btv_env sigma)).
+Proof.
+Admitted.
+
+Lemma R_constr_freshen_fresh_over_sigma {t s sigma X R1 R2} :
+  (R1, R2) = R_constr t s sigma X ->
+  forall x, In x (map snd R1) -> (~ In x (ftv_keys_env sigma)).
+Proof.
+Admitted.
+
+Lemma R_constr_R2_IdCtx {t s sigma X R1 R2} :
+  (R1, R2) = R_constr t s sigma X ->
+  IdCtx R2.
+Proof.
+  intros Hconstr.
+  unfold R_constr in Hconstr.
+  inversion Hconstr; clear Hconstr H0 H1.
+  apply map_creates_IdCtx.
+Qed.
 
 Definition t_constr (t : term) (s : term) (sigma : list (string * term)) (X : string) : prod term (list (string * string)) :=
   let tvs := tv s ++ tv_keys_env sigma in
@@ -2219,41 +2509,6 @@ Proof.
     apply in_app_iff.
     left.
     auto.
-Qed.
-
-Lemma KindOfUniqueRhsFreshMultiple used R l : 
-  KindOfUniqueRhs R -> KindOfUniqueRhs ((freshen2 (used ++ map fst R ++ map snd R) l ) ++ R).
-Proof.
-  unfold freshen.
-  induction l.
-  - simpl. auto.
-  - intros.
-    unfold freshen2.
-    change (a :: l) with ([a] ++ l).
-    rewrite fold_right_app.
-    simpl.
-    remember ((fold_right
-        (fun (x : string) (acc : list (string * string)) =>
-      (x,
-      fresh_to_GU_ (used ++ map fst R ++ map snd R) acc x)
-      :: acc)
-        []
-        l)) as R''.
-    unfold freshen2 in IHl.
-    rewrite <- HeqR'' in IHl.
-    specialize (IHl H).
-    change ((a, fresh_to_GU_ (used ++ map fst R ++ map snd R) R'' a) :: R'' ++ R) with ((a, fresh_to_GU_ (used ++ map fst R ++ map snd R) R'' a) :: (R'' ++ R)).
-
-    eapply KindOfUniqueRhsFresh; auto.
-    intros.
-    rewrite map_app in H0.
-    apply in_app_iff in H0.
-    rewrite map_app in H0.
-    destruct H0.
-    + apply in_app_iff in H0.
-      destruct H0; intuition.
-    + apply in_app_iff in H0.
-      destruct H0; intuition.
 Qed.
 
 Lemma R_constr_contains_all_t_ftvs {t s sigma X R1 R2} :
@@ -2302,10 +2557,6 @@ Lemma t_constr__fresh_btv_env_sigma__ftv_t' {t t' R s sigma X} :
   (forall Y, In Y (btv_env sigma) -> ~ In Y (ftv t')).
 Admitted.
 
-Lemma freshen2__fresh {used l x y} :
-  In (x, y) (freshen2 used l) -> ~ In y used.
-Admitted.
-
 Lemma R_constr__a_s {R1 R2 t s sigma X} :
   GU s ->
   Uhm sigma s ->
@@ -2315,24 +2566,24 @@ Proof.
   intros HGU H H0.
   apply alpha_vacuous_R.
   - intros.
-    split.
-    + unfold Uhm in H.
-      destruct H as [ [uhm1 _] _].
-      intros Hcontra.
-      remember Hcontra as Hcontra2; clear HeqHcontra2.
-      apply extend_ftv_to_tv in Hcontra.
-      apply uhm1 in Hcontra; auto.
-      unfold R_constr in H0.
-      inv H0.
-      apply in_freshen2_then_in_generator in H1.
-      apply in_app_or in H1.
-      destruct H1.
-      * apply gu_ftv_then_no_btv in H. contradiction. auto. auto.
-      * auto. 
-    + (* x' is specifically in R1, which only contains fresh vars (over s)*)
+    unfold Uhm in H.
+    destruct H as [ [uhm1 _] _].
+    intros Hcontra.
+    remember Hcontra as Hcontra2; clear HeqHcontra2.
+    apply extend_ftv_to_tv in Hcontra.
+    apply uhm1 in Hcontra; auto.
+    unfold R_constr in H0.
+    inv H0.
+    apply in_freshen2_then_in_generator in H1.
+    apply in_app_or in H1.
+    destruct H1.
+    * apply gu_ftv_then_no_btv in H. contradiction. auto. auto.
+    * auto. 
+   - (* x' is specifically in R1, which only contains fresh vars (over s)*)
        unfold R_constr in H0.
-      inv H0.
-      apply freshen2__fresh in H1.
+      inv H0. intros.
+      apply freshen2__fresh_map_snd in H0.
+      rename H0 into H1.
       apply not_in_app in H1 as [H1 _].
       apply not_in_app in H1 as [_ H1].
       apply not_in_app in H1 as [H1 _].
@@ -2367,17 +2618,29 @@ Lemma R_constr__a_sigma {R1 R2 t s sigma X} :
   αCtxSub (R1 ++ R2) sigma sigma.
 Proof.
   intros.
-  unfold Uhm in H.
-  (* R2 is idenity again.
-     R1 by uhm1 and uhm2: if it is in R1, then it is either in btv_env sigma or btv s, in both cases it is not in ftv_keys_env sigma, and we have vacuous_sub_ctx
-  *)
-Admitted.
+  destruct H as [ [Uhm1 Uhm2] Uhm3].
+  apply αctx_sub_extend_ids_right.
+  + eapply R_constr_R2_IdCtx; eauto.
+  + apply αctx_vacuous_R.
+    * intros.
+      apply R_constr_freshen_helper with (x := x) in H0; auto.
+      destruct H0 as [H01 | H02]; auto.
+    * intros.
+      apply R_constr_freshen_fresh_over_sigma with (x := x') in H0; auto.
+    * apply alpha_ctx_ren_nil.
+Qed.
 
 Lemma t_constr__a_sigma {t t' R s sigma X} :
+  Uhm sigma s ->
   (t', R) = t_constr t s sigma X ->
   αCtxSub R sigma sigma.
-(* Analogous to bove I think *)
-Admitted.
+Proof.
+  unfold t_constr.
+  destruct (R_constr t s sigma X) as [R1 R2] eqn:Rconstr.
+  intros Huhm Hconstr.
+  inversion Hconstr. clear H0. clear Hconstr.
+  eapply R_constr__a_sigma; eauto.
+Qed.
 
 Lemma t_constr__uhm1 {t' R t s sigma X} :
   (t', R) = t_constr t s sigma X ->
@@ -2699,34 +2962,6 @@ Proof.
     apply id_map_helper. auto.
   - intros. (* x in tv s, then also x in supserset of tv s*)
     intuition.
-Qed.
-
-(* Fundamental property NC is trying to capture *)
-Lemma nc_helper {s sigma} :
-  (forall x, In x (btv s) -> ~ In x (ftv_keys_env sigma)) ->
-  NC s sigma.
-Proof.
-  intros Hnc_eq.
-  induction sigma.
-  - constructor.
-  - destruct a as [a1 a2].
-    constructor.
-    + intros.
-      apply IHsigma.
-      intros x Hbtv_s.
-      specialize (Hnc_eq x Hbtv_s).
-      simpl in Hnc_eq.
-      rewrite de_morgan2 in Hnc_eq.
-      destruct Hnc_eq as [_ Hnc_eq].
-      apply not_in_app in Hnc_eq as [_ Hnc_eq].
-      auto.
-    + intros x Hbtv_s.
-      specialize (Hnc_eq x Hbtv_s).
-      simpl in Hnc_eq.
-      rewrite de_morgan2 in Hnc_eq.
-      destruct Hnc_eq as [H_n_a1_x Hnc_eq].
-      apply not_in_app in Hnc_eq as [Hnc_eq _].
-      auto.
 Qed.
 
 Lemma s_constr__nc_s {s s' sigma} :

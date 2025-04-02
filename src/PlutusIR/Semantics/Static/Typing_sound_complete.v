@@ -9,8 +9,8 @@ Local Open Scope string_scope.
 From PlutusCert Require Import 
     Normalisation.Normalisation 
     Norm_sound_complete
-    Static.Typing_Set
     PlutusIR 
+    Static.Typing
     Util.List
     Static.Util
     Equality

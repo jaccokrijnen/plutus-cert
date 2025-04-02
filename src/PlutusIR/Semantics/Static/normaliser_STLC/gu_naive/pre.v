@@ -174,6 +174,16 @@ Lemma subs_does_not_create_btv sigma x s :
   ~ In x (btv s) -> ~ In x (btv_env sigma) -> ~ In x (btv (subs sigma s)).
 Admitted.
 
+Lemma in_btv_psubs_then_in_constituents x sigma s :
+  In x (btv (psubs sigma s)) -> In x (btv s) \/ (exists t, In t (map snd sigma) /\ In x (btv t)).
+Proof.
+Admitted.
+
+Lemma not_in_constitutents_then_not_in_ftv_psubs x sigma s :
+  ~ In x (ftv s) -> ~ In x (flat_map ftv (map snd sigma)) -> ~ In x (ftv (psubs sigma s)).
+Proof.
+Admitted.
+
 Lemma btv_env_subset a sigma' sigma :
   incl sigma' sigma ->
   ~ In a (btv_env sigma) -> ~ In a (btv_env sigma').

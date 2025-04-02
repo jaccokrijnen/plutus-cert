@@ -173,11 +173,76 @@ Proof.
           reflexivity. 
 Qed.
 
+(* Identical to the above, but for Set*)
+Theorem kind_checking_sound_set : forall Delta ty kind,
+    kind_check Delta ty = Some kind -> has_kind_set Delta ty kind.
+Proof.
+    intros Delta ty. generalize dependent Delta.
+    induction ty; intros Delta kind Htc; inversion Htc.
+    - (* Var *) 
+      apply K_Var_set.
+      assumption.
+    - (* Ty_Fun *) 
+      repeat destruct_match.
+      inversion H0.
+      subst kind.
+      apply K_Fun_set; 
+      [apply IHty1| apply IHty2]; 
+      assumption.
+    - (* Ty_IFix *) 
+      repeat destruct_match.
+      inversion H0.
+      subst kind.
+      remember (kind_check Delta ty2) as K.
+      apply K_IFix_set with (K := k). 
+      + apply IHty2.
+        rewrite <- HeqK.
+        assumption.
+      + apply IHty1.
+        apply andb_true_iff in Heqb.
+        destruct Heqb as [eqb1 eqb2].
+        apply Kind_eqb_eq in eqb1.
+        apply Kind_eqb_eq in eqb2.
+        subst...
+        assumption.
+    - (* Ty_Forall *)
+      repeat destruct_match.
+      inversion H0.
+      
+      apply K_Forall_set.
+      apply IHty.
+      assumption.
+    - (* Ty_Builtin *)
+      repeat destruct_match; subst.
+      inversion H0; subst.
+      apply kind_checking_default_uni_sound in Heqo.
+      apply K_Builtin_set.
+      assumption.
+    - (* Ty_Lam *)
+      destruct_match.
+      inversion H0.
+      apply K_Lam_set. 
+      apply IHty.
+      assumption.
+    - (* Ty_App *) 
+      remember (kind_check Delta ty2) as K1.
+      destruct K1 as [k1|]; repeat destruct_match.
+      apply K_App_set with (K1 := k1).  
+        + apply IHty1.
+          inversion H0.
+          apply Kind_eqb_eq in Heqb.
+          subst.
+          assumption.
+        + apply IHty2.
+          rewrite HeqK1.
+          reflexivity. 
+Qed.
+
 
 Theorem kind_checking_complete : forall (Delta : list (binderTyname * kind)) (ty : ty) (kind : kind),
     has_kind Delta ty kind -> kind_check Delta ty = Some kind.
 Proof.
-    (* intros Delta ty kind Hkind.
+    intros Delta ty kind Hkind.
     induction Hkind; simpl.
     - (* Var *)
       apply H.
@@ -191,18 +256,28 @@ Proof.
       rewrite -> Kind_eqb_refl.
       reflexivity.
     - (* Ty_Forall *)
-      rewrite -> IHHkind.
-      reflexivity.
+      rewrite IHHkind.
+      auto.
     - (* Ty_Builtin *)
       apply kind_checking_default_uni_complete in H.
       rewrite -> H.
       reflexivity.
     - (* Ty_Lam *)
-      rewrite -> IHHkind.
-      reflexivity.
+      rewrite IHHkind.
+      auto.
     - (* Ty_App *) 
       rewrite -> IHHkind1. 
       rewrite -> IHHkind2. 
       rewrite -> Kind_eqb_refl. 
-      reflexivity. *)
+      reflexivity.
+    - (* Ty_SOP: Unimplemented *)
+      admit.
 Admitted.
+
+Theorem prop_to_type : forall Δ T K, has_kind Δ T K -> has_kind_set Δ T K.
+Proof.
+    intros Δ T K Hhk.
+    apply kind_checking_complete in Hhk. (* we cannot destruct on kind_check Δ T, because then we get some arbirtary kind*)
+    apply kind_checking_sound_set in Hhk.
+    auto.
+Qed.

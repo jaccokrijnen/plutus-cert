@@ -136,7 +136,7 @@ Proof.
         - right. constructor. constructor.
           + inversion n. assumption.
           + assumption.
-        - inversion Heqo.
+        - apply Checker.prop_to_type in Heqo. inversion Heqo.
         }
   - right. apply step_dec_SOP. (* TODO: Different induction prniciple! *)
 Qed.

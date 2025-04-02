@@ -124,6 +124,20 @@ Lemma lookup_app_or {A : Type} y t (R1 R2 : list (string * A)) :
   lookup y (R1 ++ R2) = Some t -> sum (lookup y R1 = Some t) (lookup y R2 = Some t).
 Admitted.
 
+Lemma lookup_app_or_extended {A : Type} y t (R1 R2 : list (string * A)) :
+  lookup y (R1 ++ R2) = Some t -> sum (lookup y R1 = Some t) (prod (lookup y R1 = None) (lookup y R2 = Some t)).
+Proof.
+  intros Happ.
+  induction R1.
+  + simpl in Happ. right. split; auto.
+  + destruct a as [a1 a2].
+    destr_eqb_eq y a1.
+    * left. simpl. rewrite String.eqb_refl. simpl in Happ. rewrite String.eqb_refl in Happ. auto.
+    * simpl. rewrite <- String.eqb_neq in H. rewrite String.eqb_sym in H. rewrite H.
+      eapply IHR1.
+      simpl in Happ. rewrite H in Happ. auto.
+Qed.
+
 Lemma not_existsb_not_in y U' : 
   existsb (eqb y) (ftv U') = false -> ~ In y (ftv U').
 Proof.

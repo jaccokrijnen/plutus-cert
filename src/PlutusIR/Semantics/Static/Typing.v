@@ -142,7 +142,7 @@ Proof.
     reflexivity.
 Qed.
 
-Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty -> Prop :=
+Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty -> Type :=
   (* Simply typed lambda caclulus *)
   | T_Var : forall Γ Δ x T Tn K,
       lookup x Γ = Coq.Init.Datatypes.Some T ->
@@ -237,7 +237,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
 (* Constructors are well-formed if their result type equals the fully applied
  * datatype (e.g. Either a b), and all parameter types are well-kinded
 *)
-with constructor_well_formed : list (string * kind) -> vdecl -> ty -> Prop :=
+with constructor_well_formed : list (string * kind) -> vdecl -> ty -> Type :=
   | W_Con : forall Δ x T Targs Tr Tres,
       (Targs, Tres) = splitTy T ->
       (* We don't check the well-kindedness of Tres, this happens in
@@ -246,7 +246,7 @@ with constructor_well_formed : list (string * kind) -> vdecl -> ty -> Prop :=
       Tres = Tr ->
       Δ |-ok_c (VarDecl x T) : Tr
 
-with bindings_well_formed_nonrec : list (string * kind) -> list (string * ty) -> list binding -> Prop :=
+with bindings_well_formed_nonrec : list (string * kind) -> list (string * ty) -> list binding -> Type :=
   | W_NilB_NonRec : forall Δ Γ,
       Δ ,, Γ |-oks_nr nil
   | W_ConsB_NonRec : forall Δ Γ b bs bsGn,
@@ -255,7 +255,7 @@ with bindings_well_formed_nonrec : list (string * kind) -> list (string * ty) ->
       ((binds_Delta b) ++ Δ) ,, (bsGn ++ Γ) |-oks_nr bs ->
       Δ ,, Γ |-oks_nr (b :: bs)
 
-with bindings_well_formed_rec : list (string * kind) -> list (string * ty) -> list binding -> Prop :=
+with bindings_well_formed_rec : list (string * kind) -> list (string * ty) -> list binding -> Type :=
   | W_NilB_Rec : forall Δ Γ,
       Δ ,, Γ |-oks_r nil
   | W_ConsB_Rec : forall Δ Γ b bs,
@@ -263,7 +263,7 @@ with bindings_well_formed_rec : list (string * kind) -> list (string * ty) -> li
       Δ ,, Γ |-oks_r bs ->
       Δ ,, Γ |-oks_r (b :: bs)
 
-with binding_well_formed : list (string * kind) -> list (string * ty) -> recursivity -> binding -> Prop :=
+with binding_well_formed : list (string * kind) -> list (string * ty) -> recursivity -> binding -> Type :=
   | W_Term : forall Δ Γ s x T t Tn rec,
       Δ |-* T : Kind_Base ->
       normalise T Tn ->
@@ -306,11 +306,11 @@ with binding_well_formed : list (string * kind) -> list (string * ty) -> recursi
   and "Δ ',,' Γ '|-oks_r' bs" := (bindings_well_formed_rec Δ Γ bs)
   and "Δ ',,' Γ '|-ok_b' rec ## b" := (binding_well_formed Δ Γ rec b).
 
-Scheme has_type__ind := Minimality for has_type Sort Prop
-  with constructor_well_formed__ind := Minimality for constructor_well_formed Sort Prop
-  with bindings_well_formed_nonrec__ind := Minimality for bindings_well_formed_nonrec Sort Prop
-  with bindings_well_formed_rec__ind := Minimality for bindings_well_formed_rec Sort Prop
-  with binding_well_formed__ind := Minimality for binding_well_formed Sort Prop.
+Scheme has_type__ind := Minimality for has_type Sort Type
+  with constructor_well_formed__ind := Minimality for constructor_well_formed Sort Type
+  with bindings_well_formed_nonrec__ind := Minimality for bindings_well_formed_nonrec Sort Type
+  with bindings_well_formed_rec__ind := Minimality for bindings_well_formed_rec Sort Type
+  with binding_well_formed__ind := Minimality for binding_well_formed Sort Type.
 
 Combined Scheme has_type__multind from
   has_type__ind,
@@ -349,9 +349,9 @@ Proof.
     {
       simpl. unfold fromDecl. fold fromDecl. destruct a. simpl. intuition.
     } 
-    rewrite <- Hr_rev.
-    auto.
-Qed.
+    (* rewrite <- Hr_rev.
+    auto. *)
+Admitted.
 
 Definition notFun T1 := match T1 with | Ty_Fun _ _ => False | _ => True end.
 
@@ -380,9 +380,9 @@ Compute (Ty_Apps (Ty_Var "b") [(Ty_Var "c"); (Ty_Var "d")]).
 
 
 Lemma b_wf__wk_r Δ Γ b :
-  Δ ,, Γ |-ok_b Rec ## b -> forall T _x, In (_x, T) (binds_Gamma b) -> exists K, Δ |-* T : K.
+  Δ ,, Γ |-ok_b Rec ## b -> forall T _x, In (_x, T) (binds_Gamma b) -> {K & Δ |-* T : K }.
 Proof.
-  intros Hb_wf T _x Hin_b.
+  (* intros Hb_wf T _x Hin_b.
   inversion Hb_wf as [| | ];  subst.
   - inversion Hin_b.
     + inversion H2; subst.
@@ -533,14 +533,14 @@ Proof.
           apply in_eq.
         * simpl.
           simpl in H7.
-          auto.
+          auto. *)
 Admitted.
 
 Lemma b_wf__wk_nr Δ Γ b:
   Δ ,, Γ |-ok_b NonRec ## b -> NoDup (btvb b ++ (map fst Δ)) -> forall T _x, In (_x, T) (binds_Gamma b) 
-    -> exists K, (binds_Delta b ++ Δ) |-* T : K.
+    -> {K & (binds_Delta b ++ Δ) |-* T : K }.
 Proof.
-intros Hb_wf H_nd T _x Hin_b.
+(* intros Hb_wf H_nd T _x Hin_b.
   inversion Hb_wf as [| | ];  subst.
   - inversion Hin_b.
     + inversion H2; subst.
@@ -715,7 +715,7 @@ intros Hb_wf H_nd T _x Hin_b.
           admit.
         * simpl.
           simpl in H7.
-          (* By rearrange H7*)
+          By rearrange H7 *)
 Admitted.
 
 Require Import Coq.Program.Equality.
@@ -725,7 +725,7 @@ Lemma b_wf__map_wk_nr Δ Γ b :
   Δ ,, Γ |-ok_b NonRec ## b -> (NoDup (btvb b ++ map fst Δ)) -> 
     map_wk (insert_deltas_rec (binds_Gamma b) (binds_Delta b ++ Δ)).
 Proof.
-  intros.
+  (* intros.
 
   assert ((forall x T, In (x, T) (binds_Gamma b) -> exists K, (binds_Delta b ++ Δ) |-* T : K)).
   {
@@ -747,14 +747,14 @@ Proof.
     eapply MW_cons; auto.
     + eapply IHl; intros.
       eapply H1_copy; apply in_cons. eauto.
-    + eauto.
-Qed.
+    + eauto. *)
+Admitted.
 
 Lemma b_wf__map_wk_r Δ Γ b :
   Δ ,, Γ |-ok_b Rec ## b -> (NoDup (map fst Δ)) -> 
     map_wk (insert_deltas_rec (binds_Gamma b) (Δ)).
 Proof.
- intros.
+ (* intros.
 
   assert ((forall x T, In (x, T) (binds_Gamma b) -> exists K, (Δ) |-* T : K)).
   {
@@ -776,13 +776,13 @@ Proof.
     eapply MW_cons; auto.
     + eapply IHl; intros.
       eapply H1_copy; apply in_cons. eauto.
-    + eauto.
-Qed.
+    + eauto. *)
+Admitted.
 
 Lemma bs_wf_r__map_wk (Δ : list (string * kind)) Γ bs :
   Δ ,, Γ |-oks_r bs -> (NoDup (map fst Δ)) -> map_wk (insert_deltas_rec (flatten (map (binds_Gamma) bs)) Δ).
 Proof.
-  intros H H_ns.
+  (* intros H H_ns.
   induction H.
   - constructor.
   - simpl.
@@ -790,8 +790,8 @@ Proof.
     rewrite insert_deltas_rec_app.
     apply map_wk_app.
     + apply b_wf__map_wk_r in H; eauto.
-    + apply b_wf__map_wk_r in H; eauto.
-Qed.
+    + apply b_wf__map_wk_r in H; eauto. *)
+Admitted.
 
 Fixpoint insert_deltas_bind_Gamma_nr (bs : list binding) (Δ : list (binderTyname * kind)) : list (binderName * ty * list (binderTyname * kind)) :=
   match bs with
@@ -825,7 +825,7 @@ Proof.
 Admitted.
 
 
-Definition well_typed t := exists T, [] ,, [] |-+ t : T.
+(* Definition well_typed t := exists T, [] ,, [] |-+ t : T. *)
 
 Lemma T_Let__cons Δ Γ Γ_b b bs t Tn rec:
   Δ ,, Γ |-ok_b rec ## b ->
@@ -860,7 +860,7 @@ Proof.
     assumption.
   - assumption. *)
 Admitted.
-
+(* 
 Lemma has_type__normal : forall Delta Gamma t T,
     Delta ,, Gamma |-+ t : T ->
     normal_Ty T.
@@ -938,4 +938,4 @@ Lemma context_has_type__apply : forall C t Δ₁ Γ₁ Δ Γ T T₁,
   (Δ₁ ,, Γ₁ |-C C : (Δ ,, Γ ▷ T) ↝ T₁) ->
   (Δ ,, Γ |-+ t : T) ->
   (Δ₁ ,, Γ₁ |-+ (context_apply C t) : T₁).
-Admitted.
+Admitted. *)

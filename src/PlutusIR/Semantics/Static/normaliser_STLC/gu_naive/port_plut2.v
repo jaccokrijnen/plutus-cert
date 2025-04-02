@@ -13,7 +13,7 @@ Import ListNotations.
 Require Import Ascii.
 
 From PlutusCert Require Import SN_STLC_named_naive SN_STLC_named2 util Util.List STLC_named STLC_named_typing plutus_kinding_set. (* I don't understand why we need this for ftv defintion*)
-From PlutusCert Require Import PlutusIR plutus_util.
+From PlutusCert Require Import PlutusIR plutus_util Checker.
 
 
 (** Substitutions *)
@@ -357,7 +357,8 @@ Theorem f_preserves_kind Δ s K :
   Kinding.has_kind Δ s K -> STLC_named_typing.has_kind Δ (f s) K.
 Proof.
   intros.
-  induction H using Kinding.has_kind__ind
+  apply Checker.prop_to_type in H.
+  induction H using Kinding.has_kind_set__ind
     with (P := fun Δ s K => STLC_named_typing.has_kind Δ (f s) K)
          (P0 := fun Δ Tss => plutus_util.ForallSet2 (fun T => STLC_named_typing.has_kind Δ (f T) PlutusIR.Kind_Base) Tss)
          (P1 := fun Δ Tss => plutus_util.ForallSet (fun T => STLC_named_typing.has_kind Δ (f T) PlutusIR.Kind_Base) Tss).
@@ -365,12 +366,12 @@ Proof.
   simpl.
   induction Tss.
   - repeat constructor; induction IHhas_kind; subst; auto.
-  - induction IHhas_kind; subst. simpl. constructor. constructor.
+  - induction IHhas_kind_set; subst. simpl. constructor. constructor.
     induction f0.
-    + auto. simpl. eapply IHIHhas_kind. inversion H; subst. auto.
+    + auto. simpl. eapply IHIHhas_kind_set. inversion H; subst. auto.
     + simpl. constructor.
       * auto.
-      * apply IHf0. clear IHf0. clear IHTss. clear IHIHhas_kind.
+      * apply IHf0. clear IHf0. clear IHTss. clear IHIHhas_kind_set.
         inversion H; subst.
         inversion H3; subst.
         constructor; auto.

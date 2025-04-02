@@ -2008,8 +2008,9 @@ Proof with eauto using L_sn.
     + eapply α_preserves_L_R with (s' := tmapp (subs sigma (tmlam X A s)) t) (R := sym_alpha_ctx R) in ih; eauto. constructor.
       * eapply @alpha_sym with (ren := R). apply sym_alpha_ctx_is_sym.
         repeat rewrite psubs_to_subs; auto.
-        eapply subs_preserves_alpha_σ_R; eauto; [|apply (t_constr__a_sigma Heqt'R)].
-        constructor. eapply alpha_extend_id''. auto; apply (t_constr__a_s (gu_lam gu) (uhm_smaller Huhm) Heqt'R).
+        apply (uhm_smaller) in Huhm.
+        eapply subs_preserves_alpha_σ_R; eauto; [|apply (t_constr__a_sigma Huhm Heqt'R)].
+        constructor. eapply alpha_extend_id''. auto; apply (t_constr__a_s (gu_lam gu) Huhm Heqt'R).
       * eapply @alpha_sym; eauto. apply sym_alpha_ctx_is_sym.   
         apply (t_constr__a_t Heqt'R).
     + eapply t_constr__nc_subs; eauto.

@@ -5,7 +5,7 @@ Require Import Coq.Lists.List.
 From PlutusCert Require Import plutus_util PlutusIR.
 
 Reserved Notation "'|-*_uni' T ':' K" (at level 40, T at level 0, K at level 0).
-Inductive has_kind_uni : DefaultUni -> kind -> Set :=
+Inductive has_kind_uni : DefaultUni -> kind -> Prop :=
   | K_DefaultUniInteger :
       |-*_uni DefaultUniInteger : Kind_Base
   | K_DefaultUniByteString :
@@ -53,7 +53,7 @@ No way to unify (KB -> KB) -> K2 with KB -> KB
 
 (** Kinding of types *)
 Reserved Notation "Δ '|-*' T ':' K" (at level 40, T at level 0, K at level 0).
-Inductive has_kind : list (binderName * kind) -> ty -> kind -> Set :=
+Inductive has_kind : list (binderTyname * kind) -> ty -> kind -> Prop :=
   | K_Var : forall Δ X K,
       lookup X Δ = Some K ->
       Δ |-* (Ty_Var X) : K
@@ -81,14 +81,14 @@ Inductive has_kind : list (binderName * kind) -> ty -> kind -> Set :=
   | K_SOP : forall Δ Tss,
       ForallSet2_has_kind Δ Tss ->
       Δ |-* (Ty_SOP Tss) : Kind_Base
-with ForallSet2_has_kind : list (binderName * kind) -> list (list ty) -> Set :=
+with ForallSet2_has_kind : list (binderTyname * kind) -> list (list ty) -> Prop :=
   | ForallSet2_nil : forall Δ,
       ForallSet2_has_kind Δ nil
   | ForallSet2_cons : forall Δ Ts Tss,
       ForallSet_has_kind Δ Ts ->
       ForallSet2_has_kind Δ Tss ->
       ForallSet2_has_kind Δ (Ts :: Tss)
-with ForallSet_has_kind : list (binderName * kind) -> list ty -> Set :=
+with ForallSet_has_kind : list (binderTyname * kind) -> list ty -> Prop :=
   | ForallSet_nil : forall Δ,
       ForallSet_has_kind Δ nil
   | ForallSet_cons : forall Δ T Ts,
@@ -97,9 +97,9 @@ with ForallSet_has_kind : list (binderName * kind) -> list ty -> Set :=
       ForallSet_has_kind Δ (T :: Ts)
 where "Δ '|-*' T ':' K" := (has_kind Δ T K).
 
-Scheme has_kind__ind := Minimality for has_kind Sort Set
-  with ForallSet2_has_kind__ind := Minimality for ForallSet2_has_kind Sort Set
-  with ForallSet_has_kind__ind := Minimality for ForallSet_has_kind Sort Set.
+Scheme has_kind__ind := Minimality for has_kind Sort Prop
+  with ForallSet2_has_kind__ind := Minimality for ForallSet2_has_kind Sort Prop
+  with ForallSet_has_kind__ind := Minimality for ForallSet_has_kind Sort Prop.
 
 
 Combined Scheme has_kind__multind from
@@ -147,3 +147,61 @@ Proof.
     induction H_xs; intros H_ys; try econstructor; eauto.
 Qed.
 
+
+
+
+(** Kinding of types *)
+Reserved Notation "Δ '|-*s' T ':' K" (at level 40, T at level 0, K at level 0).
+Inductive has_kind_set : list (binderTyname * kind) -> ty -> kind -> Set :=
+  | K_Var_set : forall Δ X K,
+      lookup X Δ = Some K ->
+      Δ |-*s (Ty_Var X) : K
+  | K_Fun_set : forall Δ T1 T2,
+      Δ |-*s T1 : Kind_Base ->
+      Δ |-*s T2 : Kind_Base ->
+      Δ |-*s (Ty_Fun T1 T2) : Kind_Base
+  | K_IFix_set  : forall Δ F T K,
+      Δ |-*s T : K ->
+      Δ |-*s F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
+      Δ |-*s (Ty_IFix F T) : Kind_Base
+  | K_Forall_set : forall Δ X K T,
+      ((X, K) :: Δ) |-*s T : Kind_Base ->
+      Δ |-*s (Ty_Forall X K T) : Kind_Base
+  | K_Builtin_set : forall Δ T,
+      |-*_uni T : Kind_Base ->
+      Δ |-*s (Ty_Builtin T) : Kind_Base
+  | K_Lam_set : forall Δ X K1 T K2,
+      ((X, K1) :: Δ) |-*s T : K2 ->
+      Δ |-*s (Ty_Lam X K1 T) : (Kind_Arrow K1 K2)
+  | K_App_set : forall Δ T1 T2 K1 K2,
+      Δ |-*s T1 : (Kind_Arrow K1 K2) ->
+      Δ |-*s T2 : K1 ->
+      Δ |-*s (Ty_App T1 T2) : K2
+  | K_SOP_set : forall Δ Tss,
+      ForallSet2_has_kind_set Δ Tss ->
+      Δ |-*s (Ty_SOP Tss) : Kind_Base
+with ForallSet2_has_kind_set : list (binderTyname * kind) -> list (list ty) -> Set :=
+  | ForallSet2_nil_set : forall Δ,
+      ForallSet2_has_kind_set Δ nil
+  | ForallSet2_cons_set : forall Δ Ts Tss,
+      ForallSet_has_kind_set Δ Ts ->
+      ForallSet2_has_kind_set Δ Tss ->
+      ForallSet2_has_kind_set Δ (Ts :: Tss)
+with ForallSet_has_kind_set : list (binderTyname * kind) -> list ty -> Set :=
+  | ForallSet_nil_set : forall Δ,
+      ForallSet_has_kind_set Δ nil
+  | ForallSet_cons_set : forall Δ T Ts,
+      Δ |-*s T : Kind_Base ->
+      ForallSet_has_kind_set Δ Ts ->
+      ForallSet_has_kind_set Δ (T :: Ts)
+where "Δ '|-*s' T ':' K" := (has_kind_set Δ T K).
+
+Scheme has_kind_set__ind := Minimality for has_kind_set Sort Set
+  with ForallSet2_has_kind_set__ind := Minimality for ForallSet2_has_kind_set Sort Set
+  with ForallSet_has_kind_set__ind := Minimality for ForallSet_has_kind_set Sort Set.
+
+
+Combined Scheme has_kind_set__multind from
+  has_kind_set__ind,
+  ForallSet2_has_kind_set__ind,
+  ForallSet_has_kind_set__ind.
