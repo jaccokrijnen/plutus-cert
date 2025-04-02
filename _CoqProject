@@ -103,6 +103,7 @@ src/PlutusIR/Semantics/TypeSafety/TypeLanguage/StrongNormalisation.v
 src/PlutusIR/Semantics/TypeSafety/TypeLanguage/Preservation.v
 
 src/PlutusIR/Semantics/SemanticEquivalence/Auto.v
+src/PlutusIR/Semantics/SemanticEquivalence/Congruence.v
 src/PlutusIR/Semantics/SemanticEquivalence/FundamentalProperty.v
 src/PlutusIR/Semantics/SemanticEquivalence/Contextual.v
 src/PlutusIR/Semantics/SemanticEquivalence/Validator.v

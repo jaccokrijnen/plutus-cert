@@ -322,8 +322,6 @@ Proof.
 Qed.
 
 
-Local Open Scope contexts.
-
 Lemma context_has_type__fill C t Δ1 Γ1 Δ Γ T T1 :
   Δ1 ,, Γ1 |- C : (Δ, Γ, T) ↪ T1 ->
   Δ ,, Γ |-+ t : T ->
@@ -333,3 +331,13 @@ Proof.
   dependent induction H_C;
   eauto using has_type.
 Qed.
+
+Lemma context_comp__has_type
+  Δ1 Γ1 C T1
+  Δ2 Γ2 C' T2
+  Δ Γ T :
+    Δ1 ,, Γ1 |- C : (Δ2, Γ2, T2) ↪ T1 ->
+    Δ2 ,, Γ2 |- C' : (Δ, Γ, T) ↪ T2 ->
+    Δ1 ,, Γ1 |- (context_comp C C') : (Δ, Γ, T) ↪ T1
+.
+Admitted.

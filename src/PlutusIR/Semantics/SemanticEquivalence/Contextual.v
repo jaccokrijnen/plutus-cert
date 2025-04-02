@@ -2,15 +2,11 @@ From PlutusCert Require Import PlutusIR.
 From PlutusCert Require Import PlutusIR.Semantics.Static.Typing.
 From PlutusCert Require Import PlutusIR.Semantics.Dynamic.Bigstep.
 From PlutusCert Require Import SemanticEquivalence.Validator.
+From PlutusCert Require Import SemanticEquivalence.Congruence.
 From PlutusCert Require Import Util.Tactics.
 
 Require Import Lists.List.
 Import ListNotations.
-
-
-
-Definition ty_unit : ty :=
-  Ty_Builtin DefaultUniUnit.
 
 Definition eval' t v := exists j, eval t v j.
 
@@ -33,18 +29,29 @@ Notation "Δ ',,' Γ '|-' e1 ≤-ctx e2 ':' T" := (contextually_approximate e1 e
   , no associativity).
 
 Definition contextually_equivalent
-  (e e' : term) Δ Γ T
+  Δ Γ (e e' : term) T
   :=
-  (Δ ,, Γ |- e ≤-ctx e' : T )
-  /\ (Δ ,, Γ |- e'≤-ctx e  : T)
-  .
+  (Δ ,, Γ |-+ e  : T) /\
+  (Δ ,, Γ |-+ e' : T) /\
+  forall (C : context),
+    ([] ,, [] |- C : (Δ, Γ, T) ↪ ty_unit) ->
+      (context_fill C e ==> val_unit <-> context_fill C e' ==> val_unit) /\
+      (context_fill C e ==>e <-> context_fill C e' ==>e )
+.
 
-Notation "Δ ',,' Γ '|-' e1 =ctx e2 ':' T" := (contextually_equivalent e1 e2 Δ Γ T)
+Notation "Δ ',,' Γ '|-' e1 =ctx e2 ':' T" := (contextually_equivalent Δ Γ e1 e2 T)
   ( at level 101
   , e1 at level 0
   , e2 at level 0
   , T at level 0
   , no associativity).
+
+(* Alternative formulation of contextual equivalence *)
+Lemma approx_equiv Δ Γ e e' T :
+  (Δ ,, Γ |- e ≤-ctx e' : T ) /\ (Δ ,, Γ |- e'≤-ctx e  : T) <-> (Δ ,, Γ |- e =ctx e' : T )
+  .
+Admitted.
+
 
 Lemma ctx_instantiate Δ Γ s t T C :
   Δ ,, Γ |- s =ctx t : T ->
@@ -121,6 +128,7 @@ Section contextually_approximate_lemmas.
     Δ ,, Γ |- e2 ≤-ctx e1 : T ->
     Δ ,, Γ |- e1 =ctx e2 : T.
   Proof.
+    setoid_rewrite <- approx_equiv.
     unfold contextually_equivalent.
     eauto.
   Qed.
@@ -137,6 +145,7 @@ Section contextually_equivalent_props.
   Δ ,, Γ |-+ e : T ->
   Δ ,, Γ |- e =ctx e : T.
   Proof.
+    setoid_rewrite <- approx_equiv.
     unfold contextually_equivalent.
     auto using contextually_approximate_reflexive.
   Qed.
@@ -162,5 +171,24 @@ Section contextually_equivalent_props.
   Notation "=ctx-refl" := (contextually_equivalent_reflexive).
   Notation "=ctx-trans" := (contextually_equivalent_transitive).
   Notation "=ctx-sym" := (contextually_equivalent_symmetric).
+
+
+  (* ad-hoc tactic for solving typing *)
+  Ltac solve_typing := try (solve [eauto using context_has_type__fill, type_respecting_l, type_respecting_r]).
+
+  Lemma ctx_compatible : context_compatible contextually_equivalent.
+  Proof with solve_typing.
+    intros Δ Γ s t T.
+    intros H_equiv.
+    intros C Δ1 Γ1 T1 H_ty_C.
+    unfold contextually_equivalent.
+    split...
+    split...
+    intros C0 H_ty_C0.
+    split;
+      setoid_rewrite <- context_comp_fill;
+      eapply H_equiv;
+      eauto using context_comp__has_type.
+  Qed.
 
 End contextually_equivalent_props.

@@ -111,5 +111,6 @@ Proof with eauto using LR_sound.
   intros Δ Γ e e' T H.
   unfold LR_logically_equivalent in H.
   destruct_hypos.
+  setoid_rewrite <- approx_equiv.
   split...
 Qed.

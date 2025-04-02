@@ -919,6 +919,8 @@ Definition ty_transform (custom : forall T, option (ty_alg_transform T)) : ty ->
 
 Definition unitVal : term := Constant (ValueOf DefaultUniUnit tt).
 
+Definition ty_unit : ty := Ty_Builtin DefaultUniUnit.
+
 (* AST utilities *)
 Fixpoint splitTy (T : ty) : list ty * ty :=
   match T with

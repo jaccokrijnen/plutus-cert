@@ -9,7 +9,6 @@ From Coq Require Import
 From PlutusCert Require Import Semantics.Dynamic.
 From PlutusCert Require Import Semantics.Static.
 From PlutusCert Require Import BaseKindedness.
-From PlutusCert Require Import Transform.DeadCode.
 From PlutusCert Require Import SemanticEquivalence.LogicalRelation.
 From PlutusCert Require Import SemanticEquivalence.CompatibilityLemmas.
 From PlutusCert Require Import SemanticEquivalence.Auto.
