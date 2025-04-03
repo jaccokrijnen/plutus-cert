@@ -65,12 +65,19 @@ Example replaceRetTy_bin A B C :
 Proof. reflexivity. Qed.
 
 
-(* Used as binder in the type of matchTy *)
+(* Used as type variable binder in the type of matchTy. It needs to be fresh
+   with respect to the type variables that occur free in the constructor signatures,
+   since this fresh variable will scope over those types (see matchTy)
+*)
 Definition dtdecl_freshR (d : dtdecl) : string :=
   match d with
   | Datatype XK YKs matchFunc cs =>
-      concat ""
-        (List.concat (map (fun c => Ty.ftv (vdecl_ty c)) cs))
+      let vars := List.concat (map (fun c => Ty.ftv (vdecl_ty c)) cs) in
+      match find (eqb "R") vars with
+      | None => "R"
+      | Some _ => "R" ++ concat "" vars
+      (* the "R" prefix is needed in the case that there is one free type variable named "" *)
+      end
   end
 .
 
@@ -177,10 +184,10 @@ Example either_matchTy : matchTy dtd_either =
   Ty_Forall "a" Kind_Base
     (Ty_Forall "b" Kind_Base
        (Ty_App (Ty_App (Ty_Var "Either") (Ty_Var "a")) (Ty_Var "b")
-        → Ty_Forall "aEitherabbEitherab" Kind_Base
-            ((Ty_Var "a" → Ty_Var "aEitherabbEitherab")
-             → (Ty_Var "b" → Ty_Var "aEitherabbEitherab")
-               → Ty_Var "aEitherabbEitherab")))
+        → Ty_Forall "R" Kind_Base
+            ((Ty_Var "a" → Ty_Var "R")
+             → (Ty_Var "b" → Ty_Var "R")
+               → Ty_Var "R")))
                .
 Proof. reflexivity. Qed.
 
