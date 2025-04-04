@@ -314,7 +314,7 @@ Proof.
                   --- apply alpha_extend_ids.
                       +++ apply ctx_id_right_is_id.
                       +++ eapply alpha_sym. constructor. eauto with α_eq_db.
-           ++ constructor. apply legalRenSwap_id.
+           ++ constructor.
         -- change (ctx_id_right ren) with (nil ++ ctx_id_right ren).
            apply alpha_extend_ids_right.
            ++ apply ctx_id_right_is_id.

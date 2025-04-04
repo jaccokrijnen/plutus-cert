@@ -113,7 +113,16 @@ Admitted.
 
 Lemma αctx_sub_extend_ids_right σ σ' R1 R2 :
   IdCtx R2 -> αCtxSub R1 σ σ' -> αCtxSub (R1 ++ R2) σ σ'.
-Admitted.
+Proof.
+  intros HidR2 Ha.
+  dependent induction σ.
+  - inversion Ha; subst. constructor.
+  - inversion Ha; subst.
+    constructor.
+    + eapply IHσ; eauto.
+    + apply alphavar_extend_ids_right; auto.
+    + apply alpha_extend_ids_right; auto.
+Qed.
 
 Lemma extend_ftv_keys_env_to_tv x sigma :
   In x (ftv_keys_env sigma) -> In x (tv_keys_env sigma).

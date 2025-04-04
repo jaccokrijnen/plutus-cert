@@ -165,3 +165,98 @@ Admitted.
 Lemma string_app_assoc (a b c : string) :
   (a ++ b ++ c)%string = ((a ++ b) ++ c)%string.
 Admitted.
+
+
+Fixpoint lookup_r {X:Type} (k : string) (l : list (X * string)) : option X :=
+  match l with
+  | nil => None
+  | (x, j) :: l' => if j =? k then Datatypes.Some x else lookup_r k l'
+  end.
+
+
+Lemma lookup_cons_helper (R : list (string * string)) s s' x y :
+  lookup s ((x, y)::R) = Some s' -> x <> s -> lookup s R = Some s'.
+Admitted.
+
+Lemma lookup_r_cons_helper (R : list (string * string)) s s' x y :
+  lookup_r s' ((x, y)::R) = Some s -> y <> s' -> lookup_r s' R = Some s.
+Admitted.
+
+Lemma lookup_r__app {A :Type} (k : string ) (v : A) (l1 l2 : list (A * string)) :
+  lookup_r k l1 = Some v -> lookup_r k (l1 ++ l2) = Some v.
+Proof.
+Admitted.
+
+(* NOT DIFFICULT: It must exist *)
+Lemma lookup_split_app_helper R1 R2 s s' :
+  lookup s (R1 ++ R2) = Some s' -> lookup_r s' (R1 ++ R2) = Some s ->
+  ((lookup s R1 = Some s') * (lookup_r s' R1 = Some s)) +
+  ((lookup s R1 = None) * (lookup_r s' R1 = None) * (lookup s R2 = Some s') * (lookup_r s' R2 = Some s)).
+Proof.
+  intros.
+  induction R1; auto.
+  destruct a.
+  simpl in H.
+  destr_eqb_eq s0 s.
+  + inversion H; subst.
+    simpl in H0.
+    rewrite String.eqb_refl in H0.
+    inversion H0; subst.
+    left. intuition.
+    * simpl. rewrite String.eqb_refl. auto.
+    * simpl. rewrite String.eqb_refl. auto.
+  + assert (s' <> s1).
+    {
+      intros Hcontra.
+      subst.
+      simpl in H0.
+      rewrite String.eqb_refl in H0.
+      inversion H0; subst.
+      contradiction.
+    }
+    simpl in H0.
+    rewrite <- String.eqb_neq in H2.
+    rewrite String.eqb_sym in H2.
+    rewrite H2 in H0.
+    rewrite <- String.eqb_neq in H1.
+    destruct (IHR1 H H0) as [ [IHR11 IHR12] | [[ [IHR21 IHR22] IHR23 ] IHR24] ].
+    * left.
+      simpl.
+      rewrite H2.
+      rewrite H1.
+      auto.
+    * right.
+      repeat split; auto.
+      -- simpl.
+          rewrite H1. auto.
+      -- simpl.
+          rewrite H2; auto.
+Qed.
+
+(* NOT DIFFICULT *)
+Lemma lookup_app_none_helper (R1 R2 : list (string * string)) s :
+  lookup s (R1 ++ R2) = None -> ((lookup s R1 = None) * (lookup s R2 = None))%type.
+Proof.
+Admitted.
+
+(* NOT DIFFICULT *)
+Lemma lookup_r_app_none_helper (R1 R2 : list (string * string)) s :
+  lookup_r s (R1 ++ R2) = None -> ((lookup_r s R1 = None) * (lookup_r s R2 = None))%type.
+Admitted.
+
+(* NOT DIFFICULT *)
+Lemma lookup_some_extend_helper R1 R2 s s' :
+  ((lookup s R1 = Some s') * (lookup_r s' R1 = Some s)) -> 
+  ((lookup s (R1 ++ R2) = Some s') * (lookup_r s' (R1 ++ R2) = Some s))%type.
+Proof.
+Admitted.
+
+Lemma lookup_none_extend_helper {R1 R2 s} :
+  (lookup s R1 = None) -> (lookup_r s R1 = None) -> 
+    (lookup s (R1 ++ R2) = lookup s R2 ) * (lookup_r s (R1 ++ R2) = lookup_r s R2)%type.
+Proof.
+Admitted.
+
+Inductive star {A : Type} {e : A -> A -> Type } (x : A) : A -> Type :=
+| starR : star x x
+| starSE y z : star x y -> e y z -> star x z.

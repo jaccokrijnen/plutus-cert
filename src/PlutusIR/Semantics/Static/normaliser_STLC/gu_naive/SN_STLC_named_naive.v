@@ -29,13 +29,17 @@ Hint Resolve nc_lam : gu_nc_db.
 Hint Resolve gu_applam_to_nc : gu_nc_db.
 Hint Resolve nc_ftv_env : gu_nc_db.
 
+(* Dirty hack: Repeated legal ren swap? LRS does not go by transitivity
+  but the property we use it for (alhpa_swap) does go by transitivity
 
+  So If we can LRS a b  and LRS b c, then we still have Alpha a c.
+*)
 
 (* We need a legal ren swap because the new binders get in front of the (x, y) in the inductive step of the lambda*)
 Lemma alpha_rename_binder_stronger x y s t t' : forall Rt s' Rs,
   Alpha Rs s s' ->
   Alpha Rt t t' ->
-  LegalRenSwap ((x, y)::Rt) Rs -> 
+  LegalRenSwaps ((x, y)::Rt) Rs -> 
   NC s [(x, t)] ->
   NC s' [(y, t')] ->
   Alpha Rt (sub x t s) (sub y t' s').
@@ -49,43 +53,46 @@ Proof with eauto with gu_nc_db.
   induction s; intros; inversion H; subst; simpl.
   - destr_eqb_eq x s; destr_eqb_eq y y0; eauto.
     + exfalso.
-      apply lrs_sym in H1.
-      apply (alpha_swap H1) in H.
+      apply lrss_sym in X.
+      apply (alpha_swaps X) in H.
       inversion H; subst.
-      inversion H9; subst.
-      contradiction H4; auto.
-      contradiction H10; auto.
+      inversion H8; subst.
+      contradiction H3; auto.
+      contradiction H9; auto.
     + exfalso.
-      apply lrs_sym in H1.
-      apply (alpha_swap H1) in H.
+      apply lrss_sym in X.
+      apply (alpha_swaps X) in H.
       inversion H; subst.
-      inversion H9; subst.
-      contradiction H4; auto.
-      contradiction H13; auto.
-    + eapply @alpha_swap with (ren' := ((x, y)::Rt)) in H.
+      inversion H8; subst.
+      contradiction H3; auto.
+      contradiction H12; auto.
+    + eapply @alpha_swaps with (ren' := ((x, y)::Rt)) in H.
       inversion H; subst.
-      inversion H10; subst; try contradiction.
+      inversion H9; subst; try contradiction.
       apply alpha_var.
       assumption.
-      apply lrs_sym. auto.
+      apply lrss_sym. auto.
   - constructor.
     eapply IHs; eauto...
     + eapply alpha_extend_vacuous_ftv.
-      * apply nc_ftv_env with (x := s) in H2.
+      * apply nc_ftv_env with (x := s) in H1.
+        simpl in H1.
+        intuition. apply btv_lam.
+      * apply nc_ftv_env with (x := y0) in H2.
         simpl in H2.
         intuition. apply btv_lam.
-      * apply nc_ftv_env with (x := y0) in H3.
-        simpl in H3.
-        intuition. apply btv_lam.
       * assumption.
-    + eapply @lrs_trans with (ren2 := ((s, y0)::(x, y)::Rt)).
-      * constructor. 
-        -- apply nc_ftv_env with (x := s) in H2.
-           simpl in H2. intuition. apply btv_lam.
-        -- apply nc_ftv_env with (x := y0) in H3.
-           simpl in H3. intuition. apply btv_lam.
-        -- apply legalRenSwap_id.
-      * constructor. assumption.
+    + eapply @lrss_trans with (ren2 := ((s, y0)::(x, y)::Rt)).
+      * eapply starSE.
+        -- apply starR.
+        -- 
+          ++ constructor. 
+            ** apply nc_ftv_env with (x := s) in H1.
+              simpl in H1. intuition. apply btv_lam.
+            ** apply nc_ftv_env with (x := y0) in H2.
+              simpl in H2. intuition. apply btv_lam.
+            ** apply legalRenSwap_id.
+      * apply lrss_cons. auto.
   - constructor; eauto with gu_nc_db.
   - constructor.
 Qed.
@@ -106,7 +113,7 @@ Proof.
     split.
     + constructor.
     + eapply alpha_rename_binder_stronger; eauto with gu_nc_db.
-      constructor. apply legalRenSwap_id.
+      constructor.
   - inversion H1; subst.
     specialize (IHstep_naive (gu_app_l H) s3 (gu_app_l H0) R H8) as [t' [Hstep_t' HR_t'] ].
     exists (@tmapp B t' t2).
@@ -182,11 +189,6 @@ Proof.
     + apply to_GU__GU.
   - auto.
 Qed.
-
-
-Inductive star {e : term -> term -> Type } (x : term) : term -> Type :=
-| starR : star x x
-| starSE y z : star x y -> e y z -> star x z.
 
 
 (** **** Many-Step Reduction 
@@ -960,7 +962,7 @@ Proof with eauto with sconstr2_db.
                  ** eapply sconstr2_nc_t. eauto.
                  ** eapply sconstr2_alpha_t. eauto.
                  ** constructor. constructor. constructor. eapply sconstr2_alpha_p. eauto.
-          -- constructor. constructor.
+          -- constructor.
           -- eapply gu_applam_to_nc. rewrite <- pr_eq. apply to_GU__GU.
           -- repeat rewrite psubs_to_subs; try apply single_parseq.
              eapply sconstr2_nc_sub; eauto.
@@ -1702,7 +1704,7 @@ Proof with eauto with α_eq_db gu_nc_db.
   - eapply α_preserves_L_R with (R := (nil)); eauto.
     (* repeat rewrite <- single_subs_is_sub. *)
     eapply alpha_rename_binder_stronger with (Rs := ((x, y0)::nil))...
-    constructor. constructor.
+    constructor.
   - inv H5.
     assert (Alpha [(y, y0)] (to_GU x0) s4).
     {

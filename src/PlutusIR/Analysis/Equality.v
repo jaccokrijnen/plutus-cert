@@ -118,8 +118,14 @@ Defined.
 Definition Kind_dec : EqDec kind. solveEq. Defined.
   #[export] Hint Resolve Kind_dec : Eqs.
 
-Definition Ty_dec: EqDec ty. solveEq. Admitted.
-  #[export] Hint Resolve Ty_dec : Eqs.
+Definition list_Ty_dec_axiom : forall (l l0 : list (list ty)),
+  {l = l0} + {l <> l0}.
+Admitted.
+
+Lemma Ty_dec : EqDec ty. solveEq.
+  apply list_Ty_dec_axiom. Defined.
+#[export] Hint Resolve Ty_dec : Eqs.
+
 
 Definition VDecl_dec: EqDec vdecl. Proof. solveEq. Defined.
   #[export] Hint Resolve VDecl_dec : Eqs.

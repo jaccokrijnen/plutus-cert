@@ -1202,15 +1202,6 @@ Proof.
     + apply IHl. auto.
 Qed.
 
-
-(* 
-Lemma no_ftvs_preserved_id used binders s s' used' binders' :
-  IdCtx binders -> 
-  ((used', binders'), s') = to_GU_ used binders s -> (forall x, ~ In x (ftv s) -> ~ In x (ftv s')).
-Proof.
-  (* hard to prove because of decomposition behaviour of ftv...*)
-Admitted. *)
-
 Lemma sconstr2_nc_s x0 t x p s s' t' p' :
   (s', t', p') = sconstr2 x0 t x p s ->
   NC s' ((x, p')::nil).
@@ -1499,6 +1490,7 @@ Definition list_diff {A : Type} (eq_dec : forall x y : A, {x = y} + {x <> y})
   (l1 l2 : list A) : list A :=  
   filter (fun x => if in_dec eq_dec x l2 then false else true) l1.
 
+
 (* We know the result is R ++ R' (i.e. prepended by argument), but that is not so 
     important here in the axiomatization, just that there exists one
 
@@ -1634,26 +1626,6 @@ Proof.
   decide equality; apply string_dec.
 Defined.
 
-Fixpoint lookup_r {X:Type} (k : string) (l : list (X * string)) : option X :=
-  match l with
-  | nil => None
-  | (x, j) :: l' => if j =? k then Datatypes.Some x else lookup_r k l'
-  end.
-
-
-Lemma lookup_cons_helper (R : list (string * string)) s s' x y :
-  lookup s ((x, y)::R) = Some s' -> x <> s -> lookup s R = Some s'.
-Admitted.
-
-Lemma lookup_r_cons_helper (R : list (string * string)) s s' x y :
-  lookup_r s' ((x, y)::R) = Some s -> y <> s' -> lookup_r s' R = Some s.
-Admitted.
-
-Lemma lookup_r__app {A :Type} (k : string ) (v : A) (l1 l2 : list (A * string)) :
-  lookup_r k l1 = Some v -> lookup_r k (l1 ++ l2) = Some v.
-Proof.
-Admitted.
-
 Require Import Coq.Lists.List.
 Require Import Coq.Lists.ListDec.
 Import ListNotations.
@@ -1768,86 +1740,6 @@ Proof.
       eapply IHR; auto.
 Qed.
 
-
-Lemma alphavar_lookup_helper R s s' :
-  AlphaVar R s s' -> (((lookup s R = Some s') * (lookup_r s' R = Some s)) + ((lookup s R = None) * (lookup_r s' R = None) * (s = s')))%type.
-Proof.
-  intros.
-  induction H.
-  - right. intuition.
-  - left. intuition.
-    simpl. rewrite String.eqb_refl. auto.
-    simpl. rewrite String.eqb_refl. auto.
-  - destruct IHAlphaVar as [[IH1 IH2] | [IH1 IH2]].
-    + left. split.
-      * simpl. rewrite <- String.eqb_neq in n. rewrite n. auto.
-      * simpl. rewrite <- String.eqb_neq in n0. rewrite n0. auto.
-    + right. split; [split|].
-      * simpl. rewrite <- String.eqb_neq in n. rewrite n. destruct IH1 as [IH1 _]. auto.
-      * simpl. rewrite <- String.eqb_neq in n0. rewrite n0. destruct IH1 as [_ IH1']. auto.
-      * auto.
-Qed.
-
-Lemma lookup_some_then_alphavar R s s' :
-  lookup s R = Some s' -> lookup_r s' R = Some s -> AlphaVar R s s'.
-Proof.
-  intros.
-  induction R.
-  - inversion H.
-  - destruct a.
-    destr_eqb_eq s0 s.
-    + simpl in H.
-      rewrite String.eqb_refl in H.
-      inv H.
-      constructor.
-    + assert (s1 <> s').
-      {
-        intros Hcontra.
-        subst.
-        simpl in H0.
-        rewrite String.eqb_refl in H0.
-        inv H0.
-        contradiction.
-      }
-      constructor; eauto.
-      eapply IHR.
-      * apply lookup_cons_helper in H; eauto.
-      * apply lookup_r_cons_helper in H0; auto.
-Qed.
-
-Lemma lookup_cons_None_helper (R : list (string * string)) s x y :
-  lookup s ((x, y)::R) = None -> lookup s R = None.
-Proof.
-  intros.
-  simpl in H.
-  destruct_match.
-  auto.
-Qed.
-
-Lemma lookup_r_cons_None_helper (R : list (string * string)) s' x y :
-  lookup_r s' ((x, y)::R) = None -> lookup_r s' R = None.
-Proof.
-  intros.
-  simpl in H.
-  destruct_match.
-  auto.
-Qed.
-
-Lemma lookup_none_then_alpharefl R s :
-  lookup s R = None -> lookup_r s R = None -> AlphaVar R s s.
-Proof.
-  intros.
-  induction R.
-  - simpl. constructor.
-  - destruct a.
-    constructor.
-    + intros Hcontra. subst. simpl in H. rewrite String.eqb_refl in H. inv H.
-    + intros Hcontra. subst. simpl in H0. rewrite String.eqb_refl in H0. inv H0.
-    + eapply IHR; eauto.
-      * eapply lookup_cons_None_helper. eauto.
-      * eapply lookup_r_cons_None_helper. eauto.
-Qed.
-
 Lemma strip_R_alphavar2 R s s' :
   AlphaVar R s s' -> AlphaVar (strip_R R) s s'.
 Proof.
@@ -1866,87 +1758,31 @@ Proof.
 Qed.
 
 
-(* NOT DIFFICULT: It must exist *)
-Lemma lookup_split_app_helper R1 R2 s s' :
-  lookup s (R1 ++ R2) = Some s' -> lookup_r s' (R1 ++ R2) = Some s ->
-  ((lookup s R1 = Some s') * (lookup_r s' R1 = Some s)) +
-  ((lookup s R1 = None) * (lookup_r s' R1 = None) * (lookup s R2 = Some s') * (lookup_r s' R2 = Some s)).
-Proof.
-  intros.
-  induction R1; auto.
-  destruct a.
-  simpl in H.
-  destr_eqb_eq s0 s.
-  + inv H.
-    simpl in H0.
-    rewrite String.eqb_refl in H0.
-    inv H0.
-    left. intuition.
-    * simpl. rewrite String.eqb_refl. auto.
-    * simpl. rewrite String.eqb_refl. auto.
-  + assert (s' <> s1).
-    {
-      intros Hcontra.
-      subst.
-      simpl in H0.
-      rewrite String.eqb_refl in H0.
-      inv H0.
-      contradiction.
-    }
-    simpl in H0.
-    rewrite <- String.eqb_neq in H2.
-    rewrite String.eqb_sym in H2.
-    rewrite H2 in H0.
-    rewrite <- String.eqb_neq in H1.
-    destruct (IHR1 H H0) as [ [IHR11 IHR12] | [[ [IHR21 IHR22] IHR23 ] IHR24] ].
-    * left.
-      simpl.
-      rewrite H2.
-      rewrite H1.
-      auto.
-    * right.
-      repeat split; auto.
-      -- simpl.
-          rewrite H1. auto.
-      -- simpl.
-          rewrite H2; auto.
-Qed.
-
-(* NOT DIFFICULT *)
-Lemma lookup_app_none_helper (R1 R2 : list (string * string)) s :
-  lookup s (R1 ++ R2) = None -> ((lookup s R1 = None) * (lookup s R2 = None))%type.
-Proof.
-Admitted.
-
-(* NOT DIFFICULT *)
-Lemma lookup_r_app_none_helper (R1 R2 : list (string * string)) s :
-  lookup_r s (R1 ++ R2) = None -> ((lookup_r s R1 = None) * (lookup_r s R2 = None))%type.
-Admitted.
-
-(* NOT DIFFICULT *)
-Lemma lookup_some_extend_helper R1 R2 s s' :
-  ((lookup s R1 = Some s') * (lookup_r s' R1 = Some s)) -> 
-  ((lookup s (R1 ++ R2) = Some s') * (lookup_r s' (R1 ++ R2) = Some s))%type.
-Proof.
-Admitted.
-
-
 (* NOT DIFFICULT *)
 Lemma alphavar_vacuous_prepend R1 R2 s s' :
   AlphaVar R2 s s' -> lookup s R1 = None -> lookup_r s' R1 = None -> AlphaVar (R1 ++ R2) s s'.
 Proof.
+
   intros.
   induction R1.
   - simpl. auto.
   - destruct a.
     simpl.
     constructor.
-    + (* lookup None not eq*) admit.
-    + (* lookup None not eq *) admit.
+    + intros Hcontra.
+      subst.
+      simpl in H0.
+      rewrite String.eqb_refl in H0.
+      inversion H0.
+    + intros Hcontra.
+      subst.
+      simpl in H1.
+      rewrite String.eqb_refl in H1.
+      inversion H1.
     + eapply IHR1; eauto.
-      * (* lookup split cons *) admit.
-      * admit.
-Admitted.
+      * simpl in H0. destruct_match. auto.
+      * simpl in H1. destruct_match. auto.
+Qed.
 
 Lemma alphavar_idk_helper R1 R2 R2' s s' :
   (AlphaVar R2 s s' -> AlphaVar R2' s s') -> (AlphaVar (R1 ++ R2) s s' -> AlphaVar (R1 ++ R2') s s').
@@ -2296,6 +2132,18 @@ Proof.
     eapply lookup_some_then_alphavar; eauto.
 Qed.
 
+Lemma list_diff_helper x l1 l2 :
+  In x l1 -> ~ In x l2 -> In x (list_diff string_dec l1 l2).
+Admitted.
+
+Lemma list_diff_not l1 l2 x :
+  In x l2 -> ~ In x (list_diff string_dec l1 l2).
+Admitted.
+
+Lemma in_freshen2_then_in_generator used l x :
+  In x (map fst (freshen2 used l)) -> In x l.
+Admitted.
+
 Definition a_constr {R} {s s' : term} t : prod (list (string * string)) (term) :=
   let R' := @a_R_constr R s s' t in
   let used' := tv s ++ tv s' ++ tv t ++ (map fst R') ++ (map snd R') in 
@@ -2312,11 +2160,36 @@ Proof.
   apply strip_R_preserves_alpha in H0.
   rewrite H.
   eapply alpha_vacuous_R.
-  - intros. (* x not in ftv s  by list_diff*) admit.
+  - intros. 
+    remember ((tv s ++
+        tv s' ++
+        tv t ++
+        map fst R ++
+        map snd R)) as used.
+    intros Hcontra.
+    apply list_diff_not with (l1 := (ftv t)) in Hcontra.
+    rewrite HeqRfr in H1.
+    apply in_freshen2_then_in_generator in H1.
+    contradiction.
   - intros.
-    (* x' not in ftv s' by all ftv s' used in 
-      construction of fresh vars, and x' is a fresh var *) admit.
+    rewrite HeqRfr in H1.
+    apply freshen2__fresh_map_snd in H1.
+    apply not_in_app in H1 as [_ H1].
+    apply not_in_app in H1 as [H1 _].
+    intros Hcontra.
+    apply extend_ftv_to_tv in Hcontra.
+    contradiction.
+      
   - auto.
+Qed.
+
+Lemma freshen2__fresh' {used x } {l : list (string)} {y : string} :
+  In (x, y) (freshen2 used l) -> ~ In y used.
+Admitted.
+
+Lemma freshen2__fresh_map_snd' {used l } {y : string } :
+  In y (map snd (freshen2 used l)) -> ~ In y used.
+Proof.
 Admitted.
 
 (* Useful helper lemma that captures the AlphaVar relation *)
@@ -2386,9 +2259,6 @@ Lemma fold_right_helper used  l y :
   In y (map fst (freshen2 used l)).
 Admitted.
 
-Lemma in_freshen2_then_in_generator used l x :
-  In x (map fst (freshen2 used l)) -> In x l.
-Admitted.
 
 Lemma map_pair_helper {A : Type} (x : string) l (f : A) :
   In x l -> In x (map fst ((map (pair^~ f) l))).
@@ -2402,10 +2272,6 @@ Proof.
   apply in_map with (f := pair^~ f) in H.
   auto.
 Qed.
-
-Lemma list_diff_helper x l1 l2 :
-  In x l1 -> ~ In x l2 -> In x (list_diff string_dec l1 l2).
-Admitted.
 
 Lemma a_constr__t_alpha {R s s' t R' t'} :
   (R', t') = @a_constr R s s' t ->
@@ -2980,6 +2846,30 @@ Proof.
   - eapply t_constr__uhm3. eauto. auto.
 Qed.
 
+(* By construction*)
+Lemma t_constr_btv_s_not_ftv_t' {t t' R s sigma X} :
+  (t', R) = t_constr t s sigma X ->
+  (forall y, In y (btv s) -> ~ In y (ftv t')).
+Proof.
+  intros.
+  unfold t_constr in H.
+  remember (R_constr t s sigma X) as p.
+  destruct p as [R1 R2].
+  admit.
+Admitted.
+
+(* By construction*)
+Lemma t_constr_btvenv_sigma_not_ftv_t' {t t' R s sigma X} :
+  (t', R) = t_constr t s sigma X ->
+  (forall y, In y (btv_env sigma) -> ~ In y (ftv t')).
+Proof.
+Admitted.
+
+Lemma btv_env_helper (y : string) (t : term) sigma :
+  In y (btv t) -> In t (map snd sigma) -> In y (btv_env sigma).
+Proof.
+Admitted.
+
 Lemma t_constr__nc_subs {t t' R s sigma X} :
   ~ In X (btv s) -> (* We dont have control over s or X in construction*)
   ~ In X (btv_env sigma) -> (* we do not have control over sigma*)
@@ -2991,13 +2881,34 @@ Proof.
   - constructor.
   - intros.
     split.
-    + (* by subs does nto introduce btvs *)
-      admit.
-    + (* suppose y in btv subs sigma s. Then y in sigma or s. Hence by construction. 
-        sub can remove btvs, but not introduce them.
-    *)
-      admit.
-Admitted.
+    + intros Hcontra.
+      subst.
+      apply in_btv_subs_then_in_constituents in H2.
+      destruct H2 as [Hin_s | [t0 [Ht0_sigma Hin_t0]]].
+      * contradiction.
+      * contradiction H0.
+        {
+        clear H1. clear H0. clear H.
+        induction sigma.
+        - inversion Ht0_sigma.
+        - destruct a as [ax a_t].
+          simpl.
+          rewrite map_cons in Ht0_sigma.
+          destruct Ht0_sigma.
+          + simpl in H. subst.
+            apply in_app_iff.
+            left. auto.
+          + apply in_app_iff.
+            right.
+            apply IHsigma.
+            auto.
+       }
+    + apply in_btv_subs_then_in_constituents in H2.
+      destruct H2 as [Hin_s | [t0 [Ht0_sigma Hin_t0]]].
+      * apply t_constr_btv_s_not_ftv_t' with (y := y) in H1. auto. auto.
+      * apply (btv_env_helper _ _ _ Hin_t0) in Ht0_sigma.
+        apply t_constr_btvenv_sigma_not_ftv_t' with (y := y) in H1. auto. auto.
+Qed.
 
 Opaque t_constr.
 
@@ -3236,4 +3147,137 @@ Proof.
         apply not_in_app in H_nxσ as [H_nxσ _]. auto.
       * apply de_morgan2 in H_nx'σ'. destruct H_nx'σ' as [_ H_nx'σ'].
         apply not_in_app in H_nx'σ' as [H_nx'σ' _]. auto.
+Qed.
+
+
+(* Pff, this must be avoidable: same set/prop trick as with kinding*)
+Inductive InSet {A : Type} (x : A) : list A -> Type :=
+| InSet_head : forall l, InSet x (x :: l)
+| InSet_tail : forall y l, InSet x l -> InSet x (y :: l).
+
+Lemma in_app_or_set {A} (x : A) (l1 l2 : list A) :
+  InSet x (l1 ++ l2) -> sum (InSet x l1) (InSet x l2).
+Proof.
+    induction l1 as [|h t IH]; simpl; intros H.
+  - right; exact H.
+  - inversion H; subst; clear H.
+    + left; apply InSet_head.
+    + destruct (IH X) as [H'|H'].
+      * left; apply InSet_tail; exact H'.
+      * right; exact H'.
+Qed.
+
+Definition in_dec_set {A} (eq_dec : forall x y : A, {x = y} + {x <> y}) (x : A) (l : list A) :
+  sum (InSet x l) ((InSet x l) -> False).
+Proof.
+  induction l as [|h t IH].
+  - right; intros H; inversion H.
+  - destruct (eq_dec x h) as [-> | Hneq].
+    + left; apply InSet_head.
+    + destruct IH as [Hin | Hnin].
+      * left; apply InSet_tail; exact Hin.
+      * right; intros H; inversion H; subst; [contradiction | apply Hnin; assumption].
+Defined.
+
+Theorem in_set_to_prop {A} {x : A} {l : list A} :
+  InSet x l -> In x l.
+Proof.
+  intros.
+  induction l as [|h t IH]; simpl in *.
+  - inversion X.
+  - inversion X; subst.
+    + left; reflexivity.
+    + right; apply IH; assumption.
+Qed.
+
+Fixpoint in_dec_f {A} (eq_dec : forall x y : A, {x = y} + {x <> y}) (x : A) (l : list A) :
+  bool:=
+  match l with
+  | [] => false
+  | h :: hs =>
+      match eq_dec x h with
+      | left _ => true
+      | right _ => in_dec_f eq_dec x hs
+      end
+  end.
+
+Theorem in_dec_f_sound {A} {eq_dec : forall x y : A, {x = y} + {x <> y}} {x : A} {l : list A} :
+  in_dec_f eq_dec x l = true -> InSet x l.
+Proof.
+  induction l as [|h t IH]; simpl; intros H.
+  - discriminate H.
+  - destruct (eq_dec x h) as [-> | Hneq].
+    + apply InSet_head.
+    + apply InSet_tail.
+      apply IH.
+      auto.
+Qed.
+
+Theorem in_prop_to_set {x : string} {l : list string} :
+  In x l -> InSet x l.
+Proof.
+  intros.
+  destruct (in_dec_f string_dec x l) eqn:uhm.
+  - eapply in_dec_f_sound; eauto.
+  - exfalso.
+    induction l.
+    + inversion H.
+    + inversion H; subst.
+      simpl in uhm.
+      destruct (string_dec x x).
+      * discriminate uhm.
+      * contradiction.
+      * assert (in_dec_f string_dec x l = false).
+        {
+          simpl in uhm.
+          destruct (string_dec x a).
+          - discriminate uhm.
+          - auto.
+        }
+        eapply IHl; auto.
+Qed.
+
+(* Since we have Alpha ren s s, we know no ftv in s is in ren! (or it is identity, so we already no that we won't get breaking
+  and if we do it is with variables that do not do antying to s
+)*)
+Lemma alpha_extend_id'' {s z ren}:
+  Alpha ren s s -> Alpha ((z, z)::ren ) s s.
+Proof.
+  destruct (in_dec string_dec z (ftv s)).
+  - intros.
+
+    (* By contradiction: If z breaks shadowing in ren, then there is a (z, z') in there with z' <> z. 
+    Then not ren ⊢ s ~ s*)
+    assert (NotBreakShadowing z ren).
+    {
+      dependent induction H.
+      - apply ftv_var in i; subst.
+        induction sigma.
+        + constructor.
+        + destruct a0 as [a1 a2].
+          inversion a; subst.
+          * apply not_break_shadow_id.
+          * apply not_break_shadow_cons; auto.
+      - 
+         assert (z <> x).
+        {
+          apply ftv_lam_in_no_binder in i. auto.
+        }
+        assert (Hs1_refl: s1 = s1) by auto.
+        specialize (IHAlpha (ftv_lam_helper i) Hs1_refl).
+        inversion IHAlpha; subst.
+        + auto.
+        + contradiction.
+      - simpl in i. 
+        apply in_prop_to_set in i.
+        apply in_app_or_set in i.
+        destruct i.
+        + apply in_set_to_prop in i. apply IHAlpha1; auto.
+        + apply in_set_to_prop in i. apply IHAlpha2; auto.
+      - inversion i.
+    }
+    intros.
+    eapply alpha_extend_id'; auto.
+  - intros.
+    apply alpha_extend_vacuous_ftv; eauto.
 Qed.

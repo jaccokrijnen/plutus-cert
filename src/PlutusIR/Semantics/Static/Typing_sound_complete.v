@@ -347,6 +347,14 @@ Section term_recursivity_rect.
     end.
 End term_recursivity_rect.
 
+Require Import Coq.Strings.String.
+Open Scope string_scope.
+
+Definition my_Gamma : list (string * ty) := (("x", Ty_App (Ty_Lam "y" Kind_Base (Ty_Var "y")) (Ty_Builtin DefaultUniInteger))::nil). 
+
+  
+  
+
 Lemma constructor_well_formed_sound : 
   forall Δ c T, constructor_well_formed_check Δ c T = true -> Δ |-ok_c c : T.
 Proof. 

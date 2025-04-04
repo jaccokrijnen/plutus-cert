@@ -179,6 +179,12 @@ Lemma in_btv_psubs_then_in_constituents x sigma s :
 Proof.
 Admitted.
 
+Lemma in_btv_subs_then_in_constituents x sigma s :
+  In x (btv (subs sigma s)) -> In x (btv s) \/ (exists t, In t (map snd sigma) /\ In x (btv t)).
+Proof.
+  
+Admitted.
+
 Lemma not_in_constitutents_then_not_in_ftv_psubs x sigma s :
   ~ In x (ftv s) -> ~ In x (flat_map ftv (map snd sigma)) -> ~ In x (ftv (psubs sigma s)).
 Proof.

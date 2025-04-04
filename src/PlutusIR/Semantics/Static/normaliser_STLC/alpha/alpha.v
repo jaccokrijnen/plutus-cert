@@ -4,7 +4,7 @@ From mathcomp Require Import ssreflect ssrbool eqtype ssrnat.
 From Coq Require Import ssrfun.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
-From PlutusCert Require Import Util.List AutosubstSsr freshness.
+From PlutusCert Require Import Util.List AutosubstSsr freshness util.
 Import ListNotations.
 Local Open Scope string_scope.
 Local Open Scope list_scope.
@@ -376,6 +376,18 @@ Inductive LegalRenSwap : list (string * string) -> list (string * string) -> Set
     LegalRenSwap ren1 ren1' -> (* Not important whether x, y, v, w in this, because the two were before them and they still are*)
     LegalRenSwap ((x, y) :: (v, w) :: ren1) ((v, w) :: (x, y) :: ren1').
 
+Definition LegalRenSwaps := @util.star (list (string * string)) LegalRenSwap.
+
+
+(*
+  LRS [a, b, c] [b, a, c]
+
+            LRS [b, a, c] [b, c, a]
+? LRS [a, b, c]           [b, c, a] ?
+
+No......
+*)
+
 Lemma legalRenSwap_id {ren}:
   LegalRenSwap ren ren.
 Proof.
@@ -386,19 +398,6 @@ Proof.
     assumption.
 Qed.
 
-Lemma lrs_trans ren1 ren2 ren3 :
-  LegalRenSwap ren1 ren2 -> LegalRenSwap ren2 ren3 -> LegalRenSwap ren1 ren3.
-Proof.
-  intros Hlrs1 Hlrs2.
-  generalize dependent ren3.
-  induction Hlrs1; intros.
-  - assumption.
-  - inversion Hlrs2; subst.
-    + apply lrs_cons. eapply IHHlrs1. auto.
-    + admit.
-  - admit.
-Admitted.
-
 Lemma lrs_sym ren1 ren2 :
   LegalRenSwap ren1 ren2 -> LegalRenSwap ren2 ren1.
 Proof.
@@ -408,6 +407,61 @@ Proof.
   - apply lrs_cons. assumption.
   - apply lrs_start; auto.
 Qed.
+
+
+Lemma lrss_cons x y ren1 ren2 :
+  LegalRenSwaps ren1 ren2 ->
+  LegalRenSwaps ((x, y)::ren1) ((x, y)::ren2).
+Proof.
+  induction 1.
+  all: econstructor; eauto.
+  constructor; auto.
+Qed.
+
+Lemma lrss_intro ren1 ren2 :
+  LegalRenSwap ren1 ren2 -> 
+  LegalRenSwaps ren1 ren2.
+Proof.
+  intros.
+  econstructor.
+  - constructor.
+  - auto.
+Qed.
+
+Lemma lrss_left ren1 ren2 ren3 :
+  LegalRenSwap ren1 ren2 -> LegalRenSwaps ren2 ren3 ->  LegalRenSwaps ren1 ren3.
+Proof.
+  intros Hlrs Hlrss.
+  induction Hlrss.
+  - apply lrss_intro. auto.
+  - econstructor. eauto. auto.
+Qed.
+
+Lemma lrss_sym ren1 ren2 :
+  LegalRenSwaps ren1 ren2 -> LegalRenSwaps ren2 ren1.
+Proof.
+  intros.
+  induction X.
+  - constructor.
+  - eapply lrss_left; eauto. apply lrs_sym. auto.
+Qed.
+
+Lemma lrss_trans ren1 ren2 ren3 : 
+  LegalRenSwaps ren1 ren2 -> 
+  LegalRenSwaps ren2 ren3 -> 
+  LegalRenSwaps ren1 ren3.
+Proof.
+  intros Hlrs12 Hlrs23.
+  generalize dependent ren3.
+  induction Hlrs12; intros.
+  - auto.
+  - eapply IHHlrs12.
+    apply lrss_sym in Hlrs23.
+    apply lrss_sym.
+    apply lrs_sym in e.
+    eapply starSE; eauto.
+Qed.
+
 
 Lemma alphavar_weaken {v w ren s t} :
   v <> s -> w <> t -> AlphaVar ((v, w)::ren) s t -> AlphaVar ren s t.
@@ -505,6 +559,15 @@ Proof.
     + exact (IHHalpha1 ren' lrs).
     + exact (IHHalpha2 ren' lrs).
   - constructor.
+Qed.
+
+Lemma alpha_swaps { s t ren'} ren :
+  LegalRenSwaps ren ren' ->
+  Alpha ren s t -> Alpha ren' s t.
+Proof.
+  intros Hlrss Ha.
+  induction Hlrss; auto.
+  eapply alpha_swap; eauto.
 Qed.
 
 (* In particular we can now swap identity renamings *)
@@ -771,6 +834,18 @@ Proof.
     + now apply @idCtxNotBreakShadowing with (x := x) in Hid. 
 Qed.
 
+Lemma alphavar_extend_ids_right {s t ren idCtx}:
+  IdCtx idCtx -> AlphaVar ren s t -> AlphaVar (ren ++ idCtx) s t.
+Proof.
+  intros Hid Ha.
+  assert (Alpha (ren ++ idCtx) (tmvar s) (tmvar t)).
+  {
+    apply alpha_extend_ids_right; auto.
+    constructor. auto.
+  }
+  inversion H; auto.
+Qed.
+
 Lemma alphavar_extend_ids idCtx s t:
   IdCtx idCtx -> AlphaVar nil s t -> AlphaVar idCtx s t.
 Proof.
@@ -789,18 +864,240 @@ Proof.
   eapply alpha_extend_ids_right.
 Qed.
 
+Lemma alphavar_lookup_helper R s s' :
+  AlphaVar R s s' -> (((lookup s R = Some s') * (lookup_r s' R = Some s)) + ((lookup s R = None) * (lookup_r s' R = None) * (s = s')))%type.
+Proof.
+  intros.
+  induction H.
+  - right. intuition.
+  - left. intuition.
+    simpl. rewrite String.eqb_refl. auto.
+    simpl. rewrite String.eqb_refl. auto.
+  - destruct IHAlphaVar as [[IH1 IH2] | [IH1 IH2]].
+    + left. split.
+      * simpl. rewrite <- String.eqb_neq in n. rewrite n. auto.
+      * simpl. rewrite <- String.eqb_neq in n0. rewrite n0. auto.
+    + right. split; [split|].
+      * simpl. rewrite <- String.eqb_neq in n. rewrite n. destruct IH1 as [IH1 _]. auto.
+      * simpl. rewrite <- String.eqb_neq in n0. rewrite n0. destruct IH1 as [_ IH1']. auto.
+      * auto.
+Qed.
+
+Lemma lookup_some_then_alphavar R s s' :
+  lookup s R = Some s' -> lookup_r s' R = Some s -> AlphaVar R s s'.
+Proof.
+  intros.
+  induction R.
+  - inversion H.
+  - destruct a.
+    destr_eqb_eq s0 s.
+    + simpl in H.
+      rewrite String.eqb_refl in H.
+      inv H.
+      constructor.
+    + assert (s1 <> s').
+      {
+        intros Hcontra.
+        subst.
+        simpl in H0.
+        rewrite String.eqb_refl in H0.
+        inv H0.
+        contradiction.
+      }
+      constructor; eauto.
+      eapply IHR.
+      * apply lookup_cons_helper in H; eauto.
+      * apply lookup_r_cons_helper in H0; auto.
+Qed.
+
+Lemma lookup_cons_None_helper (R : list (string * string)) s x y :
+  lookup s ((x, y)::R) = None -> lookup s R = None.
+Proof.
+  intros.
+  simpl in H.
+  destruct_match.
+  auto.
+Qed.
+
+Lemma lookup_r_cons_None_helper (R : list (string * string)) s' x y :
+  lookup_r s' ((x, y)::R) = None -> lookup_r s' R = None.
+Proof.
+  intros.
+  simpl in H.
+  destruct_match.
+  auto.
+Qed.
+
+Lemma lookup_none_then_alpharefl R s :
+  lookup s R = None -> lookup_r s R = None -> AlphaVar R s s.
+Proof.
+  intros.
+  induction R.
+  - simpl. constructor.
+  - destruct a.
+    constructor.
+    + intros Hcontra. subst. simpl in H. rewrite String.eqb_refl in H. inv H.
+    + intros Hcontra. subst. simpl in H0. rewrite String.eqb_refl in H0. inv H0.
+    + eapply IHR; eauto.
+      * eapply lookup_cons_None_helper. eauto.
+      * eapply lookup_r_cons_None_helper. eauto.
+Qed.
+
+Lemma lookup_idctx_refl R s t:
+  IdCtx R -> lookup s R = Some t -> s = t.
+Proof.
+Admitted.
+
+Lemma lookup_id_exists_then_refl R s:
+  IdCtx R -> In s (map fst R) ->
+  ((lookup s R = Some s) * (lookup_r s R = Some s))%type.
+Admitted.
+
+Lemma lookup_id_nex_then_not R s:
+  IdCtx R -> ~ In s (map fst R) ->
+  ((lookup s R = None) * (lookup_r s R = None))%type.
+Admitted.
+
+Lemma lookup_none_smaller (R1 R2: list (string * string)) s :
+  (forall x, In x (map fst R1) -> In x (map fst R2)) -> lookup s R2 = None -> lookup s R1 = None.
+Admitted.
+
+Lemma lookupr_none_smaller (R1 R2: list (string * string)) s :
+  (forall x, In x (map snd R1) -> In x (map snd R2)) -> lookup_r s R2 = None -> lookup_r s R1 = None.
+Admitted.
+
+Lemma alphavar_weaken_id R idCtx1 s t x :
+  IdCtx ((x, x)::idCtx1) -> AlphaVar (R ++ (x, x)::idCtx1) s t -> AlphaVar (R ++ idCtx1) s t.
+Proof.
+  intros Hid Ha.
+  apply alphavar_lookup_helper in Ha.
+  destruct Ha as [[Hl_some H_lr_some] | [[Hl_none Hlr_none] Heq]].
+  - destruct (lookup_split_app_helper _ _ _ _ Hl_some H_lr_some) as [[Hl_R1_some Hlr_R1_some] | [[[Hl_R1_none Hlr_R1_none] Hl_R2_some] Hlr_R2_some]].
+    + apply lookup_some_then_alphavar.
+      -- apply lookup_some_extend_helper; auto.
+      -- apply lookup_some_extend_helper; auto.
+    + assert (t = s).
+      {
+        apply (lookup_idctx_refl Hid) in Hl_R2_some.
+        auto.
+      }
+      subst.
+      remember Hl_R2_some as Hl_R2_some'; clear HeqHl_R2_some'.
+      simpl in Hl_R2_some'.
+      
+      destruct (in_dec string_dec s (map fst idCtx1)).
+      * inversion Hid; subst.
+        destruct (lookup_id_exists_then_refl H0 i) as [Hl_refl Hlr_refl].
+        destruct (@lookup_none_extend_helper _ (idCtx1) _ Hl_R1_none Hlr_R1_none) as [Hl_ex Hlr_ex].
+        apply lookup_some_then_alphavar; auto.
+        -- rewrite Hl_ex. auto.
+        -- rewrite Hlr_ex. auto.
+      * inversion Hid; subst.
+        destruct (lookup_id_nex_then_not H0 n) as [Hl_refl Hlr_refl].
+        (* We know that s is not in the idCtx1, so we can use the lookup_none lemma *)
+        destruct (@lookup_none_extend_helper _ (idCtx1) _ Hl_R1_none Hlr_R1_none) as [Hl_ex Hlr_ex].
+        apply lookup_none_then_alpharefl.
+        -- rewrite Hl_ex. auto.
+        -- rewrite Hlr_ex. auto.
+  - subst.
+    apply lookup_none_then_alpharefl.
+    -- apply lookup_none_smaller with (R1 := R ++ idCtx1) in Hl_none; auto.
+       intros.
+       rewrite map_app in H.
+       apply in_app_iff in H.
+       destruct H as [H_inR | H_inidCtx1].
+       ++ apply in_map_iff in H_inR.
+          destruct H_inR as [x' [H_eq H_inR]].
+          destruct x'.
+          simpl in H_eq; subst.
+          apply in_map_iff.
+          exists ((x0, s0)).
+          split.
+          ** auto.
+          ** apply in_app_iff.
+             left. auto.
+       ++ apply in_map_iff in H_inidCtx1.
+          destruct H_inidCtx1 as [x' [H_eq H_inidCtx1]].
+          destruct x'.
+          simpl in H_eq; subst.
+          apply in_map_iff.
+          exists ((x0, s0)).
+          split.
+          ** auto.
+          ** apply in_app_iff.
+             right. auto.
+             apply in_cons. auto.
+    -- apply lookupr_none_smaller with (R1 := R ++ idCtx1) in Hlr_none.
+        ++ auto.
+        ++ intros.
+            rewrite map_app in H.
+            apply in_app_iff in H.
+            destruct H as [H_inR | H_inidCtx1].
+            ** apply in_map_iff in H_inR.
+              destruct H_inR as [x' [H_eq H_inR]].
+              destruct x'.
+              simpl in H_eq; subst.
+              apply in_map_iff.
+              exists (s, x0).
+              split.
+              --- auto.
+              --- apply in_app_iff.
+                  left. auto.
+            ** apply in_map_iff in H_inidCtx1.
+              destruct H_inidCtx1 as [x' [H_eq H_inidCtx1]].
+              destruct x'.
+              simpl in H_eq; subst.
+              apply in_map_iff.
+              exists (s, x0).
+              split.
+              --- auto.
+              --- apply in_app_iff.
+                  right. auto.
+                  apply in_cons. auto.
+Qed.
+
+
+(* Difficult lemma, because when going under binder, we lose the IdCtx "invariant"*)
+Lemma alpha_weaken_id R idCtx1 s t x y :
+  IdCtx ((x, y)::idCtx1) -> Alpha (R ++ (x, y)::idCtx1) s t -> Alpha (R ++ idCtx1) s t.
+Proof.
+  intros.
+  assert (x = y). 
+  {
+    inversion H; subst. reflexivity.
+  }
+  subst.
+  dependent induction H0.
+  - constructor.
+    eapply alphavar_weaken_id; eauto.
+  - constructor.
+    change (((x, y0) :: (R ++ idCtx1))) with (((x, y0)::R) ++ idCtx1).
+    eapply IHAlpha; eauto.
+    + change ((x, y0) :: R ++ (y, y) :: idCtx1 ) with (((x, y0) :: R) ++ (y, y) :: idCtx1).
+      auto.
+  - constructor.
+    + eapply IHAlpha1; eauto.
+    + eapply IHAlpha2; eauto.
+  - constructor.
+Qed.
+
 Lemma alpha_weaken_ids idCtx s t:
   IdCtx idCtx -> Alpha idCtx s t -> Alpha nil s t.
 Proof.
   intros Hid Hav.
-  induction Hav.
-  - induction a; subst.
-    + constructor. auto. constructor.
-    + inversion Hid; subst.
-      constructor. constructor.
-    + eapply IHa. inversion Hid; subst. auto.
-  - (* classic.. *)
-Admitted.
+  induction idCtx.
+  - auto.
+  - eapply IHidCtx.
+    + inversion Hid; auto.
+    + destruct a as [x y].
+      assert (idCtx = [] ++ idCtx).
+      {
+        rewrite app_nil_l.
+        auto.
+      }
+      rewrite H.
+      eapply alpha_weaken_id; eauto.
+Qed.
 
 Lemma alpha_ids s idCtx :
   IdCtx idCtx -> Alpha idCtx s s.
@@ -835,14 +1132,6 @@ Proof.
   intros Hren.
   apply alpha_extend_id_split with (ren := ren) (ren1 := nil); eauto.
 Qed. 
-
-(* Since we have Alpha ren s s, we know no ftv in s is in ren! (or it is identity, so we already no that we won't get breaking
-  and if we do it is with variables that do not do antying to s
-)*)
-Lemma alpha_extend_id'' {s z ren}:
-  Alpha ren s s -> Alpha ((z, z)::ren ) s s.
-Proof.
-Admitted.
 
 (* We can extend alpha context by a non-shadowing identity substitution *)
 Lemma alpha_extend_id {s z ren}:

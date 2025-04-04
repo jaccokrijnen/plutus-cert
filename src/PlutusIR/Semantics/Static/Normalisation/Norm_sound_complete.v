@@ -175,7 +175,7 @@ Proof.
     exists tn. now apply normalise_extend with (T2 := t').
   - exists t.
     now apply normalisation__stable'__normal.
-Qed.
+Defined.
 
 Fixpoint normaliser_gas (n : nat) {T Δ K} (Hwk : Δ |-* T : K) :=
   match n with
