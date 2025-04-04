@@ -461,15 +461,16 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
         subst.
         apply kind_checking_sound in Heqo1.
         assumption.
-  (* - Case Let NONRec
+  - (* Case Let NONRec *)
     intros bs t0.
     intros P.
     intros Q.
     intros.
       inversion H.
+      destruct_match.
       unfold bind in H1.
       repeat destruct_match.
-      eapply T_Let with (Δ' := flatten (map binds_Delta bs) ++ Δ); auto.
+      eapply T_Let with (Δ' := (flatten (map binds_Delta bs) ++ Δ)%list); auto.
       * apply no_dup_fun_sound; auto.
       
       * apply (map_normaliser_sound) in Heqo. 
@@ -677,8 +678,8 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
     + eapply H0.
       intuition.
   - intros.
-    apply W_NilB_NonRec. *)
-Admitted.
+    apply W_NilB_NonRec.
+Qed.
 
 (* Hmmm, why does this rewrite?? This helper lemma is of course temporary TODO *)
 Lemma test (T2n T1n : ty) Δ Γ t x :
@@ -727,7 +728,7 @@ Proof.
     rewrite n. simpl.
     apply kind_checking_complete in h; rewrite h.
     now apply test.
-  (* - Case: T_Apply
+  - (* Case: T_Apply *)
     rewrite H0.
     rewrite H1.
     now rewrite -> Ty_eqb_refl.
@@ -836,6 +837,7 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
         {
           admit.
         }
+        
         (* no dup reverse lemmas *)
         admit.
     }
@@ -865,6 +867,7 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
        admit.
     + apply b_wf__map_wk_nr in b0; auto.
       intros.
+      (* Nodup subset*)
       admit.
 
   - intros. simpl. rewrite H0.
@@ -940,7 +943,7 @@ no_dup_fun (map vdecl_name l0)) eqn:no_dup.
       destruct no_dup as [DupTV | DUPV].
       * apply no_dup_fun_complete in n.  simpl in n. destruct_match. rewrite n in DupTV. inversion DupTV.
       * apply no_dup_fun_complete in n0. rewrite n0 in DUPV. inversion DUPV.
-    } *)
+    }
 Admitted.
 
 Extraction Language Haskell.
