@@ -417,12 +417,13 @@ Proof.
   intros.
   generalize dependent K.
   generalize dependent Δ.
-  (* induction H0; intros Δ K0 Hkind; inversion Hkind; subst; try solve [econstructor; eauto].
+  induction H0; intros Δ K0 Hkind; inversion Hkind; subst; try solve [econstructor; eauto].
   - eapply IHnormalise3; eauto.
     eapply substituteTCA_preserves_kinding; eauto.
     specialize (IHnormalise1 Δ (Kind_Arrow K1 K0) H2).
     inversion IHnormalise1; subst.
-    assumption. *)
+    assumption.
+  - admit.
 Admitted.
 
 Theorem normaliser_preserves_kinding {Δ T Tn K } :
