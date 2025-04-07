@@ -73,6 +73,7 @@ src/PlutusIR/Semantics/Dynamic/Builtins.v
 src/PlutusIR/Semantics/Dynamic/Builtins/BuiltinMeanings.v
 src/PlutusIR/Semantics/Dynamic/Datatypes.v
 src/PlutusIR/Semantics/Dynamic/Substitution.v
+src/PlutusIR/Semantics/Dynamic/Substitution/Class.v
 src/PlutusIR/Semantics/Dynamic/Substitution/Free.v
 src/PlutusIR/Semantics/Dynamic/Values.v
 

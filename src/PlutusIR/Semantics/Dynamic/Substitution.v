@@ -2,6 +2,8 @@ Require Import PlutusCert.PlutusIR.
 Import PlutusNotations.
 
 Require Export PlutusCert.PlutusIR.Analysis.BoundVars.
+From PlutusCert Require Export Substitution.Class.
+From PlutusCert Require Import Util.List.
 
 Import Coq.Lists.List.
 Import Coq.Strings.String.
@@ -179,11 +181,25 @@ Proof.
   destruct b; reflexivity.
 Qed.
 
+
+Instance Subst_subst : Subst (string * term) term := {
+  s := fun '(x, t) => subst x t
+}.
+
+Instance Subst_subst_b : Subst (string * term) binding := {
+  s := fun '(x, t) => subst_b x t
+}.
+
+Instance Subst_subst_bs : Subst (string * term) (list binding) := {
+  s := fun '(x, t) => subst_bnr x t
+}.
+
+
 (** Multi-substitutions of terms *)
 Fixpoint msubst (ss : list (string * term)) (t : term) : term :=
   match ss with
   | nil => t
-  | (x, s) :: ss' => msubst ss' <{ [x := s] t }>
+  | (x, s) :: ss' => msubst ss' ((x, s) ⊙ t)
   end.
 
 Fixpoint msubst_b (ss : list (string * term)) (b : binding) : binding :=
@@ -201,6 +217,46 @@ Fixpoint msubst_bnr (ss : list (string * term)) (bs : list binding) : list bindi
 Notation "'[' ss ']*' t" := (msubst ss t) (in custom plutus_term at level 20, ss constr).
 Notation "'[' ss ']*b' b" := (msubst_b ss b) (in custom plutus_term at level 20, ss constr).
 Notation "'[' ss ']*bnr' bs" := (msubst_bnr ss bs) (in custom plutus_term at level 20, ss constr).
+
+
+
+Instance Subst_msubst : Subst (list (string * term)) term := {
+  s := msubst
+}.
+
+Instance Subst_msubst_b : Subst (list (string * term)) binding := {
+  s := msubst_b
+}.
+
+Instance Subst_msubst_bnr : Subst (list (string * term)) (list binding) := {
+  s := msubst_bnr
+}.
+
+
+Instance Drop_string : Drop string term := {
+  d := drop
+}.
+
+Instance Drop_strings : Drop (list string) term := {
+  d := mdrop
+}.
+
+Instance Drop_bvbs : Drop (list binding) term := {
+  d := fun bs => mdrop (bvbs bs)
+}.
+
+Instance Drop_b : Drop binding term := {
+  d := fun b => mdrop (bvb b)
+}.
+
+Instance Drop_bvbs_ty : Drop (list binding) ty := {
+  d := fun bs => mdrop (bvbs bs)
+}.
+
+Instance Drop_b_ty : Drop binding ty := {
+  d := fun b => mdrop (bvb b)
+}.
+
 
 Create HintDb subst.
 Hint Rewrite subst_unfold : subst.

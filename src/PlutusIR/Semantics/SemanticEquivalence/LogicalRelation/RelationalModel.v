@@ -403,7 +403,7 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
             ∀ i (Hlt_i : i < k) v_0 v'_0,
               R I_V i T1n rho v_0 v'_0 ->
               (∀ x T1 e_body, v = <{λ x :: T1 , e_body}> ->
-                R I_C i T2n rho <{ [x := v_0] e_body }> <{ v' ⋅ v'_0 }>)
+                R I_C i T2n rho ((x, v_0) ⊙ e_body) <{ v' ⋅ v'_0 }>)
               /\
               (∀ f, applied f v ->
                 R I_C i T2n rho <{ v ⋅ v_0 }> <{ v' ⋅ v'_0 }>
@@ -474,11 +474,12 @@ Inductive G (rho : tymapping) (k : nat) : tass -> env -> env -> Prop :=
       G rho k ((x, T) :: c) ((x, v1) :: e1) ((x, v2) :: e2)
 .
 
+
 Definition approx Δ Γ e e' T :=
     (Δ ,, Γ |-+ e : T) /\
     (Δ ,, Γ |-+ e' : T) /\
-    forall k ρ γ γ',
+    forall k (ρ : tymapping) (γ γ' : list (string * term)),
       D Δ ρ ->
       G ρ k Γ γ γ' ->
-      C k T ρ (close γ (msyn1 ρ) e) (close γ' (msyn2 ρ) e').
+      C k T ρ (s γ (s (msyn1 ρ) e)) (s γ' (s (msyn2 ρ) e')).
 

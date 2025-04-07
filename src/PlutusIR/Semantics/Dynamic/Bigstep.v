@@ -15,10 +15,10 @@ Import ListNotations.
 (** * Big-step operational semantics *)
 
 (** ** Implementation of big-step semantics as an inductive datatype *)
-Reserved Notation "t '=[' j ']=>' v"(at level 40).
-Reserved Notation "t '=η=>' v"(at level 40).
-Reserved Notation "t '=[' j ']=>nr' v"(at level 40).
-Reserved Notation "t '=[' j ']=>r' v 'WITH' bs0"(at level 40).
+Reserved Notation "t '=[' j ']=>' v"(at level 70).
+Reserved Notation "t '=η=>' v"(at level 70).
+Reserved Notation "t '=[' j ']=>nr' v"(at level 70).
+Reserved Notation "t '=[' j ']=>r' v 'WITH' bs0"(at level 70).
 
 (* Make bindings non-strict so they can be used in strict let-rec
  *)
@@ -39,7 +39,7 @@ Inductive eval : term -> term -> nat -> Prop :=
       t1 =[j1]=> LamAbs x T t0 ->
       t2 =[j2]=> v2 ->
       ~ is_error v2 ->
-      <{ [x := v2 ] t0 }> =[j0]=> v0 ->
+      (x, v2) ⊙ t0 =[j0]=> v0 ->
       Apply t1 t2 =[j]=> v0
   (** Universal types *)
   | E_TyAbs : forall j X K t,
@@ -167,10 +167,7 @@ Inductive eval : term -> term -> nat -> Prop :=
       dtd = Datatype (TyVarDecl X K) tvds matchf cs ->
       (ty, t_match, t_cs) = compile_data Rec dtd ->
 
-      (substA X ty
-        (msubst t_cs
-          (subst matchf t_match
-            t))) =[j]=> v ->
+      (X, ty) ⊙ t_cs ⊙ (matchf, t_match) ⊙ t =[j]=> v ->
       Let Rec [DatatypeBind dtd] t =[j]=> v
 
 

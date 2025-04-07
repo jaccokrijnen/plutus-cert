@@ -22,92 +22,125 @@ Local Open Scope string_scope.
 
 (** Properties of substitutions *)
 
-Lemma subst_closed : forall t,
+Lemma subst_closed : forall (t : term),
     closed t ->
     forall x s,
-      <{ [x := s] t }> = t.
+      (x, s) ⊙ t = t.
 Proof. Admitted.
 
-Lemma substA_closed : forall t,
+Lemma substA_closed : forall (t : term),
     closed t ->
-    forall X T,
-      <{ :[X := T] t }> = t.
+    forall X (T : ty),
+      (X, T) ⊙ t = t.
 Proof. Admitted.
 
-Lemma subst_not_afi : forall t x v,
+Lemma subst_not_afi : forall (t : term) x v,
     closed v ->
-    ~(Term.appears_free_in x <{ [x := v] t }> ).
+    ~(Term.appears_free_in x ((x,v) ⊙ t) ).
 Proof. Admitted.
 
-Lemma substA_not_afi : forall t X U,
+Lemma substA_not_afi : forall (t : term) X U,
     Ty.closed U ->
-    ~(Annotation.appears_free_in X <{ :[X := U] t }> ).
+    ~(Annotation.appears_free_in X ((X, U) ⊙ t) ).
 Proof. Admitted.
 
-Lemma duplicate_subst : forall x t v v',
+Lemma duplicate_subst : forall x (t : term) v v',
     closed v ->
-    <{ [x := v'] ([x := v] t) }> = <{ [x := v] t }>.
+    (x, v') ⊙ (x, v) ⊙ t = (x, v) ⊙ t.
 Proof. Admitted.
 
-Lemma duplicate_substA : forall X t U U',
+Lemma duplicate_substA : forall X (t : term) U U',
     Ty.closed U ->
-    <{ :[X := U'] (:[X := U] t) }> = <{ :[X := U] t }>.
+    (X, U') ⊙ (X, U) ⊙ t = (X, U) ⊙ t.
 Proof. Admitted.
 
-Lemma duplicate__subst_bnr : forall x bs v v',
+Lemma duplicate__subst_bnr : forall x (bs : list binding) v v',
     closed v ->
-    <{ [x := v']bnr ([x := v]bnr bs) }> = <{ [x := v]bnr bs }>.
+    (x, v') ⊙ (x, v) ⊙ bs = (x, v) ⊙ bs.
 Proof. Admitted.
 
-Lemma swap_subst : forall t x x1 v v1,
+Lemma swap_subst : forall (t : term) x x1 v v1,
     x <> x1 ->
     closed v ->
     closed v1 ->
-    <{ [x1 := v1]([x := v]t) }> = <{ [x := v]([x1 := v1]t) }>.
+    (x1, v1) ⊙ (x, v) ⊙ t = (x, v) ⊙ (x1, v1) ⊙ t.
 Proof. Admitted.
 
-Lemma swap__subst_bnr : forall bs x x1 v v1,
+Lemma swap__subst_bnr : forall (bs : list binding) x x1 v v1,
     x <> x1 ->
     closed v ->
     closed v1 ->
-    <{ [x1 := v1]bnr([x := v]bnr bs) }> = <{ [x := v]bnr([x1 := v1]bnr bs) }>.
+    (x1, v1) ⊙ (x, v) ⊙ bs = (x, v) ⊙ (x1, v1) ⊙ bs.
 Proof. Admitted.
 
+
+(* Basic simplifications *)
+
+Lemma msubst_cons x (s t : term) γ :
+  ((x, s) :: γ) ⊙ t = γ ⊙ ((x, s) ⊙ t).
+Proof.
+reflexivity.
+Qed.
+
+
+Lemma msubst_bnr_cons x (s : term) (bs : list binding) γ :
+  ((x, s) :: γ) ⊙ bs = γ ⊙ ((x, s) ⊙ bs).
+Proof. reflexivity. Qed.
+
+
+Lemma msubstA_cons x (s : ty) (t : term) γ :
+  ((x, s) :: γ) ⊙ t = γ ⊙ ((x, s) ⊙ t).
+Proof.
+reflexivity.
+Qed.
+
+Lemma drop_cons x s y γ :
+  ((x, s) :: γ) \\ y = if x =? y then γ \\ y else (x, s) :: (γ \\ y).
+Proof. reflexivity. Qed.
+
+Create HintDb subst_simpl.
+Hint Rewrite
+  msubst_cons
+  msubstA_cons
+  drop_cons
+  msubst_bnr_cons
+  : subst_simpl.
 
 
 (** ** Properties of multi-substitutions *)
 
 Lemma msubst_closed : forall t,
     closed t ->
-    forall ss,
-       msubst ss t = t.
+    forall (ss : env),
+       ss ⊙ t = t.
 Proof.
   induction ss.
   - reflexivity.
   - destruct a.
-    simpl.
+    autorewrite with subst_simpl.
     rewrite subst_closed; assumption.
 Qed.
 
 Lemma msubstA_closed : forall t,
     closed t ->
-    forall ss,
-      msubstA ss t = t.
+    forall (ss : tass),
+      ss ⊙ t = t.
 Proof.
   induction ss.
   - reflexivity.
   - destruct a.
-    simpl.
+    autorewrite with subst_simpl.
     rewrite substA_closed; assumption.
 Qed.
 
-Lemma subst_msubst : forall env x v t,
+Lemma subst_msubst : forall (env : list (string * term)) (x : string) v (t : term),
     closed v ->
     closed_env env ->
-    msubst env <{ [x := v]t }> = <{ [x := v] {msubst (drop x env) t} }>.
+    env ⊙ (x, v) ⊙ t = (x, v) ⊙ (env \\ x) ⊙ t.
 Proof.
   induction env; intros; auto.
-  destruct a. simpl.
+  destruct a.
+  autorewrite with subst_simpl.
   inversion H0.
   destruct (s =? x) eqn:Heqb.
   - apply eqb_eq in Heqb as Heq.
@@ -117,37 +150,38 @@ Proof.
     rewrite swap_subst; eauto.
 Qed.
 
-Lemma subst_msubst' : forall env x v t,
+Lemma subst_msubst' : forall env x v (t : term),
     closed v ->
     closed_env env ->
-    msubst (drop x env) <{ [x := v]t }> = <{ [x := v] {msubst (drop x env) t} }>.
+    (env \\ x) ⊙ ((x, v) ⊙ t) = (x, v) ⊙ (env \\ x) ⊙ t.
 Proof.
   induction env; intros; auto.
-  destruct a. simpl.
+  destruct a.
+  autorewrite with subst_simpl.
   inversion H0.
   destruct (s =? x) eqn:Heqb.
   - apply eqb_eq in Heqb as Heq.
     subst.
     eauto.
   - apply eqb_neq in Heqb as Hneq.
-    simpl.
+    autorewrite with subst_simpl.
     rewrite swap_subst; eauto.
 Qed.
 
-Lemma subst_msubst'' : forall env x xs v t,
+Lemma subst_msubst'' : forall env x (xs : list string) v (t : term),
     closed v ->
     closed_env env ->
     ~ In x xs ->
-    msubst (mdrop xs env) <{ [x := v]t }> = <{ [x := v] {msubst (mdrop xs env) t} }>.
+    (env \\ xs) ⊙ (x, v) ⊙ t = (x, v) ⊙ (env \\ xs) ⊙ t.
 Proof. Admitted.
 
-Lemma subst_bnr__msubst_bnr : forall env x v bs,
+Lemma subst_bnr__msubst_bnr : forall env x v (bs : list binding),
     closed v ->
     closed_env env ->
-    msubst_bnr env <{ [x := v]bnr bs }> = <{ [x := v]bnr {msubst_bnr (drop x env) bs} }>.
+    env ⊙ ((x, v) ⊙ bs) = (x, v) ⊙ (env \\ x) ⊙ bs.
 Proof.
   induction env; intros; auto.
-  destruct a. simpl.
+  destruct a. autorewrite with subst_simpl.
   inversion H0.
   destruct (s =? x) eqn:Heqb.
   - apply eqb_eq in Heqb as Heq.

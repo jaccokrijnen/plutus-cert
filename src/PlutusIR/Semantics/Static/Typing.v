@@ -1,5 +1,6 @@
 Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.Util.List.
+Require Import PlutusCert.Util.Tactics.
 From PlutusCert Require Import Analysis.BoundVars.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.Auxiliary.
@@ -250,6 +251,47 @@ Proof.
     assumption.
   - assumption.
 Qed.
+
+Lemma T_Let__cons_inv Δ Γ b bs t Tn :
+  Δ ,, Γ |-+ (Let NonRec (b :: bs) t) : Tn ->
+  Δ ,, Γ |-ok_b b /\
+  Δ |-* Tn : Kind_Base /\
+  (exists Γ_b,
+    map_normalise (binds_Gamma b) Γ_b /\
+    (binds_Delta b ++ Δ ,, Γ_b ++ Γ |-+ (Let NonRec bs t) : Tn))
+.
+Proof.
+intros.
+inversion H as [ | | | | | | | | | |
+  ? ? ? ? ? ? ? ? H_flatten H_MN ? H_oks H_typing_t H_kind
+| ].
+subst.
+repeat split.
+- inversion H_oks; assumption.
+- assumption.
+- destruct b; simpl.
+  + (* TermBind *)
+    destruct v.
+    simpl in H_MN.
+    rewrite flatten_cons in H_MN.
+    apply map_normalise__app in H_MN.
+    destruct_hypos.
+    eexists. 
+    repeat split; eauto.
+    econstructor; try eauto.
+    * inversion H_oks; simpl in H8; simpl in H9; subst; auto.
+      assert (bsGn0 = x0) by eauto using map_normalise__deterministic.
+      subst; assumption.
+    *  subst bsGn. simpl in H_typing_t. rewrite flatten_cons, app_nil_r, <- app_assoc in H_typing_t.
+      assumption.
+  + (* TypeBind*)
+    admit.
+  + (* DatatypeBind *)
+    admit.
+Admitted.
+
+
+
 
 Lemma has_type__normal : forall Delta Gamma t T,
     Delta ,, Gamma |-+ t : T ->

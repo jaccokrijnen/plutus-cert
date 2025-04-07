@@ -11,6 +11,29 @@ Require Import Arith.
 Require Import Lists.List.
 Import ListNotations.
 
+Lemma old_close γ ρ t:
+  (close γ ρ t) = γ ⊙ ρ ⊙ t.
+Proof. reflexivity. Qed.
+
+Lemma old_drop x γ : drop x γ = γ \\ x.
+Proof. reflexivity. Qed.
+
+Lemma old_subst x v t : subst x v t = (x, v) ⊙ t.
+Proof. reflexivity. Qed.
+
+Create HintDb old_subst.
+Hint Rewrite
+  old_close
+  old_drop
+  old_subst
+  : old_subst.
+
+Create HintDb new_subst.
+Hint Rewrite <-
+  old_close
+  old_drop
+  old_subst
+  : new_subst.
 
 Lemma compatibility_LamAbs : forall Delta Gamma x T1 T1n T2n e e',
     Delta |-* T1 : Kind_Base ->
@@ -116,8 +139,10 @@ Proof with eauto_LR.
   eapply RG_env_closed in H_RG as Hclss...
   destruct Hclss as [Hcls__env Hcls__env'].
 
+  autorewrite with old_subst.
   rewrite <- subst_msubst...
   rewrite <- subst_msubst...
+  autorewrite with new_subst.
   rewrite msubst__fold.
   rewrite msubst__fold.
 

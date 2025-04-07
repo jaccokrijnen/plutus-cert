@@ -3,6 +3,7 @@ Import PlutusNotations.
 
 Require Import PlutusCert.PlutusIR.Semantics.Static.TypeSubstitution.
 Require Import PlutusCert.PlutusIR.Analysis.BoundVars.
+From PlutusCert Require Export Substitution.Class.
 
 Import Coq.Lists.List.
 Import Coq.Strings.String.
@@ -150,4 +151,21 @@ Notation "':[' ss ']*' t" := (msubstA ss t) (in custom plutus_term at level 20, 
 Notation "':[' ss ']*b' b" := (msubstA_b ss b) (in custom plutus_term at level 20, ss constr).
 Notation "':[' ss ']*bnr' bs" := (msubstA_bnr ss bs) (in custom plutus_term at level 20, ss constr).
 Notation "':[' ss ']*cs' cs" := (msubstA_cs ss cs) (in custom plutus_term at level 20, ss constr).
+
+
+Instance Subst_msubstA : Subst (list (string * ty)) term := {
+  s := msubstA
+}.
+
+Instance Subst_msubstA_b : Subst (list (string * ty)) binding := {
+  s := msubstA_b
+}.
+
+Instance Subst_msubstA_bnr : Subst (list (string * ty)) (list binding) := {
+  s := msubstA_bnr
+}.
+
+Instance Subst_substA_bnr : Subst (string * ty) term := {
+  s := fun '(x, T) => substA x T
+}.
 

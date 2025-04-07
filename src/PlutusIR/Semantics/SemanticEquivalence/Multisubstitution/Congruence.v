@@ -213,7 +213,7 @@ Lemma msubst_LetNonRec_nil : forall ss e,
 Proof.
   induction ss; intros.
   - reflexivity.
-  - destruct a. eauto.
+  - destruct a. simpl. auto.
 Qed.
 
 Lemma msubst_LetNonRec : forall ss bs e,
@@ -353,7 +353,7 @@ Lemma msubst_Apply : forall ss t1 t2,
 Proof.
   induction ss; intros.
   - reflexivity.
-  - destruct a. eauto.
+  - destruct a. simpl. auto.
 Qed.
 
 Lemma msubstA_Apply : forall ss t1 t2,
@@ -369,7 +369,7 @@ Lemma msubst_Builtin : forall ss f,
 Proof.
   induction ss; intros.
   - reflexivity.
-  - destruct a. eauto.
+  - destruct a. simpl. auto.
 Qed.
 
 Lemma msubstA_Builtin : forall ss f,
@@ -377,7 +377,7 @@ Lemma msubstA_Builtin : forall ss f,
 Proof.
   induction ss; intros.
   - reflexivity.
-  - destruct a. eauto.
+  - destruct a. simpl. auto.
 Qed.
 
 Lemma msubst_Constant : forall ss sv,
@@ -386,7 +386,7 @@ Proof.
   induction ss; intros.
   - reflexivity.
   - destruct a.
-    eauto.
+    simpl. eauto.
 Qed.
 
 Lemma msubstA_Constant : forall ss sv ,
@@ -394,7 +394,7 @@ Lemma msubstA_Constant : forall ss sv ,
 Proof.
   induction ss; intros.
   - reflexivity.
-  - destruct a. eauto.
+  - destruct a. simpl. eauto.
 Qed.
 
 Lemma msubstT_TyBuiltin : forall ss T,
@@ -402,7 +402,7 @@ Lemma msubstT_TyBuiltin : forall ss T,
 Proof.
   induction ss; intros.
   - reflexivity.
-  - destruct a. eauto.
+  - destruct a. simpl. eauto.
 Qed.
 
 Lemma msubst_DatatypeBind : forall ss X YKs matchFunc cs,
@@ -410,7 +410,7 @@ Lemma msubst_DatatypeBind : forall ss X YKs matchFunc cs,
 Proof.
   induction ss; intros.
   - reflexivity.
-  - destruct a. eauto.
+  - destruct a. simpl. eauto.
 Qed.
 
 Lemma msubstA_DatatypeBind : forall ss X YKs matchFunc cs,
@@ -418,7 +418,7 @@ Lemma msubstA_DatatypeBind : forall ss X YKs matchFunc cs,
 Proof.
   induction ss; intros.
   - reflexivity.
-  - destruct a. simpl. eauto.
+  - destruct a. simpl. simpl. eauto.
 Qed.
 
 
@@ -427,7 +427,7 @@ Lemma msubst_Error : forall ss T,
 Proof.
   induction ss; intros.
   - reflexivity.
-  - destruct a. eauto.
+  - destruct a. simpl. eauto.
 Qed.
 
 Lemma msubstA_Error : forall ss T,
@@ -435,7 +435,7 @@ Lemma msubstA_Error : forall ss T,
 Proof.
   induction ss; intros.
   - reflexivity.
-  - destruct a. eauto.
+  - destruct a. simpl. eauto.
 Qed.
 
 Lemma msubst_IWrap : forall ss F T M,
@@ -443,7 +443,7 @@ Lemma msubst_IWrap : forall ss F T M,
 Proof.
   induction ss; intros.
   - reflexivity.
-  - destruct a. eauto.
+  - destruct a. simpl. eauto.
 Qed.
 
 Lemma msubstA_IWrap : forall ss F T M,
@@ -451,7 +451,7 @@ Lemma msubstA_IWrap : forall ss F T M,
 Proof.
   induction ss; intros.
   - reflexivity.
-  - destruct a. eauto.
+  - destruct a. simpl. eauto.
 Qed.
 
 Lemma msubstT_IFix : forall ss F T,
@@ -459,12 +459,12 @@ Lemma msubstT_IFix : forall ss F T,
 Proof.
   induction ss; intros.
     - reflexivity.
-    - destruct a. eauto.
+    - destruct a. simpl. eauto.
 Qed.
 
 Lemma msubst_TyAbs : forall ss bX K t0,
     msubst ss (TyAbs bX K t0) = TyAbs bX K (msubst ss t0).
-Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
+Proof. induction ss; intros. - reflexivity. - destruct a. simpl. eauto. Qed.
 
 Lemma msubstA_TyAbs : forall ss bX K t0,
     msubstA ss (TyAbs bX K t0) = TyAbs bX K (msubstA (drop bX ss) t0).
@@ -477,17 +477,17 @@ Proof. induction ss; intros. - reflexivity. - intros. destruct a. simpl. destruc
 
 Lemma msubst_TyInst : forall ss t0 T0,
     msubst ss (TyInst t0 T0) = TyInst (msubst ss t0) T0.
-Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
+Proof. induction ss; intros. - reflexivity. - destruct a. simpl. eauto. Qed.
 
 
 Lemma msubstA_TyInst : forall ss t0 T0,
     msubstA ss (TyInst t0 T0) = TyInst (msubstA ss t0) (msubstT ss T0).
-Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
+Proof. induction ss; intros. - reflexivity. - destruct a. simpl. eauto. Qed.
 
 
 Lemma msubst_Unwrap : forall ss M,
     msubst ss (Unwrap M) = Unwrap (msubst ss M).
-Proof. induction ss; intros. - reflexivity. - destruct a. eauto. Qed.
+Proof. induction ss; intros. - reflexivity. - destruct a. simpl. auto. Qed.
 
 Lemma msubstA_Unwrap : forall ss M ,
     msubstA ss (Unwrap M) = Unwrap (msubstA ss M).

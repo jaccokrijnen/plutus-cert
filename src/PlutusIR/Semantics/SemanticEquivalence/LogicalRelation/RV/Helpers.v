@@ -324,7 +324,7 @@ Corollary V_functional_extensionality  {i k T1 T2 rho v v' w w'} :
   V i T1 rho w w' ->
   (forall x T1 e_body,
     v = <{λ x :: T1 , e_body}> ->
-    C i T2 rho <{ [x := w] e_body }> <{ v' ⋅ w' }>)
+    C i T2 rho ((x, w) ⊙ e_body) <{ v' ⋅ w' }>)
   /\
   (forall f,
     applied f v ->
