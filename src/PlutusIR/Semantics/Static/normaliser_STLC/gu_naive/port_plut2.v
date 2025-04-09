@@ -12,7 +12,7 @@ Require Import Coq.Arith.PeanoNat.
 Import ListNotations.
 Require Import Ascii.
 
-From PlutusCert Require Import SN_STLC_named_naive SN_STLC_named2 util Util.List STLC_named STLC_named_typing plutus_kinding_set. (* I don't understand why we need this for ftv defintion*)
+From PlutusCert Require Import SN_STLC_named_naive SN_STLC_named2 util Util.List STLC_named STLC_named_typing. (* I don't understand why we need this for ftv defintion*)
 From PlutusCert Require Import PlutusIR plutus_util Checker.
 
 
