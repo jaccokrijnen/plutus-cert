@@ -275,6 +275,12 @@ Inductive IdCtx : list (string * string) -> Set :=
     IdCtx ren -> 
     IdCtx ((x, x) :: ren).
 
+Lemma lookup_id_then_lookup_r (x x' : string) (l : list (string * string)) :
+  IdCtx l ->
+  lookup x l = Some x ->
+  lookup_r x l = Some x.
+Admitted.
+
 Lemma sym_alpha_ctx_preserves_id_ctx ren :
   IdCtx ren -> IdCtx (sym_alpha_ctx ren).
 Proof.

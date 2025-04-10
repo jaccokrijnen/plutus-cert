@@ -47,6 +47,12 @@ Lemma length_concat_helper x xs :
 Proof.
 Admitted.
 
+Fixpoint lookup_r {X:Type} (k : string) (l : list (X * string)) : option X :=
+  match l with
+  | nil => None
+  | (x, j) :: l' => if j =? k then Datatypes.Some x else lookup_r k l'
+  end.
+
 
 Lemma cons_to_append {A } (x : A) sigma :
   (x :: sigma) = (x :: nil) ++ sigma.
@@ -124,6 +130,14 @@ Lemma lookup_app_or {A : Type} y t (R1 R2 : list (string * A)) :
   lookup y (R1 ++ R2) = Some t -> sum (lookup y R1 = Some t) (lookup y R2 = Some t).
 Admitted.
 
+Lemma not_ex__lookup_r_none (R : list (string * string)) y :
+  ~ In y (map snd R) -> lookup_r y R = None.
+Admitted.
+
+Lemma lookup_r__extend y t (R1 R2 : list (string * string)) :
+   (lookup_r y R1 = None) -> (lookup_r y R2 = Some t) -> lookup_r y (R1 ++ R2) = Some t.
+Admitted.
+
 Lemma lookup_app_or_extended {A : Type} y t (R1 R2 : list (string * A)) :
   lookup y (R1 ++ R2) = Some t -> sum (lookup y R1 = Some t) (prod (lookup y R1 = None) (lookup y R2 = Some t)).
 Proof.
@@ -165,13 +179,6 @@ Admitted.
 Lemma string_app_assoc (a b c : string) :
   (a ++ b ++ c)%string = ((a ++ b) ++ c)%string.
 Admitted.
-
-
-Fixpoint lookup_r {X:Type} (k : string) (l : list (X * string)) : option X :=
-  match l with
-  | nil => None
-  | (x, j) :: l' => if j =? k then Datatypes.Some x else lookup_r k l'
-  end.
 
 
 Lemma lookup_cons_helper (R : list (string * string)) s s' x y :
@@ -257,6 +264,54 @@ Lemma lookup_none_extend_helper {R1 R2 s} :
 Proof.
 Admitted.
 
+
+Lemma in_map__exists_lookup (x y : string) l :
+  In (x, y) l -> {y' & lookup x l = Some y'}.
+Admitted.
+
 Inductive star {A : Type} {e : A -> A -> Type } (x : A) : A -> Type :=
 | starR : star x x
 | starSE y z : star x y -> e y z -> star x z.
+
+
+Lemma lookup_then_in_map_fst (x x' : string) (l : list (string * string)) :
+  lookup x l = Some x' ->
+  In x (map fst l).
+Admitted.
+
+Lemma lookup_r_then_in_map_snd (x x' : string) (l : list (string * string)) :
+  lookup_r x' l = Some x ->
+  In x' (map snd l).
+Admitted.
+
+(* all elements in l1 not in l2*)
+Definition list_diff {A : Type} (eq_dec : forall x y : A, {x = y} + {x <> y})  
+  (l1 l2 : list A) : list A :=  
+  filter (fun x => if in_dec eq_dec x l2 then false else true) l1.
+
+Lemma list_diff_helper x l1 l2 :
+  In x l1 -> ~ In x l2 -> In x (list_diff string_dec l1 l2).
+Admitted.
+
+Lemma list_diff_in_first l1 l2 x :
+  In x (list_diff string_dec l1 l2) -> In x l1.
+Admitted.
+
+Lemma list_diff_not l1 l2 x :
+  In x l2 -> ~ In x (list_diff string_dec l1 l2).
+Admitted.
+
+
+(* TODO: We already have these two I think*)
+Lemma lookup_In {A} k (v : A) xs :
+  lookup k xs = Some v ->
+  In (k, v) xs
+.
+Proof.
+Admitted.
+
+(* TODO: We already have these two I think*)
+Lemma lookup_not_In {A} k (v : A) xs :
+  lookup k xs = None ->
+  ~ In (k, v) xs.
+Admitted.

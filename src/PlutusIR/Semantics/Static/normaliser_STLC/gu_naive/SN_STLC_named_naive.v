@@ -2114,3 +2114,5 @@ Theorem SN_naive E s T : has_kind E s T -> SN_na s.
   rewrite id_subst__id in H; [|apply id_subst_is_IdSubst].
   eapply L_sn; eauto.
 Qed.
+
+Print Assumptions SN_naive.

@@ -30,18 +30,6 @@ Hint Resolve sym_alpha_ctx_is_sym : α_eq_db.
 Hint Resolve sym_alpha_ctx_is_sym : α_eq_db.
 Hint Resolve sym_alpha_ctx_left_is_sym  : α_eq_db.
 
-Lemma lookup_In {A} k (v : A) xs :
-  lookup k xs = Some v ->
-  In (k, v) xs
-.
-Proof.
-Admitted.
-
-Lemma lookup_not_In {A} k (v : A) xs :
-  lookup k xs = None ->
-  ~ In (k, v) xs.
-Admitted.
-
 
 Fixpoint sub (X : string) (U T : term) : term :=
   match T with
@@ -152,11 +140,20 @@ Fixpoint btv_env (sigma : list (string * term)) : list string :=
   | (x, t)::sigma' => (btv t) ++ (btv_env sigma')
   end.
 
-  Definition set_diff (l1 l2 : list string) : list string :=
+Lemma btv_env_helper (y : string) (t : term) sigma :
+  In y (btv t) -> In t (map snd sigma) -> In y (btv_env sigma).
+Proof.
+Admitted.
+
+Definition set_diff (l1 l2 : list string) : list string :=
   filter (fun x => negb (existsb (String.eqb x) l2)) l1.
 
 Lemma btv_env_extends_to_tv_env x sigma :
   In x (btv_env sigma) -> In x (tv_keys_env sigma).
+Admitted.
+
+Lemma ftv_keys_env_extends_to_tv_env x sigma :
+  In x (ftv_keys_env sigma) -> In x (tv_keys_env sigma).
 Admitted.
 
 
@@ -168,6 +165,7 @@ Lemma ftv_keys_env__no_values sigma x :
   ~ In x (ftv_keys_env sigma) -> (forall val, In val (map snd sigma) -> ~ In x (ftv val)).
 Admitted.
 
+(* If x not a key or value, then not both*)
 Lemma ftv_keys_env_helper sigma x :
   ~ In x (map fst sigma) -> (forall ftvs, In ftvs (map snd sigma) -> ~ In x (ftv ftvs)) 
     -> ~ In x (ftv_keys_env sigma).
@@ -452,13 +450,58 @@ Proof.
     apply btv_c_lam; auto.
 Qed.
 
+(* The fundamental NC property*)
 Lemma nc_ftv_env s sigma :
   NC s sigma -> forall x, In x (btv s) -> ~ In x (ftv_keys_env sigma).
-Admitted.
+Proof.
+  intros Hnc x Hin_btvs.
+  induction Hnc.
+  - simpl. auto.
+  - simpl.
+    specialize (p x Hin_btvs) as [Hnotx Hnott].
+    apply de_morgan2.
+    split; auto.
+    apply not_in_app.
+    split; auto.
+Qed.
+
 
 Lemma gu_ftv_then_no_btv s x :
   GU s -> In x (ftv s) -> ~ In x (btv s).
-Admitted.
+Proof.
+  intros Hgu Hins.
+  induction Hgu.
+  - simpl in Hins. auto.
+  - simpl in Hins.
+    apply in_app_iff in Hins as [Hins | Hins].
+    + simpl.
+      apply not_in_app.
+      split.
+      * auto.
+      * intros Hcontra.
+        apply H_btv_btv_empty in Hcontra.
+        apply extend_ftv_to_tv in Hins.
+        contradiction.
+    + simpl.
+      apply not_in_app.
+      split.
+      * intros Hcontra.
+        apply H_btv_ftv_empty in Hcontra.
+        apply extend_ftv_to_tv in Hins.
+        contradiction.
+      * auto.
+  - simpl.
+    apply de_morgan2.
+    split.
+    + intros Hcontra.
+      subst.
+      apply ftv_lam_no_binder in Hins. 
+      auto.
+    + apply IHHgu.
+      apply ftv_lam_helper in Hins.
+      auto.
+  - inversion Hins.
+Qed.
 
 
 
@@ -534,7 +577,15 @@ Qed.
 Lemma Uhm_appr {B s t sigma} :
   Uhm sigma (@tmapp B s t) -> Uhm sigma t.
 Proof.
-Admitted.
+  intros Huhm.
+  unfold Uhm in Huhm.
+  destruct Huhm as [ uhm1 uhm2].
+  unfold Uhm.
+  split; intros.
+  - specialize (uhm1 x H).
+    apply not_tv_dc_appr in uhm1. auto.
+  - specialize (uhm2 x H). auto.
+Qed.
 
 (* x not in btv s, hence we can add it freely as ftv to sigma*)
 Lemma Uhm_lam_id {B x A s sigma} :
