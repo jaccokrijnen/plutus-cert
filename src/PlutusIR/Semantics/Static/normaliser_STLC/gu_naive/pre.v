@@ -476,7 +476,8 @@ Admitted.
               those ftv in t' that are binders in sigma! 
 
     This argument is tooooo subtle, need to formalise.
-    What about ftv in t that are also ftv in s? they are not renamed and thus in t'. Can they be btv in sigma? No by the first argument
+    What about ftv in t that are also ftv in s? they are not renamed and thus in t'.
+     Can they be btv in sigma? No by the first argument
 
 *)
 
@@ -487,6 +488,12 @@ Fixpoint fresh18 (l : list string) : string :=
   end.
 
 
+(* Property that allows to add binder names (a, b, c,...) to alpha context R, and keeping the property that
+    R ⊢ s ~ s, and R ⊢ sigma ~ sigma
+   - binders in sigma are not free in s
+   - binders in sigma are not free in sigma
+   - binders in s are not free in sigma, exactly NC s sigma
+*)
 Definition Uhm sigma s := ((forall x, In x (btv_env sigma) -> ~ In x (tv s)) 
   * (forall x, In x (btv_env sigma) -> ~ In x (ftv_keys_env sigma))
   * (forall x, In x (btv s) -> ~ In x (ftv_keys_env sigma)))%type.
@@ -537,6 +544,37 @@ Lemma Uhm_appr {B s t sigma} :
   Uhm sigma (@tmapp B s t) -> Uhm sigma t.
 Proof.
 Admitted.
+
+(* x not in btv s, hence we can add it freely as ftv to sigma*)
+Lemma Uhm_lam_id {B x A s sigma} :
+  GU (@tmlam B x A s) ->
+  (* cannot combine uhm3 and uhm1: free vars in t can still be free vars in s*)
+  Uhm sigma (@tmlam B x A s) -> Uhm ((x, tmvar x)::sigma) s.
+Proof.
+  intros Hgu Huhm.
+  unfold Uhm in Huhm.
+  destruct Huhm as [ [uhm1 uhm2] uhm3].
+  unfold Uhm.
+  split; [split|]; intros.
+  - eapply not_tv_dc_lam.
+    eapply uhm1. auto.
+  - simpl in H.
+    simpl.
+    apply de_morgan2.
+    split; [|apply de_morgan2; split].
+    all: try solve [intros Hcontra; subst; apply uhm1 in H; simpl in H; intuition].
+    now apply uhm2.
+  - simpl in H.
+    simpl.
+    apply de_morgan2.
+    split; [|apply de_morgan2; split].
+    3: {
+      eapply btv_c_lam in H.
+      eapply uhm3 in H.
+      auto.
+    }
+    all: inversion Hgu; subst; intros Hcontra; subst; contradiction.
+Qed.
 
 Lemma Uhm_lam {B x A s sigma t} :
 (* we changed Uhm. Maybe we need more conditions! *)

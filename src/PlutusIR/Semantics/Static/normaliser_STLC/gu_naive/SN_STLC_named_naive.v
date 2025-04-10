@@ -1855,7 +1855,7 @@ Theorem soundness Gamma s A :
   GU s -> (* So that we know GU_vars (tmlam x A s) -> ~ In x (btv s), and btv s ∩ ftv s = ∅, important for dealing with vars in `t` that roll out of LR*)
   forall sigma, 
     Uhm sigma s ->
-    NC s sigma -> (* so we get "nice" substitutions *)
+    NC s sigma -> (* so we get "nice" substitutions (is contained in Uhm) *)
     ParSeq sigma -> (* So parallel and sequential substitions are identical *)
     EL Gamma sigma -> (* So that terms in a substitution are already L *)
   L A (subs sigma s).
@@ -1906,23 +1906,7 @@ Proof with eauto using L_sn.
     }
     rewrite H3.
     eapply X0 with (sigma := ((X, tmvar X)::sigma)); eauto with gu_nc_db.
-    + eapply Uhm_lam; eauto.
-      * inversion H; subst.
-        intros.
-        intros HContra.
-        destr_eqb_eq X y.
-        -- contradiction.
-        -- unfold ftv in HContra. inversion HContra. subst. contradiction. contradiction.
-      * constructor.
-      * intros.
-        unfold Uhm in H0.
-        destruct H0 as [ [uhm1 uhm2] uhm3].
-        specialize (uhm1 y H4).
-        destr_eqb_eq y X.
-        -- simpl in uhm1. apply de_morgan2 in uhm1. destruct uhm1 as [uhm1 _]. contradiction.
-        -- unfold ftv. simpl. intuition.
-      * inversion H; subst.
-        auto.
+    + eapply Uhm_lam_id; eauto.
     + constructor; auto.
       * eapply nc_lam; eauto.
       * intros.
@@ -1949,7 +1933,8 @@ Proof with eauto using L_sn.
         simpl in Hcontra.
         intuition.
     + eapply extend_EL. eauto. apply L_var.
-  - intros.
+  - (* Builtin *)
+    intros.
     unfold L.
     rewrite subs_builtin.
     constructor.
