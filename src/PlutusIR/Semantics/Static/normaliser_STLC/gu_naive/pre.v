@@ -155,6 +155,10 @@ Fixpoint btv_env (sigma : list (string * term)) : list string :=
   Definition set_diff (l1 l2 : list string) : list string :=
   filter (fun x => negb (existsb (String.eqb x) l2)) l1.
 
+Lemma btv_env_extends_to_tv_env x sigma :
+  In x (btv_env sigma) -> In x (tv_keys_env sigma).
+Admitted.
+
 
 Lemma ftv_keys_env__no_keys sigma x :
   ~ In x (ftv_keys_env sigma) -> ~ In x (map fst sigma).
@@ -492,30 +496,22 @@ Fixpoint fresh18 (l : list string) : string :=
     R ⊢ s ~ s, and R ⊢ sigma ~ sigma
    - binders in sigma are not free in s
    - binders in sigma are not free in sigma
-   - binders in s are not free in sigma, exactly NC s sigma
+   - binders in s are not free in sigma, exactly NC s sigma: so moved out of this
 *)
 Definition Uhm sigma s := ((forall x, In x (btv_env sigma) -> ~ In x (tv s)) 
-  * (forall x, In x (btv_env sigma) -> ~ In x (ftv_keys_env sigma))
-  * (forall x, In x (btv s) -> ~ In x (ftv_keys_env sigma)))%type.
+  * (forall x, In x (btv_env sigma) -> ~ In x (ftv_keys_env sigma)))%type.
 
 Lemma uhm_smaller {sigma s x t} : Uhm ((x, t)::sigma) s -> Uhm sigma s.
 Proof.
   intros.
   unfold Uhm.
-  split; [split|]; unfold Uhm in H; destruct H as [ [uhm1 uhm2] uhm3]; intros.
+  split; unfold Uhm in H; destruct H as [ uhm1 uhm2]; intros.
   - eapply uhm1.
     simpl. apply in_app_iff. right. assumption.
   - assert (~ In x0 (ftv_keys_env ((x, t)::sigma))).
     {
       eapply uhm2.
       simpl. apply in_app_iff. right. assumption.
-    }
-    simpl in H0.
-    intuition.
-  - assert (~ In x0 (ftv_keys_env ((x, t)::sigma))).
-    {
-      eapply uhm3.
-      auto.
     }
     simpl in H0.
     intuition.
@@ -527,17 +523,12 @@ Lemma Uhm_appl {B s t sigma} :
 Proof.
   intros.
   unfold Uhm in H.
-  destruct H as [ [uhm1 uhm2] uhm3].
+  destruct H as [ uhm1 uhm2].
   unfold Uhm.
-  split; [split|]; intros.
+  split; intros.
   - specialize (uhm1 x H).
     apply not_tv_dc_appl in uhm1. auto.
   - specialize (uhm2 x H). auto.
-  - specialize (uhm3 x).
-    assert (In x (btv (@tmapp B s t))).
-    { apply btv_c_appl. auto. }
-    specialize (uhm3 H0).
-    auto.
 Qed.
 
 Lemma Uhm_appr {B s t sigma} :
@@ -553,9 +544,9 @@ Lemma Uhm_lam_id {B x A s sigma} :
 Proof.
   intros Hgu Huhm.
   unfold Uhm in Huhm.
-  destruct Huhm as [ [uhm1 uhm2] uhm3].
+  destruct Huhm as [ uhm1 uhm2].
   unfold Uhm.
-  split; [split|]; intros.
+  split; intros.
   - eapply not_tv_dc_lam.
     eapply uhm1. auto.
   - simpl in H.
@@ -564,95 +555,4 @@ Proof.
     split; [|apply de_morgan2; split].
     all: try solve [intros Hcontra; subst; apply uhm1 in H; simpl in H; intuition].
     now apply uhm2.
-  - simpl in H.
-    simpl.
-    apply de_morgan2.
-    split; [|apply de_morgan2; split].
-    3: {
-      eapply btv_c_lam in H.
-      eapply uhm3 in H.
-      auto.
-    }
-    all: inversion Hgu; subst; intros Hcontra; subst; contradiction.
 Qed.
-
-Lemma Uhm_lam {B x A s sigma t} :
-(* we changed Uhm. Maybe we need more conditions! *)
-  (* by GU s we have x not in btv s.*)
-
-  (forall y, In y (btv t) -> ~ In y (tv s)) -> (* uhm1*)
-    (forall y, In y (btv t) -> ~ In y (ftv_keys_env sigma)) -> (* uhm2*)
-  (forall y, In y (btv s) -> ~ In y (ftv t)) ->  (* uhm3*)
-
-  (~ In x (btv t)) -> (* uhm6*)
-  GU t -> (* uhm7 *)
-  (forall y, In y (btv_env sigma) -> ~ In y (ftv t)) -> (* uhm8 *)
-  (~ In x (btv s)) -> (* uhm9 *)
-
-  (* cannot combine uhm3 and uhm1: free vars in t can still be free vars in s*)
-  Uhm sigma (@tmlam B x A s) -> Uhm ((x, t)::sigma) s.
-Proof.
-  intros uhm1' uhm2' uhm3' uhm6' uhm7' uhm8' uhm9' HUhm.
-  unfold Uhm.
-  split; [split|]; intros;
-      (* ~ In tv decomposes through tmlam.
-        And we have control over binder names in t'? Yeah why not. 
-          They were not a problem yet before though...
-        Where do we need the GU sigma then? I think for the alphaCtxSub sigma sigma: 
-          renaming stuff that is binder in sigma is vacuous alpha subst, but if it is also ftv, 
-          then no longer. But if it is GU (elementwise for value side), then that canot happen
-        That still allows the identity substitutions!
-      *)
-  unfold Uhm in HUhm; destruct HUhm as [ [uhm1 uhm2] uhm3].
-  - (* x0 not in tv s.
-      Case x0 in btv t:
-        - then by uhm1' notin tv s
-      Case x0 in btv_env sigma:
-        - then by uhm1 and not_tv_dc_lam.
-    *)
-
-    admit.
-  - (* suppose x0 in btv t
-        - then by uhm2' not in ftv_keys_env sigma
-        - then also not in tv s
-        - what if x = x0?
-
-          suppose x in btv env sigma. then x not in tv (tmlam x A s). Contradiction.
-          Hence x not in btv_env sigma.
-          Hence x in btv t.
-
-       suppose x0 in btv_env sigma 
-        - then not in tv (tmlam x A s)   -> x0 <> x
-        - not in ftv_keys_env sigma
-    *)
-    destr_eqb_eq x0 x.
-    + exfalso.
-      simpl in H.
-      apply in_app_iff in H.
-      destruct H.
-      * apply uhm6' in H. (* uhm6' *)
-        auto.
-      * specialize (uhm1 x H).
-        contradiction uhm1.
-        simpl. left. reflexivity.
-    + simpl in H. apply in_app_iff in H.
-      destruct H.
-      * (* in btv t, then not in ftv of t by GU t (uhm7').
-          and
-          by uhm2' not in ftv keys env sigma.
-        *)
-        admit.
-      * (*
-          x: by x0 <> x.
-          t: by uhm8'
-          sigma: by uhm2
-        *)
-        admit.
-  - destr_eqb_eq x0 x.
-    + contradiction. (* by uhm9'*)
-    + (*
-        x : by x0 <> x
-        t : by uhm3'
-        sigma: By uhm3
-    *)
-Admitted.

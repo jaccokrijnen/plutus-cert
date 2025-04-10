@@ -1854,7 +1854,7 @@ Theorem soundness Gamma s A :
   has_kind Gamma s A -> 
   GU s -> (* So that we know GU_vars (tmlam x A s) -> ~ In x (btv s), and btv s ∩ ftv s = ∅, important for dealing with vars in `t` that roll out of LR*)
   forall sigma, 
-    Uhm sigma s ->
+    Uhm sigma s -> (* so btv sigma is disjoint from tv s + ftv_env sigma: Allows adding btvs to alpha context without accidentally renaming ftvs*)
     NC s sigma -> (* so we get "nice" substitutions (is contained in Uhm) *)
     ParSeq sigma -> (* So parallel and sequential substitions are identical *)
     EL Gamma sigma -> (* So that terms in a substitution are already L *)
@@ -1917,7 +1917,7 @@ Proof with eauto using L_sn.
         -- split; auto.
            unfold ftv. simpl. unfold not. intros Hcontra. intuition.
     + unfold Uhm in H0.
-      destruct H0 as [ [uhm1 uhm2] uhm3].
+      destruct H0 as [ uhm1 uhm2].
       constructor; auto.
       * assert (~ In X (ftv_keys_env sigma)).
         {
@@ -1949,16 +1949,7 @@ Proof with eauto using L_sn.
 
     assert (Huhm: Uhm ((X, t')::sigma) s).
     {
-      eapply Uhm_lam; eauto.
-      - intros. eapply t_constr__uhm1 in Heqt'R; eauto.
-      - intros. eapply t_constr__uhm2; eauto. 
-      - intros. eapply t_constr__uhm3; eauto. 
-      - eapply t_constr__fresh_X_btv_t'; eauto.
-      - eapply t_constr__GU. eauto.
-      - eapply t_constr__fresh_btv_env_sigma__ftv_t'; eauto.
-      - intros Hcontra.
-        inversion gu; subst.
-        contradiction.
+      eapply Uhm_lam2; eauto.
     }
     assert (HX: ~ In X (btv s)).
     {
@@ -1981,7 +1972,7 @@ Proof with eauto using L_sn.
         }
         intros Hcontra.
         apply ftv_keys_env_sigma_remove in Hcontra. contradiction.
-      - unfold Uhm in wierd. destruct wierd as [ [uhm1 _] _].
+      - unfold Uhm in wierd. destruct wierd as [ uhm1 _].
         intros Hcontra.
         apply uhm1 in Hcontra; auto.
         simpl in Hcontra.
@@ -1996,12 +1987,12 @@ Proof with eauto using L_sn.
       * eapply @alpha_sym with (ren := R). apply sym_alpha_ctx_is_sym.
         repeat rewrite psubs_to_subs; auto.
         apply (uhm_smaller) in Huhm.
-        eapply subs_preserves_alpha_σ_R; eauto; [|apply (t_constr__a_sigma Huhm Heqt'R)].
+        eapply subs_preserves_alpha_σ_R; eauto; [|apply (t_constr__a_sigma Huhm (nc_lam nc) Heqt'R)].
         constructor. eapply alpha_extend_id''. auto; apply (t_constr__a_s (gu_lam gu) Huhm Heqt'R).
       * eapply @alpha_sym; eauto. apply sym_alpha_ctx_is_sym.   
         apply (t_constr__a_t Heqt'R).
     + eapply t_constr__nc_subs; eauto.
-      unfold Uhm in wierd. destruct wierd as [ [uhm1 _] _].
+      unfold Uhm in wierd. destruct wierd as [ uhm1 _ ].
       intros Hcontra.
       apply uhm1 in Hcontra; auto.
       simpl in Hcontra.
@@ -2088,27 +2079,9 @@ Lemma id_subst__nc_uhm E s :
 Proof.
   intros.
   unfold Uhm.
-  split; [split|].
+  split.
   - intros. apply no_btv_in_id_subst in H0. contradiction.
   - intros. apply no_btv_in_id_subst in H0. contradiction.
-  - intros; induction s.
-    + inversion H0.
-  
-    + destr_eqb_eq x s.
-      * apply nc_ftv_env with (x := s) in H; auto.
-      * specialize (IHs (nc_lam H)).
-        eapply IHs.
-        simpl in H0.
-        destruct H0; intuition.
-    + specialize (IHs1 (nc_app_l H)). 
-      specialize (IHs2 (nc_app_r H)).
-      intros.
-      unfold btv in H0.
-      apply in_app_or in H0.
-      destruct H0; fold btv in H0.
-      * eapply IHs1; eauto.
-      * eapply IHs2; eauto.
-    + inversion H0.
 Qed.
 
 (* The fundamental theorem for named variables. *)
