@@ -335,7 +335,7 @@ Qed.
 
 Lemma step_nd_implies_step_gu_na t t' : 
     step_nd t t' ->  
-    {t_α & step_gu_naive t t_α * (nil ⊢ t' ~ t_α)}%type.
+    {t_α & step_gu t t_α * (nil ⊢ t' ~ t_α)}%type.
 Proof.
     remember (to_GU t) as t_GU.
     assert (nil ⊢ t ~ t_GU) as H_alpha.
@@ -355,7 +355,7 @@ Proof.
     split; auto.
     clear HeqHstep_GU.
     apply GU_step_d_implies_step_na in Hstep_GU.
-    + apply step_gu_naive_intro with (s' := t_GU); auto.
+    + apply step_gu_intro with (s' := t_GU); auto.
     + subst. auto.
 Qed.
 
@@ -378,14 +378,14 @@ Proof.
   - eapply alpha_sym. apply alpha_sym_nil. exact Hα'.
 Qed.
 
-Lemma SN_na_to_SN_nd t : (@sn term step_gu_naive) t -> (@sn term step_nd) t.
+Lemma SN_na_to_SN_nd t : (@sn term step_gu) t -> (@sn term step_nd) t.
 Proof.
   intros Hsn_nd.
   apply SNI.
   intros t' Hstep.
   generalize dependent t'.
   induction Hsn_nd; intros t Hstep_d.
-  assert (Hstep_alpha: {t' & prod (step_gu_naive x t') (Alpha nil t t')}).
+  assert (Hstep_alpha: {t' & prod (step_gu x t') (Alpha nil t t')}).
   {
     eapply step_nd_implies_step_gu_na; eauto.
   }

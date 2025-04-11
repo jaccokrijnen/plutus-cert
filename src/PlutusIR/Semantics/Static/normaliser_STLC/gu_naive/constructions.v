@@ -297,7 +297,11 @@ Proof.
     auto.
 Qed.
 
-Lemma to_GU__alpha_' s R used : KindOfUniqueRhs R -> (forall x, In x (ftv s) -> lookup x R = None -> AlphaVar R x x) -> (forall x, In x (tv s) -> In x used) -> Alpha R s (snd (to_GU_ used R s)).
+Lemma to_GU__alpha_' s R used : 
+  KindOfUniqueRhs R -> 
+  (forall x, In x (ftv s) -> lookup x R = None -> AlphaVar R x x) -> 
+  (forall x, In x (tv s) -> In x used) -> 
+  Alpha R s (snd (to_GU_ used R s)).
 Proof.
   generalize dependent R.
   generalize dependent used.
@@ -309,7 +313,8 @@ Proof.
       specialize (H0 s).
       assert (In s (ftv (tmvar s))) by now apply ftv_var_eq.
       eauto.
-  - simpl. remember (to_GU_ used ((s,
+  -
+     simpl. remember (to_GU_ used ((s,
     fresh_to_GU_
       used R s)
     :: R)
@@ -332,9 +337,9 @@ Proof.
       {
         rewrite <- String.eqb_neq. auto.
       }
-      specialize (H0 x).
-      specialize (H0 Hftvlam).
-      * specialize (H1 x (extend_ftv_to_tv Hftvlam)).
+      * specialize (H0 x).
+        specialize (H0 Hftvlam).
+        specialize (H1 x (extend_ftv_to_tv Hftvlam)).
         assert (~ In (fresh_to_GU_ used R s) used) by now apply fresh_to_GU__fresh_over_ftvs.
         intros Hcontra.
         subst.
@@ -379,7 +384,10 @@ Proof.
     constructor.
 Qed.
 
-Lemma to_GU__alpha_ s R used : KindOfUniqueRhs R -> (forall x, In x (ftv s) -> {y & In (x, y) R}) -> Alpha R s (snd (to_GU_ used R s)).
+Lemma to_GU__alpha_ s R used : 
+  KindOfUniqueRhs R -> 
+  (forall x, In x (ftv s) -> {y & In (x, y) R}) -> 
+  Alpha R s (snd (to_GU_ used R s)).
 Proof.
   generalize dependent R.
   generalize dependent used.
@@ -1985,8 +1993,8 @@ Definition freshen used to_freshen := fold_left
         let fresh_var := fresh_to_GU_ used acc x in
         (x, fresh_var) :: acc) to_freshen [].
 
-(* forall ftvs in s, lookup that in R, to get (x, y) and add that to the new R*)
 
+(* forall ftvs in s, lookup that in R, to get (x, y) and add that to the new R*)
 Definition a_R_constr R (s s' : term) t : list (string * string) :=
   let used := tv s ++ tv s' ++ tv t ++ (map fst R) ++ (map snd R) in
 
@@ -2499,9 +2507,6 @@ Proof.
     + eapply IHAlpha2; eauto.
   - inversion H1.
 Qed.
-
-
-
 
 Lemma map_pair_helper {A : Type} (x : string) l (f : A) :
   In x l -> In x (map fst ((map (pair^~ f) l))).

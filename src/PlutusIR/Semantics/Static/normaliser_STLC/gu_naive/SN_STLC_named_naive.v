@@ -143,25 +143,25 @@ Unset Printing Implicit.
 
 (* If a term has globally unique binders, then it has unique binders*)
 
-Inductive step_gu_naive : term -> term -> Type :=
-| step_gu_naive_intro s s' t : 
+Inductive step_gu : term -> term -> Type :=
+| step_gu_intro s s' t : 
     Alpha [] s s' ->
     GU s' ->
     step_naive s' t ->
-    step_gu_naive s t.
+    step_gu s t.
 (*     
     Alpha [] t' t ->
     GU_vars t ->
-    step_gu_naive s t. *)
+    step_gu s t. *)
 
 (* used to be prop (TODO: Defined also in SN_STCL_named )*)
 Inductive sn {X : Type} {e : X -> X -> Type } x : Type :=
 | SNI : (forall y, e x y -> sn y) -> sn x.
 
-Notation SN_na := (@sn term step_gu_naive).
+Notation SN_na := (@sn term step_gu).
 
-Lemma step_gu_naive_preserves_alpha {s} {s'} {t} R :
-  Alpha R s t -> step_gu_naive s s' -> {t' & prod (step_gu_naive t t') (Alpha R s' t')}.
+Lemma step_gu_preserves_alpha {s} {s'} {t} R :
+  Alpha R s t -> step_gu s s' -> {t' & prod (step_gu t t') (Alpha R s' t')}.
 Proof.
   intros.
   inversion H0; subst.
@@ -184,7 +184,7 @@ Proof.
   destruct H4 as [t' [Hstep_t' HR_t'] ].
   exists t'.
   split.
-  - apply step_gu_naive_intro with (s' := (to_GU t)); eauto.
+  - apply step_gu_intro with (s' := (to_GU t)); eauto.
     + apply to_GU__alpha.
     + apply to_GU__GU.
   - auto.
@@ -196,7 +196,7 @@ TODO: See if we can use the star from autosubst ARS again. (uses Prop instead of
 *)
 Inductive red_gu_na : term -> term -> Type :=
 | red_gu_na_star s t t':
-     step_gu_naive s t -> 
+     step_gu s t -> 
      red_gu_na t t' ->
      red_gu_na s t' 
 | red_gu_na_nil s :
@@ -210,7 +210,7 @@ Proof.
   generalize dependent R.
   generalize dependent t.  
   induction H0; intros.
-  - apply (step_gu_naive_preserves_alpha H) in s0.
+  - apply (step_gu_preserves_alpha H) in s0.
     destruct s0 as [t'0 [Hstept'0 Ha_t'0] ].
     specialize (IHred_gu_na t'0 R Ha_t'0).
     destruct IHred_gu_na as [t'1 [Hred_t'1 Ha_t'1] ].
@@ -231,9 +231,9 @@ Proof.
   induction Hsn. intros R s' Hα.
   apply SNI.
   intros y1 Hstep.
-  assert ({y1_α & prod (step_gu_naive x y1_α) (sym_alpha_ctx R ⊢ y1 ~ y1_α)}) as [y1_α [Hstep' Hα'] ].
+  assert ({y1_α & prod (step_gu x y1_α) (sym_alpha_ctx R ⊢ y1 ~ y1_α)}) as [y1_α [Hstep' Hα'] ].
   {
-    eapply step_gu_naive_preserves_alpha; auto.
+    eapply step_gu_preserves_alpha; auto.
     - eauto with α_eq_db.
     - exact Hstep.
   }
@@ -265,7 +265,7 @@ Idea: Previous lemma sn_preimage above strengthened IH with remember (h x) as v.
 We strenghen IH with (h x) ~ v.
  *)
 Lemma sn_preimage_α' (h : term -> term) x v :
-  (forall x y, step_gu_naive x y -> {y_h & prod (step_gu_naive (h x) y_h) (nil ⊢ y_h ~ (h y))}) -> @sn term step_gu_naive v -> nil ⊢ v ~ h x -> @sn term step_gu_naive x.
+  (forall x y, step_gu x y -> {y_h & prod (step_gu (h x) y_h) (nil ⊢ y_h ~ (h y))}) -> @sn term step_gu v -> nil ⊢ v ~ h x -> @sn term step_gu x.
 Proof.
   intros A B Halpha.
   generalize dependent h.
@@ -289,11 +289,11 @@ Proof.
 
     exists y_h' s.t. step x y_h' /\ y_h' ~ y_h   ( and then y_h'  ~  h y)
   *)
-  assert ({y_h' & prod (step_gu_naive x y_h') (nil ⊢ y_h' ~ h y)}).
+  assert ({y_h' & prod (step_gu x y_h') (nil ⊢ y_h' ~ h y)}).
   {
     destruct C as [yh [ehy yh_alpha] ].
     eapply alpha_sym in eqn; [|apply alpha_sym_nil].
-    apply (step_gu_naive_preserves_alpha eqn) in ehy.
+    apply (step_gu_preserves_alpha eqn) in ehy.
     destruct ehy as [t' [stept' alphat'] ].
     exists t'.
     split.
@@ -312,7 +312,7 @@ Proof.
 Qed.
 
 Lemma sn_preimage_α (h : term -> term) x :
-  (forall x y, step_gu_naive x y -> {y_h & prod (step_gu_naive (h x) y_h) (nil ⊢ y_h ~ (h y))}) -> @sn term step_gu_naive (h x) -> @sn term step_gu_naive x.
+  (forall x y, step_gu x y -> {y_h & prod (step_gu (h x) y_h) (nil ⊢ y_h ~ (h y))}) -> @sn term step_gu (h x) -> @sn term step_gu x.
 Proof.
   intros A B.
   apply sn_preimage_α' with (v := h x) (h := h); eauto.
@@ -321,16 +321,16 @@ Qed.
 
 (* We need alpha here because global unique can create different terms depending on input:
   global unique does not compose
-  suppose there is a free var in s2, then that must be renamed when doing step_gu_naive (tmapp s1 s2)
-  while that is not the case in step_gu_naive s1 t1 (there s2 does not need to be taken into account)
+  suppose there is a free var in s2, then that must be renamed when doing step_gu (tmapp s1 s2)
+  while that is not the case in step_gu s1 t1 (there s2 does not need to be taken into account)
   *)
-Lemma step_gu_naive_app_l {B} s1 s2 t1 :
-  step_gu_naive s1 t1 -> 
-  {t1' & Alpha [] t1 t1' * {s2' & Alpha [] s2 s2' * step_gu_naive (@tmapp B s1 s2) (@tmapp B t1' s2')}%type }%type.
+Lemma step_gu_app_l {B} s1 s2 t1 :
+  step_gu s1 t1 -> 
+  {t1' & Alpha [] t1 t1' * {s2' & Alpha [] s2 s2' * step_gu (@tmapp B s1 s2) (@tmapp B t1' s2')}%type }%type.
 Proof.
   intros.
 
-  (* We cannot directly invert the (step_gu_naive s1 t1), because we need something to be GU over s2 as well!*)
+  (* We cannot directly invert the (step_gu s1 t1), because we need something to be GU over s2 as well!*)
   remember (to_GU (@tmapp B s1 s2)) as app.
   remember Heqapp as Heqapp'. clear HeqHeqapp'.
   apply to_GU_app_unfold in Heqapp.
@@ -344,7 +344,7 @@ Proof.
     split; auto.
     exists s2'.
     split; auto.
-    apply step_gu_naive_intro with (s' := (@tmapp B s1' s2')); auto.
+    apply step_gu_intro with (s' := (@tmapp B s1' s2')); auto.
     + rewrite Heqapp'. apply to_GU__alpha.
     + rewrite Heqapp'. apply to_GU__GU.
     + constructor. auto.
@@ -376,7 +376,7 @@ Proof.
     + eapply α_preserves_SN_R with (R := []) (s := @tmapp B C t2); eauto.
       * eauto with α_eq_db.
       * eapply X with (y := C).
-        apply step_gu_naive_intro with (s' := to_GU x); eauto.
+        apply step_gu_intro with (s' := to_GU x); eauto.
         -- eapply to_GU__alpha.
         -- eapply to_GU__GU.
         -- eapply α_preserves_SN_R with (s := x0). eauto. constructor. auto.
@@ -390,7 +390,7 @@ Proof.
     + eapply α_preserves_SN_R with (R := []) (s := @tmapp B x C); eauto.
       * eauto with α_eq_db.
       * eapply X0 with (y := C).
-        apply step_gu_naive_intro with (s' := to_GU x0); eauto.
+        apply step_gu_intro with (s' := to_GU x0); eauto.
         -- eapply to_GU__alpha.
         -- eapply to_GU__GU.
     + eapply gu_app_r. eauto.
@@ -413,11 +413,11 @@ Proof.
 
   eapply step_naive_preserves_alpha2 with (s' := to_GU x) (R := ((y0, X)::nil)) in H7 as [C [Hstep_C Hα_C] ].
   - 
-    assert (Alpha [] (@tmlam B y0 K s0) (@tmlam B X K C) * step_gu_naive x C)%type as [Hα Hstep_BForall].
+    assert (Alpha [] (@tmlam B y0 K s0) (@tmlam B X K C) * step_gu x C)%type as [Hα Hstep_BForall].
     {
       split.
       - constructor; eauto.
-      - apply step_gu_naive_intro with (s' := to_GU x); eauto.
+      - apply step_gu_intro with (s' := to_GU x); eauto.
         + eapply to_GU__alpha.
         + eapply to_GU__GU.
     }
@@ -436,7 +436,7 @@ Lemma sn_closedL {B} t s : SN_na (@tmapp B s t) -> SN_na s.
 Proof.
   apply: (sn_preimage_α (h := tmapp^~t)) => x y.
   intros.
-  eapply (@step_gu_naive_app_l B) in H.
+  eapply (@step_gu_app_l B) in H.
   destruct H as [t1' [Ha_t1' [s2' [Ha_t Hstep] ] ] ].
   exists (@tmapp B t1' s2').
   intuition.
@@ -908,7 +908,7 @@ Lemma step_subst_single R {x p s t t' } :
   (* GU t' -> *)
   NC t' [(x, p)] ->
   {aT : term & 
-  (step_gu_naive (subs ((x, p)::nil) s) aT) * (Alpha R aT (subs ((x, p)::nil) t'))}%type.
+  (step_gu (subs ((x, p)::nil) s) aT) * (Alpha R aT (subs ((x, p)::nil) t'))}%type.
 Proof with eauto with sconstr2_db.
   intros. rename H into Hstep. generalize dependent t'. generalize dependent R. induction Hstep; intros.
   - 
@@ -926,7 +926,7 @@ Proof with eauto with sconstr2_db.
       
       exists (sub x0' sub_t sub_s).
       split.
-      + eapply step_gu_naive_intro with (s' := (tmapp (tmlam x0' A sub_s) sub_t)).
+      + eapply step_gu_intro with (s' := (tmapp (tmlam x0' A sub_s) sub_t)).
         * constructor. constructor. auto. auto.
         * rewrite <- pr_eq. apply to_GU__GU.
         * apply step_beta.
@@ -1122,7 +1122,7 @@ Proof with eauto with sconstr2_db.
     destruct H7 as [s''step [Halpha_s'' Hstep_s'' ] ].
     exists (@tmlam B x0 A s''step).
     split.
-    + apply step_gu_naive_intro with (s' := @tmlam B x0 A s''); auto. 
+    + apply step_gu_intro with (s' := @tmlam B x0 A s''); auto. 
       * constructor.
         apply alpha_extend_ids. constructor. constructor.
         eapply @alpha_trans. constructor. eauto. eauto.
@@ -1165,7 +1165,7 @@ Proof with eauto with to_GU'_db.
       
     apply (sn_preimage_α (h := sub_gu X T)) => x y. 
     intros.
-    (* eapply (@step_gu_naive_preserves_alpha) with (R := nil) (t := to_GU' X T x) in H1... (* so that we already have a GU term*)
+    (* eapply (@step_gu_preserves_alpha) with (R := nil) (t := to_GU' X T x) in H1... (* so that we already have a GU term*)
     destruct H1 as [t' [Hstep H_a] ]. *)
     (* to_GU' is created such that we have GU s and NC s ((X, T))*)
     repeat rewrite <- single_subs_is_sub.
@@ -1197,8 +1197,8 @@ Definition neutral (s : term) : bool :=
 
 Record reducible (P : cand) : Type := {
   p_sn : forall s, P s -> SN_na s;
-  p_cl : forall s t, P s -> step_gu_naive s t -> P t;
-  p_nc : forall s, neutral s -> (forall t, step_gu_naive s t -> P t) -> P s
+  p_cl : forall s t, P s -> step_gu s t -> P t;
+  p_nc : forall s, neutral s -> (forall t, step_gu s t -> P t) -> P s
 }.
 
 (* Since we are only interested in globally unique alpha terms, we do an exists here.
@@ -1277,7 +1277,7 @@ Set Printing Implicit.
 
 Lemma L_reducible A :
   reducible (L A).
-Proof with eauto using step_gu_naive.
+Proof with eauto using step_gu.
   elim: A => /=[|A ih1 B ih2].
   - apply reducible_sn.
   - constructor.
@@ -1285,7 +1285,7 @@ Proof with eauto using step_gu_naive.
      apply: (@sn_closedL App (tmvar "x")). apply: (p_sn (P := L B))...
       eapply h. eapply reducible_var; eauto.
     + intros. specialize (X t0 X0).
-      eapply step_gu_naive_app_l with (s1 := s) (t1 := t) (s2 := t0) in H. 
+      eapply step_gu_app_l with (s1 := s) (t1 := t) (s2 := t0) in H. 
       * destruct H as [t1' [ Ha_t [s2' [Ha_s2' Hstep] ] ] ].
         eapply p_cl with (s := (tmapp s t0)) in X; auto.
         2: exact Hstep.
@@ -1297,14 +1297,14 @@ Proof with eauto using step_gu_naive.
       elim: snt la => {} t _ ih3 la. apply: p_nc... move=> v st. inv st=> //...
       inv H.  inv H1=> //...
       * inv H7. discriminate ns.
-      * assert (Hgn: step_gu_naive s s0).
+      * assert (Hgn: step_gu s s0).
         {
           apply gu_app_l in H0.
           econstructor; eauto.
         }
         specialize (h s0 Hgn).
         eapply α_preserves_L_R with (s' := t2) in la; eauto.
-      * assert (step_gu_naive t t0).
+      * assert (step_gu t t0).
         {
           apply gu_app_r in H0.
           econstructor; eauto.    
@@ -1321,7 +1321,7 @@ Proof. intros Las. assert (reducible (L A)) by apply (L_reducible A).
    apply (p_sn X). assumption.
 Qed.
 
-Corollary L_cl T s t : L T s -> step_gu_naive s t -> L T t.
+Corollary L_cl T s t : L T s -> step_gu s t -> L T t.
 Proof.
   intros Hstep Hst.
   assert (H: reducible (L T)) by apply L_reducible.
@@ -1329,7 +1329,7 @@ Proof.
 Qed.
 
 Corollary L_nc T s :
-  neutral s -> (forall t, step_gu_naive s t -> L T t) -> L T s.
+  neutral s -> (forall t, step_gu s t -> L T t) -> L T s.
 Proof. 
   intros Hneut Hstep.
   assert (H: reducible (L T)) by apply L_reducible.
@@ -1380,7 +1380,7 @@ Qed.
 
 
 Lemma step_gu_na_lam_fold {B} x A s s' :
-  step_gu_naive s s' -> {lams' & step_gu_naive (@tmlam B x A s) lams' * Alpha [] lams' (@tmlam B x A s')}%type.
+  step_gu s s' -> {lams' & step_gu (@tmlam B x A s) lams' * Alpha [] lams' (@tmlam B x A s')}%type.
 Proof.
   intros.
   assert (Alpha [] (@tmlam B x A s) (to_GU (@tmlam B x A s)) ).
@@ -1411,7 +1411,7 @@ Proof.
   destruct H5 as [t' [Hstep_t' Halpha_t'] ].
   exists (@tmlam B y A t').
   split.
-  - eapply step_gu_naive_intro with (s' := tmlam y A s2); eauto.
+  - eapply step_gu_intro with (s' := tmlam y A s2); eauto.
     + rewrite <- H10 in H0. eauto.
     + assert (GU (to_GU (@tmlam B x A s))) by apply to_GU__GU.
       rewrite <- H10 in H5. auto.
@@ -1447,7 +1447,7 @@ Proof.
 Qed.
 
 Lemma step_gu_na_appl_fold {B s1 s2 t1 }:
-  step_gu_naive s1 s2 -> {app & step_gu_naive (@tmapp B s1 t1) app * Alpha [] app (@tmapp B s2 t1)}%type.
+  step_gu s1 s2 -> {app & step_gu (@tmapp B s1 t1) app * Alpha [] app (@tmapp B s2 t1)}%type.
 Proof.
   intros Hstep_gu.
   inversion Hstep_gu; subst.
@@ -1466,7 +1466,7 @@ Proof.
   destruct Hstep_na' as [s2' [Hstep_s2' Ha_s2'] ].
   exists (@tmapp B s2' t2).
   split.
-  - eapply step_gu_naive_intro with (s' := @tmapp B s3 t2).
+  - eapply step_gu_intro with (s' := @tmapp B s3 t2).
     + rewrite H7. auto.
     + rewrite H7. apply to_GU__GU.
     + apply step_appL. auto.
@@ -1474,7 +1474,7 @@ Proof.
 Qed.
 
 Lemma step_gu_na_appr_fold {B s1 t1 t2 } : 
-  step_gu_naive t1 t2 -> {app & step_gu_naive (@tmapp B s1 t1) app * Alpha [] app (@tmapp B s1 t2)}%type.
+  step_gu t1 t2 -> {app & step_gu (@tmapp B s1 t1) app * Alpha [] app (@tmapp B s1 t2)}%type.
 Proof.
   intros Hstep_gu.
   inversion Hstep_gu; subst.
@@ -1493,7 +1493,7 @@ Proof.
   destruct Hstep_na' as [t2' [Hstep_t2' Ha_t2'] ].
   exists (@tmapp B s2 t2').
   split.
-  - eapply step_gu_naive_intro with (s' := @tmapp B s2 t3).
+  - eapply step_gu_intro with (s' := @tmapp B s2 t3).
     + rewrite H7. auto.
     + rewrite H7. apply to_GU__GU.
     + apply step_appR. auto.
@@ -1595,7 +1595,7 @@ Qed.
 
 
 Lemma red_beta x s t1 t2 : 
-  step_gu_naive t1 t2 ->
+  step_gu t1 t2 ->
   NC s ((x, t1)::nil) ->
   NC s ((x, t2)::nil) -> (* step does not introduce new free vars, so should be true!*)
   { a & prod 
@@ -1720,9 +1720,9 @@ Proof with eauto with α_eq_db gu_nc_db.
       apply to_GU__GU.
     }
     destruct H1 as [s5' [Hstep_na_s5' Ha_s5'] ].
-    assert (Hstep_s5': step_gu_naive x0 s5').
+    assert (Hstep_s5': step_gu x0 s5').
     {
-      apply step_gu_naive_intro with (s' := to_GU x0).
+      apply step_gu_intro with (s' := to_GU x0).
       - eapply to_GU__alpha.
       - eapply to_GU__GU.
       - assumption.
@@ -1754,7 +1754,7 @@ Proof with eauto with α_eq_db gu_nc_db.
     * subst. eapply to_GU'__GU. 
     * subst. eapply to_GU'__NC.
     * 
-    assert ({α & (step_gu_naive (sub x x1 s0) α) * (nil ⊢ α ~ sub x x1 s'_a1)}%type) 
+    assert ({α & (step_gu (sub x x1 s0) α) * (nil ⊢ α ~ sub x x1 s'_a1)}%type) 
       as [alpha [Hred Halpha] ].
       {
         repeat rewrite <- single_subs_is_sub.
