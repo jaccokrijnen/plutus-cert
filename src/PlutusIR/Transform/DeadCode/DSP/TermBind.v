@@ -246,7 +246,8 @@ Proof.
         + apply H_RV_vb.
         + lia.
       - eapply normalise_to_normal; eauto.
-      - assumption.
+      - admit. (* TODO: from RV *)
+      - admit. (* TODO: from RV *)
       - eapply RG_monotone.
         + apply H_Δ_ρ.
         + apply H_Γ_γ_γ'.
@@ -376,6 +377,8 @@ Proof.
   {
     (** Contradiction: tb ⇓ Error, but tb is a safe binding, so
         it should terminate with a value *)
+    admit. (* TODO: not sure if this is provable with term substitutions *)
+      (*
     unfold pure_open in *.
     assert (normal_Ty Tbn). {eauto using normalise_to_normal. }
     specialize (H_pure ltac:(assumption) ltac:(assumption) (msyn1 ρ) γ).
@@ -391,6 +394,7 @@ Proof.
     subst vb.
     assert (is_error (Error T')) by constructor.
     contradiction.
+    *)
   }
 
 Admitted.

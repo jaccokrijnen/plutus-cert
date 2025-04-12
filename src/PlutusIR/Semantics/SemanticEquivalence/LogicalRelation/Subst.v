@@ -333,13 +333,13 @@ Proof.
   - intros.
     simpl.
     assumption.
-  - intros.
-    eapply RV_typable_empty_1 in H_RV as temp; eauto.
+  - intros Gamma T0 t H0.
+    eapply RC_typable_empty_1 in H_RV as temp; eauto.
     destruct temp as [Tn'[Hnorm__Tn Htyp__v1]].
     eapply IHV; eauto.
     eapply substitution_preserves_typing.
-    + simpl in H.
-      rewrite mgsubst_absorbs_msubstT in H.
+    + simpl in H0.
+      rewrite mgsubst_absorbs_msubstT in H0.
       eauto.
     + eauto.
     + eauto.
@@ -357,13 +357,13 @@ Proof.
   - intros.
     simpl.
     assumption.
-  - intros.
-    eapply RV_typable_empty_2 in H_RV as temp; eauto.
+  - intros Gamma T0 t H0.
+    eapply RC_typable_empty_2 in H_RV as temp; eauto.
     destruct temp as [Tn [Hnorm__Tn Htyp__v2]].
     eapply IHV; eauto.
     eapply substitution_preserves_typing.
-    + simpl in H.
-      rewrite mgsubst_absorbs_msubstT in H.
+    + simpl in H0.
+      rewrite mgsubst_absorbs_msubstT in H0.
       eauto.
     + eauto.
     + eauto.

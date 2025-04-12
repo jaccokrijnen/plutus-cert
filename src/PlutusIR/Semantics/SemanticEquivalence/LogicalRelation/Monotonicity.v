@@ -153,7 +153,7 @@ Proof.
     inversion H0.
     subst.
     eapply RG_cons; eauto.
-    eapply RV_monotone; eauto.
+    eapply RC_monotone; eauto.
 Qed.
 
 

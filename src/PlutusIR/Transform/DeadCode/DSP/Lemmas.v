@@ -459,6 +459,7 @@ Section Purity.
   (* Only substitutes pure (closed) terms *)
   Definition pure_substitution (γ : env) := Forall (fun '(x, t) => pure t) γ.
 
+    (*
   Lemma RG_pure_substitution_1 : forall ρ k Γ γ γ',
     RG ρ k Γ γ γ' -> pure_substitution γ.
   Proof.
@@ -467,11 +468,12 @@ Section Purity.
     - constructor.
     - constructor.
       destruct H.
-      assert (v1 =[0]=> v1). { apply eval_result. assumption. }
+      assert (v1 =[0]=> v1). { apply eval_result__result. assumption. }
       + repeat eexists.
         all: eassumption.
       + assumption.
   Qed.
+  *)
 
   Inductive substitution : tass -> env -> Prop :=
     | S_nil : substitution [] []

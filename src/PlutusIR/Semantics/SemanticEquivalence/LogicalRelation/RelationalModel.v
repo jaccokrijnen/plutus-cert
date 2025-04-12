@@ -266,9 +266,10 @@ Inductive RG (rho : tymapping) (k : nat) : tass -> env -> env -> Prop :=
   | RG_nil :
       RG rho k nil nil nil
   | RG_cons : forall x T v1 v2 c e1 e2,
-      RV k T rho v1 v2 ->
+      RC k T rho v1 v2 ->
       normal_Ty T ->
-      ~ (is_error v1) ->
+      (exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([] ,, [] |-+ v1 : Tn)) ->
+      (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\  ([] ,, [] |-+ v2 : Tn')) ->
       RG rho k c e1 e2 ->
       RG rho k ((x, T) :: c) ((x, v1) :: e1) ((x, v2) :: e2).
 
