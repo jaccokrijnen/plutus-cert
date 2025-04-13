@@ -469,8 +469,10 @@ Inductive G (rho : tymapping) (k : nat) : tass -> env -> env -> Prop :=
   | G_nil :
       G rho k nil nil nil
   | G_cons : forall x T v1 v2 c e1 e2,
-      V k T rho v1 v2 ->
+      C k T rho v1 v2 ->
       normal_Ty T ->
+      (exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([] ,, [] |-+ v1 : Tn)) ->
+      (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\  ([] ,, [] |-+ v2 : Tn')) ->
       G rho k c e1 e2 ->
       G rho k ((x, T) :: c) ((x, v1) :: e1) ((x, v2) :: e2)
 .

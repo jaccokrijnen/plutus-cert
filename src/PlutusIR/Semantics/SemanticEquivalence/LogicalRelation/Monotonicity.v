@@ -103,7 +103,7 @@ Proof with try solve [lia || eauto].
 Qed.
 
 Lemma C_monotone : forall k ρ T i e e' Δ,
-    RD Δ ρ ->
+    D Δ ρ ->
     C k T ρ e e' ->
     i <= k ->
     C i T ρ e e'.
@@ -172,5 +172,5 @@ Proof.
     inversion H0.
     subst.
     eapply G_cons; eauto.
-    eapply V_monotone; eauto.
+    eapply C_monotone; eauto.
 Qed.
