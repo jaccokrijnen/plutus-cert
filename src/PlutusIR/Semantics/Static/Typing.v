@@ -58,6 +58,10 @@ Reserved Notation "Delta ',,' Gamma '|-ok_b' b" (at level 101, b at level 0, no 
 
 Local Open Scope list_scope.
 
+(* TODO: make stronger
+Should have
+drop_ty_var "s" (("x", Ty_Bool) :: ("x", Ty_Var "s") :: ("x", Ty_Int) :: nil) = nil
+*)
 Definition drop_ty_var X (Γ : list (string * ty)) : list (string * ty) :=
   filter (fun x => if (in_dec string_dec X (Ty.ftv (snd x))) 
                     then false else true)  
