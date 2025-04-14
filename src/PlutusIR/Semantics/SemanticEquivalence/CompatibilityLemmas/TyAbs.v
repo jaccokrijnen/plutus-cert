@@ -98,10 +98,8 @@ Proof with eauto_LR.
   - apply RG_extend_rho.
     eapply RG_monotone; eauto.
     rewrite <- minus_n_O in Hlt_i.
-    (* idk *)
-    admit.
+
 
     (* apply Nat.lt_le_incl.
     assumption. *)
-    (* admit. *)
 Admitted.

@@ -1,6 +1,7 @@
 Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.Util.List.
 From PlutusCert Require Import Analysis.BoundVars.
+From PlutusCert Require Import Analysis.FreeVars.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.Auxiliary.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
@@ -58,7 +59,7 @@ Reserved Notation "Delta ',,' Gamma '|-ok_b' b" (at level 101, b at level 0, no 
 Local Open Scope list_scope.
 
 Definition drop_ty_var X (Γ : list (string * ty)) : list (string * ty) :=
-  filter (fun x => if (in_dec string_dec X (Ty.btv (snd x))) 
+  filter (fun x => if (in_dec string_dec X (Ty.ftv (snd x))) 
                     then false else true)  
           Γ.
 
@@ -219,6 +220,30 @@ Combined Scheme has_type__multind from
   bindings_well_formed_nonrec__ind,
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
+
+(* Cannot type faulty const function *)
+Example const_shadowing T :
+  (nil ,, nil |-+ 
+    (TyAbs "X" Kind_Base
+      (LamAbs "x" (Ty_Var "X")
+        (TyAbs "X" Kind_Base
+          (LamAbs "y" (Ty_Var "X")
+            (Var "x"))))) : T) -> False.
+Proof.
+  intros.
+  inversion H; subst.
+  inversion H6; subst.
+  simpl drop_ty_var in *.
+  inversion H9; subst.
+  inversion H10; subst.
+  inversion H8; subst.
+  simpl in H13.
+  inversion H13; subst.
+  simpl in H1.
+  inversion H1.
+Qed.
+  
+
 
 Definition well_typed t := exists T, [] ,, [] |-+ t : T.
 
