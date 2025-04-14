@@ -57,6 +57,11 @@ Reserved Notation "Delta ',,' Gamma '|-ok_b' b" (at level 101, b at level 0, no 
 
 Local Open Scope list_scope.
 
+Definition drop_ty_var X (Γ : list (string * ty)) : list (string * ty) :=
+  filter (fun x => if (in_dec string_dec X (Ty.btv (snd x))) 
+                    then false else true)  
+          Γ.
+
 Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty -> Prop :=
   (* Simply typed lambda caclulus *)
   | T_Var : forall Γ Δ x T Tn,
@@ -74,7 +79,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ ,, Γ |-+ (Apply t1 t2) : T2n
   (* Universal types *)
   | T_TyAbs : forall Δ Γ X K t Tn,
-      ((X, K) :: Δ) ,, Γ |-+ t : Tn ->
+      ((X, K) :: Δ) ,, (drop_ty_var X Γ) |-+ t : Tn ->
       Δ ,, Γ |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
   | T_TyInst : forall Δ Γ t1 T2 T1n X K2 T0n T2n,
       Δ ,, Γ |-+ t1 : (Ty_Forall X K2 T1n) ->

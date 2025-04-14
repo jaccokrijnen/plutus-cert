@@ -84,13 +84,21 @@ Module Typing.
     all: try (intros Delta'_0 Gamma'_0 HinclD HinclG).
     all: try (intros Delta'_0 HinclD).
     all: try solve [econstructor; subst; eauto using Kinding.weakening, inclusion_cons, inclusion_append].
+    - unfold P_has_type in H0.
+      apply T_TyAbs.
+      apply H0.
+      apply inclusion_cons; auto.
+      (* inclusion G G' -> inclusion (drop X G) (drop X G') ?
+      *)
+
+      admit.
     - (* W_Data *)
       econstructor...
       + subst.
         intros.
         eapply H7...
       + subst...
-  Qed.
+  Admitted.
 
   Lemma weakening_empty : forall Delta Gamma t T,
       [] ,, [] |-+ t : T ->

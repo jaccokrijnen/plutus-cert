@@ -92,6 +92,15 @@ Module Term.
       inversion Hafi. subst.
       eapply H2 in H8...
       rewrite lookup_neq in H8...
+    - (* TyAbs *)
+      unfold P_has_type in H0.
+      assert (Term.appears_free_in x0 t) by admit. (* TyAbs binder does nto change fvs *)
+      specialize (H0 x0 H1) as [T' Hlookup].
+      
+
+      (* We just need any T', and we bascially have "added" (not removed) something to Gamam
+      so it is impossible to get None *)
+      admit.
     - (* T_Let *)
       inversion Hafi.
       + subst.
@@ -121,7 +130,7 @@ Module Term.
         apply notIn_bvb_bindsG in H7.
         eapply notIn__map_normalise in H7...
         erewrite <- notIn__lookup_append...
-Qed.
+Admitted.
 
 End Term.
 

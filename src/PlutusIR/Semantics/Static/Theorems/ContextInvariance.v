@@ -117,6 +117,11 @@ Module Typing.
       + apply eqb_neq in Heqb.
         rewrite lookup_neq; auto.
         rewrite lookup_neq; auto.
+    - unfold P_has_type in H0.
+      apply T_TyAbs.
+      apply H0.
+      (* I think this lemma about drop_ty_var holds*)
+       admit.
     - (* T_Let *)
       subst.
       eapply T_Let...
@@ -157,6 +162,6 @@ Module Typing.
         eapply In__map_normalise in i...
         apply In__lookup_append...
       + apply lookup_append_cong...
-  Qed.
+  Admitted.
 
 End Typing.

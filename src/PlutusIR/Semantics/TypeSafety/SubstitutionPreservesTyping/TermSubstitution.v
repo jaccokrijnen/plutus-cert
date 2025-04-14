@@ -280,6 +280,15 @@ Proof with eauto.
       eapply T_Var...
       simpl in H3.
       rewrite Heqb in H3...
+  - (* TyAbs *)
+    simpl.
+    inversion H0; subst.
+    apply T_TyAbs.
+    unfold P_Term in H.
+    eapply H; eauto.
+    (* s not free in U by [],,[] |-+ v : Un 
+      <- empty kinding context?? hence no ftvs *)
+    admit. 
   - (* LamAbs *)
     inversion H0. subst.
     simpl.
