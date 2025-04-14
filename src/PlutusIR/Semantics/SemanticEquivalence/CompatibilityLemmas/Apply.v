@@ -17,7 +17,7 @@ Import ListNotations.
 Import PlutusNotations.
 
 (* Notation for closing substitutions *)
-Notation close γ ρ t := (msubst γ (msubstA ρ t)).
+(* Notation close γ ρ t := (msubst γ (msubstA ρ t)). *)
 
 Lemma compatibility_Apply : forall Delta Gamma e1 e2 e1' e2' T1n T2n,
     LR_logically_approximate Delta Gamma e1 e1' (Ty_Fun T1n T2n) ->
@@ -236,12 +236,12 @@ Qed.
 (* There should be a lemma that can compute a new step-index for the result *)
 Lemma RV_apply_min {j T1 T2 Δ ρ f f' k v v'} :
   RD Δ ρ ->
-  V j <{ T1 → T2 }> ρ f f' ->
+  V j (Ty_Fun T1 T2) ρ f f' ->
   V k T1 ρ v v' ->
   exists (i : nat) (x : binderName) (b b' : term) (T1v T1v' : ty),
-    f = <{ λ x :: T1v, b }> /\
-    f' = <{ λ x :: T1v', b' }> /\
-    C (j - i) T2 ρ <{ [x := v] b }> <{ [x := v'] b' }>.
+    f = LamAbs x T1v b /\
+    f' = LamAbs x T1v' b' /\
+    C (j - i) T2 ρ ([x ↦ v] ⊙ b) ([x ↦ v'] ⊙ b').
 Proof.
   intros D_Δ V_f V_v.
   destruct (lt_dec k j).
@@ -270,12 +270,12 @@ Lemma use_approx {Δ ρ Γ γ γ' e e' T }:
   forall k,
   D Δ ρ ->
   G ρ k Γ γ γ' ->
-  C k T ρ (close γ (msyn1 ρ) e) (close γ' (msyn2 ρ) e')
+  C k T ρ (γ ⊙ msyn1 ρ :⊙ e) (γ' ⊙ msyn2 ρ :⊙ e')
 .
 Proof.
   unfold approx.
   intros H k H_RD H_RG.
-  destruct H as [_ [_ H]].
+  destruct H as [_ H].
   auto.
 Qed.
 
@@ -371,14 +371,15 @@ Proof.
       inversion H2.
 Qed.
 
+
+
 Lemma compat_Apply Δ Γ e1 e2 e1' e2' T1 T2 :
     approx Δ Γ e1 e1' <{T1 → T2}> ->
     approx Δ Γ e2 e2' T1 ->
-    approx Δ Γ <{e1 ⋅ e2}> <{e1' ⋅ e2'}> T2.
+    approx Δ Γ (e1 ⋅ e2) (e1' ⋅ e2') T2.
 Proof with eauto_LR.
   intros IH_LR1 IH_LR2.
 
-  split... admit. (* typing *)
   split... admit. (* typing *)
 
   intros k ρ γ γ' H_RD H_RG.
@@ -390,13 +391,13 @@ Proof with eauto_LR.
 
   use_approx IH_LR1 k
     C_e1.
-  remember (close γ (msyn1 ρ) e1) as c_e1.
-  remember (close γ' (msyn2 ρ) e1') as c_e1'.
+  remember (γ ⊙ msyn1 ρ :⊙ e1) as c_e1.
+  remember (γ' ⊙ msyn2 ρ :⊙ e1') as c_e1'.
 
   use_approx IH_LR2 k
     C_e2.
-  remember (close γ (msyn1 ρ) e2) as c_e2.
-  remember (close γ' (msyn2 ρ) e2') as c_e2'.
+  remember (γ ⊙ msyn1 ρ :⊙ e2) as c_e2.
+  remember (γ' ⊙ msyn2 ρ :⊙ e2') as c_e2'.
 
   inversion Hev__app; subst.
 
@@ -450,8 +451,9 @@ Proof with eauto_LR.
 
     use_approx IH_LR1 k
       H_C_e1.
-    remember (close γ (msyn1 ρ) e1) as c_e1.
-    remember (close γ' (msyn2 ρ) e1') as c_e1'.
+
+    remember (γ ⊙ msyn1 ρ :⊙ e1) as c_e1.
+    remember (γ' ⊙ msyn2 ρ :⊙ e1') as c_e1'.
 
     (*
     assert (H_RG' : G ρ (k - (applied_args c_e1)) Γ γ γ'). {
@@ -462,8 +464,8 @@ Proof with eauto_LR.
     use_approx IH_LR2 k
       H_C_e2.
 
-    remember (close γ (msyn1 ρ) e2) as c_e2.
-    remember (close γ' (msyn2 ρ) e2') as c_e2'.
+    remember (γ ⊙ msyn1 ρ :⊙ e2) as c_e2.
+    remember (γ' ⊙ msyn2 ρ :⊙ e2') as c_e2'.
 
     admit.
 
@@ -471,7 +473,7 @@ Proof with eauto_LR.
   - (* E_Error_Apply1 *)
 
     assert (HRC1 :
-      C k (Ty_Fun T1 T2) ρ (close γ (msyn1 ρ) e1) (close γ' (msyn2 ρ) e1')
+      C k (Ty_Fun T1 T2) ρ (γ ⊙ msyn1 ρ :⊙ e1) (γ' ⊙ msyn2 ρ :⊙ e1')
     ) by admit.
     admit.
   - (* E_Error_Apply2 *)

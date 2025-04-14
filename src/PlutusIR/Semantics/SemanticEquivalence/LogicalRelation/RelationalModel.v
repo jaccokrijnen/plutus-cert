@@ -295,7 +295,7 @@ Definition LR_logically_approximate (Δ : list (string * kind)) (Γ : list (stri
       RG ρ k Γ γ γ' ->
       RC k T ρ (msubst γ (msubstA (msyn1 ρ) e)) (msubst γ' (msubstA (msyn2 ρ) e')).
 
-Notation close γ ρ t := (msubst γ (msubstA ρ t)).
+(* Notation close γ ρ t := (msubst γ (msubstA ρ t)). *)
 
 Notation "Δ ',,' Γ '|-' e1 ≤ e2 ':' T" := (LR_logically_approximate Δ Γ e1 e2 T)
   ( at level 101
@@ -364,20 +364,20 @@ Qed.
 Instance wf_pair : WellFounded (ltof _ measure) := lt_pair_wf.
 
 (* Logical relation for closed values and computations *)
-Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : term) : Prop by wf (i, k) (ltof _ measure) :=
+Equations? R (i : interpretation) (k : nat) (T : ty) (ρ : tymapping) (e e' : term) : Prop by wf (i, k) (ltof _ measure) :=
 
-  R I_C k T rho e e' :=
+  R I_C k T ρ e e' :=
     ∀ j (Hlt_j : j < k) r,
       e =[j]=> r ->
       ∃ r' j',
         e' =[j']=> r' /\
-        (R I_V (k - j) T rho r r' \/ (is_error r /\ is_error r'));
+        (R I_V (k - j) T ρ r r' \/ (is_error r /\ is_error r'));
 
-  R I_V k T rho v v' :=
+  R I_V k T ρ v v' :=
     ( (∃ Tn,
-        normalise (msubstT (msyn1 rho) T) Tn /\ ([] ,, [] |-+ v : Tn)) /\
+        normalise (msubstT (msyn1 ρ) T) Tn /\ ([] ,, [] |-+ v : Tn)) /\
       (∃ Tn',
-        normalise (msubstT (msyn2 rho) T) Tn' /\  ([] ,, [] |-+ v' : Tn'))
+        normalise (msubstT (msyn2 ρ) T) Tn' /\  ([] ,, [] |-+ v' : Tn'))
     ) /\
 
     (value v /\ value v') /\
@@ -385,7 +385,7 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
       match T with
       | Ty_Var a =>
           ∀ Chi,
-            sem rho a = Datatypes.Some Chi ->
+            sem ρ a = Datatypes.Some Chi ->
             Chi k v v'
 
       | Ty_Lam X K T0 =>
@@ -402,12 +402,12 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
 
       | Ty_Fun T1n T2n =>
             ∀ i (Hlt_i : i < k) v_0 v'_0,
-              R I_V i T1n rho v_0 v'_0 ->
+              R I_V i T1n ρ v_0 v'_0 ->
               (∀ x T1 e_body, v = <{λ x :: T1 , e_body}> ->
-                R I_C i T2n rho <{ [x := v_0] e_body }> <{ v' ⋅ v'_0 }>)
+                R I_C i T2n ρ <{ [x := v_0] e_body }> <{ v' ⋅ v'_0 }>)
               /\
               (∀ f, applied f v ->
-                R I_C i T2n rho <{ v ⋅ v_0 }> <{ v' ⋅ v'_0 }>
+                R I_C i T2n ρ <{ v ⋅ v_0 }> <{ v' ⋅ v'_0 }>
               )
 
       | Ty_IFix Fn Tn =>
@@ -415,10 +415,10 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
             v = IWrap F T v_0 /\
             v' = IWrap F' T' v'_0 /\
             ∀ i (Hlt_i : i < k) K T0n,
-              [] |-* (msubstT (msyn1 rho) Tn) : K ->
-              [] |-* (msubstT (msyn2 rho) Tn) : K ->
+              [] |-* (msubstT (msyn1 ρ) Tn) : K ->
+              [] |-* (msubstT (msyn2 ρ) Tn) : K ->
               normalise (unwrapIFix Fn K Tn) T0n ->
-              R I_V i T0n rho v_0 v'_0
+              R I_V i T0n ρ v_0 v'_0
 
       | Ty_Forall X K Tn =>
           exists e_body e'_body,
@@ -429,7 +429,7 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
               [] |-* T2 : K ->
               Rel T1 T2 Chi ->
               ∀ i (Hlt_i : i < k),
-                R I_C i Tn ((X, (Chi, T1, T2)) :: rho) <{ :[X := T1] e_body }> <{ :[X := T2] e'_body }>
+                R I_C i Tn ((X, (Chi, T1, T2)) :: ρ) <{ :[X := T1] e_body }> <{ :[X := T2] e'_body }>
       end
   ).
 Proof.
@@ -439,12 +439,12 @@ Qed.
 Notation C := (R I_C).
 Notation V := (R I_V).
 
-Corollary C_values_to_V k T rho v v' :
+Corollary C_values_to_V k T ρ v v' :
     0 < k ->
     value v ->
     value v' ->
-    C k T rho v v' ->
-    V k T rho v v'.
+    C k T ρ v v' ->
+    V k T ρ v v'.
 Proof.
   intros H_gt H_v H_v' H_RC.
   autorewrite with R in H_RC.
@@ -465,23 +465,38 @@ Proof.
   - assumption.
 Qed.
 
-Inductive G (rho : tymapping) (k : nat) : tass -> env -> env -> Prop :=
+Inductive G (ρ : tymapping) (k : nat) : tass -> env -> env -> Prop :=
   | G_nil :
-      G rho k nil nil nil
+      G ρ k nil nil nil
   | G_cons : forall x T v1 v2 c e1 e2,
-      C k T rho v1 v2 ->
+      C k T ρ v1 v2 ->
       normal_Ty T ->
-      (exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([] ,, [] |-+ v1 : Tn)) ->
-      (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\  ([] ,, [] |-+ v2 : Tn')) ->
-      G rho k c e1 e2 ->
-      G rho k ((x, T) :: c) ((x, v1) :: e1) ((x, v2) :: e2)
+      (exists Tn, normalise (msubstT (msyn1 ρ) T) Tn /\ ([] ,, [] |-+ v1 : Tn)) ->
+      (exists Tn', normalise (msubstT (msyn2 ρ) T) Tn' /\  ([] ,, [] |-+ v2 : Tn')) ->
+      G ρ k c e1 e2 ->
+      G ρ k ((x, T) :: c) ((x, v1) :: e1) ((x, v2) :: e2)
 .
 
+Notation "γ ⊙ t" := (msubst γ t) (at level 55, right associativity).
+Notation "γ ⊙b b" := (msubst_b γ b) (at level 55, right associativity).
+Notation "γ ⊙bnr bs" := (msubst_bnr γ bs) (at level 55, right associativity).
+Notation "δ :⊙ t" := (msubstA δ t) (at level 55, right associativity).
+Notation "δ :⊙b b" := (msubstA_b δ b) (at level 55, right associativity).
+Notation "δ :⊙bnr bs" := (msubstA_bnr δ bs) (at level 55, right associativity).
+Notation "γ \\ xs" := (mdrop xs γ) (at level 50, left associativity).
+
 Definition approx Δ Γ e e' T :=
-    (Δ ,, Γ |-+ e : T) /\
-    (Δ ,, Γ |-+ e' : T) /\
+    ((Δ ,, Γ |-+ e : T) /\ (Δ ,, Γ |-+ e' : T)) /\
     forall k ρ γ γ',
       D Δ ρ ->
       G ρ k Γ γ γ' ->
-      C k T ρ (close γ (msyn1 ρ) e) (close γ' (msyn2 ρ) e').
+      C k T ρ (γ ⊙ (msyn1 ρ) :⊙ e) (γ' ⊙ (msyn2 ρ) :⊙ e').
+
+
+Notation "Δ ',,' Γ '|-' e1 ≤' e2 ':' T" := (approx Δ Γ e1 e2 T)
+  ( at level 101
+  , e1 at level 0
+  , e2 at level 0
+  , T at level 0
+  , no associativity).
 

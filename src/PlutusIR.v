@@ -978,8 +978,10 @@ Module PlutusNotations.
 
   (* Term notations *)
   Notation "'λ' x :: ty , body" := (LamAbs x ty body) (in custom plutus_term at level 51, right associativity).
+  Notation "'λ' x :: ty , body" := (LamAbs x ty body) (at level 51, right associativity).
   Notation "'Λ' X :: K , body" := (TyAbs X K body) (in custom plutus_term at level 51, right associativity).
   Notation "t1 ⋅ t2" := (Apply t1 t2) (in custom plutus_term at level 50, left associativity).
+  Notation "t1 ⋅ t2" := (Apply t1 t2) (at level 50, left associativity).
   Notation "t @ T" := (TyInst t T) (in custom plutus_term at level 50, left associativity).
 
 
@@ -1015,6 +1017,10 @@ Module PlutusNotations.
   Notation "'unit'" := (Ty_Builtin DefaultUniUnit) (in custom plutus_term).
   Notation "X '→' Y" := (Ty_Fun X Y) (in custom plutus_term at level 49, right associativity).
   Notation "'bytestring'" := (Ty_Builtin DefaultUniByteString) (in custom plutus_term at level 51, right associativity).
+
+  (* Substitution notation*)
+  Notation "x '↦' t" := ((x, t)) (at level 49, no associativity).
+
 
   (* String notation for list byte (bytestring and string)
 

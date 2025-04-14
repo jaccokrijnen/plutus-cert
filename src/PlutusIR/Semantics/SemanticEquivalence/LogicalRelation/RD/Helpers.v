@@ -10,9 +10,9 @@ Local Open Scope string_scope.
 Lemma RD_Rel : forall ck rho,
     RD ck rho ->
     forall X Chi T1 T2,
-      sem rho X = Datatypes.Some Chi ->
-      syn1 rho X = Datatypes.Some T1 ->
-      syn2 rho X = Datatypes.Some T2 ->
+      sem rho X = Some Chi ->
+      syn1 rho X = Some T1 ->
+      syn2 rho X = Some T2 ->
       Rel T1 T2 Chi.
 Proof.
   induction 1.
@@ -35,12 +35,12 @@ Proof.
 Qed.
 
 
-Lemma D_Rel : forall ck rho,
-    D ck rho ->
+Lemma D_Rel : forall Δ ρ,
+    D Δ ρ ->
     forall X Chi T1 T2,
-      sem rho X = Datatypes.Some Chi ->
-      syn1 rho X = Datatypes.Some T1 ->
-      syn2 rho X = Datatypes.Some T2 ->
+      sem ρ X = Some Chi ->
+      syn1 ρ X = Some T1 ->
+      syn2 ρ X = Some T2 ->
       Rel' T1 T2 Chi.
 Proof.
   induction 1.
@@ -65,10 +65,10 @@ Qed.
 Lemma RD_sem_syn : forall ck rho,
     RD ck rho ->
     forall X Chi,
-      sem rho X = Datatypes.Some Chi ->
+      sem rho X = Some Chi ->
       exists T1 T2,
-        syn1 rho X = Datatypes.Some T1 /\
-        syn2 rho X = Datatypes.Some T2.
+        syn1 rho X = Some T1 /\
+        syn2 rho X = Some T2.
 Proof.
   induction 1.
   - intros.
@@ -80,13 +80,13 @@ Proof.
     destruct (X0 =? X) eqn:Heqb; eauto.
 Qed.
 
-Lemma D_sem_syn : forall ck rho,
-    D ck rho ->
+Lemma D_sem_syn : forall Δ ρ,
+    D Δ ρ ->
     forall X Chi,
-      sem rho X = Datatypes.Some Chi ->
+      sem ρ X = Some Chi ->
       exists T1 T2,
-        syn1 rho X = Datatypes.Some T1 /\
-        syn2 rho X = Datatypes.Some T2.
+        syn1 ρ X = Some T1 /\
+        syn2 ρ X = Some T2.
 Proof.
   induction 1.
   - intros.
@@ -101,7 +101,7 @@ Qed.
 Lemma RD_sem_Rel ck rho :
     RD ck rho ->
     forall X Chi,
-      sem rho X = Datatypes.Some Chi ->
+      sem rho X = Some Chi ->
       exists T1 T2,
       Rel T1 T2 Chi.
 Proof with eauto.
@@ -113,16 +113,16 @@ Proof with eauto.
 Qed.
 
 
-Lemma D_sem_Rel ck rho :
-    D ck rho ->
+Lemma D_sem_Rel Δ ρ :
+    D Δ ρ ->
     forall X χ,
-      sem rho X = Some χ ->
+      sem ρ X = Some χ ->
       exists T1 T2,
       Rel' T1 T2 χ.
 Proof with eauto.
   intros H_D X Chi H_sem.
   assert (H_sem' := H_sem).
-  apply D_sem_syn with (ck := ck) in H_sem' as [ T1 [ T2 [H_syn1 H_syn2] ]]...
+  apply D_sem_syn with (Δ := Δ) in H_sem' as [ T1 [ T2 [H_syn1 H_syn2] ]]...
   exists T1, T2.
   eapply D_Rel...
 Qed.
@@ -130,8 +130,8 @@ Qed.
 Lemma RD_syn_closed : forall ck rho,
     RD ck rho ->
       forall X T1 T2,
-        syn1 rho X = Datatypes.Some T1 ->
-        syn2 rho X = Datatypes.Some T2 ->
+        syn1 rho X = Some T1 ->
+        syn2 rho X = Some T2 ->
         Ty.closed T1 /\ Ty.closed T2.
 Proof with eauto.
   induction 1; intros...
@@ -147,11 +147,11 @@ Proof with eauto.
 Qed.
 
 
-Lemma D_syn_closed : forall ck rho,
-    D ck rho ->
+Lemma D_syn_closed : forall Δ ρ,
+    D Δ ρ ->
       forall X T1 T2,
-        syn1 rho X = Datatypes.Some T1 ->
-        syn2 rho X = Datatypes.Some T2 ->
+        syn1 ρ X = Some T1 ->
+        syn2 ρ X = Some T2 ->
         Ty.closed T1 /\ Ty.closed T2.
 Proof with eauto.
   induction 1; intros...

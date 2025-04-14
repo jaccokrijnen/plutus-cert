@@ -575,7 +575,7 @@ Hint Rewrite
   msubst_LetNonRec
   (* msubst_LetRec *)
   msubst_TermBind
-  (* msubst_BindingsNonRec_cons *)
+  msubst_bnr_cons
   msubst_LamAbs
   msubst_Apply
   msubst_Builtin

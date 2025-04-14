@@ -37,12 +37,12 @@ Proof.
   auto.
 Qed.
 
-Lemma V_typable_empty : forall k T rho v v',
-    V k T rho v v' ->
-    (exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([],, [] |-+ v : Tn)) /\
-    (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\  ([],, [] |-+ v' : Tn')).
+Lemma V_typable_empty : forall k T ρ v v',
+    V k T ρ v v' ->
+    (exists Tn, normalise (msubstT (msyn1 ρ) T) Tn /\ ([],, [] |-+ v : Tn)) /\
+    (exists Tn', normalise (msubstT (msyn2 ρ) T) Tn' /\  ([],, [] |-+ v' : Tn')).
 Proof.
-  intros k T rho v v' H.
+  intros k T ρ v v' H.
   autorewrite with R in H.
   destruct H as [[H1 H2] _ ].
   auto.
@@ -54,9 +54,9 @@ Lemma RV_typable_empty_1 : forall k T rho v v',
     (exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([],, [] |-+ v : Tn)).
 Proof. intros. destruct (RV_typable_empty _ _ _ _ _ H H0) as [Htyp__v Htyp__v']. eauto. Qed.
 
-Lemma V_typable_empty_1 : forall k T rho v v',
-    V k T rho v v' ->
-    (exists Tn, normalise (msubstT (msyn1 rho) T) Tn /\ ([],, [] |-+ v : Tn)).
+Lemma V_typable_empty_1 : forall k T ρ v v',
+    V k T ρ v v' ->
+    (exists Tn, normalise (msubstT (msyn1 ρ) T) Tn /\ ([],, [] |-+ v : Tn)).
 Proof. intros. destruct (V_typable_empty _ _ _ _ _ H) as [Htyp__v Htyp__v']. eauto. Qed.
 
 Lemma RV_typable_empty_2 : forall k T rho v v',
@@ -65,9 +65,9 @@ Lemma RV_typable_empty_2 : forall k T rho v v',
     (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\ ([],, [] |-+ v' : Tn')).
 Proof. intros. destruct (RV_typable_empty _ _ _ _ _ H H0) as [Htyp__v Htyp__v']. eauto. Qed.
 
-Lemma V_typable_empty_2 : forall k T rho v v',
-    V k T rho v v' ->
-    (exists Tn', normalise (msubstT (msyn2 rho) T) Tn' /\ ([],, [] |-+ v' : Tn')).
+Lemma V_typable_empty_2 : forall k T ρ v v',
+    V k T ρ v v' ->
+    (exists Tn', normalise (msubstT (msyn2 ρ) T) Tn' /\ ([],, [] |-+ v' : Tn')).
 Proof. intros. destruct (V_typable_empty _ _ _ _ _ H) as [Htyp__v Htyp__v']. eauto. Qed.
 
 (** Closedness *)
@@ -84,8 +84,8 @@ Proof with eauto.
   all: eapply typable_empty__closed...
 Qed.
 
-Lemma V_closed : forall k T rho v v',
-    V k T rho v v' ->
+Lemma V_closed : forall k T ρ v v',
+    V k T ρ v v' ->
     closed v /\ closed v'.
 Proof with eauto.
   intros.
@@ -102,8 +102,8 @@ Lemma RV_closed_1 : forall k T rho v v',
 Proof with eauto. apply RV_closed. Qed.
 
 
-Lemma V_closed_1 : forall k T rho v v',
-    V k T rho v v' ->
+Lemma V_closed_1 : forall k T ρ v v',
+    V k T ρ v v' ->
     closed v.
 Proof with eauto. apply V_closed. Qed.
 
@@ -113,8 +113,8 @@ Lemma RV_closed_2 : forall k T rho v v',
     closed v'.
 Proof with eauto. apply RV_closed. Qed.
 
-Lemma V_closed_2 : forall k T rho v v',
-    V k T rho v v' ->
+Lemma V_closed_2 : forall k T ρ v v',
+    V k T ρ v v' ->
     closed v'.
 Proof with eauto. apply V_closed. Qed.
 
@@ -127,10 +127,10 @@ Lemma RV_equiv : forall k k' T rho e e',
 Proof. intros. subst. eauto. Qed.
 
 
-Lemma V_equiv : forall k k' T rho e e',
-    V k T rho e e' ->
+Lemma V_equiv : forall k k' T ρ e e',
+    V k T ρ e e' ->
     k = k' ->
-    V k' T rho e e'.
+    V k' T ρ e e'.
 Proof. intros. subst. eauto. Qed.
 
 (** Easy access to the RV conditions *)
@@ -155,8 +155,8 @@ Proof.
   all: eauto.
 Qed.
 
-Lemma V_value : forall k T rho v v',
-    V k T rho v v' ->
+Lemma V_value : forall k T ρ v v',
+    V k T ρ v v' ->
     value v /\ value v'.
 Proof.
   intros.
@@ -165,8 +165,8 @@ Proof.
   auto.
 Qed.
 
-Corollary V_value_1 : forall k T rho v v',
-    V k T rho v v' ->
+Corollary V_value_1 : forall k T ρ v v',
+    V k T ρ v v' ->
     value v.
 Proof.
   intros.
@@ -174,8 +174,8 @@ Proof.
   eauto using V_value.
 Qed.
 
-Corollary V_value_2 : forall k T rho v v',
-    V k T rho v v' ->
+Corollary V_value_2 : forall k T ρ v v',
+    V k T ρ v v' ->
     value v'.
 Proof.
   intros.
@@ -318,17 +318,17 @@ Corollary RV_functional_extensionality : forall k T1n T2n rho v v',
 Proof. intros. eapply RV_condition in H. all: eauto. Qed.
 
 
-Corollary V_functional_extensionality  {i k T1 T2 rho v v' w w'} :
+Corollary V_functional_extensionality  {i k T1 T2 ρ v v' w w'} :
   i < k ->
-  V k (Ty_Fun T1 T2) rho v v' ->
-  V i T1 rho w w' ->
+  V k (Ty_Fun T1 T2) ρ v v' ->
+  V i T1 ρ w w' ->
   (forall x T1 e_body,
     v = <{λ x :: T1 , e_body}> ->
-    C i T2 rho <{ [x := w] e_body }> <{ v' ⋅ w' }>)
+    C i T2 ρ <{ [x := w] e_body }> <{ v' ⋅ w' }>)
   /\
   (forall f,
     applied f v ->
-    C i T2 rho <{ v ⋅ w }> <{ v' ⋅ w' }>
+    C i T2 ρ <{ v ⋅ w }> <{ v' ⋅ w' }>
   )
 .
 Proof.
@@ -421,16 +421,16 @@ Admitted.
 
 
 
-Lemma V_extend_rho : forall X Chi T1 T2 rho k T v v',
-    V k T rho v v' ->
-    V k T ((X, (Chi, T1, T2)) :: rho) v v'.
+Lemma V_extend_ρ : forall X Chi T1 T2 ρ k T v v',
+    V k T ρ v v' ->
+    V k T ((X, (Chi, T1, T2)) :: ρ) v v'.
 (* ADMIT: We admit this, but this is not entirely correct. This lemma
    is only correct if X does not appear
    freely in the type annotations and types of v and v'.
    Should hold if the uniqueness property holds.
 
    Jacco: v and v' will be closed if they are in RV, so the assumption
-   should just be that X is not free in T. Or in other words, X is not in rho/Δ.
+   should just be that X is not free in T. Or in other words, X is not in ρ/Δ.
 
    This should follow from the structure of Δ once the type system disallows
    shadowing altogether (https://github.com/jaccokrijnen/plutus-cert/issues/16)

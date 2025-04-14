@@ -185,6 +185,10 @@ with eval_bindings_nonrec : term -> term -> nat -> Prop :=
       ~ is_error v1 ->
       <{ [x := v1] ({Let NonRec bs t0}) }> =[j2]=>nr v2 ->
       Let NonRec ((TermBind Strict (VarDecl x T) t1) :: bs) t0 =[j]=>nr v2
+  | E_Let_TermBind_NonStrict : forall j j1 x T t1 bs s t v,
+      j = j1 + 1 ->
+      <{ [x := t1] ({Let NonRec bs t}) }> =[j1]=>nr v ->
+      Let NonRec ((TermBind NonStrict (VarDecl x T) s) :: bs) t =[j]=>nr v
   | E_Let_DatatypeBind : forall j dtd X K tvds matchf X_ty matchf_term cs_subst cs bs t i v,
       j = i + 1 ->
 

@@ -102,6 +102,9 @@ Proof with eauto.
     + rewrite app_assoc...
       rewrite app_assoc...
       rewrite <- flatten_app...
+  - (* TermBind needs to destruct strictness *)
+    destruct s.
+    all : eauto with DSP_compatibility_lemmas typing.
 Qed.
 
 

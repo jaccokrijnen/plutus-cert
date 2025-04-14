@@ -57,12 +57,12 @@ Proof.
 Qed.
 
 
-Lemma compatibility_TermBind : forall Δ Γ stricty x Tb Tbn tb tb' b b' bs bs' t t' Tn,
+Lemma compatibility_TermBind_Strict : forall Δ Γ  x Tb Tbn tb tb' b b' bs bs' t t' Tn,
     Δ |-* Tb : Kind_Base ->
     normalise Tb Tbn ->
     forall Δ_ih Γ_ih bsGn,
-      b = TermBind stricty (VarDecl x Tb) tb ->
-      b' = TermBind stricty (VarDecl x Tb) tb' ->
+      b = TermBind Strict (VarDecl x Tb) tb ->
+      b' = TermBind Strict (VarDecl x Tb) tb' ->
       Δ_ih = (binds_Delta b) ++ Δ ->
       map_normalise (binds_Gamma b) bsGn ->
       Γ_ih = bsGn ++ Γ ->
@@ -70,7 +70,7 @@ Lemma compatibility_TermBind : forall Δ Γ stricty x Tb Tbn tb tb' b b' bs bs' 
       LR_logically_approximate Δ Γ tb tb' Tbn ->
       LR_logically_approximate Δ Γ (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t') Tn.
 Proof with eauto_LR.
-  intros Δ Γ stricty x Tb Tbn tb tb' b b' bs bs' t t' Tn.
+  intros Δ Γ x Tb Tbn tb tb' b b' bs bs' t t' Tn.
   intros Hkind__Tb Hnorm__Tbn.
   intros Δ_ih Γ_ih bsGn.
   intros Heq__b Heq__b' Heq__Δ_ih Hmapnorm__bsGn Heq__Γ_ih IHLR__ih IHLR__tb.
@@ -127,8 +127,8 @@ Proof with eauto_LR.
     clear Hev__e_f.
     rename v1 into vb.
     rename j1 into jb.
-    rename H8 into Hev__vb.
-    rename H10 into Hev__e_f.
+    rename H7 into Hev__vb.
+    rename H9 into Hev__e_f.
 
     assert (HRC__tb :
     RC k Tbn rho
@@ -315,7 +315,7 @@ Proof with eauto_LR.
       }
   - (* E_Error_Let_TermBind*)
     rename j1 into jb.
-    rename H8 into Hev__Err.
+    rename H7 into Hev__Err.
 
     assert (HRC__tb :
       RC k Tbn rho
@@ -368,4 +368,70 @@ Proof with eauto_LR.
         eexists. split...
       }
       right...
+Admitted.
+
+
+Lemma compatibility_TermBind_NonStrict : forall Δ Γ  x Tb Tbn tb tb' b b' bs bs' t t' Tn,
+    Δ |-* Tb : Kind_Base ->
+    normalise Tb Tbn ->
+    forall Δ_ih Γ_ih bsGn,
+      b = TermBind NonStrict (VarDecl x Tb) tb ->
+      b' = TermBind NonStrict (VarDecl x Tb) tb' ->
+      Δ_ih = (binds_Delta b) ++ Δ ->
+      map_normalise (binds_Gamma b) bsGn ->
+      Γ_ih = bsGn ++ Γ ->
+      LR_logically_approximate Δ_ih Γ_ih (Let NonRec bs t) (Let NonRec bs' t') Tn ->
+      LR_logically_approximate Δ Γ tb tb' Tbn ->
+      LR_logically_approximate Δ Γ (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t') Tn.
+Admitted.
+
+Notation "x ':' Tb ~= tb" := (TermBind NonStrict (VarDecl x Tb) tb) (at level 100).
+
+(* TODO: hintdb for removing substitutions under a bvbs *)
+Lemma bvbs_msubstA δ b bs :
+  bvbs (δ :⊙b b :: δ :⊙bnr bs) = bvbs (b :: bs).
+Admitted.
+
+Lemma compatibility_TermBind_NonStrict' Δ Γ x Tb Tbn tb tb' b b' bs bs' t t' Tn :
+    Δ |-* Tb : Kind_Base ->
+    normalise Tb Tbn ->
+    b = TermBind NonStrict (VarDecl x Tb) tb ->
+    b' = TermBind NonStrict (VarDecl x Tb) tb' ->
+    Δ ,, (x, Tbn) :: Γ |- (Let NonRec bs t) ≤' (Let NonRec bs' t') : Tn ->
+    Δ ,, Γ |- tb ≤' tb' : Tbn ->
+    Δ ,, Γ |- (Let NonRec (b :: bs) t) ≤' (Let NonRec (b' :: bs') t') : Tn.
+Proof.
+  intros H_kind H_norm H_b H_b' H_bs H_tb.
+  subst b b'.
+
+  unfold approx.
+  split.
+  - admit. (* typing *)
+  - intros k ρ γ γ' H_D H_G.
+    autorewrite with R.
+    intros j H_j_k r H_eval_t.
+
+
+    (* Extend γ and γ' with tb, tb' respectively *)
+    destruct H_tb as [[H_ty_tb H_ty_tb'] H_C_tb].
+    specialize (H_C_tb _ _ _ _ H_D H_G).
+    remember (msyn1 ρ) as δ.
+    remember (msyn2 ρ) as δ'.
+    assert (H_Gx : G ρ k (x ↦ Tbn :: Γ) ((x ↦ (γ ⊙ δ :⊙ tb)) :: γ) (x ↦ (γ' ⊙ δ' :⊙ tb') :: γ')). {
+      econstructor.
+      - assumption.
+      - admit. (* from H_norm *)
+      - admit. (* closing preserves type *)
+      - admit. (* closing preserves type *)
+      - assumption.
+    }
+
+    (* rewrite and inversion on H_eval_t *)
+    autorewrite with multi_subst in H_eval_t.
+    simpl in H_eval_t.
+    inversion H_eval_t; subst.
+    inversion H3; subst.
+
+    (* todo: substitution admin *)
+    
 Admitted.

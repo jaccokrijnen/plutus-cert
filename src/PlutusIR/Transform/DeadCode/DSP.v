@@ -114,7 +114,8 @@ Proof.
       simpl in H2.
       admit.
 
-
+    + (* E_Let_TermBind_NonStrict *)
+      admit.
     + (* E_Error_Let_Termbind*)
       admit.
 
