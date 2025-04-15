@@ -315,3 +315,11 @@ Lemma lookup_not_In {A} k (v : A) xs :
   lookup k xs = None ->
   ~ In (k, v) xs.
 Admitted.
+
+Lemma lookup_app_r {A} k (v : A) xs xs' :
+    lookup k xs = Some v -> lookup k (xs ++ xs') = Some v.
+  Admitted.
+
+Lemma lookup_none_app {A} k (v : A) xs xs' :
+    lookup k xs = None -> lookup k xs' = Some v -> lookup k (xs ++ xs') = Some v.
+Admitted.

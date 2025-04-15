@@ -297,8 +297,9 @@ Proof.
     auto.
 Qed.
 
+
 Lemma to_GU__alpha_' s R used : 
-  KindOfUniqueRhs R -> 
+  (forall x y, In x (ftv s) -> lookup x R = Some y -> AlphaVar R x y) ->
   (forall x, In x (ftv s) -> lookup x R = None -> AlphaVar R x x) -> 
   (forall x, In x (tv s) -> In x used) -> 
   Alpha R s (snd (to_GU_ used R s)).
@@ -308,7 +309,8 @@ Proof.
   induction s; intros.
   - simpl. destruct (lookup s R) eqn:lookup_x_R.
     + constructor.
-      unfold KindOfUniqueRhs in H. eapply H. eauto.
+      apply H. simpl. left. auto.
+      auto.
     + constructor.
       specialize (H0 s).
       assert (In s (ftv (tmvar s))) by now apply ftv_var_eq.
@@ -326,7 +328,20 @@ Proof.
     rewrite <- Heqp in IHs. 
     simpl in IHs.
     eapply IHs.
-    + eapply KindOfUniqueRhsFresh; auto.
+    + intros.
+      destr_eqb_eq s x.
+      * inversion H3. subst.
+        constructor.
+      * constructor; auto.
+        -- apply lookup_some_then_in_values in H3.
+           
+           assert (~ In (fresh_to_GU_ used R s) (map snd R)).
+           { eapply fresh_to_GU__fresh_over_snd_binders. }
+           intros Hcontra.
+           subst.
+           contradiction.
+        -- apply H.
+           simpl. apply in_remove. auto. auto.
     + intros.
       destruct_match.
       assert (Hftvlam: In x (ftv (@tmlam USort s k s0))).
@@ -361,7 +376,7 @@ Proof.
       rewrite <- Heqp1 in IHs1.
       simpl in IHs1.
       eapply IHs1.
-      * assumption.
+      * intros. apply H. simpl. apply in_app_iff. left. auto. auto.
       * intros.
         eapply H0.
         apply ftv_c_appl. auto. 
@@ -371,7 +386,7 @@ Proof.
       rewrite <- Heqp2 in IHs2.
       simpl in IHs2.
       eapply IHs2.
-      * assumption.
+      * intros. apply H. simpl. apply in_app_iff. right. auto. auto.
       * intros.
         eapply H0.
         apply ftv_c_appr. auto.
@@ -385,7 +400,7 @@ Proof.
 Qed.
 
 Lemma to_GU__alpha_ s R used : 
-  KindOfUniqueRhs R -> 
+  (forall x y, In x (ftv s) -> lookup x R = Some y -> AlphaVar R x y) ->
   (forall x, In x (ftv s) -> {y & In (x, y) R}) -> 
   Alpha R s (snd (to_GU_ used R s)).
 Proof.
@@ -394,7 +409,7 @@ Proof.
   induction s; intros.
   - simpl. destruct (lookup s R) eqn:lookup_x_R.
     + constructor. 
-      unfold KindOfUniqueRhs in H. eapply H. eauto.
+      apply H. simpl. left. auto. auto.
     + constructor.
       specialize (H0 s).
       assert (In s (ftv (tmvar s))) by now apply ftv_var_eq.
@@ -414,7 +429,21 @@ Proof.
     rewrite <- Heqp in IHs. 
     simpl in IHs.
     eapply IHs.
-    + eapply KindOfUniqueRhsFresh; auto.
+    + intros.
+      destr_eqb_eq s x.
+      * inversion H2.
+        subst.
+        constructor.
+      * constructor; auto.
+        -- apply lookup_some_then_in_values in H2.
+           
+           assert (~ In (fresh_to_GU_ used R s) (map snd R)).
+           { eapply fresh_to_GU__fresh_over_snd_binders. }
+           intros Hcontra.
+           subst.
+           contradiction.
+        -- apply H.
+           simpl. apply in_remove. auto. auto.
     + intros.
       destr_eqb_eq x s.
       * exists (fresh_to_GU_ used R s).
@@ -442,7 +471,7 @@ Proof.
       rewrite <- Heqp1 in IHs1.
       simpl in IHs1.
       eapply IHs1.
-      * assumption.
+      * intros. apply H. simpl. apply in_app_iff. left. auto. auto.
       * intros.
         assert (In x (ftv (@tmapp BSort s1 s2))) by now apply ftv_c_appl.
         specialize (H0 x H2).
@@ -451,7 +480,7 @@ Proof.
       rewrite <- Heqp2 in IHs2.
       simpl in IHs2.
       eapply IHs2.
-      * assumption.
+      * intros. apply H. simpl. apply in_app_iff. right. auto. auto.
       * intros.
         assert (In x (ftv (@tmapp BSort s1 s2))) by now apply ftv_c_appr.
         specialize (H0 x H2).
@@ -463,6 +492,8 @@ Lemma map_creates_IdCtx l : IdCtx (map (fun x => (x, x)) l).
 Proof.
   induction l; simpl; constructor; auto.
 Qed.
+
+Search "lookup".
 
 Lemma to_GU__alpha s : Alpha [] s (to_GU s).
 Proof.
@@ -479,7 +510,9 @@ Proof.
     }
 
     eapply to_GU__alpha_'.
-    - apply IdCtx__KindOfUniqueRhs. auto.
+    - intros.
+      eapply lookup_some_IdCtx_then_alphavar; eauto.
+
     - intros.
       apply id_ctx_alphavar_refl; auto.
     - intros. auto.
@@ -1020,7 +1053,8 @@ Proof.
   assert (R ⊢ s ~ (to_GU_ (X :: tv T ++ tv s) R s).2).
   {
     eapply to_GU__alpha_'.
-    - apply IdCtx__KindOfUniqueRhs.
+    - intros.
+      eapply lookup_some_IdCtx_then_alphavar; eauto.
       rewrite HeqR.
       apply map_creates_IdCtx.
     - intros.
@@ -1216,7 +1250,9 @@ Proof.
   inv H.
   eapply @alpha_weaken_ids.
   2: { eapply to_GU__alpha_. 
-      - apply IdCtx__KindOfUniqueRhs.  apply map_creates_IdCtx.
+      - intros.
+        eapply lookup_some_IdCtx_then_alphavar; eauto.
+        apply map_creates_IdCtx.
       - intros.
         exists x1.
         apply id_map_helper. auto.
@@ -1234,7 +1270,9 @@ Proof.
   inv H.
   eapply @alpha_weaken_ids.
   2: { eapply to_GU__alpha_. 
-      - apply IdCtx__KindOfUniqueRhs.  apply map_creates_IdCtx.
+      - intros.
+        eapply lookup_some_IdCtx_then_alphavar; eauto.
+        apply map_creates_IdCtx.
       - intros.
         exists x1.
         apply id_map_helper. auto.
@@ -1252,7 +1290,9 @@ Proof.
   inv H.
   eapply @alpha_weaken_ids.
   2: { eapply to_GU__alpha_. 
-      - apply IdCtx__KindOfUniqueRhs.  apply map_creates_IdCtx.
+      - intros.
+        eapply lookup_some_IdCtx_then_alphavar; eauto.
+        apply map_creates_IdCtx.
       - intros.
         exists x1.
         apply id_map_helper. auto.
@@ -1380,9 +1420,10 @@ Proof.
     ) as t'.
   assert (R ⊢ t ~ t').
   - rewrite Heqt'.
-    eapply to_GU__alpha_.
-    + apply IdCtx__KindOfUniqueRhs.
-      subst.
+    eapply to_GU__alpha_. 
+    + intros.
+      eapply lookup_some_IdCtx_then_alphavar; eauto.
+      rewrite HeqR.
       apply map_creates_IdCtx.
     + intros.
       exists x1.
@@ -1411,10 +1452,11 @@ Proof.
     ) as p'.
   assert (R ⊢ p ~ p').
   - rewrite Heqp'.
-    eapply to_GU__alpha_.
-    + apply IdCtx__KindOfUniqueRhs.
-      subst.
-      apply map_creates_IdCtx.
+    eapply to_GU__alpha_. 
+      + intros.
+        eapply lookup_some_IdCtx_then_alphavar; eauto.
+        rewrite HeqR.
+        apply map_creates_IdCtx.
     + intros.
       exists x1.
       subst.
@@ -1582,136 +1624,6 @@ Require Import List.
 Import ListNotations.
 
 
-(* We know the result is R ++ R' (i.e. prepended by argument), but that is not so 
-    important here in the axiomatization, just that there exists one
-
-  TODO: Can we use one of the other constructions, like the one for type_L?  
-  I also feel like we may need conditions here on t?
-
-  this is not trivial because:
-  - suppose (x, x') in R.
-  - and now suppose x' in t.
-  - if then also x in t, then x gets renamed to x', and we have a clash
-  - solution: rename away all ftvs in t that are not free in s, to fresh stuff
-  - Then still Alpha R+ s s' (since nto free in s)
-
-  - then for all x in ftv t. if it is in (ftv s), then R(s) gives some x' (or if its not in there identical)
-      it is then also not in R+, so Alpha R' x x'.
-  - now suppose we find an x in ftv t that is not in ftv s. 
-      Then we rename it to smoething fresh. What if it was however in R already?
-
-    We can use to_GU_ with this special R probably to get the alpha behaviour.
-    R' will only have vars not in ftv s, so that should be fine:
-    problematic is: R does nto have to have UniqueRHS. Maybe we can remove it, or remove conditions of that lemma
-  *)
-
-
-Fixpoint strip_R'' (R : list (string * string)) (lhs : list string) (rhs : list string) :=
-  match R with
-  | nil => nil
-  | (x, y) :: R' => if in_dec string_dec x lhs || in_dec string_dec y rhs then
-                      strip_R'' R' (x::lhs) (y::rhs)   (* do not include if shadowed*)  
-                    else
-                      (x, y) :: (strip_R'' R' (x::lhs) (y::rhs))
-  end.
-
-Require Import Coq.Program.Equality.
-
-(* The original R used in R ⊢ s ~ s' could also contain random variables not occuring in s or s'.*)
-Definition strip_R (R : list (string * string)) :=
-  strip_R'' R nil nil.
-
-Lemma strip_R''_helper R LHS RHS s0 :
-  In s0 RHS ->
-  ~ In s0 (map snd (strip_R'' R LHS RHS)).
-Proof.
-  generalize dependent LHS.
-  generalize dependent RHS.
-  induction R; intros RHS LHS H.
-  - simpl. auto.
-  - unfold strip_R''; fold strip_R''.
-    destruct a.
-    destr_eqb_eq s0 s1.
-    {
-      destruct (in_dec string_dec s LHS || in_dec string_dec s1 RHS) eqn:indec.
-      + eapply IHR. apply in_cons. eauto.
-      + unfold orb in indec.
-        destruct (in_dec string_dec s LHS) eqn:indec1.
-        * simpl. auto.
-        * destruct (is_left (right n)); auto.
-          exfalso.
-          destruct (in_dec string_dec s1 RHS); auto.
-    }
-    {
-      destruct (in_dec string_dec s LHS || in_dec string_dec s1 RHS) eqn:indec.
-      + eapply IHR; eauto. apply in_cons. auto.
-      + unfold strip_R''; fold strip_R''.
-        simpl.
-        apply not_in_cons. simpl. split. auto.
-        eapply IHR; eauto.
-        apply in_cons. auto.
-    }
-Qed.
-
-
-Lemma strip_R''_KindOfUnique R LHS RHS :
-  KindOfUniqueRhs (strip_R'' R LHS RHS).
-Proof.
-  generalize dependent LHS.
-  generalize dependent RHS.
-  induction R; intros RHS LHS.
-  - simpl. unfold strip_R''. unfold KindOfUniqueRhs. intros.  inversion H.
-  - intros.
-    unfold KindOfUniqueRhs.
-    intros.
-    destruct a.
-    unfold strip_R'' in H; fold strip_R'' in H.
-    destruct (in_dec string_dec s LHS || in_dec string_dec s0 RHS) eqn:indec1.
-    + unfold KindOfUniqueRhs in IHR.
-      unfold strip_R''; fold strip_R''.
-      destruct (in_dec string_dec s LHS || in_dec string_dec s0 RHS).
-      * 
-        eapply IHR; eauto. 
-
-      * discriminate indec1.
-    + unfold KindOfUniqueRhs in IHR.
-      unfold strip_R''; fold strip_R''.
-      destruct (in_dec string_dec s LHS || in_dec string_dec s0 RHS) eqn:indec2.
-      * eapply IHR; eauto.
-        discriminate indec1.
-      * destr_eqb_eq x s.
-        -- simpl in H.
-           rewrite String.eqb_refl in H.
-           inversion H.
-           subst.
-           constructor.
-        -- destr_eqb_eq y s0.
-           ++ exfalso.
-              simpl in H.
-              rewrite <- String.eqb_neq in H0. rewrite String.eqb_sym in H0. rewrite H0 in H.
-              
-              assert (~ In s0 (map snd(strip_R'' R (s :: LHS) (s0 :: RHS)))).
-              {
-                eapply strip_R''_helper.
-                apply in_eq.
-              }
-              apply lookup_some_then_in_values in H.
-              contradiction.
-           ++
-           
-           constructor; auto.
-           simpl in H.
-           rewrite <- String.eqb_neq in H0. rewrite <- String.eqb_sym in H0. rewrite H0 in H.
-           eapply IHR. auto.
-Qed.
-
-Lemma strip_R_KindOfUnique R :
-  KindOfUniqueRhs (strip_R R).
-Proof.
-  unfold strip_R.
-  apply strip_R''_KindOfUnique.
-Qed.
-
 Definition string_pair_dec (p1 p2 : string * string) : {p1 = p2} + {p1 <> p2}.
 Proof.
   decide equality; apply string_dec.
@@ -1720,173 +1632,6 @@ Defined.
 Require Import Coq.Lists.List.
 Require Import Coq.Lists.ListDec.
 Import ListNotations.
-
-
-Lemma strip_R_lookup_some_helper R LHS RHS x y:
-  lookup x R = Some y -> lookup_r y R = Some x -> 
-  (~ In x LHS) -> (* These conditions explain the relationship between what was already seen *)
-  (~ In y RHS) ->
-  ((lookup x (strip_R'' R LHS RHS) = Some y) * (lookup_r y (strip_R'' R LHS RHS) = Some x))%type.
-Proof.
-  intros.
-  generalize dependent LHS.
-  generalize dependent RHS.
-  induction R; intros.
-  - inversion H.
-  - destruct a as [a1 a2].
-    destr_eqb_eq a1 x.
-    + simpl in H.
-      rewrite String.eqb_refl in H.
-      inv H.
-      simpl.
-      destruct (in_dec string_dec x LHS || in_dec string_dec y RHS) eqn:indec.
-      * exfalso.
-        apply orb_true_iff in indec.
-        destruct indec as [indecLHS | indecRHS].
-        -- destruct (in_dec string_dec x LHS).
-           ++ contradiction.
-           ++ destruct (in_dec string_dec y RHS).
-              ** contradiction.
-              ** inv indecLHS.
-        -- destruct (in_dec string_dec y RHS).
-            ++ contradiction.
-            ++ destruct (in_dec string_dec x LHS).
-                ** contradiction.
-                ** inv indecRHS.
-      * simpl.
-        rewrite String.eqb_refl.
-        rewrite String.eqb_refl.
-        intuition.
-    + assert (a2 <> y).
-      {
-        intros Hcontra.
-        subst.
-        simpl in H0.
-        rewrite String.eqb_refl in H0.
-        inv H0.
-        contradiction.
-      }
-      simpl.
-      assert (lookup x R = Some y).
-      {
-        eapply lookup_cons_helper; eauto.
-      }
-      assert (lookup_r y R = Some x).
-      { apply lookup_r_cons_helper with (x := a1) (y := a2); eauto. }
-      assert (~ In x (a1 :: LHS)).
-      { simpl. intuition. }
-      assert (~ In y (a2 :: RHS)).
-      { simpl. intuition. }
-      destruct (in_dec string_dec a1 LHS || in_dec string_dec a2 RHS) eqn:indec.
-      * eapply IHR; auto. 
-      * simpl.
-        rewrite <- String.eqb_neq in H3.
-        rewrite <- String.eqb_neq in H4.
-        rewrite H3.
-        rewrite H4.
-        eapply IHR; eauto.    
-Qed.
-
-Lemma strip_R''_lookup_some_not_removed R LHS RHS x y:
-  lookup x (strip_R'' R LHS RHS) = Some y -> In y (map snd R).
-Proof.
-  intros Hlookup.
-  generalize dependent RHS.
-  generalize dependent LHS.
-  induction R; intros.
-  - simpl in Hlookup. inversion Hlookup.
-  - simpl in Hlookup.
-    destruct a as [a1 a2].
-    destr_eqb_eq x a1.
-    + simpl in Hlookup.
-      destruct (in_dec string_dec a1 LHS
-        || in_dec string_dec a2 RHS).
-      * eapply IHR in Hlookup.
-        simpl.
-        right.
-        auto.
-      * simpl in Hlookup.
-        rewrite String.eqb_refl in Hlookup.
-        inv Hlookup.
-        simpl. auto.
-    + destruct (in_dec string_dec a1 LHS
-      || in_dec string_dec a2 RHS).
-      * eapply IHR in Hlookup.
-        simpl.
-        right.
-        auto.
-      * rewrite <- String.eqb_neq in H.
-        rewrite String.eqb_sym in H.
-        simpl in Hlookup.
-        rewrite H in Hlookup.
-        eapply IHR in Hlookup.
-        simpl.
-        right.
-        auto.
-Qed.
-
-Lemma strip_R_lookup_some_not_removed R x y:
-  lookup x (strip_R R) = Some y -> In y (map snd R).
-Proof.
-  unfold strip_R.
-  apply strip_R''_lookup_some_not_removed.
-Qed.
-
-(* this is basically saying inclusion*)
-Lemma strip_R_lookup_none_helper R x LHS RHS:
-  lookup x R = None -> lookup x (strip_R'' R LHS RHS) = None.
-Proof.
-  intros.
-  generalize dependent LHS.
-  generalize dependent RHS.
-  induction R; intros.
-  - simpl. auto.
-  - destruct a.
-    simpl.
-    destruct (in_dec string_dec s LHS || in_dec string_dec s0 RHS) eqn:indec.
-    + eapply IHR. simpl in H. destruct_match. auto.
-    + simpl in H.
-      destruct_match.
-      simpl.
-      rewrite Heqb.
-      eapply IHR; auto.
-Qed.
-
-Lemma strip_R_lookup_r_none_helper R x LHS RHS:
-  lookup_r x R = None -> lookup_r x (strip_R'' R LHS RHS) = None.
-Proof.
-  intros.
-  generalize dependent LHS.
-  generalize dependent RHS.
-  induction R; intros.
-  - simpl. auto.
-  - destruct a.
-    simpl.
-    destruct (in_dec string_dec s LHS || in_dec string_dec s0 RHS) eqn:indec.
-    + eapply IHR. simpl in H. destruct_match. auto.
-    + simpl in H.
-      destruct_match.
-      simpl.
-      rewrite Heqb.
-      eapply IHR; auto.
-Qed.
-
-Lemma strip_R_alphavar2 R s s' :
-  AlphaVar R s s' -> AlphaVar (strip_R R) s s'.
-Proof.
-  intros Ha_s.
-  apply alphavar_lookup_helper in Ha_s.
-  destruct Ha_s as [Hyes | Hno].
-  - destruct Hyes as [Hs Hs'].
-    apply strip_R_lookup_some_helper with (LHS := []) (RHS := []) in Hs; eauto; clear Hs'.
-    unfold strip_R.
-    destruct Hs as [Hs1 Hs2].
-    apply lookup_some_then_alphavar; auto.
-  - destruct Hno as [ [Hs Hs'] Heq]; subst.
-    apply strip_R_lookup_none_helper with (LHS := nil) (RHS := nil) in Hs.
-    apply strip_R_lookup_r_none_helper with (LHS := nil) (RHS := nil) in Hs'.
-    apply lookup_none_then_alpharefl; auto.
-Qed.
 
 
 (* NOT DIFFICULT *)
@@ -1944,42 +1689,6 @@ Proof.
     eapply alphavar_vacuous_prepend; auto.
 Qed.
 
-Lemma strip_R_alphavar_split R1 R2 s s' :
-  AlphaVar (R1 ++ R2) s s' -> AlphaVar (R1 ++ strip_R R2) s s'.
-Proof.
-  eapply alphavar_idk_helper.
-  eapply strip_R_alphavar2.
-Qed.
-
-Lemma strip_R_preserves_alpha_split R1 R2 s s' :
-  Alpha (R1 ++ R2) s s' -> Alpha (R1 ++ (strip_R R2)) s s'.
-Proof.
-  intros.
-  generalize dependent R1.
-  generalize dependent R2.
-  generalize dependent s'.
-  induction s; intros.
-  - inversion H; subst.
-    constructor; clear H.
-    eapply strip_R_alphavar_split. auto.
-  - inversion H; subst.
-    constructor.
-    change ((s, y) :: R1 ++ strip_R R2) with (((s, y):: R1) ++ strip_R R2).
-    eapply IHs; eauto.
-  - inversion H; subst.
-    constructor.
-    + eapply IHs1; eauto.
-    + eapply IHs2; eauto.
-  - inversion H; subst.
-    constructor.
-Qed.
-
-Lemma strip_R_preserves_alpha R s s' :
-  Alpha R s s' -> Alpha (strip_R R) s s'.
-Proof.
-  eapply strip_R_preserves_alpha_split with (R1 := nil); eauto.
-Qed.
-
 Definition freshen2 used to_freshen :=
   fold_right
     (fun x acc =>
@@ -2006,7 +1715,14 @@ Definition a_R_constr R (s s' : term) t : list (string * string) :=
   *)
   let to_freshen := list_diff string_dec (ftv t) (ftv s) in
   let Rfr := freshen2 used to_freshen in
-  Rfr ++ (strip_R R).
+  Rfr ++ R.
+
+  (*
+    Suppose we have s = x   s' = y
+    R = [x, y]
+
+                    t = y   t' = ?
+  *)
 
 
 Search "alphavar".
@@ -2273,6 +1989,8 @@ Proof.
       * intros. eapply H0. apply in_cons. auto.
 Qed.
 
+Require Import Coq.Program.Equality.
+
 Lemma αctx_vacuous_R R σ σ' :
   (forall x, In x (map fst R) -> (~ In x (ftv_keys_env σ))) -> (forall x', In x' (map snd R) -> ~ In x' (ftv_keys_env σ')) -> αCtxSub [] σ σ' -> αCtxSub R σ σ'.
 Proof.
@@ -2314,56 +2032,68 @@ Proof.
 Qed.
 (* END OF THAT*)
 
+Search "alphavar".
 
-Lemma a_R_constr_KindOfUniqueRHS R R' s s' t :
+Lemma a_R_constr_helper R R' s s' t x y :
   R' = @a_R_constr R s s' t ->
-  KindOfUniqueRhs R'.
+  
+  In x (ftv t) ->
+  lookup x R' = Some y ->
+  Alpha R s s' ->
+  AlphaVar R' x y.
 Proof.
-  intros.
-  unfold KindOfUniqueRhs.
   intros.
   unfold a_R_constr in H.
   remember (freshen2 _ _) as Rfr.
-  rewrite H in H0.
-  remember H0 as H0'.
-  clear HeqH0'.
-  apply lookup_app_or_extended in H0 as [H_in_fresh | [H_ni_fresh H_in_strip] ].
-  - assert (lookup_r y (Rfr ++ strip_R R) = Some x).
+  rewrite H in H1.
+  apply lookup_app_or_extended in H1 as [H_in_fresh | [H_ni_fresh H_in_strip] ].
+  - assert (AlphaVar Rfr x y).
     {
-      apply lookup_r__app.
-      clear H0'.
-      assert (KindOfUniqueRhs Rfr).
+      assert (KindOfUniqueRhs (Rfr ++ nil)).
       {
         subst.
-        rewrite <- app_nil_r.
-        remember (tv s ++
-            tv s' ++ tv t ++ map fst R ++ map snd R) as used.
-        assert((used) = (used ++ (map fst (nil : list (string * string))) ++ (map snd (nil : list (string * string))))).
-        {
-          rewrite app_nil_r. auto.
-        }
+        assert ((tv s ++
+            tv s' ++
+            tv t ++ map fst R ++ map snd R) = (tv s ++
+            tv s' ++
+            tv t ++ map fst R ++ map snd R) ++ (@map (string * string) string fst []) ++ (@map (string * string) string snd [])).
+        { simpl. rewrite app_nil_r. auto. }
         rewrite H.
-        eapply KindOfUniqueRhsFreshMultiple with (R := nil); eauto.
-        unfold KindOfUniqueRhs.
-        intros.
-        inversion H0.
+        eapply KindOfUniqueRhsFreshMultiple.
+        unfold KindOfUniqueRhs. intros. inversion H1.
       }
-      unfold KindOfUniqueRhs in H0.
-      specialize (H0 x y H_in_fresh).
-      apply av_lookup_implies_right. auto. auto.
+      unfold KindOfUniqueRhs in H1. repeat rewrite app_nil_r in H1.
+      eapply H1; auto.
+    }
+  
+    assert (lookup_r y (Rfr ++ R) = Some x).
+    {
+      apply lookup_r__app.
+      apply av_lookup_implies_right in H1; auto.
     }
     rewrite H.
     eapply lookup_some_then_alphavar; eauto.
+    + apply lookup_app_r; auto. 
+
   - 
-    assert (AlphaVar (strip_R R) x y).
+    assert (AlphaVar R x y).
     {
-      assert (KindOfUniqueRhs (strip_R R)) by apply strip_R_KindOfUnique.
-      unfold KindOfUniqueRhs in H0.
-      eapply H0; eauto.
+      assert (In x (ftv s)) by admit. (* By lookup x Rfr = None*)
+      (* Suppose to the contrary that there exists z, s.t. lookup_r y R = z
+          with z <> x.
+
+          By R ⊢ s ~ s' and x in ftv s, we know that needs to be mapped to y,
+          but by lookup_r y R = z, that needs to be mapped back to z, contradiction.
+
+        *)
+
+      admit.
     }
     assert (lookup x R' = Some y).
     {
-      subst. auto.
+      rewrite H.
+      apply lookup_none_app; auto.
+      
     }
     assert (lookup_r y R' = Some x).
     {
@@ -2371,8 +2101,11 @@ Proof.
       {
         assert (In y (map snd R)).
         {
-          eapply strip_R_lookup_some_not_removed. eauto.
+          apply lookup_In in H_in_strip.
+          apply in_map_iff.
+          exists ((x, y)). simpl. split; auto.
         }
+        
         assert (In y ((tv s ++
             tv s' ++
             tv t ++
@@ -2396,16 +2129,16 @@ Proof.
         }
         apply not_ex__lookup_r_none. auto.
       }
-      subst.
+      rewrite H.
       eapply lookup_r__extend.
       + auto.
-      + apply alphavar_lookup_helper in H0.
-        destruct H0.
+      + apply alphavar_lookup_helper in H1.
+        destruct H1.
         * destruct p. auto.
         * destruct p. destruct p. rewrite e0 in H_in_strip. inversion H_in_strip.
     }
     eapply lookup_some_then_alphavar; eauto.
-Qed.
+Admitted.
 
 Definition a_constr {R} {s s' : term} t : prod (list (string * string)) (term) :=
   let R' := @a_R_constr R s s' t in
@@ -2420,7 +2153,6 @@ Proof.
   intros.
   unfold a_R_constr in H.
   remember (freshen2 _ _) as Rfr.
-  apply strip_R_preserves_alpha in H0.
   rewrite H.
   eapply alpha_vacuous_R.
   - intros. 
@@ -2442,7 +2174,6 @@ Proof.
     intros Hcontra.
     apply extend_ftv_to_tv in Hcontra.
     contradiction.
-      
   - auto.
 Qed.
 
@@ -2530,9 +2261,13 @@ Proof.
   intros.
   inversion H.
   apply to_GU__alpha_'.
-  - eapply a_R_constr_KindOfUniqueRHS. eauto.
   - intros.
-    assert (KindOfUniqueRhs R') by (eapply a_R_constr_KindOfUniqueRHS; eauto).
+    eapply a_R_constr_helper.
+    + eauto.
+    + auto.
+    + auto.
+    + auto.
+  - intros.
     rewrite <- H2.
     apply lookup_none_then_no_key in H4.
 
@@ -2994,7 +2729,8 @@ Proof.
       (btv s ++ btv_env sigma))) as Rid.
     unfold R_constr in HeqR'.
     inv HeqR'.
-    eapply KindOfUniqueRhsFreshMultiple.
+    intros.
+    eapply KindOfUniqueRhsFreshMultiple; auto.
     eapply IdCtx__KindOfUniqueRhs.
     apply map_creates_IdCtx.
   - intros.
@@ -3505,7 +3241,8 @@ Proof.
   {
     rewrite Heqs'.
     eapply to_GU__alpha_'.
-    - apply IdCtx__KindOfUniqueRhs.
+    - intros.
+      eapply lookup_some_IdCtx_then_alphavar; eauto.
       rewrite HeqR.
       apply map_creates_IdCtx.
     - intros.

@@ -889,6 +889,10 @@ Proof.
       * auto.
 Qed.
 
+Lemma lookup_some_IdCtx_then_alphavar R s s' :
+  IdCtx R -> lookup s R = Some s' -> AlphaVar R s s'.
+Admitted.
+
 Lemma lookup_some_then_alphavar R s s' :
   lookup s R = Some s' -> lookup_r s' R = Some s -> AlphaVar R s s'.
 Proof.
