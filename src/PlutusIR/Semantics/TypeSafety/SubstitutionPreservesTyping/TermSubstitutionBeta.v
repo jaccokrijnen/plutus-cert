@@ -176,34 +176,6 @@ Qed.
 
 Open Scope string_scope.
 
-
-Example wrong_type :
-    (("s", Kind_Base)::nil) ,, (("x", Ty_Int)::nil) |-+
-    (LamAbs "x" (Ty_Var "s") (TyAbs "s" (Kind_Base) (Var "x"))) : (Ty_Fun (Ty_Var "s") (Ty_Forall "s" Kind_Base (Ty_Int))).
-Proof.
-    intros.
-    constructor.
-    constructor.
-    simpl. auto.
-    constructor.
-    constructor.
-    simpl.
-    econstructor; eauto.
-    simpl. eauto.
-    constructor.
-Qed.
-
-Lemma beta_forall_example :
-    (* ("s", Kind_Base)::nil ,, (("x", Ty_Int)::("y", (Ty_Var "s"))::nil) |-+ (Var "v") : (Ty_Var "s") -> *)
-
-    (("s", Kind_Base)::nil) ,, (("x", Ty_Int)::("v", (Ty_Var "s"))::nil) |-+
-    (Apply 
-        (LamAbs "x" (Ty_Var "s") (TyAbs "s" (Kind_Base) (Var "x")))
-        ((Var "v"))) : (Ty_Var "s").
-        (* This should not be typable because of usign that x...
-            but this example is showing the issue with an x already being bound before!
-        *)
-
 (** * Main lemmas *)
 
 Lemma substitution_preserves_typing_beta :
@@ -319,26 +291,19 @@ Proof with eauto.
     inversion H0; subst.
     (* If U is Ty_Var s, it gets dropped.
         If Gamma is (x, Tn), with Tn not containing s.
-
-        Then [],,(x, Tn) ⊢ (x) : Tn
-        
-
-        
         *)
 
     apply T_TyAbs.
 
-    (*
-
-        Not [],,[]
-    *)
-
     unfold P_Term in H.
     eapply H; eauto.
-    (* s not free in U by [],,[] |-+ v : Un 
-      <- empty kinding context?? hence no ftvs *)
-    admit. 
-    admit.
+    + (* Suppose s in U, then lookup x (drop_ty_var (x, U):: Gamma) = None
+        Hence x not free in t. Hence we can remove (x, U)
+
+        Suppose s not in U, then simple unfold/simpl.
+      *)
+      admit. 
+    + admit.
   - (* LamAbs *)
     inversion H0. subst.
     simpl.

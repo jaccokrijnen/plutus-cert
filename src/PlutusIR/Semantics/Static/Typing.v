@@ -58,14 +58,25 @@ Reserved Notation "Delta ',,' Gamma '|-ok_b' b" (at level 101, b at level 0, no 
 
 Local Open Scope list_scope.
 
-(* TODO: make stronger
+(* 
 Should have
 drop_ty_var "s" (("x", Ty_Bool) :: ("x", Ty_Var "s") :: ("x", Ty_Int) :: nil) = nil
+
+We keep an accumulator of already "removed" vars like "x"
 *)
+Fixpoint drop_ty_var' X (Γ : list (string * ty)) (acc : list string): list (string * ty) :=
+  match Γ with
+  | nil => nil
+  | (x, T) :: Γ' =>
+      if (in_dec string_dec X (Ty.ftv T)) then 
+        drop_ty_var' X Γ' (x::acc)
+      else if in_dec string_dec x acc then
+        drop_ty_var' X Γ' acc
+      else (x, T) :: drop_ty_var' X Γ' acc
+  end.
+
 Definition drop_ty_var X (Γ : list (string * ty)) : list (string * ty) :=
-  filter (fun x => if (in_dec string_dec X (Ty.ftv (snd x))) 
-                    then false else true)  
-          Γ.
+  drop_ty_var' X Γ nil.
 
 Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty -> Prop :=
   (* Simply typed lambda caclulus *)
