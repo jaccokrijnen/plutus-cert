@@ -88,17 +88,14 @@ Module Typing.
       apply T_TyAbs.
       apply H0.
       apply inclusion_cons; auto.
-      (* inclusion G G' -> inclusion (drop X G) (drop X G') ?
-      *)
-
-      admit.
+      eapply drop_ty_var__inclusion; eauto.
     - (* W_Data *)
       econstructor...
       + subst.
         intros.
         eapply H7...
       + subst...
-  Admitted.
+  Qed.
 
   Lemma weakening_empty : forall Delta Gamma t T,
       [] ,, [] |-+ t : T ->

@@ -126,6 +126,18 @@ Fixpoint drop_ty_var' X (Γ : list (string * ty)) (acc : list string): list (str
 Definition drop_ty_var X (Γ : list (string * ty)) : list (string * ty) :=
   drop_ty_var' X Γ nil.
 
+Lemma drop_ty_var__inclusion : forall X Γ Γ',
+    List.inclusion Γ Γ' -> List.inclusion (drop_ty_var X Γ) (drop_ty_var X Γ').
+Admitted.
+
+Lemma drop_ty_var__lookup_some : forall X Γ x T,
+    lookup x (drop_ty_var X Γ) = Some T ->
+    exists T', lookup x Γ = Some T'.
+(* Drop ty var cannot remove anything, so we cannot get None
+  we are not guaranteed to get the same, as (x, S(X)) could be dropped and in front of (x, T).
+*)
+Admitted.
+
 Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty -> Prop :=
   (* Simply typed lambda caclulus *)
   | T_Var : forall Γ Δ x T Tn K,
