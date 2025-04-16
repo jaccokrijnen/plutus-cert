@@ -171,13 +171,13 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       normalise T Tn ->
       Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
       normalise F Fn ->
-      normalise (unwrapIFixFresh Fn K Tn) T0n ->
+      normalise (unwrapIFixFresh Fn K Tn) T0n -> (* RIchard: Added fresh*)
       Δ ,, Γ |-+ M : T0n ->
       Δ ,, Γ |-+ (IWrap F T M) : (Ty_IFix Fn Tn)
   | T_Unwrap : forall Δ Γ M Fn K Tn T0n,
       Δ ,, Γ |-+ M : (Ty_IFix Fn Tn) ->
       Δ |-* Tn : K ->
-      normalise (unwrapIFixFresh Fn K Tn) T0n ->
+      normalise (unwrapIFixFresh Fn K Tn) T0n -> (* Richard: Added fresh *)
       Δ ,, Γ |-+ (Unwrap M) : T0n
   (* Additional constructs *)
   | T_Constant : forall Δ Γ T a,
@@ -186,10 +186,10 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       T = lookupBuiltinTy f ->
       normalise T Tn ->
       Δ ,, Γ |-+ (Builtin f) : Tn
-  | T_Error : forall Δ Γ S Sn,
-      Δ |-* S : Kind_Base ->
-      normalise S Sn ->
-      Δ ,, Γ |-+ (Error S) : Sn
+  | T_Error : forall Δ Γ S T Tn,
+      Δ |-* T : Kind_Base ->
+      normalise T Tn ->
+      Δ ,, Γ |-+ (Error S) : Tn
   (** Let-bindings
       Note: The rules for let-constructs differ significantly from the paper definitions
       because we had to adapt the typing rules to the compiler implementation of type checking.
