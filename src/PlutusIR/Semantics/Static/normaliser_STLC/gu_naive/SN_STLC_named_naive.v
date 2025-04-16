@@ -29,12 +29,6 @@ Hint Resolve nc_lam : gu_nc_db.
 Hint Resolve gu_applam_to_nc : gu_nc_db.
 Hint Resolve nc_ftv_env : gu_nc_db.
 
-(* Dirty hack: Repeated legal ren swap? LRS does not go by transitivity
-  but the property we use it for (alhpa_swap) does go by transitivity
-
-  So If we can LRS a b  and LRS b c, then we still have Alpha a c.
-*)
-
 (* We need a legal ren swap because the new binders get in front of the (x, y) in the inductive step of the lambda*)
 Lemma alpha_rename_binder_stronger x y s t t' : forall Rt s' Rs,
   Alpha Rs s s' ->
@@ -515,7 +509,7 @@ Qed.
 (* May also work on sequential substiutions with additional assumptions.
   For now only needed for parallel substitutions
 *)
-Lemma subs_preserves_alpha_σ_R s : forall R s' sigma sigma',
+Lemma psubs__α s : forall R s' sigma sigma',
   NC s sigma ->
   NC s' sigma' ->
   Alpha R s s' ->
@@ -843,9 +837,9 @@ Proof with eauto with gu_nc_db.
       * contradiction.
       * assert (psubs sigma (tmvar s) = tmvar s) by now apply psubs_vac_var. (* DONE: s not in sigma*)
         rewrite H8.
-        simpl.
+        simpl. 
         rewrite String.eqb_refl.
-        eapply subs_preserves_alpha_σ_R; eauto.
+        eapply psubs__α; eauto.
     + simpl in H. 
       rewrite <- String.eqb_neq in H8.
       rewrite H8 in H.
@@ -856,7 +850,7 @@ Proof with eauto with gu_nc_db.
       *)
       * rewrite sub_vacuous; auto.
         {
-          eapply subs_preserves_alpha_σ_R; eauto.
+          eapply psubs__α; eauto.
         }
         apply psubs_no_ftv.
         -- apply ftv_keys_env_helper; auto.
@@ -868,7 +862,7 @@ Proof with eauto with gu_nc_db.
         unfold sub.
         rewrite H8.
         rewrite <- H9.
-        eapply subs_preserves_alpha_σ_R; eauto.
+        eapply psubs__α; eauto.
 
   - inversion H; subst.
     autorewrite with subs_db in *.
@@ -948,7 +942,7 @@ Proof with eauto with sconstr2_db.
             ++ eauto with α_eq_db.
             ++ eapply alpha_extend_ids. constructor. constructor.
                repeat rewrite psubs_to_subs; try apply single_parseq.
-               eapply subs_preserves_alpha_σ_R.
+               eapply psubs__α.
                ** apply (nc_lam (nc_app_l H1)).
                ** eapply sconstr2_nc_s. eauto.
                ** eapply sconstr2_alpha_s. eauto.
@@ -957,7 +951,7 @@ Proof with eauto with sconstr2_db.
               ++ constructor.
               ++ eauto with α_eq_db.
               ++ repeat rewrite psubs_to_subs; try apply single_parseq.
-                 eapply subs_preserves_alpha_σ_R.
+                 eapply psubs__α.
                  ** apply (nc_app_r H1).
                  ** eapply sconstr2_nc_t. eauto.
                  ** eapply sconstr2_alpha_t. eauto.
@@ -976,7 +970,7 @@ Proof with eauto with sconstr2_db.
               eapply ctx_id_left_is_id.
               repeat rewrite <- single_subs_is_sub.
               repeat rewrite psubs_to_subs; try apply single_parseq.
-              eapply subs_preserves_alpha_σ_R with (R := nil).
+              eapply psubs__α with (R := nil).
               + eapply sconstr2_nc_s_t; eauto.
               + eapply gu_applam_to_nc. eauto.
               + eapply @alpha_sym. constructor. eapply sconstr2_alpha_s; eauto.
@@ -1045,7 +1039,7 @@ Proof with eauto with sconstr2_db.
       * rewrite subs_tmapp.
         constructor. eauto. 
         repeat rewrite psubs_to_subs; try apply single_parseq.
-        eapply subs_preserves_alpha_σ_R; eauto.
+        eapply psubs__α; eauto.
         -- exact (nc_app_r H1).
         -- exact (nc_app_r H4).
   - (* TODO: cleanup, because this is completely analogous to case above*) 
@@ -1083,7 +1077,7 @@ Proof with eauto with sconstr2_db.
       * apply alpha_extend_ids. apply ctx_id_left_is_id. constructor. eapply alpha_sym. constructor. eauto. eapply alpha_sym. constructor. eauto.
       * constructor; eauto. 
         repeat rewrite psubs_to_subs; try apply single_parseq.
-        eapply subs_preserves_alpha_σ_R; eauto.
+        eapply psubs__α; eauto.
         -- exact (nc_app_l H1).
         -- exact (nc_app_l H4).
   - inversion H2; subst.
@@ -1147,7 +1141,7 @@ Proof with eauto with to_GU'_db.
   assert (Alpha [] (sub X T s) (sub X T (to_GU' X T s))).
   {
     repeat rewrite <- single_subs_is_psub.
-    eapply subs_preserves_alpha_σ_R; eauto.
+    eapply psubs__α; eauto.
     eapply to_GU'__NC.
     eapply to_GU'__alpha.
     constructor. constructor. constructor. apply alpha_refl. constructor.
@@ -1181,7 +1175,7 @@ Proof with eauto with to_GU'_db.
     - apply to_GU'__GU.
     - eapply @alpha_trans with (t := x); eauto with α_eq_db. apply to_GU'__alpha.
   }
-  eapply subs_preserves_alpha_σ_R with (R := nil); eauto.
+  eapply psubs__α with (R := nil); eauto.
   - apply to_GU'__NC.
   - apply to_GU'__alpha.
   - constructor. constructor. constructor. apply alpha_refl. constructor.
@@ -1804,7 +1798,7 @@ Proof.
       * eapply to_GU'__GU.
       * eapply to_GU'__NC.
     + repeat rewrite <- single_subs_is_psub.
-      eapply subs_preserves_alpha_σ_R; auto.
+      eapply psubs__α; auto.
       * eapply to_GU'__NC.
       * eapply to_GU'__alpha.
       * apply alpha_ctx_ren_nil.
@@ -1987,7 +1981,7 @@ Proof with eauto using L_sn.
       * eapply @alpha_sym with (ren := R). apply sym_alpha_ctx_is_sym.
         repeat rewrite psubs_to_subs; auto.
         apply (uhm_smaller) in Huhm.
-        eapply subs_preserves_alpha_σ_R; eauto; [|apply (t_constr__a_sigma Huhm (nc_lam nc) Heqt'R)].
+        eapply psubs__α; eauto; [|apply (t_constr__a_sigma Huhm (nc_lam nc) Heqt'R)].
         constructor. eapply alpha_extend_id''. auto; apply (t_constr__a_s (gu_lam gu) Huhm Heqt'R).
       * eapply @alpha_sym; eauto. apply sym_alpha_ctx_is_sym.   
         apply (t_constr__a_t Heqt'R).
