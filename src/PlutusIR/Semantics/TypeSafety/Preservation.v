@@ -12,9 +12,11 @@ Lemma closed__substituteT_CA :
 Proof.
 Admitted.
 
-(* Term language type preservation under evaluation/reduction*)
+Require Import Coq.Program.Equality.
+
+(* Term language type preservation of closed terms under evaluation/reduction*)
 Theorem eval__type_preservation : forall t T v k,
-    nil ,, nil |-+ t : T -> (* TODO: closed terms?*)
+    nil ,, nil |-+ t : T ->
     t =[k]=> v ->
     nil ,, nil |-+ v : T.
 Proof.
@@ -25,9 +27,10 @@ Proof.
       exact Ht.
     - (* E_Apply *)
       apply IHHbs3.
-      inversion Ht; subst.
-      apply IHHbs1 in H5.
-      inversion H5; subst.
+      dependent destruction Ht.
+      (* inversion Ht as [| |? ? ? ? ? ? Hl Hr | | | | | | | | | ]; subst. *)
+      apply IHHbs1 in Ht1.
+      inversion Ht1; subst.
       apply substitution_preserves_typing__Term with (U := T1n) (Un := T1n).
       + auto. 
       + apply normalisation__stable'__normal.
