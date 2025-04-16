@@ -126,8 +126,62 @@ Fixpoint drop_ty_var' X (Γ : list (string * ty)) (acc : list string): list (str
 Definition drop_ty_var X (Γ : list (string * ty)) : list (string * ty) :=
   drop_ty_var' X Γ nil.
 
-Lemma drop_ty_var__inclusion : forall X Γ Γ',
+Lemma drop_ty_var__inclusion X Γ :
+  List.inclusion (drop_ty_var X Γ) Γ.
+Proof.
+  unfold List.inclusion.
+  intros x v Hl.
+  induction Γ.
+  - inversion Hl.
+  - simpl.
+    destruct a as [a1 a2].
+    (* TODO: destr_eqb_eq tactic *)
+    destruct (string_dec a1 x); subst.
+    + rewrite String.eqb_refl.
+      f_equal.
+      (* Suppose X in a2. Then by Hl
+        we have that a2 <> v
+
+        But then by drop_ty_var, all keys "x" will be removed from Hl,
+        hence contradiction, because then it would have been None.
+
+        Hence we must have X not in a2.
+        Then by Hl we have lookup x ((x, a2)::...) = Some v => a2 = v
+      *)
+      admit.
+    + rewrite <- String.eqb_neq in n.
+      rewrite n.
+      (* a1 <> x
+        lookup x (drop ((a1, a2)::Γ) = Some v)
+        Well, it is not the first one (a1), and the result is Some v.
+        Hence we must have lookup x (drop Γ) = Some v. (possibly with even smaller Gamma, if a2 contains X)
+        since drop Γ is a subset of Γ, we must have then also lookup x Γ = Some v.
+      *)
+
+Admitted.
+
+Lemma drop_ty_var__inclusion_preserving : forall X Γ Γ',
     List.inclusion Γ Γ' -> List.inclusion (drop_ty_var X Γ) (drop_ty_var X Γ').
+Proof.
+intros X Γ Γ' Hincl.
+unfold List.inclusion in Hincl.
+unfold List.inclusion.
+intros x v Hl.
+(* by contradiction:
+  Suppose lookup x (drop_ty_var X Γ') = None
+
+    By drop_ty_var__inclusion, 
+      we have lookup x Γ' = Some v.
+      
+      then 
+        (x, v) in Gamma' and X in v (not possible by Hl)
+      OR
+        (x, v') in Gamma' and X in v', then also (x, v) gets removed
+
+        But if this (x, v') occured to the right of (x, v), then still (x, v) in Gamma
+        If it occurred to the left, we would have had
+        lookup x Γ' = Some v' with v <> v'. Contradiction.
+*)
 Admitted.
 
 Lemma drop_ty_var__lookup_some : forall X Γ x T,
