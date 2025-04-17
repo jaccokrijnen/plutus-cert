@@ -88,7 +88,7 @@ Module Typing.
       apply T_TyAbs.
       apply H0.
       apply inclusion_cons; auto.
-      eapply drop_ty_var__inclusion; eauto.
+      eapply drop_ty_var__inclusion_preserving; eauto.
     - (* W_Data *)
       econstructor...
       + subst.
