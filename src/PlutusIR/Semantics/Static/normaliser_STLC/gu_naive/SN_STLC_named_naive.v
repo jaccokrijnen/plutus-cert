@@ -152,7 +152,7 @@ Inductive step_gu : term -> term -> Type :=
 Inductive sn {X : Type} {e : X -> X -> Type } x : Type :=
 | SNI : (forall y, e x y -> sn y) -> sn x.
 
-Notation SN_na := (@sn term step_gu).
+Notation SN_gu := (@sn term step_gu).
 
 Lemma step_gu_preserves_alpha {s} {s'} {t} R :
   Alpha R s t -> step_gu s s' -> {t' & prod (step_gu t t') (Alpha R s' t')}.
@@ -217,7 +217,7 @@ Proof.
 Qed.
 
 Theorem α_preserves_SN_R s s' R :
-  Alpha R s s' -> SN_na s -> SN_na s'.
+  Alpha R s s' -> SN_gu s -> SN_gu s'.
 Proof.
   intros Hα Hsn.
   generalize dependent s'.
@@ -349,7 +349,7 @@ Qed.
 
 
 (* This would NOT work for app because of beta reduction*)
-Lemma sn_ty_fun {B s t} : B <> App -> SN_na s -> SN_na t -> SN_na (@tmapp B s t).
+Lemma sn_ty_fun {B s t} : B <> App -> SN_gu s -> SN_gu t -> SN_gu (@tmapp B s t).
 Proof.
   intros HnotApp HSN_s HSN_t.
   generalize dependent t.
@@ -395,7 +395,7 @@ Proof.
       -- eapply to_GU__alpha.
 Qed.
 
-Lemma sn_ty_forall {B X K T} : SN_na T -> SN_na (@tmlam B X K T).
+Lemma sn_ty_forall {B X K T} : SN_gu T -> SN_gu (@tmlam B X K T).
 Proof.
   intros HSN_T.
   induction HSN_T.
@@ -426,7 +426,7 @@ Proof.
     + eapply alpha_extend_ids. constructor. constructor. apply to_GU__alpha.
 Qed.
 
-Lemma sn_closedL {B} t s : SN_na (@tmapp B s t) -> SN_na s.
+Lemma sn_closedL {B} t s : SN_gu (@tmapp B s t) -> SN_gu s.
 Proof.
   apply: (sn_preimage_α (h := tmapp^~t)) => x y.
   intros.
@@ -1135,7 +1135,7 @@ Hint Resolve to_GU'__alpha to_GU'__GU to_GU'__NC : to_GU'_db.
 
 Definition sub_gu (X : string) (T : term) (s : term) := sub X T (to_GU' X T s).
 
-Lemma sn_subst X T s : NC s ((X, T)::nil) -> SN_na (sub X T s) -> SN_na s.
+Lemma sn_subst X T s : NC s ((X, T)::nil) -> SN_gu (sub X T s) -> SN_gu s.
 Proof with eauto with to_GU'_db.
   intros nc.
   assert (Alpha [] (sub X T s) (sub X T (to_GU' X T s))).
@@ -1190,7 +1190,7 @@ Definition neutral (s : term) : bool :=
   end.
 
 Record reducible (P : cand) : Type := {
-  p_sn : forall s, P s -> SN_na s;
+  p_sn : forall s, P s -> SN_gu s;
   p_cl : forall s t, P s -> step_gu s t -> P t;
   p_nc : forall s, neutral s -> (forall t, step_gu s t -> P t) -> P s
 }.
@@ -1200,10 +1200,10 @@ But we should do a little study if that is necessary.
 
 we want this to hold for [x := t] meaning substituteT:
 Lemma beta_expansion A B x s t :p
-  SN_na t -> L A ([x := t] s) ->
+  SN_gu t -> L A ([x := t] s) ->
   L A (tmapp (tmlam x B s) t).
 
-It also has to hold for A := Kind_Base, in which case it is proved by showing SN_na.
+It also has to hold for A := Kind_Base, in which case it is proved by showing SN_gu.
 We only have that these two terms mean the same thing if we are allowed to forget about capture in the sbustitution
 Hence only if t is globally unique with respect to s. We can enforce that by changing the definition of L.
 
@@ -1212,7 +1212,7 @@ JACCO and WOUTER think it is a bad idea to change the LR and that using L_preser
 *)
 Fixpoint L (T : PlutusIR.kind) : cand :=
 match T with
-  | PlutusIR.Kind_Base => SN_na 
+  | PlutusIR.Kind_Base => SN_gu 
   | PlutusIR.Kind_Arrow A B => fun s => forall t, L A t -> L B (@tmapp App s t)
 end.
 
@@ -1254,7 +1254,7 @@ Proof.
     eapply a_constr__t_alpha; eauto.
 Qed.
 
-Lemma reducible_sn : reducible SN_na.
+Lemma reducible_sn : reducible SN_gu.
 Proof. 
   constructor; eauto using ARS.sn. by move=> s t [f] /f. 
   intros s.  elim: s => //.
@@ -1265,6 +1265,15 @@ Global Hint Resolve reducible_sn : core.
 Lemma reducible_var P x : reducible P -> P (tmvar x).
 Proof. move/p_nc. apply=> // t st.
   inv st. inv H. inv H1.
+Qed.
+
+Lemma SN_var x : SN_gu (tmvar x).
+Proof. 
+  econstructor.
+  intros.
+  inversion H; subst.
+  inversion H0; subst.
+  inversion H2; subst.
 Qed.
 
 Set Printing Implicit.
@@ -1310,7 +1319,7 @@ Proof with eauto using step_gu.
         constructor; eauto. eapply alpha_refl. constructor.
 Qed.
 
-Corollary L_sn A s : L A s -> SN_na s.
+Corollary L_sn A s : L A s -> SN_gu s.
 Proof. intros Las. assert (reducible (L A)) by apply (L_reducible A).
    apply (p_sn X). assumption.
 Qed.
@@ -1669,11 +1678,11 @@ Lemma beta_expansion' {BA BL} A B x y s s' t :
   Alpha [(y, x)] s' s -> (* this allows us to not have to "rename free vars in t" manually*)
   GU s ->
   NC s [(x, t)] -> (* this really is the right assumption. no free variable in t is a binder in s', because these binders could be added to the environment through beta reduction and then capture*)
-  SN_na t -> L A (sub x t s) ->
+  SN_gu t -> L A (sub x t s) ->
   L A (@tmapp BA (@tmlam BL y B s') t).
 Proof with eauto with α_eq_db gu_nc_db.
   move=> Ha_s' gu nc snt h. have sns := sn_subst nc (L_sn h).
-  assert (SN_na s').
+  assert (SN_gu s').
   {
     (* eapply alpha_sym in Ha_s'. *)
     eapply α_preserves_SN_R with (s := s)...
@@ -1726,7 +1735,7 @@ Proof with eauto with α_eq_db gu_nc_db.
     specialize (X s5' Hstep_s5' x1).
     clear Ha_s5'. clear H7. clear st. 
     inv Hstep_s5'.
-    assert (HSN_x1: SN_na x1) by now constructor.
+    assert (HSN_x1: SN_gu x1) by now constructor.
 
     (* TODO: instead of to_GU, assume gu of s0 here by NC?*)
     assert ({s'_a &  step_naive s0 s'_a * Alpha [(y, x)] s5' s'_a}%type).
@@ -1783,7 +1792,7 @@ Qed.
 
 Lemma beta_expansion_subst {BA BL} X t sigma s A B :
   NC (subs sigma s) [(X, t)] -> (* so the substitution makes sense after "breaking"  it open*)
-  SN_na t -> L A (subs ((X, t)::sigma) s) -> L A (@tmapp BA (subs sigma (@tmlam BL X B s)) t).
+  SN_gu t -> L A (subs ((X, t)::sigma) s) -> L A (@tmapp BA (subs sigma (@tmlam BL X B s)) t).
 Proof.
   intros nc snt H.
   simpl in H.
@@ -2102,7 +2111,7 @@ Qed.
 
 
 
-Theorem SN_naive E s T : has_kind E s T -> SN_na s.
+Theorem SN_naive E s T : has_kind E s T -> SN_gu s.
   intros.
   eapply type_L in H.
   rewrite id_subst__id in H; [|apply id_subst_is_IdSubst].
