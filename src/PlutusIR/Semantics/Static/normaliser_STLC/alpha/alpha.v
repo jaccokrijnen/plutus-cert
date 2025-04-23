@@ -184,11 +184,24 @@ Inductive αCtxTrans : list (string * string) -> list (string * string) -> list 
     αCtxTrans ren ren' ren'' -> 
     αCtxTrans ((x, y) :: ren) ((y, z) :: ren') ((x, z) :: ren'').
 
+Lemma alpha_var_trans {s t u ren ren' ren''}:
+  αCtxTrans ren ren' ren'' -> AlphaVar ren s t -> AlphaVar ren' t u -> AlphaVar ren'' s u.
+Proof.
+  intros Htrans Halpha1 Halpha2.
+  generalize dependent ren'.
+  generalize dependent ren''.
+  generalize dependent u.
+  induction Halpha1; 
+  intros u ren'' ren' Htrans Halpha2.
+  + inversion Htrans; subst; auto.
+  + inversion Htrans; subst.
+    inversion Halpha2; subst; intuition.
+    constructor.
+  + inversion Htrans; subst.
+    inversion Halpha2; subst; intuition.
+    constructor; intuition.
+Qed.
 
-(* Do we also have:
-  Alpha ((s, t)::ren) x y -> Alpha (t, u) y z -> Alpha (s, u)::ren x z ?
-  
-*)
 Lemma alpha_trans {s t u ren ren' ren''}: (* Transitive contexts as well *)
   αCtxTrans ren ren' ren'' -> Alpha ren s t -> Alpha ren' t u -> Alpha ren'' s u.
 Proof with auto. 
@@ -200,42 +213,12 @@ Proof with auto.
   intros u ren'' ren' Htrans Halpha2;
   inversion Halpha2; subst;
   constructor.
-  - induction Htrans.
-    + inversion H1.
-      subst.
-      assumption.
-      
-    + inversion H1; subst.
-      inversion a; subst; try contradiction.
-      * apply alpha_var_cons.
-      * apply alpha_var_diff.
-        -- inversion a. subst. contradiction. assumption.
-        -- assumption.
-        -- apply IHHtrans.
-           inversion a.
-           ++ contradiction.
-           ++ assumption.
-           ++ apply alpha_var.
-              assumption.
-           ++ assumption.
+  - eapply alpha_var_trans; eauto.
   - apply (IHHalpha1 s3 ((x, y0)::ren'') ((y, y0)::ren')).
     + now apply alpha_trans_cons.
     + now inversion Halpha2.
   - now apply (IHHalpha1_1 s3 ren'' ren').
   - now apply (IHHalpha1_2 t3 ren'' ren').
-Qed.
-
-Lemma alpha_var_trans {s t u ren ren' ren''}:
-  αCtxTrans ren ren' ren'' -> AlphaVar ren s t -> AlphaVar ren' t u -> AlphaVar ren'' s u.
-Proof.
-  intros Htrans Halpha1 Halpha2.
-  assert (Alpha ren'' (tmvar s) (tmvar u)). {
-    eapply alpha_trans; eauto.
-    apply alpha_var in Halpha1; eauto.
-    apply alpha_var. assumption.
-  }
-  inversion H.
-  assumption.
 Qed.
 
 Fixpoint sym_alpha_ctx (ren : list (string * string)) :=
@@ -268,7 +251,7 @@ Proof.
     assumption.
 Qed.
     
-
+(* TODO: This is exactly alphaCtxRefl*)
 Inductive IdCtx : list (string * string) -> Set :=
 | id_ctx_nil : IdCtx []
 | id_ctx_cons x ren :
