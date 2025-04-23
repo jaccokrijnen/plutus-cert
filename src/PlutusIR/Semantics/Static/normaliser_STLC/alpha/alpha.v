@@ -1167,7 +1167,8 @@ Qed.
 We need the freshness condition since we do not have:
   Alpha [(x, x); (x, x')] x' x'
   *)
-Lemma alphaIdShadowsVacuous x x' s :
+Lemma 
+hadowsVacuous x x' s :
   ~ (In x' (tv s)) -> Alpha [(x, x); (x, x')] s s.
 Proof.
   intros Hfresh.

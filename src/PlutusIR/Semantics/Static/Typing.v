@@ -214,7 +214,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       map_normalise (flatten (map binds_Gamma bs)) bsGn ->
       Γ' = bsGn ++ Γ ->
       Δ ,, Γ |-oks_nr bs ->
-      Δ' ,, Γ' |-+ t : Tn ->
+      Δ' ,, Γ'  |-+ t : Tn ->
       Δ |-* Tn : Kind_Base ->
       Δ ,, Γ |-+ (Let NonRec bs t) : Tn
   | T_LetRec : forall Δ Γ bs t Tn Δ' Γ' bsGn,

@@ -1,7 +1,7 @@
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
 Import ListNotations.
-From PlutusCert Require Import STLC_named alpha.alpha Util.List freshness.
+From PlutusCert Require Import STLC_named alpha.alpha Util.List freshness util.
 Local Open Scope string_scope.
 Local Open Scope list_scope.
 
@@ -43,33 +43,22 @@ Proof.
         destruct Hfresh as [Hfresh _].
         assumption.
       * apply alpha_var_refl.
-  - destruct (x =? s) eqn:xs.
-    + assert (Hsx: s = x).
-      {
-        apply String.eqb_eq in xs.
-        symmetry.
-        assumption. 
-      }
-
+  - destr_eqb_eq s x.
+    + 
     
-      assert (HignoreRename: forall B, rename x x' (@tmlam B s k s0) = @tmlam B s k s0).
+      assert (HignoreRename: forall B, rename x x' (@tmlam B x k s0) = @tmlam B x k s0).
       {
         unfold rename.
         unfold mren.
         fold mren.
         subst.
         simpl.
-        rewrite xs.
+        rewrite String.eqb_refl.
         rewrite mren_id.
         reflexivity.
       }
       rewrite HignoreRename.
       apply alpha_lam.
-
-      rewrite Hsx.
-      rewrite Hsx in HignoreRename.
-      rewrite Hsx in Hfresh.
-      clear Hsx xs.
 
       (* TODO: boring code, think of tactics*)
       apply alphaIdShadowsVacuous.
@@ -77,16 +66,18 @@ Proof.
       apply not_in_cons in Hfresh.
       destruct Hfresh as [_ Hfresh].
       assumption.
-    + assert (H: forall B, rename x x' (@tmlam B s k s0) = @tmlam B s k (rename x x' s0)).
+    + assert (H1: forall B, rename x x' (@tmlam B s k s0) = @tmlam B s k (rename x x' s0)).
       {
         unfold rename.
         unfold mren.
         fold mren.
         simpl.
-        rewrite xs.
-        reflexivity.        
+        rewrite <- String.eqb_neq in H.
+        rewrite String.eqb_sym in H.
+        rewrite H.
+        auto.        
       }
-      rewrite H.
+      rewrite H1.
       apply alpha_lam.
       assert (s <> x').
       {
@@ -95,12 +86,7 @@ Proof.
         symmetry.
         assumption.
       }
-      assert (s <> x).
-      {
-        apply String.eqb_neq in xs.
-        symmetry.
-        assumption.
-      }
+      
       apply alpha_extend_id'.
       * apply IHs.
         (* We know tv (tmlam s t s0) = s :: tv s0*)
