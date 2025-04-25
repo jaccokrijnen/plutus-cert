@@ -57,53 +57,307 @@ Reserved Notation "Delta ',,' Gamma '|-ok_b' b" (at level 101, b at level 0, no 
 
 Local Open Scope list_scope.
 
+Definition inb_string (x : string) (xs : list string) : bool :=
+  if in_dec string_dec x xs then true else false.
+
+Lemma inb_string_true_iff (x : string) (xs : list string) :
+  inb_string x xs = true <-> In x xs.
+Proof.
+  unfold inb_string.
+  destruct (in_dec string_dec x xs); split; intro H; try easy; try congruence.
+Qed.
+
+Lemma inb_string_false_iff (x : string) (xs : list string) :
+  inb_string x xs = false <-> ~ In x xs.
+Proof.
+  unfold inb_string.
+  destruct (in_dec string_dec x xs); split; intro H; try easy; try congruence.
+Qed.
+
 Definition drop_Δ (Δ : list (string * kind)) (bs : list binding) : list (string * kind) :=
   (* Just negb and In, but for bools isntead of props*)
-  filter (fun x => (if in_dec string_dec (fst x) (btvbs bs) then false else true)) Δ.
+  filter (fun x => negb (inb_string (fst x) (btvbs bs))) Δ.
 
 Lemma drop_Δ_nil : forall Δ,
     drop_Δ Δ nil = Δ.
-Admitted.
+Proof.
+  intros Δ.
+  unfold drop_Δ.
+  induction Δ.
+  - simpl. reflexivity.
+  - simpl. f_equal.
+    auto.
+Qed.
+
+From Coq Require Import Bool.
+
+Lemma drop_Δ__weaken : forall Δ b bs,
+  drop_Δ Δ (b::bs) = drop_Δ (binds_Delta b ++ Δ) (b::bs).
+Proof.
+  intros Δ b bs.
+  induction b.
+  - simpl. reflexivity.
+  - simpl. destruct t.
+    unfold drop_Δ.
+    remember (fun x : string * kind => _) as f.
+
+    assert (Hf_nil: filter f [(b, k)] = []).
+    {
+      subst; simpl.
+      assert (Hin: (inb_string b (btvbs (TypeBind (TyVarDecl b k) t0 :: bs))) = true).
+      {
+        unfold btvbs; simpl.
+        rewrite inb_string_true_iff.
+        apply in_eq.
+      }
+      rewrite Hin; auto.
+    }
+    assert (Hf_app: filter f Δ = filter f [(b, k)] ++ filter f Δ).
+    {
+      rewrite Hf_nil.
+      rewrite app_nil_l.
+      reflexivity.
+    }
+    rewrite Hf_app.
+    rewrite filter_app; auto.
+  - simpl. destruct d. destruct t.
+    unfold drop_Δ.
+    remember (fun x : string * kind => _) as f.
+    assert (Hf_nil: filter f [(b0, k)] = []).
+    {
+      subst; simpl.
+      assert (Hin: (inb_string b0 (btvbs (DatatypeBind (Datatype (TyVarDecl b0 k) l b l0) :: bs))) = true).
+      {
+        unfold btvbs; simpl.
+        rewrite inb_string_true_iff.
+        apply in_eq.
+      }
+      rewrite Hin; auto.
+    }
+    assert (Hf_app: filter f Δ = filter f [(b0, k)] ++ filter f Δ).
+    {
+      rewrite Hf_nil.
+      rewrite app_nil_l.
+      reflexivity.
+    }
+    rewrite Hf_app.
+    rewrite filter_app; auto.
+Qed.
+
+
+Lemma drop_Δ__unfold : forall Δ b bs,
+  drop_Δ Δ (b::bs) = drop_Δ (drop_Δ Δ bs) [b].
+Proof.
+  intros Δ b bs.
+  induction Δ.
+  - simpl. reflexivity.
+  - simpl.
+    destruct (inb_string (fst a) (btvbs (b :: bs))) eqn:Heqn1.
+    + (* a = b or In a (btvb bs)*)
+      simpl.
+      destruct (inb_string (fst a) (btvbs bs)) eqn:Heqn2.
+      * (* a in bs *)
+        simpl.
+        apply IHΔ.
+      * (* a notin bs, so then a = b*)
+        simpl.
+        assert (inb_string (fst a) (btvbs [b]) = true ).
+        {
+          rewrite btvbs_cons in Heqn1.
+          rewrite inb_string_true_iff in Heqn1.
+          rewrite in_app_iff in Heqn1. 
+          destruct Heqn1 as [Heqn1 | Heqn1].
+          - rewrite <- inb_string_true_iff in Heqn1.
+            unfold btvbs; simpl.
+            rewrite app_nil_r.
+            assumption.
+          - rewrite <- inb_string_true_iff in Heqn1.
+            rewrite Heqn1 in Heqn2.
+            inversion Heqn2.
+        }
+        simpl.
+        rewrite H.
+        simpl.
+        apply IHΔ.
+    + (* ~ In a (btvbs (b :: bs))*)
+      assert (
+        (inb_string (fst a) (btvbs bs)) = false).
+      {
+        rewrite btvbs_cons in Heqn1.
+        rewrite inb_string_false_iff in Heqn1.
+        rewrite not_in_app in Heqn1.
+        destruct Heqn1 as [_ Heqn1].
+        rewrite <- inb_string_false_iff in Heqn1.
+        assumption.
+      }
+      rewrite H.
+      simpl.
+      assert ((inb_string (fst a) (btvbs [b])) = false).
+      {
+        rewrite btvbs_cons in Heqn1.
+        rewrite inb_string_false_iff in Heqn1.
+        rewrite not_in_app in Heqn1.
+        destruct Heqn1 as [Heqn1 _].
+        rewrite <- inb_string_false_iff in Heqn1.
+        unfold btvbs. simpl.
+        rewrite app_nil_r.
+        assumption.
+      }
+      rewrite H0; simpl.
+      f_equal.
+      apply IHΔ.
+Qed.
 
 Lemma drop_Δ_nil__kinding : forall Δ T K,
     drop_Δ Δ nil |-* T : K -> Δ |-* T : K.
 Proof.
-Admitted.
+  intros.
+  rewrite drop_Δ_nil in H.
+  assumption.
+Qed.
     
+
+  Lemma drop_Δ__lookup_None : forall Δ bs x,
+    In x (BoundVars.btvbs bs) -> lookup x (drop_Δ Δ bs) = None.
+  Proof.
+    intros Δ bs x Hbtvbs.
+    induction Δ; simpl.
+    - reflexivity.
+    - destruct a as [a1 a2]; simpl.
+      destruct (negb (inb_string a1 (btvbs bs))) eqn:Heqn.
+      + destruct (string_dec a1 x).
+        * subst.
+          exfalso.
+          rewrite negb_true_iff in Heqn.
+          rewrite inb_string_false_iff in Heqn.
+          contradiction.
+        * simpl.
+          rewrite <- String.eqb_neq in n.
+          rewrite n.
+          exact IHΔ.
+    + assumption.
+  Qed.
+
+  Lemma lookup_None__drop_Δ : forall Δ bs x,
+    ~ In x (BoundVars.btvbs bs) ->
+    lookup x (drop_Δ Δ bs) = lookup x Δ.
+  Proof.
+    intros Δ bs x HnotBtvb.
+    induction Δ; simpl.
+    - reflexivity.
+    - destruct a as [a1 a2]; simpl.
+      destruct ((inb_string a1 (btvbs bs))) eqn:Heqn; simpl.
+      + destruct (string_dec a1 x).
+        * subst.
+          rewrite inb_string_true_iff in Heqn.
+          contradiction.
+        * rewrite <- String.eqb_neq in n.
+          rewrite n.
+          rewrite IHΔ; auto.
+      + simpl.
+        destruct (string_dec a1 x).
+        * subst.
+          rewrite String.eqb_refl.
+          reflexivity.
+        * rewrite <- String.eqb_neq in n.
+          rewrite n.
+          rewrite IHΔ; auto. 
+  Qed.
+
+  Lemma lookup_Some__drop_Δ_no_btvbs : forall Δ bs x K,
+    lookup x (drop_Δ Δ bs) = Some K ->
+    ~ In x (BoundVars.btvbs bs).
+  Proof.
+    intros Δ bs x K Hl.
+    induction Δ; simpl in *.
+    - inversion Hl.
+    - destruct a as [a1 a2]; simpl in *.
+      destruct (inb_string a1 (btvbs bs)) eqn:Heqn; simpl in *.
+      + destruct (string_dec a1 x).
+        * apply IHΔ.
+          assumption.
+        * subst.
+          apply IHΔ.
+          exact Hl.
+      + simpl in Hl.
+        destruct (string_dec a1 x).
+        * subst.
+          rewrite inb_string_false_iff in Heqn.
+          assumption.
+        * rewrite <- String.eqb_neq in n.
+          rewrite n in Hl.
+          apply IHΔ.
+          assumption.
+  Qed.
+
+  Lemma drop_Δ__inclusion : forall Δ bs,
+    List.inclusion (drop_Δ Δ bs) Δ.
+  Proof.
+    intros.
+    induction Δ; simpl.
+    - unfold List.inclusion; auto.
+    - destruct a as [a1 a2].
+      destruct (inb_string (fst (a1, a2)) (btvbs bs)) eqn:Heqn; simpl in *.
+      + unfold inclusion.
+        intros x v Hl.
+        destruct (string_dec a1 x).
+        * subst.
+          exfalso.
+          rewrite inb_string_true_iff in Heqn.
+          eapply drop_Δ__lookup_None in Heqn.
+          rewrite Hl in Heqn.
+          inversion Heqn.
+        * simpl.
+          rewrite <- String.eqb_neq in n.
+          rewrite n.
+          apply IHΔ.
+          assumption.
+      + unfold inclusion.
+        intros x v Hl.
+        destruct (string_dec a1 x).
+        * subst.
+          inversion Hl.
+          rewrite String.eqb_refl.
+          simpl.
+          rewrite String.eqb_refl.
+          reflexivity.
+        * simpl.
+          rewrite <- String.eqb_neq in n.
+          rewrite n.
+          apply IHΔ.
+          simpl in Hl.
+          rewrite n in Hl.
+          assumption.
+  Qed.
+
+
+
 Lemma drop_Δ_cons__inclusion : forall Δ b bs,
     List.inclusion (drop_Δ Δ (b::bs)) (drop_Δ (binds_Delta b ++ Δ) bs).
 Proof.
   intros Δ b bs.
-  induction b.
-  - simpl. (* termbinds hav no effect on drop_Δ*) admit.
-  - simpl. destruct t.
-    (* b is dropped from the lhs, hence b does not shadow anything in the rhs*)
-    admit.
-  - simpl. destruct d.
-    destruct t.
-    (* same story *)
-Admitted.
+  assert (Hweaken: drop_Δ Δ (b::bs) = drop_Δ (binds_Delta b ++ Δ) (b::bs)).
+  {
+    apply drop_Δ__weaken.
+  }
+  rewrite Hweaken; clear Hweaken.
+  assert (Hunfold: drop_Δ (binds_Delta b ++ Δ) (b::bs) = drop_Δ (drop_Δ (binds_Delta b ++ Δ) bs) [b]).
+  {
+    apply drop_Δ__unfold.
+  }
+  rewrite Hunfold; clear Hunfold.
+  apply drop_Δ__inclusion.
+Qed.
 
-Lemma drop_Δ__inclusion : forall Δ bs,
-    List.inclusion (drop_Δ Δ bs) Δ.
-Admitted.
-
-Lemma drop_Δ__kinding : forall Δ bs T K,
-    drop_Δ Δ bs |-* T : K -> Δ |-* T : K.
+Lemma btvbs_eq__drop_Δ_eq : forall Δ bs bs',
+  btvbs bs = btvbs bs' ->
+  drop_Δ Δ bs = drop_Δ Δ bs'.
 Proof.
-Admitted.
-
-Lemma drop_Δ__preserves__inclusion : forall Δ Δ' bs,
-    List.inclusion Δ Δ' ->
-    List.inclusion (drop_Δ Δ bs) (drop_Δ Δ' bs).
-Proof.
-Admitted.
-
-Lemma binds_Delta_eq__drop_Δ_eq : forall Δ bs bs',
-  map binds_Delta bs = map binds_Delta bs' ->
-    drop_Δ Δ bs = drop_Δ Δ bs'.
-Proof.
-Admitted.
+  intros Δ bs bs' Hbtvbs.
+  unfold drop_Δ.
+  rewrite Hbtvbs.
+  reflexivity.
+Qed.
 
 Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty -> Prop :=
   (* Simply typed lambda caclulus *)

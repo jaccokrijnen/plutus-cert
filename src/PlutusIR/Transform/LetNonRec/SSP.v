@@ -16,12 +16,6 @@ Lemma binds_Gamma__bvbs bs bs' :
 .
 Admitted.
 
-Lemma binds_Delta__btvbs bs bs' :
-  map binds_Delta bs = map binds_Delta bs' ->
-  btvbs bs = btvbs bs'
-.
-Admitted.
-
 Definition P_CNR_Term t t' := ∀ Δ Γ T,
   has_type Δ Γ t T ->
   has_type Δ Γ t' T
@@ -148,7 +142,8 @@ Theorem CNR_Term__SSP : ∀ t t',
     + assert (H_eq : bvbs bs' = bvbs bs) by eauto using binds_Gamma__bvbs.
       rewrite H_eq...
     + subst. 
-      erewrite binds_Delta_eq__drop_Δ_eq; eauto.
+      apply binds_Delta__btvbs in H_eq_Delta.
+      erewrite btvbs_eq__drop_Δ_eq; eauto.
 
   - (* CNR_LetRec_nil *)
     unfold P_CNR_Bindings.
