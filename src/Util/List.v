@@ -574,7 +574,7 @@ Admitted.
 Lemma Lookup_In : forall A B (k : A) (v : B) kvs, NoDup kvs -> In (k, v) kvs <-> Lookup k v kvs.
 Admitted.
 
-Fixpoint drop {X:Type} (n:string) (nxs:list (string * X)) : list (string * X) :=
+Function drop {X:Type} (n:string) (nxs:list (string * X)) : list (string * X) :=
   match nxs with
   | nil => nil
   | (n',x) :: nxs' => if n' =? n then drop n nxs' else (n',x) :: (drop n nxs')
