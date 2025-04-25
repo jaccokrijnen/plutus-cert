@@ -173,18 +173,23 @@ Proof with (eauto with typing).
     + eapply Util.ForallP_tl in H...
 Qed.
 
-Lemma subst_bnr'__preserves__btvb x v bs :
+Search "binds".
+
+Lemma subst_bnr'__preserves__btvbs x v bs :
   btvbs (@subst_bnr' subst_b x v bs) = btvbs bs.
 Proof.
-Admitted.
+  apply binds_Delta__btvbs.
+  rewrite subst_bnr__preserves_bindsD.
+  reflexivity.
+Qed.
 
-Lemma subst_bnr'__preserves__drop_Δ x v Δ bs :
-  drop_Δ Δ (@subst_bnr' subst_b x v bs) = drop_Δ Δ bs.
-Admitted.
-
-Lemma subst_br'__preserves__drop_Δ x v Δ bs :
-  drop_Δ Δ (@subst_br' subst_b x v bs) = drop_Δ Δ bs.
-Admitted.
+Lemma subst_br'__preserves__btvbs x v bs :
+  btvbs (@subst_br' subst_b x v bs) = btvbs bs.
+Proof.
+  apply binds_Delta__btvbs.
+  rewrite subst_br__preserves_bindsD.
+  reflexivity.
+Qed.
 
 (** * Main lemmas *)
 
@@ -213,8 +218,9 @@ Proof with eauto.
             apply H13.
             all: auto using inclusion_refl, append_shadow.
         -- simpl. 
-           rewrite subst_bnr'__preserves__drop_Δ.
-           assumption.
+           erewrite btvbs_eq__drop_Δ_eq; eauto.
+           rewrite subst_bnr'__preserves__btvbs; eauto.
+            
       * eapply T_Let...
         -- rewrite subst_bnr__preserves_bindsG...
         -- eapply SPT__Bindings_NonRec...
@@ -233,8 +239,8 @@ Proof with eauto.
             apply Typing.weakening in H13.
             apply H13.
             all: auto using inclusion_refl, append_permute.
-          -- rewrite subst_bnr'__preserves__drop_Δ.
-             assumption.
+        -- erewrite btvbs_eq__drop_Δ_eq; eauto.
+           rewrite subst_bnr'__preserves__btvbs; eauto.
     + simpl.
       destruct (existsb (eqb x) (bvbs bs)) eqn:Hexb.
       * eapply existsb_exists in Hexb.
@@ -277,8 +283,8 @@ Proof with eauto.
               all: auto using inclusion_refl, append_permute.
            ++ apply H2.
            ++ assumption.
-        -- rewrite subst_br'__preserves__drop_Δ.
-           assumption.
+        -- erewrite btvbs_eq__drop_Δ_eq; eauto.
+           rewrite subst_br'__preserves__btvbs; eauto.
   - (* Var *)
     simpl.
     destruct (x =? s)%string eqn:Heqb.

@@ -27,6 +27,41 @@ Module Kinding.
     eapply weakening; eauto using inclusion_empty.
   Qed.
 
+
+  Lemma drop_Δ__kinding : forall Δ bs T K,
+      drop_Δ Δ bs |-* T : K -> Δ |-* T : K.
+  Proof.
+    intros.
+    eapply Kinding.weakening.
+    - apply drop_Δ__inclusion.
+    - eauto.
+  Qed.
+
+  Lemma drop_Δ__preserves__inclusion : forall Δ Δ' bs,
+      List.inclusion Δ Δ' ->
+      List.inclusion (drop_Δ Δ bs) (drop_Δ Δ' bs).
+  Proof.
+    intros Δ Δ' bs Hincl.
+    unfold inclusion in *.
+    intros x v Hl.
+    assert (lookup x Δ' = Some v).
+    {
+      apply drop_Δ__inclusion in Hl.
+      apply Hincl in Hl.
+      assumption.
+    }
+    assert ( ~ In x (BoundVars.btvbs bs)).
+    {
+      eapply lookup_Some__drop_Δ_no_btvbs; eauto.
+    }
+
+    induction Δ'.
+    - inversion H.
+    - eapply lookup_None__drop_Δ in H0; eauto.
+      rewrite H0.
+      assumption.
+  Qed.
+
 End Kinding.
 
 Module Typing.
@@ -87,11 +122,11 @@ Module Typing.
     - (* T_Let NonRec*)
       econstructor; subst; eauto using Kinding.weakening, inclusion_cons, inclusion_append.
       apply Kinding.weakening with (Delta := drop_Δ Δ bs); auto.
-      apply drop_Δ__preserves__inclusion. assumption.
+      apply Kinding.drop_Δ__preserves__inclusion. assumption.
     - (* T_Let Rec *)
       econstructor; subst; eauto using Kinding.weakening, inclusion_cons, inclusion_append.
       apply Kinding.weakening with (Delta := drop_Δ Δ bs); auto.
-      apply drop_Δ__preserves__inclusion. assumption.
+      apply Kinding.drop_Δ__preserves__inclusion. assumption.
     - (* W_Data *)
       econstructor...
       + subst.
