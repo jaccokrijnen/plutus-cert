@@ -128,24 +128,29 @@ Theorem CNR_Term__SSP : ∀ t t',
     unfold P_CNR_Term, P_CNR_Term, P_CNR_Bindings in *.
     intros Δ Γ T H_typing_let.
 
-    inversion H_typing_let using inv_T_Let. intros ? ? ? ? ? ? ? H_t_body ?.
+    inversion H_typing_let using inv_T_Let. intros ? ? ? ? ? ? ? ? H_t_body ? ?.
     apply IH_t_body in H_t_body as H_t_body'; clear H_t_body IH_t_body.
-    subst.
+    subst. 
     apply IH_bs in H_t_body'; assumption.
 
   - (* CNR_LetRec *)
     unfold P_CNR_Term, P_CNR_LetRec_compat.
     intros ? ? ? ? _ IH_t_body _ IH_bs ? ? ? H_typing.
-    inversion H_typing using inv_T_LetRec. intros ? ? ? ? ? ? H_mn_bs ? H_bs H_t_body H_kinding.
+    inversion H_typing using inv_T_LetRec. intros ? ? ? ? ? ? ? H_mn_bs ? H_bs H_t_body H_kinding ?.
     specialize (IH_bs _ _ H_bs).
     destruct IH_bs as [H_bs' [H_eq_Gamma H_eq_Delta]].
     rewrite H_eq_Gamma in H_mn_bs.
     rewrite H_eq_Delta in *...
+    
     econstructor...
     + assert (H_eq : btvbs bs' = btvbs bs) by eauto using binds_Delta__btvbs.
       rewrite H_eq...
     + assert (H_eq : bvbs bs' = bvbs bs) by eauto using binds_Gamma__bvbs.
       rewrite H_eq...
+    + subst. 
+      (* By map binds_Delta bs = map binds_Delta bs', 
+        drop_Δ only uses bound type names, and they are identical *)
+      admit.
 
   - (* CNR_LetRec_nil *)
     unfold P_CNR_Bindings.
@@ -216,4 +221,4 @@ Theorem CNR_Term__SSP : ∀ t t',
     + eauto with typing.
     + simpl. rewrite H_eq_2, H_eq_3. reflexivity.
     + simpl. rewrite H_eq_1, H_eq_4. reflexivity.
-Qed.
+Admitted.

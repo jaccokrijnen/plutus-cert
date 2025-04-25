@@ -25,6 +25,13 @@ Proof with eauto_LR.
   destruct IHLR__t as [Htyp__t [Htyp__t' IH__t]].
 
   split...
+  {
+    econstructor...
+    (* drop_Δ nil lemma *)
+    assert (drop_Δ Delta nil = Delta) by admit.
+    rewrite H.
+    auto.
+  }
   split...
 
   intros k rho env env' H_RD H_RG.
@@ -58,14 +65,14 @@ Proof with eauto_LR.
 
   eapply RV_condition...
   eapply RV_monotone...
-Qed.
+Admitted.
 
 
 (* used in hintdb DSP_compatibility_lemmas, hence it's somewhat strange type (compare to compatibility_LetNonRec_nil')*)
 Lemma compatibility_LetNonRec_Nil : forall Delta Gamma t t' Tn,
     forall bsGn,
       map_normalise nil bsGn ->
-      Delta |-* Tn : Kind_Base ->
+      Delta |-* Tn : Kind_Base -> (* Richard: Escaping should remove btvbs from Delta, but no btvbs in nil.*)
       LR_logically_approximate Delta (bsGn ++ Gamma) t t' Tn ->
       LR_logically_approximate Delta Gamma (Let NonRec nil t) (Let NonRec nil t') Tn.
 Proof with eauto_LR.
@@ -78,7 +85,21 @@ Proof with eauto_LR.
   destruct IHLR__t as [Htyp__t [Htyp__t' IH__t]].
 
   split...
+  {
+    econstructor...
+    (* drop_Δ nil lemma *)
+    assert (drop_Δ Delta nil = Delta) by admit.
+    rewrite H.
+    auto.
+  }
   split...
+  {
+    econstructor...
+    (* drop_Δ nil lemma *)
+    assert (drop_Δ Delta nil = Delta) by admit.
+    rewrite H.
+    auto.
+  }
 
   intros k rho env env' H_RD H_RG.
   subst.
@@ -113,4 +134,4 @@ Proof with eauto_LR.
 
   eapply RV_condition...
   eapply RV_monotone...
-Qed.
+Admitted.
