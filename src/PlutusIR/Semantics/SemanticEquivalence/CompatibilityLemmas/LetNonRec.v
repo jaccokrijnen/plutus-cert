@@ -27,10 +27,8 @@ Proof with eauto_LR.
   split...
   {
     econstructor...
-    (* drop_Δ nil lemma *)
-    assert (drop_Δ Delta nil = Delta) by admit.
-    rewrite H.
-    auto.
+    rewrite drop_Δ_nil.
+    assumption.
   }
   split...
 
@@ -65,7 +63,7 @@ Proof with eauto_LR.
 
   eapply RV_condition...
   eapply RV_monotone...
-Admitted.
+Qed.
 
 
 (* used in hintdb DSP_compatibility_lemmas, hence it's somewhat strange type (compare to compatibility_LetNonRec_nil')*)
@@ -87,18 +85,14 @@ Proof with eauto_LR.
   split...
   {
     econstructor...
-    (* drop_Δ nil lemma *)
-    assert (drop_Δ Delta nil = Delta) by admit.
-    rewrite H.
-    auto.
+    rewrite drop_Δ_nil.
+    assumption.
   }
   split...
   {
     econstructor...
-    (* drop_Δ nil lemma *)
-    assert (drop_Δ Delta nil = Delta) by admit.
-    rewrite H.
-    auto.
+    rewrite drop_Δ_nil.
+    assumption.
   }
 
   intros k rho env env' H_RD H_RG.
@@ -134,4 +128,4 @@ Proof with eauto_LR.
 
   eapply RV_condition...
   eapply RV_monotone...
-Admitted.
+Qed.

@@ -148,9 +148,7 @@ Theorem CNR_Term__SSP : ∀ t t',
     + assert (H_eq : bvbs bs' = bvbs bs) by eauto using binds_Gamma__bvbs.
       rewrite H_eq...
     + subst. 
-      (* By map binds_Delta bs = map binds_Delta bs', 
-        drop_Δ only uses bound type names, and they are identical *)
-      admit.
+      erewrite binds_Delta_eq__drop_Δ_eq; eauto.
 
   - (* CNR_LetRec_nil *)
     unfold P_CNR_Bindings.
@@ -221,4 +219,4 @@ Theorem CNR_Term__SSP : ∀ t t',
     + eauto with typing.
     + simpl. rewrite H_eq_2, H_eq_3. reflexivity.
     + simpl. rewrite H_eq_1, H_eq_4. reflexivity.
-Admitted.
+Qed.
