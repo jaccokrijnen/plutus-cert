@@ -173,7 +173,18 @@ Proof with (eauto with typing).
     + eapply Util.ForallP_tl in H...
 Qed.
 
+Lemma subst_bnr'__preserves__btvb x v bs :
+  btvbs (@subst_bnr' subst_b x v bs) = btvbs bs.
+Proof.
+Admitted.
 
+Lemma subst_bnr'__preserves__drop_Δ x v Δ bs :
+  drop_Δ Δ (@subst_bnr' subst_b x v bs) = drop_Δ Δ bs.
+Admitted.
+
+Lemma subst_br'__preserves__drop_Δ x v Δ bs :
+  drop_Δ Δ (@subst_br' subst_b x v bs) = drop_Δ Δ bs.
+Admitted.
 
 (** * Main lemmas *)
 
@@ -202,10 +213,8 @@ Proof with eauto.
             apply H13.
             all: auto using inclusion_refl, append_shadow.
         -- simpl. 
-           (* subst_bnr' does not change the result of btvbs on bs, which is used in drop_Δ
-              Hence by assumption.
-              *)
-           admit.
+           rewrite subst_bnr'__preserves__drop_Δ.
+           assumption.
       * eapply T_Let...
         -- rewrite subst_bnr__preserves_bindsG...
         -- eapply SPT__Bindings_NonRec...
@@ -224,8 +233,8 @@ Proof with eauto.
             apply Typing.weakening in H13.
             apply H13.
             all: auto using inclusion_refl, append_permute.
-          -- (* see let nonrec *)
-            admit.
+          -- rewrite subst_bnr'__preserves__drop_Δ.
+             assumption.
     + simpl.
       destruct (existsb (eqb x) (bvbs bs)) eqn:Hexb.
       * eapply existsb_exists in Hexb.
@@ -268,8 +277,8 @@ Proof with eauto.
               all: auto using inclusion_refl, append_permute.
            ++ apply H2.
            ++ assumption.
-        -- (* see letrec, only termbinds get some substituting stuff *)
-           admit.
+        -- rewrite subst_br'__preserves__drop_Δ.
+           assumption.
   - (* Var *)
     simpl.
     destruct (x =? s)%string eqn:Heqb.

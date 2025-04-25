@@ -62,7 +62,7 @@ Proof with eauto.
 
   all : autounfold; intros; subst.
   all : eauto with DSP_compatibility_lemmas typing.
-  - assert (Δ |-* Tn : Kind_Base) by admit. (* drop nil *)
+  - apply drop_Δ_nil__kinding in H3.
     eauto with DSP_compatibility_lemmas typing.
   - rewrite flatten_app in H5.
     apply map_normalise__app in H5.
@@ -73,12 +73,12 @@ Proof with eauto.
 
     eapply H0...
     eapply H3...
-    + (* It is well-kinded without b, so also with b *)
-      admit.
+    + eapply Kinding.weakening...
+      apply drop_Δ_cons__inclusion.
     + rewrite app_assoc...
       rewrite app_assoc...
       rewrite <- flatten_app...
-Admitted.
+Qed.
 
 
 (* Reflexivity of one-hole contexts *)

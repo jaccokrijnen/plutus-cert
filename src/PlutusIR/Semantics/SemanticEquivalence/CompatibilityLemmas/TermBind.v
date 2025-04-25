@@ -351,9 +351,7 @@ Proof with eauto_LR.
       split. {
         inversion Htyp__ih. subst.
         simpl in H10.
-        (* weakening *)
-        clear H10.
-        assert (H10: Δ |-* Tn : Kind_Base) by admit.
+        apply drop_Δ__kinding in H10.
         
         eapply closing_preserves_kinding_1 in H10 as H11...
         eapply strong_normalisation in H11 as H12...
@@ -366,8 +364,7 @@ Proof with eauto_LR.
         inversion Htyp__ih. subst.
 
         simpl in H10.
-        clear H10.
-        assert (H10: Δ |-* Tn : Kind_Base) by admit.
+        apply drop_Δ__kinding in H10.
         eapply closing_preserves_kinding_2 in H10 as H10...
         eapply strong_normalisation in H10 as H11...
         destruct H11.
@@ -375,4 +372,4 @@ Proof with eauto_LR.
         eexists. split...
       }
       right...
-Admitted.
+Qed.

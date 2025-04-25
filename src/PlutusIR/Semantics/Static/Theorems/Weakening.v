@@ -86,19 +86,19 @@ Module Typing.
     all: try solve [econstructor; subst; eauto using Kinding.weakening, inclusion_cons, inclusion_append].
     - (* T_Let NonRec*)
       econstructor; subst; eauto using Kinding.weakening, inclusion_cons, inclusion_append.
-      (* Richard: Just like for Issue16, we have that inclusion Δ Δ' -> inclusion (drop_Δ Δ bs) (drop_Δ Δ' bs)*)
-      admit.
+      apply Kinding.weakening with (Delta := drop_Δ Δ bs); auto.
+      apply drop_Δ__preserves__inclusion. assumption.
     - (* T_Let Rec *)
       econstructor; subst; eauto using Kinding.weakening, inclusion_cons, inclusion_append.
-
-      admit.
+      apply Kinding.weakening with (Delta := drop_Δ Δ bs); auto.
+      apply drop_Δ__preserves__inclusion. assumption.
     - (* W_Data *)
       econstructor...
       + subst.
         intros.
         eapply H7...
       + subst...
-  Admitted.
+  Qed.
 
   Lemma weakening_empty : forall Delta Gamma t T,
       [] ,, [] |-+ t : T ->

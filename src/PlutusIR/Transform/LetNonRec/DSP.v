@@ -243,8 +243,7 @@ Proof with eauto_LR.
       split. {
         inversion Htyp__ih. subst.
         simpl in H10.
-        clear H10.
-        assert (H10: Delta |-* Tn : Kind_Base) by admit. (* Weakening*)
+        apply drop_Δ__kinding in H10.
         eapply closing_preserves_kinding_1 in H10 as H11...
         eapply strong_normalisation in H11 as H12...
         destruct H12.
@@ -255,8 +254,7 @@ Proof with eauto_LR.
       split. {
         inversion Htyp__ih. subst.
         simpl in H10.
-        clear H10.
-        assert (H10: Delta |-* Tn : Kind_Base) by admit. (* Weakening*)
+        apply drop_Δ__kinding in H10.
         eapply closing_preserves_kinding_2 in H10 as H10...
         eapply strong_normalisation in H10 as H11...
         destruct H11.
@@ -264,7 +262,7 @@ Proof with eauto_LR.
         eexists. split...
       }
       right...
-Admitted.
+Qed.
 
 (** ** Predicates *)
 
@@ -369,8 +367,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
     eapply H3...
   - (* W_NilB_NonRec *)
     split. all: intros. all: subst.
-    + 
-      assert (Δ |-* Tn : Kind_Base) by admit. (* drop nil*)
+    + apply drop_Δ_nil__kinding in H4.
     
       inv_Compat.
       inversion H1...
@@ -380,8 +377,8 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
         | H : map_normalise _ _ |- _ => inversion H; subst; simpl in H
       end.
       eapply compatibility_LetNonRec_Nil'...
-      (* drop_Δ nil *)
-      admit.
+      apply drop_Δ_nil__kinding in H4.
+      assumption.
   - (* W_ConsB_NonRec *)
     split. all: intros. all: subst.
     +
@@ -399,8 +396,8 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
 
       eapply H0...
       eapply H3...
-      * (* it is well kinded without b, so also with binds b *)
-        admit.
+      * eapply Kinding.weakening...
+        apply drop_Δ_cons__inclusion.
       * rewrite app_assoc.
         rewrite app_assoc.
         rewrite <- flatten_app...
@@ -419,8 +416,8 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
 
       eapply H0...
       eapply H3...
-      * (* it is well kinded without b, so also with binds b *)
-        admit.
+      * eapply Kinding.weakening...
+        apply drop_Δ_cons__inclusion.
       * rewrite app_assoc.
         rewrite app_assoc.
         rewrite <- flatten_app...
@@ -438,7 +435,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
     split. all: intros. all: subst.
     + inv_Compat...
     + inv_CNR...
-Admitted.
+Qed.
 
 
 From PlutusCert Require Import Contextual.

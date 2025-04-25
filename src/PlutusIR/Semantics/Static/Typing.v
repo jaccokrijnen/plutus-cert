@@ -61,6 +61,50 @@ Definition drop_Δ (Δ : list (string * kind)) (bs : list binding) : list (strin
   (* Just negb and In, but for bools isntead of props*)
   filter (fun x => (if in_dec string_dec (fst x) (btvbs bs) then false else true)) Δ.
 
+Lemma drop_Δ_nil : forall Δ,
+    drop_Δ Δ nil = Δ.
+Admitted.
+
+Lemma drop_Δ_nil__kinding : forall Δ T K,
+    drop_Δ Δ nil |-* T : K -> Δ |-* T : K.
+Proof.
+Admitted.
+    
+Lemma drop_Δ_cons__inclusion : forall Δ b bs,
+    List.inclusion (drop_Δ Δ (b::bs)) (drop_Δ (binds_Delta b ++ Δ) bs).
+Proof.
+  intros Δ b bs.
+  induction b.
+  - simpl. (* termbinds hav no effect on drop_Δ*) admit.
+  - simpl. destruct t.
+    (* b is dropped from the lhs, hence b does not shadow anything in the rhs*)
+    admit.
+  - simpl. destruct d.
+    destruct t.
+    (* same story *)
+Admitted.
+
+Lemma drop_Δ__inclusion : forall Δ bs,
+    List.inclusion (drop_Δ Δ bs) Δ.
+Admitted.
+
+Lemma drop_Δ__kinding : forall Δ bs T K,
+    drop_Δ Δ bs |-* T : K -> Δ |-* T : K.
+Proof.
+Admitted.
+
+Lemma drop_Δ__preserves__inclusion : forall Δ Δ' bs,
+    List.inclusion Δ Δ' ->
+    List.inclusion (drop_Δ Δ bs) (drop_Δ Δ' bs).
+Proof.
+Admitted.
+
+Lemma binds_Delta_eq__drop_Δ_eq : forall Δ bs bs',
+  map binds_Delta bs = map binds_Delta bs' ->
+    drop_Δ Δ bs = drop_Δ Δ bs'.
+Proof.
+Admitted.
+
 Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty -> Prop :=
   (* Simply typed lambda caclulus *)
   | T_Var : forall Γ Δ x T Tn,
