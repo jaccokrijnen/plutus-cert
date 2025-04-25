@@ -91,7 +91,8 @@ Proof.
     subst.
     rewrite <- app_assoc.
     assumption.
-  - assumption.
+  - eauto.
+  - subst. eauto.
 Qed.
 
 Lemma compat_nil Δ Γ T t t' :

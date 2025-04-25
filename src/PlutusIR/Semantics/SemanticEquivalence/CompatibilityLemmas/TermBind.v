@@ -82,7 +82,7 @@ Proof with eauto_LR.
 
   split. {
     inversion Htyp__ih. subst.
-    rewrite <- append_flatten in H7.
+    rewrite <- append_flatten in H5.
 
     eapply T_Let...
     - unfold flatten.
@@ -90,12 +90,12 @@ Proof with eauto_LR.
       simpl in Hmapnorm__bsGn.
       rewrite List.concat_app.
       eapply map_normalise__app'...
-    - rewrite app_assoc in H7. eapply H7.
+    - rewrite app_assoc in H5. eapply H5.
   }
 
   split. {
     inversion Htyp__ih'. subst.
-    rewrite <- append_flatten in H7.
+    rewrite <- append_flatten in H5.
 
     eapply T_Let...
     - unfold flatten.
@@ -103,7 +103,7 @@ Proof with eauto_LR.
       simpl in Hmapnorm__bsGn.
       rewrite List.concat_app.
       eapply map_normalise__app'...
-    - rewrite app_assoc in H7. eapply H7.
+    - rewrite app_assoc in H5. eapply H5.
   }
 
   intros k rho env env' HRD HRG.
@@ -350,22 +350,29 @@ Proof with eauto_LR.
 
       split. {
         inversion Htyp__ih. subst.
-        simpl in H9.
-        eapply closing_preserves_kinding_1 in H9 as H10...
-        eapply strong_normalisation in H10 as H11...
-        destruct H11.
+        simpl in H10.
+        (* weakening *)
+        clear H10.
+        assert (H10: Δ |-* Tn : Kind_Base) by admit.
+        
+        eapply closing_preserves_kinding_1 in H10 as H11...
+        eapply strong_normalisation in H11 as H12...
+        destruct H12.
 
         eexists. split...
       }
 
       split. {
         inversion Htyp__ih. subst.
-        simpl in H9.
-        eapply closing_preserves_kinding_2 in H9 as H10...
+
+        simpl in H10.
+        clear H10.
+        assert (H10: Δ |-* Tn : Kind_Base) by admit.
+        eapply closing_preserves_kinding_2 in H10 as H10...
         eapply strong_normalisation in H10 as H11...
         destruct H11.
 
         eexists. split...
       }
       right...
-Qed.
+Admitted.

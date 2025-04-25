@@ -72,7 +72,7 @@ Proof with eauto_LR.
 
   split. {
     inversion Htyp__ih. subst.
-    rewrite <- append_flatten in H7.
+    rewrite <- append_flatten in H5.
 
     eapply T_Let...
     - unfold flatten.
@@ -87,14 +87,14 @@ Proof with eauto_LR.
       all: admit.
       (* ADMIT: Add NoDup and well-kinded assumptions from W_Data as arguments (assumptions)
       * to this lemma *)
-    - rewrite List.app_assoc in H7. eapply H7.
+    - rewrite List.app_assoc in H5. eapply H5.
     - (* ADMIT: Should follow from uniqueness property. *)
       admit.
   }
 
   split. {
     inversion Htyp__ih'. subst.
-    rewrite <- append_flatten in H7.
+    rewrite <- append_flatten in H5.
 
     eapply T_Let...
     - unfold flatten.
@@ -109,7 +109,7 @@ Proof with eauto_LR.
       all: admit.
       (* ADMIT: Add NoDup and well-kinded assumptions from W_Data as arguments (assumptions)
       * to this lemma *)
-    - rewrite List.app_assoc in H7. eapply H7.
+    - rewrite List.app_assoc in H5. eapply H5.
     - (* ADMIT: Should follow from uniqueness property. *)
       admit.
   }

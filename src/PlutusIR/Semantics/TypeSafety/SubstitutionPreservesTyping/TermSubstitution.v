@@ -198,9 +198,14 @@ Proof with eauto.
             subst.
             apply In_bvbs_bindsG in HIn.
             eapply In__map_normalise in HIn...
-            apply Typing.weakening in H14.
-            apply H14.
+            apply Typing.weakening in H13.
+            apply H13.
             all: auto using inclusion_refl, append_shadow.
+        -- simpl. 
+           (* subst_bnr' does not change the result of btvbs on bs, which is used in drop_Δ
+              Hence by assumption.
+              *)
+           admit.
       * eapply T_Let...
         -- rewrite subst_bnr__preserves_bindsG...
         -- eapply SPT__Bindings_NonRec...
@@ -216,9 +221,11 @@ Proof with eauto.
             }
             apply notIn_bvbs_bindsG in H4.
             eapply notIn__map_normalise in H4...
-            apply Typing.weakening in H14.
-            apply H14.
+            apply Typing.weakening in H13.
+            apply H13.
             all: auto using inclusion_refl, append_permute.
+          -- (* see let nonrec *)
+            admit.
     + simpl.
       destruct (existsb (eqb x) (bvbs bs)) eqn:Hexb.
       * eapply existsb_exists in Hexb.
@@ -228,11 +235,11 @@ Proof with eauto.
         apply In_bvbs_bindsG in HIn.
         eapply In__map_normalise in HIn...
         eapply T_LetRec...
-        -- apply Typing.weakening in H14.
-           apply H14.
+        -- apply Typing.weakening in H12.
+           apply H12.
            all: auto using inclusion_refl, append_shadow.
-        -- apply Typing.weakening in H16.
-           apply H16.
+        -- apply Typing.weakening in H15.
+           apply H15.
            all: auto using inclusion_refl, append_shadow.
       * eapply Util.existsb_nexists in Hexb.
         assert (~ In x (bvbs bs)). {
@@ -250,17 +257,19 @@ Proof with eauto.
         -- rewrite subst_br__preserves_bindsG...
         -- rewrite subst_br__preserves_bindsD...
            eapply SPT__Bindings_Rec...
-           apply Typing.weakening in H14.
-           apply H14.
+           apply Typing.weakening in H12.
+           apply H12.
            all: auto using inclusion_refl, append_permute.
         -- rewrite subst_br__preserves_bindsD...
            eapply H0.
            ++
-              apply Typing.weakening in H16.
-              apply H16.
+              apply Typing.weakening in H15.
+              apply H15.
               all: auto using inclusion_refl, append_permute.
            ++ apply H2.
            ++ assumption.
+        -- (* see letrec, only termbinds get some substituting stuff *)
+           admit.
   - (* Var *)
     simpl.
     destruct (x =? s)%string eqn:Heqb.

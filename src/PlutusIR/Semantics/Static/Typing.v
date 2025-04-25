@@ -57,6 +57,10 @@ Reserved Notation "Delta ',,' Gamma '|-ok_b' b" (at level 101, b at level 0, no 
 
 Local Open Scope list_scope.
 
+Definition drop_Δ (Δ : list (string * kind)) (bs : list binding) : list (string * kind) :=
+  (* Just negb and In, but for bools isntead of props*)
+  filter (fun x => (if in_dec string_dec (fst x) (btvbs bs) then false else true)) Δ.
+
 Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty -> Prop :=
   (* Simply typed lambda caclulus *)
   | T_Var : forall Γ Δ x T Tn,
@@ -113,15 +117,16 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Reference: The Haskell module PlutusIR.TypeCheck.Internal in the
       iohk/plutus/plutus-core/plutus-ir project.
   **)
-  | T_Let : forall Δ Γ bs t Tn Δ' Γ' bsGn,
+  | T_Let : forall Δ Γ bs t Tn Δ_no_esc Δ' Γ' bsGn,
       Δ' = flatten (map binds_Delta bs) ++ Δ ->
       map_normalise (flatten (map binds_Gamma bs)) bsGn ->
       Γ' = bsGn ++ Γ ->
       Δ ,, Γ |-oks_nr bs ->
       Δ' ,, Γ' |-+ t : Tn ->
-      Δ |-* Tn : Kind_Base ->
+      Δ_no_esc = drop_Δ Δ bs ->
+      Δ_no_esc |-* Tn : Kind_Base ->
       Δ ,, Γ |-+ (Let NonRec bs t) : Tn
-  | T_LetRec : forall Δ Γ bs t Tn Δ' Γ' bsGn,
+  | T_LetRec : forall Δ Γ bs t Tn Δ_no_esc Δ' Γ' bsGn,
       (* There can be no duplicate bound variables in a let-rec *)
       NoDup (btvbs bs) ->
       NoDup (bvbs bs) ->
@@ -131,7 +136,8 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Γ' = bsGn ++ Γ->
       Δ' ,, Γ' |-oks_r bs ->
       Δ' ,, Γ' |-+ t : Tn ->
-      Δ |-* Tn : Kind_Base ->
+      Δ_no_esc = drop_Δ Δ bs ->
+      Δ_no_esc |-* Tn : Kind_Base ->
       Δ ,, Γ |-+ (Let Rec bs t) : Tn
 
 (* Constructors are well-formed if their result type equals the fully applied
@@ -219,7 +225,7 @@ Definition well_typed t := exists T, [] ,, [] |-+ t : T.
 
 Lemma T_Let__cons Δ Γ Γ_b b bs t Tn :
   Δ ,, Γ |-ok_b b ->
-  Δ |-* Tn : Kind_Base -> (* Tn may not mention types bound in b (escaping) *)
+  drop_Δ Δ (b::bs) |-* Tn : Kind_Base -> (* Tn may not mention types bound in b (escaping) *)
   map_normalise (binds_Gamma b) Γ_b ->
   binds_Delta b ++ Δ ,, Γ_b ++ Γ |-+ (Let NonRec bs t) : Tn ->
   Δ ,, Γ |-+ (Let NonRec (b :: bs) t) : Tn
@@ -248,7 +254,8 @@ Proof.
     rewrite <- app_assoc.
     rewrite <- app_assoc.
     assumption.
-  - assumption.
+  - eauto. 
+  - eauto.
 Qed.
 
 Lemma has_type__normal : forall Delta Gamma t T,
