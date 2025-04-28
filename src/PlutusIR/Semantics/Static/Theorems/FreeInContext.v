@@ -225,12 +225,15 @@ Module Annotation.
         {
           eapply H8...
         }
-        exists K.
-        revert Hl_K.
-        (* should hold by some inclusion lemmas *)
-       admit.
+        exists K'.
+        assert (List.inclusion ((rev (map fromDecl YKs) ++ drop_Δ' Δ [Y]))  (rev (map fromDecl YKs) ++ Δ)).
+        {
+          apply inclusion_append.
+          apply drop_Δ'__inclusion.
+        }
+        apply H. assumption.
       + eapply H8...
-  Admitted.
+  Qed.
 
   Search "inclusion".
 
