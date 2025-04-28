@@ -101,6 +101,7 @@ Module Typing.
       apply H0.
       apply inclusion_cons; auto.
       eapply drop_ty_var__inclusion_preserving; eauto.
+      eapply Kinding.weakening...
     - (* T_Let NonRec*)
       econstructor; subst; eauto using Kinding.weakening, inclusion_cons, inclusion_append.
       apply Kinding.weakening with (Delta := drop_Δ Δ bs); auto.

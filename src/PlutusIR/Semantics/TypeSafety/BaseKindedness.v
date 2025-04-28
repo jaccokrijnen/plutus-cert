@@ -56,15 +56,15 @@ Proof with (eauto || solver).
   - inversion IHhas_type. subst.
     eapply preservation.
     2:{
-      apply H3.
+      apply H2.
     }
     eapply substituteTCA_preserves_kinding...
     eapply preservation...
-  - unfold unwrapIFixFresh in H2.
+  - unfold unwrapIFixFresh in H1.
     inversion IHhas_type. subst.
     assert (K = K0) by admit. (* unique kinnds*)
     subst.
-    eapply preservation in H2; eauto.
+    eapply preservation in H1; eauto.
     
     econstructor...
     econstructor...

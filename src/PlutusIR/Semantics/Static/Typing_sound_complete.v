@@ -17,6 +17,7 @@ From PlutusCert Require Import
     Kinding.Checker
     Util
     SubstituteTCA
+    UniqueTypes
     BaseKindedness.
 Require Import PlutusCert.PlutusIR.Analysis.BoundVars.
 
@@ -180,22 +181,25 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
            final type    Ty_Forall X K' T
           *)
 
-        match type_check ((X, K) :: Δ) Γ t with
-        | Some T => Some (Ty_Forall X K T)
+        match type_check ((X, K) :: Δ) (drop_ty_var X Γ) t with
+        | Some T => match kind_check ((X, K)::Δ) T with
+                    | Some Kind_Base => Some (Ty_Forall X K T)
+                    | _ => None
+                    end
         | _ => None
         end
     | TyInst t1 T2 => (* TODO: normalisation T1?*)
         match type_check Δ Γ t1, kind_check Δ T2 with (* TODO: first we check that it kind and type checks here, and then normaliser_Jacco does it again. Feels a little off*)
         | Some (Ty_Forall X K2 T1), Some K2' =>
-            match kind_check ((X, K2)::Δ) T1 with
-            | Some Kind_Base =>
+            (* match kind_check ((X, K2)::Δ) T1 with
+            | Some Kind_Base => *)
             if Kind_eqb K2 K2' then 
                 normaliser_Jacco Δ T2 >>= fun T2n =>
                 normaliser_Jacco Δ (substituteTCA X T2n T1) >>= fun T0n =>
                 Some T0n
             else None
-            | _ => None
-            end
+            (* | _ => None
+            end *)
         | _, _ => None
         end
     | IWrap F T M =>
@@ -214,12 +218,11 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
     | Unwrap M =>
         match type_check Δ Γ M with
             | Some (Ty_IFix F T) =>
-                match kind_check Δ T, kind_check Δ F with
-                    | Some K, Some (Kind_Arrow (Kind_Arrow K' Kind_Base) (Kind_Arrow K'' Kind_Base)) =>
-                        if andb (Kind_eqb K K') (Kind_eqb K K'') then
+                match kind_check Δ T with
+                    | Some K =>
                           normaliser_Jacco Δ (unwrapIFixFresh F K T) >>= fun T0n => Some T0n
-                        else None
-                    | _, _ => None
+                        
+                    | _  => None
                     end 
             | _ => None
             end
@@ -497,7 +500,6 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
     inversion H2.
     subst.
     eapply T_TyAbs...
-    admit.
   - intros.
     inversion H0.
     unfold bind in H2.
@@ -535,9 +537,8 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
     subst.
     apply T_TyInst with (X := b) (K2 := k0) (T1n := t3) (T2n := t4); eauto.
     + apply kind_checking_sound. auto.
-    + apply kind_checking_sound. auto.
+    + apply normaliser_Jacco_sound in Heqo1. auto.
     + apply normaliser_Jacco_sound in Heqo2. auto.
-    + apply normaliser_Jacco_sound in Heqo3. auto.
   - intros.
     unfold type_check in H.
     
@@ -569,11 +570,6 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
     repeat destruct_match.
     inversion H2. subst.
     apply T_Unwrap with (Fn := t2_1) (Tn := t2_2) (K := k)...
-    apply andb_true_iff in Heqb as [Heqb1 Heqb2].
-    apply Kind_eqb_eq in Heqb1.
-    apply Kind_eqb_eq in Heqb2.
-    subst.
-    assumption.
   - intros.
     inversion H.
   - intros.
@@ -690,14 +686,19 @@ Qed.
 
 (* this doesnt work inline...*)
 Lemma oof2 X K Δ Γ t Tn :
-type_check ((X, K) :: Δ) Γ t = Some Tn ->
- match type_check ((X, K) :: Δ) Γ t with
-| Some T => Some (Ty_Forall X K T)
-| None => None
-end = Some (Ty_Forall X K Tn).
+  type_check ((X, K) :: Δ) Γ t = Some Tn ->
+  kind_check ((X, K) :: Δ) Tn = Some Kind_Base ->
+  match type_check ((X, K) :: Δ) Γ t with
+  | Some T => match kind_check ((X, K) :: Δ) T with
+              | Some Kind_Base => Some (Ty_Forall X K T)
+              | _ => None
+              end
+  | None => None
+  end = Some (Ty_Forall X K Tn).
 Proof.
     intros.
     rewrite H.
+    rewrite H0.
     reflexivity.
 Qed.
 
@@ -730,20 +731,27 @@ Proof.
     rewrite H1.
     now rewrite -> Ty_eqb_refl.
   - (* Case: T_TyAbs *) 
-    admit.
-    (* now apply oof2.    *)
+    apply oof2; auto.
+    eapply kind_checking_complete; auto.
   - (* Case: T_Inst *)
     rewrite H0.
-    apply (normaliser_Jacco_complete h1) in n; rewrite n; simpl.
-    apply kind_checking_complete in h1; rewrite h1.
+    apply (normaliser_Jacco_complete h0) in n; rewrite n; simpl.
+    apply kind_checking_complete in h0; rewrite h0.
     rewrite -> Kind_eqb_refl.
+    
     assert (Δ0 |-* (substituteTCA X T2n T1n) : Kind_Base) as Hwk_subst.
     {
+      assert (((X, K2)::Δ0) |-* T1n : Kind_Base).
+      {
+        apply has_type__basekinded in h.
+        inversion h; subst.
+        assumption.
+      }
       eapply substituteTCA_preserves_kinding; eauto.
       eapply normaliser_preserves_kinding; eauto.
       eapply kind_checking_sound; eauto.
     }
-    apply kind_checking_complete in h0; rewrite h0.
+    unfold bind.
     now apply (normaliser_Jacco_complete Hwk_subst) in n0; rewrite n0; simpl.
   - (* Case T_IWrap *)
     apply (normaliser_Jacco_complete h) in n; rewrite n; simpl.
@@ -770,11 +778,13 @@ Proof.
     assert (Δ0 |-* (unwrapIFixFresh Fn K Tn) : Kind_Base).
     {
       eapply unwrapIFixFresh__well_kinded; eauto.
+      apply has_type__basekinded in h.
+      inversion h; subst.
+      apply (unique_kinds Δ0 Tn K0 K H4) in h0; subst.
+      assumption.
     }
 
     apply kind_checking_complete in h0; rewrite h0.
-    apply kind_checking_complete in h1; rewrite h1.
-    rewrite Kind_eqb_refl; simpl.
     unfold bind.
     apply (normaliser_Jacco_complete H1) in n; rewrite n.
     reflexivity.
@@ -949,6 +959,8 @@ no_dup_fun (map vdecl_name l0)) eqn:no_dup.
       * apply no_dup_fun_complete in n0. rewrite n0 in DUPV. inversion DUPV.
     }
 Admitted.
+
+Search "unique".
 
 (* Extraction Language Haskell.
 Redirect "type_check.hs" Recursive Extraction type_check. *)

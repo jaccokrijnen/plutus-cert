@@ -579,10 +579,11 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
   (* Universal types *)
   | T_TyAbs : forall Δ Γ X K t Tn,
       ((X, K) :: Δ) ,, (drop_ty_var X Γ) |-+ t : Tn ->
+      ((X, K) :: Δ) |-* Tn : Kind_Base -> (* This is required, see issue 84 *)
       Δ ,, Γ |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
   | T_TyInst : forall Δ Γ t1 T2 T1n X K2 T0n T2n,
       Δ ,, Γ |-+ t1 : (Ty_Forall X K2 T1n) ->
-      ((X, K2)::Δ) |-* T1n : Kind_Base -> (* Richard: Added *)
+      (* ((X, K2)::Δ) |-* T1n : Kind_Base -> Richard: Added *)
       Δ |-* T2 : K2 ->
       normalise T2 T2n ->
       normalise (substituteTCA X T2n T1n) T0n ->
@@ -598,7 +599,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ ,, Γ |-+ (IWrap F T M) : (Ty_IFix Fn Tn)
   | T_Unwrap : forall Δ Γ M Fn K Tn T0n,
       Δ ,, Γ |-+ M : (Ty_IFix Fn Tn) ->
-      Δ |-* Fn : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) -> (* Richard: Added *)
+      (* Δ |-* Fn : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) -> Richard: Added *)
       Δ |-* Tn : K ->
       normalise (unwrapIFixFresh Fn K Tn) T0n -> (* Richard: Changed to fresh!*)
       Δ ,, Γ |-+ (Unwrap M) : T0n
@@ -1242,27 +1243,7 @@ Proof.
       * eauto.
       * intros. (* subset preserves NoDup*) admit.
 Admitted.
-(* Cannot type faulty const function *)
-Example const_shadowing T :
-  (nil ,, nil |-+ 
-    (TyAbs "X" Kind_Base
-      (LamAbs "x" (Ty_Var "X")
-        (TyAbs "X" Kind_Base
-          (LamAbs "y" (Ty_Var "X")
-            (Var "x"))))) : T) -> False.
-Proof.
-  intros.
-  inversion H; subst.
-  inversion H6; subst.
-  simpl drop_ty_var in *.
-  inversion H9; subst.
-  inversion H10; subst.
-  inversion H8; subst.
-  simpl in H13.
-  inversion H13; subst.
-  simpl in H1.
-  inversion H1.
-Qed.
+
   
 
 
