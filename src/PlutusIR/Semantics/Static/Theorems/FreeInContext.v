@@ -220,22 +220,13 @@ Module Annotation.
       simpl in H7.
       simpl in H8.
       destruct rec.
-      + assert (exists K', lookup x0 (rev (map fromDecl YKs) ++ (drop_Δ' Δ [Y]))
-           = Some K') as [K' Hl_K].
-        {
-          eapply H8...
-        }
+      + specialize (H8 c HIn__c x0 Hafi__c) as [K' Hl_K].
         exists K'.
-        assert (List.inclusion ((rev (map fromDecl YKs) ++ drop_Δ' Δ [Y]))  (rev (map fromDecl YKs) ++ Δ)).
-        {
-          apply inclusion_append.
-          apply drop_Δ'__inclusion.
-        }
-        apply H. assumption.
+        eapply inclusion_unfold; eauto.
+        apply inclusion_append.
+        apply drop_Δ'__inclusion.
       + eapply H8...
   Qed.
-
-  Search "inclusion".
 
 End Annotation.
 
