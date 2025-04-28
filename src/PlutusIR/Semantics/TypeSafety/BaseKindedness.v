@@ -43,6 +43,12 @@ Lemma uniType__basekinded : forall t A,
 (* TODO: should hold, property of uniType_option *)
 Admitted.
 
+Lemma lookupBuiltinTy__well_kinded f Δ :
+  Δ |-* (lookupBuiltinTy f) : Kind_Base.
+Proof.
+  destruct f; repeat constructor.
+Qed.
+
 Lemma has_type__basekinded : forall Delta Gamma t T,
     Delta ,, Gamma |-+ t : T ->
     Delta |-* T : Kind_Base.
@@ -81,11 +87,20 @@ Proof with (eauto || solver).
       eauto.
     + apply weaken_fresh.
       assumption.
-  - (* T_Builtin *)
+  - (* T_Constant *)
+    constructor...
+
     (* TODO: keep typing derivation around during induction and use uniType__basekinded *)
     admit.
-  - destruct f...
-    (* TODO: implement lookupBuiltinType *)
+  - (* T_Builtin*)
+    subst.
+    eapply preservation.
+    apply lookupBuiltinTy__well_kinded.
+    eauto.
+  - (* T_LetNonRec *)
+    admit.
+  - (* T_LetRec *)
+    admit.
 
 (* ADMIT: This should hold if all types in gamma are base kinded, which should
    be the case since we only but base-kinded types in Gamma in our
