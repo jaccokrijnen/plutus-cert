@@ -93,11 +93,11 @@ Definition P_Term (t : term) :=
     Delta ,, Gamma |-+ <{ [x := v] t }> : T.
 
 Definition P_Binding (b : binding) : Prop :=
-  forall Delta Gamma x U Un v,
-    Delta ,, ((x, U) :: Gamma) |-ok_b b ->
+  forall Delta Gamma rec x U Un v,
+    Delta ,, ((x, U) :: Gamma) |-ok_b rec # b ->
     normalise U Un ->
     [] ,, [] |-+ v : Un ->
-    Delta ,, Gamma |-ok_b <{ [x := v]b b }>.
+    Delta ,, Gamma |-ok_b rec # <{ [x := v]b b }>.
 
 #[export] Hint Unfold
   P_Term
@@ -173,7 +173,23 @@ Proof with (eauto with typing).
     + eapply Util.ForallP_tl in H...
 Qed.
 
+Search "binds".
 
+Lemma subst_bnr'__preserves__btvbs x v bs :
+  btvbs (@subst_bnr' subst_b x v bs) = btvbs bs.
+Proof.
+  apply binds_Delta__btvbs.
+  rewrite subst_bnr__preserves_bindsD.
+  reflexivity.
+Qed.
+
+Lemma subst_br'__preserves__btvbs x v bs :
+  btvbs (@subst_br' subst_b x v bs) = btvbs bs.
+Proof.
+  apply binds_Delta__btvbs.
+  rewrite subst_br__preserves_bindsD.
+  reflexivity.
+Qed.
 
 (** * Main lemmas *)
 
@@ -198,9 +214,13 @@ Proof with eauto.
             subst.
             apply In_bvbs_bindsG in HIn.
             eapply In__map_normalise in HIn...
-            apply Typing.weakening in H14.
-            apply H14.
+            apply Typing.weakening in H13.
+            apply H13.
             all: auto using inclusion_refl, append_shadow.
+        -- simpl. 
+           erewrite btvbs_eq__drop_Δ_eq; eauto.
+           rewrite subst_bnr'__preserves__btvbs; eauto.
+            
       * eapply T_Let...
         -- rewrite subst_bnr__preserves_bindsG...
         -- eapply SPT__Bindings_NonRec...
@@ -216,9 +236,11 @@ Proof with eauto.
             }
             apply notIn_bvbs_bindsG in H4.
             eapply notIn__map_normalise in H4...
-            apply Typing.weakening in H14.
-            apply H14.
+            apply Typing.weakening in H13.
+            apply H13.
             all: auto using inclusion_refl, append_permute.
+        -- erewrite btvbs_eq__drop_Δ_eq; eauto.
+           rewrite subst_bnr'__preserves__btvbs; eauto.
     + simpl.
       destruct (existsb (eqb x) (bvbs bs)) eqn:Hexb.
       * eapply existsb_exists in Hexb.
@@ -228,11 +250,11 @@ Proof with eauto.
         apply In_bvbs_bindsG in HIn.
         eapply In__map_normalise in HIn...
         eapply T_LetRec...
-        -- apply Typing.weakening in H14.
-           apply H14.
+        -- apply Typing.weakening in H12.
+           apply H12.
            all: auto using inclusion_refl, append_shadow.
-        -- apply Typing.weakening in H16.
-           apply H16.
+        -- apply Typing.weakening in H15.
+           apply H15.
            all: auto using inclusion_refl, append_shadow.
       * eapply Util.existsb_nexists in Hexb.
         assert (~ In x (bvbs bs)). {
@@ -250,17 +272,19 @@ Proof with eauto.
         -- rewrite subst_br__preserves_bindsG...
         -- rewrite subst_br__preserves_bindsD...
            eapply SPT__Bindings_Rec...
-           apply Typing.weakening in H14.
-           apply H14.
+           apply Typing.weakening in H12.
+           apply H12.
            all: auto using inclusion_refl, append_permute.
         -- rewrite subst_br__preserves_bindsD...
            eapply H0.
            ++
-              apply Typing.weakening in H16.
-              apply H16.
+              apply Typing.weakening in H15.
+              apply H15.
               all: auto using inclusion_refl, append_permute.
            ++ apply H2.
            ++ assumption.
+        -- erewrite btvbs_eq__drop_Δ_eq; eauto.
+           rewrite subst_br'__preserves__btvbs; eauto.
   - (* Var *)
     simpl.
     destruct (x =? s)%string eqn:Heqb.
@@ -314,9 +338,9 @@ Corollary substitution_preserves_typing__Term : forall t Delta Gamma x U Un v T,
     Delta ,, Gamma |-+ <{ [x := v] t }> : T.
 Proof. apply substitution_preserves_typing. Qed.
 
-Corollary substitution_preserves_typing__Binding : forall b Delta Gamma x U Un v,
-    Delta ,, ((x, U) :: Gamma) |-ok_b b ->
+Corollary substitution_preserves_typing__Binding : forall b Delta Gamma rec x U Un v,
+    Delta ,, ((x, U) :: Gamma) |-ok_b rec # b ->
     normalise U Un ->
     [] ,, [] |-+ v : Un ->
-    Delta ,, Gamma |-ok_b <{ [x := v]b b }>.
+    Delta ,, Gamma |-ok_b rec # <{ [x := v]b b }>.
 Proof. apply substitution_preserves_typing. Qed.

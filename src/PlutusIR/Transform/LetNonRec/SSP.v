@@ -16,12 +16,6 @@ Lemma binds_Gamma__bvbs bs bs' :
 .
 Admitted.
 
-Lemma binds_Delta__btvbs bs bs' :
-  map binds_Delta bs = map binds_Delta bs' ->
-  btvbs bs = btvbs bs'
-.
-Admitted.
-
 Definition P_CNR_Term t t' := ∀ Δ Γ T,
   has_type Δ Γ t T ->
   has_type Δ Γ t' T
@@ -48,8 +42,8 @@ Definition P_CNR_Binding b (f : term -> term) :=
       f = (fun t_bs => Apply (LamAbs v ty t_bs) t_bound') ->
       P_CNR_Term t_bound t_bound'
       /\
-      (∀ Δ Γ t T Γ_bs,
-          Δ ,, Γ |-ok_b b ->
+      (∀ Δ Γ rec t T Γ_bs,
+          Δ ,, Γ |-ok_b rec # b ->
           map_normalise (binds_Gamma b) Γ_bs ->
           binds_Delta b ++ Δ ,, Γ_bs ++ Γ |-+ t : T ->
           Δ,, Γ |-+ (f t) : T
@@ -59,9 +53,9 @@ Definition P_CNR_Binding b (f : term -> term) :=
 )
 .
 
-Definition P_CNR_Binding_compat b b' := ∀ Δ Γ,
-    Δ ,, Γ |-ok_b b ->
-    Δ ,, Γ |-ok_b b' /\
+Definition P_CNR_Binding_compat b b' := ∀ Δ Γ rec,
+    Δ ,, Γ |-ok_b rec # b ->
+    Δ ,, Γ |-ok_b rec # b' /\
     binds_Delta b = binds_Delta b' /\
     binds_Gamma b = binds_Gamma b'
 .
@@ -69,7 +63,7 @@ Definition P_CNR_Binding_compat b b' := ∀ Δ Γ,
 Ltac inv_typing :=
   match goal with
   | H : has_type _ _ _ _ |- _ => inversion H
-  | H : _ ,,  _ |-ok_b _ |- _ => inversion H
+  | H : _ ,,  _ |-ok_b _ # _ |- _ => inversion H
   end
 .
 
@@ -93,7 +87,7 @@ Derive Inversion_clear inv_oks_r_cons with
   (∀ Δ Γ b bs, Δ,, Γ |-oks_r (b :: bs)).
 
 Derive Inversion_clear inv_ok_b with
-  (∀ Δ Γ b, Δ,, Γ |-ok_b b).
+  (∀ Δ Γ rec b, Δ,, Γ |-ok_b rec # b).
 
 Derive Inversion_clear inv_T_Let with
   (∀ Δ Γ bs t T, Δ,, Γ |-+ (Let NonRec bs t) : T).
@@ -128,24 +122,28 @@ Theorem CNR_Term__SSP : ∀ t t',
     unfold P_CNR_Term, P_CNR_Term, P_CNR_Bindings in *.
     intros Δ Γ T H_typing_let.
 
-    inversion H_typing_let using inv_T_Let. intros ? ? ? ? ? ? ? H_t_body ?.
+    inversion H_typing_let using inv_T_Let. intros ? ? ? ? ? ? ? ? H_t_body ? ?.
     apply IH_t_body in H_t_body as H_t_body'; clear H_t_body IH_t_body.
-    subst.
+    subst. 
     apply IH_bs in H_t_body'; assumption.
 
   - (* CNR_LetRec *)
     unfold P_CNR_Term, P_CNR_LetRec_compat.
     intros ? ? ? ? _ IH_t_body _ IH_bs ? ? ? H_typing.
-    inversion H_typing using inv_T_LetRec. intros ? ? ? ? ? ? H_mn_bs ? H_bs H_t_body H_kinding.
+    inversion H_typing using inv_T_LetRec. intros ? ? ? ? ? ? ? H_mn_bs ? H_bs H_t_body H_kinding ?.
     specialize (IH_bs _ _ H_bs).
     destruct IH_bs as [H_bs' [H_eq_Gamma H_eq_Delta]].
     rewrite H_eq_Gamma in H_mn_bs.
     rewrite H_eq_Delta in *...
+    
     econstructor...
     + assert (H_eq : btvbs bs' = btvbs bs) by eauto using binds_Delta__btvbs.
       rewrite H_eq...
     + assert (H_eq : bvbs bs' = bvbs bs) by eauto using binds_Gamma__bvbs.
       rewrite H_eq...
+    + subst. 
+      apply binds_Delta__btvbs in H_eq_Delta.
+      erewrite btvbs_eq__drop_Δ_eq; eauto.
 
   - (* CNR_LetRec_nil *)
     unfold P_CNR_Bindings.
@@ -193,7 +191,7 @@ Theorem CNR_Term__SSP : ∀ t t',
     clear H_eq.
     split.
     + assumption.
-    + intros ? ? ? ? ? H_b ?.
+    + intros ? ? ? ? ? ? H_b ?.
       simpl in *.
       inversion H_b; subst.
       simplify_norm...
@@ -209,7 +207,7 @@ Theorem CNR_Term__SSP : ∀ t t',
     unfold P_CNR_Binding_compat, P_CNR_LetRec_compat in *.
     inversion H_oks_b_bs using inv_oks_r_cons. intros H_b H_bs.
 
-    specialize (IH_b _ _ H_b) as [? [H_eq_1 H_eq_2]].
+    specialize (IH_b _ _ _ H_b) as [? [H_eq_1 H_eq_2]].
     specialize (IH_bs _ _ H_bs) as [? [H_eq_3 H_eq_4]].
 
     repeat split.

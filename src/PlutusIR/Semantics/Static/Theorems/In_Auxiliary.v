@@ -216,6 +216,73 @@ Proof with eauto.
       apply In_btvb_bindsD...
 Qed.
 
+Lemma binds_Delta__btvb : forall b b',
+  binds_Delta b = binds_Delta b' ->
+    btvb b = btvb b'.
+Proof.
+  intros b b' HbindsD.
+  generalize dependent b'.
+  induction b; intros.
+  - simpl in HbindsD.
+    unfold binds_Delta in HbindsD.
+    destruct b'; auto.
+    + simpl. destruct v; destruct v0. auto.
+    + destruct t0. inversion HbindsD.
+    + destruct d. destruct t0. inversion HbindsD.
+  - inversion HbindsD.
+    destruct t; subst.
+    unfold binds_Delta in H0.
+    destruct b'.
+    + inversion H0.
+    + destruct t. inversion H0; subst.
+      simpl.
+      reflexivity.
+    + destruct d. destruct t. 
+      inversion H0; subst.
+      simpl.
+      reflexivity.
+  - inversion HbindsD; subst.
+    destruct d. destruct t.
+    unfold binds_Delta in H0.
+    destruct b'.
+    + inversion H0.
+    + destruct t. inversion H0; subst.
+      simpl.
+      reflexivity.
+    + destruct d. destruct t. inversion H0; subst.
+      simpl.
+      reflexivity.
+Qed.
+
+Lemma binds_Delta__btvbs : forall bs bs',
+  map binds_Delta bs = map binds_Delta bs' ->
+    btvbs bs = btvbs bs'.
+Proof.
+  intros bs bs' HbindsD.
+  generalize dependent bs'.
+  induction bs; intros.
+  - inversion HbindsD; subst.
+    unfold btvbs.
+    simpl.
+    assert (bs' = nil).
+    {
+      destruct bs'.
+      + reflexivity.
+      + simpl in HbindsD.
+        inversion HbindsD.
+    }
+    subst.
+    simpl.
+    reflexivity.
+  - destruct bs'.
+    + inversion HbindsD. 
+    + repeat rewrite btvbs_cons.
+      inversion HbindsD; subst.
+      f_equal.
+      * apply binds_Delta__btvb; auto.
+      * eapply IHbs; auto.
+Qed.
+
 Lemma notIn_btvbs_bindsD : forall bs x,
     ~ In x (btvbs bs) ->
     ~ In x (map fst (flatten (map binds_Delta bs))).

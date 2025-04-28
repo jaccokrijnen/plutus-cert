@@ -48,9 +48,12 @@ Proof.
   - inversion H. subst. simpl. econstructor. eauto. eauto.
 Qed.
 
+Open Scope list_scope.
+Import ListNotations.
 
-Lemma compatibility_DatatypeBind : forall Delta Gamma X YKs cs matchFunc Delta' b b' bs bs' t t' Tn,
-    Delta' = rev (map fromDecl YKs) ++ Delta  ->
+Lemma compatibility_DatatypeBind : forall Delta Gamma X YKs cs matchFunc Delta' b b' bs bs' t t' Tn Delta_ns,
+    Delta_ns = drop_Δ' Delta [tvdecl_name X] ->
+    Delta' = rev (map fromDecl YKs) ++ Delta_ns  ->
     (forall c, In c cs -> Delta' |-ok_c c : (constrLastTyExpected (Datatype X YKs matchFunc cs))) ->
     forall Delta_ih Gamma_ih bsGn,
       b = DatatypeBind (Datatype X YKs matchFunc cs) ->
@@ -61,8 +64,8 @@ Lemma compatibility_DatatypeBind : forall Delta Gamma X YKs cs matchFunc Delta' 
       LR_logically_approximate Delta_ih Gamma_ih (Let NonRec bs t) (Let NonRec bs' t') Tn ->
       LR_logically_approximate Delta Gamma (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t') Tn.
 Proof with eauto_LR.
-  intros Delta Gamma X YKs cs matchFunc Delta' b b' bs bs' t t' Tn.
-  intros Heq__Delta' Hok__cs.
+  intros Delta Gamma X YKs cs matchFunc Delta' b b' bs bs' t t' Tn Delta_ns.
+  intros Heq_Delta_ns Heq__Delta' Hok__cs.
   intros Delta_ih Gamma_ih bsGn.
   intros Heq__b Heq__b' Heq__Delta_ih Hmapnorm__bsGn Heq__Gamma_ih IHLR__ih.
 
@@ -72,7 +75,7 @@ Proof with eauto_LR.
 
   split. {
     inversion Htyp__ih. subst.
-    rewrite <- append_flatten in H7.
+    rewrite <- append_flatten in H5.
 
     eapply T_Let...
     - unfold flatten.
@@ -87,14 +90,14 @@ Proof with eauto_LR.
       all: admit.
       (* ADMIT: Add NoDup and well-kinded assumptions from W_Data as arguments (assumptions)
       * to this lemma *)
-    - rewrite List.app_assoc in H7. eapply H7.
+    - rewrite List.app_assoc in H5. eapply H5.
     - (* ADMIT: Should follow from uniqueness property. *)
       admit.
   }
 
   split. {
     inversion Htyp__ih'. subst.
-    rewrite <- append_flatten in H7.
+    rewrite <- append_flatten in H5.
 
     eapply T_Let...
     - unfold flatten.
@@ -109,7 +112,7 @@ Proof with eauto_LR.
       all: admit.
       (* ADMIT: Add NoDup and well-kinded assumptions from W_Data as arguments (assumptions)
       * to this lemma *)
-    - rewrite List.app_assoc in H7. eapply H7.
+    - rewrite List.app_assoc in H5. eapply H5.
     - (* ADMIT: Should follow from uniqueness property. *)
       admit.
   }

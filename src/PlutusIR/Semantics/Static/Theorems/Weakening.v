@@ -27,6 +27,16 @@ Module Kinding.
     eapply weakening; eauto using inclusion_empty.
   Qed.
 
+
+  Lemma drop_Δ__kinding : forall Δ bs T K,
+      drop_Δ Δ bs |-* T : K -> Δ |-* T : K.
+  Proof.
+    intros.
+    eapply Kinding.weakening.
+    - apply drop_Δ__inclusion.
+    - eauto.
+  Qed.
+
 End Kinding.
 
 Module Typing.
@@ -54,11 +64,11 @@ Module Typing.
       inclusion Gamma Gamma' ->
       Delta' ,, Gamma' |-oks_r bs.
 
-  Definition P_binding_well_formed Delta Gamma b : Prop :=
+  Definition P_binding_well_formed Delta Gamma rec b : Prop :=
     forall Delta' Gamma',
       inclusion Delta Delta' ->
       inclusion Gamma Gamma' ->
-      Delta' ,, Gamma' |-ok_b b.
+      Delta' ,, Gamma' |-ok_b rec # b.
 
   #[export] Hint Unfold
     P_has_type
@@ -72,7 +82,7 @@ Module Typing.
     (forall Delta Gamma t T, Delta ,, Gamma |-+ t : T -> P_has_type Delta Gamma t T) /\
     (forall Delta Gamma bs, Delta ,, Gamma |-oks_nr bs -> P_bindings_well_formed_nonrec Delta Gamma bs) /\
     (forall Delta Gamma bs, Delta ,, Gamma |-oks_r bs -> P_bindings_well_formed_rec Delta Gamma bs) /\
-    (forall  Delta Gamma b, Delta ,, Gamma |-ok_b b -> P_binding_well_formed Delta Gamma b).
+    (forall  Delta Gamma rec b, Delta ,, Gamma |-ok_b rec # b -> P_binding_well_formed Delta Gamma rec b).
   Proof with eauto using Kinding.weakening, inclusion_cons, inclusion_append.
     apply has_type__multind with
       (P := P_has_type)
@@ -89,12 +99,27 @@ Module Typing.
       apply H0.
       apply inclusion_cons; auto.
       eapply drop_ty_var__inclusion_preserving; eauto.
+    - (* T_Let NonRec*)
+      econstructor; subst; eauto using Kinding.weakening, inclusion_cons, inclusion_append.
+      apply Kinding.weakening with (Delta := drop_Δ Δ bs); auto.
+      apply drop_Δ__preserves__inclusion. assumption.
+    - (* T_Let Rec *)
+      econstructor; subst; eauto using Kinding.weakening, inclusion_cons, inclusion_append.
+      apply Kinding.weakening with (Delta := drop_Δ Δ bs); auto.
+      apply drop_Δ__preserves__inclusion. assumption.
     - (* W_Data *)
       econstructor...
-      + subst.
-        intros.
-        eapply H7...
-      + subst...
+      + subst; intros.
+        eapply H8...
+        apply inclusion_append.
+        destruct rec; auto.
+        eapply drop_Δ'__preserves__inclusion. assumption.
+      + destruct rec; subst...
+        simpl in *.
+        eapply Kinding.weakening...
+        apply inclusion_cons.
+        apply inclusion_append.
+        eapply drop_Δ'__preserves__inclusion. assumption.
   Qed.
 
   Lemma weakening_empty : forall Delta Gamma t T,

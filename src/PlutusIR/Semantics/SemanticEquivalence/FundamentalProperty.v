@@ -2,7 +2,6 @@ Require Import PlutusCert.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.PlutusIR.Semantics.Static.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
-Require Import PlutusCert.PlutusIR.Semantics.Misc.Axiom.
 Require Import PlutusCert.PlutusIR.Analysis.BoundVars.
 
 Require Import Lists.List.
@@ -18,22 +17,25 @@ Definition P_has_type Δ Γ e T :=
 Definition P_constructor_well_formed Δ c Tr := Δ |-ok_c c : Tr.
 
 Definition P_bindings_well_formed_nonrec Δ Γ (bs : list binding) :=
-  forall Δ_t Γ_t bsGn t t' Tn,
+  forall Δ_t Γ_t bsGn t t' Tn Δ_no_esc,
     Δ_t = flatten (List.map binds_Delta bs) ++ Δ ->
     map_normalise (flatten (List.map binds_Gamma bs)) bsGn ->
     Γ_t = bsGn ++ Γ ->
-    Δ |-* Tn : Kind_Base ->
+    Δ_no_esc = drop_Δ Δ bs ->
+    Δ_no_esc |-* Tn : Kind_Base ->
     LR_logically_approximate Δ_t Γ_t t t' Tn ->
     LR_logically_approximate Δ Γ (Let NonRec bs t) (Let NonRec bs t') Tn.
 
 Definition P_bindings_well_formed_rec Δ Γ bs1 := Δ ,, Γ |-oks_r bs1.
 
-Definition P_binding_well_formed Δ Γ b :=
-  forall Δ_t Γ_t bsGn t t' Tn bs bs',
+Definition P_binding_well_formed Δ Γ (rec : recursivity) b :=
+  rec = NonRec -> (* Richard: TODO: This fixes fundamental property, but isn't this only because compatibility LetRec is not finished yet?*)
+  forall Δ_t Γ_t bsGn t t' Tn bs bs' Δ_no_esc,
     Δ_t = binds_Delta b ++ Δ ->
     map_normalise (binds_Gamma b) bsGn ->
     Γ_t = bsGn ++ Γ ->
-    Δ |-* Tn : Kind_Base ->
+    Δ_no_esc = drop_Δ Δ (b::bs) ->
+    Δ_no_esc |-* Tn : Kind_Base ->
     LR_logically_approximate Δ_t Γ_t (Let NonRec bs t) (Let NonRec bs' t') Tn ->
     LR_logically_approximate Δ Γ (Let NonRec (b :: bs) t) (Let NonRec (b :: bs') t') Tn.
 
@@ -58,9 +60,10 @@ Proof with eauto.
     (P1 := P_bindings_well_formed_nonrec)
     (P2 := P_bindings_well_formed_rec)
     (P3 := P_binding_well_formed).
-
   all : autounfold; intros; subst.
   all : eauto with DSP_compatibility_lemmas typing.
+  - apply drop_Δ_nil__kinding in H3.
+    eauto with DSP_compatibility_lemmas typing.
   - rewrite flatten_app in H5.
     apply map_normalise__app in H5.
     destruct H5 as [l1n [l2n [Hmn__l1n [Hmn__l2n Heq]]]].
@@ -71,34 +74,7 @@ Proof with eauto.
     eapply H0...
     eapply H3...
     + eapply Kinding.weakening...
-      destruct b.
-      * simpl. eapply inclusion_refl.
-      * simpl. destruct t0. simpl.
-        unfold inclusion.
-        intros.
-        destruct (b =? x)%string eqn:Heqb.
-        -- eapply eqb_eq in Heqb as Heq.
-           subst.
-           assert (appears_bound_in_ann x (Let NonRec (TypeBind (TyVarDecl x k) t1 :: bs) t)) by eauto.
-           eapply uniqueness' in H4.
-           rewrite H4 in H1.
-           inversion H4.
-        -- apply eqb_neq in Heqb as Hneq.
-           simpl. rewrite Heqb...
-      * destruct d.
-        simpl. destruct t0.
-        simpl.
-        unfold inclusion.
-        intros.
-        destruct (b0 =? x)%string eqn:Heqb.
-        -- eapply eqb_eq in Heqb as Heq.
-           subst.
-           assert (appears_bound_in_ann x (Let NonRec (DatatypeBind (Datatype (TyVarDecl x k) l b l0) :: bs) t)) by eauto.
-           eapply uniqueness' in H4.
-           rewrite H4 in H1.
-           inversion H4.
-        -- apply eqb_neq in Heqb as Hneq.
-           simpl. rewrite Heqb...
+      apply drop_Δ_cons__inclusion.
     + rewrite app_assoc...
       rewrite app_assoc...
       rewrite <- flatten_app...

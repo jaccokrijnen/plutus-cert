@@ -54,7 +54,7 @@ Reserved Notation "Delta ',,' Gamma '|-+' t ':' T" (at level 101, t at level 0, 
 Reserved Notation "Delta '|-ok_c' c ':' T" (at level 101, c at level 0, T at level 0).
 Reserved Notation "Delta ',,' Gamma  '|-oks_nr' bs" (at level 101, bs at level 0, no associativity).
 Reserved Notation "Delta ',,' Gamma '|-oks_r' bs" (at level 101, bs at level 0, no associativity).
-Reserved Notation "Delta ',,' Gamma '|-ok_b' b" (at level 101, b at level 0, no associativity).
+Reserved Notation "Delta ',,' Gamma '|-ok_b' rec # b" (at level 101, b at level 0, no associativity).
 
 Local Open Scope list_scope.
 
@@ -105,6 +105,8 @@ Proof.
     apply unwrapIFixFresh_ftv_helper.
 Qed.
 
+
+(* ************* drop_ty_var ************* *)
 
 (* 
 Should have
@@ -192,6 +194,384 @@ Lemma drop_ty_var__lookup_some : forall X Γ x T,
 *)
 Admitted.
 
+(************* Drop_Δ **********)
+
+Definition inb_string (x : string) (xs : list string) : bool :=
+  if in_dec string_dec x xs then true else false.
+
+Lemma inb_string_true_iff (x : string) (xs : list string) :
+  inb_string x xs = true <-> In x xs.
+Proof.
+  unfold inb_string.
+  destruct (in_dec string_dec x xs); split; intro H; try easy; try congruence.
+Qed.
+
+Lemma inb_string_false_iff (x : string) (xs : list string) :
+  inb_string x xs = false <-> ~ In x xs.
+Proof.
+  unfold inb_string.
+  destruct (in_dec string_dec x xs); split; intro H; try easy; try congruence.
+Qed.
+
+Definition drop_Δ' (Δ : list (string * kind)) (bsn : list string) : list (string * kind) :=
+  (* Just negb and In, but for bools isntead of props*)
+  filter (fun x => negb (inb_string (fst x) bsn)) Δ.
+
+Definition drop_Δ (Δ : list (string * kind)) (bs : list binding) : list (string * kind) :=
+  (* Just negb and In, but for bools isntead of props*)
+  drop_Δ' Δ (btvbs bs).
+
+Lemma drop_Δ_nil : forall Δ,
+    drop_Δ Δ nil = Δ.
+Proof.
+  intros Δ.
+  unfold drop_Δ.
+  induction Δ.
+  - simpl. reflexivity.
+  - simpl. f_equal.
+    auto.
+Qed.
+
+From Coq Require Import Bool.
+
+Lemma drop_Δ__weaken : forall Δ b bs,
+  drop_Δ Δ (b::bs) = drop_Δ (binds_Delta b ++ Δ) (b::bs).
+Proof.
+  intros Δ b bs; unfold drop_Δ.
+  induction b.
+  - simpl. reflexivity.
+  - simpl. destruct t.
+    unfold drop_Δ'.
+    remember (fun x : string * kind => _) as f.
+
+    assert (Hf_nil: filter f [(b, k)] = []).
+    {
+      subst; simpl.
+      assert (Hin: (inb_string b (btvbs (TypeBind (TyVarDecl b k) t0 :: bs))) = true).
+      {
+        unfold btvbs; simpl.
+        rewrite inb_string_true_iff.
+        apply in_eq.
+      }
+      rewrite Hin; auto.
+    }
+    assert (Hf_app: filter f Δ = filter f [(b, k)] ++ filter f Δ).
+    {
+      rewrite Hf_nil.
+      rewrite app_nil_l.
+      reflexivity.
+    }
+    rewrite Hf_app.
+    rewrite filter_app; auto.
+  - simpl. destruct d. destruct t.
+    unfold drop_Δ'.
+    remember (fun x : string * kind => _) as f.
+    assert (Hf_nil: filter f [(b0, k)] = []).
+    {
+      subst; simpl.
+      assert (Hin: (inb_string b0 (btvbs (DatatypeBind (Datatype (TyVarDecl b0 k) l b l0) :: bs))) = true).
+      {
+        unfold btvbs; simpl.
+        rewrite inb_string_true_iff.
+        apply in_eq.
+      }
+      rewrite Hin; auto.
+    }
+    assert (Hf_app: filter f Δ = filter f [(b0, k)] ++ filter f Δ).
+    {
+      rewrite Hf_nil.
+      rewrite app_nil_l.
+      reflexivity.
+    }
+    rewrite Hf_app.
+    rewrite filter_app; auto.
+Qed.
+
+
+Lemma drop_Δ__unfold : forall Δ b bs,
+  drop_Δ Δ (b::bs) = drop_Δ (drop_Δ Δ bs) [b].
+Proof.
+  intros Δ b bs.
+  induction Δ.
+  - simpl. reflexivity.
+  - simpl.
+    destruct (inb_string (fst a) (btvbs (b :: bs))) eqn:Heqn1.
+    + (* a = b or In a (btvb bs)*)
+      simpl.
+      destruct (inb_string (fst a) (btvbs bs)) eqn:Heqn2.
+      * (* a in bs *)
+        simpl.
+        apply IHΔ.
+      * (* a notin bs, so then a = b*)
+        simpl.
+        assert (inb_string (fst a) (btvbs [b]) = true ).
+        {
+          rewrite btvbs_cons in Heqn1.
+          rewrite inb_string_true_iff in Heqn1.
+          rewrite in_app_iff in Heqn1. 
+          destruct Heqn1 as [Heqn1 | Heqn1].
+          - rewrite <- inb_string_true_iff in Heqn1.
+            unfold btvbs; simpl.
+            rewrite app_nil_r.
+            assumption.
+          - rewrite <- inb_string_true_iff in Heqn1.
+            rewrite Heqn1 in Heqn2.
+            inversion Heqn2.
+        }
+        simpl.
+        rewrite H.
+        simpl.
+        apply IHΔ.
+    + (* ~ In a (btvbs (b :: bs))*)
+      assert (
+        (inb_string (fst a) (btvbs bs)) = false).
+      {
+        rewrite btvbs_cons in Heqn1.
+        rewrite inb_string_false_iff in Heqn1.
+        rewrite not_in_app in Heqn1.
+        destruct Heqn1 as [_ Heqn1].
+        rewrite <- inb_string_false_iff in Heqn1.
+        assumption.
+      }
+      rewrite H.
+      simpl.
+      assert ((inb_string (fst a) (btvbs [b])) = false).
+      {
+        rewrite btvbs_cons in Heqn1.
+        rewrite inb_string_false_iff in Heqn1.
+        rewrite not_in_app in Heqn1.
+        destruct Heqn1 as [Heqn1 _].
+        rewrite <- inb_string_false_iff in Heqn1.
+        unfold btvbs. simpl.
+        rewrite app_nil_r.
+        assumption.
+      }
+      rewrite H0; simpl.
+      f_equal.
+      apply IHΔ.
+Qed.
+
+Lemma drop_Δ_nil__kinding : forall Δ T K,
+    drop_Δ Δ nil |-* T : K -> Δ |-* T : K.
+Proof.
+  intros.
+  rewrite drop_Δ_nil in H.
+  assumption.
+Qed.
+    
+  Lemma drop_Δ'__lookup_None : forall Δ xs x,
+    In x (xs) -> lookup x (drop_Δ' Δ xs) = None.
+  Proof.
+    intros Δ xs x Hbtvbs.
+    induction Δ; simpl.
+    - reflexivity.
+    - destruct a as [a1 a2]; simpl.
+      destruct (negb (inb_string a1 (xs))) eqn:Heqn.
+      + destruct (string_dec a1 x).
+        * subst.
+          exfalso.
+          rewrite negb_true_iff in Heqn.
+          rewrite inb_string_false_iff in Heqn.
+          contradiction.
+        * simpl.
+          rewrite <- String.eqb_neq in n.
+          rewrite n.
+          exact IHΔ.
+    + assumption.
+  Qed.
+
+  Lemma drop_Δ__lookup_None : forall Δ bs x,
+    In x (BoundVars.btvbs bs) -> lookup x (drop_Δ Δ bs) = None.
+  Proof.
+    intros.
+    unfold drop_Δ.
+    eapply drop_Δ'__lookup_None.
+    assumption.
+  Qed.
+
+   Lemma lookup_None__drop_Δ' : forall Δ xs x,
+    ~ In x xs ->
+    lookup x (drop_Δ' Δ xs) = lookup x Δ.
+  Proof.
+    intros Δ xs x HnotBtvb.
+    induction Δ; simpl.
+    - reflexivity.
+    - destruct a as [a1 a2]; simpl.
+      destruct ((inb_string a1 xs)) eqn:Heqn; simpl.
+      + destruct (string_dec a1 x).
+        * subst.
+          rewrite inb_string_true_iff in Heqn.
+          contradiction.
+        * rewrite <- String.eqb_neq in n.
+          rewrite n.
+          rewrite IHΔ; auto.
+      + simpl.
+        destruct (string_dec a1 x).
+        * subst.
+          rewrite String.eqb_refl.
+          reflexivity.
+        * rewrite <- String.eqb_neq in n.
+          rewrite n.
+          rewrite IHΔ; auto. 
+  Qed.
+
+  Lemma lookup_None__drop_Δ : forall Δ bs x,
+    ~ In x (BoundVars.btvbs bs) ->
+    lookup x (drop_Δ Δ bs) = lookup x Δ.
+  Proof.
+    intros.
+    unfold drop_Δ.
+    eapply lookup_None__drop_Δ'.
+    assumption.
+  Qed.
+
+  Lemma lookup_Some__drop_Δ'_no_xs : forall Δ xs x K,
+    lookup x (drop_Δ' Δ xs) = Some K ->
+    ~ In x xs.
+  Proof.
+    intros Δ xs x K Hl.
+    induction Δ; simpl in *.
+    - inversion Hl.
+    - destruct a as [a1 a2]; simpl in *.
+      destruct (inb_string a1 xs) eqn:Heqn; simpl in *.
+      + destruct (string_dec a1 x).
+        * apply IHΔ.
+          assumption.
+        * subst.
+          apply IHΔ.
+          exact Hl.
+      + simpl in Hl.
+        destruct (string_dec a1 x).
+        * subst.
+          rewrite inb_string_false_iff in Heqn.
+          assumption.
+        * rewrite <- String.eqb_neq in n.
+          rewrite n in Hl.
+          apply IHΔ.
+          assumption.
+  Qed.
+
+  Lemma lookup_Some__drop_Δ_no_btvbs : forall Δ bs x K,
+    lookup x (drop_Δ Δ bs) = Some K ->
+    ~ In x (BoundVars.btvbs bs).
+  Proof.
+    intros.
+    unfold drop_Δ.
+    eapply lookup_Some__drop_Δ'_no_xs; eauto.
+  Qed.
+
+  Lemma drop_Δ'__inclusion : forall Δ xs,
+    List.inclusion (drop_Δ' Δ xs) Δ.
+  Proof.
+    intros.
+    induction Δ; simpl.
+    - unfold List.inclusion; auto.
+    - destruct a as [a1 a2].
+      destruct (inb_string (fst (a1, a2)) xs) eqn:Heqn; simpl in *.
+      + unfold inclusion.
+        intros x v Hl.
+        destruct (string_dec a1 x).
+        * subst.
+          exfalso.
+          rewrite inb_string_true_iff in Heqn.
+          eapply drop_Δ'__lookup_None in Heqn.
+          rewrite Hl in Heqn.
+          inversion Heqn.
+        * simpl.
+          rewrite <- String.eqb_neq in n.
+          rewrite n.
+          apply IHΔ.
+          assumption.
+      + unfold inclusion.
+        intros x v Hl.
+        destruct (string_dec a1 x).
+        * subst.
+          inversion Hl.
+          rewrite String.eqb_refl.
+          simpl.
+          rewrite String.eqb_refl.
+          reflexivity.
+        * simpl.
+          rewrite <- String.eqb_neq in n.
+          rewrite n.
+          apply IHΔ.
+          simpl in Hl.
+          rewrite n in Hl.
+          assumption.
+  Qed.
+
+  Lemma drop_Δ__inclusion : forall Δ bs,
+    List.inclusion (drop_Δ Δ bs) Δ.
+  Proof.
+    intros.
+    unfold drop_Δ.
+    eapply drop_Δ'__inclusion.
+  Qed.
+
+
+
+Lemma drop_Δ_cons__inclusion : forall Δ b bs,
+    List.inclusion (drop_Δ Δ (b::bs)) (drop_Δ (binds_Delta b ++ Δ) bs).
+Proof.
+  intros Δ b bs.
+  assert (Hweaken: drop_Δ Δ (b::bs) = drop_Δ (binds_Delta b ++ Δ) (b::bs)).
+  {
+    apply drop_Δ__weaken.
+  }
+  rewrite Hweaken; clear Hweaken.
+  assert (Hunfold: drop_Δ (binds_Delta b ++ Δ) (b::bs) = drop_Δ (drop_Δ (binds_Delta b ++ Δ) bs) [b]).
+  {
+    apply drop_Δ__unfold.
+  }
+  rewrite Hunfold; clear Hunfold.
+  apply drop_Δ__inclusion.
+Qed.
+
+  Lemma drop_Δ'__preserves__inclusion : forall Δ Δ' xs,
+      List.inclusion Δ Δ' ->
+      List.inclusion (drop_Δ' Δ xs) (drop_Δ' Δ' xs).
+  Proof.
+    intros Δ Δ' xs Hincl.
+    unfold inclusion in *.
+    intros x v Hl.
+    assert (lookup x Δ' = Some v).
+    {
+      apply drop_Δ'__inclusion in Hl.
+      apply Hincl in Hl.
+      assumption.
+    }
+    assert ( ~ In x xs).
+    {
+      eapply lookup_Some__drop_Δ'_no_xs; eauto.
+    }
+
+    induction Δ'.
+    - inversion H.
+    - eapply lookup_None__drop_Δ' in H0; eauto.
+      rewrite H0.
+      assumption.
+  Qed.
+
+  Lemma drop_Δ__preserves__inclusion : forall Δ Δ' bs,
+      List.inclusion Δ Δ' ->
+      List.inclusion (drop_Δ Δ bs) (drop_Δ Δ' bs).
+  Proof.
+    intros.
+    unfold drop_Δ.
+    eapply drop_Δ'__preserves__inclusion.
+    assumption.
+  Qed.
+
+Lemma btvbs_eq__drop_Δ_eq : forall Δ bs bs',
+  btvbs bs = btvbs bs' ->
+  drop_Δ Δ bs = drop_Δ Δ bs'.
+Proof.
+  intros Δ bs bs' Hbtvbs.
+  unfold drop_Δ.
+  rewrite Hbtvbs.
+  reflexivity.
+Qed.
+
 Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty -> Prop :=
   (* Simply typed lambda caclulus *)
   | T_Var : forall Γ Δ x T Tn K,
@@ -250,18 +630,16 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Reference: The Haskell module PlutusIR.TypeCheck.Internal in the
       iohk/plutus/plutus-core/plutus-ir project.
   **)
-
-(* TODO: Check for changes in Strong normalisation branches to typing rules*)
-
-  | T_Let : forall Δ Γ bs t Tn Δ' Γ' bsGn,
+  | T_Let : forall Δ Γ bs t Tn Δ_no_esc Δ' Γ' bsGn,
       Δ' = flatten (map binds_Delta bs) ++ Δ ->
       map_normalise (flatten (map binds_Gamma bs)) bsGn ->
       Γ' = bsGn ++ Γ ->
       Δ ,, Γ |-oks_nr bs ->
       Δ' ,, Γ' |-+ t : Tn ->
-      Δ |-* Tn : Kind_Base ->
+      Δ_no_esc = drop_Δ Δ bs ->
+      Δ_no_esc |-* Tn : Kind_Base ->
       Δ ,, Γ |-+ (Let NonRec bs t) : Tn
-  | T_LetRec : forall Δ Γ bs t Tn Δ' Γ' bsGn,
+  | T_LetRec : forall Δ Γ bs t Tn Δ_no_esc Δ' Γ' bsGn,
       (* There can be no duplicate bound variables in a let-rec *)
       NoDup (btvbs bs) ->
       NoDup (bvbs bs) ->
@@ -271,7 +649,8 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Γ' = bsGn ++ Γ->
       Δ' ,, Γ' |-oks_r bs ->
       Δ' ,, Γ' |-+ t : Tn ->
-      Δ |-* Tn : Kind_Base ->
+      Δ_no_esc = drop_Δ Δ bs ->
+      Δ_no_esc |-* Tn : Kind_Base ->
       Δ ,, Γ |-+ (Let Rec bs t) : Tn
 
 (* Constructors are well-formed if their result type equals the fully applied
@@ -290,7 +669,7 @@ with bindings_well_formed_nonrec : list (string * kind) -> list (string * ty) ->
   | W_NilB_NonRec : forall Δ Γ,
       Δ ,, Γ |-oks_nr nil
   | W_ConsB_NonRec : forall Δ Γ b bs bsGn,
-      Δ ,, Γ |-ok_b b ->
+      Δ ,, Γ |-ok_b NonRec # b ->
       map_normalise (binds_Gamma b) bsGn ->
       ((binds_Delta b) ++ Δ) ,, (bsGn ++ Γ) |-oks_nr bs ->
       Δ ,, Γ |-oks_nr (b :: bs)
@@ -299,20 +678,20 @@ with bindings_well_formed_rec : list (string * kind) -> list (string * ty) -> li
   | W_NilB_Rec : forall Δ Γ,
       Δ ,, Γ |-oks_r nil
   | W_ConsB_Rec : forall Δ Γ b bs,
-      Δ ,, Γ |-ok_b b ->
+      Δ ,, Γ |-ok_b Rec # b ->
       Δ ,, Γ |-oks_r bs ->
       Δ ,, Γ |-oks_r (b :: bs)
 
-with binding_well_formed : list (string * kind) -> list (string * ty) -> binding -> Prop :=
-  | W_Term : forall Δ Γ s x T t Tn,
+with binding_well_formed : list (string * kind) -> list (string * ty) -> recursivity -> binding -> Prop :=
+  | W_Term : forall Δ Γ s x T t Tn rec,
       Δ |-* T : Kind_Base ->
       normalise T Tn ->
       Δ ,, Γ |-+ t : Tn ->
-      Δ ,, Γ |-ok_b (TermBind s (VarDecl x T) t)
-  | W_Type : forall Δ Γ X K T,
+      Δ ,, Γ |-ok_b rec # (TermBind s (VarDecl x T) t)
+  | W_Type : forall Δ Γ X K T rec,
       Δ |-* T : K ->
-      Δ ,, Γ |-ok_b (TypeBind (TyVarDecl X K) T)
-  | W_Data : forall Δ Γ dtd XK YKs matchFunc cs X Ys Δ' Tres,
+      Δ ,, Γ |-ok_b rec # (TypeBind (TyVarDecl X K) T)
+  | W_Data : forall Δ Γ dtd XK YKs matchFunc cs X Ys Δ' Δ_ns rec Tres,
       dtd = Datatype XK YKs matchFunc cs ->
       X = tvdecl_name XK ->
       Ys = map tvdecl_name YKs ->
@@ -324,7 +703,14 @@ with binding_well_formed : list (string * kind) -> list (string * ty) -> binding
       NoDup (map vdecl_name cs) ->
 
       (* Well-formedness of constructors *)
-      Δ' = rev (map fromDecl YKs) ++ Δ ->
+      (* Constructor argument types may not use type variable with 
+      datatype's name in NonRec case*)
+      Δ_ns = match rec with
+            | NonRec => drop_Δ' Δ [X]
+            | Rec => Δ
+            end ->
+      Δ' = rev (map fromDecl YKs) ++ Δ_ns ->
+      (* The constructor types are well-kinded *) 
       Tres = constrLastTyExpected dtd -> (* The expected result type for each constructor *)
       (forall c, In c cs -> Δ' |-ok_c c : Tres) ->
 
@@ -335,13 +721,13 @@ with binding_well_formed : list (string * kind) -> list (string * ty) -> binding
        *)
       (fromDecl XK :: Δ') |-* Tres : Kind_Base ->
 
-      Δ ,, Γ |-ok_b (DatatypeBind dtd)
+      Δ ,, Γ |-ok_b rec # (DatatypeBind dtd)
 
   where "Δ ',,' Γ '|-+' t ':' T" := (has_type Δ Γ t T)
   and  "Δ '|-ok_c' c ':' T" := (constructor_well_formed Δ c T)
   and "Δ ',,' Γ '|-oks_nr' bs" := (bindings_well_formed_nonrec Δ Γ bs)
   and "Δ ',,' Γ '|-oks_r' bs" := (bindings_well_formed_rec Δ Γ bs)
-  and "Δ ',,' Γ '|-ok_b' b" := (binding_well_formed Δ Γ b).
+  and "Δ ',,' Γ '|-ok_b' rec # b" := (binding_well_formed Δ Γ rec b).
 
 Scheme has_type__ind := Minimality for has_type Sort Prop
   with constructor_well_formed__ind := Minimality for constructor_well_formed Sort Prop
@@ -382,8 +768,8 @@ Qed.
 Definition well_typed t := exists T, [] ,, [] |-+ t : T.
 
 Lemma T_Let__cons Δ Γ Γ_b b bs t Tn :
-  Δ ,, Γ |-ok_b b ->
-  Δ |-* Tn : Kind_Base -> (* Tn may not mention types bound in b (escaping) *)
+  Δ ,, Γ |-ok_b NonRec # b ->
+  drop_Δ Δ (b::bs) |-* Tn : Kind_Base -> (* Tn may not mention types bound in b (escaping) *)
   map_normalise (binds_Gamma b) Γ_b ->
   binds_Delta b ++ Δ ,, Γ_b ++ Γ |-+ (Let NonRec bs t) : Tn ->
   Δ ,, Γ |-+ (Let NonRec (b :: bs) t) : Tn
@@ -412,7 +798,8 @@ Proof.
     rewrite <- app_assoc.
     rewrite <- app_assoc.
     assumption.
-  - assumption.
+  - eauto. 
+  - eauto.
 Qed.
 
 Lemma has_type__normal : forall Delta Gamma t T,

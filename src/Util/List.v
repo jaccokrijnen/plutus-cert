@@ -134,6 +134,12 @@ Admitted.
 Definition inclusion {A : Type} (m m' : list (string * A)) :=
   forall x v, lookup x m = Some v -> lookup x m' = Some v.
 
+Lemma inclusion_unfold {A : Type} (m m' : list (string * A)) x v:
+  inclusion m m' -> lookup x m = Some v -> lookup x m' = Some v.
+Proof.
+  auto.
+Qed.
+
 Lemma inclusion_tail {A : Type} (x : string * A) m m' :
   inclusion m m' ->
   inclusion (x :: m) (x :: m').
