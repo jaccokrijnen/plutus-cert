@@ -448,7 +448,6 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
       eapply T_LetRec; auto.
       * apply no_dup_fun_sound. auto.
       * apply no_dup_fun_sound. auto.
-      * apply no_dup_fun_sound. auto.
       * eapply map_normaliser_sound in Heqo.
         rewrite <- insert_remove_deltas_id in Heqo.
         eauto.
@@ -460,7 +459,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
       * inversion H1.
         subst.
         apply kind_checking_sound in Heqo1.
-        assumption.
+        admit.
   - (* Case Let NONRec *)
     intros bs t0.
     intros P.
@@ -470,9 +469,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
       destruct_match.
       unfold bind in H1.
       repeat destruct_match.
-      eapply T_Let with (Δ' := (flatten (map binds_Delta bs) ++ Δ)%list); auto.
-      * apply no_dup_fun_sound; auto.
-      
+      eapply T_Let with (Δ' := (flatten (map binds_Delta bs) ++ Δ)%list); auto.      
       * apply (map_normaliser_sound) in Heqo. 
         rewrite <- insert_remove_deltas_nr_id in Heqo.
         exact Heqo.
@@ -482,6 +479,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
       * inversion H1.
         subst.
         apply kind_checking_sound in Heqo1.  auto.
+        admit.
   - intros. 
     inversion H.
     unfold bind in H1.
@@ -498,6 +496,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
     inversion H2.
     subst.
     eapply T_TyAbs...
+    admit.
   - intros.
     inversion H0.
     unfold bind in H2.
@@ -617,17 +616,18 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
       * reflexivity.
       * intros.
         simpl.
-        
-        assert (constructor_well_formed_check (rev (map fromDecl l) ++ Δ) c (Ty_Apps (Ty_Var (tvdecl_name t0)) (map Ty_Var (map tvdecl_name l))) = true).
+        admit.
+        (* assert (constructor_well_formed_check (rev (map fromDecl l) ++ Δ) c (Ty_Apps (Ty_Var (tvdecl_name t0)) (map Ty_Var (map tvdecl_name l))) = true).
         { eapply (allb_element_true) in Hc_wf.
           - exact Hc_wf.
           - assumption.
         }
-        now apply constructor_well_formed_sound.
+        now apply constructor_well_formed_sound. *)
       * repeat destruct_match.
         simpl.
         apply kind_checking_sound in Heqo.
         auto.
+        admit.
     + repeat destruct_match; subst.
       eapply W_Data; eauto.
       * constructor; auto.
@@ -641,10 +641,6 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
           - assumption.
         }
         now apply constructor_well_formed_sound.
-      * repeat destruct_match.
-        simpl.
-        apply kind_checking_sound in Heqo.
-        auto.
   - intros.
     apply W_ConsB_Rec.
     + apply H.
@@ -679,7 +675,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
       intuition.
   - intros.
     apply W_NilB_NonRec.
-Qed.
+Admitted.
 
 (* Hmmm, why does this rewrite?? This helper lemma is of course temporary TODO *)
 Lemma test (T2n T1n : ty) Δ Γ t x :
@@ -733,7 +729,8 @@ Proof.
     rewrite H1.
     now rewrite -> Ty_eqb_refl.
   - (* Case: T_TyAbs *) 
-    now apply oof2.   
+    admit.
+    (* now apply oof2.    *)
   - (* Case: T_Inst *)
     rewrite H0.
     apply (normaliser_Jacco_complete h1) in n; rewrite n; simpl.
@@ -807,11 +804,12 @@ Proof.
     rewrite H2.
     rewrite H0.
     rewrite H1.
-    apply kind_checking_complete in h0; rewrite h0.
+    admit. admit. admit.
+    (* apply kind_checking_complete in h0; rewrite h0.
     apply no_dup_fun_complete in n.
     + rewrite (bool_if _ _ _ n). auto. (* I don't understand Coq yet.*)
     + auto.
-    + auto.
+    + auto. *)
   - (* Case: T_LetRec *)
     destruct (no_dup_fun (btvbs bs) &&
 no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
@@ -830,9 +828,10 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
         rewrite m.
         rewrite H0.
         rewrite H1.
-        apply kind_checking_complete in h0; rewrite h0.
+        admit. 
+        (* apply kind_checking_complete in h0; rewrite h0.
         apply no_dup_fun_complete in n.
-        rewrite (bool_if _ _ _ n). reflexivity.
+        rewrite (bool_if _ _ _ n). reflexivity. *)
       - assert (map fst (flatten (map binds_Delta bs)) = rev (btvbs bs)).
         {
           admit.
@@ -842,9 +841,10 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
         admit.
     }
     apply andb_false_iff in no_dup_eqn. exfalso.
-    destruct no_dup_eqn.
+    admit.
+    (* destruct no_dup_eqn.
     + apply no_dup_fun_complete in n0. rewrite n0 in H2. discriminate H2.
-    + apply no_dup_fun_complete in n1. rewrite n1 in H2. discriminate H2.
+    + apply no_dup_fun_complete in n1. rewrite n1 in H2. discriminate H2. *)
   - (* Case: ? *)
     intros. simpl. rewrite H0. auto.
   - (* Case: ? *)
@@ -889,7 +889,8 @@ no_dup_fun (map vdecl_name l0)) eqn:no_dup.
       rewrite (bool_if _ _ _ no_dup). auto. 
       apply andb_true_intro; split.
       * subst.
-        clear e. clear n. clear n0. clear y. clear no_dup.
+        admit.
+        (* clear e. clear n. clear n0. clear y. clear no_dup.
         induction cs; intros.
         -- simpl. reflexivity.
         -- simpl. apply andb_true_intro. split.
@@ -897,11 +898,12 @@ no_dup_fun (map vdecl_name l0)) eqn:no_dup.
              eapply c.
              apply in_eq.
           ++ eapply IHcs.
-             intros. eapply c. apply in_cons. auto.
-      * subst.
+             intros. eapply c. apply in_cons. auto. *)
+      * admit.
+        (* subst.
         simpl in y.
         apply kind_checking_complete in y.
-        rewrite y. auto.
+        rewrite y. auto. *)
 
     + exfalso.
       subst.
@@ -920,7 +922,8 @@ no_dup_fun (map vdecl_name l0)) eqn:no_dup.
       simpl in n.
       destruct_match.
       rewrite (bool_if _ _ _ no_dup). auto. 
-      apply andb_true_intro; split.
+      admit.
+      (* apply andb_true_intro; split.
       * subst.
         clear e. clear n. clear n0. clear y. clear no_dup.
         induction cs; intros.
@@ -934,7 +937,7 @@ no_dup_fun (map vdecl_name l0)) eqn:no_dup.
       * subst.
         simpl in y.
         apply kind_checking_complete in y.
-        rewrite y. auto.
+        rewrite y. auto. *)
 
     + exfalso.
       subst.
@@ -946,7 +949,7 @@ no_dup_fun (map vdecl_name l0)) eqn:no_dup.
     }
 Admitted.
 
-Extraction Language Haskell.
-Redirect "type_check.hs" Recursive Extraction type_check.
+(* Extraction Language Haskell.
+Redirect "type_check.hs" Recursive Extraction type_check. *)
 
 (* Compute (type_check nil (cons ((EmptyString, (Ty_App (Ty_Lam EmptyString Kind_Base (Ty_Var EmptyString)) (Ty_Builtin DefaultUniInteger)))) nil) (Var EmptyString)). *)

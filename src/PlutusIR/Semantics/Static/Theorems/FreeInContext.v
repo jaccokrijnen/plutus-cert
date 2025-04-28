@@ -1,4 +1,4 @@
-(* Require Import PlutusCert.PlutusIR.
+Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.Util.List.
 Require Import Lists.List.
 Import ListNotations.
@@ -59,7 +59,7 @@ Module Term.
       Term.appears_free_in__bindings_rec x bs ->
       exists T', lookup x Gamma = Datatypes.Some T'.
 
-  Definition P_binding_well_formed (Delta : list (string * kind)) (Gamma : list (string * ty)) (b : binding) :=
+  Definition P_binding_well_formed (Delta : list (string * kind)) (Gamma : list (string * ty)) (rec : recursivity) (b : binding) :=
     forall x,
       Term.appears_free_in__binding x b ->
       exists T', lookup x Gamma = Datatypes.Some T'.
@@ -76,7 +76,7 @@ Module Term.
       (forall Delta Gamma t T, Delta ,, Gamma |-+ t : T -> P_has_type Delta Gamma t T) /\
       (forall Delta Gamma bs, Delta ,, Gamma |-oks_nr bs -> P_bindings_well_formed_nonrec Delta Gamma bs) /\
       (forall Delta Gamma bs, Delta ,, Gamma |-oks_r bs -> P_bindings_well_formed_rec Delta Gamma bs) /\
-      (forall Delta Gamma b, Delta ,, Gamma |-ok_b b -> P_binding_well_formed Delta Gamma b).
+      (forall Delta Gamma rec b, Delta ,, Gamma |-ok_b rec # b -> P_binding_well_formed Delta Gamma rec b).
   Proof with eauto.
     apply has_type__multind with
       (P := P_has_type)
@@ -92,38 +92,44 @@ Module Term.
       inversion Hafi. subst.
       eapply H2 in H8...
       rewrite lookup_neq in H8...
+    - (* TyAbs *)
+      unfold P_has_type in H0.
+      assert (Term.appears_free_in x0 t).
+      { 
+        inversion Hafi; subst; auto.
+      }
+      specialize (H0 x0 H1) as [T' Hlookup].
+      eapply drop_ty_var__lookup_some; eauto.
     - (* T_Let *)
-      (* inversion Hafi.
-      + subst.
-        eapply H5 in H12...
-        apply notIn_bvbs_bindsG in H10.
-        eapply notIn__map_normalise in H10...
-        rewrite notIn__lookup_append in H12...
-      + subst.
-        eapply H3 in H9... *)
-        admit.
-    - (* T_LetRec *)
-      (* inversion Hafi.
-      + subst.
-        eapply H7 in H14...
-        apply notIn_bvbs_bindsG in H12.
-        eapply notIn__map_normalise in H12...
-        rewrite notIn__lookup_append in H14...
+      inversion Hafi.
       + subst.
         eapply H5 in H13...
-        apply notIn_bvbs_bindsG in H12.
-        eapply notIn__map_normalise in H12...
-        rewrite notIn__lookup_append in H13... *)
-        admit.
+        apply notIn_bvbs_bindsG in H11.
+        eapply notIn__map_normalise in H11...
+        rewrite notIn__lookup_append in H13...
+      + subst.
+        eapply H3 in H10...
+    - (* T_LetRec *)
+      inversion Hafi.
+      + subst.
+        eapply H7 in H15...
+        apply notIn_bvbs_bindsG in H13.
+        eapply notIn__map_normalise in H13...
+        rewrite notIn__lookup_append in H15...
+      + subst.
+        eapply H5 in H14...
+        apply notIn_bvbs_bindsG in H13.
+        eapply notIn__map_normalise in H13...
+        rewrite notIn__lookup_append in H14...
     - (* W_ConsB_NonRec *)
       inversion Hafi.
       + subst.
         apply H0...
       + subst.
-        (* apply notIn_bvb_bindsG in H7.
+        apply notIn_bvb_bindsG in H7.
         eapply notIn__map_normalise in H7...
-        erewrite <- notIn__lookup_append... *)
-Admitted.
+        erewrite <- notIn__lookup_append...
+Qed.
 
 End Term.
 
@@ -149,7 +155,7 @@ Module Annotation.
       Annotation.appears_free_in__bindings_rec X bs ->
       exists K', lookup X Delta = Datatypes.Some K'.
 
-  Definition P_binding_well_formed (Delta : list (string * kind)) (Gamma : list (string * ty)) (b : binding) :=
+  Definition P_binding_well_formed (Delta : list (string * kind)) (Gamma : list (string * ty)) (rec : recursivity) (b : binding) :=
     forall X,
       Annotation.appears_free_in__binding X b ->
       exists K', lookup X Delta = Datatypes.Some K'.
@@ -167,7 +173,7 @@ Module Annotation.
       (forall Delta Gamma t T, Delta ,, Gamma |-+ t : T -> P_has_type Delta Gamma t T) /\
       (forall Delta Gamma bs, Delta ,, Gamma |-oks_nr bs -> P_bindings_well_formed_nonrec Delta Gamma bs) /\
       (forall Delta Gamma bs, Delta ,, Gamma |-oks_r bs -> P_bindings_well_formed_rec Delta Gamma bs) /\
-      (forall Delta Gamma b, Delta ,, Gamma |-ok_b b -> P_binding_well_formed Delta Gamma b).
+      (forall Delta Gamma rec b, Delta ,, Gamma |-ok_b rec # b -> P_binding_well_formed Delta Gamma rec b).
   Proof with (eauto using Ty.free_in_context).
     apply has_type__multind with
       (P := P_has_type)
@@ -184,25 +190,23 @@ Module Annotation.
       eapply H0 in H5...
       rewrite lookup_neq in H5...
     - (* T_Let*)
-      (* inversion Hafi.
-      + subst.
-        eapply H5 in H11...
-        apply notIn_btvbs_bindsD in H9.
-        rewrite notIn__lookup_append in H11...
-      + subst.
-        eapply H3 in H8... *)
-        admit.
-    - (* T_LetRec *)
-      (* inversion Hafi.
-      + subst.
-        eapply H7 in H13...
-        apply notIn_btvbs_bindsD in H11.
-        rewrite notIn__lookup_append in H13...
+      inversion Hafi.
       + subst.
         eapply H5 in H12...
-        apply notIn_btvbs_bindsD in H11.
-        rewrite notIn__lookup_append in H12... *)
-        admit.
+        apply notIn_btvbs_bindsD in H10.
+        rewrite notIn__lookup_append in H12...
+      + subst.
+        eapply H3 in H9...
+    - (* T_LetRec *)
+      inversion Hafi.
+      + subst.
+        eapply H7 in H14...
+        apply notIn_btvbs_bindsD in H12.
+        rewrite notIn__lookup_append in H14...
+      + subst.
+        eapply H5 in H13...
+        apply notIn_btvbs_bindsD in H12.
+        rewrite notIn__lookup_append in H13...
     - (* W_Con *)
       inversion Hafi. subst.
       rewrite <- H4 in H.
@@ -214,15 +218,23 @@ Module Annotation.
       + subst.
         apply H0...
       + subst.
-        (* apply notIn_btvb_bindsD in H6.
+        apply notIn_btvb_bindsD in H6.
         erewrite <- notIn__lookup_append...
     - (* W_Data *)
       inversion Hafi. subst.
       inversion H9. subst.
       destruct H11 as [c [HIn__c Hafi__c]].
       erewrite <- notIn__lookup_append...
-      eapply H7... *)
-  Admitted.
+      simpl in H7.
+      simpl in H8.
+      destruct rec.
+      + specialize (H8 c HIn__c x0 Hafi__c) as [K' Hl_K].
+        exists K'.
+        eapply inclusion_unfold; eauto.
+        apply inclusion_append.
+        apply drop_Δ'__inclusion.
+      + eapply H8...
+  Qed.
 
 End Annotation.
 
@@ -240,4 +252,4 @@ Proof with eauto.
     eapply Annotation.free_in_context in H1...
     destruct H1 as [K' C]...
     discriminate C.
-Qed. *)
+Qed. 

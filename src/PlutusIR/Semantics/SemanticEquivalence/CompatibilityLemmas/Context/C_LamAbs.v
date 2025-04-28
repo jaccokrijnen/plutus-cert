@@ -22,5 +22,5 @@ Proof.
   intros e1 e2 H_approx_e1_e2.
   simpl.
   eauto using compatibility_LamAbs.
-Admitted. (* TODO: Why is this proof now incomplete?*)
+Qed.
 

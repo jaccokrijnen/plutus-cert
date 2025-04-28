@@ -109,7 +109,7 @@ Equations? RC (k : nat) (T : ty) (rho : tymapping) (e e' : term) : Prop by wf k 
                   forall i (Hlt_i : i < k - j) K T0n,
                     [] |-* (msubstT (msyn1 rho) Tn) : K ->
                     [] |-* (msubstT (msyn2 rho) Tn) : K ->
-                    normalise (unwrapIFix Fn K Tn) T0n ->
+                    normalise (unwrapIFixFresh Fn K Tn) T0n ->
                     RC i T0n rho v_0 v'_0
 
             (* RV for universal types *)
@@ -125,6 +125,7 @@ Equations? RC (k : nat) (T : ty) (rho : tymapping) (e e' : term) : Prop by wf k 
                     Rel T1 T2 Chi ->
                     forall i (Hlt_i : i < k - j),
                       RC i Tn ((X, (Chi, T1, T2)) :: rho) <{ :[X := T1] e_body }> <{ :[X := T2] e'_body }>
+            | PlutusIR.Ty_SOP Tss => False (* TODO *)
             end
           )
         ) \/ (
@@ -321,7 +322,7 @@ Logical approximation of one-hole contexts
 Definition LR_logically_approximate_context Δ₁ Γ₁ C C' Δ Γ T T₁ :=
   forall e e',
     Δ ,, Γ |- e ≤ e' : T ->
-    Δ₁ ,, Γ₁ |- (context_apply C e) ≤ (context_apply C' e') : T₁
+    Δ₁ ,, Γ₁ |- (context_fill C e) ≤ (context_fill C' e') : T₁
 .
 
 
@@ -429,6 +430,7 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
               Rel T1 T2 Chi ->
               ∀ i (Hlt_i : i < k),
                 R I_C i Tn ((X, (Chi, T1, T2)) :: rho) <{ :[X := T1] e_body }> <{ :[X := T2] e'_body }>
+      | PlutusIR.Ty_SOP Tss => False (* TODO *)
       end
   ).
 Proof.

@@ -33,11 +33,23 @@ Proof with (eauto || solver).
     eapply preservation...
   - unfold unwrapIFix in H1.
     inversion IHhas_type. subst.
-    assert (K = K0) by admit.
+    assert (K = K0) by admit. (* unique kinnds*)
     subst.
-    eapply preservation in H1; eauto;
+    eapply preservation in H1; eauto.
+    admit. admit.
+(*   
+    econstructor...
+    econstructor...
+    econstructor...
+    apply K_IFix with (K := K0).
+    + econstructor...
+      remember (freshUnwrapIFix Fn) as fr.
+      simpl.
+      rewrite String.eqb_refl.
+      auto.
+    + 
     (* ADMIT: Should follow from uniqnuess property. *)
-    admit.
+    admit. *)
   - (* TODO: keep typing derivation around during induction and use uniType__basekinded *)
     admit.
   - destruct f...

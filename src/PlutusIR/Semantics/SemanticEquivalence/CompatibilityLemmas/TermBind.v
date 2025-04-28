@@ -81,8 +81,8 @@ Proof with eauto_LR.
   destruct IHLR__tb as [Htyp__tb [Htyp__tb' IH__tb]].
 
   split. {
-    (* inversion Htyp__ih. subst.
-    rewrite <- append_flatten in H7.
+    inversion Htyp__ih. subst.
+    rewrite <- append_flatten in H5.
 
     eapply T_Let...
     - unfold flatten.
@@ -90,13 +90,12 @@ Proof with eauto_LR.
       simpl in Hmapnorm__bsGn.
       rewrite List.concat_app.
       eapply map_normalise__app'...
-    - rewrite app_assoc in H7. eapply H7. *)
-    admit.
+    - rewrite app_assoc in H5. eapply H5.
   }
 
   split. {
-    (* inversion Htyp__ih'. subst.
-    rewrite <- append_flatten in H7.
+    inversion Htyp__ih'. subst.
+    rewrite <- append_flatten in H5.
 
     eapply T_Let...
     - unfold flatten.
@@ -104,8 +103,7 @@ Proof with eauto_LR.
       simpl in Hmapnorm__bsGn.
       rewrite List.concat_app.
       eapply map_normalise__app'...
-    - rewrite app_assoc in H7. eapply H7. *)
-    admit.
+    - rewrite app_assoc in H5. eapply H5.
   }
 
   intros k rho env env' HRD HRG.
@@ -351,24 +349,28 @@ Proof with eauto_LR.
       }
 
       split. {
-        (* inversion Htyp__ih. subst.
-        simpl in H9.
-        eapply closing_preserves_kinding_1 in H9 as H10...
-        eapply strong_normalisation in H10 as H11...
-        destruct H11.
+        inversion Htyp__ih. subst.
+        simpl in H10.
+        apply Kinding.drop_Δ__kinding in H10.
+        
+        eapply closing_preserves_kinding_1 in H10 as H11...
+        eapply strong_normalisation in H11 as H12...
+        destruct H12.
 
-        eexists. split... *)
+        eexists. split...
         admit.
       }
 
       split. {
-        (* inversion Htyp__ih. subst.
-        simpl in H9.
-        eapply closing_preserves_kinding_2 in H9 as H10...
+        inversion Htyp__ih. subst.
+
+        simpl in H10.
+        apply Kinding.drop_Δ__kinding in H10.
+        eapply closing_preserves_kinding_2 in H10 as H10...
         eapply strong_normalisation in H10 as H11...
         destruct H11.
 
-        eexists. split... *)
+        eexists. split...
         admit.
       }
       right...

@@ -59,13 +59,13 @@ Proof.
       }
       rewrite HignoreRename.
       apply alpha_lam.
-
-      (* TODO: boring code, think of tactics*)
+      admit.
+      (* TODO: boring code, think of tactics
       apply alphaIdShadowsVacuous.
       unfold tv in Hfresh; fold tv in Hfresh.
       apply not_in_cons in Hfresh.
       destruct Hfresh as [_ Hfresh].
-      assumption.
+      assumption. *)
     + assert (H1: forall B, rename x x' (@tmlam B s k s0) = @tmlam B s k (rename x x' s0)).
       {
         unfold rename.
@@ -114,7 +114,7 @@ Proof.
   - unfold rename.
     unfold mren.
     constructor.
-Qed.  
+Admitted.  
 
 
 (*

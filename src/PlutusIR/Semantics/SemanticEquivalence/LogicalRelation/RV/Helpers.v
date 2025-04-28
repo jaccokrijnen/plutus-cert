@@ -239,7 +239,7 @@ Lemma RV_condition : forall k T rho v v',
               forall i (Hlt_i : i < k) K T0n,
                 [] |-* (msubstT (msyn1 rho) Tn) : K ->
                 [] |-* (msubstT (msyn2 rho) Tn) : K ->
-                normalise (unwrapIFix Fn K Tn) T0n ->
+                normalise (unwrapIFixFresh Fn K Tn) T0n ->
                 RC i T0n rho v_0 v'_0
 
         (* RV for universal types *)
@@ -255,6 +255,7 @@ Lemma RV_condition : forall k T rho v v',
                 Rel T1 T2 Chi ->
                 forall i (Hlt_i : i < k),
                   RC i T ((bX, (Chi, T1, T2)) :: rho) <{ :[bX := T1] e_body }> <{ :[bX := T2] e'_body }>
+        | PlutusIR.Ty_SOP Tss => False (* TODO *)
         end
       ) \/ (
         is_error v /\
@@ -353,7 +354,7 @@ Corollary RV_unwrap : forall k Fn Tn rho v v' ,
         forall i (Hlt_i : i < k) K T0n,
           [] |-* (msubstT (msyn1 rho) Tn) : K ->
           [] |-* (msubstT (msyn2 rho) Tn) : K ->
-          normalise (unwrapIFix Fn K Tn) T0n ->
+          normalise (unwrapIFixFresh Fn K Tn) T0n ->
           RC i T0n rho v_0 v'_0
     ) \/ (
       is_error v /\

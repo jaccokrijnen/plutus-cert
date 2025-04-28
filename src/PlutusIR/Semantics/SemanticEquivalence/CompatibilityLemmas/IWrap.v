@@ -67,7 +67,8 @@ Proof with eauto_LR.
 
   destruct IH_LR as [Htyp__e [Htyp__e' IH]].
 
-  split... split...
+  split... 
+  split...
 
   intros k rho env env' H_RD H_RG.
   subst.
@@ -149,13 +150,13 @@ Proof with eauto_LR.
       eapply unique_kinds...
     }
     subst.
-    eapply normalisation__deterministic in Hnorm__T0n...
+    eapply (normalisation__deterministic _ _ _ Hnorm__T0n) in H1...
     subst.
 
     eapply RV_to_RC.
 
     eapply RV_monotone...
-    admit.
+    
   - (* E_Error_Iwrap *)
     assert (HRC :
       RC k T0n rho

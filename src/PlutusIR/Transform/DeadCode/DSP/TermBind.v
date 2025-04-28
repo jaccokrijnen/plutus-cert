@@ -9,7 +9,6 @@ From Coq Require Import
 From PlutusCert Require Import Semantics.Dynamic.
 From PlutusCert Require Import Semantics.Static.
 From PlutusCert Require Import BaseKindedness.
-From PlutusCert Require Import Transform.DeadCode.
 From PlutusCert Require Import SemanticEquivalence.LogicalRelation.
 From PlutusCert Require Import SemanticEquivalence.CompatibilityLemmas.
 From PlutusCert Require Import SemanticEquivalence.Auto.
@@ -67,7 +66,7 @@ Lemma compat_TermBind_typing Δ Γ b x Tb tb Tbn bs t Tn :
 Proof.
   intros H_eq H_kind_base H_norm H_ty_tb H_ty_let_bs.
 
-  assert (H_b_wf : Δ ,, Γ |-ok_b b). {
+  assert (H_b_wf : Δ ,, Γ |-ok_b NonRec # b). {
     subst b.
     apply W_Term with (Tn := Tbn); auto.
   }
@@ -77,7 +76,7 @@ Proof.
   - reflexivity.
   - subst b.
     rewrite flatten_app.
-    (* apply MN_snoc; auto.
+     apply MN_snoc; auto.
   - reflexivity.
   - econstructor.
     + assumption.
@@ -92,8 +91,9 @@ Proof.
     subst.
     rewrite <- app_assoc.
     assumption.
-  - assumption. *)
-Admitted.
+  - eauto.
+  - subst. eauto.
+Qed.
 
 Lemma compat_nil Δ Γ T t t' :
   LR_logically_approximate Δ Γ           t  t' T ->
@@ -111,7 +111,7 @@ Qed.
 Lemma elim_TermBind_NonRec__approximate Δ Γ t t' Tn b bs x Tb tb :
   b = TermBind Strict (VarDecl x Tb) tb ->
 
-  Δ ,, Γ |-ok_b b ->
+  Δ ,, Γ |-ok_b NonRec # b ->
   pure_binding Δ Γ b ->
   disjoint (bvb b) (fv t') ->
 
@@ -142,7 +142,7 @@ Proof.
   unfold binds_Gamma, binds_Delta in *; subst.
   assert (Γ_b = [(x, Tbn)]). {
     inversion H_norm_Γ_bs; subst.
-    inversion H3; subst.
+    inversion H4; subst.
     f_equal.
     f_equal.
     eauto using normalisation__deterministic.
@@ -388,7 +388,7 @@ Proof.
     destruct H_pure_closed as [l [vb [H_eval H_not_err]]].
     apply eval__deterministic in H_eval.
     unfold P_eval in H_eval.
-    apply H_eval in H0 as [H_v_Error _].
+    apply H_eval in H1 as [H_v_Error _].
     subst vb.
     assert (is_error (Error T')) by constructor.
     contradiction.
@@ -399,7 +399,7 @@ Admitted.
 Lemma elim_TermBind_NonRec__approximate_rev Δ Γ t t' Tn b bs x Tb tb :
   b = TermBind Strict (VarDecl x Tb) tb ->
 
-  Δ ,, Γ |-ok_b b ->
+  Δ ,, Γ |-ok_b NonRec # b ->
   pure_binding Δ Γ b ->
   disjoint (bvb b) (fv t') ->
 

@@ -6,15 +6,15 @@ Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstituti
 
 Require Import Arith.
 
-Lemma compatibility_Var : forall Delta Gamma x T Tn,
+Lemma compatibility_Var : forall Delta Gamma x T Tn K,
     lookup x Gamma = Coq.Init.Datatypes.Some T ->
-    (* Delta |-* T : Kind_Base -> *) (* this fixes this lemma, but breaks DSP*)
+    Delta |-* T : K ->
     normalise T Tn ->
     LR_logically_approximate Delta Gamma (Var x) (Var x) Tn.
 Proof with eauto_LR.
-  intros Delta Gamma x T Tn Hx Hnorm__Tn.
+  intros Delta Gamma x T Tn K Hx Hkind__T Hnorm__Tn.
   unfold LR_logically_approximate.
-(* 
+
   split... split...
 
   intros k rho env env' HRD HRG.
@@ -36,5 +36,5 @@ Proof with eauto_LR.
     rewrite Hlu__v...
   - rewrite msubstA_Var.
     rewrite msubst_Var...
-    rewrite Hlu__v'... *)
-Admitted.
+    rewrite Hlu__v'...
+Qed.

@@ -16,7 +16,7 @@ Lemma compatibility_Error: forall Delta Gamma S T Tn,
     normalise T Tn ->
     LR_logically_approximate Delta Gamma (Error S) (Error S) Tn.
 Proof with eauto_LR.
-  intros Delta Gamma S T Tn Hnorm Hkind__T.
+  intros Delta Gamma S T Tn Hkind__T Hnorm.
   unfold LR_logically_approximate.
   Admitted.
 (*

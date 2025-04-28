@@ -118,7 +118,6 @@ src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/alpha_freshness.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/rename.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/alpha/util.v
 
-src/PlutusIR/Semantics/Static/TypingTyForallFix.v
 src/PlutusIR/Semantics/Static/Theorems/ContextInvariance.v
 src/PlutusIR/Semantics/Static/Theorems/ContextInvariance/AFI.v
 src/PlutusIR/Semantics/Static/Theorems/FreeInContext.v
@@ -135,10 +134,13 @@ src/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping/TypeSubstitution.v
 src/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping/SubstituteTCA.v
 src/PlutusIR/Semantics/TypeSafety/TypeLanguage/StrongNormalisation.v
 src/PlutusIR/Semantics/TypeSafety/TypeLanguage/Preservation.v
+src/PlutusIR/Semantics/TypeSafety/Preservation.v
 
 src/PlutusIR/Semantics/SemanticEquivalence/Auto.v
+src/PlutusIR/Semantics/SemanticEquivalence/Congruence.v
 src/PlutusIR/Semantics/SemanticEquivalence/FundamentalProperty.v
 src/PlutusIR/Semantics/SemanticEquivalence/Contextual.v
+src/PlutusIR/Semantics/SemanticEquivalence/Validator.v
 src/PlutusIR/Semantics/SemanticEquivalence/Multisubstitution/Congruence.v
 
 src/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas.v
@@ -176,8 +178,6 @@ src/PlutusIR/Semantics/SemanticEquivalence/LogicalRelation/Tymapping.v
 src/PlutusIR/Semantics/SemanticEquivalence/LogicalRelation/Validity.v
 
 src/PlutusIR/Semantics/SemanticEquivalence/Soundness.v
-
-src/PlutusIR/Semantics/Misc/Axiom.v
 
 src/Language.v
 src/Language/PIR.v

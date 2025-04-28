@@ -4,7 +4,6 @@ Require Import Coq.Program.Basics.
 Require Import PlutusCert.PlutusIR.Transform.DeadCode2.
 Require Import PlutusCert.PlutusIR.Transform.DeadCode.SSP.
 Require Import PlutusCert.PlutusIR.Semantics.Dynamic.
-Require Import PlutusCert.PlutusIR.Semantics.Misc.Axiom.
 Require Import PlutusCert.PlutusIR.Analysis.BoundVars.
 Require Import PlutusCert.PlutusIR.Analysis.Purity.
 Require Import PlutusCert.PlutusIR.Analysis.UniqueBinders.
@@ -64,7 +63,7 @@ Notation "'[' γ ; ρ ']_b' t" := (msubst_b γ (msubstA_b ρ t)) (at level 10).
 
 Lemma elim_nonrec_approx : forall Δ Γ b bs t T t' Γ_b,
   disjoint (bvb b) (fv t') ->
-  disjoint (btvb b) (ftv t') ->
+  disjoint (btvb b) (Term.ftv t') ->
   map_normalise (binds_Gamma b) Γ_b ->
   binds_Delta b ++ Δ,, Γ_b ++ Γ |- (Let NonRec       bs  t) ≤ t' : T ->
   Δ                 ,, Γ        |- (Let NonRec (b :: bs) t) ≤ t' : T.
@@ -229,7 +228,7 @@ Definition P_dc_rev t t' :=
 
 Lemma elim_nonrec_approx_rev : forall Δ Γ b bs t T t' Γ_b,
   disjoint (bvb b) (fv t') ->
-  disjoint (btvb b) (ftv t') ->
+  disjoint (btvb b) (Term.ftv t') ->
   pure_binding nil b ->
   map_normalise (binds_Gamma b) Γ_b ->
   binds_Delta b ++ Δ,, Γ_b ++ Γ |- t' ≤ (Let NonRec       bs  t)  : T ->

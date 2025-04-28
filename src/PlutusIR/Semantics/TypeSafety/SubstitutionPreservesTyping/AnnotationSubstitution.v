@@ -59,10 +59,10 @@ Definition P_Term (t : term) :=
     Delta ,, (gsubst X U Gamma) |-+ <{ :[X := U] t }> : Tn.
 
 Definition P_Binding (b : binding) : Prop :=
-  forall Delta Gamma X K U,
-    ((X, K) :: Delta) ,, Gamma |-ok_b b ->
+  forall Delta Gamma rec X K U,
+    ((X, K) :: Delta) ,, Gamma |-ok_b rec # b ->
     [] |-* U : K ->
-    Delta ,, (gsubst X U Gamma) |-ok_b <{ :[X := U]b b }>.
+    Delta ,, (gsubst X U Gamma) |-ok_b rec # <{ :[X := U]b b }>.
 
 #[export] Hint Unfold
   P_Term
@@ -81,3 +81,35 @@ Proof with (eauto using substituteT_preserves_kinding with typing).
   all: try (inversion Htyp__t; subst).
 (* ADMIT: I had no time to finish this. Should follow from uniqueness property, amongst others. *)
 Admitted.
+
+Corollary substA_preserves_typing__Term : 
+  forall Delta Gamma X K U t T Tn,
+    ((X, K) :: Delta) ,, Gamma |-+ t : T ->
+    [] |-* U : K ->
+    normalise (substituteT X U T) Tn ->
+    Delta ,, (gsubst X U Gamma) |-+ <{ :[X := U] t }> : Tn.
+Proof.
+  intros.
+  eapply substA_preserves_typing; eauto.
+Qed.
+
+Corollary substA_preserves_typing__Term__value : 
+  forall X K U t T Tn,
+    ((X, K) :: nil) ,, nil |-+ t : T ->
+    [] |-* U : K -> (* 
+    
+      So.. no capture?
+      No free vars in U, hence a binder in T cannot capture that
+
+    *)
+    normalise (substituteT X U T) Tn ->
+    nil ,, nil |-+ <{ :[X := U] t }> : Tn.
+Proof.
+  intros.
+  assert (nil ,, (gsubst X U nil) |-+ <{ :[X := U] t }> : Tn).
+  {
+    eapply substA_preserves_typing__Term; eauto.
+  }
+  simpl in H2.
+  auto.
+Qed.

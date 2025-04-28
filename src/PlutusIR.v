@@ -10,7 +10,6 @@ Require Import Eqdep.
 From PlutusCert Require Import Util.
 Set Implicit Arguments.
 
-Require Import Coq.Program.Basics.
 
 Import ListNotations.
 
@@ -406,14 +405,38 @@ Definition mk_let (r : recursivity) (bs : list binding) (t : term) : term :=
   end
 .
 
-Fixpoint context_apply (C : context) (t : term) :=
+Fixpoint context_fill (C : context) (t : term) :=
   match C with
     | C_Hole           => t
-    | C_LamAbs bn ty C => LamAbs bn ty (context_apply C t)
-    | C_Apply_L C t'   => Apply (context_apply C t) t'
-    | C_Apply_R t' C   => Apply t' (context_apply C t)
+    | C_LamAbs bn ty C => LamAbs bn ty (context_fill C t)
+    | C_Apply_L C t'   => Apply (context_fill C t) t'
+    | C_Apply_R t' C   => Apply t' (context_fill C t)
   end
 .
+
+Fixpoint context_comp (C C' : context) : context :=
+  match C with
+    | C_Hole           => C'
+    | C_LamAbs bn ty C => C_LamAbs bn ty (context_comp C C')
+    | C_Apply_L C t'   => C_Apply_L (context_comp C C') t'
+    | C_Apply_R t' C   => C_Apply_R t' (context_comp C C')
+  end
+.
+
+
+  Declare Scope contexts.
+
+  #[local]
+  Notation "C ∘ C'" := (context_comp C C') (at level 60) : contexts.
+  #[local]
+  Notation "C @ t  " := (context_fill C t) (at level 65, right associativity) : contexts .
+
+  #[local]
+  Open Scope contexts.
+
+  Lemma context_comp_fill C C' t : (C ∘ C' @ t) = (C @ C' @ t).
+  Admitted.
+
 
 (** ** Trace of compilation *)
 Inductive pass :=
@@ -943,6 +966,8 @@ Definition ty_transform (custom : forall T, option (ty_alg_transform T)) : ty ->
   fold_alg _ (to_total custom). *)
 
 Definition unitVal : term := Constant (ValueOf DefaultUniUnit tt).
+
+Definition ty_unit : ty := Ty_Builtin DefaultUniUnit.
 
 (* AST utilities *)
 Fixpoint splitTy (T : ty) : list ty * ty :=
