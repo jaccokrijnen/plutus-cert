@@ -109,7 +109,7 @@ Equations? RC (k : nat) (T : ty) (rho : tymapping) (e e' : term) : Prop by wf k 
                   forall i (Hlt_i : i < k - j) K T0n,
                     [] |-* (msubstT (msyn1 rho) Tn) : K ->
                     [] |-* (msubstT (msyn2 rho) Tn) : K ->
-                    normalise (unwrapIFix Fn K Tn) T0n ->
+                    normalise (unwrapIFixFresh Fn K Tn) T0n ->
                     RC i T0n rho v_0 v'_0
 
             (* RV for universal types *)
@@ -416,7 +416,7 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
             ∀ i (Hlt_i : i < k) K T0n,
               [] |-* (msubstT (msyn1 rho) Tn) : K ->
               [] |-* (msubstT (msyn2 rho) Tn) : K ->
-              normalise (unwrapIFix Fn K Tn) T0n ->
+              normalise (unwrapIFixFresh Fn K Tn) T0n ->
               R I_V i T0n rho v_0 v'_0
 
       | Ty_Forall X K Tn =>

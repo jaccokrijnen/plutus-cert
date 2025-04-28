@@ -12,10 +12,10 @@ Require Import Arith.
 
 Lemma normalise_unwrapIFix_commutes'_1 : forall ck rho Fn K Tn T0n Fn' Tn' T0n',
     RD ck rho ->
-    normalise (unwrapIFix Fn K Tn) T0n ->
+    normalise (unwrapIFixFresh Fn K Tn) T0n ->
     normalise (msubstT (msyn1 rho) Fn) Fn' ->
     normalise (msubstT (msyn1 rho) Tn) Tn' ->
-    normalise (unwrapIFix Fn' K Tn') T0n' ->
+    normalise (unwrapIFixFresh Fn' K Tn') T0n' ->
     normalise (msubstT (msyn1 rho) T0n) T0n'.
 Proof.
 (* ADMIT: Commutativity should hold. *)
@@ -23,10 +23,10 @@ Admitted.
 
 Lemma normalise_unwrapIFix_commutes'_2 : forall ck rho Fn K Tn T0n Fn' Tn' T0n',
     RD ck rho ->
-    normalise (unwrapIFix Fn K Tn) T0n ->
+    normalise (unwrapIFixFresh Fn K Tn) T0n ->
     normalise (msubstT (msyn2 rho) Fn) Fn' ->
     normalise (msubstT (msyn2 rho) Tn) Tn' ->
-    normalise (unwrapIFix Fn' K Tn') T0n' ->
+    normalise (unwrapIFixFresh Fn' K Tn') T0n' ->
     normalise (msubstT (msyn2 rho) T0n) T0n'.
 Proof.
 (* ADMIT: Commutativity should hold. *)
@@ -34,7 +34,7 @@ Admitted.
 
 Lemma compatibility_Unwrap : forall Delta Gamma e e' Fn Tn K T0n,
     Delta |-* Tn : K ->
-    normalise (unwrapIFix Fn K Tn) T0n ->
+    normalise (unwrapIFixFresh Fn K Tn) T0n ->
     LR_logically_approximate Delta Gamma e e' (Ty_IFix Fn Tn)->
     LR_logically_approximate Delta Gamma (Unwrap e) (Unwrap e') T0n.
 Proof with eauto_LR.
