@@ -50,19 +50,25 @@ Proof with (eauto || solver).
   induction 1; intros...
   all: try solve [econstructor; eauto using preservation]...
   all: try solve [eauto using preservation]...
-  - (* ADMIT: See end of proof *)
+  - (* T_Var *)
+    (* ADMIT: See end of proof *)
     admit.
-  - inversion IHhas_type1...
-  - inversion IHhas_type. subst.
+  - (* T_LamAbs *) inversion IHhas_type1...
+  - (* T_TyInst *) 
+    inversion IHhas_type. subst.
     eapply preservation.
     2:{
       apply H2.
     }
     eapply substituteTCA_preserves_kinding...
     eapply preservation...
-  - unfold unwrapIFix in H1.
+  - (* T_Unwrap *)
+    unfold unwrapIFix in H1.
     inversion IHhas_type. subst.
-    assert (K = K0) by admit.
+    assert (K = K0).
+    {
+      eapply unique_kinds in H5; eauto.
+    }
     subst.
     eapply preservation in H1; eauto.
     econstructor...
@@ -75,7 +81,8 @@ Proof with (eauto || solver).
       eauto.
     + apply weaken_fresh.
       assumption.
-  - (* TODO: keep typing derivation around during induction and use uniType__basekinded *)
+  - (* T_Builtin *)
+    (* TODO: keep typing derivation around during induction and use uniType__basekinded *)
     admit.
   - destruct f...
     (* TODO: implement lookupBuiltinType *)
