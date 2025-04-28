@@ -110,6 +110,9 @@ Proof.
         type checking completeness to go through,
         but that does no longer work for 
         preservation now.
+
+        Decided in meeting April 16 that we will keep it that way and 
+        will not care about preservation of errors.
         *)
 
       inversion Ht; subst.
