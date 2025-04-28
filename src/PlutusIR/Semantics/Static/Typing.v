@@ -529,6 +529,61 @@ Combined Scheme has_type__multind from
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
 
+
+(* There is no kind check on the types in the environment, so we can have well-typed terms that have ill-kinded types *)
+Lemma ill_kinded_well_typed_var T :
+  T = Ty_App (Ty_Lam "bX" Kind_Base (Ty_Var "bX")) (Ty_Lam "bY" Kind_Base (Ty_Var "bY")) ->
+  (~ (exists Δ K, Δ |-* T : K) /\ 
+  (nil ,, [("x",  T)] |-+ (Var "x") : (Ty_Lam "bY" Kind_Base (Ty_Var "bY")))).
+Proof.
+  intros; rewrite H.
+  split.
+  {
+    intros Hcontra.
+    destruct Hcontra as [Δ [K Hcontra]].
+    inversion Hcontra; subst.
+    inversion H3; subst.
+    inversion H5.
+  }
+  {
+  eapply T_Var.
+  - simpl. reflexivity.
+  - eapply N_BetaReduce.
+    + eapply N_TyLam.
+      eapply N_TyVar.
+    + eapply N_TyLam.
+      eapply N_TyVar.
+    + autorewrite with substituteTCA.
+      simpl.
+      eapply N_TyLam.
+      eapply N_TyVar.
+  }
+Qed.
+
+(* has_type problem: Ty_Foralls always have to be Kind_Base*)
+Lemma ill_kinded_well_typed_forall T :
+  T = Ty_Forall "X" Kind_Base (Ty_Lam "Z" Kind_Base (Ty_Var "Z")) ->
+  (~ (exists Δ K, Δ |-* T : K) /\ 
+  (nil ,, [("W", Ty_Lam "Z" Kind_Base (Ty_Var "Z"))] |-+ (TyAbs "X" Kind_Base (Var "W")) : T)).
+Proof.
+  intros; subst.
+  split.
+  {
+    intros Hcontra.
+    destruct Hcontra as [Δ [K Hcontra]].
+    inversion Hcontra; subst.
+    inversion H4; subst.
+  }
+  {
+    eapply T_TyAbs.
+    eapply T_Var.
+    - simpl.
+      reflexivity.
+    - eapply N_TyLam.
+      eapply N_TyVar.
+  }
+Qed.
+
 Definition well_typed t := exists T, [] ,, [] |-+ t : T.
 
 Lemma T_Let__cons Δ Γ Γ_b b bs t Tn :
