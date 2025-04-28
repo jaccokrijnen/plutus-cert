@@ -104,30 +104,15 @@ Module Typing.
       apply drop_Δ__preserves__inclusion. assumption.
     - (* W_Data *)
       econstructor...
-      + subst.
-        intros.
+      + subst; intros.
         eapply H8...
         apply inclusion_append.
         destruct rec; auto.
         eapply drop_Δ'__preserves__inclusion. assumption.
-        
       + destruct rec; subst...
-        simpl.
-        simpl in H9.
+        simpl in *.
         eapply Kinding.weakening...
-        assert ((fromDecl XK
-            :: rev (map fromDecl YKs) ++
-            drop_Δ' Δ [tvdecl_name XK]) = ((fromDecl XK
-            :: rev (map fromDecl YKs)) ++
-            drop_Δ' Δ [tvdecl_name XK])) by auto.
-                    rewrite H.
-                    assert (((fromDecl XK
-            :: rev (map fromDecl YKs) ++
-            drop_Δ' Delta'_0 [tvdecl_name XK]) = (((fromDecl XK
-            :: rev (map fromDecl YKs)) ++
-            drop_Δ' Delta'_0 [tvdecl_name XK])))) by auto.
-        rewrite H0.
-        remember (fromDecl XK :: rev (map fromDecl YKs)) as p.
+        apply inclusion_cons.
         apply inclusion_append.
         eapply drop_Δ'__preserves__inclusion. assumption.
   Qed.
