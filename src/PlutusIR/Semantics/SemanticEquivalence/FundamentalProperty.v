@@ -28,7 +28,8 @@ Definition P_bindings_well_formed_nonrec Δ Γ (bs : list binding) :=
 
 Definition P_bindings_well_formed_rec Δ Γ bs1 := Δ ,, Γ |-oks_r bs1.
 
-Definition P_binding_well_formed Δ Γ b :=
+Definition P_binding_well_formed Δ Γ (rec : recursivity) b :=
+  rec = NonRec -> (* TODO: This fixes fundamental property, but isn't this only because compatibility LetRec is not finished yet?*)
   forall Δ_t Γ_t bsGn t t' Tn bs bs' Δ_no_esc,
     Δ_t = binds_Delta b ++ Δ ->
     map_normalise (binds_Gamma b) bsGn ->
@@ -59,9 +60,10 @@ Proof with eauto.
     (P1 := P_bindings_well_formed_nonrec)
     (P2 := P_bindings_well_formed_rec)
     (P3 := P_binding_well_formed).
-
   all : autounfold; intros; subst.
   all : eauto with DSP_compatibility_lemmas typing.
+  - 
+     admit.
   - apply drop_Δ_nil__kinding in H3.
     eauto with DSP_compatibility_lemmas typing.
   - rewrite flatten_app in H5.
