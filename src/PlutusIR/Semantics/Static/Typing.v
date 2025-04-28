@@ -388,6 +388,41 @@ Proof.
   apply drop_Δ__inclusion.
 Qed.
 
+  Lemma drop_Δ'__preserves__inclusion : forall Δ Δ' xs,
+      List.inclusion Δ Δ' ->
+      List.inclusion (drop_Δ' Δ xs) (drop_Δ' Δ' xs).
+  Proof.
+    intros Δ Δ' xs Hincl.
+    unfold inclusion in *.
+    intros x v Hl.
+    assert (lookup x Δ' = Some v).
+    {
+      apply drop_Δ'__inclusion in Hl.
+      apply Hincl in Hl.
+      assumption.
+    }
+    assert ( ~ In x xs).
+    {
+      eapply lookup_Some__drop_Δ'_no_xs; eauto.
+    }
+
+    induction Δ'.
+    - inversion H.
+    - eapply lookup_None__drop_Δ' in H0; eauto.
+      rewrite H0.
+      assumption.
+  Qed.
+
+  Lemma drop_Δ__preserves__inclusion : forall Δ Δ' bs,
+      List.inclusion Δ Δ' ->
+      List.inclusion (drop_Δ Δ bs) (drop_Δ Δ' bs).
+  Proof.
+    intros.
+    unfold drop_Δ.
+    eapply drop_Δ'__preserves__inclusion.
+    assumption.
+  Qed.
+
 Lemma btvbs_eq__drop_Δ_eq : forall Δ bs bs',
   btvbs bs = btvbs bs' ->
   drop_Δ Δ bs = drop_Δ Δ bs'.

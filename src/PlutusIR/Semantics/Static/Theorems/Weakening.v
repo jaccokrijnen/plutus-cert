@@ -37,41 +37,6 @@ Module Kinding.
     - eauto.
   Qed.
 
-  Lemma drop_Δ'__preserves__inclusion : forall Δ Δ' xs,
-      List.inclusion Δ Δ' ->
-      List.inclusion (drop_Δ' Δ xs) (drop_Δ' Δ' xs).
-  Proof.
-    intros Δ Δ' xs Hincl.
-    unfold inclusion in *.
-    intros x v Hl.
-    assert (lookup x Δ' = Some v).
-    {
-      apply drop_Δ'__inclusion in Hl.
-      apply Hincl in Hl.
-      assumption.
-    }
-    assert ( ~ In x xs).
-    {
-      eapply lookup_Some__drop_Δ'_no_xs; eauto.
-    }
-
-    induction Δ'.
-    - inversion H.
-    - eapply lookup_None__drop_Δ' in H0; eauto.
-      rewrite H0.
-      assumption.
-  Qed.
-
-  Lemma drop_Δ__preserves__inclusion : forall Δ Δ' bs,
-      List.inclusion Δ Δ' ->
-      List.inclusion (drop_Δ Δ bs) (drop_Δ Δ' bs).
-  Proof.
-    intros.
-    unfold drop_Δ.
-    eapply drop_Δ'__preserves__inclusion.
-    assumption.
-  Qed.
-
 End Kinding.
 
 Module Typing.
@@ -132,11 +97,11 @@ Module Typing.
     - (* T_Let NonRec*)
       econstructor; subst; eauto using Kinding.weakening, inclusion_cons, inclusion_append.
       apply Kinding.weakening with (Delta := drop_Δ Δ bs); auto.
-      apply Kinding.drop_Δ__preserves__inclusion. assumption.
+      apply drop_Δ__preserves__inclusion. assumption.
     - (* T_Let Rec *)
       econstructor; subst; eauto using Kinding.weakening, inclusion_cons, inclusion_append.
       apply Kinding.weakening with (Delta := drop_Δ Δ bs); auto.
-      apply Kinding.drop_Δ__preserves__inclusion. assumption.
+      apply drop_Δ__preserves__inclusion. assumption.
     - (* W_Data *)
       econstructor...
       + subst.
@@ -144,7 +109,7 @@ Module Typing.
         eapply H8...
         apply inclusion_append.
         destruct rec; auto.
-        eapply Kinding.drop_Δ'__preserves__inclusion. assumption.
+        eapply drop_Δ'__preserves__inclusion. assumption.
         
       + destruct rec; subst...
         simpl.
@@ -164,7 +129,7 @@ Module Typing.
         rewrite H0.
         remember (fromDecl XK :: rev (map fromDecl YKs)) as p.
         apply inclusion_append.
-        eapply Kinding.drop_Δ'__preserves__inclusion. assumption.
+        eapply drop_Δ'__preserves__inclusion. assumption.
   Qed.
 
   Lemma weakening_empty : forall Delta Gamma t T,
