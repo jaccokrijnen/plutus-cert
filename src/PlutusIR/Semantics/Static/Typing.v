@@ -371,8 +371,9 @@ Qed.
 
 Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty -> Prop :=
   (* Simply typed lambda caclulus *)
-  | T_Var : forall Γ Δ x T Tn,
+  | T_Var : forall Γ Δ x T Tn K,
       lookup x Γ = Coq.Init.Datatypes.Some T ->
+      Δ |-* T : K ->
       normalise T Tn ->
       Δ ,, Γ |-+ (Var x) : Tn
   | T_LamAbs : forall Δ Γ x T1 t T2n T1n,
@@ -579,6 +580,7 @@ Proof.
     eapply T_Var.
     - simpl.
       reflexivity.
+    - econstructor. econstructor. simpl. eauto. (* Even when adding the well-kinded var rule, we still have this issue*)
     - eapply N_TyLam.
       eapply N_TyVar.
   }
