@@ -46,17 +46,12 @@ Definition fromDecl (tvd : tvdecl) : string * kind :=
   | TyVarDecl v K => (v, K)
   end.
 
-
 Definition freshUnwrapIFix (F : ty) : string :=
   "a" ++ String.concat EmptyString (FreeVars.Ty.ftv F).
 
 Definition unwrapIFixFresh (F : ty) (K : kind) (T : ty) : ty :=
   let b := freshUnwrapIFix F in 
  (Ty_App (Ty_App F (Ty_Lam b K (Ty_IFix F (Ty_Var b)))) T).
-
-Lemma unwrapIFixFresh_ftv_helper F :
-  ~ In (freshUnwrapIFix F) (FreeVars.Ty.ftv F).
-Admitted.
 
 (** Typing of terms *)
 Reserved Notation "Delta ',,' Gamma '|-+' t ':' T" (at level 101, t at level 0, T at level 0, no associativity).
