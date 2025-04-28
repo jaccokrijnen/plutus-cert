@@ -360,7 +360,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
     (P3 := P_binding_well_formed).
 
   all : intros; autounfold; intros; subst.
-  (* all: try solve [ inv_CNR; eauto with DSP_compatibility_lemmas typing].
+  all: try solve [ inv_CNR; eauto with DSP_compatibility_lemmas typing].
   all : try solve [eauto with typing].
   - (* T_Let *)
     inv_CNR...
@@ -443,7 +443,7 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
       * eapply H7...
       * (* Why do we have to show it for the recursive case? Maybe we need to put Rec/NonRec inside of Datatype bind?*)
       admit.
-    + inv_CNR... *)
+    + inv_CNR...
 Admitted.
 
 

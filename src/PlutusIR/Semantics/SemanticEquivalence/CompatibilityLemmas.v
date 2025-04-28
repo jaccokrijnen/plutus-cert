@@ -24,7 +24,7 @@ Create HintDb DSP_compatibility_lemmas.
   compatibility_IWrap
   compatibility_LamAbs
   compatibility_LetNonRec_Nil
-  (* compatibility_LetRec *)
+  compatibility_LetRec
   compatibility_TermBind
   compatibility_TyAbs
   compatibility_TyInst

@@ -62,8 +62,6 @@ Proof with eauto.
     (P3 := P_binding_well_formed).
   all : autounfold; intros; subst.
   all : eauto with DSP_compatibility_lemmas typing.
-  - 
-     admit.
   - apply drop_Δ_nil__kinding in H3.
     eauto with DSP_compatibility_lemmas typing.
   - rewrite flatten_app in H5.
