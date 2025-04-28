@@ -6,6 +6,35 @@ Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyp
 
 Ltac solver := try solve [repeat (econstructor; eauto)].
 
+Require Import Coq.Lists.List.
+
+(* Stronger than Kinding.weakening:
+  x := freshUnwrapIFix F may shadow something in Δ
+   when it is not used, because Δ may contain vars
+   that are not free in F.
+*)
+Lemma weaken_fresh Δ F K K1 :
+  Δ |-* F : K -> ((freshUnwrapIFix F, K1)::Δ) |-* F : K.
+Admitted.
+
+Lemma unwrapIFixFresh__well_kinded F K T Δ :
+  Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
+  Δ |-* T : K ->
+  Δ |-* (unwrapIFixFresh F K T) : Kind_Base.
+Proof.
+  intros.
+  eapply K_App with (K1 := K); auto.
+  eapply K_App with (K1 := Kind_Arrow K Kind_Base); auto.
+  eapply K_Lam.
+  eapply K_IFix with (K := K); auto.
+  - remember (freshUnwrapIFix F) as X.
+    constructor.
+    simpl.
+    rewrite String.eqb_refl.
+    reflexivity.
+  - apply weaken_fresh.
+    assumption.
+Qed.
 
 Lemma uniType__basekinded : forall t A,
   uniType_option t = Some A ->
@@ -31,25 +60,22 @@ Proof with (eauto || solver).
     }
     eapply substituteTCA_preserves_kinding...
     eapply preservation...
-  - unfold unwrapIFix in H1.
+  - unfold unwrapIFixFresh in H2.
     inversion IHhas_type. subst.
     assert (K = K0) by admit. (* unique kinnds*)
     subst.
-    eapply preservation in H1; eauto.
-    admit. admit.
-(*   
+    eapply preservation in H2; eauto.
+    
     econstructor...
     econstructor...
     econstructor...
-    apply K_IFix with (K := K0).
+    econstructor...
     + econstructor...
-      remember (freshUnwrapIFix Fn) as fr.
       simpl.
       rewrite String.eqb_refl.
-      auto.
-    + 
-    (* ADMIT: Should follow from uniqnuess property. *)
-    admit. *)
+      eauto.
+    + apply weaken_fresh.
+      assumption.
   - (* TODO: keep typing derivation around during induction and use uniType__basekinded *)
     admit.
   - destruct f...

@@ -16,7 +16,8 @@ From PlutusCert Require Import
     Equality
     Kinding.Checker
     Util
-    SubstituteTCA.
+    SubstituteTCA
+    BaseKindedness.
 Require Import PlutusCert.PlutusIR.Analysis.BoundVars.
 
 Scheme has_type_mut_ind := Induction for has_type Sort Prop

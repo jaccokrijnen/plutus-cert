@@ -52,71 +52,21 @@ Definition fromDecl (tvd : tvdecl) : string * kind :=
   | TyVarDecl v K => (v, K)
   end.
 
-(* TODO:
-
-well-kinded?
-normalisation preserves kinding.
-T has kind K 
-F has kind (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base))
-
-(Ty_IFix F (Ty_Var "X") has kind Kind_Base if (Ty_Var "X") has kind K.
-
-Then (Ty_Lam "X" K (Ty_IFix F (Ty_Var "X"))) has kind (Kind_Arrow K Kind_Base)
-
-We apply F to this type to get the same kind back (see kind F), so then we have
-(Ty_App F (Ty_Lam "X" K (Ty_IFix F (Ty_Var "X")))) has kind (Kind_Arrow K Kind_Base)
-
-T has kind K, so this is well kinded with kind Kind_Base and for every context.
-*)
-Definition unwrapIFix (F : ty) (K : kind) (T : ty) : ty := (Ty_App (Ty_App F (Ty_Lam "X" K (Ty_IFix F (Ty_Var "X")))) T).
-
-(* TODO: Do we really need bound variables? *)
 Definition freshUnwrapIFix (F : ty) : string :=
   "a" ++ String.concat EmptyString (FreeVars.Ty.ftv F).
-
-
 
 Definition unwrapIFixFresh (F : ty) (K : kind) (T : ty) : ty :=
   let b := freshUnwrapIFix F in 
  (Ty_App (Ty_App F (Ty_Lam b K (Ty_IFix F (Ty_Var b)))) T).
 
-(* TODO: See also Theorems/Weakening
-*)
-Lemma weakening : forall T T2 K X Δ,
-      ~ In X (FreeVars.Ty.ftv T) ->
-      Δ |-* T : K ->
-      ((X, T2)::Δ) |-* T : K.
-Proof.
+(* Main property of fresh variables: they are fresh*)
+Lemma freshUnwrapIFix__fresh F :
+  ~ In (freshUnwrapIFix F) (FreeVars.Ty.ftv F).
 Admitted.
 
 Lemma unwrapIFixFresh_ftv_helper F :
   ~ In (freshUnwrapIFix F) (FreeVars.Ty.ftv F).
 Admitted.
-
-Lemma unwrapIFixFresh__well_kinded F K T Δ :
-  Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
-  Δ |-* T : K ->
-  Δ |-* (unwrapIFixFresh F K T) : Kind_Base.
-Proof.
-  intros.
-  unfold unwrapIFix.
-  eapply K_App with (K1 := K); auto.
-  eapply K_App with (K1 := Kind_Arrow K Kind_Base); auto.
-  eapply K_Lam.
-  eapply K_IFix with (K := K); auto.
-  - remember (freshUnwrapIFix F) as X.
-    constructor.
-    simpl.
-    rewrite String.eqb_refl.
-    reflexivity.
-  - remember (freshUnwrapIFix F) as x.
-    (* Now weaken *)
-    eapply weakening with (Δ := Δ); auto.
-    unfold List.inclusion.
-    (* By definition of freshUnwrapIFix *)
-    subst.
-    apply unwrapIFixFresh_ftv_helper.
-Qed.
 
 (** Typing of terms *)
 Reserved Notation "Delta ',,' Gamma '|-+' t ':' T" (at level 101, t at level 0, T at level 0, no associativity).
@@ -650,7 +600,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ ,, Γ |-+ M : (Ty_IFix Fn Tn) ->
       Δ |-* Fn : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) -> (* Richard: Added *)
       Δ |-* Tn : K ->
-      normalise (unwrapIFixFresh Fn K Tn) T0n -> (* Richard: Changed to fresh*)
+      normalise (unwrapIFixFresh Fn K Tn) T0n -> (* Richard: Changed to fresh!*)
       Δ ,, Γ |-+ (Unwrap M) : T0n
   (* Additional constructs *)
   | T_Constant : forall Δ Γ T a,
