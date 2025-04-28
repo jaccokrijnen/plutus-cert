@@ -29,8 +29,6 @@ Proof.
     rewrite H in H2.
     inversion H2. subst.
     reflexivity.
-  - (* K_Builtin *)
-    apply unique_kinds_uni with (d := T); assumption.
   - (* K_Lam *)
     f_equal.
     apply IHHkind1.
