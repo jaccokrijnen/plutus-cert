@@ -8,10 +8,6 @@ Ltac solver := try solve [repeat (econstructor; eauto)].
 
 Require Import Coq.Lists.List.
 
-Lemma unwrapIFixFresh_ftv_helper F :
-  ~ In (freshUnwrapIFix F) (FreeVars.Ty.ftv F).
-Admitted.
-
 (* Stronger than Kinding.weakening:
   x := freshUnwrapIFix F may shadow something in Δ
    when it is not used, because Δ may contain vars

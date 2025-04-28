@@ -53,6 +53,11 @@ Definition unwrapIFixFresh (F : ty) (K : kind) (T : ty) : ty :=
   let b := freshUnwrapIFix F in 
  (Ty_App (Ty_App F (Ty_Lam b K (Ty_IFix F (Ty_Var b)))) T).
 
+(* Main property of fresh variables: they are fresh*)
+Lemma unwrapIFixFresh_ftv_helper F :
+  ~ In (freshUnwrapIFix F) (FreeVars.Ty.ftv F).
+Admitted.
+
 (** Typing of terms *)
 Reserved Notation "Delta ',,' Gamma '|-+' t ':' T" (at level 101, t at level 0, T at level 0, no associativity).
 Reserved Notation "Delta '|-ok_c' c ':' T" (at level 101, c at level 0, T at level 0).
