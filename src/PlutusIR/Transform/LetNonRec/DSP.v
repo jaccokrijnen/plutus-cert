@@ -301,6 +301,7 @@ Definition P_bindings_well_formed_nonrec Delta Gamma bs : Prop :=
 Definition P_bindings_well_formed_rec Delta Gamma bs1 : Prop := Delta ,, Gamma |-oks_r bs1.
 
 Definition P_binding_well_formed Delta Gamma (rec : recursivity) b : Prop :=
+  rec = NonRec -> (* Richard: In line with under-defined LetRec *)
   (
     forall b',
       Compat.Compat_Binding CNR_Term b b' ->
@@ -435,16 +436,8 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
   - (* W_Data *)
     split. all: intros. all: subst.
     + inv_Compat...
-      eapply compatibility_DatatypeBind; eauto.
-      intros c HIn__c.
-      simpl.
-      simpl in H7.
-      destruct rec.
-      * eapply H7...
-      * (* Why do we have to show it for the recursive case? Maybe we need to put Rec/NonRec inside of Datatype bind?*)
-      admit.
     + inv_CNR...
-Admitted.
+Qed.
 
 
 From PlutusCert Require Import Contextual.
