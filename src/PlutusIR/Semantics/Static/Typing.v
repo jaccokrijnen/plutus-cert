@@ -373,7 +373,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
   (* Simply typed lambda caclulus *)
   | T_Var : forall Γ Δ x T Tn K,
       lookup x Γ = Coq.Init.Datatypes.Some T ->
-      Δ |-* T : K ->
+      Δ |-* T : K -> (* TODO: KindBase? *)
       normalise T Tn ->
       Δ ,, Γ |-+ (Var x) : Tn
   | T_LamAbs : forall Δ Γ x T1 t T2n T1n,
@@ -388,6 +388,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
   (* Universal types *)
   | T_TyAbs : forall Δ Γ X K t Tn,
       ((X, K) :: Δ) ,, Γ |-+ t : Tn ->
+      ((X, K) :: Δ) |-* Tn : Kind_Base ->
       Δ ,, Γ |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
   | T_TyInst : forall Δ Γ t1 T2 T1n X K2 T0n T2n,
       Δ ,, Γ |-+ t1 : (Ty_Forall X K2 T1n) ->
@@ -530,61 +531,6 @@ Combined Scheme has_type__multind from
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
 
-
-(* There is no kind check on the types in the environment, so we can have well-typed terms that have ill-kinded types *)
-Lemma ill_kinded_well_typed_var T :
-  T = Ty_App (Ty_Lam "bX" Kind_Base (Ty_Var "bX")) (Ty_Lam "bY" Kind_Base (Ty_Var "bY")) ->
-  (~ (exists Δ K, Δ |-* T : K) /\ 
-  (nil ,, [("x",  T)] |-+ (Var "x") : (Ty_Lam "bY" Kind_Base (Ty_Var "bY")))).
-Proof.
-  intros; rewrite H.
-  split.
-  {
-    intros Hcontra.
-    destruct Hcontra as [Δ [K Hcontra]].
-    inversion Hcontra; subst.
-    inversion H3; subst.
-    inversion H5.
-  }
-  {
-  eapply T_Var.
-  - simpl. reflexivity.
-  - eapply N_BetaReduce.
-    + eapply N_TyLam.
-      eapply N_TyVar.
-    + eapply N_TyLam.
-      eapply N_TyVar.
-    + autorewrite with substituteTCA.
-      simpl.
-      eapply N_TyLam.
-      eapply N_TyVar.
-  }
-Qed.
-
-(* has_type problem: Ty_Foralls always have to be Kind_Base*)
-Lemma ill_kinded_well_typed_forall T :
-  T = Ty_Forall "X" Kind_Base (Ty_Lam "Z" Kind_Base (Ty_Var "Z")) ->
-  (~ (exists Δ K, Δ |-* T : K) /\ 
-  (nil ,, [("W", Ty_Lam "Z" Kind_Base (Ty_Var "Z"))] |-+ (TyAbs "X" Kind_Base (Var "W")) : T)).
-Proof.
-  intros; subst.
-  split.
-  {
-    intros Hcontra.
-    destruct Hcontra as [Δ [K Hcontra]].
-    inversion Hcontra; subst.
-    inversion H4; subst.
-  }
-  {
-    eapply T_TyAbs.
-    eapply T_Var.
-    - simpl.
-      reflexivity.
-    - econstructor. econstructor. simpl. eauto. (* Even when adding the well-kinded var rule, we still have this issue*)
-    - eapply N_TyLam.
-      eapply N_TyVar.
-  }
-Qed.
 
 Definition well_typed t := exists T, [] ,, [] |-+ t : T.
 
