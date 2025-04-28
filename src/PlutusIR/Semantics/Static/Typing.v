@@ -54,7 +54,7 @@ Definition unwrapIFixFresh (F : ty) (K : kind) (T : ty) : ty :=
  (Ty_App (Ty_App F (Ty_Lam b K (Ty_IFix F (Ty_Var b)))) T).
 
 (* Main property of fresh variables: they are fresh*)
-Lemma unwrapIFixFresh_ftv_helper F :
+Lemma freshUnwrapIFix__fresh F :
   ~ In (freshUnwrapIFix F) (FreeVars.Ty.ftv F).
 Admitted.
 
