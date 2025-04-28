@@ -49,7 +49,7 @@ Definition fromDecl (tvd : tvdecl) : string * kind :=
 Definition freshUnwrapIFix (F : ty) : string :=
   "a" ++ String.concat EmptyString (FreeVars.Ty.ftv F).
 
-Definition unwrapIFixFresh (F : ty) (K : kind) (T : ty) : ty :=
+Definition unwrapIFix (F : ty) (K : kind) (T : ty) : ty :=
   let b := freshUnwrapIFix F in 
  (Ty_App (Ty_App F (Ty_Lam b K (Ty_IFix F (Ty_Var b)))) T).
 
@@ -400,13 +400,13 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       normalise T Tn ->
       Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
       normalise F Fn ->
-      normalise (unwrapIFixFresh Fn K Tn) T0n -> (* Richard: Changed to fresh!*)
+      normalise (unwrapIFix Fn K Tn) T0n -> (* Richard: Changed to fresh!*)
       Δ ,, Γ |-+ M : T0n ->
       Δ ,, Γ |-+ (IWrap F T M) : (Ty_IFix Fn Tn)
   | T_Unwrap : forall Δ Γ M Fn K Tn T0n,
       Δ ,, Γ |-+ M : (Ty_IFix Fn Tn) ->
       Δ |-* Tn : K ->
-      normalise (unwrapIFixFresh Fn K Tn) T0n -> (* Richard: Changed to fresh!*)
+      normalise (unwrapIFix Fn K Tn) T0n -> (* Richard: Changed to fresh!*)
       Δ ,, Γ |-+ (Unwrap M) : T0n
   (* Additional constructs *)
   | T_Constant : forall Δ Γ T a,

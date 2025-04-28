@@ -17,10 +17,10 @@ Lemma weaken_fresh Δ F K K1 :
   Δ |-* F : K -> ((freshUnwrapIFix F, K1)::Δ) |-* F : K.
 Admitted.
 
-Lemma unwrapIFixFresh__well_kinded F K T Δ :
+Lemma unwrapIFix__well_kinded F K T Δ :
   Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
   Δ |-* T : K ->
-  Δ |-* (unwrapIFixFresh F K T) : Kind_Base.
+  Δ |-* (unwrapIFix F K T) : Kind_Base.
 Proof.
   intros.
   eapply K_App with (K1 := K); auto.
@@ -60,7 +60,7 @@ Proof with (eauto || solver).
     }
     eapply substituteTCA_preserves_kinding...
     eapply preservation...
-  - unfold unwrapIFixFresh in H1.
+  - unfold unwrapIFix in H1.
     inversion IHhas_type. subst.
     assert (K = K0) by admit.
     subst.
