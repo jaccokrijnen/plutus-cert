@@ -11,15 +11,14 @@ Require Import Arith.
 
 
 
-Lemma compatibility_Error: forall Delta Gamma S T Tn,
-    Delta |-* T : Kind_Base ->
-    normalise T Tn ->
-    LR_logically_approximate Delta Gamma (Error S) (Error S) Tn.
+Lemma compatibility_Error: forall Delta Gamma S Sn,
+    Delta |-* S : Kind_Base ->
+    normalise S Sn ->
+    LR_logically_approximate Delta Gamma (Error S) (Error S) Sn.
 Proof with eauto_LR.
-  intros Delta Gamma S T Tn Hkind__T Hnorm.
+  intros Delta Gamma S Sn Hnorm Hkind__S.
   unfold LR_logically_approximate.
-  Admitted.
-(*
+  
 
   split...
   split...
@@ -47,6 +46,9 @@ Proof with eauto_LR.
     destruct H1 as [Tn0 H1].
     exists Tn0.
     split...
+    assert (normalise (msubstT (msyn1 rho) S) Tn0) by admit.
+    constructor; eauto.
+    (* some kidns preserved *) admit.
   }
   split. {
     eapply preservation in Hnorm as H...
@@ -55,9 +57,10 @@ Proof with eauto_LR.
     destruct H1 as [Tn0 H1].
     exists Tn0.
     split...
+    admit.
   }
 
   right.
   split... econstructor.
   split...
-Qed. *)
+Admitted.

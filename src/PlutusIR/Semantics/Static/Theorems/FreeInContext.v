@@ -188,6 +188,7 @@ Module Annotation.
     all: try solve [inversion Hafi; subst; eauto using Ty.free_in_context].
     - (* T_TyAbs *)
       dependent destruction Hafi.
+      subst.
       eapply H0 in Hafi...
       rewrite lookup_neq in Hafi...
     - (* T_Let*)

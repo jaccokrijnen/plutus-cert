@@ -12,10 +12,10 @@ Require Import Arith.
 
 Lemma normalise_unwrapIFix_commutes'_1 : forall ck rho Fn K Tn T0n Fn' Tn' T0n',
     RD ck rho ->
-    normalise (unwrapIFixFresh Fn K Tn) T0n ->
+    normalise (unwrapIFix Fn K Tn) T0n ->
     normalise (msubstT (msyn1 rho) Fn) Fn' ->
     normalise (msubstT (msyn1 rho) Tn) Tn' ->
-    normalise (unwrapIFixFresh Fn' K Tn') T0n' ->
+    normalise (unwrapIFix Fn' K Tn') T0n' ->
     normalise (msubstT (msyn1 rho) T0n) T0n'.
 Proof.
 (* ADMIT: Commutativity should hold. *)
@@ -23,10 +23,10 @@ Admitted.
 
 Lemma normalise_unwrapIFix_commutes'_2 : forall ck rho Fn K Tn T0n Fn' Tn' T0n',
     RD ck rho ->
-    normalise (unwrapIFixFresh Fn K Tn) T0n ->
+    normalise (unwrapIFix Fn K Tn) T0n ->
     normalise (msubstT (msyn2 rho) Fn) Fn' ->
     normalise (msubstT (msyn2 rho) Tn) Tn' ->
-    normalise (unwrapIFixFresh Fn' K Tn') T0n' ->
+    normalise (unwrapIFix Fn' K Tn') T0n' ->
     normalise (msubstT (msyn2 rho) T0n) T0n'.
 Proof.
 (* ADMIT: Commutativity should hold. *)
@@ -34,7 +34,7 @@ Admitted.
 
 Lemma compatibility_Unwrap : forall Delta Gamma e e' Fn Tn K T0n,
     Delta |-* Tn : K ->
-    normalise (unwrapIFixFresh Fn K Tn) T0n ->
+    normalise (unwrapIFix Fn K Tn) T0n ->
     LR_logically_approximate Delta Gamma e e' (Ty_IFix Fn Tn)->
     LR_logically_approximate Delta Gamma (Unwrap e) (Unwrap e') T0n.
 Proof with eauto_LR.
@@ -43,8 +43,7 @@ Proof with eauto_LR.
   unfold LR_logically_approximate.
 
   destruct IH_LR as [Htyp__e [Htyp__e' IH__e]].
-  (* TODO: What did I break here by adding kinding assumptions??? *)
-  (* split... split...
+  split... split...
 
   intros k rho env env' HRD HRG.
   subst.
@@ -141,5 +140,5 @@ Proof with eauto_LR.
 
       split... admit. (* ADMIT: I had no time to finish this. Should hold. *)
       split... admit. (* ADMIT: I had no time to finish this. Should hold. *)
-ADMIT: Proof contains admits. *)
+(* ADMIT: Proof contains admits. *)
 Admitted.

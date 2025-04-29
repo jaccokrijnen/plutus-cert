@@ -203,7 +203,7 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
             => if andb (Kind_eqb K K') (Kind_eqb K K'') then
                     normaliser_Jacco Δ T >>= fun Tn =>
                     normaliser_Jacco Δ F >>= fun Fn =>
-                    normaliser_Jacco Δ (unwrapIFixFresh Fn K Tn) >>= fun T0n' =>
+                    normaliser_Jacco Δ (unwrapIFix Fn K Tn) >>= fun T0n' =>
                     if Ty_eqb T0n T0n' then 
                         Some (Ty_IFix Fn Tn)
                     else None 
@@ -215,7 +215,7 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
             | Some (Ty_IFix F T) =>
                 match kind_check Δ T with
                     | Some K =>
-                          normaliser_Jacco Δ (unwrapIFixFresh F K T) >>= fun T0n => Some T0n
+                          normaliser_Jacco Δ (unwrapIFix F K T) >>= fun T0n => Some T0n
                         
                     | _  => None
                     end 
@@ -739,9 +739,9 @@ Proof.
     apply (normaliser_Jacco_complete h) in n; rewrite n; simpl.
     apply (normaliser_Jacco_complete h0) in n0; rewrite n0; simpl.
 
-    assert (Δ0 |-* (unwrapIFixFresh Fn K Tn) : Kind_Base).
+    assert (Δ0 |-* (unwrapIFix Fn K Tn) : Kind_Base).
     {
-      eapply unwrapIFixFresh__well_kinded; eauto.
+      eapply unwrapIFix__well_kinded; eauto.
       - eapply normaliser_preserves_kinding; eauto.
       - eapply normaliser_preserves_kinding; eauto.
     }
@@ -757,9 +757,9 @@ Proof.
   - (* Case: T_Unwrap*)
     rewrite H0.
 
-    assert (Δ0 |-* (unwrapIFixFresh Fn K Tn) : Kind_Base).
+    assert (Δ0 |-* (unwrapIFix Fn K Tn) : Kind_Base).
     {
-      eapply unwrapIFixFresh__well_kinded; eauto.
+      eapply unwrapIFix__well_kinded; eauto.
       apply has_type__basekinded in h.
       inversion h; subst.
       apply (unique_kinds Δ0 Tn K0 K H4) in h0; subst.

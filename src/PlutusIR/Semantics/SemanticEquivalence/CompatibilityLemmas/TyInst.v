@@ -27,14 +27,13 @@ Admitted.
 
 Lemma compatibility_TyInst: forall Delta Gamma e e' X K2 T1n T2 T2n T0n,
     Delta |-* T2 : K2 ->
-    ((X, K2)::Delta) |-* T1n : Kind_Base -> (* Richard: Added *)
     normalise T2 T2n ->
     normalise (substituteTCA X T2n T1n) T0n ->
     LR_logically_approximate Delta Gamma e e' (Ty_Forall X K2 T1n) ->
     LR_logically_approximate Delta Gamma (TyInst e T2) (TyInst e' T2) T0n.
 Proof with eauto_LR.
   intros Delta Gamma e e' X K2 T1n T2 T2n T0n.
-  intros Hkind__T2 Hnorm__T1n Hnorm__T2n Hnorm__T0n IH_LR.
+  intros Hkind__T2 Hnorm__T2n Hnorm__T0n IH_LR.
   unfold LR_logically_approximate.
 
   destruct IH_LR as [Htyp__e [Htyp__e' IH__e]].

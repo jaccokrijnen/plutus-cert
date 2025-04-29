@@ -15,12 +15,14 @@ Require Import Arith.
 
 Lemma compatibility_TyAbs: forall Delta Gamma bX K T e e',
     LR_logically_approximate ((bX, K) :: Delta) (drop_ty_var bX Gamma) e e' T ->
+    ((bX, K) :: Delta) |-* T : Kind_Base ->
     LR_logically_approximate Delta Gamma (TyAbs bX K e) (TyAbs bX K e') (Ty_Forall bX K T).
 Proof with eauto_LR.
   intros Delta Gamma bX K T e e' IH_LR.
   unfold LR_logically_approximate.
 
   destruct IH_LR as [Htyp__e [Htyp__e' IH__e]].
+  intros Hwk.
 
   split... 
   split...
@@ -42,10 +44,8 @@ Proof with eauto_LR.
     eapply eval_result. apply R_Value. apply V_TyAbs.
   }
 
-  split... 
-  (* BROKEN BY new tyabs rule! *)
-  {
-    apply T_TyAbs in Htyp__e.
+  split... {
+    apply T_TyAbs in Htyp__e...
     eapply has_type__basekinded in Htyp__e as H...
     eapply closing_preserves_kinding_1 in H as H0...
     rewrite msubstT_TyForall in H0.
@@ -63,7 +63,7 @@ Proof with eauto_LR.
     eauto.
   }
   split... {
-    apply T_TyAbs in Htyp__e'.
+    apply T_TyAbs in Htyp__e'...
     eapply has_type__basekinded in Htyp__e' as H...
     eapply closing_preserves_kinding_2 in H as H0...
     rewrite msubstT_TyForall in H0.

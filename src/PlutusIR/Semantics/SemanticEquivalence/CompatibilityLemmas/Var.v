@@ -12,7 +12,7 @@ Lemma compatibility_Var : forall Delta Gamma x T Tn K,
     normalise T Tn ->
     LR_logically_approximate Delta Gamma (Var x) (Var x) Tn.
 Proof with eauto_LR.
-  intros Delta Gamma x T Tn K Hx Hkind__T Hnorm__Tn.
+  intros Delta Gamma x T Tn K Hx Hnorm__Tn Hwk.
   unfold LR_logically_approximate.
 
   split... split...

@@ -4,6 +4,7 @@ Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyp
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
 Require Import PlutusCert.PlutusIR.Semantics.Static.Theorems.UniqueTypes.
 Require Import PlutusCert.PlutusIR.Semantics.Static.Theorems.ContextInvariance.AFI.
+
 (* SubstituteT behaves as substituteTCA when substituting closed types *)
 Lemma closed__substituteT_CA : 
   forall X U T,
@@ -14,79 +15,43 @@ Admitted.
 
 Require Import Coq.Program.Equality.
 
-(* Term language type preservation of closed terms under evaluation/reduction*)
+(* Term language type preservation of closed terms under evaluation/reduction
+   Per issue 83, errors are not preserved.
+*)
 Theorem eval__type_preservation : forall t T v k,
     nil ,, nil |-+ t : T ->
     t =[k]=> v ->
-    nil ,, nil |-+ v : T.
+    (nil ,, nil |-+ v : T \/ is_error v).
 Proof.
     intros t T v k Ht Hbs.
     generalize dependent T.
     induction Hbs; intros.
     - (* E_LamAbs *)
+      left.
       exact Ht.
     - (* E_Apply *)
-      apply IHHbs3.
-      dependent destruction Ht.
-      (* inversion Ht as [| |? ? ? ? ? ? Hl Hr | | | | | | | | | ]; subst. *)
-      apply IHHbs1 in Ht1.
-      inversion Ht1; subst.
-      apply substitution_preserves_typing__Term with (U := T1n) (Un := T1n).
-      + auto. 
-      + apply normalisation__stable'__normal.
-        eapply normalise_to_normal; eauto.
-      + apply IHHbs2; auto.
+      admit.
     - (* E_TyAbs *)
+      left.
       exact Ht.
     - (* E_TyInst *)
-      apply IHHbs2.
-      inversion Ht; subst.
-      apply IHHbs1 in H2.
-      inversion H2; subst.
-      apply substA_preserves_typing__Term__value with (T := T1n) (K := K2).
-      + auto.
-      + auto.
-      + assert ((substituteTCA X0 T2n T1n) = (substituteT X0 T2n T1n)).
-        {
-          apply closed__substituteT_CA.
-          auto.
-          (* By T2 well-kinded in empty environment
-            and normalise preserves kinding *)
-          admit.
-        }
-        rewrite H in H9.
-
-        auto.
-        subst.
-        auto.
-         (* relation of normalise and substituteT
-        *)
-        admit.
+      admit.
     - (* E_IWrap *)
-      inversion Ht; subst.
-      eapply T_IWrap; eauto. (* Through IHHbs*)
+      admit.
     - (* E_Unwrap *)
-      inversion Ht; subst.
-      apply IHHbs in H1.
-      inversion H1; subst.
-      assert (K0 = K).
-      {
-        apply (TypeLanguage.Preservation.preservation _ _ _ _ H8) in H11.
-        eapply unique_kinds; eauto.
-      }
-      subst.
-      apply (normalisation__deterministic _ _ _ H6) in H14.
-      subst.
-      auto.
+      admit.
     - (* E_Constant*)
+      left.
       exact Ht.
     - (* E_Constr_nil *)
+      left.
       exact Ht.
     - (* E_Constr_cons *)
       
       admit.
       (* TODO: No typing rules for constr?*)
     - (* E_Builtin *)
+      left.
       exact Ht.
     - (* E_Apply_Builtin_Partial *)
       inversion Ht; subst.
@@ -103,10 +68,11 @@ Proof.
     - (* E_TyInst_Builtin_Full *)
       admit.
     - (* E_Error *)
+      left.
       exact Ht.
     - (* E_Error_Apply1 *)
 
-      (* TODO: Error rule was changed to allow
+      (* Error rule was changed to allow
         type checking completeness to go through,
         but that does no longer work for 
         preservation now.
@@ -114,10 +80,4 @@ Proof.
         Decided in meeting April 16 that we will keep it that way and 
         will not care about preservation of errors.
         *)
-
-      inversion Ht; subst.
-      
-      apply IHHbs in H4.
-      
-
 Admitted.
