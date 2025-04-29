@@ -93,7 +93,7 @@ Proof with eauto_LR.
   split...
   split...
 
-  rewrite <- minus_n_O.
+  rewrite Nat.sub_0_r.
   intros i Hlt__i v_0 v'_0 [H_pure_v_0 H_pure_v'_0] HRV.
 
   apply RV_unfolded_to_RV in HRV.
