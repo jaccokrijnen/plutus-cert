@@ -84,6 +84,7 @@ src/PlutusIR/Semantics/Static/Builtins/Signatures.v
 src/PlutusIR/Semantics/Static/Util.v
 
 src/PlutusIR/Semantics/Static/Typing.v
+src/PlutusIR/Semantics/Static/Binders_Wellkinded.v
 src/PlutusIR/Semantics/Static/Typing_sound_complete.v
 
 src/PlutusIR/Semantics/Static/Kinding/Checker.v

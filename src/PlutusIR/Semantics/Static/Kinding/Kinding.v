@@ -137,6 +137,15 @@ Inductive map_wk_e : list (string * ty) -> Prop :=
       has_kind Δ T K ->
       map_wk_e ((X, T) :: xs).
 
+(* TODO: there is probably a higher order thing to create stuff like this *)
+Inductive map_wk_e_type : list (string * ty) -> Type :=
+  | MW_nil_e_type :
+      map_wk_e_type nil
+  | MW_cons_e_type : forall X Δ T (xs : list (string * ty)) K,
+      map_wk_e_type xs ->
+      has_kind Δ T K ->
+      map_wk_e_type ((X, T) :: xs).
+
 (* TODO: Is this what we usually call app? *)
 Lemma map_wk_app_e : forall xs ys,
   map_wk_e xs ->
