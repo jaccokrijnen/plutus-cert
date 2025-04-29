@@ -204,7 +204,7 @@ Proof.
   destruct H2. subst.
   eexists. eexists.
   split. eapply eval_result. eapply eval_to_result__eval. eauto.
-  rewrite Nat.sub_0_r.
+  rewrite <- minus_n_O.
   eauto.
 Qed.
 

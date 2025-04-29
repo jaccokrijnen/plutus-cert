@@ -5,7 +5,7 @@
 
 all: Makefile.coq
 	mkdir -p hs-src/PlutusIR/Certifier
-#	+make -C lib/QuickChick
+	+make -C lib/QuickChick
 	+make -f Makefile.coq all
 	sed -i 's/module Extracted/module PlutusIR.Certifier.Extracted/' hs-src/PlutusIR/Certifier/Extracted.hs
 	sed -i 's/GHC.Base.unsafeCoerce/Unsafe.Coerce.unsafeCoerce/' hs-src/PlutusIR/Certifier/Extracted.hs

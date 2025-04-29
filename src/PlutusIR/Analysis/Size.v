@@ -133,6 +133,18 @@ Lemma bind_binds_struct b bs : binding_size b < bindings_size (b :: bs).
 Proof. unfold bindings_size, Folds.foldBindingsUse, Folds.foldBindings. simpl. intuition. Qed.
 
 
+(* Sum of two sizes decrease*)
+Definition plus_lt_r : forall n m p : nat, n < m -> n + p < m + p :=
+  Plus.plus_lt_compat_r.
+
+Definition plus_lt_l : forall n m p : nat, n < m -> p + n < p + m :=
+  Plus.plus_lt_compat_l.
+
+Definition plus_lt_lr : forall n m p q : nat, n < m -> p < q -> n + p < m + q :=
+  Plus.plus_lt_compat.
+
+
+
 
 Section NonFold.
 
