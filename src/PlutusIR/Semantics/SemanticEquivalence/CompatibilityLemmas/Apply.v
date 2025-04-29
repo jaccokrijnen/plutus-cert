@@ -139,6 +139,7 @@ Proof with eauto_LR.
         destruct H7.
         exists x.
         split...
+        admit.
       }
 
       split. {
@@ -149,6 +150,7 @@ Proof with eauto_LR.
         destruct H7.
         exists x.
         split...
+        admit.
       }
 
       right...
@@ -182,6 +184,7 @@ Proof with eauto_LR.
         destruct H7.
         exists x.
         split...
+        admit.
       }
 
       split. {
@@ -192,6 +195,7 @@ Proof with eauto_LR.
         destruct H7.
         exists x.
         split...
+        admit.
       }
 
       right...

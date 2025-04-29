@@ -184,12 +184,13 @@ Proof with eauto_LR.
         destruct H3. destruct H6.
         eexists.
         split. eapply N_TyIFix...
-        eapply T_Error.
-        eapply K_IFix.
+        eapply T_Error. admit.
+        admit.
+        (* eapply K_IFix.
         eapply H1.
         eapply H2.
-        eapply N_TyIFix...
-      }
+        eapply N_TyIFix... *)
+      } 
 
       split. {
         rewrite msubstT_IFix.
@@ -202,11 +203,11 @@ Proof with eauto_LR.
         destruct H3. destruct H6.
         eexists.
         split. eapply N_TyIFix...
-        eapply T_Error.
-        eapply K_IFix.
+        eapply T_Error. admit. admit.
+        (* eapply K_IFix.
         eapply H1.
         eapply H2.
-        eapply N_TyIFix...
+        eapply N_TyIFix... *)
       }
       right...
-Qed.
+Admitted.

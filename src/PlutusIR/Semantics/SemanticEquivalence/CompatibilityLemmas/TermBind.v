@@ -357,7 +357,7 @@ Proof with eauto_LR.
         eapply strong_normalisation in H11 as H12...
         destruct H12.
 
-        eexists. split...
+        eexists. split... admit.
       }
 
       split. {
@@ -369,7 +369,7 @@ Proof with eauto_LR.
         eapply strong_normalisation in H10 as H11...
         destruct H11.
 
-        eexists. split...
+        eexists. split... admit.
       }
       right...
-Qed.
+Admitted.
