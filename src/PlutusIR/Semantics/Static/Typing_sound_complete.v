@@ -166,7 +166,11 @@ Definition bindings_well_formed_rec_check : (binding -> bool) -> list binding ->
 
 Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * ty)) (term : term) {struct term} : (option ty) :=
     match term with
-    | Var x => lookup x Γ >>= fun T => normaliser_Jacco Δ T
+    | Var x => lookup x Γ >>= fun T => 
+                match kind_check Δ T with
+                | Some Kind_Base => normaliser_Jacco Δ T
+                | _ => None
+                end
     | LamAbs x T1 t => 
         normaliser_Jacco Δ T1 >>= fun T1n =>
         match type_check Δ ((x, T1n) :: Γ) t, kind_check Δ T1 with
@@ -188,10 +192,7 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
           *)
 
         match type_check ((X, K) :: Δ) (drop_ty_var X Γ) t with
-        | Some T => match kind_check ((X, K)::Δ) T with
-                    | Some Kind_Base => Some (Ty_Forall X K T)
-                    | _ => None
-                    end
+        | Some T => Some (Ty_Forall X K T)
         | _ => None
         end
     | TyInst t1 T2 => (* TODO: normalisation T1?*)
@@ -481,13 +482,12 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
       * eapply Q. auto.
       * apply kind_checking_sound in Heqo1.  auto.
   - intros. 
-    inversion H.
+    inversion H; subst.
     unfold bind in H1.
-    repeat destruct_match.
+    repeat destruct_match; subst.
     remember H1 as H1_copy; clear HeqH1_copy.
-    apply normaliser_Jacco__well_kinded in H1 as [K H1].
-    apply T_Var with (T := t0) (K := K); auto.
-    apply kind_checking_complete in H1.
+    apply T_Var with (T := t0); auto.
+    eapply kind_checking_sound in Heqo0; auto.
     now apply normaliser_Jacco_sound in H1_copy.
   - intros. 
     inversion H0.
@@ -505,11 +505,9 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
     apply T_LamAbs...
   - intros.
     inversion H1.
-    unfold bind in H3.
     repeat destruct_match.
-    inversion H3.
-    subst.
-    eapply T_Apply.
+    inversion H3; subst.
+    eapply T_Apply with (T1n := t3_1).
     + eapply H; eauto.
     + eapply H0; eauto.
       apply Ty_eqb_eq in Heqb.
@@ -684,18 +682,13 @@ Qed.
 (* this doesnt work inline...*)
 Lemma oof2 X K Δ Γ t Tn :
   type_check ((X, K) :: Δ) Γ t = Some Tn ->
-  kind_check ((X, K) :: Δ) Tn = Some Kind_Base ->
   match type_check ((X, K) :: Δ) Γ t with
-  | Some T => match kind_check ((X, K) :: Δ) T with
-              | Some Kind_Base => Some (Ty_Forall X K T)
-              | _ => None
-              end
+  | Some T => Some (Ty_Forall X K T)
   | None => None
   end = Some (Ty_Forall X K Tn).
 Proof.
     intros.
     rewrite H.
-    rewrite H0.
     reflexivity.
 Qed.
 
@@ -717,7 +710,10 @@ Proof.
         ; simpl; auto; intros.
   - (*Case T_Var *)
     rewrite e. simpl. 
+    eapply kind_checking_complete in h.
+    rewrite h.
     eapply normaliser_Jacco_complete; eauto.
+    eapply kind_checking_sound; eauto.
   - (* Case: T_LamAbs *)
     eapply (normaliser_Jacco_complete h) in n.
     rewrite n. simpl.
@@ -729,7 +725,6 @@ Proof.
     now rewrite -> Ty_eqb_refl.
   - (* Case: T_TyAbs *) 
     apply oof2; auto.
-    eapply kind_checking_complete; auto.
   - (* Case: T_Inst *)
     rewrite H0.
     apply (normaliser_Jacco_complete h0) in n; rewrite n; simpl.

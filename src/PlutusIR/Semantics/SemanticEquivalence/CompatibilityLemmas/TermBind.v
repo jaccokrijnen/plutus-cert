@@ -357,7 +357,11 @@ Proof with eauto_LR.
         eapply strong_normalisation in H11 as H12...
         destruct H12.
 
-        eexists. split... admit.
+        eexists. split...
+        (* ADMIT: This is not provable in the current formulation of RC.
+          This subproof is not necessary in the new formulation of RC: R. 
+         *)
+        admit.
       }
 
       split. {
@@ -369,7 +373,11 @@ Proof with eauto_LR.
         eapply strong_normalisation in H10 as H11...
         destruct H11.
 
-        eexists. split... admit.
+        eexists. split...
+        (* ADMIT: This is not provable in the current formulation of RC.
+          This subproof is not necessary in the new formulation of RC: R. 
+         *)
+        admit.
       }
       right...
 Admitted.
