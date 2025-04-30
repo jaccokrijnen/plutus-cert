@@ -3,5 +3,5 @@
 	url = https://github.com/Xiving/coq-ctproxy
 [submodule "lib/QuickChick"]
 	path = lib/QuickChick
-	url = https://github.com/Xiving/QuickChick
-	branch = dec-derivining-mutind-bugfix
+	url = https://github.com/QuickChick/QuickChick.git
+	branch = v2.0.4
