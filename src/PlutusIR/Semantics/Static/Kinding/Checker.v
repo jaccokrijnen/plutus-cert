@@ -148,10 +148,10 @@ Proof.
       apply IHty.
       assumption.
     - (* Ty_Builtin *)
-      repeat destruct_match; subst.
+      repeat destruct_match.
       inversion H0; subst.
-      apply kind_checking_default_uni_sound in Heqo.
-      apply K_Builtin.
+      constructor.
+      eapply kind_checking_default_uni_sound.
       assumption.
     - (* Ty_Lam *)
       destruct_match.
@@ -259,8 +259,9 @@ Proof.
       rewrite IHHkind.
       auto.
     - (* Ty_Builtin *)
+      
       apply kind_checking_default_uni_complete in H.
-      rewrite -> H.
+      rewrite H.
       reflexivity.
     - (* Ty_Lam *)
       rewrite IHHkind.
