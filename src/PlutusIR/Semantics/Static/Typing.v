@@ -371,9 +371,9 @@ Qed.
 
 Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty -> Prop :=
   (* Simply typed lambda caclulus *)
-  | T_Var : forall Γ Δ x T Tn K,
+  | T_Var : forall Γ Δ x T Tn,
       lookup x Γ = Coq.Init.Datatypes.Some T ->
-      Δ |-* T : K -> (* TODO: KindBase? *)
+      Δ |-* T : Kind_Base ->
       normalise T Tn ->
       Δ ,, Γ |-+ (Var x) : Tn
   | T_LamAbs : forall Δ Γ x T1 t T2n T1n,
@@ -388,7 +388,6 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
   (* Universal types *)
   | T_TyAbs : forall Δ Γ X K t Tn,
       ((X, K) :: Δ) ,, Γ |-+ t : Tn ->
-      ((X, K) :: Δ) |-* Tn : Kind_Base ->
       Δ ,, Γ |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
   | T_TyInst : forall Δ Γ t1 T2 T1n X K2 T0n T2n,
       Δ ,, Γ |-+ t1 : (Ty_Forall X K2 T1n) ->
