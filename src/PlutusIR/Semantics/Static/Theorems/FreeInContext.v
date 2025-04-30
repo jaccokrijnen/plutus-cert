@@ -224,8 +224,8 @@ Module Annotation.
         erewrite <- notIn__lookup_append...
     - (* W_Data *)
       inversion Hafi. subst.
-      inversion H9. subst.
-      destruct H11 as [c [HIn__c Hafi__c]].
+      inversion H10. subst.
+      destruct H12 as [c [HIn__c Hafi__c]].
       erewrite <- notIn__lookup_append...
       simpl in H7.
       simpl in H8.

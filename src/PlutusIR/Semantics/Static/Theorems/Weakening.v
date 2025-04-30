@@ -112,11 +112,18 @@ Module Typing.
       apply drop_Δ__preserves__inclusion. assumption.
     - (* W_Data *)
       econstructor...
-      subst; intros.
-      eapply H8...
-      apply inclusion_append.
-      destruct rec; auto.
-      eapply drop_Δ'__preserves__inclusion. assumption.
+      + subst; intros.
+        eapply H8...
+        apply inclusion_append.
+        destruct rec; auto.
+        eapply drop_Δ'__preserves__inclusion. assumption.
+      + destruct rec; auto.
+        * apply Kinding.weakening with (Delta := fromDecl XK :: rev (map fromDecl YKs) ++ drop_Δ' Δ [X]); subst; auto.
+          apply inclusion_cons; auto.
+          apply inclusion_append.
+          eapply drop_Δ'__preserves__inclusion. assumption.
+        * apply Kinding.weakening with (Delta := rev (map fromDecl YKs) ++ Δ); subst; auto.
+          apply inclusion_append; auto.
   Qed.
 
   Lemma weakening_empty : forall Delta Gamma t T,

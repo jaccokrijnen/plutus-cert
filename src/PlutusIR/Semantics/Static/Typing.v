@@ -711,9 +711,13 @@ with binding_well_formed : list (string * kind) -> list (string * ty) -> recursi
       (forall c, In c cs -> Δ' |-ok_c c : Tres) ->
 
       (* The expected result type is well-kinded *)
-      (* In the case that this DatatypeBind is in a let-rec, X will already be
-       * in Δ, hence we check for this to keep our NoDup invariant on Delta
+      (* In the case that this DatatypeBind is in a let-nonrec, 
+         we must add X to the kinding context to type the return type (its name is not yet available in Delta')
        *)
+       match rec with
+        | NonRec => (fromDecl XK :: Δ') |-* Tres : Kind_Base
+        | Rec => Δ' |-* Tres : Kind_Base
+       end ->
 
       Δ ,, Γ |-ok_b rec # (DatatypeBind dtd)
 
