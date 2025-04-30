@@ -111,4 +111,4 @@ Proof with eauto with hintdb_compat_context.
 
   all: intros Δ1 Γ1 Δ Γ T T1 H_C_ty.
   all: inversion H_C_ty; subst...
-Admitted. (* TODO: Why is this proof now incomplete? *)
+Qed.
