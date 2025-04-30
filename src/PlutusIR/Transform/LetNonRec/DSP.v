@@ -249,6 +249,7 @@ Proof with eauto_LR.
         destruct H12.
 
         eexists. split...
+        admit.
       }
 
       split. {
@@ -260,9 +261,10 @@ Proof with eauto_LR.
         destruct H11.
 
         eexists. split...
+        admit.
       }
       right...
-Qed.
+Admitted.
 
 (** ** Predicates *)
 

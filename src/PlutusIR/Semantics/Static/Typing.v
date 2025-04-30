@@ -46,7 +46,17 @@ Definition fromDecl (tvd : tvdecl) : string * kind :=
   | TyVarDecl v K => (v, K)
   end.
 
-Definition unwrapIFix (F : ty) (K : kind) (T : ty) : ty := (Ty_App (Ty_App F (Ty_Lam "X" K (Ty_IFix F (Ty_Var "X")))) T).
+Definition freshUnwrapIFix (F : ty) : string :=
+  "a" ++ String.concat EmptyString (FreeVars.Ty.ftv F).
+
+Definition unwrapIFix (F : ty) (K : kind) (T : ty) : ty :=
+  let b := freshUnwrapIFix F in 
+ (Ty_App (Ty_App F (Ty_Lam b K (Ty_IFix F (Ty_Var b)))) T).
+
+(* Main property of fresh variables: they are fresh*)
+Lemma freshUnwrapIFix__fresh F :
+  ~ In (freshUnwrapIFix F) (FreeVars.Ty.ftv F).
+Admitted.
 
 (** Typing of terms *)
 Reserved Notation "Delta ',,' Gamma '|-+' t ':' T" (at level 101, t at level 0, T at level 0, no associativity).
@@ -363,6 +373,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
   (* Simply typed lambda caclulus *)
   | T_Var : forall Γ Δ x T Tn,
       lookup x Γ = Coq.Init.Datatypes.Some T ->
+      Δ |-* T : Kind_Base ->
       normalise T Tn ->
       Δ ,, Γ |-+ (Var x) : Tn
   | T_LamAbs : forall Δ Γ x T1 t T2n T1n,
@@ -390,13 +401,13 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       normalise T Tn ->
       Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
       normalise F Fn ->
-      normalise (unwrapIFix Fn K Tn) T0n ->
+      normalise (unwrapIFix Fn K Tn) T0n -> (* Richard: Changed to fresh!*)
       Δ ,, Γ |-+ M : T0n ->
       Δ ,, Γ |-+ (IWrap F T M) : (Ty_IFix Fn Tn)
   | T_Unwrap : forall Δ Γ M Fn K Tn T0n,
       Δ ,, Γ |-+ M : (Ty_IFix Fn Tn) ->
       Δ |-* Tn : K ->
-      normalise (unwrapIFix Fn K Tn) T0n ->
+      normalise (unwrapIFix Fn K Tn) T0n -> (* Richard: Changed to fresh!*)
       Δ ,, Γ |-+ (Unwrap M) : T0n
   (* Additional constructs *)
   | T_Constant : forall Δ Γ T a,
@@ -405,10 +416,10 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       T = lookupBuiltinTy f ->
       normalise T Tn ->
       Δ ,, Γ |-+ (Builtin f) : Tn
-  | T_Error : forall Δ Γ S T Tn,
-      Δ |-* T : Kind_Base ->
-      normalise T Tn ->
-      Δ ,, Γ |-+ (Error S) : Tn
+  | T_Error : forall Δ Γ S Sn,
+      Δ |-* S : Kind_Base ->
+      normalise S Sn ->
+      Δ ,, Γ |-+ (Error S) : Sn
   (** Let-bindings
       Note: The rules for let-constructs differ significantly from the paper definitions
       because we had to adapt the typing rules to the compiler implementation of type checking.
@@ -518,6 +529,7 @@ Combined Scheme has_type__multind from
   bindings_well_formed_nonrec__ind,
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
+
 
 Definition well_typed t := exists T, [] ,, [] |-+ t : T.
 
