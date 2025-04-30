@@ -1238,3 +1238,42 @@ Proof.
       * simpl in H_Rl. apply de_morgan2 in H_Rl as [_ H_Rl]. auto.
       * simpl in H_Rr. apply de_morgan2 in H_Rr as [_ H_Rr]. auto.
 Qed.
+
+
+(*
+  Suppose x in tv s.
+  Then Alpha [(x, x); (x, x')] s s
+  => (alpha_cons)
+    Alpha [(x, x)] x x
+
+  Otherwise it is not in s, and so the (x, x') is vacuous.
+We need the freshness condition since we do not have:
+  Alpha [(x, x); (x, x')] x' x'
+  *)
+Lemma alphaIdShadowsVacuous x x' s :
+  ~ (In x' (tv s)) -> Alpha [(x, x); (x, x')] s s.
+Proof.
+  intros Hfresh.
+  induction s.
+  -  (* Case: variable *)
+    apply alpha_var.
+    destr_eqb_eq x s.
+    + now apply alpha_var_cons.
+    + apply not_in_cons in Hfresh as [Hfresh _].
+      now repeat apply alpha_var_diff;
+      try apply alpha_var_refl.
+  - (* Case: lambda *)
+    apply alpha_lam.
+    apply not_in_cons in Hfresh as [HfreshS HfreshS0].
+    destr_eqb_eq x' x;
+    destr_eqb_eq x s.
+    all: 
+        apply alpha_extend_id;
+        [ repeat try constructor; now try assumption
+        | now apply IHs ].
+  - (* Case: app *)
+    apply alpha_app;
+    [apply IHs1 | apply IHs2]; 
+    now apply not_in_app in Hfresh as [Hfresh1 Hfresh2].
+  - constructor.
+Qed.

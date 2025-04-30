@@ -994,7 +994,7 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
     }
 Qed.
 
-Search "unique".
+Print Assumptions type_checking_complete.
 
 (* Extraction Language Haskell.
 Redirect "type_check.hs" Recursive Extraction type_check. *)
