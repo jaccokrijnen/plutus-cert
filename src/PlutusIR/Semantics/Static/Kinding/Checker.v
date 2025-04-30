@@ -21,7 +21,7 @@ Fixpoint kind_check_default_uni (d : DefaultUni) : option kind :=
       | (Some (Kind_Arrow k k'), Some k'') => if Kind_eqb k'' k then Some k' else None
       | _ => None
       end
-  | DefaultUniProtoPair
+  | DefaultUniProtoPair => Some (Kind_Arrow Kind_Base (Kind_Arrow Kind_Base Kind_Base))
   | DefaultUniProtoList => Some (Kind_Arrow Kind_Base Kind_Base)
   end.
 
@@ -91,7 +91,10 @@ Fixpoint kind_check (Delta : list (binderTyname * kind)) (ty : ty) : (option kin
         | _ => None
         end
     | Ty_Builtin d =>
-        kind_check_default_uni d
+        match kind_check_default_uni d with
+        | Some Kind_Base => Some Kind_Base
+        | _ => None
+        end
     | Ty_Lam X K1 T => 
         match kind_check ((X, K1) :: Delta) T with
         | Some K2 => Some (Kind_Arrow K1 K2)
@@ -144,8 +147,10 @@ Proof.
       apply IHty.
       assumption.
     - (* Ty_Builtin *)
-      apply kind_checking_default_uni_sound in H0.
-      apply K_Builtin.
+      repeat destruct_match.
+      inversion H0; subst.
+      constructor.
+      eapply kind_checking_default_uni_sound.
       assumption.
     - (* Ty_Lam *)
       destruct_match.
@@ -188,8 +193,10 @@ Proof.
       rewrite -> IHHkind.
       reflexivity.
     - (* Ty_Builtin *)
+      
       apply kind_checking_default_uni_complete in H.
-      assumption.
+      rewrite H.
+      reflexivity.
     - (* Ty_Lam *)
       rewrite -> IHHkind.
       reflexivity.
