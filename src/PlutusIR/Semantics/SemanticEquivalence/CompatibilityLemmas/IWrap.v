@@ -184,12 +184,11 @@ Proof with eauto_LR.
         destruct H3. destruct H6.
         eexists.
         split. eapply N_TyIFix...
-        eapply T_Error. admit.
-        admit.
-        (* eapply K_IFix.
-        eapply H1.
-        eapply H2.
-        eapply N_TyIFix... *)
+        eapply T_Error.
+        (* ADMIT: This is not provable in the current formulation of RC.
+          This subproof is not necessary in the new formulation of RC: R. 
+         *)
+        admit. admit.
       } 
 
       split. {
@@ -203,11 +202,11 @@ Proof with eauto_LR.
         destruct H3. destruct H6.
         eexists.
         split. eapply N_TyIFix...
-        eapply T_Error. admit. admit.
-        (* eapply K_IFix.
-        eapply H1.
-        eapply H2.
-        eapply N_TyIFix... *)
+        eapply T_Error.
+        (* ADMIT: This is not provable in the current formulation of RC.
+          This subproof is not necessary in the new formulation of RC: R. 
+         *)
+        admit. admit.
       }
       right...
 Admitted.

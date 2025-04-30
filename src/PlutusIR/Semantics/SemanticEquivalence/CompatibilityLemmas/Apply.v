@@ -140,6 +140,9 @@ Proof with eauto_LR.
         exists x.
         split...
         admit.
+        (* ADMIT: This is not provable in the current formulation of RC.
+          This subproof is not necessary in the new formulation of RC: R. 
+         *)
       }
 
       split. {
@@ -151,6 +154,9 @@ Proof with eauto_LR.
         exists x.
         split...
         admit.
+        (* ADMIT: This is not provable in the current formulation of RC.
+          This subproof is not necessary in the new formulation of RC: R. 
+         *)
       }
 
       right...
@@ -185,6 +191,9 @@ Proof with eauto_LR.
         exists x.
         split...
         admit.
+        (* ADMIT: This is not provable in the current formulation of RC.
+          This subproof is not necessary in the new formulation of RC: R. 
+         *)
       }
 
       split. {
@@ -195,6 +204,9 @@ Proof with eauto_LR.
         destruct H7.
         exists x.
         split...
+        (* ADMIT: This is not provable in the current formulation of RC.
+          This subproof is not necessary in the new formulation of RC: R. 
+         *)
         admit.
       }
 
