@@ -3,6 +3,7 @@ Require Import PlutusCert.Util.List.
 From PlutusCert Require Import 
   Kinding.Kinding 
   util
+  Free
   Weakening
   Static.TypeSubstitution.
 
@@ -11,6 +12,270 @@ Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Arith.Wf_nat.
+
+Require Import Coq.Program.Equality.
+
+(* 
+  Trivial cases with copilot    
+*)
+Lemma kinding_weakening_fresh : forall X T L K Δ,
+  ~ In X (ftv T) ->
+  Δ |-* T : K -> ((X, L) :: Δ) |-* T : K.
+Proof.
+  intros.
+  generalize dependent Δ.
+  generalize dependent K.
+  generalize dependent L.
+  induction T; intros; inversion H0; subst.
+  - (* Ty_Var *)
+    rename t into Y.
+    destruct (X =? Y)%string eqn:Heqb.
+    + (* X = Y *)
+      simpl in H.
+      contradiction H.
+      left.
+      symmetry.
+      apply eqb_eq; auto.
+    + (* X <> Y *)
+      constructor.
+      simpl.
+      rewrite Heqb.
+      assumption.
+  - (* Ty_Fun *)
+    constructor.
+    + eapply IHT1; auto.
+      simpl in H.
+      apply not_in_app in H.
+      destruct H; auto.
+    + eapply IHT2; auto.
+      simpl in H.
+      apply not_in_app in H.
+      destruct H; auto.
+  - (* Ty_IFix *)
+    econstructor.
+    + eapply IHT2; eauto.
+      simpl in H.
+      apply not_in_app in H.
+      destruct H; auto.
+    + eapply IHT1; auto.
+      simpl in H.
+      apply not_in_app in H.
+      destruct H; auto.
+  - (* Ty_Forall *)
+    rename b into Z.
+    rename k into K1.
+    destruct (X =? Z)%string eqn:Heqb.
+    + (* X = Z *)
+      apply eqb_eq in Heqb. symmetry in Heqb. subst.
+      constructor.
+      inversion H0; subst.
+      eapply Kinding.weakening with (Delta := ((X, K1)::Δ)).
+      eapply inclusion_shadow_right; eauto.
+      auto.
+    + (* X <> Z *)
+      constructor.
+      eapply Kinding.weakening with (Delta := ((X, L)::(Z, K1)::Δ)).
+      { eapply inclusion_swap; auto.
+        apply eqb_neq in Heqb; auto. }
+      eapply IHT.
+      * simpl in H.
+        apply not_in_remove in H.
+        destruct H; auto.
+        subst.
+        apply eqb_neq in Heqb; auto.
+      * assumption.
+  - (* Ty_Builtin *)
+    constructor.
+    assumption.
+  - (* Ty_Lam *)
+    rename b into Z.
+    rename k into K1.
+    destruct (X =? Z)%string eqn:Heqb.
+    + (* X = Z *)
+      apply eqb_eq in Heqb. symmetry in Heqb. subst.
+      constructor.
+      inversion H0; subst.
+      eapply Kinding.weakening with (Delta := ((X, K1)::Δ)).
+      eapply inclusion_shadow_right; eauto.
+      auto.
+    + (* X <> Z *)
+      constructor.
+      eapply Kinding.weakening with (Delta := ((X, L)::(Z, K1)::Δ)).
+      { eapply inclusion_swap; auto.
+        apply eqb_neq in Heqb; auto. }
+      eapply IHT.
+      * simpl in H.
+        apply not_in_remove in H.
+        destruct H; auto.
+        subst.
+        apply eqb_neq in Heqb; auto.
+      * assumption.
+  - (* Ty_App *)
+    econstructor.
+    + eapply IHT1; eauto.
+      simpl in H.
+      apply not_in_app in H.
+      destruct H; auto.
+    + eapply IHT2; auto.
+      simpl in H.
+      apply not_in_app in H.
+      destruct H; auto.
+  - (* Ty_SOP *)
+    (* ADMIT: Ty_SOP: Unimplemented *)
+Admitted.
+
+(* Note: Not strictly necessary to work with tv,
+    but easier to prove than with ftv *)
+Lemma rename_preserves_kinding X Y K L Δ T:
+  ~ In Y (plutusTv T) ->
+  ((X, L) :: Δ) |-* T : K -> 
+  ((Y, L) :: Δ) |-* (rename X Y T) : K.
+Proof.
+  intros Hfresh Hkind.
+  generalize dependent Δ.
+  generalize dependent K.
+  generalize dependent L.
+  induction T; intros; inversion Hkind; subst.
+  - (* K_Var *)
+    rename t into Z.
+    destruct (X =? Z)%string eqn:Heqb.
+    + (* X = Z *)
+      apply eqb_eq in Heqb as Heq.
+      subst.
+      inversion Hkind; subst.
+      rewrite lookup_eq in H1.
+      unfold rename.
+      unfold substituteT.
+      rewrite String.eqb_refl.
+      constructor.
+      rewrite lookup_eq.
+      assumption.
+    + (* X <> Z *)
+      unfold rename.
+      unfold substituteT.
+      rewrite Heqb.
+      apply eqb_neq in Heqb as Hneq.
+      inversion Hkind; subst.
+      rewrite lookup_neq in H1; auto.
+      unfold rename.
+      unfold substituteT.
+      constructor. auto.
+      rewrite lookup_neq; auto.
+      simpl in Hfresh. intuition.
+  - (* K_Fun *)
+    unfold rename.
+    simpl.
+    constructor.
+    + unfold rename in IHT1.
+      eapply IHT1; auto.
+      simpl in Hfresh; auto with *.
+    + unfold rename in IHT2.
+      eapply IHT2; auto.
+      simpl in Hfresh; auto with *.
+  - (* K_IFix *)
+    unfold rename.
+    simpl.
+    econstructor.
+    + unfold rename in IHT2.
+      eapply IHT2; eauto.
+      simpl in Hfresh; auto with *.
+    + unfold rename in IHT1.
+      eapply IHT1; eauto.
+      simpl in Hfresh; auto with *.
+  - (* Ty_Forall *)
+    rename b into Z.
+    rename k into K1.
+    destruct (X =? Z)%string eqn:Heqb.
+    + (* X = Z *)
+      apply eqb_eq in Heqb. symmetry in Heqb. subst.
+      unfold rename; simpl; rewrite String.eqb_refl.
+      constructor.
+      destr_eqb_eq X Y.
+      * (* Y = X *)
+        assumption.
+      * eapply Kinding.weakening.
+        eapply inclusion_swap; auto.
+        apply kinding_weakening_fresh; auto.
+        {          
+          apply weaken_not_plutusTv_to_not_ftv.
+          simpl in Hfresh; intuition.
+        }
+        simpl in Hfresh; intuition.
+        eapply Kinding.weakening in H4; eauto.
+        apply inclusion_shadow_left.
+    + (* X <> Z *)
+      unfold rename; simpl; rewrite Heqb.
+      constructor.
+      destr_eqb_eq Z Y.
+      * contradiction Hfresh.
+        simpl. left. reflexivity.
+      * unfold rename in IHT.
+        eapply Kinding.weakening with (Delta := ((Y, L) :: (Z, K1) :: Δ)).
+        eapply inclusion_swap; auto.
+        eapply IHT; auto.
+        {          
+          simpl in Hfresh; intuition.
+        }
+        simpl in Hfresh; intuition.
+        eapply Kinding.weakening.
+        eapply inclusion_swap; eauto.
+        apply eqb_neq in Heqb; auto.
+        assumption.
+  - (* Ty_Builtin *)
+    constructor.
+    assumption.
+  - (* Ty_Lam *)
+    rename b into Z.
+    rename k into K1.
+    destruct (X =? Z)%string eqn:Heqb.
+    + (* X = Z *)
+      apply eqb_eq in Heqb. symmetry in Heqb. subst.
+      unfold rename; simpl; rewrite String.eqb_refl.
+      constructor.
+      destr_eqb_eq X Y.
+      * (* Y = X *)
+        assumption.
+      * eapply Kinding.weakening.
+        eapply inclusion_swap; auto.
+        apply kinding_weakening_fresh; auto.
+        {          
+          apply weaken_not_plutusTv_to_not_ftv.
+          simpl in Hfresh; intuition.
+        }
+        simpl in Hfresh; intuition.
+        eapply Kinding.weakening in H4; eauto.
+        apply inclusion_shadow_left.
+    + (* X <> Z *)
+      unfold rename; simpl. rewrite Heqb.
+      constructor.
+      destr_eqb_eq Z Y.
+      * contradiction Hfresh.
+        simpl. left. reflexivity.
+      * unfold rename in IHT.
+        eapply Kinding.weakening with (Delta := ((Y, L) :: (Z, K1) :: Δ)).
+        eapply inclusion_swap; auto.
+        eapply IHT; auto.
+        {          
+          simpl in Hfresh; intuition.
+        }
+        simpl in Hfresh; intuition.
+        eapply Kinding.weakening.
+        eapply inclusion_swap; eauto.
+        apply eqb_neq in Heqb; auto.
+        assumption.
+  - (* Ty_App *)
+    unfold rename.
+    simpl.
+    econstructor.
+    + unfold rename in IHT1.
+      eapply IHT1; eauto.
+      simpl in Hfresh; auto with *.
+    + unfold rename in IHT2.
+      eapply IHT2; eauto.
+      simpl in Hfresh; auto with *.
+  - (* Ty_SOP *)
+    (* ADMIT: Ty_SOP: Unimplemented *)
+Admitted.
 
 (* See alpha_typing.v for a proof of this for STLC. This proof will be analogous*)
 Theorem substituteTCA_preserves_kinding : forall T Delta X K U L,
@@ -54,16 +319,10 @@ Proof with eauto with typing.
     + eapply H; eauto.
       simpl. lia.
   - (* Ty_Forall*)
-    (* ADMIT: Identical to Ty_Lam *)
-    admit.
-  - (* Ty_Builtin *)
-    constructor.
-    assumption.
-  - (* Ty_Lam *)
     destr_eqb_eq X b.
     + constructor.
       eapply Kinding.weakening with (Delta := ((b, k) :: (b, L) :: Delta)).
-      * (* ADMIT: (b, L) is shadowed, so inclusion *) admit.
+      * eapply inclusion_shadow_left.
       * assumption.
     + destruct (existsb (eqb b) (ftv U)) eqn:Hexi.
       * remember (fresh _ _ _) as fr.
@@ -72,17 +331,60 @@ Proof with eauto with typing.
         -- rewrite <- rename_preserves_size.
            simpl.
            lia.
-        -- (* ADMIT: kinding swap *)
-           admit.
-        -- (* ADMIT: Vacuous context extension by fr notin ftv U.*)
-           admit.
+        -- eapply Kinding.weakening with (Delta := ((fr, k) :: (X, L):: Delta)); eauto.
+           ++ eapply inclusion_swap; auto.
+              subst.
+              symmetry.
+              apply fresh__X.
+           ++ eapply rename_preserves_kinding; eauto.
+              subst.
+              apply fresh__T.
+        -- apply kinding_weakening_fresh; auto.
+           subst.
+           apply weaken_not_plutusTv_to_not_ftv.
+           apply fresh__S.
       * constructor.
         eapply H; eauto.
         -- simpl. lia.
-        -- (* ADMIT: kinding swap *)
-           admit.
-        -- (* ADMIT: Vacuous context extension by b notin ftv U.*)
-        admit.
+        -- eapply Kinding.weakening with (Delta := ((b, k) :: (X, L):: Delta)); eauto.
+           apply inclusion_swap; auto.
+        -- apply kinding_weakening_fresh; auto.
+           apply not_in_existsb in Hexi; auto.
+  - (* Ty_Builtin *)
+    constructor.
+    assumption.
+  - (* Ty_Lam *)
+    destr_eqb_eq X b.
+    + constructor.
+      eapply Kinding.weakening with (Delta := ((b, k) :: (b, L) :: Delta)).
+      * eapply inclusion_shadow_left.
+      * assumption.
+    + destruct (existsb (eqb b) (ftv U)) eqn:Hexi.
+      * remember (fresh _ _ _) as fr.
+        constructor.
+        eapply H; eauto.
+        -- rewrite <- rename_preserves_size.
+           simpl.
+           lia.
+        -- eapply Kinding.weakening with (Delta := ((fr, k) :: (X, L):: Delta)); eauto.
+           ++ eapply inclusion_swap; auto.
+              subst.
+              symmetry.
+              apply fresh__X.
+           ++ eapply rename_preserves_kinding; eauto.
+              subst.
+              apply fresh__T.
+        -- apply kinding_weakening_fresh; auto.
+           subst.
+           apply weaken_not_plutusTv_to_not_ftv.
+           apply fresh__S.
+      * constructor.
+        eapply H; eauto.
+        -- simpl. lia.
+        -- eapply Kinding.weakening with (Delta := ((b, k) :: (X, L):: Delta)); eauto.
+           apply inclusion_swap; auto.
+        -- apply kinding_weakening_fresh; auto.
+           apply not_in_existsb in Hexi; auto.
     - (* Ty_App *)
       econstructor.
       + eapply H; eauto.
@@ -92,6 +394,4 @@ Proof with eauto with typing.
     - (* Ty_SOP *)
       (* ADMIT: Ty_SOP Unimplemented *)
       admit.
-      
-(* ADMIT: I had no time to finish this. Requires proofs about renamings. *)
 Admitted.

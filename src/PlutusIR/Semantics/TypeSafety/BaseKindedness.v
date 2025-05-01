@@ -15,7 +15,9 @@ Require Import Coq.Lists.List.
 *)
 Lemma weaken_fresh Δ F K K1 :
   Δ |-* F : K -> ((freshUnwrapIFix F, K1)::Δ) |-* F : K.
+  (* TODO: See also kinding_weakening_fresh in substituteTCA_preserves_kinding *)
 Admitted.
+
 
 Lemma unwrapIFix__well_kinded F K T Δ :
   Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->

@@ -79,6 +79,10 @@ Fixpoint plutusTv (t : ty) : list string :=
 
 Compute (plutusTv (Ty_SOP [[Ty_Var "a"; Ty_Var "b"]; [Ty_Var "c"; Ty_Var "d"]])).
 
+Lemma weaken_not_plutusTv_to_not_ftv : forall X T,
+  ~ In X (plutusTv T) -> ~ In X (ftv T).
+Admitted.
+
 
 (** Assume that we compute the substitution of U for X in (LamAbs Y K T).
     We reduce the  problem of generating a fresh type variable to generating
@@ -109,12 +113,12 @@ Proof with eauto.
 Qed.
 
 Lemma fresh__S : forall X U T,
-    ~ In (fresh X U T) (ftv U).
-Proof. Abort.
+    ~ In (fresh X U T) (plutusTv U).
+Proof. Admitted.
 
 Lemma fresh__T : forall X U T,
-    ~ In (fresh X U T) (ftv T).
-Proof. Abort.
+    ~ In (fresh X U T) (plutusTv T).
+Proof. Admitted.
 
 Definition rename (X Y : string) (T : ty) := substituteT X (Ty_Var Y) T.
 

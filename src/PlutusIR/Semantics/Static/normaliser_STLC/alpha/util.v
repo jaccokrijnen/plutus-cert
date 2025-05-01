@@ -152,6 +152,7 @@ Proof.
       simpl in Happ. rewrite H in Happ. auto.
 Qed.
 
+(* TODO: Use more general lemma without mentioning ftv*)
 Lemma not_existsb_not_in y U' : 
   existsb (eqb y) (ftv U') = false -> ~ In y (ftv U').
 Proof.
