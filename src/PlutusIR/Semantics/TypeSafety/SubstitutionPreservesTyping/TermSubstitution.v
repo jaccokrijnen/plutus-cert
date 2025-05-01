@@ -311,7 +311,12 @@ Proof with eauto.
     unfold P_Term in H.
     eapply H; eauto.
     (* s not free in U by [],,[] |-+ v : Un 
-      <- empty kinding context?? hence no ftvs *)
+      <- empty kinding context?? hence no ftvs 
+      Problem: this says nothing about U though,
+      since normalisation could remove free variables.
+
+      maybe it is a combination of weakening and vacuous weakening (see branch preservation-kinding)
+      *)
     admit. 
   - (* LamAbs *)
     inversion H0. subst.
