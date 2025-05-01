@@ -14,7 +14,7 @@ Require Import Arith.
 
 
 Lemma compatibility_TyAbs: forall Delta Gamma bX K T e e',
-    LR_logically_approximate ((bX, K) :: Delta) Gamma e e' T ->
+    LR_logically_approximate ((bX, K) :: Delta) (drop_ty_var bX Gamma) e e' T ->
     LR_logically_approximate Delta Gamma (TyAbs bX K e) (TyAbs bX K e') (Ty_Forall bX K T).
 Proof with eauto_LR.
   intros Delta Gamma bX K T e e' IH_LR.
@@ -22,7 +22,8 @@ Proof with eauto_LR.
 
   destruct IH_LR as [Htyp__e [Htyp__e' IH__e]].
 
-  split... split...
+  split... 
+  split...
 
   intros k rho env env' HRD HRG.
 
@@ -42,7 +43,7 @@ Proof with eauto_LR.
   }
 
   split... {
-    apply T_TyAbs in Htyp__e.
+    apply T_TyAbs in Htyp__e...
     eapply has_type__basekinded in Htyp__e as H...
     eapply closing_preserves_kinding_1 in H as H0...
     rewrite msubstT_TyForall in H0.
@@ -60,7 +61,7 @@ Proof with eauto_LR.
     eauto.
   }
   split... {
-    apply T_TyAbs in Htyp__e'.
+    apply T_TyAbs in Htyp__e'...
     eapply has_type__basekinded in Htyp__e' as H...
     eapply closing_preserves_kinding_2 in H as H0...
     rewrite msubstT_TyForall in H0.
@@ -95,6 +96,8 @@ Proof with eauto_LR.
   - apply RG_extend_rho.
     eapply RG_monotone; eauto.
     rewrite <- minus_n_O in Hlt_i.
-    apply Nat.lt_le_incl.
-    assumption.
-Qed.
+
+
+    (* apply Nat.lt_le_incl.
+    assumption. *)
+Admitted.

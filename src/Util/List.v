@@ -134,6 +134,12 @@ Admitted.
 Definition inclusion {A : Type} (m m' : list (string * A)) :=
   forall x v, lookup x m = Some v -> lookup x m' = Some v.
 
+Lemma inclusion_unfold {A : Type} (m m' : list (string * A)) x v:
+  inclusion m m' -> lookup x m = Some v -> lookup x m' = Some v.
+Proof.
+  auto.
+Qed.
+
 Lemma inclusion_tail {A : Type} (x : string * A) m m' :
   inclusion m m' ->
   inclusion (x :: m) (x :: m').
@@ -194,6 +200,21 @@ Proof.
     discriminate.
   - reflexivity.
 Qed.
+
+Lemma inclusion_swap {A} (x y : string) (K L : A) m  :
+  x <> y -> 
+  inclusion ((x, K) :: (y, L) :: m) ((y, L) :: (x, K) :: m).
+Admitted.
+
+(* Second element is shadowed and hence ignored by lookup *)
+Lemma inclusion_shadow_left {A} (x : string) (K L : A) m  :
+  inclusion ((x, K) :: (x, L) :: m) ((x, K) :: m).
+Admitted.
+
+(* Second element is shadowed and hence ignored by lookup *)
+Lemma inclusion_shadow_right {A} (x : string) (K L : A) m  :
+  inclusion ((x, K) :: m) ((x, K) :: (x, L) :: m).
+Admitted.
 
 Lemma cons_shadow {A} k (x y : A) xs:
   inclusion ((k, x) :: (k, y) :: xs) ((k, x) :: xs).

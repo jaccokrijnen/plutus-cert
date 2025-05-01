@@ -8,6 +8,7 @@ Require Import Arith.
 
 Lemma compatibility_Var : forall Delta Gamma x T Tn,
     lookup x Gamma = Coq.Init.Datatypes.Some T ->
+    Delta |-* T : Kind_Base ->
     normalise T Tn ->
     LR_logically_approximate Delta Gamma (Var x) (Var x) Tn.
 Proof with eauto_LR.

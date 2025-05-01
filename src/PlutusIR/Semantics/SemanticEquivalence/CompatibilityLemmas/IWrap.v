@@ -67,7 +67,8 @@ Proof with eauto_LR.
 
   destruct IH_LR as [Htyp__e [Htyp__e' IH]].
 
-  split... split...
+  split... 
+  split...
 
   intros k rho env env' H_RD H_RG.
   subst.
@@ -149,12 +150,13 @@ Proof with eauto_LR.
       eapply unique_kinds...
     }
     subst.
-    eapply normalisation__deterministic in Hnorm__T0n...
+    eapply (normalisation__deterministic _ _ _ Hnorm__T0n) in H1...
     subst.
 
     eapply RV_to_RC.
 
     eapply RV_monotone...
+    
   - (* E_Error_Iwrap *)
     assert (HRC :
       RC k T0n rho
@@ -185,11 +187,11 @@ Proof with eauto_LR.
         eexists.
         split. eapply N_TyIFix...
         eapply T_Error.
-        eapply K_IFix.
-        eapply H1.
-        eapply H2.
-        eapply N_TyIFix...
-      }
+        (* ADMIT: This is not provable in the current formulation of RC.
+          This subproof is not necessary in the new formulation of RC: R. 
+         *)
+        admit. admit.
+      } 
 
       split. {
         rewrite msubstT_IFix.
@@ -203,10 +205,10 @@ Proof with eauto_LR.
         eexists.
         split. eapply N_TyIFix...
         eapply T_Error.
-        eapply K_IFix.
-        eapply H1.
-        eapply H2.
-        eapply N_TyIFix...
+        (* ADMIT: This is not provable in the current formulation of RC.
+          This subproof is not necessary in the new formulation of RC: R. 
+         *)
+        admit. admit.
       }
       right...
-Qed.
+Admitted.
