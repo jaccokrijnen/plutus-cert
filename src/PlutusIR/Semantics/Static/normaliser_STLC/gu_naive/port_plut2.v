@@ -164,7 +164,8 @@ Proof.
           rewrite Hfr_pres.
           f_equal.
           ++ eapply H; eauto.
-            ** rewrite <- rename_preserves_size.
+            ** rewrite <- f_preserves_rename. 
+              rewrite <- rename_preserves_size.
                simpl.
                lia.
             ** apply f_preserves_rename.
@@ -200,7 +201,8 @@ Proof.
           rewrite Hfr_pres.
           f_equal.
           ++ eapply H; eauto.
-            ** rewrite <- rename_preserves_size.
+            ** rewrite <- f_preserves_rename.
+               rewrite <- rename_preserves_size.
                simpl.
                lia.
             ** apply f_preserves_rename.
@@ -220,11 +222,18 @@ Proof.
     {
       autorewrite with substituteTCA. simpl. reflexivity.
     }
-    rewrite H0; clear H0.
-    eapply IHl; intros; auto.
-    inversion Heqn. lia.
-         
-    
+    rewrite H0.
+    eapply IHl; intros; eauto.
+    rewrite <- H0.
+    eapply IHfT.
+    assert (f (Ty_SOP l) = f (Ty_SOP ([] :: l))).
+    {
+      autorewrite with substituteTCA.
+      simpl.
+      auto.
+    }
+    rewrite <- H4.
+    auto.
   + induction T; subst; inversion HeqfT; subst.
     * autorewrite with substituteTCA; simpl; f_equal; eauto; eapply H; auto; simpl; lia. 
     * autorewrite with substituteTCA; simpl; f_equal; eauto; eapply H; auto; simpl; lia. 
@@ -244,10 +253,29 @@ Proof.
               simpl.
               auto.
             }
-            rewrite H0; clear H0.
-            eapply IHl; intros; auto.
-            ** inversion Heqn. lia.
-            ** inversion Heqn. lia.
+            rewrite H0.
+            eapply IHl; intros; eauto.
+            subst. 
+            rewrite <- H0.
+            eapply IHfT1.
+            assert (f (Ty_SOP l) = f (Ty_SOP ([] :: l))).
+            {
+              autorewrite with substituteTCA.
+              simpl.
+              auto.
+            }
+            rewrite <- H2. reflexivity.
+            rewrite <- H0.
+            eapply IHfT2.
+                        assert (f (Ty_SOP l) = f (Ty_SOP ([] :: l))).
+            {
+              autorewrite with substituteTCA.
+              simpl.
+              auto.
+            }
+            rewrite <- H2. 
+            assumption.
+
           ++ autorewrite with substituteTCA.
              simpl.
              inversion HeqfT; subst.
@@ -324,8 +352,9 @@ Proof.
           simpl.
           auto.
         }
-        rewrite H0; clear H0.
+        rewrite H0.
         eapply IHl; intros; auto.
+        eapply H; eauto.
 Qed.
 
 
