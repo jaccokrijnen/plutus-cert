@@ -118,12 +118,12 @@ Lemma f_preserves_substituteTCA X U T :
   (f (TypeSubstitution.substituteTCA X U T)) = (substituteTCA X (f U) (f T)).
 Proof.
   remember (f T) as fT.
-  remember (size fT) as n.
+  remember (size (f T)) as n.
   generalize dependent fT.
   generalize dependent T.
   induction n using lt_wf_ind.
   intros.
-  dependent induction fT; subst.
+  induction fT; subst.
   + induction T; subst; inversion HeqfT; subst.
     autorewrite with substituteTCA.
     destr_eqb_eq X t; auto.
