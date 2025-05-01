@@ -310,12 +310,13 @@ Proof with eauto.
     apply T_TyAbs.
     unfold P_Term in H.
     eapply H; eauto.
-    (* s not free in U by [],,[] |-+ v : Un 
-      <- empty kinding context?? hence no ftvs 
-      Problem: this says nothing about U though,
-      since normalisation could remove free variables.
-
-      maybe it is a combination of weakening and vacuous weakening (see branch preservation-kinding)
+    (* Suppose s not in U, then done by unfold.
+       Suppose s free in U.
+       then x not in (drop_ty_var s ((x, U) :: Gamma)).
+       then x not free in t.
+       then we can strengthen the goal and remove (x, U).
+       Then drop_ty_var of smaller context is included in
+       drop_ty_var of superset of that context.
       *)
     admit. 
   - (* LamAbs *)
