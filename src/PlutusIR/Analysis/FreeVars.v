@@ -4,6 +4,7 @@ Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Ascii.
 
+From PlutusCert Require Import plutus_util.
 From PlutusCert Require Import PlutusIR.
 From PlutusCert Require Import  PlutusIR.Folds.
 From PlutusCert Require Import  Analysis.BoundVars.
@@ -30,6 +31,8 @@ Module Ty.
         remove string_dec X (ftv T')
     | Ty_App T1 T2 =>
         ftv T1 ++ ftv T2
+    | Ty_SOP Tss =>
+        flatmap2 ftv Tss
     end.
 
 End Ty.

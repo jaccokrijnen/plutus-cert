@@ -125,6 +125,7 @@ Equations? RC (k : nat) (T : ty) (rho : tymapping) (e e' : term) : Prop by wf k 
                     Rel T1 T2 Chi ->
                     forall i (Hlt_i : i < k - j),
                       RC i Tn ((X, (Chi, T1, T2)) :: rho) <{ :[X := T1] e_body }> <{ :[X := T2] e'_body }>
+            | PlutusIR.Ty_SOP Tss => False (* TODO *)
             end
           )
         ) \/ (
@@ -429,6 +430,7 @@ Equations? R (i : interpretation) (k : nat) (T : ty) (rho : tymapping) (e e' : t
               Rel T1 T2 Chi ->
               ∀ i (Hlt_i : i < k),
                 R I_C i Tn ((X, (Chi, T1, T2)) :: rho) <{ :[X := T1] e_body }> <{ :[X := T2] e'_body }>
+      | PlutusIR.Ty_SOP Tss => False (* TODO *)
       end
   ).
 Proof.

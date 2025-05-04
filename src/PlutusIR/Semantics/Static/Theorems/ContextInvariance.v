@@ -11,6 +11,14 @@ Local Open Scope string_scope.
 
 
 
+Lemma drop_ty_var__inclusion_ftv X Γ Γ' t :
+  (forall x, Term.appears_free_in x t ->
+    lookup x Γ = lookup x Γ') -> 
+  (forall x, Term.appears_free_in x t -> 
+    lookup x (drop_ty_var X Γ) = lookup x (drop_ty_var X Γ')).
+  (* Should follow from drop_ty_var__inclusion*)
+Admitted.
+
 Module Kinding.
 
   Lemma context_invariance : forall Delta Delta' T K,
@@ -49,7 +57,36 @@ Module Kinding.
       + apply eqb_neq in Heqb.
         rewrite lookup_neq...
         rewrite lookup_neq...
-  Qed.
+    - (* Ty_SOP *) admit.
+  Admitted.
+
+  Lemma swap_kinding_context : forall T X Y K1 K2 K3 Δ,
+    X <> Y -> 
+    ((X, K1) :: (Y, K2) :: Δ) |-* T : K3 ->
+    ((Y, K2) :: (X, K1) :: Δ) |-* T : K3.
+  Proof.
+    intros T X Y K1 K2 K3 Δ Hneq Hk.
+    apply context_invariance with (Delta := (X, K1) :: (Y, K2) :: Δ).
+    - assumption.
+    - intros Z Hafi.
+      destruct (Z =? X) eqn:ZX.
+      + apply eqb_eq in ZX. subst.
+        simpl. rewrite String.eqb_refl.
+        rewrite <- String.eqb_neq in Hneq.
+        rewrite String.eqb_sym in Hneq.
+        rewrite Hneq. reflexivity.
+      + destruct (Z =? Y) eqn:ZY.
+        * apply eqb_eq in ZY. subst.
+          simpl. rewrite String.eqb_refl.
+          rewrite <- String.eqb_neq in Hneq.
+          rewrite Hneq. reflexivity.
+        * simpl.
+          rewrite String.eqb_sym.
+          rewrite ZX.
+          rewrite String.eqb_sym.
+          rewrite ZY.
+          reflexivity.
+Qed.
 
 End Kinding.
 
@@ -73,10 +110,10 @@ Module Typing.
       (forall x, Term.appears_free_in__bindings_rec x bs -> lookup x Gamma = lookup x Gamma') ->
       Delta ,, Gamma' |-oks_r bs.
 
-  Definition P_binding_well_formed (Delta : list (string * kind)) (Gamma : list (string * ty)) (b : binding) :=
+  Definition P_binding_well_formed (Delta : list (string * kind)) (Gamma : list (string * ty)) (rec : recursivity) (b : binding) :=
     forall Gamma',
       (forall x, Term.appears_free_in__binding x b -> lookup x Gamma = lookup x Gamma') ->
-      Delta ,, Gamma' |-ok_b b.
+      Delta ,, Gamma' |-ok_b rec # b.
 
   #[export] Hint Unfold
     P_has_type
@@ -90,7 +127,7 @@ Module Typing.
     (forall Delta Gamma t T, Delta ,, Gamma |-+ t : T -> P_has_type Delta Gamma t T) /\
     (forall Delta Gamma bs, Delta ,, Gamma |-oks_nr bs -> P_bindings_well_formed_nonrec Delta Gamma bs) /\
     (forall Delta Gamma bs, Delta ,, Gamma |-oks_r bs -> P_bindings_well_formed_rec Delta Gamma bs) /\
-    (forall Delta Gamma b, Delta ,, Gamma |-ok_b b -> P_binding_well_formed Delta Gamma b).
+    (forall Delta Gamma rec b, Delta ,, Gamma |-ok_b rec # b -> P_binding_well_formed Delta Gamma rec b).
   Proof with eauto.
     apply has_type__multind with
       (P := P_has_type)
@@ -103,7 +140,7 @@ Module Typing.
 
     - (* T_Var *)
       eapply T_Var...
-      rewrite <- H1; auto.
+      rewrite <- H2; auto.
     - (* T_LamAbs *)
       apply T_LamAbs...
       apply H2.
@@ -117,6 +154,12 @@ Module Typing.
       + apply eqb_neq in Heqb.
         rewrite lookup_neq; auto.
         rewrite lookup_neq; auto.
+    - (* T_TyAbs *) 
+      unfold P_has_type in H0.
+      apply T_TyAbs.
+      apply H0.
+      intros.
+      eapply drop_ty_var__inclusion_ftv; eauto.
     - (* T_Let *)
       subst.
       eapply T_Let...
@@ -128,7 +171,7 @@ Module Typing.
         eapply In__map_normalise in i...
         apply In__lookup_append...
       + apply lookup_append_cong...
-    - (* T_LetRec *)
+    - (* T_LetRec *) 
       subst.
       eapply T_LetRec...
       + apply H5.

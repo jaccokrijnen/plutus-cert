@@ -83,6 +83,11 @@ Definition dtdecl_freshR (d : dtdecl) : string :=
 
 (* The expected return type of a constructor, i.e. the Datatype applied to all
  * its type parameters. For example: Either a b
+
+ Richard: All constructors should end with the same type! That is what we use this for
+ in the case of List, this will be
+   Ty_Apps (Ty_Var (getTyName ("List", * -> * )) (Ty_Var (getTyName ("T", * )))
+   which is just List T
  *)
 Definition constrLastTyExpected dtd : ty :=
   match dtd with
