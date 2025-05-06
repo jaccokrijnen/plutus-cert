@@ -1,4 +1,5 @@
 CoqMakefile.conf
+.direnv
 
 # coq
 *.vo
