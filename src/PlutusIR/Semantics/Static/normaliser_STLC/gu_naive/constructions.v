@@ -109,7 +109,7 @@ Inductive IdSubst : list (string * term) -> Set :=
 Lemma id_subst__id s σ :
   (* NC s σ ->  *)
   IdSubst σ -> 
-  subs σ s = s. (* even when this capturs, it doesnt matter, since it captures something and then substiutes it for the same name*)
+  psubs σ s = s. (* even when this capturs, it doesnt matter, since it captures something and then substiutes it for the same name*)
 Proof.
   intros.
   induction s.
@@ -118,16 +118,14 @@ Proof.
     + simpl. destruct a as [x1 x2].
       inversion H; subst.
       specialize (IHσ H1).
-      rewrite IHσ.
-      destr_eqb_eq x1 s.
-      * simpl. rewrite String.eqb_refl. reflexivity.
-      * simpl. rewrite <- String.eqb_neq in H0. rewrite H0. reflexivity.
-  - rewrite subs_tmlam.
+      simpl in IHσ.
+      destr_eqb_eq x1 s; auto.
+  - simpl.
     f_equal.
     apply IHs.
-  - rewrite subs_tmapp.
+  - simpl.
     f_equal; eauto.
-  - rewrite subs_builtin. auto.
+  - simpl; auto.
 Qed.
 
 Lemma id_ctx_alphavar_refl R x : IdCtx R -> AlphaVar R x x.
@@ -3173,7 +3171,7 @@ Lemma t_constr__nc_subs {t t' R s sigma X} :
   ~ In X (btv s) -> (* We dont have control over s or X in construction*)
   ~ In X (btv_env sigma) -> (* we do not have control over sigma*)
   (t', R) = t_constr t s sigma X ->
-  NC (subs sigma s) ((X, t')::nil).
+  NC (psubs sigma s) ((X, t')::nil).
 Proof.
   intros.
   constructor.
@@ -3536,4 +3534,77 @@ Proof.
            apply in_app_iff.
            right. auto.
         -- eapply uhm2. eauto.
+Qed.
+
+
+Create HintDb gu_nc_db.
+Hint Resolve gu_app_r : gu_nc_db.
+Hint Resolve gu_app_l : gu_nc_db.
+Hint Resolve gu_lam : gu_nc_db.
+Hint Resolve nc_app_r : gu_nc_db.
+Hint Resolve nc_app_l : gu_nc_db.
+Hint Resolve nc_lam : gu_nc_db.
+Hint Resolve gu_applam_to_nc : gu_nc_db.
+Hint Resolve nc_ftv_env : gu_nc_db.
+
+(* We need a legal ren swap because the new binders get in front of the (x, y) in the inductive step of the lambda*)
+Lemma alpha_rename_binder_stronger x y s t t' : forall Rt s' Rs,
+  Alpha Rs s s' ->
+  Alpha Rt t t' ->
+  LegalRenSwaps ((x, y)::Rt) Rs -> 
+  NC s [(x, t)] ->
+  NC s' [(y, t')] ->
+  Alpha Rt (sub x t s) (sub y t' s').
+Proof with eauto with gu_nc_db.
+  intros.
+  generalize dependent Rt.
+  generalize dependent Rs.
+  generalize dependent t.
+  generalize dependent t'.
+  generalize dependent s'.
+  induction s; intros; inversion H; subst; simpl.
+  - destr_eqb_eq x s; destr_eqb_eq y y0; eauto.
+    + exfalso.
+      apply lrss_sym in X.
+      apply (alpha_swaps X) in H.
+      inversion H; subst.
+      inversion H8; subst.
+      contradiction H3; auto.
+      contradiction H9; auto.
+    + exfalso.
+      apply lrss_sym in X.
+      apply (alpha_swaps X) in H.
+      inversion H; subst.
+      inversion H8; subst.
+      contradiction H3; auto.
+      contradiction H12; auto.
+    + eapply @alpha_swaps with (ren' := ((x, y)::Rt)) in H.
+      inversion H; subst.
+      inversion H9; subst; try contradiction.
+      apply alpha_var.
+      assumption.
+      apply lrss_sym. auto.
+  - constructor.
+    eapply IHs; eauto...
+    + eapply alpha_extend_vacuous_ftv.
+      * apply nc_ftv_env with (x := s) in H1.
+        simpl in H1.
+        intuition. apply btv_lam.
+      * apply nc_ftv_env with (x := y0) in H2.
+        simpl in H2.
+        intuition. apply btv_lam.
+      * assumption.
+    + eapply @lrss_trans with (ren2 := ((s, y0)::(x, y)::Rt)).
+      * eapply starSE.
+        -- apply starR.
+        -- 
+          ++ constructor. 
+            ** apply nc_ftv_env with (x := s) in H1.
+              simpl in H1. intuition. apply btv_lam.
+            ** apply nc_ftv_env with (x := y0) in H2.
+              simpl in H2. intuition. apply btv_lam.
+            ** apply legalRenSwap_id.
+      * apply lrss_cons. auto.
+  - constructor; eauto with gu_nc_db.
+  - constructor.
 Qed.

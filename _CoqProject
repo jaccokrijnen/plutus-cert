@@ -104,6 +104,7 @@ src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/port_plut.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/port_plut2.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/plutus_util.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/pre.v
+src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/step_gu.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/constructions.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/SN_STLC_named_naive.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/SN_STLC_named2.v

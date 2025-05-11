@@ -54,18 +54,11 @@ Inductive step_naive : term -> term -> Set :=
 
     
 
-Fixpoint subs (sigma : list (string * term)) (T : term) : term :=
+(* Fixpoint subs (sigma : list (string * term)) (T : term) : term :=
   match sigma with
   | nil => T
   | cons (x, t) sigma' => sub x t (subs sigma' T) (* or the other way around?*)
-  end.
-
-Lemma single_subs_is_sub X T s :
-  subs [(X, T)] s = sub X T s.
-Proof.
-  simpl. reflexivity.
-Qed.
-
+  end. *)
 
 
 (* parallel subs *)
@@ -91,10 +84,201 @@ Proof.
   - simpl. reflexivity.
 Qed.
 
+Lemma psubs_nil s : psubs nil s = s.
+Proof.
+  induction s; auto.
+  - simpl. f_equal. auto.
+  - simpl. f_equal; auto.
+Qed.
+
+Lemma psubs_extend_new (x : string) s δ:
+  ~ In x (map fst δ) -> psubs δ s = psubs ((x, tmvar x)::δ) s.
+Proof.
+  intros HnotIn.
+  induction s; auto.
+  - simpl. destr_eqb_eq x s.
+    + rewrite not_in__lookup; auto.
+    + reflexivity.
+  - simpl. f_equal; auto.
+  - simpl. f_equal; auto.
+Qed.
+
+Fixpoint remove_ids (sigma : list (string * term)) : list (string * term) :=
+  match sigma with 
+  | nil => nil
+  | (x, tmvar y)::sigma' => if String.eqb x y then remove_ids sigma' else (x, tmvar y)::(remove_ids sigma')
+  | (x, t)::sigma' => (x, t)::(remove_ids sigma')
+  end.
+
+Lemma remove_ids_subset sigma :
+  incl (remove_ids sigma) sigma.
+Proof.
+  unfold incl.
+  intros.
+  induction sigma.
+  - inversion H.
+  - 
+    (* need lemma to rewrite a in remove_ids a0 :: sigma to a in a0 :: remove_ids sigma*)
+    admit.
+Admitted.
+
+
+Lemma remove_ids_helper sigma s t :
+  In (s, t) sigma -> ~ In s (map fst (remove_ids sigma)) -> t = tmvar s.
+Proof.
+  intros.
+  induction sigma.
+  - inversion H.
+  - destruct a as [a1 a2].
+    inversion H.
+    + inversion H1; subst; clear H1.
+      simpl in H0.
+      induction t; try solve [simpl in H0; apply de_morgan2 in H0 as [H0 _]; contradiction].
+      destr_eqb_eq s s0.
+      -- reflexivity.
+      -- simpl in H0. apply de_morgan2 in H0 as [H0 _].
+         contradiction.
+    + eapply IHsigma; eauto.
+      simpl in H0.
+      induction a2; try solve [simpl in H0; apply de_morgan2 in H0 as [_ H0]; auto ].
+      destr_eqb_eq a1 s0; auto.
+      apply de_morgan2 in H0 as [H0_]; auto.      
+Qed.
+
+Lemma remove_ids_helper2 sigma s s' :
+  In (s, tmvar s') sigma -> s <> s' -> In (s, tmvar s') (remove_ids sigma).
+Proof.
+  intros.
+  induction sigma; auto.
+  destruct a as [a1 a2].
+  simpl.
+  induction a2.
+  - destr_eqb_eq a1 s0. eapply IHsigma.
+    inversion H. inversion H1; subst. contradiction.
+    auto.
+    inversion H. inversion H2; subst. apply in_eq. apply in_cons.
+    eapply IHsigma; auto.
+  - apply in_cons.
+    eapply IHsigma; eauto.
+    inversion H; intuition.
+    inversion H1.
+  - apply in_cons.
+    eapply IHsigma; eauto.
+    inversion H; intuition.
+    inversion H1.
+  - apply in_cons.
+    eapply IHsigma; eauto.
+    inversion H; intuition.
+    inversion H1.
+Qed.
+
+Lemma remove_ids_helper4 sigma X a1 t:
+  ~ In X (ftv_keys_env (remove_ids ((a1, t)::sigma))) -> ~ In X (ftv_keys_env (remove_ids sigma)).
+Proof.
+  intros.
+  simpl in H.
+  induction t; simpl in H; intuition.
+  destr_eqb_eq a1 s; auto.
+  apply not_in_cons in H; auto with *.
+Qed.
+
+Lemma remove_ids_helper3 sigma X a1 t:
+  ~ In X (ftv_keys_env (remove_ids ((a1, t)::sigma))) -> (t = tmvar X /\ a1 = X) \/ ~ In X (ftv t).
+Proof.
+  intros.
+  induction sigma.
+  - induction t.
+    + unfold remove_ids in H.
+      destr_eqb_eq a1 s.
+      destr_eqb_eq s X.
+      left. auto.
+      right. simpl. intuition.
+      destr_eqb_eq X s. 
+      simpl in H. intuition.
+      right. simpl. intuition.
+    + right.
+      simpl.
+      simpl in H.
+      apply de_morgan2 in H as [H H1].
+      rewrite app_nil_r in H1.
+      assumption.
+    + right.
+      simpl in H.
+      apply de_morgan2 in H as [H H1].
+      simpl.
+      rewrite app_nil_r in H1.
+      assumption.
+    + right.
+      simpl. auto.
+  - eapply IHsigma.
+    + simpl.
+      induction t.
+      * destr_eqb_eq a1 s.
+        -- apply remove_ids_helper4 in H.
+          destruct a as [a1 a2].
+          apply remove_ids_helper4 in H. 
+          auto.
+        -- simpl.
+            apply de_morgan2.
+            split.
+            intros Hcontra.
+            subst.
+            simpl remove_ids in H.
+            destr_eqb_eq X s; try contradiction.
+            simpl in H. intuition.
+            apply de_morgan2.
+            split.
+            intros Hcontra.
+            subst.
+            simpl remove_ids in H.
+            destr_eqb_eq a1 X; try contradiction.
+            simpl in H. intuition.
+            apply remove_ids_helper4 in H.
+            destruct a as [a1' a2].
+            apply remove_ids_helper4 in H.
+            assumption.
+        * remember H as H'. clear HeqH'.
+           simpl in H.
+          apply de_morgan2 in H as [H H1].
+          simpl.
+          apply de_morgan2.
+          split.
+          auto.
+          apply not_in_app; split.
+          apply not_in_app in H1 as [H1 _]; auto.
+          apply remove_ids_helper4 in H'.
+          destruct a as [a1' a2].
+          apply remove_ids_helper4 in H'.
+          assumption.
+        * remember H as H'. clear HeqH'.
+           simpl in H.
+          apply de_morgan2 in H as [H H1].
+          simpl.
+          apply de_morgan2.
+          split.
+          auto.
+          apply not_in_app; split.
+          apply not_in_app in H1 as [H1 _]; auto.
+          apply remove_ids_helper4 in H'.
+          destruct a as [a1' a2].
+          apply remove_ids_helper4 in H'.
+          assumption.
+        * simpl.
+          apply de_morgan2.
+          split.
+          intros Hcontra.
+          subst.
+          simpl in H. intuition.
+          apply remove_ids_helper4 in H.
+          destruct a as [a1' a2].
+          apply remove_ids_helper4 in H.
+          assumption.
+Qed.
+
 (* parallel substitution *)
 
 (* Define the rewrite rules *)
-Lemma subs_tmapp {B} : forall sigma s1 s2,
+(* Lemma subs_tmapp {B} : forall sigma s1 s2,
   subs sigma (@tmapp B s1 s2) = @tmapp B (subs sigma s1) (subs sigma s2).
 Proof.
   intros sigma s1 s2.
@@ -129,7 +313,7 @@ Hint Rewrite (@subs_tmlam ForAll) : subs_db.
 
 (* Add the lemmas to the hint database *)
 Hint Resolve subs_tmapp : subs_db.
-Hint Resolve subs_tmlam : subs_db.
+Hint Resolve subs_tmlam : subs_db. *)
 
 (* So sub is also rewritten when rewriting subs *)
 Hint Extern 1 => simpl sub : subs_db.
@@ -173,7 +357,7 @@ Admitted.
 
 
 Lemma subs_does_not_create_btv sigma x s :
-  ~ In x (btv s) -> ~ In x (btv_env sigma) -> ~ In x (btv (subs sigma s)).
+  ~ In x (btv s) -> ~ In x (btv_env sigma) -> ~ In x (btv (psubs sigma s)).
 Admitted.
 
 Lemma in_btv_psubs_then_in_constituents x sigma s :
@@ -182,7 +366,7 @@ Proof.
 Admitted.
 
 Lemma in_btv_subs_then_in_constituents x sigma s :
-  In x (btv (subs sigma s)) -> In x (btv s) \/ (exists t, In t (map snd sigma) /\ In x (btv t)).
+  In x (btv (psubs sigma s)) -> In x (btv s) \/ (exists t, In t (map snd sigma) /\ In x (btv t)).
 Proof.
   
 Admitted.
@@ -309,7 +493,7 @@ Qed.
 
 
 Lemma subs_does_not_create_ftv sigma x s :
-  ~ In x (ftv s) -> ~ In x (ftv_keys_env sigma) -> ~ In x (ftv (subs sigma s)).
+  ~ In x (ftv s) -> ~ In x (ftv_keys_env sigma) -> ~ In x (ftv (psubs sigma s)).
 Proof.
   intros Hftv_s Hftv_sigma.
   induction s.
@@ -327,28 +511,18 @@ Proof.
       destruct Hftv_sigma as [Hftv_sigma].
       specialize (IHsigma H).
       destr_eqb_eq x y.
-      * apply sub_helper. auto.
+      * rewrite <- String.eqb_neq in Hftv_s. rewrite Hftv_s. simpl in IHsigma.
+        assumption.
       * 
         (* This should be its own lemma, since it is about sub now, not subs*)
         {
-        induction (subs sigma (tmvar s)).
-        - simpl. destr_eqb_eq y s0; auto.
-        - simpl.
-          intros Hcontra.
-          apply in_remove in Hcontra as [Hcontra Hcontra_s0].
-          contradiction IHt0.
-          eapply ftv_lam_negative; eauto.
-        - simpl.
-          apply not_in_app. split.
-          + apply IHt0_1. auto. eapply not_ftv_app_not_left; eauto.
-          + apply IHt0_2. auto. eapply not_ftv_app_not_right; eauto.
-        - auto.
+        destr_eqb_eq y s; auto.
 
         }
         
 
 
-  - rewrite subs_tmlam.
+  -
     destr_eqb_eq x s.
     + apply ftv_lam_no_binder.
     + intros Hcontra.
@@ -356,12 +530,12 @@ Proof.
       apply ftv_lam_negative in Hftv_s.
       specialize (IHs Hftv_s).
       contradiction. auto.
-  - rewrite subs_tmapp.
+  - 
     simpl.
     apply not_in_app. split.
     + apply IHs1. auto. eapply not_ftv_app_not_left; eauto.
     + apply IHs2. auto; eapply not_ftv_app_not_right; eauto.
-  - rewrite subs_builtin. auto.
+  - auto.
 Qed.
 
 Lemma step_naive_preserves_no_ftv x t1 t2 :
@@ -371,7 +545,7 @@ Proof.
   induction Hstep.
   - destr_eqb_eq x x0.
     + apply sub_helper. apply not_ftv_app_not_right in Hftv_t1. auto.
-    + rewrite <- single_subs_is_sub.
+    + rewrite <- single_subs_is_psub.
       apply subs_does_not_create_ftv.
       * apply not_ftv_app_not_left in Hftv_t1. auto. eapply ftv_lam_negative; eauto.
       * unfold ftv_keys_env. simpl. apply not_in_cons. split.
