@@ -60,11 +60,11 @@ Section TypingHelpers.
       Γ = Γ1 ++ (x, Tx) :: Γ2 ->
       Δ,, (Γ1 ++ Γ2) |-oks_r bs.
 
-  Definition P_binding_well_formed Δ Γ b :=
+  Definition P_binding_well_formed Δ Γ rec b :=
     forall Γ1 Γ2 x Tx,
       ~ In x (fvb NonRec b) ->
       Γ = Γ1 ++ (x, Tx) :: Γ2 ->
-      Δ,, (Γ1 ++ Γ2) |-ok_b b.
+      Δ,, (Γ1 ++ Γ2) |-ok_b rec # b.
 
   From PlutusCert Require Import Static.Typing.
   Lemma strengthen_Γ Δ Γ t T :
