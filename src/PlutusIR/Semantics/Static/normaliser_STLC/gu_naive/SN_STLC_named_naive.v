@@ -29,99 +29,40 @@ Theorem α_preserves_SN_R s s' R :
   Alpha R s s' -> SN_gu s -> SN_gu s'.
 Proof.
   intros Hα Hsn.
-  generalize dependent s'.
-  generalize dependent R.
-  induction Hsn. intros R s' Hα.
+  revert s' R Hα.
+  induction Hsn. intros s' R Hα.
   apply SNI.
   intros y1 Hstep.
-  assert ({y1_α & prod (step_gu x y1_α) (sym_alpha_ctx R ⊢ y1 ~ y1_α)}) as [y1_α [Hstep' Hα'] ].
-  {
-    eapply step_gu_preserves_alpha; auto.
-    - eauto with α_eq_db.
-    - exact Hstep.
-  }
+  eapply alpha_sym in Hα; eauto with α_eq_db.
+  apply (step_gu_preserves_alpha Hα) in Hstep as [y1_α [Hstep' Hα']].
   eapply X; eauto with α_eq_db.
 Qed.
 
-Lemma sn_preimage {e : term -> term -> Type} (h : term -> term) x :
-  (forall x y, e x y -> e (h x) (h y)) -> @sn term e (h x) -> @sn term e x.
-Proof.
-  intros A B.
-  remember (h x) as v. (* this allows us to keep B : sn v as an hypothesis*)
-  generalize dependent h.
-  generalize dependent x.
-  induction B.
-  intros x0 h A eqn.
-  apply SNI.
-  intros y C.
-  apply A in C.
-  specialize (X (h y)).
-  rewrite <- eqn in C.
-  eapply X.
-  - assumption.
-  - exact A.
-  - reflexivity.
-Qed.
-
-(* TODO: It is currently for step only, not for general relation e anymore.
-Idea: Previous lemma sn_preimage above strengthened IH with remember (h x) as v.
-We strenghen IH with (h x) ~ v.
- *)
 Lemma sn_preimage_α' (h : term -> term) x v :
   (forall x y, step_gu x y -> {y_h & prod (step_gu (h x) y_h) (nil ⊢ y_h ~ (h y))}) -> @sn term step_gu v -> nil ⊢ v ~ h x -> @sn term step_gu x.
 Proof.
   intros A B Halpha.
   generalize dependent h.
   generalize dependent x.
-  (* remember (h x) as v. (* this allows us to keep B : sn v as an hypothesis*)
-  generalize dependent h.
-  generalize dependent x.
-  assert (forall x h, (forall x0 y, e x0 y -> {y_h & prod(e (h x0) y_h) (nil ⊢ y_h ~ h y)}) -> nil ⊢ v ~ h x -> @sn e x).
-  {
-  intros x h A. *)
-  (* So we are now not proving sn (h x) -> sn x anymore.
-    We are proving: sn v ->  v ~ h x  -> sn x
-  *)
   induction B.
-  intros x0 h A eqn.
-  apply SNI.
-  intros y C.
-  apply A in C.
-  (* x ~ h x0.
-    step (h x0) y_h  /\ y_h ~ h y
-
-    exists y_h' s.t. step x y_h' /\ y_h' ~ y_h   ( and then y_h'  ~  h y)
-  *)
-  assert ({y_h' & prod (step_gu x y_h') (nil ⊢ y_h' ~ h y)}).
-  {
-    destruct C as [yh [ehy yh_alpha] ].
-    eapply alpha_sym in eqn; [|apply alpha_sym_nil].
-    apply (step_gu_preserves_alpha eqn) in ehy.
-    destruct ehy as [t' [stept' alphat'] ].
-    exists t'.
-    split.
-    - assumption.
-    - eapply alpha_trans.
-      + apply alpha_trans_nil.
-      + eapply alpha_sym. apply alpha_sym_nil. exact alphat'.
-      + assumption.
-  }
-  destruct H as [yh' [ehy' yh_alpha'] ].
-  specialize (X yh').
-  eapply X.
-  - assumption.
-  - exact A.
-  - assumption.
+  intros x0 h A Ha.
+  apply: SNI => y C.
+  apply A in C as [yh [ehy yh_alpha] ].
+  eapply (step_gu_preserves_alpha) in ehy as [yh' [ehy' yh_alpha']]; eauto with α_eq_db.
 Qed.
 
 Lemma sn_preimage_α (h : term -> term) x :
   (forall x y, step_gu x y -> {y_h & prod (step_gu (h x) y_h) (nil ⊢ y_h ~ (h y))}) -> @sn term step_gu (h x) -> @sn term step_gu x.
 Proof.
-  intros A B.
-  apply sn_preimage_α' with (v := h x) (h := h); eauto.
-  apply alpha_refl. apply alpha_refl_nil.
+  intros.
+  eapply sn_preimage_α'; eauto with α_eq_db.
 Qed.
 
+Create HintDb to_GU'_db.
+Hint Resolve to_GU'__alpha to_GU'__GU to_GU'__NC : to_GU'_db.
+
+Create HintDb to_GU_db.
+Hint Resolve to_GU__alpha to_GU__GU : to_GU_db.
 
 (* This would NOT work for app because of beta reduction*)
 Lemma sn_ty_fun {B s t} : B <> App -> SN_gu s -> SN_gu t -> SN_gu (@tmapp B s t).
@@ -134,40 +75,21 @@ Proof.
   intros t.
   elim=> {}. intros.
 
-  apply SNI.
-  intros.
+  apply: SNI => y H.
   inversion H; subst.
   inversion H0; subst.
   inversion H2; subst.
   - (* B not App : contradiction *)
     contradiction.
-  - eapply step_naive_preserves_alpha2 with (s' := to_GU x) (R := nil) in H7 as [C [Hstep_C Ha_C] ].
-    + eapply α_preserves_SN_R with (R := []) (s := @tmapp B C t2); eauto.
-      * eauto with α_eq_db.
-      * eapply X with (y := C).
-        apply step_gu_intro with (s' := to_GU x); eauto.
-        -- eapply to_GU__alpha.
-        -- eapply to_GU__GU.
-        -- eapply α_preserves_SN_R with (s := x0). eauto. constructor. auto.
-    + eapply gu_app_l. eauto.
-    + eapply to_GU__GU.
-    + eapply @alpha_trans with (t := x).
-      -- repeat constructor.
-      -- eauto with α_eq_db.
-      -- eapply to_GU__alpha.
-  - eapply step_naive_preserves_alpha2 with (s' := to_GU x0) (R := nil) in H7 as [C [Hstep_C Ha_C] ].
-    + eapply α_preserves_SN_R with (R := []) (s := @tmapp B x C); eauto.
-      * eauto with α_eq_db.
-      * eapply X0 with (y := C).
-        apply step_gu_intro with (s' := to_GU x0); eauto.
-        -- eapply to_GU__alpha.
-        -- eapply to_GU__GU.
-    + eapply gu_app_r. eauto.
-    + eapply to_GU__GU. 
-    + eapply @alpha_trans with (t := x0).
-      -- repeat constructor.
-      -- eauto with α_eq_db.
-      -- eapply to_GU__alpha.
+  - eapply step_naive_preserves_alpha2 with (s' := to_GU x) (R := nil) in H7 as [C [Hstep_C Ha_C] ]; eauto with gu_nc_db α_eq_db to_GU_db.
+    eapply α_preserves_SN_R with (R := []) (s := @tmapp B C t2); eauto with α_eq_db.
+    eapply X with (y := C).
+    + apply step_gu_intro with (s' := to_GU x); eauto with gu_nc_db α_eq_db to_GU_db.
+    + eapply α_preserves_SN_R with (s := x0). eauto. constructor. auto.
+  - eapply step_naive_preserves_alpha2 with (s' := to_GU x0) (R := nil) in H7 as [C [Hstep_C Ha_C] ]; eauto with gu_nc_db α_eq_db to_GU_db.
+    eapply α_preserves_SN_R with (R := []) (s := @tmapp B x C); eauto with α_eq_db.
+    eapply X0 with (y := C).
+    apply step_gu_intro with (s' := to_GU x0); eauto with to_GU_db.
 Qed.
 
 Lemma sn_ty_forall {B X K T} : SN_gu T -> SN_gu (@tmlam B X K T).
@@ -203,13 +125,9 @@ Qed.
 
 Lemma sn_closedL {B} t s : SN_gu (@tmapp B s t) -> SN_gu s.
 Proof.
-  apply: (sn_preimage_α (h := tmapp^~t)) => x y.
-  intros.
-  eapply (@step_gu_app_l B) in H.
-  destruct H as [t1' [Ha_t1' [s2' [Ha_t Hstep] ] ] ].
-  exists (@tmapp B t1' s2').
-  intuition.
-  constructor; eapply alpha_sym; intuition; constructor.
+  apply: (sn_preimage_α (h := tmapp^~t)) => x y H.
+  eapply (@step_gu_app_l B) in H as [t1' [Ha_t1' [s2' [Ha_t Hstep] ] ] ].
+  eexists; eauto with *.
 Qed.
 
 Lemma psubs_vac_var sigma x :
@@ -233,27 +151,6 @@ Proof.
     unfold psubs in IHsigma.
     assumption.
 Qed.
-
-
-(* Lemma subs_vac_var sigma x :
-  ~ In x (map fst sigma) ->
-  subs sigma (tmvar x) = (tmvar x).
-Proof.
-  intros.
-  induction sigma.
-  - reflexivity.
-  - simpl.
-    destruct a as [a1 a2].
-    simpl in H.
-    apply de_morgan2 in H.
-    destruct H as [H1 H2].
-    specialize (IHsigma H2).
-    rewrite IHsigma.
-    rewrite <- String.eqb_neq in H1.
-    simpl.
-    rewrite H1.
-    reflexivity.
-Qed. *)
 
 (* need also handle btv, since substitution is nto capture avoiding*)
 Lemma sub_vac x t s :
@@ -279,7 +176,6 @@ Proof.
       eapply not_ftv_app_not_right; eauto. eapply not_btv_dc_appr. eauto.
 Qed.
 (* looks like sub_vacuous maybe?*)
-
 
 Lemma psubs_vac X T t :
   ~ In X (tv t) ->
@@ -320,17 +216,15 @@ Lemma psubs__α s : forall R s' sigma sigma',
   Alpha R (psubs sigma s) (psubs sigma' s').
 Proof with eauto with gu_nc_db.
   induction s; intros; inv H1; simpl.
-  - destruct (lookup s sigma) eqn:lookup_x_sigma.
-    + destruct (alpha_ctx_right_ex H2 H5 lookup_x_sigma) as [t' [Hlookupy_sigma' Ht'_a] ].
-      now rewrite Hlookupy_sigma'.
-    + rewrite (alpha_ctx_right_nex H2 H5 lookup_x_sigma).
+  all: try constructor...
+  - destruct (lookup s sigma) eqn:Hl_x_σ.
+    + destruct (alpha_ctx_right_ex H2 H5 Hl_x_σ) as [t' [Hl_x_σ' Ht'_a] ].
+      now rewrite Hl_x_σ'.
+    + rewrite (alpha_ctx_right_nex H2 H5 Hl_x_σ).
       constructor. assumption.
-  - constructor.
-    eapply IHs...
+  - eapply IHs...
     * eapply alpha_ctx_ren_extend_fresh_ftv; auto;
       eapply nc_ftv_env; eauto; apply btv_lam.
-  - constructor...
-  - constructor.
 Qed.
 
 Inductive ParSeq : list (string * term) -> Set :=
@@ -371,9 +265,7 @@ Inductive ParSeq : list (string * term) -> Set :=
 Lemma parseq_smaller {sigma x t} :
   ParSeq ((x, t)::sigma) -> ParSeq sigma.
 Proof.
-  intros.
-  inversion H; subst.
-  auto.
+  now inversion 1.
 Qed.
 
 (* Identity substitutions: Given a typing context E, give a list of term substitutions matching this E*)
@@ -455,31 +347,6 @@ Proof.
   now repeat constructor.
 Qed.
 
-Lemma sub_vacuous x t s :
-  ~ In x (ftv s) -> NC s ((x, t)::nil) -> sub x t s = s.
-Proof.
-  intros.
-  induction s; simpl; auto.
-  - destr_eqb_eq x s; auto. unfold ftv in H. contradiction H. apply in_eq.
-  - f_equal. 
-    assert (s <> x).
-    {
-      apply nc_ftv_env with (x := s) in H0. 
-      simpl in H0.
-      intuition.
-      apply btv_lam.
-
-    }
-    apply ftv_lam_negative in H.
-    apply IHs. intuition.
-    eapply nc_lam; eauto. auto.
-  - f_equal.
-    + eapply IHs1; eauto.
-      eapply not_ftv_app_not_left. eauto. eapply nc_app_l; eauto.
-    + eapply IHs2; eauto. 
-      eapply not_ftv_app_not_right. eauto. eapply nc_app_r; eauto.
-Qed.
-
 (* substitutions do not introduce new free variables 
 *)
 Lemma psubs_no_ftv x sigma y:
@@ -554,16 +421,17 @@ Proof with eauto with gu_nc_db.
       (* 
         by s in keys, ther emust be a value. Hmm. But these are sequential substs...
       *)
-      * rewrite sub_vacuous; auto.
+      * rewrite sub_vac; auto.
         {
           eapply psubs__α; eauto.
         }
         apply psubs_no_ftv.
         -- apply ftv_keys_env_helper; auto. (* uses Hx_value *) 
         -- apply String.eqb_neq. assumption.
-        
-        
-
+        -- intros Hcontra.
+           apply nc_ftv_env with (x := x) in HNC_subs; eauto.
+           apply ftv_keys_env__no_keys in HNC_subs; eauto.
+           simpl in HNC_subs. intuition.
       * assert (Hsub_vac: psubs sigma (tmvar s) = tmvar s) by now apply psubs_vac_var. (* DONE : s not in fst sigma *)
         rewrite Hsub_vac.
         unfold sub.
@@ -587,14 +455,6 @@ Proof with eauto with gu_nc_db.
     inversion Ha_sub.
     simpl.
     constructor.
-Qed.
-
-Lemma gu_app_st__gu_app_ts {B} s1 s2 :
-  GU (@tmapp B s1 s2) -> GU (@tmapp B s2 s1).
-Proof.
-  intros.
-  inversion H; subst.
-  constructor; auto.
 Qed.
 
 
@@ -831,9 +691,6 @@ Proof with eauto with sconstr2_db.
       * assumption.
 Qed.
 
-Create HintDb to_GU'_db.
-Hint Resolve to_GU'__alpha to_GU'__GU to_GU'__NC : to_GU'_db.
-
 Definition sub_gu (X : string) (T : term) (s : term) := sub X T (to_GU' X T s).
 
 Lemma sn_subst X T s : NC s ((X, T)::nil) -> SN_gu (sub X T s) -> SN_gu s.
@@ -898,63 +755,34 @@ Record reducible (P : cand) : Type := {
   p_nc : forall s, neutral s -> (forall t, step_gu s t -> P t) -> P s
 }.
 
-(* Since we are only interested in globally unique alpha terms, we do an exists here.
-But we should do a little study if that is necessary.
-
-we want this to hold for [x := t] meaning substituteT:
-Lemma beta_expansion A B x s t :p
-  SN_gu t -> L A ([x := t] s) ->
-  L A (tmapp (tmlam x B s) t).
-
-It also has to hold for A := Kind_Base, in which case it is proved by showing SN_gu.
-We only have that these two terms mean the same thing if we are allowed to forget about capture in the sbustitution
-Hence only if t is globally unique with respect to s. We can enforce that by changing the definition of L.
-
-JACCO and WOUTER think it is a bad idea to change the LR and that using L_preserves_alpha will allow us to use original LR.
-
-*)
 Fixpoint L (T : PlutusIR.kind) : cand :=
 match T with
   | PlutusIR.Kind_Base => SN_gu 
   | PlutusIR.Kind_Arrow A B => fun s => forall t, L A t -> L B (@tmapp App s t)
 end.
 
-
-
+Create HintDb a_constr_db.
+Hint Resolve a_constr__s_alpha a_constr__t_alpha : a_constr_db.
 
 Lemma α_preserves_L_R A s s' R :
   Alpha R s s' -> L A s -> L A s'.
-Proof.
+Proof with eauto with α_eq_db a_constr_db.
   intros.
   generalize dependent s.
   generalize dependent s'.
   generalize dependent R.
-  induction A; intros.
-  - simpl. simpl in X.
-    eapply α_preserves_SN_R with (s := s); eauto.
-  - simpl in X.
-    simpl.
-    intros t' Ht.
-
-    remember (sym_alpha_ctx R) as R'.
-    assert (Alpha R' s' s).
-    {
-      subst.
-      eauto with α_eq_db.
-    }
-
-    remember (@a_constr R' s' s t') as Rt.
+  induction A.
+  all: intros. simpl. simpl in *.
+  - eapply α_preserves_SN_R with (s := s); eauto.
+  - intros t' Ht.
+  
+    remember (@a_constr (sym_alpha_ctx R) s' s t') as Rt.
     destruct Rt as [R_ t].
     
-    (* first arg of R_extender needs to live in the same alpha land as the last*)
     eapply (IHA2 (sym_alpha_ctx R_) _ (tmapp s t)).
     + eapply @alpha_sym. eapply sym_alpha_ctx_is_sym.
-      constructor; eauto.
-      * eapply a_constr__s_alpha; eauto.
-      * eapply a_constr__t_alpha; eauto.
-    + 
-    eapply X. eapply (IHA1 R_ t t'); eauto with α_eq_db.
-    eapply a_constr__t_alpha; eauto.
+      constructor; eauto...
+    + eapply X. eapply (IHA1 R_ t t'); eauto...
 Qed.
 
 Lemma reducible_sn : reducible SN_gu.
@@ -978,8 +806,6 @@ Proof.
   inversion H0; subst.
   inversion H2; subst.
 Qed.
-
-Set Printing Implicit.
 
 Lemma L_reducible A :
   reducible (L A).
@@ -1008,7 +834,6 @@ Proof with eauto using step_gu.
           apply gu_app_l in H0.
           econstructor; eauto.
         }
-        specialize (h s0 Hgn).
         eapply α_preserves_L_R with (s' := t2) in la; eauto.
       * assert (step_gu t t0).
         {
@@ -1016,10 +841,9 @@ Proof with eauto using step_gu.
           econstructor; eauto.    
         }
         specialize (ih3 t0 H).
-        apply (p_cl ih1 la) in H.
-        specialize (ih3 H).
         eapply α_preserves_L_R; eauto.
         constructor; eauto. eapply alpha_refl. constructor.
+        eapply p_cl in H; eauto.
 Qed.
 
 Corollary L_sn A s : L A s -> SN_gu s.
@@ -1061,7 +885,6 @@ Definition EL (Gamma : list (string * PlutusIR.kind))
   forall x T, lookup x Gamma = Some T ->
     { t & prod (lookup x sigma = Some t) (L T t)}.
 
-(* is true! *)
 Lemma extend_EL (Gamma : list (string * PlutusIR.kind)) (sigma : list (string * term)) x T t :
   EL Gamma sigma -> L T t -> EL ((x, T) :: Gamma) ((x, t) :: sigma).
 Proof.

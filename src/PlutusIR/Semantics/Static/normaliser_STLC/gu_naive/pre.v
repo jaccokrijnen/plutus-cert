@@ -610,6 +610,14 @@ Proof.
   inversion 1; auto.
 Qed.
 
+Lemma gu_app_st__gu_app_ts {B} s1 s2 :
+  GU (@tmapp B s1 s2) -> GU (@tmapp B s2 s1).
+Proof.
+  intros.
+  inversion H; subst.
+  constructor; auto.
+Qed.
+
 Lemma gu_applam_to_nc {BA} {BL} s t x A :
   GU (@tmapp BA (@tmlam BL x A s) t) -> NC s [(x, t)].
 Proof.

@@ -100,7 +100,6 @@ src/PlutusIR/Semantics/Static/normaliser_STLC/AutosubstSsr.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/ARS.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/Context.v
 
-src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/port_plut.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/port_plut2.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/plutus_util.v
 src/PlutusIR/Semantics/Static/normaliser_STLC/gu_naive/pre.v

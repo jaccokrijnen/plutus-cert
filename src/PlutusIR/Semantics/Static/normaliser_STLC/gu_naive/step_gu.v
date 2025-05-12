@@ -13,7 +13,7 @@ Require Import Coq.Arith.Arith.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From PlutusCert Require Import alpha_typing STLC_named STLC_named_typing ARS gu_naive.pre gu_naive.constructions.
+From PlutusCert Require Import STLC_named STLC_named_typing ARS gu_naive.pre gu_naive.constructions.
 From PlutusCert Require Import alpha.alpha alpha_rename rename util alpha_ctx_sub freshness alpha_freshness.
 
 
