@@ -509,7 +509,6 @@ Qed.
   Qed.
 
 
-
 Lemma drop_Δ_cons__inclusion : forall Δ b bs,
     List.inclusion (drop_Δ Δ (b::bs)) (drop_Δ (binds_Delta b ++ Δ) bs).
 Proof.
