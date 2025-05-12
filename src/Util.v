@@ -8,6 +8,8 @@ Import ListNotations.
 From QuickChick Require Import QuickChick.
 From QuickChick Require Import CheckerProofs.
 
+Ltac inv H := inversion H; try clear H; try subst.
+
 Section list_rect'.
   Variable (a : Type).
   Variable (res_a : a -> Type).

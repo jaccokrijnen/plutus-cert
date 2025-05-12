@@ -2,7 +2,7 @@ From mathcomp Require Import ssreflect ssrbool eqtype ssrnat.
 From Coq Require Import ssrfun.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
-From PlutusCert Require Import Util.List AutosubstSsr.
+From PlutusCert Require Import Util.List.
 Import ListNotations.
 Local Open Scope string_scope.
 Local Open Scope list_scope.
@@ -13,7 +13,7 @@ Require Import Coq.Arith.Arith.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From PlutusCert Require Import step_gu STLC_named STLC_named_typing ARS.
+From PlutusCert Require Import step_gu STLC_named STLC_named_typing.
 From PlutusCert Require Import alpha_typing alpha.alpha alpha_rename rename util alpha_ctx_sub freshness alpha_freshness.
 From PlutusCert Require Import SN_STLC_named_naive gu_naive.pre gu_naive.constructions.
 

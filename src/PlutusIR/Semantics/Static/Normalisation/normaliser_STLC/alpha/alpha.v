@@ -4,7 +4,7 @@ From mathcomp Require Import ssreflect ssrbool eqtype ssrnat.
 From Coq Require Import ssrfun.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
-From PlutusCert Require Import Util.List AutosubstSsr freshness util.
+From PlutusCert Require Import Util.List freshness util.
 Import ListNotations.
 Local Open Scope string_scope.
 Local Open Scope list_scope.
@@ -14,7 +14,7 @@ Require Import Coq.Program.Basics.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From PlutusCert Require Import STLC_named ARS util.
+From PlutusCert Require Import STLC_named util.
 
 Inductive AlphaVar : list (string * string) -> string -> string -> Set :=
 | alpha_var_refl x : AlphaVar [] x x
@@ -886,7 +886,7 @@ Proof.
     destr_eqb_eq s0 s.
     + simpl in H.
       rewrite String.eqb_refl in H.
-      inv H.
+      inversion H.
       constructor.
     + assert (s1 <> s').
       {
@@ -894,7 +894,7 @@ Proof.
         subst.
         simpl in H0.
         rewrite String.eqb_refl in H0.
-        inv H0.
+        inversion H0.
         contradiction.
       }
       constructor; eauto.
@@ -929,8 +929,8 @@ Proof.
   - simpl. constructor.
   - destruct a.
     constructor.
-    + intros Hcontra. subst. simpl in H. rewrite String.eqb_refl in H. inv H.
-    + intros Hcontra. subst. simpl in H0. rewrite String.eqb_refl in H0. inv H0.
+    + intros Hcontra. subst. simpl in H. rewrite String.eqb_refl in H. inversion H.
+    + intros Hcontra. subst. simpl in H0. rewrite String.eqb_refl in H0. inversion H0.
     + eapply IHR; eauto.
       * eapply lookup_cons_None_helper. eauto.
       * eapply lookup_r_cons_None_helper. eauto.
