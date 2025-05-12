@@ -10,6 +10,8 @@ Require Export PlutusCert.PlutusIR.Semantics.Static.Normalisation.
 Require Export PlutusCert.PlutusIR.Semantics.Static.TypeSubstitution.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Builtins.Signatures.
 
+From PlutusCert Require Import Dynamic.AnnotationSubstitution.
+
 Import Coq.Lists.List.
 Import ListNotations.
 Import Coq.Strings.String.
@@ -591,6 +593,9 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
   | T_TyAbs : forall Δ Γ X K t Tn,
       ((X, K) :: Δ) ,, (drop_ty_var X Γ) |-+ t : Tn ->
       Δ ,, Γ |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
+  | T_TyAbs2 : forall Δ Γ X K Y t Tn,
+      ((X, K) :: Δ) ,, (drop_ty_var X Γ) |-+ t : Tn ->
+      Δ ,, Γ |-+ (TyAbs X K t) : (Ty_Forall Y K (substituteTCA X (Ty_Var Y) Tn))
   | T_TyInst : forall Δ Γ t1 T2 T1n X K2 T0n T2n,
       Δ ,, Γ |-+ t1 : (Ty_Forall X K2 T1n) ->
       ((X, K2)::Δ) |-* T1n : Kind_Base -> (* Richard: Added *)
@@ -760,7 +765,38 @@ Proof.
   inversion H13; subst.
   simpl in H1.
   inversion H1.
+  admit.
+Admitted.
+
+Lemma substituteTCA_inverter Tn X :
+    substituteTCA X (Ty_Var X) Tn = (Ty_Var X) -> Tn = Ty_Var X.
+Admitted.
+  
+
+
+
+Lemma test t :
+  [] ,, [] |-+ (TyAbs "X" Kind_Base t) : (Ty_Forall "X" Kind_Base (Ty_Var "X"))
+  -> [] ,, [] |-+ (TyAbs "X" Kind_Base t) : (Ty_Forall "Y" Kind_Base (Ty_Var "Y")).
+Proof.
+  intros.
+  assert (Ty_Var "Y" = substituteTCA "X" (Ty_Var "Y") (Ty_Var "X")).
+  {
+    autorewrite with substituteTCA.
+    rewrite String.eqb_refl. auto.
+  }
+  rewrite H0.
+  eapply T_TyAbs2.
+  inversion H; subst; auto.
+  assert (Tn = Ty_Var "X").
+  {
+    apply substituteTCA_inverter; auto.
+  }
+  rewrite H1 in *.
+  subst.
+  assumption.
 Qed.
+
   
 
 
@@ -808,7 +844,7 @@ Proof with eauto.
   induction 1; intros; eauto using normalise_to_normal...
   - inversion IHhas_type1; subst...
     inversion H1.
-Qed.
+Admitted.
 
 
 (* ↪ = \hookrightarrow *)

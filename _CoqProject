@@ -123,6 +123,7 @@ src/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/LetRec.v
 src/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Unwrap.v
 src/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TermBind.v
 src/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TyAbs.v
+src/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TyAbs2.v
 src/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TyInst.v
 src/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TypeBind.v
 src/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Var.v

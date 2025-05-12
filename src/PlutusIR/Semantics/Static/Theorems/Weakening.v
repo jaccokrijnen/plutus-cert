@@ -99,6 +99,12 @@ Module Typing.
       apply H0.
       apply inclusion_cons; auto.
       eapply drop_ty_var__inclusion_preserving; eauto.
+    - (* TyAbs2 *)
+      unfold P_has_type in H0.
+      apply T_TyAbs2; auto.
+      apply H0.
+      apply inclusion_cons; auto.
+      eapply drop_ty_var__inclusion_preserving; eauto.
     - (* T_Let NonRec*)
       econstructor; subst; eauto using Kinding.weakening, inclusion_cons, inclusion_append.
       apply Kinding.weakening with (Delta := drop_Δ Δ bs); auto.

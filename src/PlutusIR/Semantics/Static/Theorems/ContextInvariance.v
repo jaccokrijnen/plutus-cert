@@ -130,6 +130,11 @@ Module Typing.
       apply H0.
       intros.
       eapply drop_ty_var__inclusion_ftv; eauto.
+    - (* T_TyAbs2 *)
+      apply T_TyAbs2...
+      apply H0.
+      intros.
+      eapply drop_ty_var__inclusion_ftv; eauto.
     - (* T_Let *)
       subst.
       eapply T_Let...

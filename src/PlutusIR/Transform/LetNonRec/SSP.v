@@ -144,7 +144,6 @@ Theorem CNR_Term__SSP : ∀ t t',
     + subst. 
       apply binds_Delta__btvbs in H_eq_Delta.
       erewrite btvbs_eq__drop_Δ_eq; eauto.
-
   - (* CNR_LetRec_nil *)
     unfold P_CNR_Bindings.
     intros.

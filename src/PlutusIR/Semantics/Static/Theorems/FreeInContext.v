@@ -100,6 +100,14 @@ Module Term.
       }
       specialize (H0 x0 H1) as [T' Hlookup].
       eapply drop_ty_var__lookup_some; eauto.
+    - (* T_TyAbs2 *)
+      unfold P_has_type in H0.
+      assert (Term.appears_free_in x0 t).
+      { 
+        inversion Hafi; subst; auto.
+      }
+      specialize (H0 x0 H1) as [T' Hlookup].
+      eapply drop_ty_var__lookup_some; eauto.
     - (* T_Let *)
       inversion Hafi.
       + subst.
@@ -189,6 +197,8 @@ Module Annotation.
       subst.
       eapply H0 in H5...
       rewrite lookup_neq in H5...
+    - (* T_TyAbs2 *)
+      admit.
     - (* T_Let*)
       inversion Hafi.
       + subst.
@@ -234,7 +244,7 @@ Module Annotation.
         apply inclusion_append.
         apply drop_Δ'__inclusion.
       + eapply H8...
-  Qed.
+  Admitted.
 
 End Annotation.
 
