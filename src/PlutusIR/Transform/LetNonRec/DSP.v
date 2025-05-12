@@ -300,7 +300,8 @@ Definition P_bindings_well_formed_nonrec Delta Gamma bs : Prop :=
 
 Definition P_bindings_well_formed_rec Delta Gamma bs1 : Prop := Delta ,, Gamma |-oks_r bs1.
 
-Definition P_binding_well_formed Delta Gamma b : Prop :=
+Definition P_binding_well_formed Delta Gamma (rec : recursivity) b : Prop :=
+  rec = NonRec -> (* Richard: In line with under-defined LetRec *)
   (
     forall b',
       Compat.Compat_Binding CNR_Term b b' ->
@@ -423,7 +424,8 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
         rewrite <- flatten_app...
 
   - (* W_Term *)
-    split. all: intros. all: subst.
+    split.
+     all: intros. all: subst.
     + inv_Compat...
     + inv_CNR.
       eapply compatibility_TermBind__desugar...

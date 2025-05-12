@@ -35,11 +35,11 @@ Definition P_bindings_well_formed_rec Δ Γ bs1 : Prop :=
     Δ ,, Γ |-oks_r bs2
 .
 
-Definition P_binding_well_formed Δ Γ b1 : Prop :=
+Definition P_binding_well_formed Δ Γ rec b1 : Prop :=
   forall b2,
-    Δ ,, Γ |-ok_b b1 ->
+    Δ ,, Γ |-ok_b rec # b1 ->
     Compat.Compat_Binding dc b1 b2 ->
-    Δ ,, Γ |-ok_b b2
+    Δ ,, Γ |-ok_b rec # b2
 .
 
 #[export] Hint Unfold
