@@ -53,6 +53,24 @@ Fixpoint lookup_r {X:Type} (k : string) (l : list (X * string)) : option X :=
   | (x, j) :: l' => if j =? k then Datatypes.Some x else lookup_r k l'
   end.
 
+Lemma lookup_r_eq {X} k (v : X) kvs : lookup_r k ((v, k) :: kvs) = Some v.
+Proof.
+  simpl.
+  destruct (k =? k) eqn:H_eqb.
+  - reflexivity.
+  - rewrite eqb_neq in H_eqb.
+    contradiction.
+Qed.
+
+Lemma lookup_r_neq {X} k1 k2 (v : X) kvs : k1 <> k2 -> lookup_r k1 ((v, k2) :: kvs) = lookup_r k1 kvs.
+Proof with auto.
+  intros H_neq.
+  simpl.
+  rewrite eqb_sym.
+  rewrite <- eqb_neq in H_neq.
+  rewrite H_neq...
+Qed.
+
 
 Lemma cons_to_append {A } (x : A) sigma :
   (x :: sigma) = (x :: nil) ++ sigma.
@@ -194,6 +212,14 @@ Lemma lookup_r__app {A :Type} (k : string ) (v : A) (l1 l2 : list (A * string)) 
 Proof.
 Admitted.
 
+Lemma lookup_none_smaller (R1 R2: list (string * string)) s :
+  (forall x, In x (map fst R1) -> In x (map fst R2)) -> lookup s R2 = None -> lookup s R1 = None.
+Admitted.
+
+Lemma lookupr_none_smaller (R1 R2: list (string * string)) s :
+  (forall x, In x (map snd R1) -> In x (map snd R2)) -> lookup_r s R2 = None -> lookup_r s R1 = None.
+Admitted.
+
 (* NOT DIFFICULT: It must exist *)
 Lemma lookup_split_app_helper R1 R2 s s' :
   lookup s (R1 ++ R2) = Some s' -> lookup_r s' (R1 ++ R2) = Some s ->
@@ -265,8 +291,8 @@ Proof.
 Admitted.
 
 
-Lemma in_map__exists_lookup (x y : string) l :
-  In (x, y) l -> {y' & lookup x l = Some y'}.
+Lemma in_map__exists_lookup {A : Type} (x : string) (t : A) l :
+  In (x, t) l -> {t' & lookup x l = Some t'}.
 Admitted.
 
 Inductive star {A : Type} {e : A -> A -> Type } (x : A) : A -> Type :=

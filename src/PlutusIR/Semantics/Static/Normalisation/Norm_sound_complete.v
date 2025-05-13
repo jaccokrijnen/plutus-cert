@@ -25,7 +25,7 @@ Proof.
   + apply N_TyLam.
     now apply normalisation__stable'__normal.
   + now apply normalisation__stable'__normal.
-  + (* TY_SOP *) admit.
+  + (* ADMIT: Unimplemented TY_SOP *) admit.
 Admitted.
 
 Require Import Coq.Program.Equality.
@@ -423,7 +423,8 @@ Proof.
     specialize (IHnormalise1 Δ (Kind_Arrow K1 K0) H2).
     inversion IHnormalise1; subst.
     assumption.
-  - admit.
+  - (* ADMIT: Unimplemented Ty_SOP*)
+    admit.
 Admitted.
 
 Theorem normaliser_preserves_kinding {Δ T Tn K } :

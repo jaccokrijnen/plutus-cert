@@ -355,26 +355,131 @@ Lemma ftv_keys_env_helper sigma x :
     -> ~ In x (ftv_keys_env sigma).
 Admitted.
 
+Lemma In_btv_env__exists sigma x :
+  In x (btv_env sigma) -> exists t, In t (map snd sigma) /\ In x (btv t).
+Proof.
+  intros HIn.
+  induction sigma.
+  - inversion HIn.
+  - destruct a as [a1 a2].
+    simpl in HIn.
+    apply in_app_or in HIn as [HIn | HIn].
+    + exists a2. simpl. split. left. reflexivity. assumption. 
+    + apply IHsigma in HIn as [t [HIn_t Hbtv_t]].
+      exists t. split. simpl. right. auto. auto.
+Qed.
 
-Lemma subs_does_not_create_btv sigma x s :
-  ~ In x (btv s) -> ~ In x (btv_env sigma) -> ~ In x (btv (psubs sigma s)).
-Admitted.
+Lemma btv_env_lookup__in σ x s t :
+  lookup s σ = Some t -> In x (btv t) -> In x (btv_env σ).
+Proof.
+  intros Hl Hbtv.
+  induction σ.
+  - inversion Hl.
+  - destruct a as [a1 a2].
+    inversion Hl.
+    destr_eqb_eq a1 s.
+    + inversion H0; subst; clear H0.
+      simpl in Hl.
+      rewrite String.eqb_refl in Hl.
+      simpl. apply in_app_iff. left. auto.
+    + simpl in Hl.
+      apply String.eqb_neq in H.
+      rewrite H in Hl.
+      simpl.
+      apply in_app_iff.
+      right.
+      apply IHσ.
+      auto.
+Qed.
 
+Lemma in_btv_psubs_then_in_constituents2 x sigma s :
+  In x (btv (psubs sigma s)) -> In x (btv s) \/ (In x (btv_env sigma)).
+Proof.
+  intros Hbtv_psubs.
+  induction s.
+  - simpl in Hbtv_psubs.
+    destruct (lookup s sigma) eqn:Hl.
+    + right. eapply btv_env_lookup__in; eauto.
+    + left. auto.
+  - destr_eqb_eq x s.
+    + left. simpl. left. auto.
+    + simpl in Hbtv_psubs.
+      destruct Hbtv_psubs as [Heq | Hbtv_psubs].
+      * symmetry in Heq. contradiction.
+      * apply IHs in Hbtv_psubs as [Hbtv_s0 | Hbtv_sigma].
+        -- left. simpl. right. auto.
+        -- right. auto.
+  - simpl in Hbtv_psubs.
+    apply in_app_or in Hbtv_psubs as [Hbtv_left | Hbtv_right].
+    + apply IHs1 in Hbtv_left as [Hbtv_s1 | Hbtv_sigma].
+      * left. simpl. apply in_app_iff. left. auto.
+      * right. auto.
+    + apply IHs2 in Hbtv_right as [Hbtv_s2 | Hbtv_sigma].
+      * left. simpl. apply in_app_iff. right. auto.
+      * right. auto.
+  - simpl in Hbtv_psubs.
+    contradiction.
+Qed.
+
+(* This seems like an unnecessary indirection*)
 Lemma in_btv_psubs_then_in_constituents x sigma s :
   In x (btv (psubs sigma s)) -> In x (btv s) \/ (exists t, In t (map snd sigma) /\ In x (btv t)).
 Proof.
-Admitted.
+  intros Hbtv_psubs.
+  apply in_btv_psubs_then_in_constituents2 in Hbtv_psubs.
+  destruct Hbtv_psubs as [Hbtv_s | Hbtv_sigma].
+  - left. auto.
+  - right. apply In_btv_env__exists; auto.
+Qed.
 
-Lemma in_btv_subs_then_in_constituents x sigma s :
-  In x (btv (psubs sigma s)) -> In x (btv s) \/ (exists t, In t (map snd sigma) /\ In x (btv t)).
+Lemma psubs_does_not_create_btv sigma x s :
+  ~ In x (btv s) -> ~ In x (btv_env sigma) -> ~ In x (btv (psubs sigma s)).
 Proof.
-  
-Admitted.
+  intros Hbtv_s Hbtv_sigma.
+  intros Hcontra.
+  apply in_btv_psubs_then_in_constituents2 in Hcontra.
+  destruct Hcontra; auto.
+Qed.
 
-Lemma not_in_constitutents_then_not_in_ftv_psubs x sigma s :
-  ~ In x (ftv s) -> ~ In x (flat_map ftv (map snd sigma)) -> ~ In x (ftv (psubs sigma s)).
+Lemma ftv_env_helper x σ s t :
+  ~ In x (flat_map ftv (map snd σ)) -> lookup s σ = Some t -> ~ In x (ftv t).
 Proof.
-Admitted.
+  intros HNin_σ Hl.
+  induction σ.
+  - inversion Hl.
+  - destruct a as [a1 a2].
+    simpl in HNin_σ.
+    apply not_in_app in HNin_σ as [HNin_σ1 HNin_σ2].
+    simpl in Hl.
+    destr_eqb_eq a1 s.
+    + inversion Hl; subst. auto.
+    + apply IHσ; auto.
+Qed.
+
+
+Lemma not_in_constituents_then_not_in_ftv_psubs x σ s :
+  ~ In x (ftv s) -> ~ In x (flat_map ftv (map snd σ)) -> ~ In x (ftv (psubs σ s)).
+Proof.
+  intros HNIn_s HNIn_σ.
+  induction s.
+  - apply not_in_ftv_var in HNIn_s.
+    simpl.
+    destruct (lookup s σ) eqn:Hl.
+    + eapply ftv_env_helper; eauto.
+    + simpl. apply de_morgan2. split; auto.
+  - simpl.
+    destr_eqb_eq x s.
+    + apply not_in_remove. right. auto.
+    + apply not_in_remove. left.
+      apply ftv_lam_negative in HNIn_s; auto.
+  - simpl.
+    simpl in HNIn_s.
+    apply not_in_app in HNIn_s as [HNIn_s1 HNIn_s2].
+    apply not_in_app. split.
+    + apply IHs1; auto.
+    + apply IHs2; auto.
+  - auto.
+Qed.
 
 Lemma btv_env_subset a sigma' sigma :
   incl sigma' sigma ->
@@ -492,7 +597,7 @@ Proof.
 Qed.
 
 
-Lemma subs_does_not_create_ftv sigma x s :
+Lemma psubs_does_not_create_ftv sigma x s :
   ~ In x (ftv s) -> ~ In x (ftv_keys_env sigma) -> ~ In x (ftv (psubs sigma s)).
 Proof.
   intros Hftv_s Hftv_sigma.
@@ -546,7 +651,7 @@ Proof.
   - destr_eqb_eq x x0.
     + apply sub_helper. apply not_ftv_app_not_right in Hftv_t1. auto.
     + rewrite <- single_subs_is_psub.
-      apply subs_does_not_create_ftv.
+      apply psubs_does_not_create_ftv.
       * apply not_ftv_app_not_left in Hftv_t1. auto. eapply ftv_lam_negative; eauto.
       * unfold ftv_keys_env. simpl. apply not_in_cons. split.
         -- auto.

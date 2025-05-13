@@ -2,6 +2,8 @@ Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Strings.String.
 From PlutusCert Require Import STLC_named alpha.alpha Util.List util freshness.
+Require Import Coq.Program.Equality.
+Require Import ssreflect.
 
 (* One subsitution is related to the other through the alpha context*)
 Inductive αCtxSub : list (string * string) -> list (string * term) -> list (string * term) -> Set :=
@@ -14,6 +16,18 @@ Inductive αCtxSub : list (string * string) -> list (string * term) -> list (str
     αCtxSub R ((x, t)::σ) ((y, t')::σ').
 
 
+Lemma αctx_sym σ σ' R :
+  αCtxSub R σ σ' -> αCtxSub (sym_alpha_ctx R) σ' σ.
+Proof.
+  intros Hctx.
+  induction Hctx.
+  all: constructor; auto.
+  - eapply alphavar_sym; eauto. apply sym_alpha_ctx_is_sym.
+  - eapply alpha_sym; eauto. apply sym_alpha_ctx_is_sym.
+Qed.
+
+(* 
+(* Not used? *)
 Lemma alpha_ctx_found ren sigma sigma' x x' t t' :
   αCtxSub ren sigma sigma' ->
   AlphaVar ren x x' ->
@@ -21,15 +35,7 @@ Lemma alpha_ctx_found ren sigma sigma' x x' t t' :
   lookup x' sigma' = Some t' ->
   Alpha ren t t'.
 Proof.
-Admitted.
-
-Lemma alpha_ctx_left_ex {ren sigma sigma' x x' t' }:
-  αCtxSub ren sigma sigma' ->
-  AlphaVar ren x x' ->
-  lookup x' sigma' = Some t' ->
-  { t & prod (lookup x sigma = Some t) (Alpha ren t t')}.
-Proof.
-Admitted.
+Admitted. *)
 
 Lemma alpha_ctx_right_ex {ren sigma sigma' x x' t }:
   αCtxSub ren sigma sigma' ->
@@ -52,19 +58,53 @@ Proof.
     simpl. rewrite <- String.eqb_neq in H0. rewrite H0. auto.
 Qed.
 
+Lemma alpha_ctx_left_ex {ren sigma sigma' x x' t' }:
+  αCtxSub ren sigma sigma' ->
+  AlphaVar ren x x' ->
+  lookup x' sigma' = Some t' ->
+  { t & prod (lookup x sigma = Some t) (Alpha ren t t')}.
+Proof.
+  intros Hctx HA_x Hl.
+  eapply @alphavar_sym with (ren' := sym_alpha_ctx ren) in HA_x; auto.
+  2: { apply sym_alpha_ctx_is_sym. }
+  apply @αctx_sym with (R := ren) in Hctx; auto.
+  eapply alpha_ctx_right_ex in Hl as [t'' [Hl_t'' Ha_t']]; eauto.
+  exists t''. split; auto.
+  eapply @alpha_sym with (ren := (sym_alpha_ctx ren)); auto.
+  apply sym_alpha_ctx_left_is_sym.
+Qed.
+
 Lemma alpha_ctx_left_nex {ren sigma sigma' x x'}:
   αCtxSub ren sigma sigma' ->
   AlphaVar ren x x' ->
   lookup x' sigma' = None ->
   lookup x sigma = None.
-Admitted.
+Proof.
+  intros Hctx HA_x Hl.
+  apply not_in__lookup.
+  intros Hcontra.
+  apply in_map_iff in Hcontra as [ [x'' t] [Hlookup Hcontra'] ].
+  apply in_map__exists_lookup in Hcontra' as [t' Hl_t'].
+  simpl in Hlookup. subst.
+  eapply (alpha_ctx_right_ex Hctx HA_x) in Hl_t' as [t'0 [Hl_t'0 Ha_t'0]].
+  congruence.
+Qed.
 
 Lemma alpha_ctx_right_nex {ren sigma sigma' x x'}:
   αCtxSub ren sigma sigma' ->
   AlphaVar ren x x' ->
   lookup x sigma = None ->
   lookup x' sigma' = None.
-Admitted.
+Proof.
+  intros Hctx HA_x Hl.
+  apply not_in__lookup.
+  intros Hcontra.
+  apply in_map_iff in Hcontra as [ [x'' t] [Hlookup Hcontra'] ].
+  apply in_map__exists_lookup in Hcontra' as [t' Hl_t'].
+  simpl in Hlookup. subst.
+  eapply (alpha_ctx_left_ex Hctx HA_x) in Hl_t' as [t'0 [Hl_t'0 Ha_t'0]].
+  congruence.
+Qed.
 
 Lemma alpha_ctx_ren_nil {sigma }:
   αCtxSub [] sigma sigma.
@@ -76,19 +116,6 @@ Proof.
     + apply alpha_var_refl.
     + apply alpha_refl. apply alpha_refl_nil.
 Qed.
-
-
-
-
-
-Fixpoint ftv_keys_env (sigma : list (string * term)) : list string :=
-  match sigma with
-  | nil => nil
-  | (x, t)::sigma' => x :: (ftv t) ++ (ftv_keys_env sigma')
-  end.
-
-
-Require Import Coq.Program.Equality.
 
 Lemma αctx_trans R1 R2 R σ σ' σ'' :
   αCtxTrans R1 R2 R -> 
@@ -107,9 +134,9 @@ Proof.
     + eapply alpha_trans; eauto.
 Qed.
 
-Lemma αctx_ids idCtx σ σ' :
+(* Lemma αctx_ids idCtx σ σ' :
   IdCtx idCtx -> αCtxSub nil σ σ' -> αCtxSub idCtx σ σ'.
-Admitted.
+Admitted. *)
 
 Lemma αctx_sub_extend_ids_right σ σ' R1 R2 :
   IdCtx R2 -> αCtxSub R1 σ σ' -> αCtxSub (R1 ++ R2) σ σ'.
@@ -124,7 +151,8 @@ Proof.
     + apply alpha_extend_ids_right; auto.
 Qed.
 
-Lemma extend_ftv_keys_env_to_tv x sigma :
-  In x (ftv_keys_env sigma) -> In x (tv_keys_env sigma).
-Proof.
-Admitted.
+Fixpoint ftv_keys_env (sigma : list (string * term)) : list string :=
+  match sigma with
+  | nil => nil
+  | (x, t)::sigma' => x :: (ftv t) ++ (ftv_keys_env sigma')
+  end.

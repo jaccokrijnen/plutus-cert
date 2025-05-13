@@ -2,7 +2,6 @@ Require Import PlutusCert.PlutusIR.Semantics.Static.
 Require Import PlutusCert.PlutusIR.Semantics.Static.Kinding.Checker.
 
 Require Import PlutusCert.PlutusIR.Semantics.Static.Normalisation.Norm_sound_complete.
-From Coq Require Import ssreflect.
 
 From PlutusCert Require Import port_plut2.
 

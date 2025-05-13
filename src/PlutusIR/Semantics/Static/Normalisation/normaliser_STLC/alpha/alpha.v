@@ -262,12 +262,21 @@ Lemma lookup_id_then_lookup_r (x x' : string) (l : list (string * string)) :
   IdCtx l ->
   lookup x l = Some x ->
   lookup_r x l = Some x.
-Admitted.
+Proof.
+  intros Hid Hl.
+  induction Hid.
+  - inversion Hl.
+  - inversion Hid; subst; auto.
+    destr_eqb_eq x x0.
+    + apply lookup_r_eq.
+    + rewrite lookup_neq in Hl; auto.
+      rewrite lookup_r_neq; auto.
+Qed.
 
-Lemma sym_alpha_ctx_preserves_id_ctx ren :
+(* Lemma sym_alpha_ctx_preserves_id_ctx ren :
   IdCtx ren -> IdCtx (sym_alpha_ctx ren).
 Proof.
-Admitted.
+Admitted. *)
 
 Lemma alphavar_unique_right X Y Y' ren :
   AlphaVar ren X Y -> AlphaVar ren X Y' -> Y = Y'.
@@ -872,9 +881,35 @@ Proof.
       * auto.
 Qed.
 
+Lemma lookup_idctx_refl R s t:
+  IdCtx R -> lookup s R = Some t -> s = t.
+Proof.
+  intros Hid Hl.
+  induction R; [inversion Hl|].
+  - destruct a as [a1 a2].
+    inversion Hid; subst.
+    inversion Hl.
+    destr_eqb_eq a2 s.
+    + inversion H1; subst.
+      reflexivity.
+    + apply IHR; auto.
+Qed.
+
 Lemma lookup_some_IdCtx_then_alphavar R s s' :
   IdCtx R -> lookup s R = Some s' -> AlphaVar R s s'.
-Admitted.
+Proof.
+  intros Hid Hl.
+  induction R.
+  - inversion Hl.
+  - destruct a as [a1 a2].
+    inversion Hid; subst.
+    inversion Hl.
+    destr_eqb_eq a2 s.
+    + inversion H1; subst.
+      constructor.
+    + constructor; auto.
+      apply lookup_idctx_refl in H1; subst; auto.
+Qed.
 
 Lemma lookup_some_then_alphavar R s s' :
   lookup s R = Some s' -> lookup_r s' R = Some s -> AlphaVar R s s'.
@@ -936,28 +971,42 @@ Proof.
       * eapply lookup_r_cons_None_helper. eauto.
 Qed.
 
-Lemma lookup_idctx_refl R s t:
-  IdCtx R -> lookup s R = Some t -> s = t.
-Proof.
-Admitted.
-
 Lemma lookup_id_exists_then_refl R s:
   IdCtx R -> In s (map fst R) ->
   ((lookup s R = Some s) * (lookup_r s R = Some s))%type.
-Admitted.
+Proof.
+  intros Hid HIn.
+  induction Hid.
+  - inversion HIn.
+  - destr_eqb_eq x s.
+    + simpl.
+      rewrite String.eqb_refl.
+      auto.
+    + simpl.
+      apply String.eqb_neq in H.
+      rewrite H.
+      apply IHHid.
+      inversion HIn; subst; auto.
+      simpl in H.
+      apply String.eqb_neq in H.
+      contradiction.
+Qed.
 
 Lemma lookup_id_nex_then_not R s:
   IdCtx R -> ~ In s (map fst R) ->
   ((lookup s R = None) * (lookup_r s R = None))%type.
-Admitted.
-
-Lemma lookup_none_smaller (R1 R2: list (string * string)) s :
-  (forall x, In x (map fst R1) -> In x (map fst R2)) -> lookup s R2 = None -> lookup s R1 = None.
-Admitted.
-
-Lemma lookupr_none_smaller (R1 R2: list (string * string)) s :
-  (forall x, In x (map snd R1) -> In x (map snd R2)) -> lookup_r s R2 = None -> lookup_r s R1 = None.
-Admitted.
+Proof.
+  intros Hid HIn.
+  induction Hid.
+  - simpl. auto.
+  - rewrite map_cons in HIn.
+    simpl in HIn.
+    apply de_morgan2 in HIn as [HIn1 HIn2].
+    simpl.
+    apply String.eqb_neq in HIn1.
+    rewrite HIn1.
+    apply IHHid; auto.
+Qed.
 
 Lemma alphavar_weaken_id R idCtx1 s t x :
   IdCtx ((x, x)::idCtx1) -> AlphaVar (R ++ (x, x)::idCtx1) s t -> AlphaVar (R ++ idCtx1) s t.

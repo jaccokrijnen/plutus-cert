@@ -126,6 +126,25 @@ Lemma extend_ftv_to_tv x s :
 Proof.
 Admitted.
 
+Lemma extend_ftv_keys_env_to_tv x sigma :
+  In x (ftv_keys_env sigma) -> In x (tv_keys_env sigma).
+Proof.
+  intros.
+  induction sigma.
+  - inversion H.
+  - destruct a as [a1 a2].
+    unfold tv_keys_env.
+    inversion H.
+    + subst. apply in_eq.
+    + apply in_cons.
+      apply in_app_or in H0; destruct H0 as [H0 | H0].
+      * apply extend_ftv_to_tv in H0.
+        apply in_or_app. left. assumption.
+      * apply in_or_app. right.
+        apply IHsigma.
+        assumption.
+Qed.
+
 Lemma extend_btv_to_tv x s :
   In x (btv s) -> In x (tv s).
 Proof.

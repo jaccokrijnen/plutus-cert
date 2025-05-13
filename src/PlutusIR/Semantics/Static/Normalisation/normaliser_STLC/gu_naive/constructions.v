@@ -1567,7 +1567,7 @@ Proof.
   apply in_btv_psubs_then_in_constituents in H0 as [H_btv_s' | H_btv_p'].
   - split.
     + eapply sconstr2_fresh_over_x0 in H as [Hnot_x0 Hnot_x]; eauto.
-    + apply not_in_constitutents_then_not_in_ftv_psubs.
+    + apply not_in_constituents_then_not_in_ftv_psubs.
       * intros Hcontra.
         assert (In y (ftv t)).
         { eapply sconstr2_preserves_ftv_t; eauto. }
@@ -1591,7 +1591,7 @@ Proof.
     inversion H_eq; try contradiction. simpl in H0. subst.
     split.
     + eapply sconstr2_fresh_over_x0 in H as [Hnot_x0 Hnot_x]; eauto.
-    + apply not_in_constitutents_then_not_in_ftv_psubs.
+    + apply not_in_constituents_then_not_in_ftv_psubs.
       * intros Hcontra.
         assert (In y (ftv t)).
         { eapply sconstr2_preserves_ftv_t; eauto. }
@@ -3180,7 +3180,7 @@ Proof.
     split.
     + intros Hcontra.
       subst.
-      apply in_btv_subs_then_in_constituents in H2.
+      apply in_btv_psubs_then_in_constituents in H2.
       destruct H2 as [Hin_s | [t0 [Ht0_sigma Hin_t0]]].
       * contradiction.
       * contradiction H0.
@@ -3200,7 +3200,7 @@ Proof.
             apply IHsigma.
             auto.
        }
-    + apply in_btv_subs_then_in_constituents in H2.
+    + apply in_btv_psubs_then_in_constituents in H2.
       destruct H2 as [Hin_s | [t0 [Ht0_sigma Hin_t0]]].
       * apply t_constr_btv_s_not_ftv_t' with (x := y) in H1. auto. auto.
         apply in_app_iff. left. auto.

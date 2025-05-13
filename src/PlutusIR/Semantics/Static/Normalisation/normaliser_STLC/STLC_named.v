@@ -70,6 +70,12 @@ Fixpoint tv_keys_env (sigma : list (string * term)) : list string :=
   | (x, t)::sigma' => x :: (tv t) ++ (tv_keys_env sigma')
   end.
 
+Fixpoint ftv_keys_env (sigma : list (string * term)) : list string :=
+match sigma with
+| nil => nil
+| (x, t)::sigma' => x :: (ftv t) ++ (ftv_keys_env sigma')
+end.
+
 Definition fresh2 (sigma : list (string * term)) (T : term) : string :=
   "a" (* new*)
   ++ String.concat EmptyString (
