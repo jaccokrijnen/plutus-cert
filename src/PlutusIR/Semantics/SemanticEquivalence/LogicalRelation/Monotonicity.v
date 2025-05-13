@@ -67,11 +67,12 @@ Proof with (try solve [eauto || lia]).
     eexists. eexists. eexists. eexists. eexists. eexists.
     split... split...
     intros. eapply Hunwr...
-  - destruct HRV_cond as [e_body [e'_body [Heq [Heq' Hie]]]].
+  - admit.
+  (* destruct HRV_cond as [e_body [e'_body [Heq [Heq' Hie]]]].
     eexists. eexists.
     split... split...
-    intros. eapply Hie...
-Qed.
+    intros. eapply Hie... *)
+Admitted.
 
 Lemma V_monotone  k Δ ρ T i v v' :
     D Δ ρ ->

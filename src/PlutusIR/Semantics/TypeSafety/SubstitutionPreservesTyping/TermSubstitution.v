@@ -304,6 +304,26 @@ Proof with eauto.
       eapply T_Var...
       simpl in H3.
       rewrite Heqb in H3...
+  - (* TyAbs *)
+    simpl.
+    inversion H0; subst.
+    + apply T_TyAbs.
+      unfold P_Term in H.
+      eapply H; eauto.
+      (* Suppose s not in U, then done by unfold.
+        Suppose s free in U.
+        then x not in (drop_ty_var s ((x, U) :: Gamma)).
+        then x not free in t.
+        then we can strengthen the goal and remove (x, U).
+        Then drop_ty_var of smaller context is included in
+        drop_ty_var of superset of that context.
+        *)
+      admit.
+    + apply T_TyAbs2; auto.
+      unfold P_Term in H.
+      eapply H; eauto.
+      (* See above *)
+      admit.
   - (* LamAbs *)
     inversion H0. subst.
     simpl.

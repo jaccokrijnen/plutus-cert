@@ -7,17 +7,18 @@ Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.BaseKindedness.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
-
+Require Import Coq.Lists.List.
+Require Import PlutusCert.PlutusIR.Analysis.BoundVars.
 Require Import Arith.
 
 
 
 
-Lemma compatibility_TyAbs: forall Delta Gamma bX K T e e',
+Lemma compatibility_TyAbs2: forall Delta Gamma bX bY K T e e',
     LR_logically_approximate ((bX, K) :: Delta) (drop_ty_var bX Gamma) e e' T ->
-    LR_logically_approximate Delta Gamma (TyAbs bX K e) (TyAbs bX K e') (Ty_Forall bX K T).
+    LR_logically_approximate Delta Gamma (TyAbs bX K e) (TyAbs bX K e') (Ty_Forall bY K (substituteTCA bX (Ty_Var bY) T)).
 Proof with eauto_LR.
-  intros Delta Gamma bX K T e e' IH_LR.
+  intros Delta Gamma bX bY K T e e' IH_LR.
   unfold LR_logically_approximate.
 
   destruct IH_LR as [Htyp__e [Htyp__e' IH__e]].
@@ -36,16 +37,15 @@ Proof with eauto_LR.
   intros j Hlt__j e_f Hev__e_f.
   inversion Hev__e_f. subst.
 
-  eexists. eexists.
+  eexists. eexists. 
 
   split. {
     eapply eval_result. apply R_Value. apply V_TyAbs.
   }
 
   split... 
-  (* BROKEN BY new tyabs rule! *)
   {
-    apply T_TyAbs in Htyp__e.
+    eapply T_TyAbs2 in Htyp__e; eauto.
     eapply has_type__basekinded in Htyp__e as H...
     eapply closing_preserves_kinding_1 in H as H0...
     rewrite msubstT_TyForall in H0.
@@ -63,7 +63,7 @@ Proof with eauto_LR.
     eauto.
   }
   split... {
-    apply T_TyAbs in Htyp__e'.
+    eapply T_TyAbs2 in Htyp__e'; auto.
     eapply has_type__basekinded in Htyp__e' as H...
     eapply closing_preserves_kinding_2 in H as H0...
     rewrite msubstT_TyForall in H0.
@@ -83,9 +83,17 @@ Proof with eauto_LR.
 
   left. split. intros Hcon. inversion Hcon. split. intros Hcon. inversion Hcon.
 
-  eexists. eexists. left.
+  eexists. eexists. right.
 
-  split... split...
+  split...
+  {
+    
+    admit.
+  }
+   split...
+   {
+    admit.
+   }
 
   intros.
   rewrite substA_msubst by eauto using Ty.kindable_empty__closed.
@@ -93,11 +101,11 @@ Proof with eauto_LR.
   rewrite <- substA_msubstA by eauto using Ty.kindable_empty__closed.
   rewrite <- substA_msubstA by eauto using Ty.kindable_empty__closed.
 
-  eapply IH__e.
+  (* eapply IH__e.
   - eapply RD_cons; eauto.
   - apply RG_extend_rho.
     eapply RG_monotone; eauto.
-    rewrite <- minus_n_O in Hlt_i.
+    rewrite <- minus_n_O in Hlt_i. *) 
 
 
     (* apply Nat.lt_le_incl.

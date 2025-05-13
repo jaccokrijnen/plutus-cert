@@ -276,3 +276,125 @@ Create HintDb hintdb__eval_with_error.
 
 Definition terminates t := exists v j, t =[ j ]=> v.
 Notation "t '⇓'" := (terminates t) (at level 101).
+
+From Coq Require Import Strings.String.
+Local Open Scope string_scope.
+Require Import Coq.Lists.List.
+Import ListNotations.
+From PlutusCert Require Import Static.Typing.
+
+Definition KB := Kind_Base.
+Definition Kid := Kind_Arrow Kind_Base Kind_Base.
+Definition t := TyAbs "α" Kind_Base (
+      TyInst (
+        TyAbs "Y" (Kind_Base) (TyAbs "α" (Kind_Base) (Var "x"))) (Ty_Var "α")).
+
+Definition FRSH := (fresh "Y"
+                  (Ty_Var "α")
+                  (Ty_Builtin
+                  DefaultUniInteger)).
+
+(* This derivation was also possible in Master *)
+Lemma t_wt :
+  [] ,, [("x", Ty_Int)] |-+ t : (Ty_Forall "α" Kind_Base (Ty_Forall FRSH Kind_Base Ty_Int)).
+Proof.
+  apply T_TyAbs.
+  eapply T_TyInst with (X := "Y").
+  - apply T_TyAbs.
+    apply T_TyAbs.
+    eapply T_Var. simpl. reflexivity. constructor. constructor. constructor.
+  - constructor. constructor. constructor.
+  - constructor. simpl. reflexivity.
+  - constructor.
+  - autorewrite with substituteTCA.
+    destruct ("Y" =? "α") eqn:Heqn.
+    + (* impossible *)
+      admit.
+    + assert ( existsb
+        (String.eqb
+        "α")
+        (TypeSubstitution.ftv
+        (Ty_Var
+        "α")) = true) by admit.
+      simpl.
+      unfold rename.
+      unfold substituteT.
+      autorewrite with substituteTCA.
+      unfold Ty_Int.
+      unfold FRSH.
+      constructor.
+      constructor.
+Admitted.
+
+Definition t_bool := (TyInst t Ty_Bool).
+
+Lemma t_bool_wt :
+  [] ,, [("x", Ty_Int)] |-+ t_bool : (Ty_Forall FRSH Kind_Base Ty_Int).
+Proof.
+  eapply T_TyInst; try apply t_wt; eauto.
+  - constructor. constructor. constructor.
+  - repeat constructor.
+  - repeat constructor.
+  - autorewrite with substituteTCA.
+    destruct ("α" =? FRSH) eqn:Heqn.
+    + (* impossible *)
+      admit.
+    + assert (  existsb
+        (String.eqb
+        FRSH)
+        (TypeSubstitution.ftv
+        (Ty_Builtin
+        DefaultUniBool)) = false) by admit.
+      simpl.
+      autorewrite with substituteTCA.
+      unfold Ty_Int.
+      unfold FRSH.
+      constructor.
+      autorewrite with substituteTCA.
+      constructor.
+Admitted.
+
+Definition v_bool := TyAbs "α" Kind_Base (Var "x").
+
+(* This was the only assignable type in the old type system*)
+Lemma v_bool_wt :
+  [] ,, [("x", Ty_Int)] |-+ v_bool : (Ty_Forall "α" Kind_Base Ty_Int).
+Proof.
+    apply T_TyAbs.
+    apply T_Var with (T := Ty_Int) (K := Kind_Base).
+    - (* yes *) admit.
+    - constructor. constructor.
+    - constructor.
+Admitted.
+
+(*But now we can also give it this type, which is the same as for t_bool (which steps to v_bool) *)
+Lemma v_bool_wt2 :
+  [] ,, [("x", Ty_Int)] |-+ v_bool : (Ty_Forall FRSH Kind_Base Ty_Int).
+Proof.
+    assert (substituteTCA "α" (Ty_Var FRSH) (Ty_Int) = Ty_Int).
+    {
+        unfold Ty_Int. autorewrite with substituteTCA.
+        reflexivity.
+    }
+    rewrite <- H.
+    apply T_TyAbs2.
+    apply T_Var with (T := Ty_Int) (K := Kind_Base).
+    - rewrite H. (* Yes*) admit.
+    - constructor. constructor.
+    - constructor.
+Admitted.
+
+From Coq Require Import micromega.Lia.
+
+(* Just to be sure *)
+Lemma t_bool__evaluates__v_bool :
+  t_bool =[2]=> v_bool.
+Proof.
+    unfold t_bool.
+    unfold v_bool.
+    unfold t.
+    repeat econstructor.
+    lia.
+Qed.
+
+(* t_bool evaluates to *)

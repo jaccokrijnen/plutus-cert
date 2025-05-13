@@ -101,6 +101,7 @@ src/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping/TypeSubstitution.v
 src/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping/SubstituteTCA.v
 src/PlutusIR/Semantics/TypeSafety/TypeLanguage/StrongNormalisation.v
 src/PlutusIR/Semantics/TypeSafety/TypeLanguage/Preservation.v
+src/PlutusIR/Semantics/TypeSafety/Preservation.v
 
 src/PlutusIR/Semantics/SemanticEquivalence/Auto.v
 src/PlutusIR/Semantics/SemanticEquivalence/Congruence.v
@@ -122,6 +123,7 @@ src/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/LetRec.v
 src/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Unwrap.v
 src/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TermBind.v
 src/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TyAbs.v
+src/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TyAbs2.v
 src/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TyInst.v
 src/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/TypeBind.v
 src/PlutusIR/Semantics/SemanticEquivalence/CompatibilityLemmas/Var.v

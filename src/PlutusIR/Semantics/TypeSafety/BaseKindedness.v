@@ -24,10 +24,13 @@ Proof with (eauto || solver).
   - (* ADMIT: See end of proof *)
     admit.
   - inversion IHhas_type1...
+  -
+    admit.
+
   - inversion IHhas_type. subst.
     eapply preservation.
     2:{
-      apply H2.
+      apply H3.
     }
     eapply substituteTCA_preserves_kinding...
     eapply preservation...
@@ -39,7 +42,13 @@ Proof with (eauto || solver).
     econstructor...
     econstructor...
     econstructor...
-    econstructor...
+    apply K_IFix with (K := K0).
+    + econstructor...
+      remember (freshUnwrapIFix Fn) as fr.
+      simpl.
+      rewrite String.eqb_refl.
+      auto.
+    + 
     (* ADMIT: Should follow from uniqnuess property. *)
     admit.
   - (* TODO: keep typing derivation around during induction and use uniType__basekinded *)
