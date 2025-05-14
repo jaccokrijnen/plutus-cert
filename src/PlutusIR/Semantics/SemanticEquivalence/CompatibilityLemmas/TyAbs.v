@@ -14,7 +14,7 @@ Require Import Arith.
 
 
 Lemma compatibility_TyAbs: forall Delta Gamma bX K T e e',
-    LR_logically_approximate ((bX, K) :: Delta) Gamma e e' T ->
+    LR_logically_approximate ((bX, K) :: Delta) (drop_ty_var bX Gamma) e e' T ->
     LR_logically_approximate Delta Gamma (TyAbs bX K e) (TyAbs bX K e') (Ty_Forall bX K T).
 Proof with eauto_LR.
   intros Delta Gamma bX K T e e' IH_LR.
@@ -22,7 +22,8 @@ Proof with eauto_LR.
 
   destruct IH_LR as [Htyp__e [Htyp__e' IH__e]].
 
-  split... split...
+  split...
+  split...
 
   intros k rho env env' HRD HRG.
 
@@ -94,8 +95,10 @@ Proof with eauto_LR.
   - eapply RD_cons; eauto.
   - apply RG_extend_rho.
     eapply RG_monotone; eauto.
-
     rewrite Nat.sub_0_r in Hlt_i.
-    apply Nat.lt_le_incl.
-    assumption.
-Qed.
+
+    (* TODO: see #91 (weakening for logical approximation) *)
+
+    (* apply Nat.lt_le_incl.
+    assumption. *)
+Admitted.
