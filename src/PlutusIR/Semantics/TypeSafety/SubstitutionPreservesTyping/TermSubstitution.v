@@ -319,11 +319,6 @@ Proof with eauto.
         drop_ty_var of superset of that context.
         *)
       admit.
-    + apply T_TyAbs2; auto.
-      unfold P_Term in H.
-      eapply H; eauto.
-      (* See above *)
-      admit.
   - (* LamAbs *)
     inversion H0. subst.
     simpl.

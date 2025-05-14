@@ -293,7 +293,7 @@ Definition FRSH := (fresh "Y"
                   (Ty_Var "α")
                   (Ty_Builtin
                   DefaultUniInteger)).
-
+(* 
 (* This derivation was also possible in Master *)
 Lemma t_wt :
   [] ,, [("x", Ty_Int)] |-+ t : (Ty_Forall "α" Kind_Base (Ty_Forall FRSH Kind_Base Ty_Int)).
@@ -395,6 +395,6 @@ Proof.
     unfold t.
     repeat econstructor.
     lia.
-Qed.
+Qed. *)
 
 (* t_bool evaluates to *)

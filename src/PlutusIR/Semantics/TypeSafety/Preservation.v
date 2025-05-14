@@ -39,7 +39,7 @@ Proof.
     - (* E_TyAbs *)
       exact Ht.
     - (* E_TyInst *)
-      apply IHHbs2.
+      (* apply IHHbs2.
       inversion Ht; subst.
       apply IHHbs1 in H2.
       inversion H2; subst.
@@ -60,7 +60,7 @@ Proof.
         subst.
         auto.
          (* relation of normalise and substituteT
-        *)
+        *) *)
         admit.
     - (* E_IWrap *)
       inversion Ht; subst.

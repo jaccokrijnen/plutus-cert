@@ -125,15 +125,11 @@ Module Typing.
       + apply eqb_neq in Heqb.
         rewrite lookup_neq; auto.
         rewrite lookup_neq; auto.
-    - unfold P_has_type in H0.
-      apply T_TyAbs.
+    - (* T_TyAbs2 *)
+      apply T_TyAbs...
       apply H0.
       intros.
       eapply drop_ty_var__inclusion_ftv; eauto.
-    - (* T_TyAbs2 *)
-      apply T_TyAbs2...
-      apply H0.
-      intros.
       eapply drop_ty_var__inclusion_ftv; eauto.
     - (* T_Let *)
       subst.

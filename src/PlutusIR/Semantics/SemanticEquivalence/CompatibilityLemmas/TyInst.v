@@ -67,7 +67,7 @@ Proof with eauto_LR.
 
     apply RV_instantiational_extensionality in HRV as temp...
     destruct temp as [temp | temp].
-    + destruct temp as [Hnerr [Hnerr' [e_body [e'_body [Heq [Heq' Hie]]]]]].
+    + destruct temp as [Hnerr [Hnerr' [e_body [e'_body [bY [bZ[Heq [Heq' Hie]]]]]]]].
 
       inversion Heq. subst. clear Heq.
 
@@ -83,8 +83,8 @@ Proof with eauto_LR.
         RC (k - j_1 - 1)
           T1n
           ((X, (Chi, msubstT (msyn1 rho) T2, msubstT (msyn2 rho) T2)) :: rho)%list
-          <{ :[X := {msubstT (msyn1 rho) T2}] e_body }>
-          <{ :[X := {msubstT (msyn2 rho) T2}] e'_body }>
+          <{ :[bY := {msubstT (msyn1 rho) T2}] e_body }>
+          <{ :[bZ := {msubstT (msyn2 rho) T2}] e'_body }>
       ). eapply r...
 
       eapply RC_to_RV with (j := j_2) (e_f := e_f) in HRC2 as temp...

@@ -10,16 +10,23 @@ Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstituti
 
 Require Import Arith.
 
+Search "RC".
 
+(* TODO: Not sure if this holds *)
+Lemma RC_rename_T k T rhos ρ e e' bX bY :
+    RC k T                                ((bX, ρ)::rhos) e e' ->
+    RC k (substituteTCA bX (Ty_Var bY) T) ((bY, ρ)::rhos) e e'.
+Proof.
+Admitted.
 
-
-Lemma compatibility_TyAbs: forall Delta Gamma bX K T e e',
-    LR_logically_approximate ((bX, K) :: Delta) (drop_ty_var bX Gamma) e e' T ->
-    LR_logically_approximate Delta Gamma (TyAbs bX K e) (TyAbs bX K e') (Ty_Forall bX K T).
+Lemma compatibility_TyAbs: forall Delta Gamma bX bY K T e e',
+    LR_logically_approximate ((bX, K) :: Delta) (drop_ty_var bX (drop_ty_var bY Gamma)) e e' T ->
+        LR_logically_approximate Delta Gamma (TyAbs bX K e) (TyAbs bX K e') 
+                (Ty_Forall bY K (substituteTCA bX (Ty_Var bY) T)).
 Proof with eauto_LR.
-  intros Delta Gamma bX K T e e' IH_LR.
+  intros Delta Gamma bX bY K T e e' IH_LR.
   unfold LR_logically_approximate.
-
+  
   destruct IH_LR as [Htyp__e [Htyp__e' IH__e]].
 
   split... 
@@ -83,7 +90,7 @@ Proof with eauto_LR.
 
   left. split. intros Hcon. inversion Hcon. split. intros Hcon. inversion Hcon.
 
-  eexists. eexists. left.
+  eexists. eexists. eexists. eexists.
 
   split... split...
 
@@ -93,13 +100,31 @@ Proof with eauto_LR.
   rewrite <- substA_msubstA by eauto using Ty.kindable_empty__closed.
   rewrite <- substA_msubstA by eauto using Ty.kindable_empty__closed.
 
-  eapply IH__e.
-  - eapply RD_cons; eauto.
-  - apply RG_extend_rho.
-    eapply RG_monotone; eauto.
-    rewrite <- minus_n_O in Hlt_i.
+  assert (close env (msyn1 rho) (substA bX T1 e) 
+    = close env (msyn1 ((bX, (Chi, T1, T2))::rho)) e) by auto.
+  assert (close env' (msyn2 rho) (substA bX T2 e') = 
+    close env' (msyn2 ((bX, (Chi, T1, T2))::rho)) e') by auto.
+  rewrite H2.
+  rewrite H3.
+  (* ADMIT: bX vs bY. T is related to e/e' with bX*)
 
+  assert (RC i T ((bX, (Chi, T1, T2))::rho) (close env (msyn1 ((bX, (Chi, T1, T2))::rho)) e)
+    (close env' (msyn2 ((bX, (Chi, T1, T2))::rho)) e')).
+  {
+    eapply IH__e.
+    - eapply RD_cons; eauto.
+    - apply RG_extend_rho.
+      eapply RG_monotone; eauto.
+      (*
+      ADMIT: I think same as TyAbs issue 16 branch, see for solution after
+        having merged PR80
+             
+      rewrite <- minus_n_O in Hlt__j.
+      apply Nat.lt_le_incl.
+      assumption. *)
+      admit.
+  }
 
-    (* apply Nat.lt_le_incl.
-    assumption. *)
+  apply RC_rename_T; assumption.  
+
 Admitted.

@@ -9,7 +9,6 @@ Require Export PlutusCert.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLe
 Require Export PlutusCert.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.LetRec.
 Require Export PlutusCert.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.TermBind.
 Require Export PlutusCert.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.TyAbs.
-Require Export PlutusCert.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.TyAbs2.
 Require Export PlutusCert.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.TyInst.
 Require Export PlutusCert.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.TypeBind.
 Require Export PlutusCert.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.Unwrap.
@@ -28,7 +27,6 @@ Create HintDb DSP_compatibility_lemmas.
   compatibility_LetRec
   compatibility_TermBind
   compatibility_TyAbs
-  compatibility_TyAbs2
   compatibility_TyInst
   compatibility_TypeBind
   compatibility_Unwrap

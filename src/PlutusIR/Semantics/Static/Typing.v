@@ -590,12 +590,24 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ ,, Γ |-+ t2 : T1n ->
       Δ ,, Γ |-+ (Apply t1 t2) : T2n
   (* Universal types *)
-  | T_TyAbs : forall Δ Γ X K t Tn,
+  (* | T_TyAbs : forall Δ Γ X K t Tn,
       ((X, K) :: Δ) ,, (drop_ty_var X Γ) |-+ t : Tn ->
-      Δ ,, Γ |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
-  | T_TyAbs2 : forall Δ Γ X K Y t Tn,
-      ((X, K) :: Δ) ,, (drop_ty_var X Γ) |-+ t : Tn ->
+      Δ ,, Γ |-+ (TyAbs X K t) : (Ty_Forall X K Tn) *)
+
+
+  | T_TyAbs : forall Δ Γ X K Y t Tn,
+      ((X, K) :: Δ) ,, (drop_ty_var X (drop_ty_var Y Γ)) |-+ t : Tn ->
       Δ ,, Γ |-+ (TyAbs X K t) : (Ty_Forall Y K (substituteTCA X (Ty_Var Y) Tn))
+
+      (*
+        ΛX. X ~ ΛX. X : ∀Y. Y
+
+        
+
+      *)
+
+
+
   | T_TyInst : forall Δ Γ t1 T2 T1n X K2 T0n T2n,
       Δ ,, Γ |-+ t1 : (Ty_Forall X K2 T1n) ->
       ((X, K2)::Δ) |-* T1n : Kind_Base -> (* Richard: Added *)
@@ -786,7 +798,7 @@ Proof.
     rewrite String.eqb_refl. auto.
   }
   rewrite H0.
-  eapply T_TyAbs2.
+  eapply T_TyAbs.
   inversion H; subst; auto.
   assert (Tn = Ty_Var "X").
   {
