@@ -355,26 +355,31 @@ Require Import Coq.Program.Equality.
 
 Theorem f_preserves_kind Δ s K :
   Kinding.has_kind Δ s K -> STLC_named_typing.has_kind Δ (f s) K.
-Proof.
+Proof with subst; auto.
   intros.
   apply Checker.prop_to_type in H.
-  induction H using Kinding.has_kind_set__ind
-    with (P := fun Δ s K => STLC_named_typing.has_kind Δ (f s) K)
-         (P0 := fun Δ Tss => plutus_util.ForallSet2 (fun T => STLC_named_typing.has_kind Δ (f T) PlutusIR.Kind_Base) Tss)
-         (P1 := fun Δ Tss => plutus_util.ForallSet (fun T => STLC_named_typing.has_kind Δ (f T) PlutusIR.Kind_Base) Tss).
-  all: try solve [econstructor; eauto].
+  induction H using Kinding.has_kind_set_ind'.
+  all: try solve [intros; try econstructor; eauto].
   simpl.
   induction Tss.
-  - repeat constructor; induction IHhas_kind; subst; auto.
-  - induction IHhas_kind_set; subst. simpl. constructor. constructor.
-    induction f0.
-    + auto. simpl. eapply IHIHhas_kind_set. inversion H; subst. auto.
-    + simpl. constructor.
-      * auto.
-      * apply IHf0. clear IHf0. clear IHTss. clear IHIHhas_kind_set.
-        inversion H; subst.
-        inversion H3; subst.
-        constructor; auto.
+  - repeat constructor; induction IHhas_kind; auto.
+  - simpl.
+    induction a; auto.
+    + eapply IHTss.
+      * inversion H; auto.
+      * inversion H0; auto.
+    + constructor.
+      * inversion H0. inversion H3; auto.
+      * apply IHa.
+        -- constructor.
+           ++ inversion H.
+              inversion H3; auto.
+           ++ inversion H; auto.
+        -- inversion H0; auto.
+           constructor.
+           ++ inversion H.
+              inversion H3; auto.
+           ++ inversion H; auto.
 Qed.
 
 
