@@ -47,17 +47,7 @@ Definition fromDecl (tvd : tvdecl) : string * kind :=
   | TyVarDecl v K => (v, K)
   end.
 
-Definition freshUnwrapIFix (F : ty) : string :=
-  "a" ++ String.concat EmptyString (FreeVars.Ty.ftv F).
-
-Definition unwrapIFix (F : ty) (K : kind) (T : ty) : ty :=
-  let b := freshUnwrapIFix F in
-  (Ty_App (Ty_App F (Ty_Lam b K (Ty_IFix F (Ty_Var b)))) T).
-
-(* Main property of fresh variables: they are fresh*)
-Lemma freshUnwrapIFix__fresh F :
-  ~ In (freshUnwrapIFix F) (FreeVars.Ty.ftv F).
-Admitted.
+Definition unwrapIFix (F : ty) (K : kind) (T : ty) : ty := (Ty_App (Ty_App F (Ty_Lam "X" K (Ty_IFix F (Ty_Var "X")))) T).
 
 (** Typing of terms *)
 Reserved Notation "Delta ',,' Gamma '|-+' t ':' T" (at level 101, t at level 0, T at level 0, no associativity).
@@ -67,6 +57,54 @@ Reserved Notation "Delta ',,' Gamma '|-oks_r' bs" (at level 101, bs at level 0, 
 Reserved Notation "Delta ',,' Gamma '|-ok_b' rec # b" (at level 101, b at level 0, no associativity).
 
 Local Open Scope list_scope.
+
+(* TODO: Do we really need bound variables? *)
+Definition freshUnwrapIFix (F : ty) : string :=
+  "a" ++ String.concat EmptyString (FreeVars.Ty.ftv F).
+
+
+Definition unwrapIFixFresh (F : ty) (K : kind) (T : ty) : ty :=
+  let b := freshUnwrapIFix F in 
+ (Ty_App (Ty_App F (Ty_Lam b K (Ty_IFix F (Ty_Var b)))) T).
+
+(* TODO: See also Theorems/Weakening
+*)
+Lemma weakening : forall T T2 K X Δ,
+      ~ In X (FreeVars.Ty.ftv T) ->
+      Δ |-* T : K ->
+      ((X, T2)::Δ) |-* T : K.
+Proof.
+Admitted.
+
+Lemma unwrapIFixFresh_ftv_helper F :
+  ~ In (freshUnwrapIFix F) (FreeVars.Ty.ftv F).
+Admitted.
+
+Lemma unwrapIFixFresh__well_kinded F K T Δ :
+  Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
+  Δ |-* T : K ->
+  Δ |-* (unwrapIFixFresh F K T) : Kind_Base.
+Proof.
+  intros.
+  unfold unwrapIFix.
+  eapply K_App with (K1 := K); auto.
+  eapply K_App with (K1 := Kind_Arrow K Kind_Base); auto.
+  eapply K_Lam.
+  eapply K_IFix with (K := K); auto.
+  - remember (freshUnwrapIFix F) as X.
+    constructor.
+    simpl.
+    rewrite String.eqb_refl.
+    reflexivity.
+  - remember (freshUnwrapIFix F) as x.
+    (* Now weaken *)
+    eapply weakening with (Δ := Δ); auto.
+    unfold List.inclusion.
+    (* By definition of freshUnwrapIFix *)
+    subst.
+    apply unwrapIFixFresh_ftv_helper.
+Qed.
+
 
 (* ************* drop_ty_var ************* *)
 
@@ -155,6 +193,8 @@ Lemma drop_ty_var__lookup_some : forall X Γ x T,
   we are not guaranteed to get the same, as (x, S(X)) could be dropped and in front of (x, T).
 *)
 Admitted.
+
+(************* Drop_Δ **********)
 
 Definition inb_string (x : string) (xs : list string) : bool :=
   if in_dec string_dec x xs then true else false.
@@ -533,8 +573,9 @@ Qed.
 
 Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty -> Prop :=
   (* Simply typed lambda caclulus *)
-  | T_Var : forall Γ Δ x T Tn,
+  | T_Var : forall Γ Δ x T Tn K,
       lookup x Γ = Coq.Init.Datatypes.Some T ->
+      Δ |-* T : K ->
       normalise T Tn ->
       Δ ,, Γ |-+ (Var x) : Tn
   | T_LamAbs : forall Δ Γ x T1 t T2n T1n,
@@ -552,6 +593,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ ,, Γ |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
   | T_TyInst : forall Δ Γ t1 T2 T1n X K2 T0n T2n,
       Δ ,, Γ |-+ t1 : (Ty_Forall X K2 T1n) ->
+      ((X, K2)::Δ) |-* T1n : Kind_Base -> (* Richard: Added *)
       Δ |-* T2 : K2 ->
       normalise T2 T2n ->
       normalise (substituteTCA X T2n T1n) T0n ->
@@ -562,13 +604,13 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       normalise T Tn ->
       Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
       normalise F Fn ->
-      normalise (unwrapIFix Fn K Tn) T0n ->
+      normalise (unwrapIFixFresh Fn K Tn) T0n -> (* RIchard: Added fresh*)
       Δ ,, Γ |-+ M : T0n ->
       Δ ,, Γ |-+ (IWrap F T M) : (Ty_IFix Fn Tn)
   | T_Unwrap : forall Δ Γ M Fn K Tn T0n,
       Δ ,, Γ |-+ M : (Ty_IFix Fn Tn) ->
       Δ |-* Tn : K ->
-      normalise (unwrapIFix Fn K Tn) T0n ->
+      normalise (unwrapIFixFresh Fn K Tn) T0n -> (* Richard: Added fresh *)
       Δ ,, Γ |-+ (Unwrap M) : T0n
   (* Additional constructs *)
   | T_Constant : forall Δ Γ T a,
