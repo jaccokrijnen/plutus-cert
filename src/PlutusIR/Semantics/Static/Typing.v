@@ -1,6 +1,7 @@
 Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.Util.List.
 From PlutusCert Require Import Analysis.BoundVars.
+From PlutusCert Require Import Analysis.FreeVars.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.Auxiliary.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
@@ -66,6 +67,94 @@ Reserved Notation "Delta ',,' Gamma '|-oks_r' bs" (at level 101, bs at level 0, 
 Reserved Notation "Delta ',,' Gamma '|-ok_b' rec # b" (at level 101, b at level 0, no associativity).
 
 Local Open Scope list_scope.
+
+(* ************* drop_ty_var ************* *)
+
+(*
+Should have
+drop_ty_var "s" (("x", Ty_Bool) :: ("x", Ty_Var "s") :: ("x", Ty_Int) :: nil) = nil
+
+We keep an accumulator of already "removed" vars like "x"
+*)
+Fixpoint drop_ty_var' X (Γ : list (string * ty)) (acc : list string): list (string * ty) :=
+  match Γ with
+  | nil => nil
+  | (x, T) :: Γ' =>
+      if (in_dec string_dec X (Ty.ftv T)) then 
+        drop_ty_var' X Γ' (x::acc)
+      else if in_dec string_dec x acc then
+        drop_ty_var' X Γ' acc
+      else (x, T) :: drop_ty_var' X Γ' acc
+  end.
+
+Definition drop_ty_var X (Γ : list (string * ty)) : list (string * ty) :=
+  drop_ty_var' X Γ nil.
+
+Lemma drop_ty_var__inclusion X Γ :
+  List.inclusion (drop_ty_var X Γ) Γ.
+Proof.
+  unfold List.inclusion.
+  intros x v Hl.
+  induction Γ.
+  - inversion Hl.
+  - simpl.
+    destruct a as [a1 a2].
+    (* TODO: destr_eqb_eq tactic *)
+    destruct (string_dec a1 x); subst.
+    + rewrite String.eqb_refl.
+      f_equal.
+      (* Suppose X in a2. Then by Hl
+        we have that a2 <> v
+
+        But then by drop_ty_var, all keys "x" will be removed from Hl,
+        hence contradiction, because then it would have been None.
+
+        Hence we must have X not in a2.
+        Then by Hl we have lookup x ((x, a2)::...) = Some v => a2 = v
+      *)
+      admit.
+    + rewrite <- String.eqb_neq in n.
+      rewrite n.
+      (* a1 <> x
+        lookup x (drop ((a1, a2)::Γ) = Some v)
+        Well, it is not the first one (a1), and the result is Some v.
+        Hence we must have lookup x (drop Γ) = Some v. (possibly with even smaller Gamma, if a2 contains X)
+        since drop Γ is a subset of Γ, we must have then also lookup x Γ = Some v.
+      *)
+
+Admitted.
+
+Lemma drop_ty_var__inclusion_preserving : forall X Γ Γ',
+    List.inclusion Γ Γ' -> List.inclusion (drop_ty_var X Γ) (drop_ty_var X Γ').
+Proof.
+intros X Γ Γ' Hincl.
+unfold List.inclusion in Hincl.
+unfold List.inclusion.
+intros x v Hl.
+(* by contradiction:
+  Suppose lookup x (drop_ty_var X Γ') = None
+
+    By drop_ty_var__inclusion,
+      we have lookup x Γ' = Some v.
+
+      then
+        (x, v) in Gamma' and X in v (not possible by Hl)
+      OR
+        (x, v') in Gamma' and X in v', then also (x, v) gets removed
+
+        But if this (x, v') occured to the right of (x, v), then still (x, v) in Gamma
+        If it occurred to the left, we would have had
+        lookup x Γ' = Some v' with v <> v'. Contradiction.
+*)
+Admitted.
+
+Lemma drop_ty_var__lookup_some : forall X Γ x T,
+    lookup x (drop_ty_var X Γ) = Some T ->
+    exists T', lookup x Γ = Some T'.
+(* Drop ty var cannot remove anything, so we cannot get None
+  we are not guaranteed to get the same, as (x, S(X)) could be dropped and in front of (x, T).
+*)
+Admitted.
 
 Definition inb_string (x : string) (xs : list string) : bool :=
   if in_dec string_dec x xs then true else false.
@@ -459,7 +548,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ ,, Γ |-+ (Apply t1 t2) : T2n
   (* Universal types *)
   | T_TyAbs : forall Δ Γ X K t Tn,
-      ((X, K) :: Δ) ,, Γ |-+ t : Tn ->
+      ((X, K) :: Δ) ,, (drop_ty_var X Γ) |-+ t : Tn ->
       Δ ,, Γ |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
   | T_TyInst : forall Δ Γ t1 T2 T1n X K2 T0n T2n,
       Δ ,, Γ |-+ t1 : (Ty_Forall X K2 T1n) ->
@@ -608,6 +697,29 @@ Combined Scheme has_type__multind from
   bindings_well_formed_nonrec__ind,
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
+
+(* Cannot type faulty const function *)
+Example const_shadowing T :
+  (nil ,, nil |-+
+    (TyAbs "X" Kind_Base
+      (LamAbs "x" (Ty_Var "X")
+        (TyAbs "X" Kind_Base
+          (LamAbs "y" (Ty_Var "X")
+            (Var "x"))))) : T) -> False.
+Proof.
+  intros.
+  inversion H; subst.
+  inversion H6; subst.
+  simpl drop_ty_var in *.
+  inversion H9; subst.
+  inversion H10; subst.
+  inversion H8; subst.
+  simpl in H13.
+  inversion H13; subst.
+  simpl in H1.
+  inversion H1.
+Qed.
+
 
 Definition well_typed t := exists T, [] ,, [] |-+ t : T.
 
