@@ -194,8 +194,6 @@ Definition normaliser {T Δ K} (Hwk : Δ |-* T : K) :=
   let HSN := plutus_ty_strong_normalization T Δ K Hwk in
   projT1 (SN_normalise T Δ K Hwk HSN).
 
-Print Assumptions normaliser.
-
 Definition normaliser_Jacco Δ T : option ty :=
   match kind_check Δ T with
   | Some K => fun Hkc =>

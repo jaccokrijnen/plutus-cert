@@ -273,6 +273,7 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
     | _ => None (* TODO: Case and Constr?? *)
     end.
 
+
 Section term_recursivity_rect.
   Variable (P : term -> Type).
   Variable (Q : binding -> Type).
@@ -989,9 +990,10 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
     }
 Qed.
 
-Print Assumptions type_checking_complete.
+(* Print Assumptions type_checking_complete. *)
 
 (* Extraction Language Haskell.
 Redirect "type_check.hs" Recursive Extraction type_check. *)
 
 (* Compute (type_check nil (cons ((EmptyString, (Ty_App (Ty_Lam EmptyString Kind_Base (Ty_Var EmptyString)) (Ty_Builtin DefaultUniInteger)))) nil) (Var EmptyString)). *)
+

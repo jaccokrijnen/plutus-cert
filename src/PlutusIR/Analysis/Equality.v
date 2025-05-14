@@ -197,7 +197,7 @@ Section Derived_Eqb.
     - subst. intuition.
     - intuition.
       inversion H.
-  Qed.
+  Defined.
 
   Definition func_eqb_eq := eq_dec_to_eqb__sound func_dec.
   Definition unit_eqb_eq := eq_dec_to_eqb__sound unit_dec.

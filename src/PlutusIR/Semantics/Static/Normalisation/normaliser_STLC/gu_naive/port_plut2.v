@@ -347,7 +347,7 @@ Proof.
       * simpl. auto.
       * simpl. constructor. apply IHx.
         inversion f0; subst. auto.
-Qed.
+Defined.
 
 Set Printing Implicit.
 
@@ -400,14 +400,14 @@ Proof.
   - assumption.
   - exact A.
   - reflexivity.
-Qed.
+Defined.
 
 Theorem sn_step_plut : forall s, @sn STLC_named.term step_nd (f s) -> @sn PlutusIR.ty Type_reduction.step s.
 Proof.
   intros s.
   eapply @sn_preimage2 with (h := f) (e2 := Type_reduction.step) (e := step_nd).
   apply f_preserves_step.
-Qed.
+Defined.
 
 Corollary plutus_ty_strong_normalization s Δ K : Kinding.has_kind Δ s K -> @sn PlutusIR.ty Type_reduction.step s.
 Proof.
@@ -416,6 +416,18 @@ Proof.
   apply strong_normalization in Hwk.
   apply sn_step_plut.
   auto.
-Qed.
+Defined.
 
-Print Assumptions plutus_ty_strong_normalization.
+(* Definition kc : kind_check nil (Ty_App (Ty_Lam "X" Kind_Base (Ty_Var "X")) (Ty_Builtin DefaultUniInteger)) = Some Kind_Base := eq_refl. *)
+
+(* Compute (plutus_ty_strong_normalization 
+    (Ty_App (Ty_Lam "X" Kind_Base (Ty_Var "X")) (Ty_Builtin DefaultUniInteger)) 
+    nil 
+    PlutusIR.Kind_Base
+    (kind_checking_sound 
+      nil 
+      (Ty_App (Ty_Lam "X" Kind_Base (Ty_Var "X")) (Ty_Builtin DefaultUniInteger)) 
+      PlutusIR.Kind_Base kc)
+    ). *)
+
+(* Print Assumptions plutus_ty_strong_normalization. *)

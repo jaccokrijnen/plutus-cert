@@ -22,7 +22,7 @@ Infix ">>=" := bind (at level 50, left associativity).
 
 
 
-Inductive step_nd : term -> term -> Set :=
+Inductive step_nd : term -> term -> Type :=
 | step_beta_nd (x : string) (A : PlutusIR.kind) (s t : term) :
     step_nd (@tmapp App (@tmlam Lam x A s) t) (substituteTCA x t s) (* capture avoiding conservative substitutions *)
 | step_appL_nd B s1 s2 t :

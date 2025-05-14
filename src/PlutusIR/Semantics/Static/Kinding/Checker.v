@@ -53,7 +53,7 @@ Proof with eauto.
     + apply IHd2.
       inversion H1.
       reflexivity. 
-Qed.
+Defined.
 
 Lemma kind_checking_default_uni_complete : forall d k,
     |-*_uni d : k -> kind_check_default_uni d = Some k.
@@ -171,7 +171,7 @@ Proof.
         + apply IHty2.
           rewrite HeqK1.
           reflexivity. 
-Qed.
+Defined.
 
 (* Identical to the above, but for Set*)
 Theorem kind_checking_sound_set : forall Delta ty kind,
