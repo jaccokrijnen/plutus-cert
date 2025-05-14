@@ -27,43 +27,6 @@ with bs_wf_mut_ind := Induction for bindings_well_formed_rec Sort Prop
 with bs_wf_nonrec_mut_ind := Induction for bindings_well_formed_nonrec Sort Prop
 with b_wf_mut_ind := Induction for binding_well_formed Sort Prop.
 
-Fixpoint allbmap {A : Type} (f : A -> bool) (bs : list A) : bool :=
-    match bs with
-    | [] => true
-    | b::bs => andb (f b) (allbmap f bs)
-    end.
-
-Lemma allb_element_true : forall A f bs b, In b bs -> @allbmap A f bs = true -> f b = true.
-Proof.
-  intros.
-  induction bs.
-  - inversion H.
-  - simpl in H0.
-    destruct H.
-    + subst.
-      simpl in H0.
-      apply andb_true_iff in H0.
-      destruct H0.
-      assumption.
-    + apply andb_true_iff in H0.
-      destruct H0.
-      apply IHbs; auto.
-Qed.
-
-Lemma allbmap_each : forall A f bs, (forall b, In b bs -> f b = true) -> @allbmap A f bs = true.
-Proof.
-  intros.
-  induction bs.
-  - simpl. reflexivity.
-  - simpl.
-    apply andb_true_iff.
-    split.
-    + apply H. left. reflexivity.
-    + apply IHbs.
-      intros.
-      apply H.
-      right. assumption.
-Qed.
 
 (* Find instead of in_dec for performance?*)
 Fixpoint no_dup_fun (xs : list string) := 
@@ -89,7 +52,7 @@ Definition is_KindBase (k : option kind) : bool :=
 Definition constructor_well_formed_check (Δ : list (binderTyname * kind)) (v : vdecl) (Tr : ty ) : bool :=
   match v with
   | VarDecl x T => let (targs, tr') := splitTy T in
-          Ty_eqb Tr tr' && allbmap (fun U => is_KindBase (kind_check Δ U)) targs
+          Ty_eqb Tr tr' && forallb (fun U => is_KindBase (kind_check Δ U)) targs
   end.
 
 (* Idea Jacco: pass the recursively called type_check function as an argument even though it is not defined yet 
@@ -125,7 +88,7 @@ Definition binding_well_formed_check
                     end in
         let Δ' := rev (map fromDecl YKs) ++ Δ_ns in
         let Tres := constrLastTyExpected dtd in
-        if allbmap (fun c => constructor_well_formed_check Δ' c Tres) cs then
+        if forallb (fun c => constructor_well_formed_check Δ' c Tres) cs then
           match rec with
             | NonRec => match kind_check (fromDecl XK :: Δ') Tres with
                         | Some Kind_Base => true 
@@ -379,7 +342,7 @@ Proof.
   eapply W_Con; eauto.
   simpl in H1.
   intros.
-  apply (allb_element_true ty _ _ _ H0) in H1.
+  eapply forallb_forall in H1; eauto.
   unfold is_KindBase in H1.
   repeat destruct_match.
   subst.
@@ -400,10 +363,10 @@ Proof.
   apply andb_true_iff.
   split.
   - apply Ty_eqb_refl.
-  - apply allbmap_each.
+  - apply forallb_forall.
     intros.
     unfold is_KindBase.
-    specialize (H4 b0 H0).
+    specialize (H4 x H0).
     apply kind_checking_complete in H4.
     rewrite H4.
     reflexivity.
@@ -612,7 +575,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
         eauto.
         assert (constructor_well_formed_check (rev (map fromDecl l) ++ (drop_Δ' Δ [tvdecl_name t0])) c (Ty_Apps (Ty_Var (tvdecl_name t0)) (map Ty_Var (map tvdecl_name l))) = true).
         { 
-            eapply (allb_element_true) in Heqb1.
+            eapply (forallb_forall) in Heqb1.
           - exact Heqb1.
           - assumption.
         }
@@ -628,7 +591,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
       * intros.
         simpl.
         assert (constructor_well_formed_check (rev (map fromDecl l) ++ Δ) c (Ty_Apps (Ty_Var (tvdecl_name t0)) (map Ty_Var (map tvdecl_name l))) = true).
-        { eapply (allb_element_true) in Heqb1.
+        { eapply (forallb_forall) in Heqb1.
           - exact Heqb1.
           - assumption.
         }
@@ -890,7 +853,7 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
          apply kind_checking_complete in y.
          simpl in y.
          rewrite y. reflexivity.
-      -- assert (allbmap
+      -- assert (forallb
           (fun c0 : vdecl =>
         constructor_well_formed_check
           (rev (map fromDecl YKs) ++ drop_Δ' Δ0 [tvdecl_name XK]) c0
@@ -901,7 +864,7 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
             eapply constructor_well_formed_complete.
             eapply c. apply in_eq.
             assert ((if
-                      allbmap (fun c0 : vdecl =>
+                      forallb (fun c0 : vdecl =>
                       constructor_well_formed_check (rev (map fromDecl YKs) ++ drop_Δ' Δ0 [tvdecl_name XK]) c0 (Ty_Apps (Ty_Var (tvdecl_name XK))
                         (map Ty_Var (map tvdecl_name YKs))))                        cs then
                       match kind_check (fromDecl XK :: rev (map fromDecl YKs) ++ drop_Δ' Δ0 [tvdecl_name XK])
@@ -950,7 +913,7 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
       clear e. clear n. clear n0. clear no_dup.
       induction cs; intros.
       -- simpl. eapply kind_checking_complete in y. simpl in y. rewrite y. reflexivity.
-      -- assert (allbmap
+      -- assert (forallb
               (fun c0 : vdecl =>
             constructor_well_formed_check (rev (map fromDecl YKs) ++ Δ0) c0
               (Ty_Apps (Ty_Var (tvdecl_name XK)) (map Ty_Var (map tvdecl_name YKs))))
@@ -960,7 +923,7 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
             eapply constructor_well_formed_complete.
             eapply c. apply in_eq.
             assert ((if
-                      allbmap (fun c0 : vdecl =>
+                      forallb (fun c0 : vdecl =>
                       constructor_well_formed_check (rev (map fromDecl YKs) ++ Δ0) c0 (Ty_Apps (Ty_Var (tvdecl_name XK))
                         (map Ty_Var (map tvdecl_name YKs))))                        cs then
                       match kind_check (rev (map fromDecl YKs) ++ Δ0)

@@ -4,6 +4,9 @@ Require Import PlutusCert.PlutusIR.
 
 Require Import Coq.Bool.Bool.
 Require Import PlutusCert.Util.List.
+Require Import Coq.Lists.List.
+
+
 
 Fixpoint kind_check_default_uni (d : DefaultUni) : option kind :=
   match d with
@@ -106,7 +109,13 @@ Fixpoint kind_check (Delta : list (binderTyname * kind)) (ty : ty) : (option kin
             if Kind_eqb K11 K12 then Some K2 else None
         | (_, _) => None
         end
-    | Ty_SOP Tss => None  (* TODO *)
+    | Ty_SOP Tss => 
+      if (forallb (fun Ts => 
+              (forallb (fun T => match kind_check Delta T with 
+                                      | Some Kind_Base => true
+                                      | _ => false
+                                end) Ts)) 
+                Tss) then Some Kind_Base else None
     end.
 
 Theorem kind_checking_sound : forall Delta ty kind,
@@ -171,7 +180,8 @@ Proof.
         + apply IHty2.
           rewrite HeqK1.
           reflexivity. 
-Defined.
+    - (* ADMIT: Ty_SOP strengthened induction on types not implemented *)
+Admitted.
 
 (* Identical to the above, but for Set*)
 Theorem kind_checking_sound_set : forall Delta ty kind,
@@ -236,23 +246,24 @@ Proof.
         + apply IHty2.
           rewrite HeqK1.
           reflexivity. 
-Qed.
+    - (* ADMIT: Ty_SOP Unimplemented*)
+Admitted.
 
 
 Theorem kind_checking_complete : forall (Delta : list (binderTyname * kind)) (ty : ty) (kind : kind),
     has_kind Delta ty kind -> kind_check Delta ty = Some kind.
 Proof.
     intros Delta ty kind Hkind.
-    induction Hkind; simpl.
+    induction Hkind using Kinding.has_kind_ind'; simpl.
     - (* Var *)
       apply H.
     - (* Ty_Fun *)
-      rewrite -> IHHkind1.
-      rewrite -> IHHkind2.
+      rewrite -> IHHkind.
+      rewrite -> IHHkind0.
       reflexivity.
     - (* Ty_IFix *)
-      rewrite -> IHHkind1.
-      rewrite -> IHHkind2.
+      rewrite -> IHHkind.
+      rewrite -> IHHkind0.
       rewrite -> Kind_eqb_refl.
       reflexivity.
     - (* Ty_Forall *)
@@ -267,12 +278,24 @@ Proof.
       rewrite IHHkind.
       auto.
     - (* Ty_App *) 
-      rewrite -> IHHkind1. 
-      rewrite -> IHHkind2. 
+      rewrite -> IHHkind. 
+      rewrite -> IHHkind0. 
       rewrite -> Kind_eqb_refl. 
       reflexivity.
-    - (* Ty_SOP: Unimplemented *)
-      admit.
+    - (* Ty_SOP *)
+      induction Tss; eauto.
+      induction a; simpl.
+      + simpl in H0.
+        apply IHTss; eauto.
+        inversion H; subst; auto.
+        inversion H0; subst; auto.
+      + simpl.
+        inversion H0; subst; auto.
+        inversion H3; subst; auto.
+        rewrite H5.
+        
+        
+       (* Ty_SOP: Unimplemented *)
 Admitted.
 
 Theorem prop_to_type : forall Δ T K, has_kind Δ T K -> has_kind_set Δ T K.
