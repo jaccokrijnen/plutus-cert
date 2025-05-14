@@ -92,6 +92,14 @@ Module Term.
       inversion Hafi. subst.
       eapply H2 in H8...
       rewrite lookup_neq in H8...
+    - (* TyAbs *)
+      unfold P_has_type in H0.
+      assert (Term.appears_free_in x0 t).
+      { 
+        inversion Hafi; subst; auto.
+      }
+      specialize (H0 x0 H1) as [T' Hlookup].
+      eapply drop_ty_var__lookup_some; eauto.
     - (* T_Let *)
       inversion Hafi.
       + subst.

@@ -11,6 +11,14 @@ Local Open Scope string_scope.
 
 
 
+Lemma drop_ty_var__inclusion_ftv X Γ Γ' t :
+  (forall x, Term.appears_free_in x t ->
+    lookup x Γ = lookup x Γ') -> 
+  (forall x, Term.appears_free_in x t -> 
+    lookup x (drop_ty_var X Γ) = lookup x (drop_ty_var X Γ')).
+  (* Should follow from drop_ty_var__inclusion*)
+Admitted.
+
 Module Kinding.
 
   Lemma context_invariance : forall Delta Delta' T K,
@@ -103,7 +111,7 @@ Module Typing.
 
     - (* T_Var *)
       eapply T_Var...
-      rewrite <- H1; auto.
+      rewrite <- H2; auto.
     - (* T_LamAbs *)
       apply T_LamAbs...
       apply H2.
@@ -117,6 +125,11 @@ Module Typing.
       + apply eqb_neq in Heqb.
         rewrite lookup_neq; auto.
         rewrite lookup_neq; auto.
+    - unfold P_has_type in H0.
+      apply T_TyAbs.
+      apply H0.
+      intros.
+      eapply drop_ty_var__inclusion_ftv; eauto.
     - (* T_Let *)
       subst.
       eapply T_Let...
