@@ -8,23 +8,136 @@ Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNorma
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Multisubstitution.Congruence.
 
+From PlutusCert Require Import FreeVars.
+
+Require Import Coq.Lists.List.
+Require Import Coq.Bool.Bool.
+
 Require Import Arith.
 
 Search "RC".
 
 (* TODO: Not sure if this holds *)
 Lemma RC_rename_T k T rhos ρ e e' bX bY :
+    ~ In bY (Ty.ftv T) ->
+    ~ In bY (Ty.btv T) ->
     RC k T                                ((bX, ρ)::rhos) e e' ->
-    RC k (substituteTCA bX (Ty_Var bY) T) ((bY, ρ)::rhos) e e'.
+    RC k (substituteT bX (Ty_Var bY) T) ((bY, ρ)::rhos) e e'.
 Proof.
+  intros Hftv Hbtv HRC.
+  generalize dependent rhos.
+  induction T; intros.
+  - simpl.
+    destruct (String.eqb bX t) eqn:Heqb.
+    + assert (t = bX). { apply String.eqb_eq in Heqb. auto. } subst.
+      autorewrite with RC in HRC.
+      autorewrite with RC; intros.
+      specialize (HRC _ Hlt_j _ H).
+      destruct HRC as [e'_f [j' HRC]].
+      exists e'_f.
+      exists j'.
+      destruct HRC as [HRC1 [HRC2 HRC3]].
+      split; auto.
+      split.
+      * (* ADMIT: We know that bY gets substituted with the same type as bX will. through HRC2. *)
+        admit.
+      * destruct HRC3 as [HRC3_1 HRC3_2].
+        split; auto.
+        -- (* ADMIT: We know that bY gets substituted with the same type as bX will. through HRC3_1.*)
+           admit.
+        -- destruct HRC3_2 as [HRC3_2 | HRC3_2_error]; auto.
+           left.
+           destruct HRC3_2 as [HRC3_2_1 [HRC3_2_2 HRC3_2]].
+           split; auto.
+           split; auto.
+           intros.
+           apply HRC3_2.
+           simpl. destruct ρ. destruct p.
+           rewrite String.eqb_refl.
+           simpl in H0.
+           rewrite String.eqb_refl in H0.
+           inversion H0; subst.
+           auto.
+    + assert (bY <> t).
+      {(* By Hftv *)
+         admit.
+      }
+      assert (HbXt: bX <> t) by admit.
+            autorewrite with RC in HRC.
+      autorewrite with RC; intros.
+      specialize (HRC _ Hlt_j _ H0).
+      destruct HRC as [e'_f [j' HRC]].
+      exists e'_f.
+      exists j'.
+      destruct HRC as [HRC1 [HRC2 HRC3]].
+      split; auto.
+      split.
+      * 
+        simpl msyn1 in HRC2.
+        destruct ρ.
+        destruct p.
+        simpl msubstT in HRC2.
+        rewrite Heqb in HRC2.
+        simpl msyn1.
+        simpl msubstT.
+        rewrite <- String.eqb_neq in H.
+        rewrite H.
+        assumption.
+      * destruct HRC3 as [HRC3_1 HRC3_2].
+        split; auto.
+        -- (* ADMIT: see above: msyn2 skips over (bX, ρ) and (bY, ρ) because of inequality to t.
+            Then by assumption. *)
+            admit.
+        -- destruct HRC3_2 as [HRC3_2 | HRC3_2_error]; auto.
+           left.
+           destruct HRC3_2 as [HRC3_2_1 [HRC3_2_2 HRC3_2]].
+           split; auto.
+           split; auto.
+           intros.
+           apply HRC3_2.
+           simpl. destruct ρ. destruct p.
+           rewrite String.eqb_sym in Heqb.
+           rewrite Heqb.
+           simpl in H1.
+           rewrite <- String.eqb_neq in H.
+           rewrite String.eqb_sym in H.
+           rewrite H in H1.
+           rewrite H1.
+           auto.
+  - admit.
+  - admit.
+  - (* Ty_Forall *)
+    simpl.
+    assert (bY <> b) by admit. (* by Hbtv*)
+    destruct (eqb bX b) eqn:Heqb.
+    + (* bX = b 
+        but when RC'ing body of forall, 
+          we add b in front of rho
+        probably some shadowign thing
+
+        bY does not occur in T, so probably we can remove it.
+
+      *)admit.
+    + (* bx <> b *)
+      (* by some swap rhos argument, we can instantiate IHT 
+        with rhos := (b, something)::(bY, rho) :: rhos*)
+
+        (* Then again we can prove IHT assumption by
+          swap rhos.
+          *)
+      admit.
 Admitted.
+
+Require Import Coq.Lists.List.
 
 Lemma compatibility_TyAbs: forall Delta Gamma bX bY K T e e',
     LR_logically_approximate ((bX, K) :: Delta) (drop_ty_var bX (drop_ty_var bY Gamma)) e e' T ->
+    ~ In bY (Ty.ftv T) ->
+    ~ In bY (Ty.btv T) ->
         LR_logically_approximate Delta Gamma (TyAbs bX K e) (TyAbs bX K e') 
-                (Ty_Forall bY K (substituteTCA bX (Ty_Var bY) T)).
+                (Ty_Forall bY K (substituteT bX (Ty_Var bY) T)).
 Proof with eauto_LR.
-  intros Delta Gamma bX bY K T e e' IH_LR.
+  intros Delta Gamma bX bY K T e e' IH_LR Hftv Hbtv.
   unfold LR_logically_approximate.
   
   destruct IH_LR as [Htyp__e [Htyp__e' IH__e]].
@@ -52,7 +165,7 @@ Proof with eauto_LR.
   split... 
   (* BROKEN BY new tyabs rule! *)
   {
-    apply T_TyAbs in Htyp__e.
+    apply T_TyAbs in Htyp__e; auto.
     eapply has_type__basekinded in Htyp__e as H...
     eapply closing_preserves_kinding_1 in H as H0...
     rewrite msubstT_TyForall in H0.
@@ -70,7 +183,7 @@ Proof with eauto_LR.
     eauto.
   }
   split... {
-    apply T_TyAbs in Htyp__e'.
+    apply T_TyAbs in Htyp__e'; auto.
     eapply has_type__basekinded in Htyp__e' as H...
     eapply closing_preserves_kinding_2 in H as H0...
     rewrite msubstT_TyForall in H0.
