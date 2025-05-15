@@ -376,6 +376,10 @@ Qed.
 (* TODO: These sigma's can be single substitutions I think!
   - Used in step_subst, there it can be single substs
     - Used in beta_expansion: single substs *)
+
+(*
+  [x := σ(t)] σ(s)  =   σ([x := t] s)
+*)
 Lemma commute_sub_naive R x s t (sigma sigma' : list (string * term)) xtsAlpha:
   Alpha R (sub x t s) xtsAlpha ->
   αCtxSub R sigma sigma' -> (* TODO: Vars in R not in sigma?*)
@@ -457,7 +461,7 @@ Proof with eauto with gu_nc_db.
     constructor.
 Qed.
 
-
+(* s -> t   ==>  [p/x] s -> [p/x] t*)
 Lemma step_subst_single R {x p s t t' } :
   step_naive s t -> 
   GU s ->  (*  We could return them, but we don't want to. Current idea: have GU in NC *)
@@ -1173,7 +1177,8 @@ Theorem soundness Gamma s A :
   has_kind Gamma s A -> 
   GU s -> (* So that we know GU_vars (tmlam x A s) -> ~ In x (btv s), and btv s ∩ ftv s = ∅, important for dealing with vars in `t` that roll out of LR*)
   forall sigma, 
-    Uhm sigma s -> (* so btv sigma is disjoint from tv s + ftv_env sigma: Allows adding btvs to alpha context without accidentally renaming ftvs*)
+    Uhm sigma s -> (* so btv sigma is disjoint from tv s + ftv_env sigma: Allows adding btvs 
+                        to alpha context without accidentally renaming ftvs*)
     NC s sigma -> (* so we get "nice" substitutions (is contained in Uhm) *)
     ParSeq sigma -> (* So parallel and sequential substitions are identical *)
     EL Gamma sigma -> (* So that terms in a substitution are already L *)
@@ -1422,11 +1427,11 @@ Qed.
 
 
 
-Theorem SN_naive E s T : has_kind E s T -> SN_gu s.
+Theorem SN_gu' E s T : has_kind E s T -> @sn term step_gu s.
   intros.
   eapply type_L in H.
   rewrite id_subst__id in H; [|apply id_subst_is_IdSubst].
   eapply L_sn; eauto.
 Qed.
 
-(* Print Assumptions SN_naive. *)
+(* Print Assumptions SN_gu. *)

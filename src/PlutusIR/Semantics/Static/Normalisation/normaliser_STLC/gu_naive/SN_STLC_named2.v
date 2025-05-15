@@ -15,7 +15,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 From PlutusCert Require Import step_gu STLC_named STLC_named_typing.
 From PlutusCert Require Import alpha_typing alpha.alpha alpha_rename rename util alpha_ctx_sub freshness alpha_freshness.
-From PlutusCert Require Import SN_STLC_named_naive gu_naive.pre gu_naive.constructions.
+From PlutusCert Require Import SN_STLC_named_gu gu_naive.pre gu_naive.constructions.
 
 (* Define an infix operator for bind *)
 Infix ">>=" := bind (at level 50, left associativity).
@@ -24,7 +24,7 @@ Infix ">>=" := bind (at level 50, left associativity).
 
 Inductive step_nd : term -> term -> Type :=
 | step_beta_nd (x : string) (A : PlutusIR.kind) (s t : term) :
-    step_nd (@tmapp App (@tmlam Lam x A s) t) (substituteTCA x t s) (* capture avoiding conservative substitutions *)
+    step_nd (@tmapp App (@tmlam Lam x A s) t) (substituteTCA x t s) 
 | step_appL_nd B s1 s2 t :
     step_nd s1 s2 -> step_nd (@tmapp B s1 t) (@tmapp B s2 t)
 | step_appR_nd B s t1 t2 :
@@ -402,7 +402,7 @@ Qed.
 
 Theorem strong_normalization E s T : STLC_named_typing.has_kind E s T -> (@sn term step_nd) s.
   intros.
-  apply SN_naive in H. 
+  apply SN_gu' in H. 
   apply SN_na_to_SN_nd.
   assumption.
 Qed.

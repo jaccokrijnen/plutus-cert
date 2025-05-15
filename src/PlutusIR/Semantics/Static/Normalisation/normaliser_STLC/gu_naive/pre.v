@@ -36,7 +36,7 @@ Fixpoint sub (X : string) (U T : term) : term :=
   | tmvar Y =>
     if X =? Y then U else tmvar Y
   | @tmlam B Y K1 T' =>
-    @tmlam B Y K1 (sub X U T')
+    @tmlam B Y K1 (sub X U T') (* X can never be equal to Y due to GU: We only ever do substitutions such that NC T [(X, U)]*)
   | @tmapp B T1 T2 =>
     @tmapp B (sub X U T1) (sub X U T2)
   | tmbuiltin d => tmbuiltin d
@@ -68,7 +68,7 @@ Fixpoint psubs (sigma : list (string * term)) (T : term) : term :=
               | Some t => t
               | None => tmvar x
               end
-  | @tmlam B x A s => @tmlam B x A (psubs sigma s)
+  | @tmlam B x A s => @tmlam B x A (psubs sigma s) (* We do not look at binders, see NC x <> y property*)
   | @tmapp B s t => @tmapp B (psubs sigma s) (psubs sigma t)
   | tmbuiltin d => tmbuiltin d
   end.

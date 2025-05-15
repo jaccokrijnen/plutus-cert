@@ -12,7 +12,7 @@ Require Import Coq.Arith.PeanoNat.
 Import ListNotations.
 Require Import Ascii.
 
-From PlutusCert Require Import SN_STLC_named_naive SN_STLC_named2 util Util.List STLC_named STLC_named_typing. (* I don't understand why we need this for ftv defintion*)
+From PlutusCert Require Import SN_STLC_named_gu SN_STLC_named2 util Util.List STLC_named STLC_named_typing. (* I don't understand why we need this for ftv defintion*)
 From PlutusCert Require Import PlutusIR plutus_util Checker.
 
 
@@ -386,7 +386,8 @@ Qed.
 (*
 Jacco: Dit is blijkbaar een forward simulation
 *)
-Lemma sn_preimage2 {e2 : PlutusIR.ty -> PlutusIR.ty -> Type} {e : STLC_named.term -> STLC_named.term -> Type} (h : PlutusIR.ty -> STLC_named.term) (x : PlutusIR.ty) :
+Lemma sn_preimage2 {e2 : PlutusIR.ty -> PlutusIR.ty -> Type} {e : STLC_named.term -> STLC_named.term -> Type} 
+  (h : PlutusIR.ty -> STLC_named.term) (x : PlutusIR.ty) :
   (forall x y, e2 x y -> e (h x) (h y)) -> @sn STLC_named.term e (h x) -> @sn PlutusIR.ty e2 x.
 Proof.
   intros A B.

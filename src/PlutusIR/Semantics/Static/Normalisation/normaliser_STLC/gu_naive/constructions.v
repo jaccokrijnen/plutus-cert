@@ -491,8 +491,6 @@ Proof.
   induction l; simpl; constructor; auto.
 Qed.
 
-Search "lookup".
-
 Lemma to_GU__alpha s : Alpha [] s (to_GU s).
 Proof.
   remember (to_GU s) as s'.
@@ -1723,8 +1721,6 @@ Definition a_R_constr R (s s' : term) t : list (string * string) :=
   *)
 
 
-Search "alphavar".
-
 (* Must ahve implies, since alphavar does not imply that x and y in R.*)
 (* TODO: Does this one really help so much over just alphavar_lookup_helper?*)
 Lemma av_lookup_implies_right R x y :
@@ -2138,6 +2134,13 @@ Proof.
     eapply lookup_some_then_alphavar; eauto.
 Admitted.
 
+(* Let t = Var x <*> Var y.     t' = Var v    [x, v] ⊢ t ~ t'
+   Let s = (λx. x) * y
+   Let s' = (λx. x) * z
+   Let R = [y, z].
+
+   Dan willen we vrije variabelen in t renamen.
+*)
 Definition a_constr {R} {s s' : term} t : prod (list (string * string)) (term) :=
   let R' := @a_R_constr R s s' t in
   let used' := tv s ++ tv s' ++ tv t ++ (map fst R') ++ (map snd R') in 

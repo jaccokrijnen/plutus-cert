@@ -32,6 +32,10 @@ Require Import Coq.Program.Equality.
 Axiom step_dec_SOP : forall l,
   normal_Ty (Ty_SOP l).
 
+(* Need kinding because of e.g.
+  T = Ty_App (Ty_Fun Int Int) Int.
+  This is not normal (Ty_Fun is not neutral), and it also does not step (Ty_Fun not a Ty_lam)
+*)
 Definition step_dec (T : ty) : forall Δ K, has_kind Δ T K -> {T' & step T T'} + normal_Ty T.
 Proof.
   induction T; intros.
@@ -157,7 +161,7 @@ Proof.
   - apply step_preserves_kinding_SOP_axiom.
 Qed.
 
-From PlutusCert Require Import SN_STLC_named_naive.
+From PlutusCert Require Import SN_STLC_named_gu.
 
 Definition SN := @sn ty Type_reduction.step.
 
@@ -188,7 +192,7 @@ Fixpoint normaliser_gas (n : nat) {T Δ K} (Hwk : Δ |-* T : K) :=
         end
   end.
 
-Definition normaliser {T Δ K} (Hwk : Δ |-* T : K) :=
+Definition normaliser {T Δ K} (Hwk : Δ |-* T : K) : ty :=
   (* normaliser_gas 100 Hwk. *)
   let HSN := plutus_ty_strong_normalization T Δ K Hwk in
   projT1 (SN_normalise T Δ K Hwk HSN).

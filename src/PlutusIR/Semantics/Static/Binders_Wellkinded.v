@@ -433,7 +433,8 @@ Proof.
     all: apply b_r_wf__map_wk in H; eauto.
 Qed.
 
-Fixpoint insert_deltas_bind_Gamma_nr (bs : list binding) (Δ : list (binderTyname * kind)) : list (binderName * ty * list (binderTyname * kind)) :=
+Fixpoint insert_deltas_bind_Gamma_nr (bs : list binding) (Δ : list (binderTyname * kind)) : 
+      list (binderName * ty * list (binderTyname * kind)) :=
   match bs with
   | [] => []
   | (b :: bs') => (insert_deltas_bind_Gamma_nr bs' (binds_Delta b ++ Δ)) ++ (insert_deltas_rec (binds_Gamma b) (binds_Delta b ++ Δ))
