@@ -173,8 +173,6 @@ Proof with (eauto with typing).
     + eapply Util.ForallP_tl in H...
 Qed.
 
-Search "binds".
-
 Lemma subst_bnr'__preserves__btvbs x v bs :
   btvbs (@subst_bnr' subst_b x v bs) = btvbs bs.
 Proof.
