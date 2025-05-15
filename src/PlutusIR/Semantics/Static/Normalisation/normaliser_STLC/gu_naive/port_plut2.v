@@ -58,8 +58,8 @@ Proof.
   all: try solve [simpl; destr_eqb_eq s X; try rewrite mren_id; simpl; f_equal; auto]. (* all cases with binders/vars *)
   induction H; auto.
   induction H; auto.
-  simpl in IHForallP22. simpl. simpl. rewrite H. f_equal.
-  apply IHForallP.
+  simpl in IHForall. simpl. rewrite H. f_equal.
+  apply IHForall0.
 Qed.
 
 Lemma f_preserves_ftv T :

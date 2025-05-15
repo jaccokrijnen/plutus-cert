@@ -177,12 +177,11 @@ Proof.
   apply PlutusIR.ty__ind with (P := fun T => size T = size (substituteT X (Ty_Var Y) T)); intros; simpl; eauto.
   all: try solve [destruct (X =? X0); simpl; eauto].
   induction H; auto.
-  inversion IHForallP22.
-  induction H; auto.
-  inversion IHForallP.
-  simpl. 
   f_equal.
-  auto.
+  inversion IHForall.
+  induction H; auto.
+  inversion IHForall0.
+  simpl; auto.
 Qed.
 
 (* A version of map that remembers list membership. Necessary in termination argument of substituteTCA*)

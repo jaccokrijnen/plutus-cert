@@ -32,6 +32,8 @@ Inductive step_nd : term -> term -> Type :=
 | step_abs_nd B x A s1 s2 :
     step_nd s1 s2 -> step_nd (@tmlam B x A s1) (@tmlam B x A s2).
 
+
+
 Lemma in_ftv_existsb_true t s :
   In s (ftv t) -> existsb (eqb s) (ftv t) = true.
 Proof.

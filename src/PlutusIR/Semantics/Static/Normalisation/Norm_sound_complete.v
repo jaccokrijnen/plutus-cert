@@ -139,7 +139,7 @@ Proof.
         - apply Checker.prop_to_type in Heqo. inversion Heqo.
         }
   - right. apply step_dec_SOP. (* TODO: Different induction prniciple! *)
-Qed.
+Defined.
 
 Axiom step_preserves_kinding_SOP_axiom : forall l Δ,
   Δ |-* (Ty_SOP l) : Kind_Base.

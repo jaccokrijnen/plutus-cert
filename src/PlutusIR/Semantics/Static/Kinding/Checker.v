@@ -6,6 +6,8 @@ Require Import Coq.Bool.Bool.
 Require Import PlutusCert.Util.List.
 Require Import Coq.Lists.List.
 
+From PlutusCert Require Import plutus_util Util.
+
 
 
 Fixpoint kind_check_default_uni (d : DefaultUni) : option kind :=
@@ -122,7 +124,7 @@ Theorem kind_checking_sound : forall Delta ty kind,
     kind_check Delta ty = Some kind -> has_kind Delta ty kind.
 Proof.
     intros Delta ty. generalize dependent Delta.
-    induction ty; intros Delta kind Htc; inversion Htc.
+    induction ty using ty__ind; intros Delta kind Htc; inversion Htc.
     - (* Var *) 
       apply K_Var.
       assumption.
@@ -180,15 +182,88 @@ Proof.
         + apply IHty2.
           rewrite HeqK1.
           reflexivity. 
-    - (* ADMIT: Ty_SOP strengthened induction on types not implemented *)
-Admitted.
+    - destruct_match.
+      inversion H1; subst.
+      eapply K_SOP.
+      clear H1.
+      inversion H; subst; auto.
+      constructor.
+      + apply Forall_forall.
+        intros.
+        eapply Forall_forall with (x := x0) in H0; auto.
+        eapply H0.
+        inversion Heqb.
+        apply andb_true_iff in H4 as [H4 _].
+        eapply forallb_forall with (x := x0) in H4; auto.
+        repeat destruct_match; subst; auto.
+      + apply Forall_forall; intros.
+        apply Forall_forall with (x := x0) in H1; auto.
+        apply Forall_forall; intros.
+        apply Forall_forall with (x := x1) in H1; auto.
+        apply H1.
+
+
+        inversion Htc.
+        destruct_match; subst; auto.
+        apply andb_true_iff in Heqb0 as [Heqb01 Heqb02].
+        apply forallb_forall with (x :=x0) in Heqb02; auto.
+        
+        apply forallb_forall with (x := x1) in Heqb02; auto.
+        repeat destruct_match; subst; auto.
+Qed.
+
+
+Section ty__ind_set.
+  Unset Implicit Arguments.
+
+  (* Variable for the property to prove about `ty` *)
+  Variable (P : ty -> Set).
+
+  (* Hypotheses for each constructor of `ty` *)
+  Context
+    (H_Var : forall (X : tyname), P (Ty_Var X))
+    (H_Fun : forall (T1 T2 : ty), P T1 -> P T2 -> P (Ty_Fun T1 T2))
+    (H_IFix : forall (F T : ty), P F -> P T -> P (Ty_IFix F T))
+    (H_Forall : forall (X : binderTyname) (K : kind) (T : ty), P T -> P (Ty_Forall X K T))
+    (H_Builtin : forall (T : DefaultUni), P (Ty_Builtin T))
+    (H_Lam : forall (X : binderTyname) (K : kind) (T : ty), P T -> P (Ty_Lam X K T))
+    (H_App : forall (T1 T2 : ty), P T1 -> P T2 -> P (Ty_App T1 T2))
+    (H_SOP : forall (Tss : list (list ty)), ForallT (ForallT P) Tss -> P (Ty_SOP Tss)).
+
+  (* Main induction principle for `ty` *)
+  Fixpoint ty__ind_set (T : ty) : P T :=
+    match T with
+    | Ty_Var X => H_Var X
+    | Ty_Fun T1 T2 => H_Fun T1 T2 (ty__ind_set T1) (ty__ind_set T2)
+    | Ty_IFix F T => H_IFix F T (ty__ind_set F) (ty__ind_set T)
+    | Ty_Forall X K T => H_Forall X K T (ty__ind_set T)
+    | Ty_Builtin T => H_Builtin T
+    | Ty_Lam X K T => H_Lam X K T (ty__ind_set T)
+    | Ty_App T1 T2 => H_App T1 T2 (ty__ind_set T1) (ty__ind_set T2)
+    | Ty_SOP Tss =>
+        H_SOP Tss ((fix list_list_ind (tss : list (list ty)) : ForallT (ForallT P) tss :=
+          match tss with
+          | nil => ForallT_nil
+          | ts :: tss' =>
+              ForallT_cons
+                ((fix list_ind (ts : list ty) : ForallT P ts :=
+                   match ts with
+                   | nil => ForallT_nil
+                   | t :: ts' => 
+                       ForallT_cons (ty__ind_set t) (list_ind ts')
+                   end) ts)
+                (list_list_ind tss')
+          end) Tss)
+    end.
+
+End ty__ind_set.
 
 (* Identical to the above, but for Set*)
 Theorem kind_checking_sound_set : forall Delta ty kind,
     kind_check Delta ty = Some kind -> has_kind_set Delta ty kind.
 Proof.
     intros Delta ty. generalize dependent Delta.
-    induction ty; intros Delta kind Htc; inversion Htc.
+    induction ty using ty__ind_set; intros Delta kind Htc; inversion Htc.
     - (* Var *) 
       apply K_Var_set.
       assumption.
@@ -246,9 +321,51 @@ Proof.
         + apply IHty2.
           rewrite HeqK1.
           reflexivity. 
-    - (* ADMIT: Ty_SOP Unimplemented*)
+    - (* Ty_SOP *)
+      destruct_match.
+      inversion H1; subst.
+      eapply K_SOP_set.
+      clear H1.
+      inversion H; subst; auto.
+      constructor.
+      (* ADMIT: Ty_SOP ForallT_Forall necessary? Prop vs Type *)
 Admitted.
 
+Lemma kind_checking_complete_TYSOP Tss Δ : 
+        Forall
+          (Forall
+          (fun T : ty => kind_check Δ T = Some Kind_Base))
+          Tss -> (if
+        forallb (fun Ts : list ty =>
+        forallb (fun T : ty => match kind_check Δ T with
+        | Some Kind_Base => true
+        | _ => false
+        end) Ts)
+          Tss then Some Kind_Base
+        else None) =
+        Some Kind_Base.
+Proof.
+  intros.
+  induction Tss; simpl; auto.
+  induction a; simpl; auto.
+  - apply IHTss. inversion H; auto.
+  - inversion H; subst; auto.
+    inversion H2; subst; auto.
+    rewrite H4.
+    simpl.
+    assert (forallb (fun T : ty =>
+        match kind_check Δ T with
+        | Some Kind_Base => true
+        | _ => false
+        end)
+          a0 = true).
+    {  clear H H2 H3 H4 IHa IHTss.
+      induction a0; simpl; auto. 
+      inversion H5; subst; auto. rewrite H1. simpl.
+      auto. }
+    rewrite H0. simpl.
+    apply IHTss. auto.
+Qed.
 
 Theorem kind_checking_complete : forall (Delta : list (binderTyname * kind)) (ty : ty) (kind : kind),
     has_kind Delta ty kind -> kind_check Delta ty = Some kind.
@@ -283,20 +400,8 @@ Proof.
       rewrite -> Kind_eqb_refl. 
       reflexivity.
     - (* Ty_SOP *)
-      induction Tss; eauto.
-      induction a; simpl.
-      + simpl in H0.
-        apply IHTss; eauto.
-        inversion H; subst; auto.
-        inversion H0; subst; auto.
-      + simpl.
-        inversion H0; subst; auto.
-        inversion H3; subst; auto.
-        rewrite H5.
-        
-        
-       (* Ty_SOP: Unimplemented *)
-Admitted.
+      apply kind_checking_complete_TYSOP; auto.
+Defined.
 
 Theorem prop_to_type : forall Δ T K, has_kind Δ T K -> has_kind_set Δ T K.
 Proof.

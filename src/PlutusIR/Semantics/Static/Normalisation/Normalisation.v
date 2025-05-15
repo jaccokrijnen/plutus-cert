@@ -132,6 +132,8 @@ Lemma normalise_to_normal : forall T Tn,
     normal_Ty Tn.
 Proof.
   induction 1; eauto.
+  apply NO_TySOP.
+  (* ADMIT: TY_SOP *)
 Admitted.
 
 Lemma normalisation__deterministic : forall T Tn T'n,

@@ -2,7 +2,7 @@
 Require Import PlutusCert.Util.List.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
-From PlutusCert Require Import plutus_util PlutusIR.
+From PlutusCert Require Import plutus_util PlutusIR Util.
 
 Reserved Notation "'|-*_uni' T ':' K" (at level 40, T at level 0, K at level 0).
 Inductive has_kind_uni : DefaultUni -> kind -> Prop :=
@@ -132,7 +132,7 @@ Inductive has_kind_set : list (binderTyname * kind) -> ty -> kind -> Set :=
       Δ |-*s T2 : K1 ->
       Δ |-*s (Ty_App T1 T2) : K2
   | K_SOP_set : forall Δ Tss,
-      ForallSet (ForallSet (fun T => has_kind_set Δ T Kind_Base)) Tss ->
+      ForallT (ForallT (fun T => has_kind_set Δ T Kind_Base)) Tss ->
       Δ |-*s (Ty_SOP Tss) : Kind_Base
 where "Δ '|-*s' T ':' K" := (has_kind_set Δ T K).
 
@@ -271,8 +271,8 @@ Hypothesis K_App_case : forall Δ T1 T2 K1 K2,
   P Δ (Ty_App T1 T2) K2.
 
 Hypothesis K_SOP_case : forall Δ Tss,
-  ForallSet (ForallSet (fun T => has_kind_set Δ T Kind_Base)) Tss ->
-  ForallSet (ForallSet (fun T => P Δ T Kind_Base)) Tss ->
+  ForallT (ForallT (fun T => has_kind_set Δ T Kind_Base)) Tss ->
+  ForallT (ForallT (fun T => P Δ T Kind_Base)) Tss ->
   P Δ (Ty_SOP Tss) Kind_Base.
 
 Fixpoint has_kind_set_ind'
@@ -287,7 +287,7 @@ Proof.
     |Δ T Huni
     |Δ X K1 T K2 HKT
     |Δ T1 T2 K1 K2 HK1 HK2
-    |Δ Tss HForallSet].
+    |Δ Tss HForallT].
 
   - apply K_Var_case. assumption.
 
@@ -308,9 +308,9 @@ Proof.
       [apply has_kind_set_ind' | apply has_kind_set_ind']; eassumption.
 
   - eapply K_SOP_case.
-    + exact HForallSet.
+    + exact HForallT.
     + (* Build recursive hypotheses over all T in Tss *)
-      revert HForallSet.
+      revert HForallT.
       clear K_SOP_case.
       (* specialize (K_SOP_case Δ Tss). *)
       induction Tss.
@@ -320,14 +320,14 @@ Proof.
         -- constructor.
         -- constructor; eauto.
            ++ apply has_kind_set_ind'; eauto.
-              inversion HForallSet; subst.
+              inversion HForallT; subst.
               inversion H1; subst. auto.
            ++ eapply IHa.
-              inversion HForallSet; subst.
+              inversion HForallT; subst.
               constructor; auto.
               inversion H1; subst; auto.
         -- eapply IHTss; auto.
-              inversion HForallSet; subst; auto.
+              inversion HForallT; subst; auto.
 Admitted.
 
 End has_kind_set_induction.

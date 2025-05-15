@@ -37,6 +37,9 @@ Inductive well_scoped_Ty (Δ : ctx) : ty -> Prop :=
       Δ |-* T1 ->
       Δ |-* T2 ->
       Δ |-* (Ty_App T1 T2)
+  | WST_SOP : forall Tss,
+      Forall (fun Ts => Forall (fun T => Δ |-* T) Ts) Tss ->
+      Δ |-* (Ty_SOP Tss)
 where "Δ '|-*' T " := (well_scoped_Ty Δ T).
 
 Reserved Notation "Δ ',,' Γ '|-+' t " (at level 101, t at level 0, no associativity).
