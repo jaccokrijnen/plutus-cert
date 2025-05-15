@@ -307,12 +307,18 @@ Proof with eauto.
   - (* TyAbs *)
     simpl.
     inversion H0; subst.
-    apply T_TyAbs; auto.
+    apply T_TyAbs.
     unfold P_Term in H.
     eapply H; eauto.
-    (* s not free in U by [],,[] |-+ v : Un 
-      <- empty kinding context?? hence no ftvs *)
-    admit. 
+    (* Suppose s not in U, then done by unfold.
+       Suppose s free in U.
+       then x not in (drop_ty_var s ((x, U) :: Gamma)).
+       then x not free in t.
+       then we can strengthen the goal and remove (x, U).
+       Then drop_ty_var of smaller context is included in
+       drop_ty_var of superset of that context.
+      *)
+    admit.
   - (* LamAbs *)
     inversion H0. subst.
     simpl.

@@ -95,8 +95,9 @@ Proof with eauto_LR.
   - eapply RD_cons; eauto.
   - apply RG_extend_rho.
     eapply RG_monotone; eauto.
-    rewrite <- minus_n_O in Hlt_i.
+    rewrite Nat.sub_0_r in Hlt_i.
 
+    (* TODO: see #91 (weakening for logical approximation) *)
 
     (* apply Nat.lt_le_incl.
     assumption. *)

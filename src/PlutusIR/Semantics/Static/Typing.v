@@ -56,15 +56,11 @@ Definition freshUnwrapIFix (F : ty) : string :=
   "a" ++ String.concat EmptyString (FreeVars.Ty.ftv F).
 
 Definition unwrapIFix (F : ty) (K : kind) (T : ty) : ty :=
-  let b := freshUnwrapIFix F in 
- (Ty_App (Ty_App F (Ty_Lam b K (Ty_IFix F (Ty_Var b)))) T).
+  let b := freshUnwrapIFix F in
+  (Ty_App (Ty_App F (Ty_Lam b K (Ty_IFix F (Ty_Var b)))) T).
 
 (* Main property of fresh variables: they are fresh*)
 Lemma freshUnwrapIFix__fresh F :
-  ~ In (freshUnwrapIFix F) (FreeVars.Ty.ftv F).
-Admitted.
-
-Lemma unwrapIFixFresh_ftv_helper F :
   ~ In (freshUnwrapIFix F) (FreeVars.Ty.ftv F).
 Admitted.
 
@@ -74,29 +70,12 @@ Reserved Notation "Delta '|-ok_c' c ':' T" (at level 101, c at level 0, T at lev
 Reserved Notation "Delta ',,' Gamma  '|-oks_nr' bs" (at level 101, bs at level 0, no associativity).
 Reserved Notation "Delta ',,' Gamma '|-oks_r' bs" (at level 101, bs at level 0, no associativity).
 Reserved Notation "Delta ',,' Gamma '|-ok_b' rec # b" (at level 101, b at level 0, no associativity).
-Local Open Scope list_scope.
-
-Fixpoint insert_deltas_rec (xs : list (string * ty)) (Δ : list (string * kind)) := 
-match xs with
-  | nil => nil
-  | (X, T):: xs' => (X, T, Δ) :: insert_deltas_rec xs' Δ
-end.
-
-Lemma insert_deltas_rec_app xs ys Δ :
-  insert_deltas_rec (xs ++ ys) Δ = insert_deltas_rec xs Δ ++ insert_deltas_rec ys Δ.
-Proof.
-  induction xs.
-  - reflexivity.
-  - simpl. rewrite IHxs. 
-    destruct a.
-    reflexivity.
-Admitted.
 
 Local Open Scope list_scope.
 
 (* ************* drop_ty_var ************* *)
 
-(* 
+(*
 Should have
 drop_ty_var "s" (("x", Ty_Bool) :: ("x", Ty_Var "s") :: ("x", Ty_Int) :: nil) = nil
 
@@ -160,10 +139,10 @@ intros x v Hl.
 (* by contradiction:
   Suppose lookup x (drop_ty_var X Γ') = None
 
-    By drop_ty_var__inclusion, 
+    By drop_ty_var__inclusion,
       we have lookup x Γ' = Some v.
-      
-      then 
+
+      then
         (x, v) in Gamma' and X in v (not possible by Hl)
       OR
         (x, v') in Gamma' and X in v', then also (x, v) gets removed
@@ -181,8 +160,6 @@ Lemma drop_ty_var__lookup_some : forall X Γ x T,
   we are not guaranteed to get the same, as (x, S(X)) could be dropped and in front of (x, T).
 *)
 Admitted.
-
-(************* Drop_Δ **********)
 
 Definition inb_string (x : string) (xs : list string) : bool :=
   if in_dec string_dec x xs then true else false.
@@ -497,7 +474,6 @@ Qed.
   Qed.
 
 
-
 Lemma drop_Δ_cons__inclusion : forall Δ b bs,
     List.inclusion (drop_Δ Δ (b::bs)) (drop_Δ (binds_Delta b ++ Δ) bs).
 Proof.
@@ -609,7 +585,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ ,, Γ |-+ (Builtin f) : Tn
   | T_Error : forall Δ Γ S Sn,
       Δ |-* S : Kind_Base ->
-      normalise S Sn -> (* S Sn (denk aan preservation. T Tn hadden we geimplementeerd omdat dat makkelijk is voor preservation mss, maar dat werkt niet voor completeness ), maak pull request*)
+      normalise S Sn ->
       Δ ,, Γ |-+ (Error S) : Sn
   (** Let-bindings
       Note: The rules for let-constructs differ significantly from the paper definitions
@@ -738,15 +714,7 @@ Combined Scheme has_type__multind from
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
 
-Lemma lookupBuiltinTy__well_kinded f Δ :
-  Δ |-* (lookupBuiltinTy f) : Kind_Base.
-Proof.
-  destruct f; repeat constructor.
-Qed.
-
-
 Opaque dtdecl_freshR.
-
 
 Inductive FreshOver : string -> list string -> Prop :=
   | FreshOver_nil : forall fr, FreshOver fr []
@@ -799,6 +767,28 @@ Compute (Ty_Apps (Ty_Var "b") [(Ty_Var "c"); (Ty_Var "d")]).
 (* Discuss with Jacco that because of constrLastTyExpected in matchTy we now need different Deltas. Or do we? We basically only differentiate on Rec/NonRec *)
 
   
+
+(* Cannot type faulty const function *)
+Example const_shadowing T :
+  (nil ,, nil |-+
+    (TyAbs "X" Kind_Base
+      (LamAbs "x" (Ty_Var "X")
+        (TyAbs "X" Kind_Base
+          (LamAbs "y" (Ty_Var "X")
+            (Var "x"))))) : T) -> False.
+Proof.
+  intros.
+  inversion H; subst.
+  inversion H6; subst.
+  simpl drop_ty_var in *.
+  inversion H9; subst.
+  inversion H10; subst.
+  inversion H8; subst.
+  simpl in H13.
+  inversion H13; subst.
+  simpl in H1.
+  inversion H1.
+Qed.
 
 
 Definition well_typed t := exists T, [] ,, [] |-+ t : T.

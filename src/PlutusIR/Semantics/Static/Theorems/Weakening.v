@@ -96,7 +96,8 @@ Module Typing.
     all: try (intros Delta'_0 Gamma'_0 HinclD HinclG).
     all: try (intros Delta'_0 HinclD).
     all: try solve [econstructor; subst; eauto using Kinding.weakening, inclusion_cons, inclusion_append].
-    - unfold P_has_type in H0.
+    - (* TyAbs *)
+      unfold P_has_type in H0.
       apply T_TyAbs.
       apply H0.
       apply inclusion_cons; auto.
@@ -116,13 +117,12 @@ Module Typing.
         apply inclusion_append.
         destruct rec; auto.
         eapply drop_Δ'__preserves__inclusion. assumption.
-      + destruct rec; auto.
-        * apply Kinding.weakening with (Delta := fromDecl XK :: rev (map fromDecl YKs) ++ drop_Δ' Δ [X]); subst; auto.
-          apply inclusion_cons; auto.
-          apply inclusion_append.
-          eapply drop_Δ'__preserves__inclusion. assumption.
-        * apply Kinding.weakening with (Delta := rev (map fromDecl YKs) ++ Δ); subst; auto.
-          apply inclusion_append; auto.
+      + destruct rec; subst...
+        simpl in *.
+        eapply Kinding.weakening...
+        apply inclusion_cons.
+        apply inclusion_append.
+        eapply drop_Δ'__preserves__inclusion. assumption.
   Qed.
 
   Lemma weakening_empty : forall Delta Gamma t T,

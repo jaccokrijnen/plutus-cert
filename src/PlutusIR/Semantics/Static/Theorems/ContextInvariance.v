@@ -13,8 +13,8 @@ Local Open Scope string_scope.
 
 Lemma drop_ty_var__inclusion_ftv X Γ Γ' t :
   (forall x, Term.appears_free_in x t ->
-    lookup x Γ = lookup x Γ') -> 
-  (forall x, Term.appears_free_in x t -> 
+    lookup x Γ = lookup x Γ') ->
+  (forall x, Term.appears_free_in x t ->
     lookup x (drop_ty_var X Γ) = lookup x (drop_ty_var X Γ')).
   (* Should follow from drop_ty_var__inclusion*)
 Admitted.
@@ -154,7 +154,7 @@ Module Typing.
       + apply eqb_neq in Heqb.
         rewrite lookup_neq; auto.
         rewrite lookup_neq; auto.
-    - (* T_TyAbs *) 
+    - (* TyAbs *)
       unfold P_has_type in H0.
       apply T_TyAbs.
       apply H0.

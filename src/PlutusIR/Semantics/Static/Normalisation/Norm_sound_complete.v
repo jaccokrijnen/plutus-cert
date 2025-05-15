@@ -7,7 +7,6 @@ From PlutusCert Require Import
   Kinding.Checker
   Type_reduction
   Static.Util
-  CpdtTactics
   SubstituteTCA
   port_plut2
   .

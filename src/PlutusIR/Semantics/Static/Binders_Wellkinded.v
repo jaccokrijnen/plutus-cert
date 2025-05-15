@@ -27,6 +27,24 @@ Open Scope list_scope.
 
 Opaque dtdecl_freshR.
 
+Local Open Scope list_scope.
+
+Fixpoint insert_deltas_rec (xs : list (string * ty)) (Δ : list (string * kind)) := 
+match xs with
+  | nil => nil
+  | (X, T):: xs' => (X, T, Δ) :: insert_deltas_rec xs' Δ
+end.
+
+Lemma insert_deltas_rec_app xs ys Δ :
+  insert_deltas_rec (xs ++ ys) Δ = insert_deltas_rec xs Δ ++ insert_deltas_rec ys Δ.
+Proof.
+  induction xs.
+  - reflexivity.
+  - simpl. rewrite IHxs. 
+    destruct a.
+    reflexivity.
+Admitted.
+
 Lemma b_r_wf__wk Δ Γ b :
   Δ ,, Γ |-ok_b Rec # b -> forall T _x, In (_x, T) (binds_Gamma b) -> (Δ |-* T : Kind_Base ).
 Proof.
