@@ -27,7 +27,8 @@ Proof.
   intros Hftv Hbtv HRC.
   generalize dependent rhos.
   induction T; intros.
-  - simpl.
+  - (* Ty_Var *)
+    simpl.
     destruct (String.eqb bX t) eqn:Heqb.
     + assert (t = bX). { apply String.eqb_eq in Heqb. auto. } subst.
       autorewrite with RC in HRC.
@@ -109,7 +110,7 @@ Proof.
   - (* Ty_Forall *)
     simpl.
     assert (bY <> b) by admit. (* by Hbtv*)
-    destruct (eqb bX b) eqn:Heqb.
+    destruct (String.eqb bX b) eqn:Heqb.
     + (* bX = b 
         but when RC'ing body of forall, 
           we add b in front of rho
@@ -126,6 +127,56 @@ Proof.
           swap rhos.
           *)
       admit.
+  - (* Ty_Builtin *)
+    autorewrite with RC.
+    autorewrite with RC in HRC.
+    intros.
+    specialize (HRC _ Hlt_j _ H).
+    destruct HRC as [e'_f [j' HRC]].
+    exists e'_f.
+    exists j'.
+    destruct HRC as [HRC1 [HRC2 HRC3]].
+    split; auto.
+    split; auto.
+    + (* ADMIT: Substitution on builtins doesnt do anything *)
+      admit.
+    + destruct HRC3 as [HRC3_1 HRC3_2].
+      split; auto.
+      (* ADMIT: Substitution on builtins doesnt do anything *)
+      admit.
+  - (* Ty_Lam *)
+    
+    autorewrite with RC.
+    autorewrite with RC in HRC.
+    intros.
+    specialize (HRC _ Hlt_j _ H).
+    destruct HRC as [e'_f [j' HRC]].
+    exists e'_f.
+    exists j'.
+    destruct HRC as [HRC1 [HRC2 HRC3]].
+    split; auto.
+    split; auto.
+    + destruct (String.eqb bX b) eqn:Heqb.
+      * assert (bX = b) by admit.
+        subst. simpl. destruct ρ. destruct p.
+        rewrite String.eqb_refl.
+        (* ADMIT: bY is not in Ty_Lam b k0 T, so we can remove the substitution 
+          Then by HRC2 (there we can also remove the substitution b)
+          *)
+        admit.
+      * simpl.
+        destruct ρ. destruct p.
+        rewrite Heqb.
+        (* ADMIT: lambda binder is not equal to bX or bY, should hold by inductive argument thruogh HRC*)
+        admit.
+    + destruct HRC3 as [HRC3_1 HRC3_2].
+      split; auto.
+      -- (* ADMIT: Same reasoning as above *)
+         admit.
+      -- destruct HRC3_2 as [HRC3_2 | HRC3_2_error]; auto.
+         destruct HRC3_2 as [HRC3_2_1 [HRC3_2_2 HRC3_2]]; contradiction.
+  - (* Ty_App *)
+    admit.
 Admitted.
 
 Require Import Coq.Lists.List.
