@@ -272,7 +272,7 @@ Proof.
   destruct temp as [v'' [j'' [Hev__v'' [_ [_ condition]]]]].
   assert (v'' = v' /\ j'' = 0) by (eapply eval__deterministic; eauto).
   destruct H. subst.
-  rewrite <- minus_n_O in condition.
+  rewrite Nat.sub_0_r in condition.
   eauto.
 Qed.
 

@@ -93,11 +93,11 @@ Definition P_Term (t : term) :=
     Delta ,, Gamma |-+ <{ [x := v] t }> : T.
 
 Definition P_Binding (b : binding) : Prop :=
-  forall Delta Gamma x U Un v,
-    Delta ,, ((x, U) :: Gamma) |-ok_b b ->
+  forall Delta Gamma rec x U Un v,
+    Delta ,, ((x, U) :: Gamma) |-ok_b rec # b ->
     normalise U Un ->
     [] ,, [] |-+ v : Un ->
-    Delta ,, Gamma |-ok_b <{ [x := v]b b }>.
+    Delta ,, Gamma |-ok_b rec # <{ [x := v]b b }>.
 
 #[export] Hint Unfold
   P_Term
@@ -304,6 +304,21 @@ Proof with eauto.
       eapply T_Var...
       simpl in H3.
       rewrite Heqb in H3...
+  - (* TyAbs *)
+    simpl.
+    inversion H0; subst.
+    apply T_TyAbs.
+    unfold P_Term in H.
+    eapply H; eauto.
+    (* Suppose s not in U, then done by unfold.
+       Suppose s free in U.
+       then x not in (drop_ty_var s ((x, U) :: Gamma)).
+       then x not free in t.
+       then we can strengthen the goal and remove (x, U).
+       Then drop_ty_var of smaller context is included in
+       drop_ty_var of superset of that context.
+      *)
+    admit.
   - (* LamAbs *)
     inversion H0. subst.
     simpl.
@@ -329,9 +344,9 @@ Corollary substitution_preserves_typing__Term : forall t Delta Gamma x U Un v T,
     Delta ,, Gamma |-+ <{ [x := v] t }> : T.
 Proof. apply substitution_preserves_typing. Qed.
 
-Corollary substitution_preserves_typing__Binding : forall b Delta Gamma x U Un v,
-    Delta ,, ((x, U) :: Gamma) |-ok_b b ->
+Corollary substitution_preserves_typing__Binding : forall b Delta Gamma rec x U Un v,
+    Delta ,, ((x, U) :: Gamma) |-ok_b rec # b ->
     normalise U Un ->
     [] ,, [] |-+ v : Un ->
-    Delta ,, Gamma |-ok_b <{ [x := v]b b }>.
+    Delta ,, Gamma |-ok_b rec # <{ [x := v]b b }>.
 Proof. apply substitution_preserves_typing. Qed.

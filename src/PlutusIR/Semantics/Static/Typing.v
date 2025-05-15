@@ -1,6 +1,7 @@
 Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.Util.List.
 From PlutusCert Require Import Analysis.BoundVars.
+From PlutusCert Require Import Analysis.FreeVars.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.Auxiliary.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
@@ -50,8 +51,8 @@ Definition freshUnwrapIFix (F : ty) : string :=
   "a" ++ String.concat EmptyString (FreeVars.Ty.ftv F).
 
 Definition unwrapIFix (F : ty) (K : kind) (T : ty) : ty :=
-  let b := freshUnwrapIFix F in 
- (Ty_App (Ty_App F (Ty_Lam b K (Ty_IFix F (Ty_Var b)))) T).
+  let b := freshUnwrapIFix F in
+  (Ty_App (Ty_App F (Ty_Lam b K (Ty_IFix F (Ty_Var b)))) T).
 
 (* Main property of fresh variables: they are fresh*)
 Lemma freshUnwrapIFix__fresh F :
@@ -63,9 +64,97 @@ Reserved Notation "Delta ',,' Gamma '|-+' t ':' T" (at level 101, t at level 0, 
 Reserved Notation "Delta '|-ok_c' c ':' T" (at level 101, c at level 0, T at level 0).
 Reserved Notation "Delta ',,' Gamma  '|-oks_nr' bs" (at level 101, bs at level 0, no associativity).
 Reserved Notation "Delta ',,' Gamma '|-oks_r' bs" (at level 101, bs at level 0, no associativity).
-Reserved Notation "Delta ',,' Gamma '|-ok_b' b" (at level 101, b at level 0, no associativity).
+Reserved Notation "Delta ',,' Gamma '|-ok_b' rec # b" (at level 101, b at level 0, no associativity).
 
 Local Open Scope list_scope.
+
+(* ************* drop_ty_var ************* *)
+
+(*
+Should have
+drop_ty_var "s" (("x", Ty_Bool) :: ("x", Ty_Var "s") :: ("x", Ty_Int) :: nil) = nil
+
+We keep an accumulator of already "removed" vars like "x"
+*)
+Fixpoint drop_ty_var' X (Γ : list (string * ty)) (acc : list string): list (string * ty) :=
+  match Γ with
+  | nil => nil
+  | (x, T) :: Γ' =>
+      if (in_dec string_dec X (Ty.ftv T)) then 
+        drop_ty_var' X Γ' (x::acc)
+      else if in_dec string_dec x acc then
+        drop_ty_var' X Γ' acc
+      else (x, T) :: drop_ty_var' X Γ' acc
+  end.
+
+Definition drop_ty_var X (Γ : list (string * ty)) : list (string * ty) :=
+  drop_ty_var' X Γ nil.
+
+Lemma drop_ty_var__inclusion X Γ :
+  List.inclusion (drop_ty_var X Γ) Γ.
+Proof.
+  unfold List.inclusion.
+  intros x v Hl.
+  induction Γ.
+  - inversion Hl.
+  - simpl.
+    destruct a as [a1 a2].
+    (* TODO: destr_eqb_eq tactic *)
+    destruct (string_dec a1 x); subst.
+    + rewrite String.eqb_refl.
+      f_equal.
+      (* Suppose X in a2. Then by Hl
+        we have that a2 <> v
+
+        But then by drop_ty_var, all keys "x" will be removed from Hl,
+        hence contradiction, because then it would have been None.
+
+        Hence we must have X not in a2.
+        Then by Hl we have lookup x ((x, a2)::...) = Some v => a2 = v
+      *)
+      admit.
+    + rewrite <- String.eqb_neq in n.
+      rewrite n.
+      (* a1 <> x
+        lookup x (drop ((a1, a2)::Γ) = Some v)
+        Well, it is not the first one (a1), and the result is Some v.
+        Hence we must have lookup x (drop Γ) = Some v. (possibly with even smaller Gamma, if a2 contains X)
+        since drop Γ is a subset of Γ, we must have then also lookup x Γ = Some v.
+      *)
+
+Admitted.
+
+Lemma drop_ty_var__inclusion_preserving : forall X Γ Γ',
+    List.inclusion Γ Γ' -> List.inclusion (drop_ty_var X Γ) (drop_ty_var X Γ').
+Proof.
+intros X Γ Γ' Hincl.
+unfold List.inclusion in Hincl.
+unfold List.inclusion.
+intros x v Hl.
+(* by contradiction:
+  Suppose lookup x (drop_ty_var X Γ') = None
+
+    By drop_ty_var__inclusion,
+      we have lookup x Γ' = Some v.
+
+      then
+        (x, v) in Gamma' and X in v (not possible by Hl)
+      OR
+        (x, v') in Gamma' and X in v', then also (x, v) gets removed
+
+        But if this (x, v') occured to the right of (x, v), then still (x, v) in Gamma
+        If it occurred to the left, we would have had
+        lookup x Γ' = Some v' with v <> v'. Contradiction.
+*)
+Admitted.
+
+Lemma drop_ty_var__lookup_some : forall X Γ x T,
+    lookup x (drop_ty_var X Γ) = Some T ->
+    exists T', lookup x Γ = Some T'.
+(* Drop ty var cannot remove anything, so we cannot get None
+  we are not guaranteed to get the same, as (x, S(X)) could be dropped and in front of (x, T).
+*)
+Admitted.
 
 Definition inb_string (x : string) (xs : list string) : bool :=
   if in_dec string_dec x xs then true else false.
@@ -84,9 +173,13 @@ Proof.
   destruct (in_dec string_dec x xs); split; intro H; try easy; try congruence.
 Qed.
 
+Definition drop_Δ' (Δ : list (string * kind)) (bsn : list string) : list (string * kind) :=
+  (* Just negb and In, but for bools isntead of props*)
+  filter (fun x => negb (inb_string (fst x) bsn)) Δ.
+
 Definition drop_Δ (Δ : list (string * kind)) (bs : list binding) : list (string * kind) :=
   (* Just negb and In, but for bools isntead of props*)
-  filter (fun x => negb (inb_string (fst x) (btvbs bs))) Δ.
+  drop_Δ' Δ (btvbs bs).
 
 Lemma drop_Δ_nil : forall Δ,
     drop_Δ Δ nil = Δ.
@@ -104,11 +197,11 @@ From Coq Require Import Bool.
 Lemma drop_Δ__weaken : forall Δ b bs,
   drop_Δ Δ (b::bs) = drop_Δ (binds_Delta b ++ Δ) (b::bs).
 Proof.
-  intros Δ b bs.
+  intros Δ b bs; unfold drop_Δ.
   induction b.
   - simpl. reflexivity.
   - simpl. destruct t.
-    unfold drop_Δ.
+    unfold drop_Δ'.
     remember (fun x : string * kind => _) as f.
 
     assert (Hf_nil: filter f [(b, k)] = []).
@@ -131,7 +224,7 @@ Proof.
     rewrite Hf_app.
     rewrite filter_app; auto.
   - simpl. destruct d. destruct t.
-    unfold drop_Δ.
+    unfold drop_Δ'.
     remember (fun x : string * kind => _) as f.
     assert (Hf_nil: filter f [(b0, k)] = []).
     {
@@ -226,15 +319,14 @@ Proof.
   assumption.
 Qed.
     
-
-  Lemma drop_Δ__lookup_None : forall Δ bs x,
-    In x (BoundVars.btvbs bs) -> lookup x (drop_Δ Δ bs) = None.
+  Lemma drop_Δ'__lookup_None : forall Δ xs x,
+    In x (xs) -> lookup x (drop_Δ' Δ xs) = None.
   Proof.
-    intros Δ bs x Hbtvbs.
+    intros Δ xs x Hbtvbs.
     induction Δ; simpl.
     - reflexivity.
     - destruct a as [a1 a2]; simpl.
-      destruct (negb (inb_string a1 (btvbs bs))) eqn:Heqn.
+      destruct (negb (inb_string a1 (xs))) eqn:Heqn.
       + destruct (string_dec a1 x).
         * subst.
           exfalso.
@@ -248,15 +340,24 @@ Qed.
     + assumption.
   Qed.
 
-  Lemma lookup_None__drop_Δ : forall Δ bs x,
-    ~ In x (BoundVars.btvbs bs) ->
-    lookup x (drop_Δ Δ bs) = lookup x Δ.
+  Lemma drop_Δ__lookup_None : forall Δ bs x,
+    In x (BoundVars.btvbs bs) -> lookup x (drop_Δ Δ bs) = None.
   Proof.
-    intros Δ bs x HnotBtvb.
+    intros.
+    unfold drop_Δ.
+    eapply drop_Δ'__lookup_None.
+    assumption.
+  Qed.
+
+   Lemma lookup_None__drop_Δ' : forall Δ xs x,
+    ~ In x xs ->
+    lookup x (drop_Δ' Δ xs) = lookup x Δ.
+  Proof.
+    intros Δ xs x HnotBtvb.
     induction Δ; simpl.
     - reflexivity.
     - destruct a as [a1 a2]; simpl.
-      destruct ((inb_string a1 (btvbs bs))) eqn:Heqn; simpl.
+      destruct ((inb_string a1 xs)) eqn:Heqn; simpl.
       + destruct (string_dec a1 x).
         * subst.
           rewrite inb_string_true_iff in Heqn.
@@ -274,15 +375,25 @@ Qed.
           rewrite IHΔ; auto. 
   Qed.
 
-  Lemma lookup_Some__drop_Δ_no_btvbs : forall Δ bs x K,
-    lookup x (drop_Δ Δ bs) = Some K ->
-    ~ In x (BoundVars.btvbs bs).
+  Lemma lookup_None__drop_Δ : forall Δ bs x,
+    ~ In x (BoundVars.btvbs bs) ->
+    lookup x (drop_Δ Δ bs) = lookup x Δ.
   Proof.
-    intros Δ bs x K Hl.
+    intros.
+    unfold drop_Δ.
+    eapply lookup_None__drop_Δ'.
+    assumption.
+  Qed.
+
+  Lemma lookup_Some__drop_Δ'_no_xs : forall Δ xs x K,
+    lookup x (drop_Δ' Δ xs) = Some K ->
+    ~ In x xs.
+  Proof.
+    intros Δ xs x K Hl.
     induction Δ; simpl in *.
     - inversion Hl.
     - destruct a as [a1 a2]; simpl in *.
-      destruct (inb_string a1 (btvbs bs)) eqn:Heqn; simpl in *.
+      destruct (inb_string a1 xs) eqn:Heqn; simpl in *.
       + destruct (string_dec a1 x).
         * apply IHΔ.
           assumption.
@@ -300,21 +411,30 @@ Qed.
           assumption.
   Qed.
 
-  Lemma drop_Δ__inclusion : forall Δ bs,
-    List.inclusion (drop_Δ Δ bs) Δ.
+  Lemma lookup_Some__drop_Δ_no_btvbs : forall Δ bs x K,
+    lookup x (drop_Δ Δ bs) = Some K ->
+    ~ In x (BoundVars.btvbs bs).
+  Proof.
+    intros.
+    unfold drop_Δ.
+    eapply lookup_Some__drop_Δ'_no_xs; eauto.
+  Qed.
+
+  Lemma drop_Δ'__inclusion : forall Δ xs,
+    List.inclusion (drop_Δ' Δ xs) Δ.
   Proof.
     intros.
     induction Δ; simpl.
     - unfold List.inclusion; auto.
     - destruct a as [a1 a2].
-      destruct (inb_string (fst (a1, a2)) (btvbs bs)) eqn:Heqn; simpl in *.
+      destruct (inb_string (fst (a1, a2)) xs) eqn:Heqn; simpl in *.
       + unfold inclusion.
         intros x v Hl.
         destruct (string_dec a1 x).
         * subst.
           exfalso.
           rewrite inb_string_true_iff in Heqn.
-          eapply drop_Δ__lookup_None in Heqn.
+          eapply drop_Δ'__lookup_None in Heqn.
           rewrite Hl in Heqn.
           inversion Heqn.
         * simpl.
@@ -340,6 +460,13 @@ Qed.
           assumption.
   Qed.
 
+  Lemma drop_Δ__inclusion : forall Δ bs,
+    List.inclusion (drop_Δ Δ bs) Δ.
+  Proof.
+    intros.
+    unfold drop_Δ.
+    eapply drop_Δ'__inclusion.
+  Qed.
 
 
 Lemma drop_Δ_cons__inclusion : forall Δ b bs,
@@ -358,6 +485,41 @@ Proof.
   rewrite Hunfold; clear Hunfold.
   apply drop_Δ__inclusion.
 Qed.
+
+  Lemma drop_Δ'__preserves__inclusion : forall Δ Δ' xs,
+      List.inclusion Δ Δ' ->
+      List.inclusion (drop_Δ' Δ xs) (drop_Δ' Δ' xs).
+  Proof.
+    intros Δ Δ' xs Hincl.
+    unfold inclusion in *.
+    intros x v Hl.
+    assert (lookup x Δ' = Some v).
+    {
+      apply drop_Δ'__inclusion in Hl.
+      apply Hincl in Hl.
+      assumption.
+    }
+    assert ( ~ In x xs).
+    {
+      eapply lookup_Some__drop_Δ'_no_xs; eauto.
+    }
+
+    induction Δ'.
+    - inversion H.
+    - eapply lookup_None__drop_Δ' in H0; eauto.
+      rewrite H0.
+      assumption.
+  Qed.
+
+  Lemma drop_Δ__preserves__inclusion : forall Δ Δ' bs,
+      List.inclusion Δ Δ' ->
+      List.inclusion (drop_Δ Δ bs) (drop_Δ Δ' bs).
+  Proof.
+    intros.
+    unfold drop_Δ.
+    eapply drop_Δ'__preserves__inclusion.
+    assumption.
+  Qed.
 
 Lemma btvbs_eq__drop_Δ_eq : forall Δ bs bs',
   btvbs bs = btvbs bs' ->
@@ -387,7 +549,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Δ ,, Γ |-+ (Apply t1 t2) : T2n
   (* Universal types *)
   | T_TyAbs : forall Δ Γ X K t Tn,
-      ((X, K) :: Δ) ,, Γ |-+ t : Tn ->
+      ((X, K) :: Δ) ,, (drop_ty_var X Γ) |-+ t : Tn ->
       Δ ,, Γ |-+ (TyAbs X K t) : (Ty_Forall X K Tn)
   | T_TyInst : forall Δ Γ t1 T2 T1n X K2 T0n T2n,
       Δ ,, Γ |-+ t1 : (Ty_Forall X K2 T1n) ->
@@ -465,7 +627,7 @@ with bindings_well_formed_nonrec : list (string * kind) -> list (string * ty) ->
   | W_NilB_NonRec : forall Δ Γ,
       Δ ,, Γ |-oks_nr nil
   | W_ConsB_NonRec : forall Δ Γ b bs bsGn,
-      Δ ,, Γ |-ok_b b ->
+      Δ ,, Γ |-ok_b NonRec # b ->
       map_normalise (binds_Gamma b) bsGn ->
       ((binds_Delta b) ++ Δ) ,, (bsGn ++ Γ) |-oks_nr bs ->
       Δ ,, Γ |-oks_nr (b :: bs)
@@ -474,20 +636,20 @@ with bindings_well_formed_rec : list (string * kind) -> list (string * ty) -> li
   | W_NilB_Rec : forall Δ Γ,
       Δ ,, Γ |-oks_r nil
   | W_ConsB_Rec : forall Δ Γ b bs,
-      Δ ,, Γ |-ok_b b ->
+      Δ ,, Γ |-ok_b Rec # b ->
       Δ ,, Γ |-oks_r bs ->
       Δ ,, Γ |-oks_r (b :: bs)
 
-with binding_well_formed : list (string * kind) -> list (string * ty) -> binding -> Prop :=
-  | W_Term : forall Δ Γ s x T t Tn,
+with binding_well_formed : list (string * kind) -> list (string * ty) -> recursivity -> binding -> Prop :=
+  | W_Term : forall Δ Γ s x T t Tn rec,
       Δ |-* T : Kind_Base ->
       normalise T Tn ->
       Δ ,, Γ |-+ t : Tn ->
-      Δ ,, Γ |-ok_b (TermBind s (VarDecl x T) t)
-  | W_Type : forall Δ Γ X K T,
+      Δ ,, Γ |-ok_b rec # (TermBind s (VarDecl x T) t)
+  | W_Type : forall Δ Γ X K T rec,
       Δ |-* T : K ->
-      Δ ,, Γ |-ok_b (TypeBind (TyVarDecl X K) T)
-  | W_Data : forall Δ Γ dtd XK YKs matchFunc cs X Ys Δ' Tres,
+      Δ ,, Γ |-ok_b rec # (TypeBind (TyVarDecl X K) T)
+  | W_Data : forall Δ Γ dtd XK YKs matchFunc cs X Ys Δ' Δ_ns rec Tres,
       dtd = Datatype XK YKs matchFunc cs ->
       X = tvdecl_name XK ->
       Ys = map tvdecl_name YKs ->
@@ -499,7 +661,14 @@ with binding_well_formed : list (string * kind) -> list (string * ty) -> binding
       NoDup (map vdecl_name cs) ->
 
       (* Well-formedness of constructors *)
-      Δ' = rev (map fromDecl YKs) ++ Δ ->
+      (* Constructor argument types may not use type variable with 
+      datatype's name in NonRec case*)
+      Δ_ns = match rec with
+            | NonRec => drop_Δ' Δ [X]
+            | Rec => Δ
+            end ->
+      Δ' = rev (map fromDecl YKs) ++ Δ_ns ->
+      (* The constructor types are well-kinded *) 
       Tres = constrLastTyExpected dtd -> (* The expected result type for each constructor *)
       (forall c, In c cs -> Δ' |-ok_c c : Tres) ->
 
@@ -510,13 +679,13 @@ with binding_well_formed : list (string * kind) -> list (string * ty) -> binding
        *)
       (fromDecl XK :: Δ') |-* Tres : Kind_Base ->
 
-      Δ ,, Γ |-ok_b (DatatypeBind dtd)
+      Δ ,, Γ |-ok_b rec # (DatatypeBind dtd)
 
   where "Δ ',,' Γ '|-+' t ':' T" := (has_type Δ Γ t T)
   and  "Δ '|-ok_c' c ':' T" := (constructor_well_formed Δ c T)
   and "Δ ',,' Γ '|-oks_nr' bs" := (bindings_well_formed_nonrec Δ Γ bs)
   and "Δ ',,' Γ '|-oks_r' bs" := (bindings_well_formed_rec Δ Γ bs)
-  and "Δ ',,' Γ '|-ok_b' b" := (binding_well_formed Δ Γ b).
+  and "Δ ',,' Γ '|-ok_b' rec # b" := (binding_well_formed Δ Γ rec b).
 
 Scheme has_type__ind := Minimality for has_type Sort Prop
   with constructor_well_formed__ind := Minimality for constructor_well_formed Sort Prop
@@ -530,11 +699,33 @@ Combined Scheme has_type__multind from
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
 
+(* Cannot type faulty const function *)
+Example const_shadowing T :
+  (nil ,, nil |-+
+    (TyAbs "X" Kind_Base
+      (LamAbs "x" (Ty_Var "X")
+        (TyAbs "X" Kind_Base
+          (LamAbs "y" (Ty_Var "X")
+            (Var "x"))))) : T) -> False.
+Proof.
+  intros.
+  inversion H; subst.
+  inversion H6; subst.
+  simpl drop_ty_var in *.
+  inversion H9; subst.
+  inversion H10; subst.
+  inversion H8; subst.
+  simpl in H13.
+  inversion H13; subst.
+  simpl in H1.
+  inversion H1.
+Qed.
+
 
 Definition well_typed t := exists T, [] ,, [] |-+ t : T.
 
 Lemma T_Let__cons Δ Γ Γ_b b bs t Tn :
-  Δ ,, Γ |-ok_b b ->
+  Δ ,, Γ |-ok_b NonRec # b ->
   drop_Δ Δ (b::bs) |-* Tn : Kind_Base -> (* Tn may not mention types bound in b (escaping) *)
   map_normalise (binds_Gamma b) Γ_b ->
   binds_Delta b ++ Δ ,, Γ_b ++ Γ |-+ (Let NonRec bs t) : Tn ->
