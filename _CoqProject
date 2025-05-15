@@ -94,6 +94,7 @@ src/PlutusIR/Semantics/Static/Theorems/Weakening.v
 src/PlutusIR/Semantics/Static/TypeSubstitution.v
 
 src/PlutusIR/Semantics/TypeSafety/BaseKindedness.v
+src/PlutusIR/Semantics/TypeSafety/Preservation.v
 src/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping.v
 src/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping/AnnotationSubstitution.v
 src/PlutusIR/Semantics/TypeSafety/SubstitutionPreservesTyping/TermSubstitution.v

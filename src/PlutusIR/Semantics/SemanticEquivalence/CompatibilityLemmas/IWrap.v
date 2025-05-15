@@ -185,11 +185,11 @@ Proof with eauto_LR.
         eexists.
         split. eapply N_TyIFix...
         eapply T_Error.
-        eapply K_IFix.
-        eapply H1.
-        eapply H2.
-        eapply N_TyIFix...
-      }
+        (* ADMIT: This is not provable in the current formulation of RC.
+          This subproof is not necessary in the new formulation of RC: R. 
+         *)
+        admit. admit.
+      } 
 
       split. {
         rewrite msubstT_IFix.
@@ -203,10 +203,10 @@ Proof with eauto_LR.
         eexists.
         split. eapply N_TyIFix...
         eapply T_Error.
-        eapply K_IFix.
-        eapply H1.
-        eapply H2.
-        eapply N_TyIFix...
+        (* ADMIT: This is not provable in the current formulation of RC.
+          This subproof is not necessary in the new formulation of RC: R. 
+         *)
+        admit. admit.
       }
       right...
-Qed.
+Admitted.

@@ -7,6 +7,8 @@ Require Import PlutusCert.PlutusIR.Semantics.Static.Theorems.ContextInvariance.A
 Require Import PlutusCert.PlutusIR.Semantics.Static.Theorems.In_Auxiliary.
 Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.
 
+Require Import Coq.Program.Equality.
+
 Module Ty.
 
   Lemma free_in_context : forall Delta T K,
@@ -185,10 +187,10 @@ Module Annotation.
     all: try (intros x0 Hafi).
     all: try solve [inversion Hafi; subst; eauto using Ty.free_in_context].
     - (* T_TyAbs *)
-      inversion Hafi.
+      dependent destruction Hafi.
       subst.
-      eapply H0 in H5...
-      rewrite lookup_neq in H5...
+      eapply H0 in Hafi...
+      rewrite lookup_neq in Hafi...
     - (* T_Let*)
       inversion Hafi.
       + subst.

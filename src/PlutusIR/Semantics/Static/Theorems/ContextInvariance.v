@@ -111,7 +111,7 @@ Module Typing.
 
     - (* T_Var *)
       eapply T_Var...
-      rewrite <- H1; auto.
+      rewrite <- H2; auto.
     - (* T_LamAbs *)
       apply T_LamAbs...
       apply H2.

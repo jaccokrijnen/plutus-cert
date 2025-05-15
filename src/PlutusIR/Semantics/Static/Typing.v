@@ -535,6 +535,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
   (* Simply typed lambda caclulus *)
   | T_Var : forall Γ Δ x T Tn,
       lookup x Γ = Coq.Init.Datatypes.Some T ->
+      Δ |-* T : Kind_Base ->
       normalise T Tn ->
       Δ ,, Γ |-+ (Var x) : Tn
   | T_LamAbs : forall Δ Γ x T1 t T2n T1n,
@@ -577,10 +578,10 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       T = lookupBuiltinTy f ->
       normalise T Tn ->
       Δ ,, Γ |-+ (Builtin f) : Tn
-  | T_Error : forall Δ Γ S T Tn,
-      Δ |-* T : Kind_Base ->
-      normalise T Tn ->
-      Δ ,, Γ |-+ (Error S) : Tn
+  | T_Error : forall Δ Γ S Sn,
+      Δ |-* S : Kind_Base ->
+      normalise S Sn ->
+      Δ ,, Γ |-+ (Error S) : Sn
   (** Let-bindings
       Note: The rules for let-constructs differ significantly from the paper definitions
       because we had to adapt the typing rules to the compiler implementation of type checking.
