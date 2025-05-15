@@ -26,6 +26,9 @@ Lemma RC_rename_T k T rhos ρ e e' bX bY :
 Proof.
   intros Hftv Hbtv HRC.
   generalize dependent rhos.
+  generalize dependent e.
+  generalize dependent e'.
+  generalize dependent k.
   induction T; intros.
   - (* Ty_Var *)
     simpl.
@@ -109,24 +112,75 @@ Proof.
   - admit.
   - (* Ty_Forall *)
     simpl.
-    assert (bY <> b) by admit. (* by Hbtv*)
-    destruct (String.eqb bX b) eqn:Heqb.
-    + (* bX = b 
-        but when RC'ing body of forall, 
-          we add b in front of rho
-        probably some shadowign thing
+    assert (Hby_b: bY <> b) by admit. (* by Hbtv*)
+    assert (Hftv_T: ~ In bY (Ty.ftv T)) by admit. (* by Hftv and Hbtv *)
+    assert (Hbtv_T: ~ In bY (Ty.btv T)) by admit. (* by Hbtv *)
+    specialize (IHT Hftv_T Hbtv_T).
 
-        bY does not occur in T, so probably we can remove it.
+    destruct (String.eqb bX b) eqn:Heqb.
+    + clear IHT.
+      (* bX = b 
+       
+        but when RC'ing body of forall in HRC, b will shadow bX
+          probably some shadowign thing
+
+        bY does not occur in T, so we can remove it/ it is unused, just like bX above.
+         then when RCing body, also b comes in front. Hence by HRC and some weakening argument?
 
       *)admit.
     + (* bx <> b *)
-      (* by some swap rhos argument, we can instantiate IHT 
+      (* by some swap rhos argument/weakening, we can instantiate IHT 
         with rhos := (b, something)::(bY, rho) :: rhos*)
 
         (* Then again we can prove IHT assumption by
           swap rhos.
           *)
-      admit.
+      autorewrite with RC in HRC.
+      autorewrite with RC; intros.
+      specialize (HRC _ Hlt_j _ H).
+      destruct HRC as [e'_f [j' HRC]].
+      eexists. eexists.
+      destruct HRC as [HRC1 [HRC2 HRC3]].
+      split; eauto.
+      destruct HRC2 as [HRC2_1 HRC2_2].
+      split.
+      { 
+        (* ADMIT: subst bX for bY, but then subst bY for rho,
+            and hypothesis substs bX for rho immediately. Should be the same by bY fresh.
+        *)  
+        admit. 
+      }
+      destruct HRC3 as [HRC3_1 HRC3_2].
+      split. { 
+        (* ADMIT: See above *)  
+        admit. 
+      }
+      destruct HRC3_2 as [HRC3_2 | HRC3_2_error]; auto.
+      left.
+      destruct HRC3_2 as [HRC3_2_1 [HRC3_2_2 HRC3_2]].
+      split; auto.
+      split; auto.
+      destruct HRC3_2 as [e_body [e'_body [Y [ Z [He_f [He'_f HRC3_2]]]]]].
+      exists e_body. exists e'_body. exists Y. exists Z.
+      split; auto.
+      split; auto.
+      intros.
+      specialize (HRC3_2 T1 T2 Chi H0 H1 H2 i Hlt_i).
+
+      (* NOT TRUE, but allowed by weakening *)
+      assert (HswapbY: ( ((b, (Chi, T1, T2)) :: (bY, ρ) :: rhos)) =  ((bY, ρ) :: (b, (Chi, T1, T2)) :: rhos)).
+      {
+        admit.
+      }
+      rewrite HswapbY.
+      eapply IHT.
+      assert (HswapbX: ( ((b, (Chi, T1, T2)) :: (bX, ρ) :: rhos)) =  ((bX, ρ) :: (b, (Chi, T1, T2)) :: rhos)).
+      {
+         (* Not true again, but allowed by weakening and b <> bX*)
+        admit.
+      }
+      rewrite <- HswapbX.
+      assumption.
   - (* Ty_Builtin *)
     autorewrite with RC.
     autorewrite with RC in HRC.
@@ -176,7 +230,21 @@ Proof.
       -- destruct HRC3_2 as [HRC3_2 | HRC3_2_error]; auto.
          destruct HRC3_2 as [HRC3_2_1 [HRC3_2_2 HRC3_2]]; contradiction.
   - (* Ty_App *)
-    admit.
+    autorewrite with RC.
+    autorewrite with RC in HRC.
+    intros.
+    specialize (HRC _ Hlt_j _ H).
+    destruct HRC as [e'_f [j' HRC]].
+    exists e'_f.
+    exists j'.
+    destruct HRC as [HRC1 [HRC2 HRC3]].
+    split; auto.
+    split; auto.
+    + admit.
+    + destruct HRC3 as [HRC3_1 HRC3_2].
+      split; auto.
+      (* ADMIT: Same reasoning as above *)
+      admit.
 Admitted.
 
 Require Import Coq.Lists.List.

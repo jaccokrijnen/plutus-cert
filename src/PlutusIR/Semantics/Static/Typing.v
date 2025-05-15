@@ -599,7 +599,11 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       ((X, K) :: Δ) ,, (drop_ty_var X (drop_ty_var Y Γ)) |-+ t : Tn ->
       ~ In Y (Ty.ftv Tn) -> (* This is absolutely required. Example Tn = ( X Y), then we cannot substitute X for Y and get an alhpa equivalent term
           (also not capture avoidingly) and*)
-      ~ In Y (Ty.btv Tn) -> (* This is an alternative to substituteTCA *)
+      ~ In Y (Ty.btv Tn) -> (* 
+          This is an alternative to substituteTCA 
+          I dont think it is problematic, we do not evautate the tyabs body, except when applying it
+          using Tyinst.
+          *)
       Δ ,, Γ |-+ (TyAbs X K t) : (Ty_Forall Y K (substituteT X (Ty_Var Y) Tn))
 
       (*
