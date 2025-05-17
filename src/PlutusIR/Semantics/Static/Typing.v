@@ -5,10 +5,15 @@ From PlutusCert Require Import Analysis.FreeVars.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.Auxiliary.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
-Require Export PlutusCert.PlutusIR.Semantics.Static.Kinding.
-Require Export PlutusCert.PlutusIR.Semantics.Static.Normalisation.
+Require Export PlutusCert.PlutusIR.Semantics.Static.Kinding.Kinding.
+Require Export PlutusCert.PlutusIR.Semantics.Static.Normalisation.Normalisation.
 Require Export PlutusCert.PlutusIR.Semantics.Static.TypeSubstitution.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Builtins.Signatures.
+Require Import PlutusCert.PlutusIR.Analysis.BoundVars.
+Require Export PlutusCert.PlutusIR.Analysis.FreeVars.
+
+From PlutusCert Require Import util.
+
 
 Import Coq.Lists.List.
 Import ListNotations.
@@ -594,6 +599,14 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       Γ' = bsGn ++ Γ ->
       Δ ,, Γ |-oks_nr bs ->
       Δ' ,, Γ' |-+ t : Tn ->
+
+      (* Old comment: New type variable names may not already occur in the environment, 
+       * see Teams discussion Jacco Mar 26, add Either example to thesis.
+
+        In kctx_wf will imply this NoDup, because it is used in typing t, which 
+        can only be well-typed if Δ is well-formed.  
+        Fixed by: Issue 76    
+       *)
       Δ_no_esc = drop_Δ Δ bs ->
       Δ_no_esc |-* Tn : Kind_Base ->
       Δ ,, Γ |-+ (Let NonRec bs t) : Tn
@@ -603,7 +616,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
       NoDup (bvbs bs) ->
 
       Δ' = flatten (map binds_Delta bs) ++ Δ ->
-      map_normalise (flatten (map binds_Gamma bs)) bsGn ->
+      map_normalise (flatten (map binds_Gamma bs)) bsGn -> (* TODO: Why do we need this to be normalised? Create a counterexample that shows things go wrong without normalisation here*)
       Γ' = bsGn ++ Γ->
       Δ' ,, Γ' |-oks_r bs ->
       Δ' ,, Γ' |-+ t : Tn ->
@@ -673,11 +686,13 @@ with binding_well_formed : list (string * kind) -> list (string * ty) -> recursi
       (forall c, In c cs -> Δ' |-ok_c c : Tres) ->
 
       (* The expected result type is well-kinded *)
-      (* In the case that this DatatypeBind is in a let-rec, X will already be
-       * in Δ, but it is not problematic to add it another time. It is needed
-       * for non-recursive DatatypeBinds
+      (* In the case that this DatatypeBind is in a let-nonrec, 
+         we must add X to the kinding context to type the return type (its name is not yet available in Delta')
        *)
-      (fromDecl XK :: Δ') |-* Tres : Kind_Base ->
+       match rec with
+        | NonRec => (fromDecl XK :: Δ') |-* Tres : Kind_Base
+        | Rec => Δ' |-* Tres : Kind_Base
+       end ->
 
       Δ ,, Γ |-ok_b rec # (DatatypeBind dtd)
 
@@ -698,6 +713,60 @@ Combined Scheme has_type__multind from
   bindings_well_formed_nonrec__ind,
   bindings_well_formed_rec__ind,
   binding_well_formed__ind.
+
+Opaque dtdecl_freshR.
+
+Inductive FreshOver : string -> list string -> Prop :=
+  | FreshOver_nil : forall fr, FreshOver fr []
+  | FreshOver_cons : forall fr x xs, ~ In fr (x :: xs) -> FreshOver fr xs -> FreshOver fr (x :: xs).
+
+Lemma K_TyForalls_constructor : forall Δ T YKs,
+      (rev (map fromDecl YKs) ++ Δ) |-* T : Kind_Base ->
+      Δ |-* (Ty_Foralls YKs T) : Kind_Base.
+Proof.
+  intros.
+  generalize dependent Δ.
+  induction YKs; intros.
+  - simpl. auto.
+  - simpl. constructor.
+    apply IHYKs.
+    assert (Hr_rev: (rev
+        (map fromDecl (a :: YKs)) ++
+      Δ) = (rev (map fromDecl YKs) ++
+      (getTyname a, getKind a) :: Δ)).
+    {
+      simpl. unfold fromDecl. fold fromDecl. destruct a. simpl. intuition.
+    } 
+    rewrite <- Hr_rev.
+    auto.
+Qed.
+
+Definition notFun T1 := match T1 with | Ty_Fun _ _ => False | _ => True end.
+
+Lemma TyApps_replaceReturnTy' T1 T2s T3 : 
+  notFun T1 -> (replaceRetTy (Ty_Apps T1 T2s) T3) = T3.
+Proof.
+  intros.
+  unfold Ty_Apps.
+  rewrite <- fold_left_rev_right.
+  generalize dependent T1.
+  induction T2s; intros.
+  - simpl. unfold notFun in H. destruct T1; intuition.
+  - simpl. rewrite fold_right_app.
+    eapply IHT2s. simpl. auto.
+Qed.
+
+Lemma TyApps_replaceReturnTy x T2s T3 : 
+  (replaceRetTy (Ty_Apps (Ty_Var x) T2s) T3) = T3.
+Proof.
+  now apply TyApps_replaceReturnTy'.
+Qed.
+
+Compute (Ty_Apps (Ty_Var "b") [(Ty_Var "c"); (Ty_Var "d")]).
+
+(* Discuss with Jacco that because of constrLastTyExpected in matchTy we now need different Deltas. Or do we? We basically only differentiate on Rec/NonRec *)
+
+  
 
 (* Cannot type faulty const function *)
 Example const_shadowing T :

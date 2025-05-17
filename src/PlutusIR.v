@@ -266,8 +266,53 @@ Inductive ty :=
   | Ty_Builtin : DefaultUni -> ty
   | Ty_Lam : binderTyname -> kind -> ty -> ty
   | Ty_App : ty -> ty -> ty
-  (* | Ty_SOP : list (list ty) -> ty *)
+  | Ty_SOP : list (list ty) -> ty
 .
+
+Section ty__ind.
+  Unset Implicit Arguments.
+
+  (* Variable for the property to prove about `ty` *)
+  Variable (P : ty -> Prop).
+
+  (* Hypotheses for each constructor of `ty` *)
+  Context
+    (H_Var : forall (X : tyname), P (Ty_Var X))
+    (H_Fun : forall (T1 T2 : ty), P T1 -> P T2 -> P (Ty_Fun T1 T2))
+    (H_IFix : forall (F T : ty), P F -> P T -> P (Ty_IFix F T))
+    (H_Forall : forall (X : binderTyname) (K : kind) (T : ty), P T -> P (Ty_Forall X K T))
+    (H_Builtin : forall (T : DefaultUni), P (Ty_Builtin T))
+    (H_Lam : forall (X : binderTyname) (K : kind) (T : ty), P T -> P (Ty_Lam X K T))
+    (H_App : forall (T1 T2 : ty), P T1 -> P T2 -> P (Ty_App T1 T2))
+    (H_SOP : forall (Tss : list (list ty)), Forall (Forall P) Tss -> P (Ty_SOP Tss)).
+
+  (* Main induction principle for `ty` *)
+  Fixpoint ty__ind (T : ty) : P T :=
+    match T with
+    | Ty_Var X => H_Var X
+    | Ty_Fun T1 T2 => H_Fun T1 T2 (ty__ind T1) (ty__ind T2)
+    | Ty_IFix F T => H_IFix F T (ty__ind F) (ty__ind T)
+    | Ty_Forall X K T => H_Forall X K T (ty__ind T)
+    | Ty_Builtin T => H_Builtin T
+    | Ty_Lam X K T => H_Lam X K T (ty__ind T)
+    | Ty_App T1 T2 => H_App T1 T2 (ty__ind T1) (ty__ind T2)
+    | Ty_SOP Tss =>
+        H_SOP Tss ((fix list_list_ind (tss : list (list ty)) : Forall (Forall P) tss :=
+          match tss with
+          | nil => Forall_nil _
+          | ts :: tss' =>
+              Forall_cons _
+                ((fix list_ind (ts : list ty) : Forall P ts :=
+                   match ts with
+                   | nil => Forall_nil _
+                   | t :: ts' => 
+                       Forall_cons _ (ty__ind t) (list_ind ts')
+                   end) ts)
+                (list_list_ind tss')
+          end) Tss)
+    end.
+
+End ty__ind.
 
 (*
   Note [Simplification of AST representation]
@@ -702,7 +747,7 @@ Section ty_fold.
     | Ty_Builtin b    => f_Builtin b
     | Ty_Lam v k t    => f_Lam v k (fold t)
     | Ty_App t1 t2    => f_App (fold t1) (fold t2)
-    (* | Ty_SOP xs       => f_SOP (fold_SOP fold xs)  *)
+    | Ty_SOP xs       => f_SOP (fold_SOP fold xs) 
     end
 .
 
@@ -727,11 +772,11 @@ Section Folds_Alt.
     | Ty_Builtin _    => DefaultUni -> R
     | Ty_Lam _ _ _    => binderName -> kind -> R -> R
     | Ty_App _ _      => R -> R -> R
-    (* | Ty_SOP _        =>   (S -> R)
+    | Ty_SOP _        =>   (S -> R)
                          * (P -> S -> S)
                          * S
                          * (R -> P -> P)
-                         * P *)
+                         * P
     end.
 
   Definition fold_alg (alg : forall T, ty_alg T) : ty -> R := fix fold T :=
@@ -743,8 +788,8 @@ Section Folds_Alt.
     | Ty_Builtin b    => fun f => f b
     | Ty_Lam v k t    => fun f => f v k (fold t)
     | Ty_App t1 t2    => fun f => f (fold t1) (fold t2)
-    (* | Ty_SOP xs       => fun '(f_SOP, f_cons_s, f_nil_s, f_cons_p, f_nil_p)
-        => f_SOP (fold_SOP R S P f_cons_s f_nil_s f_cons_p f_nil_p fold xs) *)
+    | Ty_SOP xs       => fun '(f_SOP, f_cons_s, f_nil_s, f_cons_p, f_nil_p)
+        => f_SOP (fold_SOP R S P f_cons_s f_nil_s f_cons_p f_nil_p fold xs)
     end (alg T)
   .
 End Folds_Alt.
@@ -880,8 +925,8 @@ End DECOMPOSABLE.
 
 
 (* A transformation algebra returns the original types for ty, sums and products *)
-(* Definition ty_alg_transform T : Set := ty_alg ty (list (list ty)) (list ty) T. *)
-Definition ty_alg_transform T : Set := ty_alg ty T.
+Definition ty_alg_transform T : Set := ty_alg ty (list (list ty)) (list ty) T.
+(* Definition ty_alg_transform T : Set := ty_alg ty T. *)
 
 Definition id_alg (T : ty) : ty_alg_transform T :=
   match T return ty_alg_transform T with
@@ -892,7 +937,7 @@ Definition id_alg (T : ty) : ty_alg_transform T :=
     | Ty_Builtin _    => Ty_Builtin
     | Ty_Lam _ _ _    => Ty_Lam
     | Ty_App _ _      => Ty_App
-    (* | Ty_SOP _        => (Ty_SOP, cons, nil, cons, nil) *)
+    | Ty_SOP _        => (Ty_SOP, cons, nil, cons, nil)
   end
 .
 
@@ -911,11 +956,11 @@ fun alg_partial T =>
 
 (* Transform a type, recursively applies the transformation before applying the
 * provided partial function (or the identity) *)
-(* Definition ty_transform (custom : forall T, option (ty_alg_transform T)) : ty -> ty :=
-  fold_alg _ _ _ (to_total custom). *)
-
 Definition ty_transform (custom : forall T, option (ty_alg_transform T)) : ty -> ty :=
-  fold_alg _ (to_total custom).
+  fold_alg _ _ _ (to_total custom).
+
+(* Definition ty_transform (custom : forall T, option (ty_alg_transform T)) : ty -> ty :=
+  fold_alg _ (to_total custom). *)
 
 Definition unitVal : term := Constant (ValueOf DefaultUniUnit tt).
 

@@ -155,6 +155,7 @@ Proof with eauto_LR.
     eapply RV_to_RC.
 
     eapply RV_monotone...
+    
   - (* E_Error_Iwrap *)
     assert (HRC :
       RC k T0n rho
