@@ -3,7 +3,7 @@ Import ListNotations.
 Require Import Coq.Strings.String.
 Require Import PlutusCert.PlutusIR.Semantics.Static.Normalisation.Strong_Normalisation.SN_STLC.SN_STLC_GU.psubs.
 
-From PlutusCert Require Import GU_NC_Uhm STLC util variables.
+From PlutusCert Require Import GU_NC_BU STLC util variables.
 
 
 Inductive IdSubst : list (string * term) -> Set :=
@@ -100,11 +100,11 @@ Proof.
     eapply IHE. auto.
 Qed.
 
-Lemma id_subst__nc_uhm E s :
-  NC s (id_subst E) -> Uhm (id_subst E) s.
+Lemma id_subst__nc_BU E s :
+  NC s (id_subst E) -> BU (id_subst E) s.
 Proof.
   intros.
-  unfold Uhm.
+  unfold BU.
   split.
   - intros. apply no_btv_in_id_subst in H0. contradiction.
   - intros. apply no_btv_in_id_subst in H0. contradiction.

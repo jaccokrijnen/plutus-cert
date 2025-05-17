@@ -4,14 +4,14 @@ Require Import Coq.Lists.List.
 Local Open Scope string_scope.
 
 Lemma ren_lam_vacuous B x x' t s0 :
-  rename x x' (@tmlam B x t s0) = @tmlam B x t s0.
+  rename x x' (@tmabs B x t s0) = @tmabs B x t s0.
 Proof.
   unfold rename.
   simpl. rewrite String.eqb_refl. rewrite mren_id. reflexivity.
 Qed.
 
 Lemma ren_lam B x x' t s s0 :
-  x <> s -> rename x x' (@tmlam B s t s0) = @tmlam B s t (rename x x' s0).
+  x <> s -> rename x x' (@tmabs B s t s0) = @tmabs B s t (rename x x' s0).
 Proof.
   intros Hnotxs.
   unfold rename.

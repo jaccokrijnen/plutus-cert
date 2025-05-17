@@ -11,7 +11,7 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Arith.
 Require Import Coq.Bool.Bool.
 
-From PlutusCert Require Import step_naive psubs util STLC SN_STLC_GU.GU_NC_Uhm alpha.alpha variables util alpha_ctx_sub alpha_freshness.
+From PlutusCert Require Import step_naive psubs util STLC SN_STLC_GU.GU_NC_BU alpha.alpha variables util alpha_ctx_sub alpha_freshness.
 
 
 (* Pff, this must be avoidable: same set/prop trick as with kinding*)
@@ -81,21 +81,21 @@ Theorem in_prop_to_set {x : string} {l : list string} :
   In x l -> InSet x l.
 Proof.
   intros.
-  destruct (in_dec_f string_dec x l) eqn:uhm.
+  destruct (in_dec_f string_dec x l) eqn:BU.
   - eapply in_dec_f_sound; eauto.
   - exfalso.
     induction l.
     + inversion H.
     + inversion H; subst.
-      simpl in uhm.
+      simpl in BU.
       destruct (string_dec x x).
-      * discriminate uhm.
+      * discriminate BU.
       * contradiction.
       * assert (in_dec_f string_dec x l = false).
         {
-          simpl in uhm.
+          simpl in BU.
           destruct (string_dec x a).
-          - discriminate uhm.
+          - discriminate BU.
           - auto.
         }
         eapply IHl; auto.
@@ -133,22 +133,22 @@ Fixpoint to_GU_ (used : list string) (binders : list (string * string)) (s : ter
                  (* this was bound and (possibly) renamed, or free and renamed to itself*)
               | None => ((x::used), binders, tmvar x) (* this branch should never happen: all binders and ftvs should be in the map. *)
               end
-  | @tmlam B x A s => (* we can freshen regardless *)
+  | @tmabs B x A s => (* we can freshen regardless *)
                     let x' := fresh_to_GU_ used binders x in
                     let (acc, term_body) := to_GU_ used ((x, x')::binders) s in
-                    ((fst acc ++ (x::x'::nil)), binders, @tmlam B x' A term_body)
-  | @tmapp B s t => let (acc_s, s') := to_GU_ used binders s in
+                    ((fst acc ++ (x::x'::nil)), binders, @tmabs B x' A term_body)
+  | @tmbin B s t => let (acc_s, s') := to_GU_ used binders s in
                  let (acc_t, t') := to_GU_ (fst acc_s) binders t in (* stuff in s cannot cause us to be suddenly under more binders in t*)
-                 (acc_t, @tmapp B s' t')
+                 (acc_t, @tmbin B s' t')
   | tmbuiltin d => (used, binders, tmbuiltin d)
   end.
 
-Compute (to_GU_ nil nil (tmlam "x" PlutusIR.Kind_Base (tmvar "x"))). (* should be λxa . xa*)
-Compute (to_GU_ nil nil (tmapp (tmvar "x") (tmvar "y"))). (* should be xy*)
-Compute (to_GU_ nil nil (tmapp (tmlam "y" PlutusIR.Kind_Base (tmapp (tmvar "x") (tmvar "y"))) (tmvar "y"))). 
-Compute (to_GU_ nil nil (tmapp (tmlam "y" PlutusIR.Kind_Base (tmvar "y")) (tmvar "y"))). (* should be x(λya . ya)*)
-Compute (to_GU_ nil nil (tmapp (tmlam "y" PlutusIR.Kind_Base (tmapp (tmvar "x") (tmvar "y"))) (tmvar "x"))).
-Compute (to_GU_ nil nil (tmlam "x" PlutusIR.Kind_Base (tmapp (tmlam "y" PlutusIR.Kind_Base (tmapp (tmvar "x") (tmvar "y"))) (tmvar "x")))).
+Compute (to_GU_ nil nil (tmabs "x" PlutusIR.Kind_Base (tmvar "x"))). (* should be λxa . xa*)
+Compute (to_GU_ nil nil (tmbin (tmvar "x") (tmvar "y"))). (* should be xy*)
+Compute (to_GU_ nil nil (tmbin (tmabs "y" PlutusIR.Kind_Base (tmbin (tmvar "x") (tmvar "y"))) (tmvar "y"))). 
+Compute (to_GU_ nil nil (tmbin (tmabs "y" PlutusIR.Kind_Base (tmvar "y")) (tmvar "y"))). (* should be x(λya . ya)*)
+Compute (to_GU_ nil nil (tmbin (tmabs "y" PlutusIR.Kind_Base (tmbin (tmvar "x") (tmvar "y"))) (tmvar "x"))).
+Compute (to_GU_ nil nil (tmabs "x" PlutusIR.Kind_Base (tmbin (tmabs "y" PlutusIR.Kind_Base (tmbin (tmvar "x") (tmvar "y"))) (tmvar "x")))).
 
 
 (* By precalculating ftvs, we cannot get that a binder is accidentally renamed to an ftv later in the term
@@ -164,8 +164,8 @@ let tvs := tv s in
   *)
 snd (to_GU_ tvs  (map (fun x => (x, x)) tvs) s).
 
-Compute (to_GU (tmapp (tmlam "y" PlutusIR.Kind_Base (tmvar "y")) (tmvar "ya"))). 
-Compute (to_GU (tmapp (tmvar "ya") (tmlam "y" PlutusIR.Kind_Base (tmvar "y")))). 
+Compute (to_GU (tmbin (tmabs "y" PlutusIR.Kind_Base (tmvar "y")) (tmvar "ya"))). 
+Compute (to_GU (tmbin (tmvar "ya") (tmabs "y" PlutusIR.Kind_Base (tmvar "y")))). 
 
 Definition KindOfUniqueRhs (R : list (string * string))  := 
   forall x y, lookup x R = Some y -> AlphaVar R x y.
@@ -315,7 +315,7 @@ Proof.
            simpl. apply in_remove. auto. auto.
     + intros.
       destruct_match.
-      assert (Hftvlam: In x (ftv (@tmlam USort s k s0))).
+      assert (Hftvlam: In x (ftv (@tmabs USort s k s0))).
       {
         apply ftv_c_lam. auto. rewrite <- String.eqb_neq. auto.
       } 
@@ -420,7 +420,7 @@ Proof.
       * exists (fresh_to_GU_ used R s).
         simpl. intuition.
       * specialize (H0 x).
-        assert (In x (ftv (@tmlam USort s k s0))).
+        assert (In x (ftv (@tmabs USort s k s0))).
         {
           apply ftv_c_lam; auto.
         } 
@@ -444,7 +444,7 @@ Proof.
       eapply IHs1.
       * intros. apply H. simpl. apply in_app_iff. left. auto. auto.
       * intros.
-        assert (In x (ftv (@tmapp BSort s1 s2))) by now apply ftv_c_appl.
+        assert (In x (ftv (@tmbin BSort s1 s2))) by now apply ftv_c_appl.
         specialize (H0 x H2).
         assumption.
     + specialize (IHs2 used1 R).
@@ -453,7 +453,7 @@ Proof.
       eapply IHs2.
       * intros. apply H. simpl. apply in_app_iff. right. auto. auto.
       * intros.
-        assert (In x (ftv (@tmapp BSort s1 s2))) by now apply ftv_c_appr.
+        assert (In x (ftv (@tmbin BSort s1 s2))) by now apply ftv_c_appr.
         specialize (H0 x H2).
         assumption.
   - simpl. constructor.
@@ -707,7 +707,7 @@ Proof.
       destr_eqb_eq y s.
       -exists (fresh_to_GU_ used binders s).
        simpl. left. auto.
-      - assert (In y (ftv (@tmlam USort s k s0))).
+      - assert (In y (ftv (@tmabs USort s k s0))).
         {
           apply ftv_c_lam. auto.
           auto.
@@ -742,7 +742,7 @@ Proof.
       {
         intros.
         specialize (H y).
-        assert (In y (ftv (@tmapp BSort s1 s2))).
+        assert (In y (ftv (@tmbin BSort s1 s2))).
         {
           apply ftv_c_appl. auto.
         }
@@ -760,7 +760,7 @@ Proof.
       {
         intros.
         specialize (H y).
-        assert (In y (ftv (@tmapp BSort s1 s2))).
+        assert (In y (ftv (@tmbin BSort s1 s2))).
         {
           apply ftv_c_appr. auto.
         }
@@ -873,7 +873,7 @@ Proof.
         destr_eqb_eq s x.
         -- left. reflexivity.
         -- specialize (H x).
-           assert (In x (ftv (@tmlam USort s k s0))).
+           assert (In x (ftv (@tmabs USort s k s0))).
            {
               apply ftv_c_lam; auto.
            }
@@ -953,7 +953,7 @@ Proof.
           contradiction. assumption.
         - intros.
           specialize (H y).
-          assert (In y (ftv (@tmapp BSort s1 s2))).
+          assert (In y (ftv (@tmbin BSort s1 s2))).
           {
             apply ftv_c_appr. auto.
           }
@@ -1079,7 +1079,7 @@ Qed.
 
 (* TODO: probably we don't need this and can do inversion once we haqve defined to_GU_app? *)
 Lemma to_GU_app_unfold {B s t st} :
-  st = to_GU (@tmapp B s t) -> {s' & { t' & (st = @tmapp B s' t') * Alpha [] s s' * Alpha [] t t'} }%type.
+  st = to_GU (@tmbin B s t) -> {s' & { t' & (st = @tmbin B s' t') * Alpha [] s s' * Alpha [] t t'} }%type.
 Proof.
   intros.
   remember H as H'.
@@ -1092,7 +1092,7 @@ Proof.
   destruct q as [ [used' binders'] idk'].
   simpl in H.
   exists idk. exists idk'.
-  assert (Alpha [] (@tmapp B idk idk') (@tmapp B s t)).
+  assert (Alpha [] (@tmbin B idk idk') (@tmbin B s t)).
   {
     subst.
     rewrite H'.
@@ -1105,7 +1105,7 @@ Proof.
 Qed.
 
 Lemma to_GU_applam_unfold {BA BL A s t st} {x : string} :
-  st = to_GU (@tmapp BA (@tmlam BL x A s) t) -> {x' : string & {s' & { t' & (st = @tmapp BA (@tmlam BL x' A s') t') * Alpha ((x, x')::nil) s s' * Alpha [] t t'} } }%type.
+  st = to_GU (@tmbin BA (@tmabs BL x A s) t) -> {x' : string & {s' & { t' & (st = @tmbin BA (@tmabs BL x' A s') t') * Alpha ((x, x')::nil) s s' * Alpha [] t t'} } }%type.
 Proof.
   intros.
   remember H as H'.
@@ -1143,9 +1143,9 @@ Qed.
 
 (* This should be easy enough. It is the same as to_GU' but without a T.
     Then we know X not in ftv s and X not in btv s.
-    So then GU (tmlam X A (to_GU'' X s)) by also GU (to_GU'' X s).
+    So then GU (tmabs X A (to_GU'' X s)) by also GU (to_GU'' X s).
 *)
-Lemma to_GU''__GU_lam {B} X A s : GU (@tmlam B X A (to_GU'' X s)).
+Lemma to_GU''__GU_lam {B} X A s : GU (@tmabs B X A (to_GU'' X s)).
 Proof.
   constructor.
   - apply to_GU'__GU.

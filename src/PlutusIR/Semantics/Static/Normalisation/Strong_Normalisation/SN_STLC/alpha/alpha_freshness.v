@@ -90,8 +90,8 @@ Qed.
 
 (* Uses stronger assumption that x notin tv s instead of ftv s
   Makes life easier for not having to deal with binders 
-  Example: x notin ftv (tmlam x. x), but x in ftv x, which is its body.
-          However x in tv (tmlam x. x), as well as in tmlam x. y. easier.
+  Example: x notin ftv (tmabs x. x), but x in ftv x, which is its body.
+          However x in tv (tmabs x. x), as well as in tmabs x. y. easier.
    *)
 Lemma alpha_preserves_ftv_from_tv {x x' s s' ren} :
   ~ In x (tv s) ->

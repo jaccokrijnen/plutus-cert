@@ -13,7 +13,7 @@ Require Import Coq.Arith.Arith.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From PlutusCert Require Import alpha_vacuous construct_GU_R alpha_sub psubs step_gu alpha_typing STLC STLC_Kinding SN_STLC_GU.GU_NC_Uhm SN_STLC_GU.construct_GU.
+From PlutusCert Require Import alpha_vacuous construct_GU_R alpha_sub psubs step_gu alpha_typing STLC STLC_Kinding SN_STLC_GU.GU_NC_BU SN_STLC_GU.construct_GU.
 From PlutusCert Require Import IdSubst step_naive alpha.alpha alpha_rename rename util alpha_ctx_sub variables alpha_freshness.
 
 (* used to be prop (TODO: Defined also in SN_STCL_named )*)
@@ -62,7 +62,7 @@ Create HintDb to_GU_db.
 Hint Resolve to_GU__alpha to_GU__GU : to_GU_db.
 
 (* This would NOT work for app because of beta reduction*)
-Lemma sn_ty_fun {B s t} : B <> App -> SN_gu s -> SN_gu t -> SN_gu (@tmapp B s t).
+Lemma sn_ty_fun {B s t} : B <> App -> SN_gu s -> SN_gu t -> SN_gu (@tmbin B s t).
 Proof.
   intros HnotApp HSN_s HSN_t.
   generalize dependent t.
@@ -79,17 +79,17 @@ Proof.
   - (* B not App : contradiction *)
     contradiction.
   - eapply step_naive_preserves_alpha2 with (s' := to_GU x) (R := nil) in H7 as [C [Hstep_C Ha_C] ]; eauto with gu_nc_db α_eq_db to_GU_db.
-    eapply α_preserves_SN_R with (R := []) (s := @tmapp B C t2); eauto with α_eq_db.
+    eapply α_preserves_SN_R with (R := []) (s := @tmbin B C t2); eauto with α_eq_db.
     eapply X with (y := C).
     + apply step_gu_intro with (s' := to_GU x); eauto with gu_nc_db α_eq_db to_GU_db.
     + eapply α_preserves_SN_R with (s := x0). eauto. constructor. auto.
   - eapply step_naive_preserves_alpha2 with (s' := to_GU x0) (R := nil) in H7 as [C [Hstep_C Ha_C] ]; eauto with gu_nc_db α_eq_db to_GU_db.
-    eapply α_preserves_SN_R with (R := []) (s := @tmapp B x C); eauto with α_eq_db.
+    eapply α_preserves_SN_R with (R := []) (s := @tmbin B x C); eauto with α_eq_db.
     eapply X0 with (y := C).
     apply step_gu_intro with (s' := to_GU x0); eauto with to_GU_db.
 Qed.
 
-Lemma sn_ty_forall {B X K T} : SN_gu T -> SN_gu (@tmlam B X K T).
+Lemma sn_ty_forall {B X K T} : SN_gu T -> SN_gu (@tmabs B X K T).
 Proof.
   intros HSN_T.
   induction HSN_T.
@@ -101,7 +101,7 @@ Proof.
 
   eapply step_naive_preserves_alpha2 with (s' := to_GU x) (R := ((y0, X)::nil)) in H7 as [C [Hstep_C Hα_C] ].
   - 
-    assert (Alpha [] (@tmlam B y0 K s0) (@tmlam B X K C) * step_gu x C)%type as [Hα Hstep_BForall].
+    assert (Alpha [] (@tmabs B y0 K s0) (@tmabs B X K C) * step_gu x C)%type as [Hα Hstep_BForall].
     {
       split.
       - constructor; eauto.
@@ -109,7 +109,7 @@ Proof.
         + eapply to_GU__alpha.
         + eapply to_GU__GU.
     }
-    eapply α_preserves_SN_R with (R := []) (s := @tmlam B X K C) in X0; eauto.
+    eapply α_preserves_SN_R with (R := []) (s := @tmabs B X K C) in X0; eauto.
     eauto with α_eq_db.
   
   - eapply gu_lam. eauto.
@@ -120,9 +120,9 @@ Proof.
     + eapply alpha_extend_ids. constructor. constructor. apply to_GU__alpha.
 Qed.
 
-Lemma sn_closedL {B} t s : SN_gu (@tmapp B s t) -> SN_gu s.
+Lemma sn_closedL {B} t s : SN_gu (@tmbin B s t) -> SN_gu s.
 Proof.
-  apply: (sn_preimage_α (h := tmapp^~t)) => x y H.
+  apply: (sn_preimage_α (h := tmbin^~t)) => x y H.
   eapply (@step_gu_app_l B) in H as [t1' [Ha_t1' [s2' [Ha_t Hstep] ] ] ].
   eexists; eauto with *.
 Qed.
@@ -145,8 +145,8 @@ Proof with eauto with sconstr2_db.
       *)
       
 
-      assert ({x' : string & {s' & { t' & ((to_GU (@tmapp App (@tmlam Lam x0 A (psubs [(x, p)] s))
-  (psubs [(x, p)] t))) = @tmapp App (@tmlam Lam x' A s') t') * Alpha ((x0, x')::nil) (psubs [(x, p)] s) s' * Alpha [] (psubs [(x, p)] t) t'} } }%type).
+      assert ({x' : string & {s' & { t' & ((to_GU (@tmbin App (@tmabs Lam x0 A (psubs [(x, p)] s))
+  (psubs [(x, p)] t))) = @tmbin App (@tmabs Lam x' A s') t') * Alpha ((x0, x')::nil) (psubs [(x, p)] s) s' * Alpha [] (psubs [(x, p)] t) t'} } }%type).
       {
         eapply to_GU_applam_unfold. auto.
       }
@@ -154,7 +154,7 @@ Proof with eauto with sconstr2_db.
       
       exists (sub x0' sub_t sub_s).
       split.
-      + eapply step_gu_intro with (s' := (tmapp (tmlam x0' A sub_s) sub_t)).
+      + eapply step_gu_intro with (s' := (tmbin (tmabs x0' A sub_s) sub_t)).
         * constructor. constructor. auto. auto.
         * rewrite <- pr_eq. apply to_GU__GU.
         * apply step_beta.
@@ -242,7 +242,7 @@ Proof with eauto with sconstr2_db.
 
     inv HstepS1.
 
-    remember (to_GU (@tmapp B s' (psubs ((x, p)::nil) t))) as st_gu.
+    remember (to_GU (@tmbin B s' (psubs ((x, p)::nil) t))) as st_gu.
     
     destruct (to_GU_app_unfold Heqst_gu) as [sigS1Alpha [sigtalpha [ [Happ Ha_s] Ha_t ] ] ].
 
@@ -257,7 +257,7 @@ Proof with eauto with sconstr2_db.
     }
     destruct H7 as [s''step [Halpha_s'' Hstep_s'' ] ].
 
-    exists (@tmapp B s''step sigtalpha).
+    exists (@tmbin B s''step sigtalpha).
     split.
     + econstructor; auto.
       * constructor.
@@ -277,10 +277,10 @@ Proof with eauto with sconstr2_db.
   - (* TODO: cleanup, because this is completely analogous to case above*) 
     inversion H2; subst.
     specialize (IHHstep (gu_app_r H0) (nc_app_r H1) R H3 t3 H10 (nc_app_r H4)) as [sigS1 [HstepS1 HalphaS1] ].
-    repeat rewrite subs_tmapp.
+    repeat rewrite subs_tmbin.
     inv HstepS1.
 
-    remember (to_GU (@tmapp B s' (psubs ((x, p)::nil) s))) as st_gu.
+    remember (to_GU (@tmbin B s' (psubs ((x, p)::nil) s))) as st_gu.
     
     destruct (to_GU_app_unfold Heqst_gu) as [sigS1Alpha [sigtalpha [ [Happ Ha_s] Ha_t ] ] ].
 
@@ -295,7 +295,7 @@ Proof with eauto with sconstr2_db.
     }
     destruct H7 as [s''step [Halpha_s'' Hstep_s'' ] ].
 
-    exists (@tmapp B sigtalpha s''step).
+    exists (@tmbin B sigtalpha s''step).
     split.
     + econstructor; auto.
       * constructor.
@@ -304,7 +304,7 @@ Proof with eauto with sconstr2_db.
         
       * apply gu_app_st__gu_app_ts. rewrite <- Happ. rewrite Heqst_gu. apply to_GU__GU.
       * constructor. eauto.
-    + eapply @alpha_trans with (ren := ctx_id_left R) (ren' := R) (t := tmapp (psubs ((x, p)::nil) s) (sigS1)). 
+    + eapply @alpha_trans with (ren := ctx_id_left R) (ren' := R) (t := tmbin (psubs ((x, p)::nil) s) (sigS1)). 
       * eapply id_left_trans. 
       * apply alpha_extend_ids. apply ctx_id_left_is_id. constructor. eapply alpha_sym. constructor. eauto. eapply alpha_sym. constructor. eauto.
       * constructor; eauto. 
@@ -329,7 +329,7 @@ Proof with eauto with sconstr2_db.
     inversion Hsteps1; subst.
 
     (* Same term, but rename (possibly occuring) x binders to something else, 
-        so that we get GU with the wrapping tmlam x still
+        so that we get GU with the wrapping tmabs x still
       This should be seen as a composability argument. GU composes up to alpha
     *)
     remember (to_GU'' x0 s') as s''.
@@ -345,9 +345,9 @@ Proof with eauto with sconstr2_db.
         eapply to_GU''__alpha.
     }
     destruct H7 as [s''step [Halpha_s'' Hstep_s'' ] ].
-    exists (@tmlam B x0 A s''step).
+    exists (@tmabs B x0 A s''step).
     split.
-    + apply step_gu_intro with (s' := @tmlam B x0 A s''); auto. 
+    + apply step_gu_intro with (s' := @tmabs B x0 A s''); auto. 
       * constructor.
         apply alpha_extend_ids. constructor. constructor.
         eapply @alpha_trans. constructor. eauto. eauto.
@@ -415,7 +415,7 @@ Definition cand := term -> Type.
 (* TODO: This is different then neutral_Ty*)
 Definition neutral (s : term) : bool :=
   match s with
-    | tmlam _ _ _ => false
+    | tmabs _ _ _ => false
     | _ => true
   end.
 
@@ -428,7 +428,7 @@ Record reducible (P : cand) : Type := {
 Fixpoint L (T : PlutusIR.kind) : cand :=
 match T with
   | PlutusIR.Kind_Base => SN_gu 
-  | PlutusIR.Kind_Arrow A B => fun s => forall t, L A t -> L B (@tmapp App s t)
+  | PlutusIR.Kind_Arrow A B => fun s => forall t, L A t -> L B (@tmbin App s t)
 end.
 
 Create HintDb a_constr_db.
@@ -449,7 +449,7 @@ Proof with eauto with α_eq_db a_constr_db.
     remember (@a_constr (sym_alpha_ctx R) s' s t') as Rt.
     destruct Rt as [R_ t].
     
-    eapply (IHA2 (sym_alpha_ctx R_) _ (tmapp s t)).
+    eapply (IHA2 (sym_alpha_ctx R_) _ (tmbin s t)).
     + eapply @alpha_sym. eapply sym_alpha_ctx_is_sym.
       constructor; eauto...
     + eapply X. eapply (IHA1 R_ t t'); eauto...
@@ -489,7 +489,7 @@ Proof with eauto using step_gu.
     + intros. specialize (X t0 X0).
       eapply step_gu_app_l with (s1 := s) (t1 := t) (s2 := t0) in H. 
       * destruct H as [t1' [ Ha_t [s2' [Ha_s2' Hstep] ] ] ].
-        eapply p_cl with (s := (tmapp s t0)) in X; auto.
+        eapply p_cl with (s := (tmbin s t0)) in X; auto.
         2: exact Hstep.
         eapply α_preserves_L_R.
         2: eauto.
@@ -616,8 +616,8 @@ Proof with eauto with α_eq_db.
     }
     specialize (IHs (nc_lam H) (nc_lam H0)) as [a [Hred_a Ha_a] ].
     assert ({a0 : term &
-  (red_gu_na (@tmlam USort s k (sub x t1 s0)) a0 *
-  (nil ⊢ a0 ~ @tmlam USort s k a))%type}).
+  (red_gu_na (@tmabs USort s k (sub x t1 s0)) a0 *
+  (nil ⊢ a0 ~ @tmabs USort s k a))%type}).
   {
     apply (red_gu_na_lam_fold Hred_a).
   }
@@ -639,9 +639,9 @@ Proof with eauto with α_eq_db.
     
     assert ({a : term &
     (red_gu_na
-      (@tmapp BSort (sub x t1 s1) (sub x t1 s2)) a *
+      (@tmbin BSort (sub x t1 s1) (sub x t1 s2)) a *
     (nil ⊢ a ~
-    @tmapp BSort g1 g2))%type}) as [app [Hred Ha] ] by apply (red_gu_na_app_fold Hred_g1 Hred_g2).
+    @tmbin BSort g1 g2))%type}) as [app [Hred Ha] ] by apply (red_gu_na_app_fold Hred_g1 Hred_g2).
     exists app.
     split; auto.
     eapply alpha_trans; eauto with α_eq_db.
@@ -660,7 +660,7 @@ Lemma beta_expansion' {BA BL} A B x y s s' t :
   NC s [(x, t)] -> (* this really is the right assumption. no free variable in t is a binder in s', because these binders could be added to the environment through beta reduction and then capture*)
   SN_gu t -> 
   L A (sub x t s) ->
-  L A (@tmapp BA (@tmlam BL y B s') t).
+  L A (@tmbin BA (@tmabs BL y B s') t).
 Proof with eauto with α_eq_db gu_nc_db.
   move=> Ha_s' gu nc snt h. have sns := sn_subst nc (L_sn h).
   assert (SN_gu s').
@@ -712,7 +712,7 @@ Proof with eauto with α_eq_db gu_nc_db.
       - assumption.
     }
 
-    eapply α_preserves_L_R with (s := tmapp (tmlam y B s5') x1) (R := nil)...
+    eapply α_preserves_L_R with (s := tmbin (tmabs y B s5') x1) (R := nil)...
     specialize (X s5' Hstep_s5' x1).
     clear Ha_s5'. clear H7. clear st. 
     inv Hstep_s5'.
@@ -749,7 +749,7 @@ Proof with eauto with α_eq_db gu_nc_db.
     eapply α_preserves_L_R with (s := alpha) (R := nil); auto.
     eapply L_cl with (s := (sub x x1 s0)); auto.
 
-  - eapply α_preserves_L_R with (s := (tmapp (tmlam y B x0) t0)) (R := nil)...
+  - eapply α_preserves_L_R with (s := (tmbin (tmabs y B x0) t0)) (R := nil)...
     eapply H10.
     + econstructor...
     + assumption.
@@ -774,11 +774,11 @@ Qed.
 Lemma beta_expansion_subst {BA BL} X t sigma s A B :
   ParSeq ((X, t)::sigma) ->
   NC (psubs sigma s) [(X, t)] -> (* so the substitution makes sense after "breaking"  it open*)
-  SN_gu t -> L A (psubs ((X, t)::sigma) s) -> L A (@tmapp BA (psubs sigma (@tmlam BL X B s)) t).
+  SN_gu t -> L A (psubs ((X, t)::sigma) s) -> L A (@tmbin BA (psubs sigma (@tmabs BL X B s)) t).
 Proof.
   intros HPS nc snt H.
   simpl in H.
-  eapply α_preserves_L_R with (R := nil) (s := (@tmapp BA (@tmlam BL X B (to_GU' X t (psubs sigma s))) t)).
+  eapply α_preserves_L_R with (R := nil) (s := (@tmbin BA (@tmabs BL X B (to_GU' X t (psubs sigma s))) t)).
   - constructor. constructor. apply alpha_extend_ids. constructor. constructor. 
     eapply @alpha_sym. eauto. constructor. apply to_GU'__alpha. eapply alpha_refl. constructor.
   - eapply α_preserves_L_R with (R := nil) (s' := (sub X t (to_GU' X t (psubs sigma s)))) in H.
@@ -806,11 +806,11 @@ Qed.
 (* The fundamental theorem. *)
 Theorem soundness Gamma s A :
   has_kind Gamma s A -> 
-  GU s -> (* So that we know GU_vars (tmlam x A s) -> ~ In x (btv s), and btv s ∩ ftv s = ∅, important for dealing with vars in `t` that roll out of LR*)
+  GU s -> (* So that we know GU_vars (tmabs x A s) -> ~ In x (btv s), and btv s ∩ ftv s = ∅, important for dealing with vars in `t` that roll out of LR*)
   forall sigma, 
-    Uhm sigma s -> (* so btv sigma is disjoint from tv s + ftv_env sigma: Allows adding btvs 
+    BU sigma s -> (* so btv sigma is disjoint from tv s + ftv_env sigma: Allows adding btvs 
                         to alpha context without accidentally renaming ftvs*)
-    NC s sigma -> (* so we get "nice" substitutions (is contained in Uhm) *)
+    NC s sigma -> (* so we get "nice" substitutions (is contained in BU) *)
     ParSeq sigma -> (* So parallel and sequential substitions are identical *)
     EL Gamma sigma -> (* So that terms in a substitution are already L *)
   L A (psubs sigma s).
@@ -829,9 +829,9 @@ Proof with eauto using L_sn.
     eapply sn_ty_fun.
     + unfold not. intros Hcontra. inversion Hcontra.
     + eapply X; eauto with gu_nc_db.
-      eapply Uhm_appl; eauto.
+      eapply BU_appl; eauto.
     + eapply X0; eauto with gu_nc_db.
-      eapply Uhm_appr; eauto.
+      eapply BU_appr; eauto.
   - (* IFix *)
     intros.
     unfold L.
@@ -839,10 +839,10 @@ Proof with eauto using L_sn.
     + unfold not. intros Hcontra. inversion Hcontra.
     + eapply L_sn.
       eapply X0; eauto with gu_nc_db.
-      eapply Uhm_appl; eauto.
+      eapply BU_appl; eauto.
     + eapply L_sn.
       eapply X; eauto with gu_nc_db.
-      eapply Uhm_appr; eauto.
+      eapply BU_appr; eauto.
   - (* Forall *)
     intros.
     unfold L.
@@ -857,7 +857,7 @@ Proof with eauto using L_sn.
     fold psubs.
     rewrite H3.
     eapply X0 with (sigma := ((X, tmvar X)::sigma)); eauto with gu_nc_db.
-    + eapply Uhm_lam_id; eauto.
+    + eapply BU_lam_id; eauto.
     + constructor; auto.
       * eapply nc_lam; eauto.
       * intros.
@@ -867,8 +867,8 @@ Proof with eauto using L_sn.
            contradiction.
         -- split; auto.
            unfold ftv. simpl. unfold not. intros Hcontra. intuition.
-    + unfold Uhm in H0.
-      destruct H0 as [ uhm1 uhm2].
+    + unfold BU in H0.
+      destruct H0 as [ BU1 BU2].
       constructor; auto.
       * assert (~ In X (ftv_keys_env sigma)).
         {
@@ -880,7 +880,7 @@ Proof with eauto using L_sn.
         intros Hcontra.
         apply ftv_keys_env_sigma_remove in Hcontra. contradiction.
       * intros Hcontra.
-        apply uhm1 in Hcontra; auto.
+        apply BU1 in Hcontra; auto.
         simpl in Hcontra.
         intuition.
     + eapply extend_EL. eauto. apply L_var.
@@ -897,9 +897,9 @@ Proof with eauto using L_sn.
     remember (t_constr t s sigma X) as t'R.
     destruct t'R as [t' R].
 
-    assert (Huhm: Uhm ((X, t')::sigma) s).
+    assert (HBU: BU ((X, t')::sigma) s).
     {
-      eapply Uhm_lam2; eauto.
+      eapply BU_lam2; eauto.
     }
     assert (HX: ~ In X (btv s)).
     {
@@ -908,7 +908,7 @@ Proof with eauto using L_sn.
       contradiction.
     }
 
-    specialize (ih (gu_lam gu) ((X, t')::sigma) Huhm (t_constr__nc_s HX (nc_lam nc) Heqt'R)).
+    specialize (ih (gu_lam gu) ((X, t')::sigma) HBU (t_constr__nc_s HX (nc_lam nc) Heqt'R)).
     assert (Hparseq: ParSeq ((X, t')::sigma)).
     {
       (* we now need: X not a binder in sigma. *)
@@ -922,9 +922,9 @@ Proof with eauto using L_sn.
         }
         intros Hcontra.
         apply ftv_keys_env_sigma_remove in Hcontra. contradiction.
-      - unfold Uhm in wierd. destruct wierd as [ uhm1 _].
+      - unfold BU in wierd. destruct wierd as [ BU1 _].
         intros Hcontra.
-        apply uhm1 in Hcontra; auto.
+        apply BU1 in Hcontra; auto.
         simpl in Hcontra.
         intuition.
     }
@@ -933,18 +933,18 @@ Proof with eauto using L_sn.
 (* **** ih tis now fully applied ********************** *)
 
     eapply beta_expansion_subst in ih; auto.
-    + eapply α_preserves_L_R with (s' := tmapp (psubs sigma (tmlam X A s)) t) (R := sym_alpha_ctx R) in ih; eauto. constructor.
+    + eapply α_preserves_L_R with (s' := tmbin (psubs sigma (tmabs X A s)) t) (R := sym_alpha_ctx R) in ih; eauto. constructor.
       * eapply @alpha_sym with (ren := R). apply sym_alpha_ctx_is_sym.
         repeat rewrite psubs_to_subs; auto.
-        apply (uhm_smaller) in Huhm.
-        eapply psubs__α; eauto; [|apply (t_constr__a_sigma Huhm (nc_lam nc) Heqt'R)].
-        constructor. eapply alpha_extend_id''. auto; apply (t_constr__a_s (gu_lam gu) Huhm Heqt'R).
+        apply (BU_smaller) in HBU.
+        eapply psubs__α; eauto; [|apply (t_constr__a_sigma HBU (nc_lam nc) Heqt'R)].
+        constructor. eapply alpha_extend_id''. auto; apply (t_constr__a_s (gu_lam gu) HBU Heqt'R).
       * eapply @alpha_sym; eauto. apply sym_alpha_ctx_is_sym.   
         apply (t_constr__a_t Heqt'R).
     + eapply t_constr__nc_subs; eauto.
-      unfold Uhm in wierd. destruct wierd as [ uhm1 _ ].
+      unfold BU in wierd. destruct wierd as [ BU1 _ ].
       intros Hcontra.
-      apply uhm1 in Hcontra; auto.
+      apply BU1 in Hcontra; auto.
       simpl in Hcontra.
       intuition.
     + eapply α_preserves_SN_R; eauto. 
@@ -953,9 +953,9 @@ Proof with eauto using L_sn.
   - intros Gamma s t A B _ ih1 _ ih2 gu sigma wierd nc blabla HEL.
     specialize (ih1 (gu_app_l gu) sigma).
 
-    specialize (ih1 (Uhm_appl wierd) (nc_app_l nc) blabla HEL).
-    specialize (ih2 (gu_app_r gu) _ (Uhm_appr wierd) (nc_app_r nc) blabla HEL).
-    repeat rewrite subs_tmapp.
+    specialize (ih1 (BU_appl wierd) (nc_app_l nc) blabla HEL).
+    specialize (ih2 (gu_app_r gu) _ (BU_appr wierd) (nc_app_r nc) blabla HEL).
+    repeat rewrite subs_tmbin.
     unfold L in ih1. fold L in ih1.
     specialize (ih1 (psubs sigma t) ih2).
     assumption.
@@ -988,7 +988,7 @@ Proof.
       eapply α_preserves_L_R with (s := s'); eauto.
       eapply alpha_sym. eapply alpha_sym_nil. eapply s_constr__a_s; eauto.
     - eapply s_constr__gu; eauto.
-    - apply id_subst__nc_uhm. eapply s_constr__nc_s; eauto.
+    - apply id_subst__nc_BU. eapply s_constr__nc_s; eauto.
     - eapply s_constr__nc_s; eauto.
     - apply id_subst__ParSeq. apply id_subst_is_IdSubst.
   }

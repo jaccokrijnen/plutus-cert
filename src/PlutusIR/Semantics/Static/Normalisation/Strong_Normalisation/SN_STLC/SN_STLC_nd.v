@@ -13,7 +13,7 @@ Require Import Coq.Arith.Arith.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From PlutusCert Require Import SN_STLC_GU step_naive GU_NC_Uhm step_gu STLC STLC_Kinding.
+From PlutusCert Require Import SN_STLC_GU step_naive GU_NC_BU step_gu STLC STLC_Kinding.
 From PlutusCert Require Import alpha_typing alpha.alpha alpha_rename rename util alpha_ctx_sub variables alpha_freshness.
 From PlutusCert Require Import alpha_sub alpha_vacuous construct_GU.
 
@@ -24,13 +24,13 @@ Infix ">>=" := bind (at level 50, left associativity).
 
 Inductive step_nd : term -> term -> Type :=
 | step_beta_nd (x : string) (A : PlutusIR.kind) (s t : term) :
-    step_nd (@tmapp App (@tmlam Lam x A s) t) (substituteTCA x t s) 
+    step_nd (@tmbin App (@tmabs Lam x A s) t) (substituteTCA x t s) 
 | step_appL_nd B s1 s2 t :
-    step_nd s1 s2 -> step_nd (@tmapp B s1 t) (@tmapp B s2 t)
+    step_nd s1 s2 -> step_nd (@tmbin B s1 t) (@tmbin B s2 t)
 | step_appR_nd B s t1 t2 :
-    step_nd t1 t2 -> step_nd (@tmapp B s t1) (@tmapp B s t2)
+    step_nd t1 t2 -> step_nd (@tmbin B s t1) (@tmbin B s t2)
 | step_abs_nd B x A s1 s2 :
-    step_nd s1 s2 -> step_nd (@tmlam B x A s1) (@tmlam B x A s2).
+    step_nd s1 s2 -> step_nd (@tmabs B x A s1) (@tmabs B x A s2).
 
 
 
@@ -142,7 +142,7 @@ Proof.
       rewrite Hαv. 
       constructor.
       auto.
-  - (* Case: tmlam *)
+  - (* Case: tmabs *)
     
     (* remember (fresh2 _ bs) as b; rewrite cons_to_append in Heqb.
     remember (fresh2 _ bs') as b'; rewrite cons_to_append in Heqb'. *)
@@ -153,12 +153,12 @@ Proof.
       rewrite String.eqb_refl.
       eapply @alpha_sym with (ren := sym_alpha_ctx R); eauto with α_eq_db.
       eapply substituteTCA_vacuous; eauto with α_eq_db.
-      eapply @alpha_preserves_no_ftv with (x := X) (s := tmlam X k s1).
+      eapply @alpha_preserves_no_ftv with (x := X) (s := tmabs X k s1).
       * apply ftv_lam_no_binder.
       * eauto with α_eq_db.
       * inversion Ha_X; eauto.
     + destr_eqb_eq y X.
-      * assert (Hvac_sub: substituteTCA X T (@tmlam B X k s2) = @tmlam B X k s2).
+      * assert (Hvac_sub: substituteTCA X T (@tmabs B X k s2) = @tmabs B X k s2).
         {
           rewrite substituteTCA_equation_2.
           rewrite String.eqb_refl.
@@ -166,7 +166,7 @@ Proof.
         }
         rewrite Hvac_sub.
         eapply substituteTCA_vacuous; eauto with α_eq_db.
-        eapply @alpha_preserves_no_ftv with (x := X) (s := tmlam X k s2).
+        eapply @alpha_preserves_no_ftv with (x := X) (s := tmabs X k s2).
         -- apply ftv_lam_no_binder.
         -- eauto with α_eq_db.
         -- inversion Ha_X; eauto. eapply @alphavar_sym with (ren := R); eauto with α_eq_db.
@@ -322,15 +322,15 @@ Proof.
            ++ apply ctx_id_right_is_id.
            ++ eapply alpha_sym. constructor. eauto.
   - destruct (IHHstep ren s3 H4) as [t1_α [Hstep' Halpha'] ].
-    exists (@tmapp B t1_α t2); split.
+    exists (@tmbin B t1_α t2); split.
     + apply step_appL_nd. assumption.
     + apply alpha_app; assumption.
   - destruct (IHHstep ren t4 H5) as [tα [Hstep' Halpha'] ].
-    exists (@tmapp B s2 tα); split.
+    exists (@tmbin B s2 tα); split.
     + apply step_appR_nd; auto.
     + apply alpha_app; assumption.
   - destruct (IHHstep ((x, y)::ren) s3 H5) as [tα [Hstep' Halpha'] ].
-    exists (@tmlam B y A tα); split.
+    exists (@tmabs B y A tα); split.
     + apply step_abs_nd. assumption.
     + apply alpha_lam; assumption.    
 Qed.

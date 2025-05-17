@@ -33,22 +33,22 @@ Inductive has_kind : list (PlutusIR.binderTyname * PlutusIR.kind) -> STLC.term -
   | K_Fun : forall Δ T1 T2,
       Δ |-* T1 : PlutusIR.Kind_Base ->
       Δ |-* T2 : PlutusIR.Kind_Base ->
-      Δ |-* (@tmapp Fun T1 T2) : PlutusIR.Kind_Base
+      Δ |-* (@tmbin Fun T1 T2) : PlutusIR.Kind_Base
   | K_IFix  : forall Δ F T K,
       Δ |-* T : K ->
       Δ |-* F : (PlutusIR.Kind_Arrow (PlutusIR.Kind_Arrow K PlutusIR.Kind_Base) (PlutusIR.Kind_Arrow K PlutusIR.Kind_Base)) ->
-      Δ |-* (@tmapp IFix F T) : PlutusIR.Kind_Base
+      Δ |-* (@tmbin IFix F T) : PlutusIR.Kind_Base
   | K_Forall : forall Δ X K T,
       ((X, K) :: Δ) |-* T : PlutusIR.Kind_Base ->
-      Δ |-* (@tmlam ForAll X K T) : PlutusIR.Kind_Base
+      Δ |-* (@tmabs ForAll X K T) : PlutusIR.Kind_Base
   | K_Builtin : forall Δ T,
       Kinding.has_kind_uni T PlutusIR.Kind_Base ->
       Δ |-* (@tmbuiltin T) : PlutusIR.Kind_Base (* DefaultUni built in types must be fully applied with K_DefaultUniApply *)
   | K_Lam : forall Δ X K1 T K2,
       ((X, K1) :: Δ) |-* T : K2 ->
-      Δ |-* (@tmlam Lam X K1 T) : (PlutusIR.Kind_Arrow K1 K2)
+      Δ |-* (@tmabs Lam X K1 T) : (PlutusIR.Kind_Arrow K1 K2)
   | K_App : forall Δ T1 T2 K1 K2,
       Δ |-* T1 : (PlutusIR.Kind_Arrow K1 K2) ->
       Δ |-* T2 : K1 ->
-      Δ |-* (@tmapp App T1 T2) : K2
+      Δ |-* (@tmbin App T1 T2) : K2
 where "Δ '|-*' T ':' K" := (has_kind Δ T K).

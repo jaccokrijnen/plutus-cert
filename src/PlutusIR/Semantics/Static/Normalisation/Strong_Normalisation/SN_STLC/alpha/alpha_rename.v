@@ -46,7 +46,7 @@ Proof.
   - destr_eqb_eq s x.
     + 
     
-      assert (HignoreRename: forall B, rename x x' (@tmlam B x k s0) = @tmlam B x k s0).
+      assert (HignoreRename: forall B, rename x x' (@tmabs B x k s0) = @tmabs B x k s0).
       {
         unfold rename.
         unfold mren.
@@ -64,7 +64,7 @@ Proof.
       apply not_in_cons in Hfresh.
       destruct Hfresh as [_ Hfresh].
       assumption.
-    + assert (H1: forall B, rename x x' (@tmlam B s k s0) = @tmlam B s k (rename x x' s0)).
+    + assert (H1: forall B, rename x x' (@tmabs B s k s0) = @tmabs B s k (rename x x' s0)).
       {
         unfold rename.
         unfold mren.
@@ -87,7 +87,7 @@ Proof.
       
       apply alpha_extend_id'.
       * apply IHs.
-        (* We know tv (tmlam s t s0) = s :: tv s0*)
+        (* We know tv (tmabs s t s0) = s :: tv s0*)
         (* Hence we make a superset argument: *)
         unfold tv in Hfresh; fold tv in Hfresh.
         (* if x' notin x :: s, then also x' not in x*)

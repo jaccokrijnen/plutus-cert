@@ -11,7 +11,7 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Arith.
 Require Import Coq.Bool.Bool.
 
-From PlutusCert Require Import construct_GU_R construct_GU psubs alpha_vacuous construct_GU step_naive psubs util STLC SN_STLC_GU.GU_NC_Uhm alpha.alpha variables util alpha_ctx_sub alpha_freshness.
+From PlutusCert Require Import construct_GU_R construct_GU psubs alpha_vacuous construct_GU step_naive psubs util STLC SN_STLC_GU.GU_NC_BU alpha.alpha variables util alpha_ctx_sub alpha_freshness.
 
 Require Import Coq.Program.Equality.
 
@@ -108,7 +108,7 @@ Qed.
   without checking if we are tyring to substitute a binder:
     i.e. no checks in substituteT 
     Then we ahve the property:
-    subsT x t (tmlam y T s) = tmlam y T (subsT x t s) even if x = y (because that cannot happen anymore)
+    subsT x t (tmabs y T s) = tmabs y T (subsT x t s) even if x = y (because that cannot happen anymore)
       Then also NC can go into the lambda
     this can be put into the NC property?
     *)

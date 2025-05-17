@@ -20,8 +20,8 @@ Inductive BSort := App | IFix | Fun.
 (** Types, maybe rename app and lam, since they are now generic *)
 Inductive term :=
   | tmvar : string -> term
-  | tmlam {USort : USort} : string -> PlutusIR.kind -> term -> term
-  | tmapp {BSort : BSort} : term -> term -> term
+  | tmabs {USort : USort} : string -> PlutusIR.kind -> term -> term
+  | tmbin {BSort : BSort} : term -> term -> term
   | tmbuiltin : PlutusIR.DefaultUni -> term
 .
 
@@ -35,9 +35,9 @@ Function ftv (T : term) : list string :=
     match T with
     | tmvar X =>
         [X]
-    | tmlam X K1 T' =>
+    | tmabs X K1 T' =>
         remove string_dec X (ftv T')
-    | tmapp T1 T2 =>
+    | tmbin T1 T2 =>
         ftv T1 ++ ftv T2
     | tmbuiltin _ => []
     end.
@@ -46,9 +46,9 @@ Fixpoint btv (T : term) : list string :=
     match T with
     | tmvar X =>
         []
-    | tmlam X K1 T' =>
+    | tmabs X K1 T' =>
       X :: btv T'
-    | tmapp T1 T2 =>
+    | tmbin T1 T2 =>
         btv T1 ++ btv T2
     | tmbuiltin _ => []
     end.
@@ -57,8 +57,8 @@ Fixpoint btv (T : term) : list string :=
 Fixpoint tv (s : term) : list string :=
   match s with
   | tmvar x => x::nil
-  | tmlam x A s => x :: tv s
-  | tmapp s t => tv s ++ tv t
+  | tmabs x A s => x :: tv s
+  | tmbin s t => tv s ++ tv t
   | tmbuiltin _ => nil
   end.
 
@@ -109,9 +109,9 @@ Fixpoint mren (rho : list (string * string)) (T : term) : term :=
               | Some Z => tmvar Z
               | None => tmvar Y
               end
-  | @tmlam B Y K1 T_body => let rho' := drop Y rho in (* What if Y in rhs of rho*)
-                        @tmlam B Y K1 (mren rho' T_body)
-  | @tmapp B T1 T2 => @tmapp B (mren rho T1) (mren rho T2)
+  | @tmabs B Y K1 T_body => let rho' := drop Y rho in (* What if Y in rhs of rho*)
+                        @tmabs B Y K1 (mren rho' T_body)
+  | @tmbin B T1 T2 => @tmbin B (mren rho T1) (mren rho T2)
   | tmbuiltin d => tmbuiltin d
 end.
 
@@ -122,8 +122,8 @@ Definition rename (X Y : string) (T : term) := mren [(X, Y)] T.
 Fixpoint size (T : term) : nat :=
   match T with
   | tmvar Y => 1
-  | tmlam bX K T0 => 1 + size T0
-  | tmapp T1 T2 => 1 + size T1 + size T2
+  | tmabs bX K T0 => 1 + size T0
+  | tmbin T1 T2 => 1 + size T1 + size T2
   | tmbuiltin _ => 1
   end.
 
@@ -150,20 +150,20 @@ Qed.
 Equations? substituteTCA (X : string) (U T : term) : term by wf (size T) :=
   substituteTCA X U (tmvar Y) =>
       if X =? Y then U else tmvar Y ;
-  substituteTCA X U (@tmlam B Y K T) =>
+  substituteTCA X U (@tmabs B Y K T) =>
       if X =? Y
         then
-          @tmlam B Y K T
+          @tmabs B Y K T
         else
           if existsb (String.eqb Y) (ftv U)
             then
               let Y' := fresh2 ((X, U)::nil) T in
               let T' := rename Y Y' T in
-              @tmlam B Y' K (substituteTCA X U T')
+              @tmabs B Y' K (substituteTCA X U T')
             else
-              @tmlam B Y K (substituteTCA X U T) ;
-  substituteTCA X U (@tmapp B T1 T2) =>
-      @tmapp B (substituteTCA X U T1) (substituteTCA X U T2) ;
+              @tmabs B Y K (substituteTCA X U T) ;
+  substituteTCA X U (@tmbin B T1 T2) =>
+      @tmbin B (substituteTCA X U T1) (substituteTCA X U T2) ;
   substituteTCA X U (tmbuiltin d) => tmbuiltin d
   .
 Proof.

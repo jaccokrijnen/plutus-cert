@@ -16,8 +16,8 @@ Fixpoint psubs (sigma : list (string * term)) (T : term) : term :=
               | Some t => t
               | None => tmvar x
               end
-  | @tmlam B x A s => @tmlam B x A (psubs sigma s) (* We do not look at binders, see NC x <> y property*)
-  | @tmapp B s t => @tmapp B (psubs sigma s) (psubs sigma t)
+  | @tmabs B x A s => @tmabs B x A (psubs sigma s) (* We do not look at binders, see NC x <> y property*)
+  | @tmbin B s t => @tmbin B (psubs sigma s) (psubs sigma t)
   | tmbuiltin d => tmbuiltin d
   end.
 

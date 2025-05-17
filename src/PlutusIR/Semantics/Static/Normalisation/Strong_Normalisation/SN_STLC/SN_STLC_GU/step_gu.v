@@ -13,7 +13,7 @@ Require Import Coq.Arith.Arith.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From PlutusCert Require Import STLC STLC_Kinding SN_STLC_GU.GU_NC_Uhm SN_STLC_GU.construct_GU construct_GU_R.
+From PlutusCert Require Import STLC STLC_Kinding SN_STLC_GU.GU_NC_BU SN_STLC_GU.construct_GU construct_GU_R.
 From PlutusCert Require Import alpha_sub step_naive alpha.alpha alpha_rename rename util alpha_ctx_sub variables alpha_freshness.
 
 
@@ -69,31 +69,31 @@ Proof.
       constructor.
   - inversion H1; subst.
     specialize (IHstep_naive (gu_app_l H) s3 (gu_app_l H0) R H8) as [t' [Hstep_t' HR_t'] ].
-    exists (@tmapp B t' t2).
+    exists (@tmbin B t' t2).
     split; constructor; auto.
   - inversion H1; subst.
     specialize (IHstep_naive (gu_app_r H) t3 (gu_app_r H0) R H9) as [t' [Hstep_t' HR_t'] ].
-    exists (@tmapp B s2 t').
+    exists (@tmbin B s2 t').
     split; constructor; auto.
   - inv H1.
     specialize (IHstep_naive (gu_lam H) s3 (gu_lam H0) ((x, y)::R) H9) as [t' [Hstep_t' HR_t'] ].
-    exists (@tmlam B y A t').
+    exists (@tmabs B y A t').
     split; constructor; auto.
 Qed.
 
 (* We need alpha here because global unique can create different terms depending on input:
   global unique does not compose
-  suppose there is a free var in s2, then that must be renamed when doing step_gu (tmapp s1 s2)
+  suppose there is a free var in s2, then that must be renamed when doing step_gu (tmbin s1 s2)
   while that is not the case in step_gu s1 t1 (there s2 does not need to be taken into account)
   *)
 Lemma step_gu_app_l {B} s1 s2 t1 :
   step_gu s1 t1 -> 
-  {t1' & Alpha [] t1 t1' * {s2' & Alpha [] s2 s2' * step_gu (@tmapp B s1 s2) (@tmapp B t1' s2')}%type }%type.
+  {t1' & Alpha [] t1 t1' * {s2' & Alpha [] s2 s2' * step_gu (@tmbin B s1 s2) (@tmbin B t1' s2')}%type }%type.
 Proof.
   intros.
 
   (* We cannot directly invert the (step_gu s1 t1), because we need something to be GU over s2 as well!*)
-  remember (to_GU (@tmapp B s1 s2)) as app.
+  remember (to_GU (@tmbin B s1 s2)) as app.
   remember Heqapp as Heqapp'. clear HeqHeqapp'.
   apply to_GU_app_unfold in Heqapp.
   destruct Heqapp as [s1' [s2' [ [Happ Ha_s1] Ha_s2] ] ].
@@ -106,7 +106,7 @@ Proof.
     split; auto.
     exists s2'.
     split; auto.
-    apply step_gu_intro with (s' := (@tmapp B s1' s2')); auto.
+    apply step_gu_intro with (s' := (@tmbin B s1' s2')); auto.
     + rewrite Heqapp'. apply to_GU__alpha.
     + rewrite Heqapp'. apply to_GU__GU.
     + constructor. auto.
@@ -116,10 +116,10 @@ Proof.
 Qed.
 
 Lemma step_gu_na_lam_fold {B} x A s s' :
-  step_gu s s' -> {lams' & step_gu (@tmlam B x A s) lams' * Alpha [] lams' (@tmlam B x A s')}%type.
+  step_gu s s' -> {lams' & step_gu (@tmabs B x A s) lams' * Alpha [] lams' (@tmabs B x A s')}%type.
 Proof.
   intros.
-  assert (Alpha [] (@tmlam B x A s) (to_GU (@tmlam B x A s)) ).
+  assert (Alpha [] (@tmabs B x A s) (to_GU (@tmabs B x A s)) ).
   {
     apply to_GU__alpha.
   }
@@ -138,18 +138,18 @@ Proof.
   {
     eapply step_naive_preserves_alpha2.
     - exact H2.
-    - assert (GU (to_GU (@tmlam B x A s))) by apply to_GU__GU.
+    - assert (GU (to_GU (@tmabs B x A s))) by apply to_GU__GU.
       rewrite <- H10 in H5. auto.
       eapply gu_lam. eauto.
     - eauto.
     - auto.
   }
   destruct H5 as [t' [Hstep_t' Halpha_t'] ].
-  exists (@tmlam B y A t').
+  exists (@tmabs B y A t').
   split.
-  - eapply step_gu_intro with (s' := tmlam y A s2); eauto.
+  - eapply step_gu_intro with (s' := tmabs y A s2); eauto.
     + rewrite <- H10 in H0. eauto.
-    + assert (GU (to_GU (@tmlam B x A s))) by apply to_GU__GU.
+    + assert (GU (to_GU (@tmabs B x A s))) by apply to_GU__GU.
       rewrite <- H10 in H5. auto.
     + apply step_abs. auto.
   - eapply @alpha_sym. constructor. constructor. eauto.
@@ -209,7 +209,7 @@ Qed.
 
 (* step_gu/red_gu always freshens binders, hence we need to work up to alpha*)
 Lemma red_gu_na_lam_fold {B x A s s'} :
-  red_gu_na s s' -> {lams' & red_gu_na (@tmlam B x A s) lams' * Alpha [] lams' (@tmlam B x A s')}%type.
+  red_gu_na s s' -> {lams' & red_gu_na (@tmabs B x A s) lams' * Alpha [] lams' (@tmabs B x A s')}%type.
 Proof.
   intros.
   induction H.
@@ -219,7 +219,7 @@ Proof.
     destruct s0 as [lams'' [Hstep'' Halpha''] ].
     assert ({lams''' & red_gu_na lams'' lams''' * Alpha [] lams' lams'''}%type).
     {
-      apply @red_gu_naive_preserves_alpha with (t := lams'') (s := @tmlam B x A t); eauto with α_eq_db.
+      apply @red_gu_naive_preserves_alpha with (t := lams'') (s := @tmabs B x A t); eauto with α_eq_db.
     }
     destruct H0 as [lams''' [Hred' Halpha'] ].
     exists lams'''.
@@ -228,33 +228,33 @@ Proof.
       * exact Hstep''.
       * eauto.
     + eauto with α_eq_db.
-  - exists (@tmlam B x A s).
+  - exists (@tmabs B x A s).
     split.
     + apply red_gu_na_nil.
     + apply alpha_refl. constructor.
 Qed.
 
 Lemma step_gu_na_appl_fold {B s1 s2 t1 }:
-  step_gu s1 s2 -> {app & step_gu (@tmapp B s1 t1) app * Alpha [] app (@tmapp B s2 t1)}%type.
+  step_gu s1 s2 -> {app & step_gu (@tmbin B s1 t1) app * Alpha [] app (@tmbin B s2 t1)}%type.
 Proof.
   intros Hstep_gu.
   inversion Hstep_gu; subst.
-  assert (Hgu_a: nil ⊢ (@tmapp B s1 t1) ~ (to_GU (@tmapp B s1 t1))) by apply to_GU__alpha.
+  assert (Hgu_a: nil ⊢ (@tmbin B s1 t1) ~ (to_GU (@tmbin B s1 t1))) by apply to_GU__alpha.
   inversion Hgu_a; subst.
 
   assert (Hstep_na': {s2' & step_naive s3 s2' * Alpha [] s2 s2'}%type).
   {
     eapply step_naive_preserves_alpha2; eauto.
-    - assert (Hgu_app: GU (to_GU (@tmapp B s1 t1))) by apply to_GU__GU.
+    - assert (Hgu_app: GU (to_GU (@tmbin B s1 t1))) by apply to_GU__GU.
       rewrite <- H7 in Hgu_app.
       eapply gu_app_l. eauto.
     - assert (Alpha [] s1 (to_GU s1)) by apply to_GU__alpha.
       eauto with α_eq_db.
   }
   destruct Hstep_na' as [s2' [Hstep_s2' Ha_s2'] ].
-  exists (@tmapp B s2' t2).
+  exists (@tmbin B s2' t2).
   split.
-  - eapply step_gu_intro with (s' := @tmapp B s3 t2).
+  - eapply step_gu_intro with (s' := @tmbin B s3 t2).
     + rewrite H7. auto.
     + rewrite H7. apply to_GU__GU.
     + apply step_appL. auto.
@@ -262,26 +262,26 @@ Proof.
 Qed.
 
 Lemma step_gu_na_appr_fold {B s1 t1 t2 } : 
-  step_gu t1 t2 -> {app & step_gu (@tmapp B s1 t1) app * Alpha [] app (@tmapp B s1 t2)}%type.
+  step_gu t1 t2 -> {app & step_gu (@tmbin B s1 t1) app * Alpha [] app (@tmbin B s1 t2)}%type.
 Proof.
   intros Hstep_gu.
   inversion Hstep_gu; subst.
-  assert (Hgu_a: nil ⊢ (@tmapp B s1 t1) ~ (to_GU (@tmapp B s1 t1))) by apply to_GU__alpha.
+  assert (Hgu_a: nil ⊢ (@tmbin B s1 t1) ~ (to_GU (@tmbin B s1 t1))) by apply to_GU__alpha.
   inversion Hgu_a; subst.
 
   assert (Hstep_na': {t2' & step_naive t3 t2' * Alpha [] t2 t2'}%type).
   {
     eapply step_naive_preserves_alpha2; eauto.
-    - assert (Hgu_app: GU (to_GU (@tmapp B s1 t1))) by apply to_GU__GU.
+    - assert (Hgu_app: GU (to_GU (@tmbin B s1 t1))) by apply to_GU__GU.
       rewrite <- H7 in Hgu_app.
       eapply gu_app_r. eauto.
     - assert (Alpha [] t1 (to_GU t1)) by apply to_GU__alpha.
       eauto with α_eq_db.
   }
   destruct Hstep_na' as [t2' [Hstep_t2' Ha_t2'] ].
-  exists (@tmapp B s2 t2').
+  exists (@tmbin B s2 t2').
   split.
-  - eapply step_gu_intro with (s' := @tmapp B s2 t3).
+  - eapply step_gu_intro with (s' := @tmbin B s2 t3).
     + rewrite H7. auto.
     + rewrite H7. apply to_GU__GU.
     + apply step_appR. auto.
@@ -311,7 +311,7 @@ Proof.
 Qed.
 
 Lemma red_gu_na_appl_fold {B s1 s2 t} :
-  red_gu_na s1 s2 -> {app & red_gu_na (@tmapp B s1 t) app * Alpha [] app (@tmapp B s2 t)}%type.
+  red_gu_na s1 s2 -> {app & red_gu_na (@tmbin B s1 t) app * Alpha [] app (@tmbin B s2 t)}%type.
 Proof.
   intros H0.
   induction H0.
@@ -320,7 +320,7 @@ Proof.
       destruct s0 as [app' [Hred' Halpha'] ].
       assert ({app'' & red_gu_na app' app'' * Alpha [] app app''}%type).
       {
-        eapply @red_gu_naive_preserves_alpha with (s := tmapp t0 t); eauto with α_eq_db.
+        eapply @red_gu_naive_preserves_alpha with (s := tmbin t0 t); eauto with α_eq_db.
       }
       destruct H as [app'' [Hred'' Halpha'' ] ].
       exists app''.
@@ -329,14 +329,14 @@ Proof.
         -- exact Hred'.
         -- eauto.
       * eauto with α_eq_db.
-    + exists (@tmapp B s t).
+    + exists (@tmbin B s t).
       split.
       * apply red_gu_na_nil.
       * apply alpha_refl. constructor. 
 Qed.
 
 Lemma red_gu_na_appr_fold {B s1 t1 t2} :
-  red_gu_na t1 t2 -> {app & red_gu_na (@tmapp B s1 t1) app * Alpha [] app (@tmapp B s1 t2)}%type.
+  red_gu_na t1 t2 -> {app & red_gu_na (@tmbin B s1 t1) app * Alpha [] app (@tmbin B s1 t2)}%type.
 Proof.
   intros H0.
   induction H0.
@@ -345,7 +345,7 @@ Proof.
       destruct s0 as [app' [Hred' Halpha'] ].
       assert ({app'' & red_gu_na app' app'' * Alpha [] app app''}%type).
       {
-        eapply @red_gu_naive_preserves_alpha with (s := tmapp s1 t); eauto with α_eq_db.
+        eapply @red_gu_naive_preserves_alpha with (s := tmbin s1 t); eauto with α_eq_db.
       }
       destruct H as [app'' [Hred'' Halpha'' ] ].
       exists app''.
@@ -354,14 +354,14 @@ Proof.
         -- exact Hred'.
         -- eauto.
       * eauto with α_eq_db.
-    + exists (@tmapp B s1 s).
+    + exists (@tmbin B s1 s).
       split.
       * apply red_gu_na_nil.
       * apply alpha_refl. constructor.
 Qed.
 
 Lemma red_gu_na_app_fold {B s1 s2 t1 t2} :
-  red_gu_na s1 s2 -> red_gu_na t1 t2 -> {app & red_gu_na (@tmapp B s1 t1) app * Alpha [] app (@tmapp B s2 t2)}%type.
+  red_gu_na s1 s2 -> red_gu_na t1 t2 -> {app & red_gu_na (@tmbin B s1 t1) app * Alpha [] app (@tmbin B s2 t2)}%type.
 Proof.
   intros.
   eapply @red_gu_na_appl_fold with (t := t1) in H.
@@ -372,7 +372,7 @@ Proof.
 
   assert ({app'' & red_gu_na app app'' * Alpha [] app' app''}%type).
   {
-    eapply @red_gu_naive_preserves_alpha with (s := tmapp s2 t1); eauto with α_eq_db.
+    eapply @red_gu_naive_preserves_alpha with (s := tmbin s2 t1); eauto with α_eq_db.
   }
   destruct H as [app'' [Hred'' Halpha'' ] ].
   exists app''.

@@ -22,15 +22,15 @@ From PlutusCert Require Import PlutusIR Checker.
 Fixpoint f (t : ty) : STLC.term :=
   match t with
   | Ty_Var x => tmvar x
-  | Ty_Lam x A t => @tmlam Lam x A (f t)
-  | Ty_Forall x A t => @tmlam ForAll x A (f t)
-  | Ty_Fun t1 t2 => @tmapp Fun (f t1) (f t2)
-  | Ty_App t1 t2 => @tmapp App (f t1) (f t2)
-  | Ty_IFix f1 t1 => @tmapp IFix (f f1) (f t1)
+  | Ty_Lam x A t => @tmabs Lam x A (f t)
+  | Ty_Forall x A t => @tmabs ForAll x A (f t)
+  | Ty_Fun t1 t2 => @tmbin Fun (f t1) (f t2)
+  | Ty_App t1 t2 => @tmbin App (f t1) (f t2)
+  | Ty_IFix f1 t1 => @tmbin IFix (f f1) (f t1)
   | Ty_SOP Tss => 
   (* Two fold rights instead of concat/map to help termination checking*)
       fold_right (fun Ts acc => 
-        (fold_right (fun T acc2 => @tmapp Fun (f T) acc2) acc Ts))
+        (fold_right (fun T acc2 => @tmbin Fun (f T) acc2) acc Ts))
         (tmbuiltin PlutusIR.DefaultUniInteger) Tss
   
       (* Instead of checking for the length, we just start with something of Base Kind*)
@@ -256,12 +256,12 @@ Proof.
                 eapply H; eauto; simpl. lia.
              ** assert (@fold_right STLC.term PlutusIR.ty
                   (fun (T : PlutusIR.ty) (acc2 : STLC.term) =>
-                @tmapp Fun (f T) acc2)
+                @tmbin Fun (f T) acc2)
                   (@fold_right STLC.term (list PlutusIR.ty)
                   (fun (Ts : list PlutusIR.ty) (acc : STLC.term) =>
                 @fold_right STLC.term PlutusIR.ty
                   (fun (T : PlutusIR.ty) (acc2 : STLC.term) =>
-                @tmapp Fun (f T) acc2)
+                @tmbin Fun (f T) acc2)
                   acc
                   Ts)
                   (tmbuiltin PlutusIR.DefaultUniInteger)
@@ -285,12 +285,12 @@ Proof.
              
         assert  (@fold_right STLC.term PlutusIR.ty
             (fun (T : PlutusIR.ty) (acc2 : STLC.term) =>
-          @tmapp Fun (f T) acc2)
+          @tmbin Fun (f T) acc2)
             (@fold_right STLC.term (list PlutusIR.ty)
             (fun (Ts : list PlutusIR.ty) (acc : STLC.term) =>
           @fold_right STLC.term PlutusIR.ty
             (fun (T : PlutusIR.ty) (acc2 : STLC.term) =>
-          @tmapp Fun (f T) acc2)
+          @tmbin Fun (f T) acc2)
             acc
             Ts)
             (tmbuiltin PlutusIR.DefaultUniInteger)

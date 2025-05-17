@@ -85,11 +85,11 @@ Inductive GU : term -> Set :=
     GU t -> 
     forall (H_btv_btv_empty : forall x, In x (btv t) -> ~ In x (tv s)),
     forall (H_btv_ftv_empty : forall x, In x (btv s) -> ~ In x (tv t)),
-    GU (@tmapp B s t)
+    GU (@tmbin B s t)
 | GU_lam {B} x A s : 
     GU s -> 
     ~ In x (btv s) ->
-    GU (@tmlam B x A s)
+    GU (@tmabs B x A s)
 | GU_builtin d :
     GU (tmbuiltin d).
 
@@ -119,7 +119,7 @@ Qed.
   we remove a binder, thenw e should still have that all remaining btvs are not in the original sigma.
 *)
 Lemma nc_lam {B x s A sigma} : 
-  NC (@tmlam B x A s) sigma -> NC s sigma.
+  NC (@tmabs B x A s) sigma -> NC s sigma.
 Proof.
   induction sigma; [constructor|]; intros Hnc.
   inversion Hnc; subst.
@@ -130,7 +130,7 @@ Proof.
 Qed.
 
 Lemma nc_app_l {B s t sigma} :
-  NC (@tmapp B s t) sigma -> NC s sigma.
+  NC (@tmbin B s t) sigma -> NC s sigma.
 Proof.
   induction sigma; [constructor|]; intros Hnc.
   inversion Hnc; subst.
@@ -141,7 +141,7 @@ Proof.
 Qed.
 
 Lemma nc_app_r {B s t sigma} :
-  NC (@tmapp B s t) sigma -> NC t sigma.
+  NC (@tmbin B s t) sigma -> NC t sigma.
 Proof.
   induction sigma; [constructor|]; intros Hnc.
   inversion Hnc; subst.
@@ -167,25 +167,25 @@ Proof.
 Qed.
 
 Lemma gu_app_l {B s t} :
-  GU (@tmapp B s t) -> GU s.
+  GU (@tmbin B s t) -> GU s.
 Proof.
   inversion 1; auto.
 Qed.
 
 Lemma gu_app_r {B s t} :
-  GU (@tmapp B s t) -> GU t.
+  GU (@tmbin B s t) -> GU t.
 Proof.
   inversion 1; auto.
 Qed.
 
 Lemma gu_lam {B x A s} :
-  GU (@tmlam B x A s) -> GU s.
+  GU (@tmabs B x A s) -> GU s.
 Proof.
   inversion 1; auto.
 Qed.
 
 Lemma gu_app_st__gu_app_ts {B} s1 s2 :
-  GU (@tmapp B s1 s2) -> GU (@tmapp B s2 s1).
+  GU (@tmbin B s1 s2) -> GU (@tmbin B s2 s1).
 Proof.
   intros.
   inversion H; subst.
@@ -193,7 +193,7 @@ Proof.
 Qed.
 
 Lemma gu_applam_to_nc {BA} {BL} s t x A :
-  GU (@tmapp BA (@tmlam BL x A s) t) -> NC s [(x, t)].
+  GU (@tmbin BA (@tmabs BL x A s) t) -> NC s [(x, t)].
 Proof.
   intros Hgu.
   inversion Hgu as [ | ? ? ? Hgu_lam Hgu_t Hgu_P1 Hgu_P2 | | ]; subst.
@@ -331,19 +331,20 @@ Qed.
    - binders in sigma are not free in sigma
    - binders in s are not free in sigma, exactly NC s sigma: so moved out of this
 *)
-Definition Uhm sigma s := ((forall x, In x (btv_env sigma) -> ~ In x (tv s)) 
+(* Binders Unique, in the sense that they do not occur in ftvs sigma or tvs s*)
+Definition BU sigma s := ((forall x, In x (btv_env sigma) -> ~ In x (tv s)) 
   * (forall x, In x (btv_env sigma) -> ~ In x (ftv_keys_env sigma)))%type.
 
-Lemma uhm_smaller {sigma s x t} : Uhm ((x, t)::sigma) s -> Uhm sigma s.
+Lemma BU_smaller {sigma s x t} : BU ((x, t)::sigma) s -> BU sigma s.
 Proof.
   intros.
-  unfold Uhm.
-  split; unfold Uhm in H; destruct H as [ uhm1 uhm2]; intros.
-  - eapply uhm1.
+  unfold BU.
+  split; unfold BU in H; destruct H as [ BU1 BU2]; intros.
+  - eapply BU1.
     simpl. apply in_app_iff. right. assumption.
   - assert (~ In x0 (ftv_keys_env ((x, t)::sigma))).
     {
-      eapply uhm2.
+      eapply BU2.
       simpl. apply in_app_iff. right. assumption.
     }
     simpl in H0.
@@ -351,49 +352,49 @@ Proof.
 Qed.
 
 
-Lemma Uhm_appl {B s t sigma} :
-  Uhm sigma (@tmapp B s t) -> Uhm sigma s.
+Lemma BU_appl {B s t sigma} :
+  BU sigma (@tmbin B s t) -> BU sigma s.
 Proof.
   intros.
-  unfold Uhm in H.
-  destruct H as [ uhm1 uhm2].
-  unfold Uhm.
+  unfold BU in H.
+  destruct H as [ BU1 BU2].
+  unfold BU.
   split; intros.
-  - specialize (uhm1 x H).
-    apply not_tv_dc_appl in uhm1. auto.
-  - specialize (uhm2 x H). auto.
+  - specialize (BU1 x H).
+    apply not_tv_dc_appl in BU1. auto.
+  - specialize (BU2 x H). auto.
 Qed.
 
-Lemma Uhm_appr {B s t sigma} :
-  Uhm sigma (@tmapp B s t) -> Uhm sigma t.
+Lemma BU_appr {B s t sigma} :
+  BU sigma (@tmbin B s t) -> BU sigma t.
 Proof.
-  intros Huhm.
-  unfold Uhm in Huhm.
-  destruct Huhm as [ uhm1 uhm2].
-  unfold Uhm.
+  intros HBU.
+  unfold BU in HBU.
+  destruct HBU as [ BU1 BU2].
+  unfold BU.
   split; intros.
-  - specialize (uhm1 x H).
-    apply not_tv_dc_appr in uhm1. auto.
-  - specialize (uhm2 x H). auto.
+  - specialize (BU1 x H).
+    apply not_tv_dc_appr in BU1. auto.
+  - specialize (BU2 x H). auto.
 Qed.
 
 (* x not in btv s, hence we can add it freely as ftv to sigma*)
-Lemma Uhm_lam_id {B x A s sigma} :
-  GU (@tmlam B x A s) ->
-  (* cannot combine uhm3 and uhm1: free vars in t can still be free vars in s*)
-  Uhm sigma (@tmlam B x A s) -> Uhm ((x, tmvar x)::sigma) s.
+Lemma BU_lam_id {B x A s sigma} :
+  GU (@tmabs B x A s) ->
+  (* cannot combine BU3 and BU1: free vars in t can still be free vars in s*)
+  BU sigma (@tmabs B x A s) -> BU ((x, tmvar x)::sigma) s.
 Proof.
-  intros Hgu Huhm.
-  unfold Uhm in Huhm.
-  destruct Huhm as [ uhm1 uhm2].
-  unfold Uhm.
+  intros Hgu HBU.
+  unfold BU in HBU.
+  destruct HBU as [ BU1 BU2].
+  unfold BU.
   split; intros.
   - eapply not_tv_dc_lam.
-    eapply uhm1. auto.
+    eapply BU1. auto.
   - simpl in H.
     simpl.
     apply de_morgan2.
     split; [|apply de_morgan2; split].
-    all: try solve [intros Hcontra; subst; apply uhm1 in H; simpl in H; intuition].
-    now apply uhm2.
+    all: try solve [intros Hcontra; subst; apply BU1 in H; simpl in H; intuition].
+    now apply BU2.
 Qed.

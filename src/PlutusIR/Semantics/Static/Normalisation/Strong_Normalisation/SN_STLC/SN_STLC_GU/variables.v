@@ -57,26 +57,26 @@ Proof.
 Qed.
 
 Lemma not_ftv_app_not_left {B : BSort} t1 t2 x :
-  ~ In x (ftv (@tmapp B t1 t2)) -> ~ In x (ftv t1).
+  ~ In x (ftv (@tmbin B t1 t2)) -> ~ In x (ftv t1).
 Proof.
 Admitted.
 
 Lemma not_ftv_app_not_right {B : BSort} t1 t2 x :
-  ~ In x (ftv (@tmapp B t1 t2)) -> ~ In x (ftv t2).
+  ~ In x (ftv (@tmbin B t1 t2)) -> ~ In x (ftv t2).
   Proof.
   Admitted.
 
-(* By X in ftv tmlam Y, we know X <> Y.
+(* By X in ftv tmabs Y, we know X <> Y.
   It doesnt matter wheteher Y' = X, if it is, then also X in ftv (rename Y Y' t).
 *)
 Lemma ftv_lam_rename_helper {B : USort} X Y Y' A t :
-   In X (ftv (@tmlam B Y A t)) -> In X (ftv (rename Y Y' t)).
+   In X (ftv (@tmabs B Y A t)) -> In X (ftv (rename Y Y' t)).
 Admitted.
 
 (* We don't need the X <> Y condition, because if X = Y, 
 the lhs is non-sensical and always false *)
 Lemma ftv_lam_helper {B : USort} X Y A t :
-   In X (ftv (@tmlam B Y A t)) -> In X (ftv t).
+   In X (ftv (@tmabs B Y A t)) -> In X (ftv t).
 Proof.
   (* intros HXnotY. *)
   intros Hftvlam.
@@ -87,15 +87,15 @@ Proof.
 Qed.
 
 Lemma ftv_c_lam {B : USort} X Y A t :
-  In X (ftv t) -> Y <> X -> In X (ftv (@tmlam B Y A t)).
+  In X (ftv t) -> Y <> X -> In X (ftv (@tmabs B Y A t)).
 Admitted.
 
 Lemma ftv_lam_negative {B : USort} X Y A t :
-  ~ In X (ftv (@tmlam B Y A t)) -> X <> Y -> ~ In X (ftv t).
+  ~ In X (ftv (@tmabs B Y A t)) -> X <> Y -> ~ In X (ftv t).
 Admitted.
 
 Lemma tv_not_lam  {B : USort} X Y A t :
-  ~ In X (tv (@tmlam B Y A t)) -> prod (X <> Y) (~ In X (tv t)).
+  ~ In X (tv (@tmabs B Y A t)) -> prod (X <> Y) (~ In X (tv t)).
 Proof.
   intros HXnotinlam.
   unfold tv in HXnotinlam.
@@ -105,21 +105,21 @@ Qed.
 
 
 Lemma tv_not_app_l {B} X Y A t :
-  ~ In X (tv (@tmlam B Y A t)) -> prod (X <> Y) (~ In X (tv t)).
+  ~ In X (tv (@tmabs B Y A t)) -> prod (X <> Y) (~ In X (tv t)).
 Proof.
 Admitted.
 
 Lemma tv_lam_rename_helper {B} X Y Y' A t :
-   Y <> Y' -> ~ In X (tv (@tmlam B Y A t)) -> ~ In X (tv (rename Y Y' t)).
+   Y <> Y' -> ~ In X (tv (@tmabs B Y A t)) -> ~ In X (tv (rename Y Y' t)).
 Admitted.
 
 Lemma ftv_lam_in_no_binder {B} Y X A t :
-  In Y (ftv (@tmlam B X A t)) -> X <> Y.
+  In Y (ftv (@tmabs B X A t)) -> X <> Y.
 Proof.
 Admitted.
 
 Lemma ftv_lam_no_binder {B} X A t :
-  ~ In X (ftv (@tmlam B X A t)).
+  ~ In X (ftv (@tmabs B X A t)).
 Proof.
   unfold ftv.
   fold ftv.
@@ -343,73 +343,73 @@ Admitted.
 
 
 Lemma btv_lam {B X A t} :
-  In X (btv (@tmlam B X A t)).
+  In X (btv (@tmabs B X A t)).
 Proof.
   unfold btv.
   apply in_eq.
 Qed.
 
 Lemma not_btv_dc_lam {B X Y A t} :
-  ~ In X (btv (@tmlam B Y A t)) -> ~ In X (btv t).
+  ~ In X (btv (@tmabs B Y A t)) -> ~ In X (btv t).
 Admitted.
 
 Lemma not_btv_dc_appl {B X t1 t2} :
-  ~ In X (btv (@tmapp B t1 t2)) -> ~ In X (btv t1).
+  ~ In X (btv (@tmbin B t1 t2)) -> ~ In X (btv t1).
 Admitted.
 
 Lemma not_btv_dc_appr {B X t1 t2} :
-  ~ In X (btv (@tmapp B t1 t2)) -> ~ In X (btv t2).
+  ~ In X (btv (@tmbin B t1 t2)) -> ~ In X (btv t2).
 Admitted.
 
 Lemma btv_c_lam {B X Y A t} :
-  In X (btv t) -> In X (btv (@tmlam B Y A t)).
+  In X (btv t) -> In X (btv (@tmabs B Y A t)).
 Admitted.
 
 Lemma btv_c_appl {B X t1 t2} :
-  In X (btv t1) -> In X (btv (@tmapp B t1 t2)).
+  In X (btv t1) -> In X (btv (@tmbin B t1 t2)).
 Admitted.
 
 Lemma btv_c_appr {B X t1 t2} :
-  In X (btv t2) -> In X (btv (@tmapp B t1 t2)).
+  In X (btv t2) -> In X (btv (@tmbin B t1 t2)).
 Admitted.
 
 (* TV *)
 Lemma not_tv_dc_lam {B X Y A t} :
-  ~ In X (tv (@tmlam B Y A t)) -> ~ In X (tv t).
+  ~ In X (tv (@tmabs B Y A t)) -> ~ In X (tv t).
 Admitted.
 
 Lemma not_tv_dc_appl {B X t1 t2} :
-  ~ In X (tv (@tmapp B t1 t2)) -> ~ In X (tv t1).
+  ~ In X (tv (@tmbin B t1 t2)) -> ~ In X (tv t1).
 Admitted.
 
 Lemma not_tv_dc_appr {B X t1 t2} :
-  ~ In X (tv (@tmapp B t1 t2)) -> ~ In X (tv t2).
+  ~ In X (tv (@tmbin B t1 t2)) -> ~ In X (tv t2).
 Admitted.
 
 Lemma tv_c_lam {B X Y A t} :
-  In X (tv t) -> In X (tv (@tmlam B Y A t)).
+  In X (tv t) -> In X (tv (@tmabs B Y A t)).
 Admitted.
 
 Lemma tv_c_appl {B X t1 t2} :
-  In X (tv t1) -> In X (tv (@tmapp B t1 t2)).
+  In X (tv t1) -> In X (tv (@tmbin B t1 t2)).
 Admitted.
 
 Lemma tv_c_appr {B X t1 t2} :
-  In X (tv t2) -> In X (tv (@tmapp B t1 t2)).
+  In X (tv t2) -> In X (tv (@tmbin B t1 t2)).
 Admitted.
 
 Lemma tv_dc_lam {B X Y A t} :
-  In X (tv (@tmlam B Y A t)) -> In X (tv t).
+  In X (tv (@tmabs B Y A t)) -> In X (tv t).
 Admitted.
 
 (* FTV *)
 
 Lemma ftv_c_appl {B X t1 t2} :
-  In X (ftv t1) -> In X (ftv (@tmapp B t1 t2)).
+  In X (ftv t1) -> In X (ftv (@tmbin B t1 t2)).
 Admitted.
 
 Lemma ftv_c_appr {B X t1 t2} :
-  In X (ftv t2) -> In X (ftv (@tmapp B t1 t2)).
+  In X (ftv t2) -> In X (ftv (@tmbin B t1 t2)).
 Admitted.
 
 

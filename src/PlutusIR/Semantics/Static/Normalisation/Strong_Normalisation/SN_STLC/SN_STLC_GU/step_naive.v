@@ -10,10 +10,10 @@ Fixpoint sub (X : string) (U T : term) : term :=
   match T with
   | tmvar Y =>
     if X =? Y then U else tmvar Y
-  | @tmlam B Y K1 T' =>
-    @tmlam B Y K1 (sub X U T') (* X can never be equal to Y due to GU: We only ever do substitutions such that NC T [(X, U)]*)
-  | @tmapp B T1 T2 =>
-    @tmapp B (sub X U T1) (sub X U T2)
+  | @tmabs B Y K1 T' =>
+    @tmabs B Y K1 (sub X U T') (* X can never be equal to Y due to GU: We only ever do substitutions such that NC T [(X, U)]*)
+  | @tmbin B T1 T2 =>
+    @tmbin B (sub X U T1) (sub X U T2)
   | tmbuiltin d => tmbuiltin d
   end.
 
@@ -77,13 +77,13 @@ Qed.
 
 Inductive step_naive : term -> term -> Set :=
 | step_beta (x : string) (A : PlutusIR.kind) (s t : term) :
-    step_naive (@tmapp App (@tmlam Lam x A s) t) ( sub x t s)
+    step_naive (@tmbin App (@tmabs Lam x A s) t) ( sub x t s)
 | step_appL B s1 s2 t :
-    step_naive s1 s2 -> step_naive (@tmapp B s1 t) (@tmapp B s2 t)
+    step_naive s1 s2 -> step_naive (@tmbin B s1 t) (@tmbin B s2 t)
 | step_appR B s t1 t2 :
-    step_naive t1 t2 -> step_naive (@tmapp B s t1) (@tmapp B s t2)
+    step_naive t1 t2 -> step_naive (@tmbin B s t1) (@tmbin B s t2)
 | step_abs B x A s1 s2 :
-    step_naive s1 s2 -> step_naive (@tmlam B x A s1) (@tmlam B x A s2).
+    step_naive s1 s2 -> step_naive (@tmabs B x A s1) (@tmabs B x A s2).
 
 
 Lemma step_naive_preserves_no_ftv x t1 t2 :

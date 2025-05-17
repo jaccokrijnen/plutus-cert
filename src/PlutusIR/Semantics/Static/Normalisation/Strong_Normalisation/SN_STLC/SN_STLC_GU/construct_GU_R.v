@@ -11,7 +11,7 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Arith.
 Require Import Coq.Bool.Bool.
 
-From PlutusCert Require Import alpha_vacuous construct_GU step_naive psubs util STLC SN_STLC_GU.GU_NC_Uhm alpha.alpha variables util alpha_ctx_sub alpha_freshness.
+From PlutusCert Require Import alpha_vacuous construct_GU step_naive psubs util STLC SN_STLC_GU.GU_NC_BU alpha.alpha variables util alpha_ctx_sub alpha_freshness.
 
 Require Import Coq.Program.Equality.
 
@@ -543,7 +543,7 @@ Qed.
   Forall x, y in R, we do lookup x R = Some y, then we prepend x, y to R.
   Let R = (x, x'), (y, x')   and s = z   s' = z.
 
-  Now let t = tmapp y x' z. 
+  Now let t = tmbin y x' z. 
 
 
 
@@ -563,7 +563,7 @@ Qed.
     *)
 
 (* 1. First we change all binders in t to  fresh binders wrs all tv in sigma and s. This process also makes it GU.
-      - t' will be added to sigma, and we need to keep the 2nd Uhm property: hence fi all binders in t' are fresh, they cannot be tvs in s, and no issues
+      - t' will be added to sigma, and we need to keep the 2nd BU property: hence fi all binders in t' are fresh, they cannot be tvs in s, and no issues
 
    2. We collect all binders in s and in sigma into a list  bs
       - we know these binders are not binders in t'. But they can be free variables.
@@ -572,15 +572,15 @@ Qed.
    3. R is then going from bs to fresh(bs). Is this problematic?
 
     3.1  By GU s we have that nothing in R is an ftv in s, hence we have R ⊢ s ~ s.
-     .2  we rename binders in sigma, by 1st UHM they are not free in s, so we can safely rename.
-     .3  By 2nd Uhm (GU uhm), we know that binders in sigma are not free in sigma, so we safely get R ⊢ sigma ~ sigma
+     .2  we rename binders in sigma, by 1st BU they are not free in s, so we can safely rename.
+     .3  By 2nd BU (GU BU), we know that binders in sigma are not free in sigma, so we safely get R ⊢ sigma ~ sigma
      .4  what about binders in s that are free in sigma? If they are free in t we have a problem, becaue
           then they will be renamed in sigma and no longer R ⊢ sigma ~ sigma.
           - Not allowing this in the first place still allows identity subsitutions: they should only have to change ftvs
           - Can we then still extend with (x, t')?
-            - x was a binder in (tmlam x A s), hence it is not a binder in s by GU so not problem
+            - x was a binder in (tmabs x A s), hence it is not a binder in s by GU so not problem
             - t': we have to look at ftvs in t'. they cannot be binders in s. But we renamed all x that are btv in s in t. so this is ok!
-          - IN CONCLUSION: we need a third UHM property: Already added!
+          - IN CONCLUSION: we need a third BU property: Already added!
 *)
 
 
@@ -707,7 +707,7 @@ Proof.
 Qed.
 
 
-Lemma R_constr__uhm3 { R1 R2 t s sigma X} :
+Lemma R_constr__BU3 { R1 R2 t s sigma X} :
   (R1, R2) = R_constr t s sigma X ->
   forall x, In x (btv s ++ btv_env sigma) -> {X' & AlphaVar (R1 ++ R2) x X' * (x <> X') * (~ In x (map snd (R1 ++ R2)))}%type.
 Proof.
@@ -946,19 +946,19 @@ Qed.
 
 Lemma R_constr__a_s {R1 R2 t s sigma X} :
   GU s ->
-  Uhm sigma s ->
+  BU sigma s ->
   (R1, R2) = R_constr t s sigma X ->
   Alpha (R1 ++ R2) s s.
 Proof.
   intros HGU H H0.
   apply alpha_vacuous_R.
   - intros.
-    unfold Uhm in H.
-    destruct H as [ uhm1 _].
+    unfold BU in H.
+    destruct H as [ BU1 _].
     intros Hcontra.
     remember Hcontra as Hcontra2; clear HeqHcontra2.
     apply extend_ftv_to_tv in Hcontra.
-    apply uhm1 in Hcontra; auto.
+    apply BU1 in Hcontra; auto.
     unfold R_constr in H0.
     inv H0.
     apply in_freshen2_then_in_generator in H1.
@@ -985,10 +985,10 @@ Proof.
     + eapply alpha_refl. constructor.
 Qed.
 
-(* here we probably need Uhm requirements*)
+(* here we probably need BU requirements*)
 Lemma t_constr__a_s {t t' R s sigma X} :
   GU s ->
-  Uhm sigma s ->
+  BU sigma s ->
   (t', R) = t_constr t s sigma X ->
   Alpha R s s.
 Proof.
@@ -1001,13 +1001,13 @@ Proof.
 Qed.
 
 Lemma R_constr__a_sigma {R1 R2 t s sigma X} :
-  Uhm sigma s ->
+  BU sigma s ->
   NC s sigma ->
   (R1, R2) = R_constr t s sigma X ->
   αCtxSub (R1 ++ R2) sigma sigma.
 Proof.
-  intros HUhm Hnc HReq.
-  destruct HUhm as [ Uhm1 Uhm2].
+  intros HBU Hnc HReq.
+  destruct HBU as [ BU1 BU2].
   apply αctx_sub_extend_ids_right.
   + eapply R_constr_R2_IdCtx; eauto.
   + apply αctx_vacuous_R.
@@ -1021,14 +1021,14 @@ Proof.
 Qed.
 
 Lemma t_constr__a_sigma {t t' R s sigma X} :
-  Uhm sigma s ->
+  BU sigma s ->
   NC s sigma ->
   (t', R) = t_constr t s sigma X ->
   αCtxSub R sigma sigma.
 Proof.
   unfold t_constr.
   destruct (R_constr t s sigma X) as [R1 R2] eqn:Rconstr.
-  intros Huhm Hnc Hconstr.
+  intros HBU Hnc Hconstr.
   inversion Hconstr. clear H0. clear Hconstr.
   eapply R_constr__a_sigma; eauto.
 Qed.
@@ -1056,7 +1056,7 @@ Proof.
     eauto.
 Qed.
 
-Lemma t_constr__uhm1 {t' R t s sigma X} :
+Lemma t_constr__BU1 {t' R t s sigma X} :
   (t', R) = t_constr t s sigma X ->
   forall x, In x (btv t') -> ~ In x (tv s).
 Proof.
@@ -1293,7 +1293,7 @@ Proof.
     remember (R_constr t s sigma X) as p.
     destruct p as [R1 R2].
     inversion H.
-    eapply R_constr__uhm3; eauto.
+    eapply R_constr__BU3; eauto.
   }
   
   eapply ftv_helper_constr.
@@ -1501,19 +1501,19 @@ Qed.
 Opaque to_GU'.
 Opaque to_GU''.
 
-Lemma Uhm_lam2 {B x A s sigma t t' R} :
-  GU (@tmlam B x A s) ->
+Lemma BU_lam2 {B x A s sigma t t' R} :
+  GU (@tmabs B x A s) ->
   (t', R) = t_constr t s sigma x ->
 
-  Uhm sigma (@tmlam B x A s) -> Uhm ((x, t')::sigma) s.
+  BU sigma (@tmabs B x A s) -> BU ((x, t')::sigma) s.
 Proof.
-  intros HGU Htconstr HUhm.
-  unfold Uhm in HUhm; destruct HUhm as [ uhm1 uhm2].
+  intros HGU Htconstr HBU.
+  unfold BU in HBU; destruct HBU as [ BU1 BU2].
   split; intros.
   - simpl in H.
     apply in_app_iff in H as [Hinbtvt' | Hinbtvsigma].
-    + eapply t_constr__uhm1 in Htconstr; eauto.
-    + apply uhm1 in Hinbtvsigma. apply not_tv_dc_lam in Hinbtvsigma; auto.
+    + eapply t_constr__BU1 in Htconstr; eauto.
+    + apply BU1 in Hinbtvsigma. apply not_tv_dc_lam in Hinbtvsigma; auto.
   - simpl in H.
     apply in_app_iff in H as [Hinbtvt' | Hinbtvsigma].
     + 
@@ -1531,14 +1531,14 @@ Proof.
       apply de_morgan2.
       split.
       * intros Hcontra; subst.
-        apply uhm1 in Hinbtvsigma.
+        apply BU1 in Hinbtvsigma.
         simpl in Hinbtvsigma.
         intuition.
       * apply not_in_app; split.
         -- eapply t_constr_btv_s_not_ftv_t'; eauto.
            apply in_app_iff.
            right. auto.
-        -- eapply uhm2. eauto.
+        -- eapply BU2. eauto.
 Qed.
 
 

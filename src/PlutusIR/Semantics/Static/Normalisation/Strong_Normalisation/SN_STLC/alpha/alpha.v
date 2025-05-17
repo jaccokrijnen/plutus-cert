@@ -32,11 +32,11 @@ Inductive Alpha : list (string * string) -> term -> term -> Set :=
     Alpha sigma (tmvar x) (tmvar y)
 | alpha_lam B x y A s1 s2 sigma :
     Alpha ((x, y) :: sigma) s1 s2 -> 
-    Alpha sigma (@tmlam B x A s1) (@tmlam B y A s2)
+    Alpha sigma (@tmabs B x A s1) (@tmabs B y A s2)
 | alpha_app B s1 s2 t1 t2 sigma :
     Alpha sigma s1 s2 -> 
     Alpha sigma t1 t2 -> 
-    Alpha sigma (@tmapp B s1 t1) (@tmapp B s2 t2)
+    Alpha sigma (@tmbin B s1 t1) (@tmbin B s2 t2)
 | alpha_builtin R d :
     Alpha R (tmbuiltin d) (tmbuiltin d).
 
@@ -66,7 +66,7 @@ Notation "sigma '⊢' t1 '~' t2" := (Alpha sigma t1 t2) (at level 40).
 
 Lemma alpha_exampl x y y' A :
   x <> y -> y <> y' -> x <> y' -> 
-  Alpha [] (@tmlam Lam x A (@tmlam Lam y A (@tmapp App (tmvar x) (tmvar y)))) (@tmlam Lam y A (@tmlam Lam y' A (@tmapp App (tmvar y) (tmvar y')))).
+  Alpha [] (@tmabs Lam x A (@tmabs Lam y A (@tmbin App (tmvar x) (tmvar y)))) (@tmabs Lam y A (@tmabs Lam y' A (@tmbin App (tmvar y) (tmvar y')))).
 Proof.
   intros Hxy Hyy' Hxy'.
   apply alpha_lam.
@@ -80,8 +80,8 @@ Qed.
 (* Showcasing shadowing behaviour is right *)
 Lemma alpha_counterexample x y z A :
   x <> y -> x <> z -> y <> z -> 
-  (Alpha [] (@tmlam Lam x A (@tmlam Lam y A (@tmapp App (tmvar x) (tmvar y)))) 
-    (@tmlam Lam z A (@tmlam Lam z A (@tmapp App (tmvar z) (tmvar z)))) -> False).
+  (Alpha [] (@tmabs Lam x A (@tmabs Lam y A (@tmbin App (tmvar x) (tmvar y)))) 
+    (@tmabs Lam z A (@tmabs Lam z A (@tmbin App (tmvar z) (tmvar z)))) -> False).
 Proof.
   intros Hxy Hxz Hyz Halpha.
   inversion Halpha; subst.
@@ -1156,12 +1156,12 @@ Qed.
       Extend alpha context by a non-shadowing identity substitution, 
       and the result is still alpha equivalent to the original term.
 
-      Alpha [] (tmlam x. s(x)) (tmlam y. s(y))
+      Alpha [] (tmabs x. s(x)) (tmabs y. s(y))
 
       Add renaming: (x, x)
 
       Then:
-      Alpha [(x,x)] (tmlam x. s(x)) (tmlam y. s(y))
+      Alpha [(x,x)] (tmabs x. s(x)) (tmabs y. s(y))
         by alpha_lam
       Alpha [(x, y), (x, x)] s(x) s(y)
         yes.
@@ -1189,14 +1189,14 @@ Qed.
 *)
 
 (*
-Alpha [] (tmlam x A x) (tmlam y A y)
+Alpha [] (tmabs x A x) (tmabs y A y)
 ->
-Alpha [] (tmlam x A (tmlam x A x)) (tmlam x A (tmlam y A y))
+Alpha [] (tmabs x A (tmabs x A x)) (tmabs x A (tmabs y A y))
 
 We do not yet use this. Just checking if the alpha machinery is powerful enough
 *)
 Lemma freshVarAlpha B x s t A :
-  Alpha [] s t -> Alpha [] (@tmlam B x A s) (@tmlam B x A t).
+  Alpha [] s t -> Alpha [] (@tmabs B x A s) (@tmabs B x A t).
 Proof. 
   intros Halpha.
   apply alpha_lam.
