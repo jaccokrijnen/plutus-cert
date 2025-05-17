@@ -221,6 +221,33 @@ Proof.
     split; auto.
 Qed.
 
+(* Fundamental property NC is trying to capture *)
+Lemma nc_helper {s sigma} :
+  (forall x, In x (btv s) -> ~ In x (ftv_keys_env sigma)) ->
+  NC s sigma.
+Proof.
+  intros Hnc_eq.
+  induction sigma.
+  - constructor.
+  - destruct a as [a1 a2].
+    constructor.
+    + intros.
+      apply IHsigma.
+      intros x Hbtv_s.
+      specialize (Hnc_eq x Hbtv_s).
+      simpl in Hnc_eq.
+      rewrite de_morgan2 in Hnc_eq.
+      destruct Hnc_eq as [_ Hnc_eq].
+      apply not_in_app in Hnc_eq as [_ Hnc_eq].
+      auto.
+    + intros x Hbtv_s.
+      specialize (Hnc_eq x Hbtv_s).
+      simpl in Hnc_eq.
+      rewrite de_morgan2 in Hnc_eq.
+      destruct Hnc_eq as [H_n_a1_x Hnc_eq].
+      apply not_in_app in Hnc_eq as [Hnc_eq _].
+      auto.
+Qed.
 
 Lemma gu_ftv_then_no_btv s x :
   GU s -> In x (ftv s) -> ~ In x (btv s).

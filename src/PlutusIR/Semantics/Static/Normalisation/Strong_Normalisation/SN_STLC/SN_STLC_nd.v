@@ -15,7 +15,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 From PlutusCert Require Import SN_STLC_GU step_naive GU_NC_Uhm step_gu STLC STLC_Kinding.
 From PlutusCert Require Import alpha_typing alpha.alpha alpha_rename rename util alpha_ctx_sub variables alpha_freshness.
-From PlutusCert Require Import construct_GU.
+From PlutusCert Require Import alpha_sub alpha_vacuous construct_GU.
 
 (* Define an infix operator for bind *)
 Infix ">>=" := bind (at level 50, left associativity).

@@ -1327,3 +1327,88 @@ Proof.
 Qed.
 
 
+(* NOT DIFFICULT *)
+Lemma alphavar_vacuous_prepend R1 R2 s s' :
+  AlphaVar R2 s s' -> lookup s R1 = None -> lookup_r s' R1 = None -> AlphaVar (R1 ++ R2) s s'.
+Proof.
+
+  intros.
+  induction R1.
+  - simpl. auto.
+  - destruct a.
+    simpl.
+    constructor.
+    + intros Hcontra.
+      subst.
+      simpl in H0.
+      rewrite String.eqb_refl in H0.
+      inversion H0.
+    + intros Hcontra.
+      subst.
+      simpl in H1.
+      rewrite String.eqb_refl in H1.
+      inversion H1.
+    + eapply IHR1; eauto.
+      * simpl in H0. destruct_match. auto.
+      * simpl in H1. destruct_match. auto.
+Qed.
+
+Lemma alphavar_idk_helper R1 R2 R2' s s' :
+  (AlphaVar R2 s s' -> AlphaVar R2' s s') -> (AlphaVar (R1 ++ R2) s s' -> AlphaVar (R1 ++ R2') s s').
+Proof.
+  intros.
+  apply alphavar_lookup_helper in H0.
+  destruct H0 as [Hyes | Hno].
+  - destruct Hyes as [Hs Hs'].
+    apply lookup_split_app_helper in Hs; auto; clear Hs'.
+    destruct Hs as [HsR1 | HsR2].
+    + eapply lookup_some_extend_helper in HsR1; eauto.
+      eapply lookup_some_then_alphavar; intuition.
+    + destruct HsR2 as [[[HsR1_None Hs'R1_None] HsR2_Some] Hs'R2_Some].
+      assert (AlphaVar R2 s s').
+      {
+        eapply lookup_some_then_alphavar; eauto.
+      } 
+      specialize (H H0).
+      apply alphavar_vacuous_prepend. auto. auto. auto.
+  - destruct Hno as [ [Hs Hs'] Heq]; subst.
+    apply lookup_app_none_helper in Hs as [HsR1 HsR2].
+    apply lookup_r_app_none_helper in Hs' as [Hs'R1 Hs'R2].
+    assert (AlphaVar R2 s' s').
+    {
+      eapply lookup_none_then_alpharefl; eauto.
+    }
+    specialize (H H0).
+    eapply alphavar_vacuous_prepend; auto.
+Qed.
+
+
+(* Must ahve implies, since alphavar does not imply that x and y in R.*)
+(* TODO: Does this one really help so much over just alphavar_lookup_helper?*)
+Lemma av_lookup_implies_right R x y :
+  AlphaVar R x y -> (lookup x R = Some y -> lookup_r y R = Some x).
+Proof.
+(*SEE alphavar_lookup_helper *)
+  intros.
+  apply alphavar_lookup_helper in H.
+  destruct H as [Hyes | Hno].
+  - intuition.
+  - destruct Hno as [[Hno _] _ ].
+    rewrite Hno in H0.
+    inversion H0.
+Qed.
+
+
+
+Lemma alpha_trans3 {R s s' s'' s'''}:
+  Alpha [] s s' -> Alpha R s' s'' -> Alpha [] s'' s''' -> Alpha R s s'''.
+Proof.
+  intros.
+  eapply @alpha_trans with (ren := ctx_id_left R) (ren' := R).
+  - { apply id_left_trans. } 
+  - apply alpha_extend_ids. apply ctx_id_left_is_id. eauto.
+  - eapply @alpha_trans with (ren := R) (ren' := ctx_id_right R).
+    + apply id_right_trans.
+    + eauto.
+    + apply alpha_extend_ids. apply ctx_id_right_is_id. eauto.
+Qed.
