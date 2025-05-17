@@ -43,6 +43,7 @@ Proof with eauto_LR.
   unfold LR_logically_approximate.
 
   destruct IH_LR as [Htyp__e [Htyp__e' IH__e]].
+
   split... split...
 
   intros k rho env env' HRD HRG.

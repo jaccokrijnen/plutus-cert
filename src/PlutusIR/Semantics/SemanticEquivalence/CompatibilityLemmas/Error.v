@@ -18,7 +18,6 @@ Lemma compatibility_Error: forall Delta Gamma S Sn,
 Proof with eauto_LR.
   intros Delta Gamma S Sn Hnorm Hkind__S.
   unfold LR_logically_approximate.
-  
 
   split...
   split...

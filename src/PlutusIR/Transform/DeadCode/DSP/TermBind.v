@@ -76,7 +76,7 @@ Proof.
   - reflexivity.
   - subst b.
     rewrite flatten_app.
-     apply MN_snoc; auto.
+    apply MN_snoc; auto.
   - reflexivity.
   - econstructor.
     + assumption.

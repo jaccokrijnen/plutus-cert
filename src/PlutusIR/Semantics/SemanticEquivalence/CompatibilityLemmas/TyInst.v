@@ -38,8 +38,7 @@ Proof with eauto_LR.
 
   destruct IH_LR as [Htyp__e [Htyp__e' IH__e]].
 
-  split... 
-  split...
+  split... split...
 
   intros k rho env env' HRD HRG.
   subst.

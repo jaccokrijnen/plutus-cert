@@ -7,6 +7,5 @@ Theorem preservation : forall Delta T K Tn,
     normalise T Tn ->
     Delta |-* Tn : K.
 Proof.
-(* Richard: I have proof sketches for this in normalisation/type checking files *)
 (* ADMIT: I had no time to finish this. Should hold according to papers. *)
 Admitted.
