@@ -30,50 +30,6 @@ Hint Resolve sym_alpha_ctx_is_sym : α_eq_db.
 Hint Resolve sym_alpha_ctx_is_sym : α_eq_db.
 Hint Resolve sym_alpha_ctx_left_is_sym  : α_eq_db.
 
-
-(* 
-Lemma remove_ids_subset sigma :
-  incl (remove_ids sigma) sigma.
-Proof.
-  unfold incl.
-  intros.
-  induction sigma.
-  - inversion H.
-  - 
-    (* need lemma to rewrite a in remove_ids a0 :: sigma to a in a0 :: remove_ids sigma*)
-    admit.
-Admitted.
-
-
-
-Lemma remove_ids_helper2 sigma s s' :
-  In (s, tmvar s') sigma -> s <> s' -> In (s, tmvar s') (remove_ids sigma).
-Proof.
-  intros.
-  induction sigma; auto.
-  destruct a as [a1 a2].
-  simpl.
-  induction a2.
-  - destr_eqb_eq a1 s0. eapply IHsigma.
-    inversion H. inversion H1; subst. contradiction.
-    auto.
-    inversion H. inversion H2; subst. apply in_eq. apply in_cons.
-    eapply IHsigma; auto.
-  - apply in_cons.
-    eapply IHsigma; eauto.
-    inversion H; intuition.
-    inversion H1.
-  - apply in_cons.
-    eapply IHsigma; eauto.
-    inversion H; intuition.
-    inversion H1.
-  - apply in_cons.
-    eapply IHsigma; eauto.
-    inversion H; intuition.
-    inversion H1.
-Qed. *)
-
-
 (* So sub is also rewritten when rewriting subs *)
 Hint Extern 1 => simpl sub : subs_db.
 

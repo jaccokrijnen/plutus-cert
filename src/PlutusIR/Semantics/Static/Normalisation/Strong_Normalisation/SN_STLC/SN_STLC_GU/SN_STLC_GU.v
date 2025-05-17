@@ -799,10 +799,6 @@ Proof.
       * apply alpha_ctx_ren_nil.
 Qed.
 
-
-
-
-
 (* The fundamental theorem. *)
 Theorem soundness Gamma s A :
   has_kind Gamma s A -> 
@@ -930,7 +926,7 @@ Proof with eauto using L_sn.
     }
 
     specialize (ih Hparseq (extend_EL EL (α_preserves_L_R (t_constr__a_t Heqt'R) X0))).
-(* **** ih tis now fully applied ********************** *)
+  (* **** ih tis now fully applied ********************** *)
 
     eapply beta_expansion_subst in ih; auto.
     + eapply α_preserves_L_R with (s' := tmbin (psubs sigma (tmabs X A s)) t) (R := sym_alpha_ctx R) in ih; eauto. constructor.
@@ -995,8 +991,6 @@ Proof.
   - eapply s_constr__a_s; eauto.
   - constructor.
 Qed.
-
-
 
 Theorem SN_gu' E s T : has_kind E s T -> @sn term step_gu s.
   intros.
