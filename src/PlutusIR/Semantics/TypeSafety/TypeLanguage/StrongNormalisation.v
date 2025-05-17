@@ -1,9 +1,9 @@
 Require Import PlutusCert.PlutusIR.Semantics.Static.
 Require Import PlutusCert.PlutusIR.Semantics.Static.Kinding.Checker.
 
-Require Import PlutusCert.PlutusIR.Semantics.Static.Normalisation.Norm_sound_complete.
+Require Import PlutusCert.PlutusIR.Semantics.Static.Normalisation.Normaliser_sound_complete.
 
-From PlutusCert Require Import port_plut2.
+From PlutusCert Require Import SN_PIR Normaliser.
 
 Theorem strong_normalisation Δ T K :
     Δ |-* T : K ->

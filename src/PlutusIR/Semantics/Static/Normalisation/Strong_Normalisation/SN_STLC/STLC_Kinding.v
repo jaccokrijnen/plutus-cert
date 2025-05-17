@@ -1,4 +1,4 @@
-From PlutusCert Require Import STLC_named Util.List.
+From PlutusCert Require Import STLC Util.List.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
 Import ListNotations.
@@ -26,7 +26,7 @@ No way to unify (KB -> KB) -> K2 with KB -> KB
 (* For Uni uses our own set kinding version for plutusIR*)
 (** Kinding of types *)
 Reserved Notation "Δ '|-*' T ':' K" (at level 40, T at level 0, K at level 0).
-Inductive has_kind : list (PlutusIR.binderTyname * PlutusIR.kind) -> STLC_named.term -> PlutusIR.kind -> Set :=
+Inductive has_kind : list (PlutusIR.binderTyname * PlutusIR.kind) -> STLC.term -> PlutusIR.kind -> Set :=
   | K_Var : forall Δ X K,
       lookup X Δ = Some K ->
       Δ |-* (tmvar X) : K

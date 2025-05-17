@@ -4,7 +4,6 @@ Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Ascii.
 
-From PlutusCert Require Import plutus_util.
 From PlutusCert Require Import PlutusIR.
 From PlutusCert Require Import  PlutusIR.Folds.
 From PlutusCert Require Import  Analysis.BoundVars.

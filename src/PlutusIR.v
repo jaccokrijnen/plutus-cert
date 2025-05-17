@@ -269,8 +269,6 @@ Inductive ty :=
   | Ty_SOP : list (list ty) -> ty
 .
 
-From PlutusCert Require Import plutus_util.
-
 Section ty__ind.
   Unset Implicit Arguments.
 

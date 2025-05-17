@@ -1,7 +1,7 @@
 Require Import Coq.Strings.String.
 Local Open Scope string_scope.
 Require Import Coq.Lists.List.
-From PlutusCert Require Import STLC_named Util.List.
+From PlutusCert Require Import Util.List.
 
 (* TODO: Also defined in kind checker.*)
 (* Tactic to simplify proofs containing hypotheses of the form
@@ -80,7 +80,7 @@ Lemma cons_chain_to_append {A } (x y : A) sigma :
 (x :: y :: sigma) = (x :: y :: nil) ++ sigma .
 Proof. reflexivity. Qed.
 
-Hint Rewrite (@cons_to_append (string * term)) (@cons_chain_to_append (string * term)) : list_simpl.
+(* Hint Rewrite (@cons_to_append (string * A)) (@cons_chain_to_append (string * A)) : list_simpl. *)
 
 Lemma in_cons_sum {A : Type} (x y : A) (l : list A) :
   In x (y :: l) -> sum (x = y) (In x l).
@@ -123,7 +123,7 @@ Proof.
       * right; assumption.
 Qed.
 
-Lemma lookup_some_then_in y t (sigma : list (string * term)) :
+Lemma lookup_some_then_in {A : Type } y t (sigma : list (string * A)) :
   lookup y sigma = Some t -> In (y, t) sigma.
 Admitted.
 
@@ -171,7 +171,7 @@ Proof.
 Qed.
 
 Lemma not_existsb_not_in y U' : 
-  existsb (eqb y) (ftv U') = false -> ~ In y (ftv U').
+  existsb (eqb y) U' = false -> ~ In y (U').
 Proof.
 Admitted.
 

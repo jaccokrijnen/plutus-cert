@@ -2,7 +2,7 @@
 Require Import PlutusCert.Util.List.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
-From PlutusCert Require Import plutus_util PlutusIR Util.
+From PlutusCert Require Import PlutusIR Util.
 
 Reserved Notation "'|-*_uni' T ':' K" (at level 40, T at level 0, K at level 0).
 Inductive has_kind_uni : DefaultUni -> kind -> Prop :=

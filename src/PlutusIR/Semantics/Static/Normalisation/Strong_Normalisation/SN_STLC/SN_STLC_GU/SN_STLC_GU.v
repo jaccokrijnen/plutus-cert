@@ -13,11 +13,8 @@ Require Import Coq.Arith.Arith.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From PlutusCert Require Import step_gu alpha_typing STLC_named STLC_named_typing gu_naive.pre gu_naive.constructions.
-From PlutusCert Require Import alpha.alpha alpha_rename rename util alpha_ctx_sub freshness alpha_freshness.
-
-
-
+From PlutusCert Require Import psubs step_gu alpha_typing STLC STLC_Kinding SN_STLC_GU.GU_NC_Uhm SN_STLC_GU.construct_GU.
+From PlutusCert Require Import IdSubst step_naive alpha.alpha alpha_rename rename util alpha_ctx_sub variables alpha_freshness.
 
 (* used to be prop (TODO: Defined also in SN_STCL_named )*)
 Inductive sn {X : Type} {e : X -> X -> Type } x : Type :=
@@ -130,81 +127,6 @@ Proof.
   eexists; eauto with *.
 Qed.
 
-Lemma psubs_vac_var sigma x :
-  ~ In x (map fst sigma) ->
-  psubs sigma (tmvar x) = (tmvar x).
-Proof.
-  intros.
-  induction sigma.
-  - reflexivity.
-  - destruct a as [a1 a2].
-    simpl in H.
-    apply de_morgan2 in H.
-    destruct H as [H1 H2].
-    specialize (IHsigma H2).
-    simpl.
-
-    
-    rewrite <- String.eqb_neq in H1.
-    simpl.
-    rewrite H1.
-    unfold psubs in IHsigma.
-    assumption.
-Qed.
-
-(* need also handle btv, since substitution is nto capture avoiding*)
-Lemma sub_vac x t s :
- ~ In x (ftv s) ->
- ~ In x (btv s) ->
- sub x t s = s.
-Proof.
-  intros.
-  induction s; simpl; auto.
-  - destr_eqb_eq x s; auto.
-    unfold ftv in H. contradiction H. apply in_eq.
-  - f_equal.
-    assert (~ In x (ftv s0)).
-    {
-      simpl in H0.
-      apply ftv_lam_negative in H; auto.
-    }
-    specialize (IHs H1 (not_btv_dc_lam H0)). auto.
-  - f_equal.
-    + eapply IHs1; eauto.
-      eapply not_ftv_app_not_left; eauto. eapply not_btv_dc_appl. eauto.
-    + eapply IHs2; eauto.
-      eapply not_ftv_app_not_right; eauto. eapply not_btv_dc_appr. eauto.
-Qed.
-(* looks like sub_vacuous maybe?*)
-
-Lemma psubs_vac X T t :
-  ~ In X (tv t) ->
-  psubs [(X, T)] t = t.
-Proof.
-  induction t; intros.
-  - simpl.
-    unfold tv in H.
-    apply not_in_cons in H as [H _].
-    apply String.eqb_neq in H.
-    rewrite H.
-    reflexivity.
-  - simpl.
-    simpl in H.
-    apply de_morgan2 in H as [_ H].
-    apply IHt in H.
-    rewrite H.
-    reflexivity.
-  - simpl.
-    simpl in H.
-    apply not_in_app in H as [H1 H2].
-    apply IHt1 in H1.
-    apply IHt2 in H2.
-    rewrite H1.
-    rewrite H2.
-    reflexivity.
-  - simpl. reflexivity.
-Qed.
-
 (* May also work on sequential substiutions with additional assumptions.
   For now only needed for parallel substitutions
 *)
@@ -227,139 +149,6 @@ Proof with eauto with gu_nc_db.
       eapply nc_ftv_env; eauto; apply btv_lam.
 Qed.
 
-Inductive ParSeq : list (string * term) -> Set :=
-| ParSeq_nil : ParSeq []
-| ParSeq_cons x t sigma :
-    ParSeq sigma -> 
-    (* ~ In x (List.concat (map ftv (map snd sigma))) ->  *)
-
-    (* we do remove_ids, since identity substitutions have no effect 
-      (and can thus not break par <=> seq)
-      hence if we have x => t, and there was an x => x before, then in tha par case
-        this is ignored of course,
-        and in the seq case, it is applied, but since it is id, it is like not applying.
-      *)
-    ~ In x (ftv_keys_env (remove_ids sigma)) -> (* UPDATE Feb 27: we cannot have that x is a key in sigma either
-      look e.g. at (x, a)::(x, b). As a sequential sub applied to tmvar x, we get b.
-                                    As a parallel, we get a.
-
-    *)
-    ~ In x (btv_env sigma) -> (* Update Mar 6: OTHERWISE WE CAN GET CAPTURE IN sigma *)
-    ParSeq ((x, t)::sigma).
-(* This says that one subsitutions does not have effect on the next one
-  In other word, no substiutions chains, where x -> t, and then t -> y, etc.
-
-  This also means that if we define lookup as right oriented, that
-    lookup_left x sigma = Some T   -> subs sigma (tmvar x) = T
-*)
-
-(* Say (x, t)::sig2, and sigma =sig1++sig2
-  Say y in ftv t. Then we have a problem if y in lhs sig1.
-  But, this cannot happen by blabla.
-
-  Also, we will use right-biased lookup.
-
-  TODO: Do we need to enforce that we cannot have twice the same key? 
-  For now: righthanded lookup will do the job
-*)
-Lemma parseq_smaller {sigma x t} :
-  ParSeq ((x, t)::sigma) -> ParSeq sigma.
-Proof.
-  now inversion 1.
-Qed.
-
-(* Identity substitutions: Given a typing context E, give a list of term substitutions matching this E*)
-Fixpoint id_subst (E : list (string * PlutusIR.kind)) : list (string * term) :=
-  match E with
-  | nil => nil
-  | cons (x, A) E' => cons (x, tmvar x) (id_subst E')
-  end.
-
-
-Lemma id_subst_is_IdSubst E :
-  IdSubst (id_subst E).
-Proof.
-  induction E.
-  - constructor.
-  - simpl. destruct a. constructor. assumption.
-Qed.
-
-
-Lemma psubs_unfold sigma X T s :
-  ParSeq ((X, T)::sigma) -> psubs ((X, T)::sigma) s = psubs [(X, T)] (psubs sigma s).
-Proof.
-  intros.
-  induction s.
-  - simpl. 
-    destr_eqb_eq X s.
-    + inversion H; subst.
-      destruct (lookup s sigma) eqn:Hl.
-      * assert (t = tmvar s).
-        {
-          apply ftv_keys_env__no_keys in H4.
-          apply lookup_In in Hl.
-          eapply remove_ids_helper; eauto.
-        }
-        subst.
-        simpl.
-        rewrite String.eqb_refl.
-        reflexivity.
-      * simpl. rewrite String.eqb_refl. reflexivity.
-    + destruct (lookup s sigma) eqn:Hl.
-      * inversion H; subst.
-        assert (~ In X (tv t)).
-        {
-          clear H H4.
-          induction sigma.
-          - inversion Hl.
-          - destruct a as [a1 a2].
-            destr_eqb_eq s a1.
-            + rewrite lookup_eq in Hl.
-              inversion Hl; subst; clear Hl.
-              
-              simpl in H6.
-              apply remove_ids_helper3 in H5.
-              destruct H5 as [[H5 H7] | H5].
-              * subst. contradiction.
-              * apply not_in_app in H6 as [H6 _].
-                apply not_ftv_btv_then_not_tv; auto.
-            + eapply IHsigma; eauto.
-              * simpl in Hl.
-                rewrite <- String.eqb_neq in H.
-                rewrite String.eqb_sym in H.
-                rewrite H in Hl; auto.
-              * apply remove_ids_helper4 in H5; auto.
-              * simpl in H6. apply not_in_app in H6 as [_ H6].
-                assumption.
-        }
-
-        symmetry.
-        apply psubs_vac; auto.
-      * simpl. rewrite <- String.eqb_neq in H0. rewrite H0.
-        reflexivity.
-  - simpl. f_equal. eauto.
-  - simpl. f_equal; eauto.
-  - simpl. reflexivity.
-Qed.
-
-Lemma single_parseq x t : ParSeq [(x, t)].
-Proof.
-  now repeat constructor.
-Qed.
-
-(* substitutions do not introduce new free variables 
-*)
-Lemma psubs_no_ftv x sigma y:
-  ~ In x (ftv_keys_env sigma) -> x <> y -> ~ In x (ftv (psubs sigma (tmvar y))).
-Proof.
-  intros.
-  unfold psubs.
-  destruct (lookup y sigma) eqn:lookup_y_sigma.
-  - eapply ftv_keys_env__no_values in H; eauto.
-    apply lookup_In in lookup_y_sigma.
-    apply in_map_iff. exists (y, t). simpl. auto.
-  - simpl. intuition.
-Qed.
 
 
 
@@ -1134,41 +923,6 @@ Proof.
 Qed.
 
 
-Lemma ftv_keys_env_sigma_remove x sigma :
-  In x (ftv_keys_env (remove_ids sigma)) -> In x (ftv_keys_env sigma).
-Proof.
-  intros.
-  induction sigma.
-  - simpl in H. contradiction.
-  - simpl in H.
-    destruct a as [y t].
-    simpl in H.
-    destruct t.
-    + destr_eqb_eq y s.
-      * simpl. right. right. apply IHsigma. auto.
-      * destruct H.
-        -- simpl. left. auto.
-        -- simpl. apply in_app_or in H. destruct H.
-          ++ simpl. right. left. auto. apply ftv_var in H. auto.
-          ++ simpl. right. right. apply IHsigma. auto.
-    + destruct H.
-      * subst. simpl. left. reflexivity.
-      * apply in_app_or in H.
-        destruct H.
-        -- simpl. right. apply in_or_app. left. assumption.
-        -- simpl. right. apply in_or_app. right. apply IHsigma. auto.
-    + destruct H.
-      * subst. simpl. left. reflexivity.
-      * apply in_app_or in H.
-        destruct H.
-        -- simpl. right. apply in_or_app. left. assumption.
-        -- simpl. right. apply in_or_app. right. apply IHsigma. auto.
-    + simpl in H.
-      destruct H.
-      simpl. left. auto.
-      simpl. right. apply IHsigma. auto.
-Qed.
-
 
 
 
@@ -1341,66 +1095,6 @@ Proof.
     simpl.
     apply extend_EL; eauto.
     apply L_var.
-Qed.
-
-Lemma remove_ids_IdSubst_is_nil sigma :
-  IdSubst sigma -> remove_ids sigma = nil.
-Proof.
-  intros.
-  induction sigma.
-  - reflexivity.
-  - simpl.
-    destruct a as [x1 x2].
-    inversion H; subst.
-    rewrite IHsigma; auto.
-    rewrite String.eqb_refl. auto.
-Qed.
-
-Lemma IdSubst_no_binders sigma :
-  IdSubst sigma -> btv_env sigma = nil.
-Proof.
-  intros.
-  induction sigma.
-  - reflexivity.
-  - simpl.
-    destruct a as [x1 x2].
-    inversion H; subst.
-    rewrite IHsigma; auto.
-Qed.
-
-Lemma id_subst__ParSeq :
-  forall (σ : list (string * term)), IdSubst σ -> ParSeq σ.
-Proof.
-  intros.
-  induction σ.
-  - constructor.
-  - simpl. destruct a as [x1 x2]. constructor. 
-    + apply IHσ. inversion H. assumption.
-    + inversion H; subst.
-      rewrite (remove_ids_IdSubst_is_nil H1). auto.
-    + inversion H; subst.
-      rewrite IdSubst_no_binders; eauto.
-Qed.
-
-Lemma no_btv_in_id_subst E :
-  forall x, In x (btv_env (id_subst E)) -> False.
-Proof.
-  intros.
-  induction E.
-  - simpl in H. contradiction.
-  - simpl in H. destruct a as [x1 x2].
-    simpl in H.
-    eapply IHE. auto.
-Qed.
-
-Lemma id_subst__nc_uhm E s :
-  NC s (id_subst E) -> Uhm (id_subst E) s.
-Proof.
-  intros.
-  unfold Uhm.
-  split.
-  - intros. apply no_btv_in_id_subst in H0. contradiction.
-  - intros. apply no_btv_in_id_subst in H0. contradiction.
 Qed.
 
 (* The fundamental theorem for named variables. *)

@@ -91,27 +91,34 @@ src/PlutusIR/Semantics/Static/Kinding/Checker.v
 src/PlutusIR/Semantics/Static/Kinding/Kinding.v
 
 src/PlutusIR/Semantics/Static/Normalisation/Normalisation.v
+src/PlutusIR/Semantics/Static/Normalisation/Normaliser_sound_complete.v
+src/PlutusIR/Semantics/Static/Normalisation/Normaliser.v
+src/PlutusIR/Semantics/Static/Normalisation/Preservation.v
+src/PlutusIR/Semantics/Static/Normalisation/Progress.v
 src/PlutusIR/Semantics/Static/Normalisation/Type_reduction.v
-src/PlutusIR/Semantics/Static/Normalisation/Norm_sound_complete.v
 
-src/PlutusIR/Semantics/Static/Normalisation/normaliser_STLC/gu_naive/port_plut2.v
-src/PlutusIR/Semantics/Static/Normalisation/normaliser_STLC/gu_naive/plutus_util.v
-src/PlutusIR/Semantics/Static/Normalisation/normaliser_STLC/gu_naive/pre.v
-src/PlutusIR/Semantics/Static/Normalisation/normaliser_STLC/gu_naive/step_gu.v
-src/PlutusIR/Semantics/Static/Normalisation/normaliser_STLC/gu_naive/constructions.v
-src/PlutusIR/Semantics/Static/Normalisation/normaliser_STLC/gu_naive/SN_STLC_named_gu.v
-src/PlutusIR/Semantics/Static/Normalisation/normaliser_STLC/gu_naive/SN_STLC_named2.v
+src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_PIR.v
 
-src/PlutusIR/Semantics/Static/Normalisation/normaliser_STLC/STLC_named_typing.v
-src/PlutusIR/Semantics/Static/Normalisation/normaliser_STLC/STLC_named.v
-src/PlutusIR/Semantics/Static/Normalisation/normaliser_STLC/alpha/alpha.v
-src/PlutusIR/Semantics/Static/Normalisation/normaliser_STLC/alpha/alpha_ctx_sub.v
-src/PlutusIR/Semantics/Static/Normalisation/normaliser_STLC/alpha/alpha_rename.v
-src/PlutusIR/Semantics/Static/Normalisation/normaliser_STLC/alpha/alpha_typing.v
-src/PlutusIR/Semantics/Static/Normalisation/normaliser_STLC/alpha/freshness.v
-src/PlutusIR/Semantics/Static/Normalisation/normaliser_STLC/alpha/alpha_freshness.v
-src/PlutusIR/Semantics/Static/Normalisation/normaliser_STLC/alpha/rename.v
-src/PlutusIR/Semantics/Static/Normalisation/normaliser_STLC/alpha/util.v
+src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_nd.v
+src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/STLC_Kinding.v
+src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/STLC.v
+
+src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/alpha/alpha_ctx_sub.v
+src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/alpha/alpha_freshness.v
+src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/alpha/alpha_rename.v
+src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/alpha/alpha_typing.v
+src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/alpha/alpha.v
+
+src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/construct_GU.v
+src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/GU_NC_Uhm.v
+src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/IdSubst.v
+src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/psubs.v
+src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/rename.v
+src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/SN_STLC_GU.v
+src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/step_gu.v
+src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/step_naive.v
+src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/util.v
+src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/variables.v
 
 src/PlutusIR/Semantics/Static/Theorems/ContextInvariance.v
 src/PlutusIR/Semantics/Static/Theorems/ContextInvariance/AFI.v

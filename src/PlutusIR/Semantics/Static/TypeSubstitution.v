@@ -1,6 +1,6 @@
 From Equations Require Import Equations.
 
-From PlutusCert Require Import PlutusIR plutus_util util.
+From PlutusCert Require Import PlutusIR Util.
 
 Require Import Coq.Strings.String.
 Local Open Scope string_scope.

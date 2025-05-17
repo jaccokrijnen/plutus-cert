@@ -6,8 +6,6 @@ From Coq Require Import
   Program.Basics
   .
 
-From PlutusCert Require Import plutus_util.
-
 Import ListNotations.
 Local Open Scope string_scope.
 

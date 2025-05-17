@@ -11,7 +11,7 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Arith.
 Require Import Coq.Bool.Bool.
 
-From PlutusCert Require Import util STLC_named gu_naive.pre alpha.alpha freshness util alpha_ctx_sub alpha_freshness.
+From PlutusCert Require Import step_naive psubs util STLC SN_STLC_GU.GU_NC_Uhm alpha.alpha variables util alpha_ctx_sub alpha_freshness.
 
 
 (* Pff, this must be avoidable: same set/prop trick as with kinding*)
@@ -99,33 +99,6 @@ Proof.
           - auto.
         }
         eapply IHl; auto.
-Qed.
-
-Inductive IdSubst : list (string * term) -> Set :=
-  | id_subst_nil : IdSubst nil
-  | id_subst_cons : forall x sigma , IdSubst sigma -> IdSubst ((x, tmvar x)::sigma).
-
-
-Lemma id_subst__id s σ :
-  (* NC s σ ->  *)
-  IdSubst σ -> 
-  psubs σ s = s. (* even when this capturs, it doesnt matter, since it captures something and then substiutes it for the same name*)
-Proof.
-  intros.
-  induction s.
-  - induction σ.
-    + reflexivity.
-    + simpl. destruct a as [x1 x2].
-      inversion H; subst.
-      specialize (IHσ H1).
-      simpl in IHσ.
-      destr_eqb_eq x1 s; auto.
-  - simpl.
-    f_equal.
-    apply IHs.
-  - simpl.
-    f_equal; eauto.
-  - simpl; auto.
 Qed.
 
 Lemma id_ctx_alphavar_refl R x : IdCtx R -> AlphaVar R x x.
@@ -3207,7 +3180,7 @@ Proof.
       destruct H2 as [Hin_s | [t0 [Ht0_sigma Hin_t0]]].
       * apply t_constr_btv_s_not_ftv_t' with (x := y) in H1. auto. auto.
         apply in_app_iff. left. auto.
-      * apply (btv_env_helper _ _ _ Hin_t0) in Ht0_sigma.
+      * apply (btv_env_helper Hin_t0) in Ht0_sigma.
         apply t_constr_btv_s_not_ftv_t' with (x := y) in H1. auto. auto.
         apply in_app_iff. right. auto.
 Qed.
@@ -3568,33 +3541,33 @@ Proof with eauto with gu_nc_db.
   induction s; intros; inversion H; subst; simpl.
   - destr_eqb_eq x s; destr_eqb_eq y y0; eauto.
     + exfalso.
-      apply lrss_sym in X.
-      apply (alpha_swaps X) in H.
+      apply lrss_sym in H1.
+      apply (alpha_swaps H1) in H.
       inversion H; subst.
-      inversion H8; subst.
-      contradiction H3; auto.
-      contradiction H9; auto.
+      inversion H9; subst.
+      contradiction H4; auto.
+      contradiction H10; auto.
     + exfalso.
-      apply lrss_sym in X.
-      apply (alpha_swaps X) in H.
+      apply lrss_sym in H1.
+      apply (alpha_swaps H1) in H.
       inversion H; subst.
-      inversion H8; subst.
-      contradiction H3; auto.
-      contradiction H12; auto.
+      inversion H9; subst.
+      contradiction H4; auto.
+      contradiction H13; auto.
     + eapply @alpha_swaps with (ren' := ((x, y)::Rt)) in H.
       inversion H; subst.
-      inversion H9; subst; try contradiction.
+      inversion H10; subst; try contradiction.
       apply alpha_var.
       assumption.
       apply lrss_sym. auto.
   - constructor.
     eapply IHs; eauto...
     + eapply alpha_extend_vacuous_ftv.
-      * apply nc_ftv_env with (x := s) in H1.
-        simpl in H1.
-        intuition. apply btv_lam.
-      * apply nc_ftv_env with (x := y0) in H2.
+      * apply nc_ftv_env with (x := s) in H2.
         simpl in H2.
+        intuition. apply btv_lam.
+      * apply nc_ftv_env with (x := y0) in H3.
+        simpl in H3.
         intuition. apply btv_lam.
       * assumption.
     + eapply @lrss_trans with (ren2 := ((s, y0)::(x, y)::Rt)).
@@ -3602,10 +3575,10 @@ Proof with eauto with gu_nc_db.
         -- apply starR.
         -- 
           ++ constructor. 
-            ** apply nc_ftv_env with (x := s) in H1.
-              simpl in H1. intuition. apply btv_lam.
-            ** apply nc_ftv_env with (x := y0) in H2.
+            ** apply nc_ftv_env with (x := s) in H2.
               simpl in H2. intuition. apply btv_lam.
+            ** apply nc_ftv_env with (x := y0) in H3.
+              simpl in H3. intuition. apply btv_lam.
             ** apply legalRenSwap_id.
       * apply lrss_cons. auto.
   - constructor; eauto with gu_nc_db.

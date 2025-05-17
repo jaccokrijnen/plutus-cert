@@ -12,14 +12,14 @@ Require Import Coq.Arith.PeanoNat.
 Import ListNotations.
 Require Import Ascii.
 
-From PlutusCert Require Import SN_STLC_named_gu SN_STLC_named2 util Util.List STLC_named STLC_named_typing. (* I don't understand why we need this for ftv defintion*)
-From PlutusCert Require Import PlutusIR plutus_util Checker.
+From PlutusCert Require Import SN_STLC_GU SN_STLC_nd util Util.List STLC STLC_Kinding. (* I don't understand why we need this for ftv defintion*)
+From PlutusCert Require Import PlutusIR Checker.
 
 
 (** Substitutions *)
 
 (* from plut to annotated stlc*)
-Fixpoint f (t : ty) : STLC_named.term :=
+Fixpoint f (t : ty) : STLC.term :=
   match t with
   | Ty_Var x => tmvar x
   | Ty_Lam x A t => @tmlam Lam x A (f t)
@@ -254,13 +254,13 @@ Proof.
              f_equal.
              ** eauto.
                 eapply H; eauto; simpl. lia.
-             ** assert (@fold_right STLC_named.term PlutusIR.ty
-                  (fun (T : PlutusIR.ty) (acc2 : STLC_named.term) =>
+             ** assert (@fold_right STLC.term PlutusIR.ty
+                  (fun (T : PlutusIR.ty) (acc2 : STLC.term) =>
                 @tmapp Fun (f T) acc2)
-                  (@fold_right STLC_named.term (list PlutusIR.ty)
-                  (fun (Ts : list PlutusIR.ty) (acc : STLC_named.term) =>
-                @fold_right STLC_named.term PlutusIR.ty
-                  (fun (T : PlutusIR.ty) (acc2 : STLC_named.term) =>
+                  (@fold_right STLC.term (list PlutusIR.ty)
+                  (fun (Ts : list PlutusIR.ty) (acc : STLC.term) =>
+                @fold_right STLC.term PlutusIR.ty
+                  (fun (T : PlutusIR.ty) (acc2 : STLC.term) =>
                 @tmapp Fun (f T) acc2)
                   acc
                   Ts)
@@ -283,13 +283,13 @@ Proof.
     }
     rewrite H0.
              
-        assert  (@fold_right STLC_named.term PlutusIR.ty
-            (fun (T : PlutusIR.ty) (acc2 : STLC_named.term) =>
+        assert  (@fold_right STLC.term PlutusIR.ty
+            (fun (T : PlutusIR.ty) (acc2 : STLC.term) =>
           @tmapp Fun (f T) acc2)
-            (@fold_right STLC_named.term (list PlutusIR.ty)
-            (fun (Ts : list PlutusIR.ty) (acc : STLC_named.term) =>
-          @fold_right STLC_named.term PlutusIR.ty
-            (fun (T : PlutusIR.ty) (acc2 : STLC_named.term) =>
+            (@fold_right STLC.term (list PlutusIR.ty)
+            (fun (Ts : list PlutusIR.ty) (acc : STLC.term) =>
+          @fold_right STLC.term PlutusIR.ty
+            (fun (T : PlutusIR.ty) (acc2 : STLC.term) =>
           @tmapp Fun (f T) acc2)
             acc
             Ts)
@@ -354,7 +354,7 @@ Set Printing Implicit.
 Require Import Coq.Program.Equality.
 
 Theorem f_preserves_kind Δ s K :
-  Kinding.has_kind Δ s K -> STLC_named_typing.has_kind Δ (f s) K.
+  Kinding.has_kind Δ s K -> STLC_Kinding.has_kind Δ (f s) K.
 Proof with subst; auto.
   intros.
   apply Checker.prop_to_type in H.
@@ -386,9 +386,9 @@ Qed.
 (*
 Jacco: Dit is blijkbaar een forward simulation
 *)
-Lemma sn_preimage2 {e2 : PlutusIR.ty -> PlutusIR.ty -> Type} {e : STLC_named.term -> STLC_named.term -> Type} 
-  (h : PlutusIR.ty -> STLC_named.term) (x : PlutusIR.ty) :
-  (forall x y, e2 x y -> e (h x) (h y)) -> @sn STLC_named.term e (h x) -> @sn PlutusIR.ty e2 x.
+Lemma sn_preimage2 {e2 : PlutusIR.ty -> PlutusIR.ty -> Type} {e : STLC.term -> STLC.term -> Type} 
+  (h : PlutusIR.ty -> STLC.term) (x : PlutusIR.ty) :
+  (forall x y, e2 x y -> e (h x) (h y)) -> @sn STLC.term e (h x) -> @sn PlutusIR.ty e2 x.
 Proof.
   intros A B.
   remember (h x) as v. (* this allows us to keep B : sn v as an hypothesis*)
@@ -408,7 +408,7 @@ Proof.
   - reflexivity.
 Defined.
 
-Theorem sn_step_plut : forall s, @sn STLC_named.term step_nd (f s) -> @sn PlutusIR.ty Type_reduction.step s.
+Theorem sn_step_plut : forall s, @sn STLC.term step_nd (f s) -> @sn PlutusIR.ty Type_reduction.step s.
 Proof.
   intros s.
   eapply @sn_preimage2 with (h := f) (e2 := Type_reduction.step) (e := step_nd).

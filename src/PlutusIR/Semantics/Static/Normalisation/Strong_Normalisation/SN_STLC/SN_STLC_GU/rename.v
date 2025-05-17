@@ -1,4 +1,4 @@
-From PlutusCert Require Import STLC_named util Util.List.
+From PlutusCert Require Import STLC util Util.List.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
 Local Open Scope string_scope.

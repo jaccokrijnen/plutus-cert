@@ -3,7 +3,7 @@ Require Import Strings.String.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.TypeSubstitution.
 
-From PlutusCert Require Import plutus_util.
+From PlutusCert Require Import Util.
 
 (** Type equality *)
 Reserved Notation "T1 '=b' T2" (at level 40).

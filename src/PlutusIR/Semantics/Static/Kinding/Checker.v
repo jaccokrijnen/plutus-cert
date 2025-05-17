@@ -6,7 +6,7 @@ Require Import Coq.Bool.Bool.
 Require Import PlutusCert.Util.List.
 Require Import Coq.Lists.List.
 
-From PlutusCert Require Import plutus_util Util.
+From PlutusCert Require Import Util.
 
 
 

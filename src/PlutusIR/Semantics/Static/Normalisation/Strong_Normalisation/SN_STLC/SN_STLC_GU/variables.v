@@ -1,4 +1,11 @@
-From PlutusCert Require Import STLC_named util rename Util.List.
+(* Lemmas about
+  - freshness of fresh2
+  - ftv, tv, btv
+    - with respect to renaming
+  - ftv_keys_env, btv_env, tv_keys_env
+*)
+
+From PlutusCert Require Import STLC util Util rename Util.List.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
 
@@ -405,4 +412,101 @@ Lemma ftv_c_appr {B X t1 t2} :
   In X (ftv t2) -> In X (ftv (@tmapp B t1 t2)).
 Admitted.
 
+
+
+Fixpoint btv_env (sigma : list (string * term)) : list string :=
+  match sigma with
+  | nil => nil
+  | (x, t)::sigma' => (btv t) ++ (btv_env sigma')
+  end.
+
+Lemma btv_env_helper (y : string) (t : term) sigma :
+  In y (btv t) -> In t (map snd sigma) -> In y (btv_env sigma).
+Proof.
+Admitted.
+
+Definition set_diff (l1 l2 : list string) : list string :=
+  filter (fun x => negb (existsb (String.eqb x) l2)) l1.
+
+Lemma btv_env_extends_to_tv_env x sigma :
+  In x (btv_env sigma) -> In x (tv_keys_env sigma).
+Admitted.
+
+Lemma ftv_keys_env_extends_to_tv_env x sigma :
+  In x (ftv_keys_env sigma) -> In x (tv_keys_env sigma).
+Admitted.
+
+
+Lemma ftv_keys_env__no_keys sigma x :
+  ~ In x (ftv_keys_env sigma) -> ~ In x (map fst sigma).
+Admitted.
+
+Lemma ftv_keys_env__no_values sigma x :
+  ~ In x (ftv_keys_env sigma) -> (forall val, In val (map snd sigma) -> ~ In x (ftv val)).
+Admitted.
+
+(* If x not a key or value, then not both*)
+Lemma ftv_keys_env_helper sigma x :
+  ~ In x (map fst sigma) -> (forall ftvs, In ftvs (map snd sigma) -> ~ In x (ftv ftvs)) 
+    -> ~ In x (ftv_keys_env sigma).
+Admitted.
+
+Lemma In_btv_env__exists sigma x :
+  In x (btv_env sigma) -> exists t, In t (map snd sigma) /\ In x (btv t).
+Proof.
+  intros HIn.
+  induction sigma.
+  - inversion HIn.
+  - destruct a as [a1 a2].
+    simpl in HIn.
+    apply in_app_or in HIn as [HIn | HIn].
+    + exists a2. simpl. split. left. reflexivity. assumption. 
+    + apply IHsigma in HIn as [t [HIn_t Hbtv_t]].
+      exists t. split. simpl. right. auto. auto.
+Qed.
+
+Lemma btv_env_lookup__in σ x s t :
+  lookup s σ = Some t -> In x (btv t) -> In x (btv_env σ).
+Proof.
+  intros Hl Hbtv.
+  induction σ.
+  - inversion Hl.
+  - destruct a as [a1 a2].
+    inversion Hl.
+    destr_eqb_eq a1 s.
+    + inversion H0; subst; clear H0.
+      simpl in Hl.
+      rewrite String.eqb_refl in Hl.
+      simpl. apply in_app_iff. left. auto.
+    + simpl in Hl.
+      apply String.eqb_neq in H.
+      rewrite H in Hl.
+      simpl.
+      apply in_app_iff.
+      right.
+      apply IHσ.
+      auto.
+Qed.
+
+
+Lemma ftv_env_helper x σ s t :
+  ~ In x (flat_map ftv (map snd σ)) -> lookup s σ = Some t -> ~ In x (ftv t).
+Proof.
+  intros HNin_σ Hl.
+  induction σ.
+  - inversion Hl.
+  - destruct a as [a1 a2].
+    simpl in HNin_σ.
+    apply not_in_app in HNin_σ as [HNin_σ1 HNin_σ2].
+    simpl in Hl.
+    destr_eqb_eq a1 s.
+    + inversion Hl; subst. auto.
+    + apply IHσ; auto.
+Qed.
+
+
+Lemma btv_env_subset a sigma' sigma :
+  incl sigma' sigma ->
+  ~ In a (btv_env sigma) -> ~ In a (btv_env sigma').
+Admitted.
 

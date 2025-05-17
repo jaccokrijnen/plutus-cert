@@ -1,5 +1,5 @@
 
-From PlutusCert Require Import STLC_named alpha.alpha alpha_ctx_sub Util.List freshness util alpha_rename.
+From PlutusCert Require Import STLC alpha.alpha alpha_ctx_sub Util.List variables util alpha_rename.
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
 
@@ -16,12 +16,6 @@ Admitted.
 
 Lemma alpha_in_ftv_helper2 {X X' ren t t'} :
   In X (ftv t) -> Alpha ((X, X')::ren) t t' -> In X' (ftv t') .
-Admitted.
-
-Lemma weaken_vacuous_alpha {X X' ren t t'} :
-  Alpha ((X, X')::ren) t t' -> ~ In X (ftv t) -> ~ In X' (ftv t') -> Alpha ren t t'.
-Proof.
-  (* Proof will go something similar to alphaRenameStronger *)
 Admitted.
 
 Lemma alpha_preserves_ftv' {x s s' ren} :

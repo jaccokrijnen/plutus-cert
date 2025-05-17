@@ -8,7 +8,8 @@ Local Open Scope string_scope.
 
 From PlutusCert Require Import 
     Normalisation.Normalisation 
-    Norm_sound_complete
+    Normalisation.Normaliser_sound_complete
+    Normalisation.Normaliser
     PlutusIR 
     Static.Typing
     Util.List

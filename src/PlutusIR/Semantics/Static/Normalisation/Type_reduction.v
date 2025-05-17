@@ -1,4 +1,4 @@
-From PlutusCert Require Import PlutusIR Normalisation.Normalisation plutus_util.
+From PlutusCert Require Import PlutusIR Normalisation.Normalisation Util.
 
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.

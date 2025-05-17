@@ -4,7 +4,7 @@ From mathcomp Require Import ssreflect ssrbool eqtype ssrnat.
 From Coq Require Import ssrfun.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
-From PlutusCert Require Import Util.List freshness util.
+From PlutusCert Require Import Util.List variables util.
 Import ListNotations.
 Local Open Scope string_scope.
 Local Open Scope list_scope.
@@ -14,7 +14,7 @@ Require Import Coq.Program.Basics.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From PlutusCert Require Import STLC_named util.
+From PlutusCert Require Import STLC util.
 
 Inductive AlphaVar : list (string * string) -> string -> string -> Set :=
 | alpha_var_refl x : AlphaVar [] x x
@@ -438,8 +438,7 @@ Qed.
 Lemma lrss_sym ren1 ren2 :
   LegalRenSwaps ren1 ren2 -> LegalRenSwaps ren2 ren1.
 Proof.
-  intros.
-  induction X.
+  induction 1.
   - constructor.
   - eapply lrss_left; eauto. apply lrs_sym. auto.
 Qed.

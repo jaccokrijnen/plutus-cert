@@ -13,9 +13,9 @@ Require Import Coq.Arith.Arith.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From PlutusCert Require Import step_gu STLC_named STLC_named_typing.
-From PlutusCert Require Import alpha_typing alpha.alpha alpha_rename rename util alpha_ctx_sub freshness alpha_freshness.
-From PlutusCert Require Import SN_STLC_named_gu gu_naive.pre gu_naive.constructions.
+From PlutusCert Require Import SN_STLC_GU step_naive GU_NC_Uhm step_gu STLC STLC_Kinding.
+From PlutusCert Require Import alpha_typing alpha.alpha alpha_rename rename util alpha_ctx_sub variables alpha_freshness.
+From PlutusCert Require Import construct_GU.
 
 (* Define an infix operator for bind *)
 Infix ">>=" := bind (at level 50, left associativity).
@@ -400,7 +400,7 @@ Proof.
     exact X.
 Qed.
 
-Theorem strong_normalization E s T : STLC_named_typing.has_kind E s T -> (@sn term step_nd) s.
+Theorem strong_normalization E s T : STLC_Kinding.has_kind E s T -> (@sn term step_nd) s.
   intros.
   apply SN_gu' in H. 
   apply SN_na_to_SN_nd.
