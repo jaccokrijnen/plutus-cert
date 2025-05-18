@@ -1554,7 +1554,9 @@ Qed.
 Opaque sconstr2.
 
 Create HintDb sconstr2_db.
-Hint Resolve sconstr2_alpha_s sconstr2_alpha_t sconstr2_nc_sub sconstr2_nc_s sconstr2_nc_t sconstr2_nc_s_t : sconstr2_db.
+Hint Resolve sconstr2_alpha_s sconstr2_alpha_t sconstr2_nc_sub 
+  sconstr2_nc_s sconstr2_nc_t sconstr2_nc_s_t
+  sconstr2_alpha_p : sconstr2_db.
 
 Require Import List.
 Import ListNotations.
@@ -1583,3 +1585,13 @@ Definition freshen used to_freshen := fold_left
         let fresh_var := fresh_to_GU_ used acc x in
         (x, fresh_var) :: acc) to_freshen [].
 
+
+
+Create HintDb to_GU'_db.
+Hint Resolve to_GU'__alpha to_GU'__GU to_GU'__NC : to_GU'_db.
+
+Create HintDb to_GU_db.
+Hint Resolve to_GU__alpha to_GU__GU : to_GU_db.
+
+Create HintDb to_GU''_db.
+Hint Resolve to_GU''__alpha to_GU''__GU : to_GU''_db.

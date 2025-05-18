@@ -17,20 +17,20 @@ Import ListNotations.
 Require Import Coq.Strings.String.
 
 Theorem norm_sound Tn {T Δ K} (Hwk : Δ |-* T : K) :
-  normaliser Hwk = Tn -> normalise T Tn.
+  normaliser_wk Hwk = Tn -> normalise T Tn.
 Proof.
   intros.
-  unfold normaliser in H.
-  destruct SN_normalise in H.
+  unfold normaliser_wk in H.
+  destruct SN_normalise in H; eauto.
   subst.
   assumption.
 Qed.
 
 Theorem norm_complete Δ K (T Tn : ty) (Hwk : Δ |-* T : K):
-  normalise T Tn -> normaliser Hwk = Tn.
+  normalise T Tn -> normaliser_wk Hwk = Tn.
 Proof.
   intros HnormR.
-  unfold normaliser.
+  unfold normaliser_wk.
   destruct SN_normalise.
   simpl.
   now apply (normalisation__deterministic T x Tn) in n.
@@ -38,10 +38,10 @@ Qed.
 
 From Coq Require Import ssreflect.
 
-Theorem normaliser_Jacco_sound Δ T Tn :
-  normaliser_Jacco Δ T = Some Tn -> normalise T Tn.
+Theorem normaliser_sound Δ T Tn :
+  normaliser Δ T = Some Tn -> normalise T Tn.
 Proof.
-  unfold normaliser_Jacco.
+  unfold normaliser.
   move: eq_refl.
   case: {2 3}(kind_check Δ T) => // a e H. (* TODO: I don't understand (all of) this ssreflect stuff, see https://stackoverflow.com/questions/47345174/using-destruct-on-pattern-match-expression-with-convoy-pattern*)
   inversion H.
@@ -52,13 +52,13 @@ Qed.
     nil |-* TyApp (Lam bX Kind_Base "bX") (Lam bY Kind_Base "bY")
 
     which normalises to Lam bY Kind_Base "bY",
-    but normaliser_Jacco _ T will return None
+    but normaliser _ T will return None
 
 *)
-Theorem normaliser_Jacco_complete {K Δ T Tn} :
-  Δ |-* T : K -> normalise T Tn -> normaliser_Jacco Δ T = Some Tn.
+Theorem normaliser_complete {K Δ T Tn} :
+  Δ |-* T : K -> normalise T Tn -> normaliser Δ T = Some Tn.
 Proof.
-  unfold normaliser_Jacco.
+  unfold normaliser.
   intros.
   apply kind_checking_complete in H.
   move: eq_refl.
@@ -104,7 +104,7 @@ Proof.
     rewrite Heq.
     constructor.
     + now apply IHxs.
-    + eapply normaliser_Jacco_sound; eauto.
+    + eapply normaliser_sound; eauto.
 Qed.
 
 Require Import Coq.Program.Equality.
@@ -147,7 +147,7 @@ Proof.
         reflexivity.
       }
       subst.
-      apply (normaliser_Jacco_complete H3) in H1.
+      apply (normaliser_complete H3) in H1.
       specialize (IHmap_normalise xs0 H2).
       assert (Ts = remove_deltas xs0).
       {
@@ -175,9 +175,9 @@ Qed.
 
 
 Theorem normaliser_preserves_kinding {Δ T Tn K } :
-  Δ |-* T : K -> normaliser_Jacco Δ T = Some Tn -> Δ |-* Tn : K.
+  Δ |-* T : K -> normaliser Δ T = Some Tn -> Δ |-* Tn : K.
 Proof.
   intros.
-  apply (normaliser_Jacco_sound) in H0.
+  apply (normaliser_sound) in H0.
   apply (normalisation_preserves_kinding H) in H0; auto.
 Qed.

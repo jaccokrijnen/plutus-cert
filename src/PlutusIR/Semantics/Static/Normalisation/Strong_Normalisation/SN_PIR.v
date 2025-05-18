@@ -11,14 +11,16 @@ Local Open Scope string_scope.
 Require Import Coq.Arith.PeanoNat.
 Import ListNotations.
 Require Import Ascii.
+Require Import Coq.Program.Equality.
+Require Import Coq.Arith.Wf_nat.
 
-From PlutusCert Require Import SN_STLC_GU SN_STLC_nd util Util.List STLC STLC_Kinding. (* I don't understand why we need this for ftv defintion*)
+From PlutusCert Require Import SN_STLC_GU SN_STLC_nd util Util.List STLC STLC_Kinding. 
 From PlutusCert Require Import PlutusIR Checker.
+From PlutusCert Require Static.TypeSubstitution Type_reduction.
 
+Set Printing Implicit.
 
-(** Substitutions *)
-
-(* from plut to annotated stlc*)
+(* from PIR to annotated stlc*)
 Fixpoint f (t : ty) : STLC.term :=
   match t with
   | Ty_Var x => tmvar x
@@ -32,22 +34,9 @@ Fixpoint f (t : ty) : STLC.term :=
       fold_right (fun Ts acc => 
         (fold_right (fun T acc2 => @tmbin Fun (f T) acc2) acc Ts))
         (tmbuiltin PlutusIR.DefaultUniInteger) Tss
-  
       (* Instead of checking for the length, we just start with something of Base Kind*)
-
   | Ty_Builtin d => tmbuiltin d
   end.
-
-Compute (f (Ty_SOP [[PlutusIR.Ty_Var "a"; PlutusIR.Ty_Var "b"]; [PlutusIR.Ty_Var "c"]])).
-
-(*
-  The following lemmas are used to prove that the translation preserves the properties of the original terms. *)
-
-Require Import Coq.Program.Equality.
-
-Set Printing Implicit.
-
-From PlutusCert Require Static.TypeSubstitution.
 
 Lemma f_preserves_rename s fr T :
   rename s fr (f T) = f (TypeSubstitution.rename s fr T).
@@ -73,12 +62,9 @@ Proof.
   f_equal; auto.
 Qed.
 
-Require Import Coq.Arith.Wf_nat.
-
 Lemma f_preserves_tv T :
   tv (f T) = TypeSubstitution.plutusTv T.
 Proof.
-  (* With custom induction principle*)
   apply PlutusIR.ty__ind with (P := fun T => tv (f T) = TypeSubstitution.plutusTv T); intros.
   all: try solve [simpl; f_equal; auto]. 
   induction H; auto; subst.
@@ -86,7 +72,6 @@ Proof.
   rewrite <- app_assoc.
   f_equal; auto.
 Qed.
-
 
 Lemma f_preserves_fresh2 y s' T :
   fresh2 ((y, f s')::nil) (f T) = TypeSubstitution.fresh y s' T.
@@ -112,11 +97,10 @@ Proof.
   auto.
 Qed.
 
-From PlutusCert Require Type_reduction.
-
 Lemma f_preserves_substituteTCA X U T :
   (f (TypeSubstitution.substituteTCA X U T)) = (substituteTCA X (f U) (f T)).
 Proof.
+  (* Uses induction the size of STLC terms*)
   remember (f T) as fT.
   remember (size fT) as n.
   generalize dependent fT.
@@ -124,12 +108,11 @@ Proof.
   induction n using lt_wf_ind.
   intros.
   dependent induction fT; subst.
-  + induction T; subst; inversion HeqfT; subst.
+  + (* tmvar *)
+    induction T; subst; inversion HeqfT; subst.
     autorewrite with substituteTCA.
     destr_eqb_eq X t; auto.
-    (* With the current f definition, we have a not so nice inversino procedure?
-      Now we need to invert again I guess.
-    *)
+    (* With the current f definition, we have a not so nice inversino procedure *)
     exfalso.
     simpl in HeqfT.
     induction l.
@@ -137,40 +120,38 @@ Proof.
     * induction a.
       -- simpl in HeqfT. eapply IHl; auto.
       -- eapply IHa; inversion HeqfT; auto.
-    (* The fold_left in H1 will become a long Fun STLC_named.term, so never equal to tmvar*)
-  + induction T; subst; inversion HeqfT; subst.
+  + (* tmabs *)
+    induction T; subst; inversion HeqfT; subst.
     
     {
       autorewrite with substituteTCA.
       destr_eqb_eq X b; eauto.
       rewrite <- (f_preserves_ftv).
       destruct (existsb (String.eqb b) (ftv (f U))) eqn:Heq.
-      -- 
-          simpl.
-          remember (fresh2 _ _) as fr.
-          remember (TypeSubstitution.fresh _ _ _) as fr'.
-          assert (Hfr_pres: fr' = fr).
-          {
-            (* Not currently true, but probably possible to change on both sides*)
-            subst.
-            symmetry.
-            assert (tmvar b = f (PlutusIR.Ty_Var b)).
-            {
+      -- simpl.
+         remember (fresh2 _ _) as fr.
+         remember (TypeSubstitution.fresh _ _ _) as fr'.
+         assert (Hfr_pres: fr' = fr).
+         {
+           subst.
+           symmetry.
+           assert (tmvar b = f (PlutusIR.Ty_Var b)).
+           {
+             simpl.
+             auto.
+           }
+           eapply f_preserves_fresh2.
+         }
+         rewrite Hfr_pres.
+         f_equal.
+         ++ eapply H; eauto.
+           ** rewrite <- rename_preserves_size.
               simpl.
-              auto.
-            }
-            eapply f_preserves_fresh2.
-          }
-          rewrite Hfr_pres.
-          f_equal.
-          ++ eapply H; eauto.
-            ** rewrite <- rename_preserves_size.
-               simpl.
-               lia.
-            ** apply f_preserves_rename.
+              lia.
+           ** apply f_preserves_rename.
       -- simpl.
          f_equal.
-          eapply H; eauto. simpl. lia.
+         eapply H; eauto. simpl. lia.
     }
 
 
@@ -225,7 +206,8 @@ Proof.
     inversion Heqn. lia.
          
     
-  + induction T; subst; inversion HeqfT; subst.
+  + (* tmbin *)
+    induction T; subst; inversion HeqfT; subst.
     * autorewrite with substituteTCA; simpl; f_equal; eauto; eapply H; auto; simpl; lia. 
     * autorewrite with substituteTCA; simpl; f_equal; eauto; eapply H; auto; simpl; lia. 
     * autorewrite with substituteTCA; simpl; f_equal; eauto; eapply H; auto; simpl; lia. 
@@ -305,7 +287,8 @@ Proof.
          clear.
          simpl.
          lia.
-  + induction T; subst; inversion HeqfT; subst.
+  + (* tmbuiltin *)
+    induction T; subst; inversion HeqfT; subst.
     * subst.
       autorewrite with substituteTCA.
       simpl. auto.
@@ -327,9 +310,6 @@ Proof.
         rewrite H0; clear H0.
         eapply IHl; intros; auto.
 Qed.
-
-
-
         
 Theorem f_preserves_step s s' :
   Type_reduction.step s s' -> step_nd (f s) (f s').
@@ -338,20 +318,12 @@ Proof.
   induction H; simpl; eauto; try solve [constructor; eauto].
   - rewrite f_preserves_substituteTCA.
     constructor.
-  - induction f0. 
-    + simpl. induction f1.
-      * simpl. constructor. auto.
-      * simpl. constructor. auto.
-    + simpl. 
-      induction x.
-      * simpl. auto.
-      * simpl. constructor. apply IHx.
-        inversion f0; subst. auto.
+  - induction f0; simpl.
+    + induction f1; simpl; constructor; auto.
+    + induction x; simpl; try constructor; auto.
+      apply IHx.
+      inversion f0; subst. auto.
 Defined.
-
-Set Printing Implicit.
-
-Require Import Coq.Program.Equality.
 
 Theorem f_preserves_kind Δ s K :
   Kinding.has_kind Δ s K -> STLC_Kinding.has_kind Δ (f s) K.
@@ -382,10 +354,7 @@ Proof with subst; auto.
            ++ inversion H; auto.
 Qed.
 
-
-(*
-Jacco: Dit is blijkbaar een forward simulation
-*)
+(* Forward simulation *)
 Lemma sn_preimage2 {e2 : PlutusIR.ty -> PlutusIR.ty -> Type} {e : STLC.term -> STLC.term -> Type} 
   (h : PlutusIR.ty -> STLC.term) (x : PlutusIR.ty) :
   (forall x y, e2 x y -> e (h x) (h y)) -> @sn STLC.term e (h x) -> @sn PlutusIR.ty e2 x.
@@ -408,7 +377,7 @@ Proof.
   - reflexivity.
 Defined.
 
-Theorem sn_step_plut : forall s, @sn STLC.term step_nd (f s) -> @sn PlutusIR.ty Type_reduction.step s.
+Theorem sn_step_nd_to_sn_step : forall s, @sn STLC.term step_nd (f s) -> @sn PlutusIR.ty Type_reduction.step s.
 Proof.
   intros s.
   eapply @sn_preimage2 with (h := f) (e2 := Type_reduction.step) (e := step_nd).
@@ -419,21 +388,7 @@ Corollary plutus_ty_strong_normalization s Δ K : Kinding.has_kind Δ s K -> @sn
 Proof.
   intros Hwk.
   apply f_preserves_kind in Hwk.
-  apply strong_normalization in Hwk.
-  apply sn_step_plut.
+  apply strong_normalization_nd in Hwk.
+  apply sn_step_nd_to_sn_step.
   auto.
 Defined.
-
-(* Definition kc : kind_check nil (Ty_App (Ty_Lam "X" Kind_Base (Ty_Var "X")) (Ty_Builtin DefaultUniInteger)) = Some Kind_Base := eq_refl. *)
-
-(* Compute (plutus_ty_strong_normalization 
-    (Ty_App (Ty_Lam "X" Kind_Base (Ty_Var "X")) (Ty_Builtin DefaultUniInteger)) 
-    nil 
-    PlutusIR.Kind_Base
-    (kind_checking_sound 
-      nil 
-      (Ty_App (Ty_Lam "X" Kind_Base (Ty_Var "X")) (Ty_Builtin DefaultUniInteger)) 
-      PlutusIR.Kind_Base kc)
-    ). *)
-
-(* Print Assumptions plutus_ty_strong_normalization. *)

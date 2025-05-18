@@ -109,3 +109,13 @@ Proof.
   - intros. apply no_btv_in_id_subst in H0. contradiction.
   - intros. apply no_btv_in_id_subst in H0. contradiction.
 Qed.
+
+(* Hint database*)
+Create HintDb id_subst_db.
+Hint Resolve id_subst__nc_BU : id_subst_db.
+Hint Resolve id_subst__ParSeq : id_subst_db.
+Hint Resolve id_subst_is_IdSubst : id_subst_db.
+Hint Resolve remove_ids_IdSubst_is_nil : id_subst_db.
+Hint Resolve IdSubst_no_binders : id_subst_db.
+Hint Unfold id_subst : id_subst_db.
+Hint Constructors IdSubst : id_subst_db.

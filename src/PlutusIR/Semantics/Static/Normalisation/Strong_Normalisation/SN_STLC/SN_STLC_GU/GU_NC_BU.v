@@ -29,6 +29,15 @@ Hint Constructors IdCtx : α_eq_db.
 Hint Resolve sym_alpha_ctx_is_sym : α_eq_db.
 Hint Resolve sym_alpha_ctx_is_sym : α_eq_db.
 Hint Resolve sym_alpha_ctx_left_is_sym  : α_eq_db.
+Hint Constructors LegalRenSwap : α_eq_db.
+Hint Unfold LegalRenSwaps : α_eq_db.
+
+Create HintDb α_eq_db_trans.
+Hint Resolve id_left_trans : α_eq_db_trans.
+Hint Resolve id_right_trans : α_eq_db_trans.
+Hint Resolve alpha_extend_ids : α_eq_db_trans.
+Hint Resolve ctx_id_left_is_id : α_eq_db_trans.
+Hint Resolve ctx_id_right_is_id : α_eq_db_trans.
 
 (* So sub is also rewritten when rewriting subs *)
 Hint Extern 1 => simpl sub : subs_db.

@@ -70,7 +70,7 @@ Definition binding_well_formed_check
     | (TermBind s (VarDecl x T) t) => match kind_check Δ T with
                                       | Some Kind_Base => 
                                         match type_check' Δ Γ t with   
-                                        | Some Tn => match normaliser_Jacco Δ T with
+                                        | Some Tn => match normaliser Δ T with
                                                     | Some Tn' => Ty_eqb Tn Tn'
                                                     | _ => false
                                                     end
@@ -132,11 +132,11 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
     match term with
     | Var x => lookup x Γ >>= fun T => 
                 match kind_check Δ T with
-                | Some Kind_Base => normaliser_Jacco Δ T
+                | Some Kind_Base => normaliser Δ T
                 | _ => None
                 end
     | LamAbs x T1 t => 
-        normaliser_Jacco Δ T1 >>= fun T1n =>
+        normaliser Δ T1 >>= fun T1n =>
         match type_check Δ ((x, T1n) :: Γ) t, kind_check Δ T1 with
         | Some T2, Some Kind_Base => Some (Ty_Fun T1n T2) (* TODO: no normalisation of T2? Is it always normal? In the has_type efinition it is called T2n, so maybe it is*)
         | _, _ => None
@@ -160,13 +160,13 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
         | _ => None
         end
     | TyInst t1 T2 => (* TODO: normalisation T1?*)
-        match type_check Δ Γ t1, kind_check Δ T2 with (* TODO: first we check that it kind and type checks here, and then normaliser_Jacco does it again. Feels a little off*)
+        match type_check Δ Γ t1, kind_check Δ T2 with (* TODO: first we check that it kind and type checks here, and then normaliser does it again. Feels a little off*)
         | Some (Ty_Forall X K2 T1), Some K2' =>
             (* match kind_check ((X, K2)::Δ) T1 with
             | Some Kind_Base => *)
             if Kind_eqb K2 K2' then 
-                normaliser_Jacco Δ T2 >>= fun T2n =>
-                normaliser_Jacco Δ (substituteTCA X T2n T1) >>= fun T0n =>
+                normaliser Δ T2 >>= fun T2n =>
+                normaliser Δ (substituteTCA X T2n T1) >>= fun T0n =>
                 Some T0n
             else None
             (* | _ => None
@@ -177,9 +177,9 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
         match kind_check Δ T, kind_check Δ F, type_check Δ Γ M with
         | Some K, Some (Kind_Arrow (Kind_Arrow K' Kind_Base) (Kind_Arrow K'' Kind_Base)), Some T0n
             => if andb (Kind_eqb K K') (Kind_eqb K K'') then
-                    normaliser_Jacco Δ T >>= fun Tn =>
-                    normaliser_Jacco Δ F >>= fun Fn =>
-                    normaliser_Jacco Δ (unwrapIFix Fn K Tn) >>= fun T0n' =>
+                    normaliser Δ T >>= fun Tn =>
+                    normaliser Δ F >>= fun Fn =>
+                    normaliser Δ (unwrapIFix Fn K Tn) >>= fun T0n' =>
                     if Ty_eqb T0n T0n' then 
                         Some (Ty_IFix Fn Tn)
                     else None 
@@ -191,7 +191,7 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
             | Some (Ty_IFix F T) =>
                 match kind_check Δ T with
                     | Some K =>
-                          normaliser_Jacco Δ (unwrapIFix F K T) >>= fun T0n => Some T0n
+                          normaliser Δ (unwrapIFix F K T) >>= fun T0n => Some T0n
                         
                     | _  => None
                     end 
@@ -200,9 +200,9 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
     | Constant (ValueOf T a) => Some (Ty_Builtin T)
     | Builtin f =>
         let T := lookupBuiltinTy f in
-        normaliser_Jacco Δ T >>= fun Tn =>
+        normaliser Δ T >>= fun Tn =>
         Some Tn
-    | Error S' => normaliser_Jacco Δ S' >>= fun S'n => match kind_check Δ S' with
+    | Error S' => normaliser Δ S' >>= fun S'n => match kind_check Δ S' with
         | Some Kind_Base => Some S'n
         | _ => None
         end
@@ -403,7 +403,7 @@ From Coq Require Import Program.Equality.
 
 Theorem type_checking_sound : 
  forall Δ Γ t ty, type_check Δ Γ t = Some ty -> (Δ ,, Γ |-+ t : ty).
-Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; eauto).
+Proof with (try apply kind_checking_sound; try eapply normaliser_sound; eauto).
   intros Δ Γ t ty.
   revert Δ Γ ty.
   eapply term_rect'' with 
@@ -453,7 +453,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
     remember H1 as H1_copy; clear HeqH1_copy.
     apply T_Var with (T := t0); auto.
     eapply kind_checking_sound in Heqo0; auto.
-    now apply normaliser_Jacco_sound in H1_copy.
+    now apply normaliser_sound in H1_copy.
   - intros. 
     inversion H0.
     unfold bind in H0.
@@ -488,7 +488,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
     unfold bind in H1.
     repeat destruct_match.
     inversion H1; subst.
-    apply normaliser_Jacco_sound in Heqo.
+    apply normaliser_sound in Heqo.
     now apply T_Builtin with (T := lookupBuiltinTy d).
   - intros. inversion H0. unfold bind in H2. repeat destruct_match.
     inversion H2. subst.
@@ -496,8 +496,8 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
     subst.
     apply T_TyInst with (X := b) (K2 := k0) (T1n := t3) (T2n := t4); eauto.
     + apply kind_checking_sound. auto.
-    + apply normaliser_Jacco_sound in Heqo1. auto.
-    + apply normaliser_Jacco_sound in Heqo2. auto.
+    + apply normaliser_sound in Heqo1. auto.
+    + apply normaliser_sound in Heqo2. auto.
   - intros.
     unfold type_check in H.
     
@@ -508,7 +508,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
     subst.
     apply T_Error.
     + now apply kind_checking_sound.
-    + apply normaliser_Jacco_sound in Heqo. 
+    + apply normaliser_sound in Heqo. 
       assumption.
   - intros.
     inversion H0.
@@ -540,7 +540,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_Jacco_sound; ea
     apply W_Term with (Tn := t3).
     + apply kind_checking_sound in Heqo.
       assumption.
-    + now apply normaliser_Jacco_sound in Heqo1.
+    + now apply normaliser_sound in Heqo1.
     + apply Ty_eqb_eq in H2.
       subst.
       eapply H; eauto.
@@ -677,10 +677,10 @@ Proof.
     rewrite e. simpl. 
     eapply kind_checking_complete in h.
     rewrite h.
-    eapply normaliser_Jacco_complete; eauto.
+    eapply normaliser_complete; eauto.
     eapply kind_checking_sound; eauto.
   - (* Case: T_LamAbs *)
-    eapply (normaliser_Jacco_complete h) in n.
+    eapply (normaliser_complete h) in n.
     rewrite n. simpl.
     apply kind_checking_complete in h; rewrite h.
     now apply test.
@@ -692,7 +692,7 @@ Proof.
     apply oof2; auto.
   - (* Case: T_Inst *)
     rewrite H0.
-    apply (normaliser_Jacco_complete h0) in n; rewrite n; simpl.
+    apply (normaliser_complete h0) in n; rewrite n; simpl.
     apply kind_checking_complete in h0; rewrite h0.
     rewrite -> Kind_eqb_refl.
     
@@ -709,10 +709,10 @@ Proof.
       eapply kind_checking_sound; eauto.
     }
     unfold bind.
-    now apply (normaliser_Jacco_complete Hwk_subst) in n0; rewrite n0; simpl.
+    now apply (normaliser_complete Hwk_subst) in n0; rewrite n0; simpl.
   - (* Case T_IWrap *)
-    apply (normaliser_Jacco_complete h) in n; rewrite n; simpl.
-    apply (normaliser_Jacco_complete h0) in n0; rewrite n0; simpl.
+    apply (normaliser_complete h) in n; rewrite n; simpl.
+    apply (normaliser_complete h0) in n0; rewrite n0; simpl.
 
     assert (Δ0 |-* (unwrapIFix Fn K Tn) : Kind_Base).
     {
@@ -724,7 +724,7 @@ Proof.
     apply kind_checking_complete in h; rewrite h.
     apply kind_checking_complete in h0; rewrite h0.
     (* apply kind_checking_complete in H1. *)
-    apply (normaliser_Jacco_complete H1) in n1; rewrite n1; simpl.
+    apply (normaliser_complete H1) in n1; rewrite n1; simpl.
 
     rewrite H0.
     rewrite Kind_eqb_refl; simpl.
@@ -743,16 +743,16 @@ Proof.
 
     apply kind_checking_complete in h0; rewrite h0.
     unfold bind.
-    apply (normaliser_Jacco_complete H1) in n; rewrite n.
+    apply (normaliser_complete H1) in n; rewrite n.
     reflexivity.
   - (* Case: T_Builtin*)
     subst.
-    eapply normaliser_Jacco_complete in n.
+    eapply normaliser_complete in n.
     rewrite n. simpl. reflexivity.
     apply lookupBuiltinTy__well_kinded. (* TODO: Is this true?*)
   - (* Case: T_Error *)
     unfold bind.
-    apply (normaliser_Jacco_complete h) in n; rewrite n.
+    apply (normaliser_complete h) in n; rewrite n.
     apply kind_checking_complete in h; rewrite h.
     reflexivity.
   - (* Case: T_Let (NonRec)*)
@@ -822,7 +822,7 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
     + apply b_nr_wf__map_wk in b0; auto.
 
   - intros. simpl. rewrite H0.
-    apply (normaliser_Jacco_complete h) in n; rewrite n.
+    apply (normaliser_complete h) in n; rewrite n.
     rewrite Ty_eqb_refl.
     apply kind_checking_complete in h; rewrite h.
     auto.

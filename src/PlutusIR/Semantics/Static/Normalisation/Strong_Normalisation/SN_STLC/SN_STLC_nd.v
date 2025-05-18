@@ -1,4 +1,4 @@
-From mathcomp Require Import ssreflect ssrbool eqtype ssrnat.
+From mathcomp Require Import ssreflect ssrbool eqtype.
 From Coq Require Import ssrfun.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
@@ -6,21 +6,13 @@ From PlutusCert Require Import Util.List.
 Import ListNotations.
 Local Open Scope string_scope.
 Local Open Scope list_scope.
-Require Import Lia.
-Require Import Coq.Program.Basics.
-Require Import Coq.Arith.Arith.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From PlutusCert Require Import SN_STLC_GU step_naive GU_NC_BU step_gu STLC STLC_Kinding.
+From PlutusCert Require Import Free SN_STLC_GU step_naive GU_NC_BU step_gu STLC STLC_Kinding.
 From PlutusCert Require Import alpha_typing alpha.alpha alpha_rename rename util alpha_ctx_sub variables alpha_freshness.
 From PlutusCert Require Import alpha_sub alpha_vacuous construct_GU.
-
-(* Define an infix operator for bind *)
-Infix ">>=" := bind (at level 50, left associativity).
-
-
 
 Inductive step_nd : term -> term -> Type :=
 | step_beta_nd (x : string) (A : PlutusIR.kind) (s t : term) :
@@ -32,67 +24,38 @@ Inductive step_nd : term -> term -> Type :=
 | step_abs_nd B x A s1 s2 :
     step_nd s1 s2 -> step_nd (@tmabs B x A s1) (@tmabs B x A s2).
 
-
-
-Lemma in_ftv_existsb_true t s :
-  In s (ftv t) -> existsb (eqb s) (ftv t) = true.
-Proof.
-  intros Hin.
-  apply existsb_exists.
-  exists s.
-  split; auto.
-  apply eqb_eq. auto.
-Qed.
-
-Lemma not_in_ftv_existsb_false t s :
-  ~ In s (ftv t) <-> existsb (eqb s) (ftv t) = false.
-Proof.
-  split.
-  - intros H.
-    apply Bool.not_true_iff_false.
-    intros He. apply existsb_exists in He.
-    destruct He as [x [Hin Heqb] ].
-    apply eqb_eq in Heqb. subst.
-    contradiction.
-  - intros H.
-    intros Hcontra. apply in_ftv_existsb_true in Hcontra.
-    rewrite H in Hcontra. discriminate.
-Qed.
-
-
-(* We need to change this to: GU s and no binder in s is free in t. Isnt that simply NC?*)
 Lemma GU_substituteTCA_sub x t s : 
     NC s ((x, t)::nil) -> substituteTCA x t s = sub x t s.
 Proof.
-intros.
-induction s; simpl.
-- destr_eqb_eq x s.
-  + autorewrite with substituteTCA. rewrite String.eqb_refl. reflexivity.
-  + autorewrite with substituteTCA. rewrite <- String.eqb_neq in H0. rewrite H0. reflexivity.
-- assert (x =? s = false).
-  {
-    apply nc_ftv_env with (x := s) in H. 
-    - unfold ftv_keys_env in H. apply not_in_cons in H.  destruct H as [H _]. rewrite <- String.eqb_sym. 
-      rewrite <- String.eqb_neq in H. assumption.
-    - apply btv_lam.
-  }
-  autorewrite with substituteTCA.
-  rewrite H0.
-  assert (existsb (eqb s) (ftv t) = false).
-  {
-    apply nc_ftv_env with (x := s) in H. 
-    - unfold ftv_keys_env in H. apply not_in_cons in H.  destruct H as [_ H]. apply not_in_app in H as [H _].
-      apply not_in_ftv_existsb_false. assumption.
-    - apply btv_lam.
-  } 
-  rewrite H1.
-  f_equal.
-  apply IHs.
-  eapply nc_lam. eauto.
-- autorewrite with substituteTCA. f_equal.
-  + eapply IHs1; eapply nc_app_l. eauto.
-  + eapply IHs2; eapply nc_app_r. eauto.
-- autorewrite with substituteTCA. auto.
+  intros.
+  induction s; simpl.
+  - destr_eqb_eq x s.
+    + autorewrite with substituteTCA. rewrite String.eqb_refl. reflexivity.
+    + autorewrite with substituteTCA. rewrite <- String.eqb_neq in H0. rewrite H0. reflexivity.
+  - assert (x =? s = false).
+    {
+      apply nc_ftv_env with (x := s) in H. 
+      - unfold ftv_keys_env in H. apply not_in_cons in H.  destruct H as [H _]. rewrite <- String.eqb_sym. 
+        rewrite <- String.eqb_neq in H. assumption.
+      - apply btv_lam.
+    }
+    autorewrite with substituteTCA.
+    rewrite H0.
+    assert (existsb (eqb s) (ftv t) = false).
+    {
+      apply nc_ftv_env with (x := s) in H. 
+      - unfold ftv_keys_env in H. apply not_in_cons in H.  destruct H as [_ H]. apply not_in_app in H as [H _].
+        apply not_in_existsb. assumption.
+      - apply btv_lam.
+    } 
+    rewrite H1.
+    f_equal.
+    apply IHs.
+    eapply nc_lam. eauto.
+  - autorewrite with substituteTCA. f_equal.
+    + eapply IHs1; eapply nc_app_l. eauto.
+    + eapply IHs2; eapply nc_app_r. eauto.
+  - autorewrite with substituteTCA. auto.
 Qed.
 
 (* If t has globally unique binders (and free variables to make it easier)
@@ -100,22 +63,20 @@ Qed.
 Lemma GU_step_d_implies_step_na t t' : 
     GU t -> step_nd t t' -> step_naive t t'.
 Proof.
-    intros HGU_vars H.
-    induction H.
-    - (* we can be sure that no binder in s appears in t by global uniqueness*)
-      assert (substituteTCA x t s = sub x t s) as Hsub.
-      { 
-          eapply GU_substituteTCA_sub.
-          eapply gu_applam_to_nc. eauto.
-        }
-      rewrite Hsub.
-      apply step_beta.
-    - apply step_appL. auto. inversion HGU_vars; auto.
-    - apply step_appR. auto. inversion HGU_vars; auto.
-    - apply step_abs. auto. inversion HGU_vars; auto.
+    intros HGU_vars Hstep.
+    induction Hstep.
+    all: try solve [constructor; auto; inversion HGU_vars; auto].
+    (* we can be sure that no binder in s appears in t by global uniqueness*)
+    assert (substituteTCA x t s = sub x t s) as Hsub.
+    { 
+        eapply GU_substituteTCA_sub.
+        eapply gu_applam_to_nc. eauto.
+      }
+    rewrite Hsub.
+    apply step_beta.
 Qed.
 
-Lemma subs_preserves_alpha' X T i : forall s s' R1 R2 R,
+Lemma substituteTCA_preserves_alpha' X T i : forall s s' R1 R2 R,
   R ⊢ (tmvar X) ~ (tmvar X) ->
   R ⊢ T ~ T ->
   αCtxTrans R1 R2 R ->
@@ -143,10 +104,6 @@ Proof.
       constructor.
       auto.
   - (* Case: tmabs *)
-    
-    (* remember (fresh2 _ bs) as b; rewrite cons_to_append in Heqb.
-    remember (fresh2 _ bs') as b'; rewrite cons_to_append in Heqb'. *)
-    (* idk, but it is true.*)
     destr_eqb_eq x X.
     + rewrite substituteTCA_equation_2.
       remember (fresh2 _ s1) as b; rewrite cons_to_append in Heqb.
@@ -211,7 +168,7 @@ Proof.
               ** eapply fresh2_over_tv_value_sigma with (X := X) (s := T) in HeqY'.
                  intros Hcontra. apply extend_ftv_to_tv in Hcontra. contradiction.
                  apply in_eq.
-              ** eapply not_in_ftv_existsb_false. auto.
+              ** eapply not_in_existsb. auto.
             ++ eauto with α_eq_db.
             ++ eapply alpha_trans_rename_left; eauto.
         -- simpl.
@@ -227,7 +184,7 @@ Proof.
                  apply in_eq.
 
            ++ eapply alpha_extend_fresh; auto.
-              eapply not_in_ftv_existsb_false. auto.
+              eapply not_in_existsb. auto.
               eapply fresh2_over_tv_value_sigma with (X := X) (s := T) in HeqY'.
               intros Hcontra. apply extend_ftv_to_tv in Hcontra. contradiction.
               apply in_eq.
@@ -240,8 +197,8 @@ Proof.
               ** intros Hcontra. apply ftv_var in Hcontra; subst.
                   rewrite String.eqb_neq in H2. contradiction.
            ++ eapply alpha_extend_fresh; auto.
-              eapply not_in_ftv_existsb_false. auto.
-              eapply not_in_ftv_existsb_false. auto.
+              eapply not_in_existsb. auto.
+              eapply not_in_existsb. auto.
            ++ eauto with α_eq_db.  
   - autorewrite with substituteTCA.
     constructor.
@@ -258,14 +215,14 @@ Lemma substituteTCA_preserves_alpha s s' ren X U:
   Alpha ren (substituteTCA X U s) (substituteTCA X U s').
 Proof.
   intros.
-  apply (@subs_preserves_alpha' X U s s s' (nil ++ ctx_id_left ren) ren ren); auto.
+  apply (@substituteTCA_preserves_alpha' X U s s s' (nil ++ ctx_id_left ren) ren ren); auto.
   - apply id_left_trans; auto.
   - apply alpha_extend_ids_right.
     + apply ctx_id_left_is_id.
     + apply alpha_refl. apply alpha_refl_nil.
 Qed.
 
-Lemma alpha_capms_to_naive X U T:
+Lemma alpha_substituteTCA_sub X U T:
   {T' & Alpha [] T T' * Alpha [] (substituteTCA X U T) (sub X U T') * NC T' ((X, U)::nil)}%type.
 Proof.
   exists (to_GU' X U T).
@@ -280,7 +237,6 @@ Proof.
   - apply to_GU'__NC.
 Qed.
 
-(* Main lemma for going from using t alpha t' in SN t' to SN t*)
 Lemma step_nd_preserves_alpha ren s t s' :
   Alpha ren s t -> step_nd s s' -> {t' & (step_nd t t') * (Alpha ren s' t')}%type.
 Proof.
@@ -289,38 +245,15 @@ Proof.
   generalize dependent ren.
   induction Hstep; intros ren t0 Halpha; inversion Halpha; subst.
   - inversion H4; subst.
-    remember (alpha_capms_to_naive x t s).
-    destruct s1 as [s' [ [Halpha1 Halpha2] Halpha3] ].
+    destruct (alpha_substituteTCA_sub x t s) as [s' [ [Halpha1 Halpha2] Halpha3] ].
     eexists.
-    split.
-    + apply step_beta_nd.
-    + eapply @alpha_trans with (t := sub x t s').
-      * apply id_left_trans.
-      * change (ctx_id_left ren) with (nil ++ ctx_id_left ren).
-        apply alpha_extend_ids_right.
-        -- apply ctx_id_left_is_id.
-        -- auto.
-      * remember (alpha_capms_to_naive y t2 s0).
-        destruct s1 as [t' [ [Halpha1' Halpha2'] Halpha3' ] ].
-      
-        eapply @alpha_trans with (t := sub y t2 t').
-        -- apply id_right_trans.
-        -- eapply alpha_rename_binder_stronger with (Rs := ((x, y)::ren)); eauto.
-           ++ eapply @alpha_trans with (t := s) (ren := ctx_id_left ((x, y)::ren)) (ren' := ((x, y)::ren)); eauto with α_eq_db.
-              ** apply id_left_trans.
-              ** apply alpha_extend_ids.
-                 --- apply ctx_id_left_is_id.
-                 --- eapply alpha_sym. constructor. eauto.
-              ** eapply @alpha_trans with (t := s0) (ren := ((x, y)::ren)) (ren' := ctx_id_right ((x, y)::ren)); eauto with α_eq_db.
-                  --- apply id_right_trans.
-                  --- apply alpha_extend_ids.
-                      +++ apply ctx_id_right_is_id.
-                      +++ eapply alpha_sym. constructor. eauto with α_eq_db.
-           ++ constructor.
-        -- change (ctx_id_right ren) with (nil ++ ctx_id_right ren).
-           apply alpha_extend_ids_right.
-           ++ apply ctx_id_right_is_id.
-           ++ eapply alpha_sym. constructor. eauto.
+    split; try constructor.
+    eapply @alpha_trans with (t := sub x t s') (ren := ctx_id_left ren) (ren' := ren); eauto with α_eq_db α_eq_db_trans.
+    destruct (alpha_substituteTCA_sub y t2 s0) as [t' [ [Halpha1' Halpha2'] Halpha3' ] ].
+    eapply @alpha_trans with (t := sub y t2 t'); eauto with α_eq_db α_eq_db_trans.
+    eapply alpha_rename_binder_stronger with (Rs := ((x, y)::ren)); eauto with α_eq_db.
+    + eapply @alpha_trans with (t := s) (ren := ctx_id_left ((x, y)::ren)) (ren' := ((x, y)::ren)); eauto with α_eq_db α_eq_db_trans.
+    + constructor.
   - destruct (IHHstep ren s3 H4) as [t1_α [Hstep' Halpha'] ].
     exists (@tmbin B t1_α t2); split.
     + apply step_appL_nd. assumption.
@@ -335,30 +268,17 @@ Proof.
     + apply alpha_lam; assumption.    
 Qed.
 
-Lemma step_nd_implies_step_gu_na t t' : 
+Lemma step_nd_implies_step_gu t t' : 
     step_nd t t' ->  
     {t_α & step_gu t t_α * (nil ⊢ t' ~ t_α)}%type.
 Proof.
-    remember (to_GU t) as t_GU.
-    assert (nil ⊢ t ~ t_GU) as H_alpha.
-    {
-      subst.
-      apply to_GU__alpha.
-    }
-    assert (GU t_GU) as H_GU.
-    {
-      subst.
-      apply to_GU__GU.
-    }
     intros.
-    remember (step_nd_preserves_alpha H_alpha H) as Hstep_GU.
-    destruct Hstep_GU as [t_GU' [Hstep_GU Halpha_GU] ].
+    remember (step_nd_preserves_alpha) as Hstep_GU.
+    edestruct Hstep_GU with (s := t) (t := to_GU t) as [t_GU' [Hstep_GU' Halpha_GU] ]; eauto with to_GU_db.
     exists t_GU'.
     split; auto.
-    clear HeqHstep_GU.
-    apply GU_step_d_implies_step_na in Hstep_GU.
-    + apply step_gu_intro with (s' := t_GU); auto.
-    + subst. auto.
+    apply GU_step_d_implies_step_na in Hstep_GU'; eauto with to_GU_db.
+    eapply step_gu_intro; eauto with to_GU_db.
 Qed.
 
 Theorem α_preserves_sn_nd s s' :
@@ -369,15 +289,7 @@ Proof.
   induction Hsn. intros s' Hα.
   apply SNI.
   intros y1 Hstep.
-  assert ({y1_α & prod (step_nd x y1_α) (nil ⊢ y1 ~ y1_α)}) as [y1_α [Hstep' Hα'] ].
-  {
-    eapply step_nd_preserves_alpha; auto.
-    - eapply alpha_sym in Hα. exact Hα. apply alpha_sym_nil.
-    - assumption.
-  }
-  eapply X.
-  - exact Hstep'.
-  - eapply alpha_sym. apply alpha_sym_nil. exact Hα'.
+  edestruct step_nd_preserves_alpha with (s := s') (t := x) as [y1_α [Hstep' Hα']]; eauto with α_eq_db.
 Qed.
 
 Lemma SN_na_to_SN_nd t : (@sn term step_gu) t -> (@sn term step_nd) t.
@@ -387,22 +299,16 @@ Proof.
   intros t' Hstep.
   generalize dependent t'.
   induction Hsn_nd; intros t Hstep_d.
-  assert (Hstep_alpha: {t' & prod (step_gu x t') (Alpha nil t t')}).
-  {
-    eapply step_nd_implies_step_gu_na; eauto.
-  }
-  destruct Hstep_alpha as [t' [Hstep Halpha] ].
+  edestruct step_nd_implies_step_gu with (t := x) as [t' [Hstep Halpha] ]; eauto with α_eq_db.
   specialize (X t' Hstep).
-  apply α_preserves_sn_nd with t'.
-  - eapply alpha_sym; [apply alpha_sym_nil |].
-    assumption.
-  - apply SNI. 
-    exact X.
+  apply α_preserves_sn_nd with t'; eauto with α_eq_db.
+  apply SNI.
+  exact X.
 Qed.
 
-Theorem strong_normalization E s T : STLC_Kinding.has_kind E s T -> (@sn term step_nd) s.
+Theorem strong_normalization_nd Δ s T : STLC_Kinding.has_kind Δ s T -> (@sn term step_nd) s.
   intros.
-  apply SN_gu' in H. 
+  apply strong_normalization_gu in H. 
   apply SN_na_to_SN_nd.
   assumption.
 Qed.

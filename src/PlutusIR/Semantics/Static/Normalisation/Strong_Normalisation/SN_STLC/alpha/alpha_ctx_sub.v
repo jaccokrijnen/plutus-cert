@@ -150,9 +150,3 @@ Proof.
     + apply alphavar_extend_ids_right; auto.
     + apply alpha_extend_ids_right; auto.
 Qed.
-
-Fixpoint ftv_keys_env (sigma : list (string * term)) : list string :=
-  match sigma with
-  | nil => nil
-  | (x, t)::sigma' => x :: (ftv t) ++ (ftv_keys_env sigma')
-  end.

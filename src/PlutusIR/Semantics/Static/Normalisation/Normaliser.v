@@ -61,23 +61,22 @@ Fixpoint normaliser_gas (n : nat) {T Δ K} (Hwk : Δ |-* T : K) :=
         end
   end.
 
-Definition normaliser {T Δ K} (Hwk : Δ |-* T : K) : ty :=
+Definition normaliser_wk {T Δ K} (Hwk : Δ |-* T : K) : ty :=
   (* normaliser_gas 100 Hwk. *)
   let HSN := plutus_ty_strong_normalization T Δ K Hwk in
   projT1 (SN_normalise T Δ K Hwk HSN).
 
-Definition normaliser_Jacco Δ T : option ty :=
+Definition normaliser Δ T : option ty :=
   match kind_check Δ T with
   | Some K => fun Hkc =>
-      Some (normaliser (kind_checking_sound Δ T K Hkc))
+      Some (normaliser_wk (kind_checking_sound Δ T K Hkc))
   | None => fun _ => None
   end eq_refl.
 
-
-Theorem normaliser_Jacco__well_kinded Δ T Tn :
-  normaliser_Jacco Δ T = Some Tn -> {K & Δ |-* T : K}.
+Theorem normaliser__well_kinded Δ T Tn :
+  normaliser Δ T = Some Tn -> {K & Δ |-* T : K}.
 Proof.
-  unfold normaliser_Jacco.
+  unfold normaliser.
   move: eq_refl.
   case: {2 3}(kind_check Δ T) => // a e H. (* TODO: I don't understand (all of) this ssreflect stuff, see https://stackoverflow.com/questions/47345174/using-destruct-on-pattern-match-expression-with-convoy-pattern*)
   inversion H.
@@ -86,18 +85,17 @@ Proof.
   now apply kind_checking_sound.
 Qed.
 
-
 Fixpoint map_normaliser (xs : list (string * ty * (list (string * kind)))) :=
   match xs with
   | nil => Some nil
-  | ((X, T, Δ) :: xs') => normaliser_Jacco Δ T >>= fun Tn => 
+  | ((X, T, Δ) :: xs') => normaliser Δ T >>= fun Tn => 
                      map_normaliser xs' >>= fun xs'' =>
                      Some ((X, Tn) ::xs'')
   end.
 
 Lemma map_normaliser_unfold {Δ : list (string * kind)} {X T} {xs xs'} :
   map_normaliser ((X, T, Δ) :: xs) = Some xs'
-  -> exists Tn xs'', (xs' = (X, Tn)::xs'') /\ normaliser_Jacco Δ T = Some Tn /\ (map_normaliser xs = Some xs'').
+  -> exists Tn xs'', (xs' = (X, Tn)::xs'') /\ normaliser Δ T = Some Tn /\ (map_normaliser xs = Some xs'').
 Proof.
   intros.
   inversion H.
@@ -108,7 +106,6 @@ Proof.
   exists l.
   auto.
 Qed.
-
 
 Lemma map_normaliser__well_kinded xs xs' :
   map_normaliser xs = Some xs' -> map_wk xs.
@@ -121,7 +118,7 @@ Proof.
   - destruct a as [[X T] Δ].
     apply map_normaliser_unfold in H.
     destruct H as [Tn [xs'' [Heq [Hnorm Hmap]] ] ].
-    apply normaliser_Jacco__well_kinded in Hnorm as [K Hwk].
+    apply normaliser__well_kinded in Hnorm as [K Hwk].
     apply MW_cons with (K := K).
     + apply (IHxs xs''); auto.
     + assumption.

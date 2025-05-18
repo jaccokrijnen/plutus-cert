@@ -1541,6 +1541,11 @@ Proof.
         -- eapply BU2. eauto.
 Qed.
 
+Create HintDb s_constr_db.
+Hint Resolve s_constr__a_s : s_constr_db.
+Hint Resolve s_constr__gu : s_constr_db.
+Hint Resolve s_constr__nc_s : s_constr_db.
+
 
 Create HintDb gu_nc_db.
 Hint Resolve gu_app_r : gu_nc_db.
@@ -1551,3 +1556,12 @@ Hint Resolve nc_app_l : gu_nc_db.
 Hint Resolve nc_lam : gu_nc_db.
 Hint Resolve gu_applam_to_nc : gu_nc_db.
 Hint Resolve nc_ftv_env : gu_nc_db.
+
+
+Create HintDb bu_db.
+Hint Resolve BU_appr : bu_db.
+Hint Resolve BU_appl : bu_db.
+Hint Resolve BU_lam_id : bu_db.
+
+Create HintDb a_constr_db.
+Hint Resolve a_constr__s_alpha a_constr__t_alpha : a_constr_db.
