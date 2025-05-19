@@ -609,14 +609,6 @@ Inductive has_type : list (binderTyname * kind) -> list (binderName * ty) -> ter
       Γ' = bsGn ++ Γ ->
       Δ ,, Γ |-oks_nr bs ->
       Δ' ,, Γ' |-+ t : Tn ->
-
-      (* Old comment: New type variable names may not already occur in the environment, 
-       * see Teams discussion Jacco Mar 26, add Either example to thesis.
-
-        In kctx_wf will imply this NoDup, because it is used in typing t, which 
-        can only be well-typed if Δ is well-formed.  
-        Fixed by: Issue 76    
-       *)
       Δ_no_esc = drop_Δ Δ bs ->
       Δ_no_esc |-* Tn : Kind_Base ->
       Δ ,, Γ |-+ (Let NonRec bs t) : Tn
@@ -626,7 +618,7 @@ Inductive has_type : list (binderTyname * kind) -> list (binderName * ty) -> ter
       NoDup (bvbs bs) ->
 
       Δ' = flatten (map binds_Delta bs) ++ Δ ->
-      map_normalise (flatten (map binds_Gamma bs)) bsGn -> (* TODO: Why do we need this to be normalised? Create a counterexample that shows things go wrong without normalisation here*)
+      map_normalise (flatten (map binds_Gamma bs)) bsGn -> 
       Γ' = bsGn ++ Γ->
       Δ' ,, Γ' |-oks_r bs ->
       Δ' ,, Γ' |-+ t : Tn ->

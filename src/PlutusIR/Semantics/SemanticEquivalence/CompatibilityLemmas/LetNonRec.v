@@ -19,7 +19,7 @@ Lemma compatibility_LetNonRec_Nil' : forall Delta Gamma t t' Tn,
     LR_logically_approximate Delta Gamma t t' Tn ->
     LR_logically_approximate Delta Gamma (Let NonRec nil t) t' Tn.
 Proof with eauto_LR.
-  (* intros Delta Gamma t t' Tn Hkind__T IHLR__t.
+  intros Delta Gamma t t' Tn Hkind__T IHLR__t.
   unfold LR_logically_approximate.
 
   destruct IHLR__t as [Htyp__t [Htyp__t' IH__t]].
@@ -62,8 +62,8 @@ Proof with eauto_LR.
   split... eapply RV_typable_empty_2...
 
   eapply RV_condition...
-  eapply RV_monotone... *)
-Admitted.
+  eapply RV_monotone...
+Qed.
 
 
 (* used in hintdb DSP_compatibility_lemmas, hence it's somewhat strange type (compare to compatibility_LetNonRec_nil')*)
@@ -74,7 +74,7 @@ Lemma compatibility_LetNonRec_Nil : forall Delta Gamma t t' Tn,
       LR_logically_approximate Delta (bsGn ++ Gamma) t t' Tn ->
       LR_logically_approximate Delta Gamma (Let NonRec nil t) (Let NonRec nil t') Tn.
 Proof with eauto_LR.
-  (* intros Delta Gamma t t' Tn bsGn Hmapnorm__bsGn Hkind__T IHLR__t.
+  intros Delta Gamma t t' Tn bsGn Hmapnorm__bsGn Hkind__T IHLR__t.
   unfold LR_logically_approximate.
 
   inversion Hmapnorm__bsGn. subst.
@@ -127,5 +127,5 @@ Proof with eauto_LR.
   split. eapply RV_typable_empty_2...
 
   eapply RV_condition...
-  eapply RV_monotone... *)
-Admitted.
+  eapply RV_monotone...
+Qed.

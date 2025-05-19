@@ -60,34 +60,6 @@ Module Kinding.
     - (* Ty_SOP *) admit.
   Admitted.
 
-  Lemma swap_kinding_context : forall T X Y K1 K2 K3 Δ,
-    X <> Y -> 
-    ((X, K1) :: (Y, K2) :: Δ) |-* T : K3 ->
-    ((Y, K2) :: (X, K1) :: Δ) |-* T : K3.
-  Proof.
-    intros T X Y K1 K2 K3 Δ Hneq Hk.
-    apply context_invariance with (Delta := (X, K1) :: (Y, K2) :: Δ).
-    - assumption.
-    - intros Z Hafi.
-      destruct (Z =? X) eqn:ZX.
-      + apply eqb_eq in ZX. subst.
-        simpl. rewrite String.eqb_refl.
-        rewrite <- String.eqb_neq in Hneq.
-        rewrite String.eqb_sym in Hneq.
-        rewrite Hneq. reflexivity.
-      + destruct (Z =? Y) eqn:ZY.
-        * apply eqb_eq in ZY. subst.
-          simpl. rewrite String.eqb_refl.
-          rewrite <- String.eqb_neq in Hneq.
-          rewrite Hneq. reflexivity.
-        * simpl.
-          rewrite String.eqb_sym.
-          rewrite ZX.
-          rewrite String.eqb_sym.
-          rewrite ZY.
-          reflexivity.
-Qed.
-
 End Kinding.
 
 Module Typing.

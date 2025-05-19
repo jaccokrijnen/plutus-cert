@@ -172,6 +172,7 @@ Proof.
     f_equal; eauto.
   - inversion H0. subst.
     eauto.
+  - (* ADMIT: TY_SOP*)
 Admitted.
 
 Ltac invert_normalise :=
@@ -185,13 +186,14 @@ Theorem normalisation__stable :
 Proof with eauto.
   eapply normal_Ty__multind; intros...
   all: try solve [invert_normalise].
-  (* - inversion H3.
+  - (* ADMIT: TY_ SOP*) admit.
+  - inversion H3.
     + subst.
       eapply H0 in H6.
       subst.
       inversion H.
     + subst.
-      f_equal... *)
+      f_equal...
 Admitted.
 
 Corollary normalisation__stable__normal : forall T,
@@ -209,7 +211,9 @@ Proof. apply normalisation__stable. Qed.
 Lemma normalisation__stable' :
   (forall Tn, normal_Ty Tn -> normalise Tn Tn) /\
   (forall Tn, neutral_Ty Tn -> normalise Tn Tn).
-Proof. apply normal_Ty__multind; eauto. Admitted.
+Proof. apply normal_Ty__multind; eauto.
+(* ADMIT: Ty_SOP *)
+Admitted.
 
 Corollary normalisation__stable'__normal : forall Tn,
     normal_Ty Tn ->
@@ -224,7 +228,9 @@ Proof. apply normalisation__stable'. Qed.
 Theorem normalisation__sound : forall T Tn,
     normalise T Tn ->
     T =b Tn.
-Proof with eauto. induction 1... Admitted.
+Proof with eauto. induction 1...
+(* ADMIT: Ty_SOP *)
+Admitted.
 
 Lemma normalisation__complete : forall S T Sn,
     S =b T ->
@@ -319,6 +325,3 @@ Axiom norm_normalise : forall ty, normalise ty (norm ty).
 
 Axiom map_norm : list (string * ty) -> list (string * ty).
 Axiom map_norm_map_normalise : forall Ts, map_normalise Ts (map_norm Ts).
-
-(****** Normaliser function ******)
-
