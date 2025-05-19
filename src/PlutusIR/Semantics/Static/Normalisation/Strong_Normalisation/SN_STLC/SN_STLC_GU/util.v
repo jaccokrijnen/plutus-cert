@@ -327,6 +327,9 @@ Lemma list_diff_not l1 l2 x :
   In x l2 -> ~ In x (list_diff string_dec l1 l2).
 Admitted.
 
+Lemma list_diff_got_filtered l1 l2 x :
+  ~ In x (list_diff string_dec l1 l2) -> In x l1 -> In x l2.
+Admitted.
 
 (* TODO: We already have these two I think*)
 Lemma lookup_In {A} k (v : A) xs :

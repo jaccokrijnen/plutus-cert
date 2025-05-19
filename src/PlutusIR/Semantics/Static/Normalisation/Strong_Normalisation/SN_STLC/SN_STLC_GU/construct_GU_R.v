@@ -271,16 +271,23 @@ Proof.
   - 
     assert (AlphaVar R x y).
     {
-      assert (In x (ftv s)) by admit. (* By lookup x Rfr = None*)
-      (* Suppose to the contrary that there exists z, s.t. lookup_r y R = z
-          with z <> x.
-
-          By R ⊢ s ~ s' and x in ftv s, we know that needs to be mapped to y,
-          but by lookup_r y R = z, that needs to be mapped back to z, contradiction.
-
-        *)
-
-      admit.
+      assert (In x (ftv s)).
+      {
+        apply lookup__not_in in H_ni_fresh.
+        subst.
+        assert (~ In x (list_diff string_dec (ftv t) (ftv s))).
+        {
+          intros Hcontra.
+          eapply in_generator_then_in_freshen2 with (used := (tv s ++ tv s' ++ tv t ++ map fst R ++ map snd R)) in Hcontra.
+          contradiction.
+        }
+        eapply list_diff_got_filtered; eauto.
+      } 
+      clear HeqRfr H0 H H_ni_fresh.
+      apply (alpha_preserves_ftv' H1) in H2 as [y' [H2_a H2_fr]].
+      destruct (alphavar_lookup_helper H2_a) as [[H2_a' _] | [[H2_a' _] _]].
+      + rewrite H_in_strip in H2_a'. congruence.
+      + rewrite H2_a' in H_in_strip. congruence.
     }
     assert (lookup x R' = Some y).
     {
@@ -331,7 +338,7 @@ Proof.
         * destruct p. destruct p. rewrite e0 in H_in_strip. inversion H_in_strip.
     }
     eapply lookup_some_then_alphavar; eauto.
-Admitted.
+Qed.
 
 (* Let t = Var x <*> Var y.     t' = Var v    [x, v] ⊢ t ~ t'
    Let s = (λx. x) * y
@@ -1565,3 +1572,5 @@ Hint Resolve BU_lam_id : bu_db.
 
 Create HintDb a_constr_db.
 Hint Resolve a_constr__s_alpha a_constr__t_alpha : a_constr_db.
+
+Search "freshen2".

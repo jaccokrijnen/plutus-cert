@@ -23,11 +23,7 @@ From PlutusCert Require Import
     BaseKindedness.
 Require Import PlutusCert.PlutusIR.Analysis.BoundVars.
 
-Scheme has_type_mut_ind := Induction for has_type Sort Prop
-with bs_wf_mut_ind := Induction for bindings_well_formed_rec Sort Prop
-with bs_wf_nonrec_mut_ind := Induction for bindings_well_formed_nonrec Sort Prop
-with b_wf_mut_ind := Induction for binding_well_formed Sort Prop.
-
+From Coq Require Import Program.Equality.
 
 (* Find instead of in_dec for performance?*)
 Fixpoint no_dup_fun (xs : list string) := 
@@ -138,39 +134,28 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
     | LamAbs x T1 t => 
         normaliser Δ T1 >>= fun T1n =>
         match type_check Δ ((x, T1n) :: Γ) t, kind_check Δ T1 with
-        | Some T2, Some Kind_Base => Some (Ty_Fun T1n T2) (* TODO: no normalisation of T2? Is it always normal? In the has_type efinition it is called T2n, so maybe it is*)
+        | Some T2, Some Kind_Base => Some (Ty_Fun T1n T2) 
         | _, _ => None
         end
-    | Apply t1 t2 => (* TODO: normalisation? *)
+    | Apply t1 t2 => 
         match type_check Δ Γ t1, type_check Δ Γ t2 with
         | Some (Ty_Fun T1 T2), Some T1' =>
             if Ty_eqb T1 T1' then Some T2 else None
         | _, _ => None
         end
-    | TyAbs X K t => (* TODO: normalisation T?*)
-      (* If K in Δ, then 
-          1. create fresh K'
-          2 rename K to K' in t 
-           
-           final type    Ty_Forall X K' T
-          *)
-
+    | TyAbs X K t => 
         match type_check ((X, K) :: Δ) (drop_ty_var X Γ) t with
         | Some T => Some (Ty_Forall X K T)
         | _ => None
         end
-    | TyInst t1 T2 => (* TODO: normalisation T1?*)
-        match type_check Δ Γ t1, kind_check Δ T2 with (* TODO: first we check that it kind and type checks here, and then normaliser does it again. Feels a little off*)
+    | TyInst t1 T2 => 
+        match type_check Δ Γ t1, kind_check Δ T2 with
         | Some (Ty_Forall X K2 T1), Some K2' =>
-            (* match kind_check ((X, K2)::Δ) T1 with
-            | Some Kind_Base => *)
             if Kind_eqb K2 K2' then 
                 normaliser Δ T2 >>= fun T2n =>
                 normaliser Δ (substituteTCA X T2n T1) >>= fun T0n =>
                 Some T0n
             else None
-            (* | _ => None
-            end *)
         | _, _ => None
         end
     | IWrap F T M =>
@@ -209,7 +194,7 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
     | Let NonRec bs t =>
         let Δ' := flatten (map binds_Delta bs) ++ Δ in
         let xs := (insert_deltas_bind_Gamma_nr bs Δ) in
-          map_normaliser xs >>= fun bsgn => (* TODO:  Δ' ?*) (* TODO different Δ*)
+          map_normaliser xs >>= fun bsgn => 
           let Γ' := bsgn ++ Γ in
           if (bindings_well_formed_nonrec_check (binding_well_formed_check type_check) Δ Γ bs) then 
             type_check Δ' Γ' t >>= fun T =>
@@ -236,7 +221,6 @@ Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * t
           else None
     | _ => None (* TODO: Case and Constr?? *)
     end.
-
 
 Section term_recursivity_rect.
   Variable (P : term -> Type).
@@ -323,9 +307,10 @@ End term_recursivity_rect.
 Require Import Coq.Strings.String.
 Open Scope string_scope.
 
-Definition my_Gamma : list (string * ty) := (("x", Ty_App (Ty_Lam "y" Kind_Base (Ty_Var "y")) (Ty_Builtin DefaultUniInteger))::nil). 
-
-  
+Scheme has_type_mut_ind := Induction for has_type Sort Prop
+with bs_wf_mut_ind := Induction for bindings_well_formed_rec Sort Prop
+with bs_wf_nonrec_mut_ind := Induction for bindings_well_formed_nonrec Sort Prop
+with b_wf_mut_ind := Induction for binding_well_formed Sort Prop.  
   
 
 Lemma constructor_well_formed_sound : 
@@ -398,8 +383,6 @@ Proof.
     rewrite <- insert_remove_deltas_id.
     f_equal; auto.
 Qed.
-
-From Coq Require Import Program.Equality.
 
 Theorem type_checking_sound : 
  forall Δ Γ t ty, type_check Δ Γ t = Some ty -> (Δ ,, Γ |-+ t : ty).
@@ -634,35 +617,6 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_sound; eauto).
     apply W_NilB_NonRec.
 Qed.
 
-(* Hmmm, why does this rewrite?? This helper lemma is of course temporary TODO *)
-Lemma test (T2n T1n : ty) Δ Γ t x :
-    type_check Δ ((x, T1n)::Γ) t = Some T2n -> match type_check Δ ((x, T1n)::Γ) t with 
-                    | Some T2 => Some (Ty_Fun T1n T2) 
-                    | None => None
-                end = Some (Ty_Fun T1n T2n). 
-Proof.
-    intros. now rewrite H.
-Qed.
-
-(* this doesnt work inline...*)
-Lemma oof2 X K Δ Γ t Tn :
-  type_check ((X, K) :: Δ) Γ t = Some Tn ->
-  match type_check ((X, K) :: Δ) Γ t with
-  | Some T => Some (Ty_Forall X K T)
-  | None => None
-  end = Some (Ty_Forall X K Tn).
-Proof.
-    intros.
-    rewrite H.
-    reflexivity.
-Qed.
-
-Lemma bool_if {A} (b : bool) (x y : A) :
-  b = true -> (if b then x else y) = x.
-Proof. intros ->; reflexivity. Qed.
-
-
-
 Theorem type_checking_complete : forall Δ Γ t ty,
     (Δ ,, Γ |-+ t : ty) -> type_check Δ Γ t = Some ty.
 Proof.
@@ -683,13 +637,13 @@ Proof.
     eapply (normaliser_complete h) in n.
     rewrite n. simpl.
     apply kind_checking_complete in h; rewrite h.
-    now apply test.
+    rewrite H0; auto.
   - (* Case: T_Apply *)
     rewrite H0.
     rewrite H1.
     now rewrite -> Ty_eqb_refl.
   - (* Case: T_TyAbs *) 
-    apply oof2; auto.
+    rewrite H0; auto.
   - (* Case: T_Inst *)
     rewrite H0.
     apply (normaliser_complete h0) in n; rewrite n; simpl.
@@ -953,11 +907,3 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
       * apply no_dup_fun_complete in n0. rewrite n0 in DUPV. inversion DUPV.
     }
 Qed.
-
-(* Print Assumptions type_checking_complete. *)
-
-(* Extraction Language Haskell.
-Redirect "type_check.hs" Recursive Extraction type_check. *)
-
-(* Compute (type_check nil (cons ((EmptyString, (Ty_App (Ty_Lam EmptyString Kind_Base (Ty_Var EmptyString)) (Ty_Builtin DefaultUniInteger)))) nil) (Var EmptyString)). *)
-

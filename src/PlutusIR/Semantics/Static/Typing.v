@@ -363,7 +363,7 @@ Qed.
     apply lookup__not_in in Hin.
     assumption.
   Qed.
-  
+
    Lemma lookup_None__drop_Δ' : forall Δ xs x,
     ~ In x xs ->
     lookup x (drop_Δ' Δ xs) = lookup x Δ.
@@ -546,7 +546,7 @@ Proof.
   reflexivity.
 Qed.
 
-Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty -> Prop :=
+Inductive has_type : list (binderTyname * kind) -> list (binderName * ty) -> term -> ty -> Prop :=
   (* Simply typed lambda caclulus *)
   | T_Var : forall Γ Δ x T Tn,
       lookup x Γ = Coq.Init.Datatypes.Some T ->
@@ -637,7 +637,7 @@ Inductive has_type : list (string * kind) -> list (string * ty) -> term -> ty ->
 (* Constructors are well-formed if their result type equals the fully applied
  * datatype (e.g. Either a b), and all parameter types are well-kinded
 *)
-with constructor_well_formed : list (string * kind) -> vdecl -> ty -> Prop :=
+with constructor_well_formed : list (binderTyname * kind) -> vdecl -> ty -> Prop :=
   | W_Con : forall Δ x T Targs Tr Tres,
       (Targs, Tres) = splitTy T ->
       (* We don't check the well-kindedness of Tres, this happens in
@@ -646,7 +646,7 @@ with constructor_well_formed : list (string * kind) -> vdecl -> ty -> Prop :=
       Tres = Tr ->
       Δ |-ok_c (VarDecl x T) : Tr
 
-with bindings_well_formed_nonrec : list (string * kind) -> list (string * ty) -> list binding -> Prop :=
+with bindings_well_formed_nonrec : list (binderTyname * kind) -> list (binderName * ty) -> list binding -> Prop :=
   | W_NilB_NonRec : forall Δ Γ,
       Δ ,, Γ |-oks_nr nil
   | W_ConsB_NonRec : forall Δ Γ b bs bsGn,
@@ -655,7 +655,7 @@ with bindings_well_formed_nonrec : list (string * kind) -> list (string * ty) ->
       ((binds_Delta b) ++ Δ) ,, (bsGn ++ Γ) |-oks_nr bs ->
       Δ ,, Γ |-oks_nr (b :: bs)
 
-with bindings_well_formed_rec : list (string * kind) -> list (string * ty) -> list binding -> Prop :=
+with bindings_well_formed_rec : list (binderTyname * kind) -> list (binderName * ty) -> list binding -> Prop :=
   | W_NilB_Rec : forall Δ Γ,
       Δ ,, Γ |-oks_r nil
   | W_ConsB_Rec : forall Δ Γ b bs,
@@ -663,7 +663,7 @@ with bindings_well_formed_rec : list (string * kind) -> list (string * ty) -> li
       Δ ,, Γ |-oks_r bs ->
       Δ ,, Γ |-oks_r (b :: bs)
 
-with binding_well_formed : list (string * kind) -> list (string * ty) -> recursivity -> binding -> Prop :=
+with binding_well_formed : list (binderTyname * kind) -> list (binderName * ty) -> recursivity -> binding -> Prop :=
   | W_Term : forall Δ Γ s x T t Tn rec,
       Δ |-* T : Kind_Base ->
       normalise T Tn ->
