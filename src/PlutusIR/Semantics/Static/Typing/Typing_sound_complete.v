@@ -11,7 +11,7 @@ From PlutusCert Require Import
     Normalisation.Normaliser_sound_complete
     Normalisation.Normaliser
     PlutusIR 
-    Static.Typing
+    Static.Typing.Typing
     Util.List
     Static.Util
     Equality
@@ -19,18 +19,15 @@ From PlutusCert Require Import
     Util
     SubstituteTCA
     UniqueTypes
-    Binders_Wellkinded
-    BaseKindedness.
+    Typing.Binders_Wellkinded
+    BaseKindedness
+    Typing.Typechecker.
 Require Import PlutusCert.PlutusIR.Analysis.BoundVars.
 
 From Coq Require Import Program.Equality.
 
-(* Find instead of in_dec for performance?*)
-Fixpoint no_dup_fun (xs : list string) := 
-  match xs with
-  | nil => true
-  | (x::xs) => if in_dec string_dec x xs then false else no_dup_fun xs
-  end.
+Require Import Coq.Strings.String.
+Open Scope string_scope.
 
 Lemma no_dup_fun_sound : forall xs, no_dup_fun xs = true -> NoDup xs.
 Proof.
@@ -39,279 +36,6 @@ Admitted.
 Lemma no_dup_fun_complete : forall xs, NoDup xs -> no_dup_fun xs = true.
 Proof.
 Admitted.
-
-Definition is_KindBase (k : option kind) : bool :=
-  match k with 
-  | Some Kind_Base => true
-  | _ => false
-  end.
-
-Definition constructor_well_formed_check (Δ : list (binderTyname * kind)) (v : vdecl) (Tr : ty ) : bool :=
-  match v with
-  | VarDecl x T => let (targs, tr') := splitTy T in
-          Ty_eqb Tr tr' && forallb (fun U => is_KindBase (kind_check Δ U)) targs
-  end.
-
-(* Idea Jacco: pass the recursively called type_check function as an argument even though it is not defined yet 
-Make another version that already has type_check as argument after type_check is defined.
-*)
-Definition binding_well_formed_check 
-  (type_check' : ((list (binderTyname * kind)) -> (list (binderName * ty)) -> term -> option ty)) 
-  (Δ : list (binderTyname * kind)) (Γ : list (binderName * ty)) (rec : recursivity) binding : bool :=
-    match binding with
-    | (TypeBind (TyVarDecl X K) T) => match kind_check Δ T with
-                                      | Some K' => Kind_eqb K K' (* is this K the same as in the pattern match to the left? it should be*)
-                                      | _ => false
-                                      end
-    | (TermBind s (VarDecl x T) t) => match kind_check Δ T with
-                                      | Some Kind_Base => 
-                                        match type_check' Δ Γ t with   
-                                        | Some Tn => match normaliser Δ T with
-                                                    | Some Tn' => Ty_eqb Tn Tn'
-                                                    | _ => false
-                                                    end
-                                        | _ => false
-                                        end
-                                      | _ => false
-                                      end
-    | (DatatypeBind (Datatype XK YKs matchFunc cs)) => 
-      let dtd := Datatype XK YKs matchFunc cs in
-      let X := tvdecl_name XK in
-      let Ys := map tvdecl_name YKs in
-      if no_dup_fun (X :: Ys) && no_dup_fun (map vdecl_name cs) then
-        let Δ_ns := match rec with
-                    | NonRec => drop_Δ' Δ [X]
-                    | Rec => Δ
-                    end in
-        let Δ' := rev (map fromDecl YKs) ++ Δ_ns in
-        let Tres := constrLastTyExpected dtd in
-        if forallb (fun c => constructor_well_formed_check Δ' c Tres) cs then
-          match rec with
-            | NonRec => match kind_check (fromDecl XK :: Δ') Tres with
-                        | Some Kind_Base => true 
-                        | _ => false
-                        end
-            | Rec =>    match kind_check Δ' Tres with
-                        | Some Kind_Base => true 
-                        | _ => false  
-                        end
-          end
-        else false
-      else false
-    end.
-
-(* first argument represents binding_well_formed with the type_check already passed in *)
-Definition bindings_well_formed_nonrec_check : 
-  ((list (binderTyname * kind)) -> (list (binderName * ty)) -> recursivity -> binding -> bool) ->
-  list (binderTyname * kind) -> (list (binderName * ty)) -> (list binding) -> bool :=
-  fun b_wf =>
-  fix f Δ Γ bs :=
-    match bs with
-      | (b::bs') =>
-            match (map_normaliser (insert_deltas_rec (binds_Gamma b) (binds_Delta b ++ Δ))) with
-            | Some bsGn =>
-              b_wf Δ Γ NonRec b && f ((binds_Delta b) ++ Δ) (bsGn ++ Γ) bs'
-            | _ => false
-            end
-      | _ => true
-    end.
-
-Definition bindings_well_formed_rec_check : (binding -> bool) -> list binding -> bool :=
-  fun b_wf =>
-  fix f bs :=
-    match bs with
-      | (b::bs') => b_wf b && f bs'
-      | _ => true
-    end.
-
-Fixpoint type_check (Δ : list (binderTyname * kind)) (Γ : list (binderName * ty)) (term : term) {struct term} : (option ty) :=
-    match term with
-    | Var x => lookup x Γ >>= fun T => 
-                match kind_check Δ T with
-                | Some Kind_Base => normaliser Δ T
-                | _ => None
-                end
-    | LamAbs x T1 t => 
-        normaliser Δ T1 >>= fun T1n =>
-        match type_check Δ ((x, T1n) :: Γ) t, kind_check Δ T1 with
-        | Some T2, Some Kind_Base => Some (Ty_Fun T1n T2) 
-        | _, _ => None
-        end
-    | Apply t1 t2 => 
-        match type_check Δ Γ t1, type_check Δ Γ t2 with
-        | Some (Ty_Fun T1 T2), Some T1' =>
-            if Ty_eqb T1 T1' then Some T2 else None
-        | _, _ => None
-        end
-    | TyAbs X K t => 
-        match type_check ((X, K) :: Δ) (drop_ty_var X Γ) t with
-        | Some T => Some (Ty_Forall X K T)
-        | _ => None
-        end
-    | TyInst t1 T2 => 
-        match type_check Δ Γ t1, kind_check Δ T2 with
-        | Some (Ty_Forall X K2 T1), Some K2' =>
-            if Kind_eqb K2 K2' then 
-                normaliser Δ T2 >>= fun T2n =>
-                normaliser Δ (substituteTCA X T2n T1) >>= fun T0n =>
-                Some T0n
-            else None
-        | _, _ => None
-        end
-    | IWrap F T M =>
-        match kind_check Δ T, kind_check Δ F, type_check Δ Γ M with
-        | Some K, Some (Kind_Arrow (Kind_Arrow K' Kind_Base) (Kind_Arrow K'' Kind_Base)), Some T0n
-            => if andb (Kind_eqb K K') (Kind_eqb K K'') then
-                    normaliser Δ T >>= fun Tn =>
-                    normaliser Δ F >>= fun Fn =>
-                    normaliser Δ (unwrapIFix Fn K Tn) >>= fun T0n' =>
-                    if Ty_eqb T0n T0n' then 
-                        Some (Ty_IFix Fn Tn)
-                    else None 
-                else None 
-        | _, _, _ => None
-        end
-    | Unwrap M =>
-        match type_check Δ Γ M with
-            | Some (Ty_IFix F T) =>
-                match kind_check Δ T with
-                    | Some K =>
-                          normaliser Δ (unwrapIFix F K T) >>= fun T0n => Some T0n
-                        
-                    | _  => None
-                    end 
-            | _ => None
-            end
-    | Constant (ValueOf T a) => Some (Ty_Builtin T)
-    | Builtin f =>
-        let T := lookupBuiltinTy f in
-        normaliser Δ T >>= fun Tn =>
-        Some Tn
-    | Error S' => normaliser Δ S' >>= fun S'n => match kind_check Δ S' with
-        | Some Kind_Base => Some S'n
-        | _ => None
-        end
-    | Let NonRec bs t =>
-        let Δ' := flatten (map binds_Delta bs) ++ Δ in
-        let xs := (insert_deltas_bind_Gamma_nr bs Δ) in
-          map_normaliser xs >>= fun bsgn => 
-          let Γ' := bsgn ++ Γ in
-          if (bindings_well_formed_nonrec_check (binding_well_formed_check type_check) Δ Γ bs) then 
-            type_check Δ' Γ' t >>= fun T =>
-              let Δ_no_esc := drop_Δ Δ bs in
-              match kind_check Δ_no_esc T with
-              | Some Kind_Base => Some T
-              | _ => None
-              end
-          else None
-    | Let Rec bs t => 
-        if no_dup_fun (btvbs bs) && no_dup_fun (bvbs bs) then
-          let Δ' := flatten (map binds_Delta bs) ++ Δ in
-          let xs := (insert_deltas_rec (flatten (map binds_Gamma bs)) Δ') in
-            map_normaliser xs >>= fun bsgn =>
-            let Γ' := bsgn ++ Γ in
-              if (bindings_well_formed_rec_check (binding_well_formed_check type_check Δ' Γ' Rec) bs) then 
-                type_check Δ' Γ' t >>= fun T =>
-                  let Δ_no_esc := drop_Δ Δ bs in
-                  match kind_check Δ_no_esc T with
-                  | Some Kind_Base => Some T
-                  | _ => None
-                    end 
-              else None
-          else None
-    | _ => None (* TODO: Case and Constr?? *)
-    end.
-
-Section term_recursivity_rect.
-  Variable (P : term -> Type).
-  Variable (Q : binding -> Type).
-  Variable (R : list binding -> Type).
-  Variable (S : list binding -> Type).
-
-  Context
-    (* (H_Let     : forall rec bs t, ForallT Q bs -> P t -> P (Let rec bs t)) *)
-    (H_LetRec     : forall bs t, R bs -> P t -> P (Let Rec bs t))
-    (H_LetNonRec  : forall bs t, S bs -> P t -> P (Let NonRec bs t))
-    (H_Var     : forall s, P (Var s))
-    (H_TyAbs   : forall s (k : kind) (t : term), P t -> P (TyAbs s k t))
-    (H_LamAbs  : forall s t (t0 : term), P t0 -> P (LamAbs s t t0))
-    (H_Apply   : forall t : term, P t -> forall t0 : term, P t0 -> P (Apply t t0))
-    (H_Constant : forall (c : constant), P (Constant c))
-    (H_Builtin : forall d : DefaultFun, P (Builtin d))
-    (H_TyInst  : forall t : term, P t -> forall t0 : ty, P (TyInst t t0))
-    (H_Error   : forall t : ty, P (Error t))
-    (H_IWrap   : forall (t t0 : ty) (t1 : term), P t1 -> P (IWrap t t0 t1))
-    (H_Unwrap  : forall t : term, P t -> P (Unwrap t))
-    (H_Constr  : forall (i : nat) T (ts : list (term)), ForallT P ts -> P (Constr T i ts))
-    (H_Case   : forall T t, P t -> forall ts, ForallT P ts -> P (Case T t ts)).
-
-  Context
-    (H_TermBind    : forall s v t, P t -> Q (TermBind s v t))
-    (H_TypeBind    : forall v ty, Q (TypeBind v ty))
-    (H_DatatypeBind : forall dtd, Q (DatatypeBind dtd)).
-
-  Context
-    (H_cons        : forall b bs, Q b -> R bs -> R (b :: bs))
-    (H_nil         : R nil).
-
-  Context
-    (H_consS      : forall b bs, Q b -> S bs -> S (b :: bs))
-    (H_nilS       : S nil).
-
-  Definition bindings_rect'' (binding_rect'' : forall (b : binding), Q b) :=
-    fix bindings_rect'' bs :=
-    match bs return R bs with
-      | nil       => @H_nil
-      | cons b bs => @H_cons _ bs (binding_rect'' b) (bindings_rect'' bs)
-    end.
-
-  Definition bindings_nonrect'' (binding_rect'' : forall (b : binding), Q b) :=
-    fix bindings_nonrect'' bs :=
-    match bs return S bs with
-      | nil       => @H_nilS
-      | cons b bs => @H_consS _ bs (binding_rect'' b) (bindings_nonrect'' bs)
-    end.
-
-  Definition terms_rect'' (term_rect : forall (t : term), P t) :=
-    fix terms_rect' ts :=
-    match ts as p return ForallT P p with
-      | nil       => ForallT_nil
-      | cons t ts => ForallT_cons (term_rect t) (terms_rect' ts)
-    end.
-
-  Fixpoint term_rect'' (t : term) : P t :=
-    match t with
-      | Let Rec bs t    => @H_LetRec bs t (bindings_rect'' binding_rect'' bs) (term_rect'' t)
-      | Let NonRec bs t => @H_LetNonRec bs t (bindings_nonrect'' binding_rect'' bs) (term_rect'' t)
-      | Var n           => @H_Var n
-      | TyAbs n k t     => @H_TyAbs n k t (term_rect'' t)
-      | LamAbs n ty t   => @H_LamAbs n ty t (term_rect'' t)
-      | Apply s t       => @H_Apply s (term_rect'' s) t (term_rect'' t)
-      | TyInst t ty     => @H_TyInst t (term_rect'' t) ty
-      | IWrap ty1 ty2 t => @H_IWrap ty1 ty2 t (term_rect'' t)
-      | Unwrap t        => @H_Unwrap t (term_rect'' t)
-      | Error ty        => @H_Error ty
-      | Constant c      => @H_Constant c
-      | Builtin f       => @H_Builtin f
-      | Constr i T ts     => @H_Constr T i ts (terms_rect'' term_rect'' ts)
-      | Case T t ts      => @H_Case T t (term_rect'' t) ts (terms_rect'' term_rect'' ts)
-    end
-  with binding_rect'' (b : binding) : Q b :=
-    match b with
-      | TermBind s v t   => @H_TermBind s v t (term_rect'' t)
-      | TypeBind v ty    => @H_TypeBind v ty
-      | DatatypeBind dtd => @H_DatatypeBind dtd
-    end.
-End term_recursivity_rect.
-
-Require Import Coq.Strings.String.
-Open Scope string_scope.
-
-Scheme has_type_mut_ind := Induction for has_type Sort Prop
-with bs_wf_mut_ind := Induction for bindings_well_formed_rec Sort Prop
-with bs_wf_nonrec_mut_ind := Induction for bindings_well_formed_nonrec Sort Prop
-with b_wf_mut_ind := Induction for binding_well_formed Sort Prop.  
-  
 
 Lemma constructor_well_formed_sound : 
   forall Δ c T, constructor_well_formed_check Δ c T = true -> Δ |-ok_c c : T.
@@ -389,7 +113,7 @@ Theorem type_checking_sound :
 Proof with (try apply kind_checking_sound; try eapply normaliser_sound; eauto).
   intros Δ Γ t ty.
   revert Δ Γ ty.
-  eapply term_rect'' with 
+  eapply term_rect' with 
     (P := fun t => forall Δ Γ ty, type_check Δ Γ t = Some ty -> Δ,, Γ |-+ t : ty)
     (Q := fun b => forall Δ Γ rec, binding_well_formed_check type_check Δ Γ rec b = true -> binding_well_formed Δ Γ rec b)
     (R := fun bs => forall Δ Γ, bindings_well_formed_rec_check (binding_well_formed_check type_check Δ Γ Rec) bs = true -> bindings_well_formed_rec Δ Γ bs)

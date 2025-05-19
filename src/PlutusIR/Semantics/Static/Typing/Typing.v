@@ -712,6 +712,11 @@ with binding_well_formed : list (binderTyname * kind) -> list (binderName * ty) 
   and "Δ ',,' Γ '|-oks_r' bs" := (bindings_well_formed_rec Δ Γ bs)
   and "Δ ',,' Γ '|-ok_b' rec # b" := (binding_well_formed Δ Γ rec b).
 
+Scheme has_type_mut_ind := Induction for has_type Sort Prop
+  with bs_wf_mut_ind := Induction for bindings_well_formed_rec Sort Prop
+  with bs_wf_nonrec_mut_ind := Induction for bindings_well_formed_nonrec Sort Prop
+  with b_wf_mut_ind := Induction for binding_well_formed Sort Prop.  
+
 Scheme has_type__ind := Minimality for has_type Sort Prop
   with constructor_well_formed__ind := Minimality for constructor_well_formed Sort Prop
   with bindings_well_formed_nonrec__ind := Minimality for bindings_well_formed_nonrec Sort Prop
@@ -771,12 +776,6 @@ Lemma TyApps_replaceReturnTy x T2s T3 :
 Proof.
   now apply TyApps_replaceReturnTy'.
 Qed.
-
-Compute (Ty_Apps (Ty_Var "b") [(Ty_Var "c"); (Ty_Var "d")]).
-
-(* Discuss with Jacco that because of constrLastTyExpected in matchTy we now need different Deltas. Or do we? We basically only differentiate on Rec/NonRec *)
-
-  
 
 (* Cannot type faulty const function *)
 Example const_shadowing T :

@@ -4,7 +4,7 @@ Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Kinding.Kinding.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Normalisation.Normalisation.
 Require Export PlutusCert.PlutusIR.Semantics.Static.TypeSubstitution.
-Require Export PlutusCert.PlutusIR.Semantics.Static.Typing.
+Require Export PlutusCert.PlutusIR.Semantics.Static.Typing.Typing.
 
 (** Important theorems *)
 Require Export PlutusCert.PlutusIR.Semantics.Static.Theorems.ContextInvariance.

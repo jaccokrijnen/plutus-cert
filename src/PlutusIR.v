@@ -635,10 +635,12 @@ Section term_rect.
   Variable (P : term -> Type).
   Variable (Q : binding -> Type).
   Variable (R : list binding -> Type).
+  Variable (S : list binding -> Type).
 
   Context
     (* (H_Let     : forall rec bs t, ForallT Q bs -> P t -> P (Let rec bs t)) *)
-    (H_Let     : forall rec bs t, R bs -> P t -> P (Let rec bs t))
+    (H_LetRec    : forall bs t, R bs -> P t -> P (Let Rec bs t))
+    (H_LetNonRec : forall bs t, S bs -> P t -> P (Let NonRec bs t))
     (H_Var     : forall s, P (Var s))
     (H_TyAbs   : forall s (k : kind) (t : term), P t -> P (TyAbs s k t))
     (H_LamAbs  : forall s t (t0 : term), P t0 -> P (LamAbs s t t0))
@@ -658,14 +660,25 @@ Section term_rect.
     (H_DatatypeBind : forall dtd, Q (DatatypeBind dtd)).
 
   Context
-    (H_cons        : forall b bs, Q b -> R bs -> R (b :: bs))
-    (H_nil         : R nil).
+    (H_consRec        : forall b bs, Q b -> R bs -> R (b :: bs))
+    (H_nilRec         : R nil).
+
+  Context
+    (H_cons      : forall b bs, Q b -> S bs -> S (b :: bs))
+    (H_nil       : S nil).
 
   Definition bindings_rect' (binding_rect' : forall (b : binding), Q b) :=
     fix bindings_rect' bs :=
     match bs return R bs with
+      | nil       => @H_nilRec
+      | cons b bs => @H_consRec _ bs (binding_rect' b) (bindings_rect' bs)
+    end.
+
+  Definition bindings_nonrec_rect' (binding_rect' : forall (b : binding), Q b) :=
+    fix bindings_nonrect' bs :=
+    match bs return S bs with
       | nil       => @H_nil
-      | cons b bs => @H_cons _ bs (binding_rect' b) (bindings_rect' bs)
+      | cons b bs => @H_cons _ bs (binding_rect' b) (bindings_nonrect' bs)
     end.
 
   Definition terms_rect' (term_rect : forall (t : term), P t) :=
@@ -677,7 +690,8 @@ Section term_rect.
 
   Fixpoint term_rect' (t : term) : P t :=
     match t with
-      | Let rec bs t    => @H_Let rec bs t (bindings_rect' binding_rect' bs) (term_rect' t)
+      | Let Rec bs t    => @H_LetRec bs t (bindings_rect' binding_rect' bs) (term_rect' t)
+      | Let NonRec bs t => @H_LetNonRec bs t (bindings_nonrec_rect' binding_rect' bs) (term_rect' t)
       | Var n           => @H_Var n
       | TyAbs n k t     => @H_TyAbs n k t (term_rect' t)
       | LamAbs n ty t   => @H_LamAbs n ty t (term_rect' t)

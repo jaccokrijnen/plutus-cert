@@ -1,6 +1,6 @@
 Require Import PlutusCert.PlutusIR.
 
-Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.
+Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.Typing.
 
 Theorem unique_kinds_uni : forall d K K',
     |-*_uni d : K -> |-*_uni d : K' -> K = K'.

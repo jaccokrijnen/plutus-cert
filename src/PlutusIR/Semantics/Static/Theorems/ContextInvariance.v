@@ -3,7 +3,7 @@ Require Import PlutusCert.Util.List.
 
 Require Import PlutusCert.PlutusIR.Semantics.Static.Theorems.ContextInvariance.AFI.
 Require Import PlutusCert.PlutusIR.Semantics.Static.Theorems.In_Auxiliary.
-Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.
+Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.Typing.
 
 Require Import Coq.Lists.List.
 

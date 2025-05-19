@@ -6,7 +6,7 @@ From PlutusCert Require Import Analysis.BoundVars.
 From PlutusCert Require Import Analysis.FreeVars.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.Auxiliary.
-Require Export PlutusCert.PlutusIR.Semantics.Static.Typing.
+Require Export PlutusCert.PlutusIR.Semantics.Static.Typing.Typing.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Kinding.Kinding.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Normalisation.Normalisation.
