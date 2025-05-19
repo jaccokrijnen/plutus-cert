@@ -81,6 +81,13 @@ Definition dtdecl_freshR (d : dtdecl) : string :=
   end
 .
 
+(* The freshness property *)
+Lemma dtdecl_freshR__fresh x x_k YKs mF cs:
+~ In (dtdecl_freshR (Datatype (TyVarDecl x x_k) YKs mF cs))
+   (map getTyname YKs ++ x :: flat_map (fun c : vdecl => Ty.ftv (vdecl_ty c)) cs).
+Proof.
+Admitted.
+
 (* The expected return type of a constructor, i.e. the Datatype applied to all
  * its type parameters. For example: Either a b
 

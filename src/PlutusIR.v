@@ -973,6 +973,20 @@ Fixpoint splitTy (T : ty) : list ty * ty :=
   | Tr => (nil, Tr)
   end.
 
+Lemma splitTy__inversion Targs Tr T:
+    (Targs, Tr) = splitTy T -> 
+    T = fold_right (fun targ acc => Ty_Fun targ acc) Tr Targs.
+Proof.
+  generalize dependent Targs.
+  generalize dependent Tr.
+  induction T; simpl; intros.
+  all: try solve [inversion H; subst; auto].
+  inversion H; subst. simpl. f_equal.
+  simpl in IHT2.
+  eapply IHT2.
+  destruct (splitTy T2); auto.
+Qed.
+
 Fixpoint returnTy (T : ty) : ty :=
   match T with
   | Ty_Fun _ T' => returnTy T'

@@ -354,6 +354,16 @@ Qed.
     assumption.
   Qed.
 
+  Lemma dropped_not_in_drop_Δ' : forall Δ xs x,
+    In x xs ->
+    ~ In x (map fst (drop_Δ' Δ xs)).
+  Proof.
+    intros Δ xs x Hin.
+    apply drop_Δ'__lookup_None with (Δ := Δ) in Hin.
+    apply lookup__not_in in Hin.
+    assumption.
+  Qed.
+  
    Lemma lookup_None__drop_Δ' : forall Δ xs x,
     ~ In x xs ->
     lookup x (drop_Δ' Δ xs) = lookup x Δ.
