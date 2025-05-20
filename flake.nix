@@ -13,6 +13,7 @@
           coqPackages.ExtLib
           coqPackages.QuickChick
           coqPackages.equations
+          coqPackages.coq-lsp
           ];
       };
   };
