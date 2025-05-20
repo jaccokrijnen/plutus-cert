@@ -28,8 +28,6 @@ Proof.
   intros Hfresh.
   induction s.
   - unfold rename.
-    unfold mren.
-    unfold lookup.
     destruct (x =? s) eqn:xs.
     + apply String.eqb_eq in xs.
       subst.
@@ -49,12 +47,9 @@ Proof.
       assert (HignoreRename: forall B, rename x x' (@tmabs B x k s0) = @tmabs B x k s0).
       {
         unfold rename.
-        unfold mren.
-        fold mren.
         subst.
         simpl.
         rewrite String.eqb_refl.
-        rewrite mren_id.
         reflexivity.
       }
       rewrite HignoreRename.
@@ -67,8 +62,6 @@ Proof.
     + assert (H1: forall B, rename x x' (@tmabs B s k s0) = @tmabs B s k (rename x x' s0)).
       {
         unfold rename.
-        unfold mren.
-        fold mren.
         simpl.
         rewrite <- String.eqb_neq in H.
         rewrite String.eqb_sym in H.
@@ -97,8 +90,7 @@ Proof.
       * apply not_break_shadow_cons; try assumption.
         apply not_break_shadow_nil.
   - unfold rename.
-    unfold mren.
-    apply alpha_app; fold mren.
+    apply alpha_app.
     + apply IHs1.
       unfold tv in Hfresh; fold tv in Hfresh.
       apply not_in_app in Hfresh.
@@ -110,7 +102,6 @@ Proof.
       destruct Hfresh as [_ Hfresh].
       assumption.
   - unfold rename.
-    unfold mren.
     constructor.
 Qed.  
 

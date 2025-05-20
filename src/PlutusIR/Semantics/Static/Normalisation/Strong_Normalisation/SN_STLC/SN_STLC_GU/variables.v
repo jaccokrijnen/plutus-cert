@@ -5,13 +5,29 @@
   - ftv_keys_env, btv_env, tv_keys_env
 *)
 
-From PlutusCert Require Import STLC util Util rename Util.List.
+From PlutusCert Require Import STLC util Util Util.List.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
+
+Lemma ren_lam_vacuous B x x' t s0 :
+  rename x x' (@tmabs B x t s0) = @tmabs B x t s0.
+Proof.
+  unfold rename.
+  simpl. rewrite String.eqb_refl. reflexivity.
+Qed.
+
+Lemma ren_lam B x x' t s s0 :
+  x <> s -> rename x x' (@tmabs B s t s0) = @tmabs B s t (rename x x' s0).
+Proof.
+  intros Hnotxs.
+  unfold rename.
+  simpl. rewrite <- String.eqb_neq in Hnotxs. rewrite Hnotxs.
+  reflexivity.
+Qed.
 
 Lemma fresh2_over_tv_term {Y t sigma} :
   Y = fresh2 sigma t ->
@@ -170,7 +186,7 @@ Proof.
   - unfold tv in HXtvt.
     apply in_inv in HXtvt as [Hxs | HXinempty]; try contradiction.
     subst.
-    unfold rename. unfold mren. simpl.
+    unfold rename. simpl.
     rewrite <- String.eqb_neq in HXnotY. rewrite String.eqb_sym in HXnotY. rewrite HXnotY.
     unfold tv.
     apply in_eq.
@@ -199,7 +215,7 @@ Proof.
         unfold tv. fold tv.
         apply in_cons.
         now apply IHt.
-  - unfold rename. unfold mren. fold mren. simpl.
+  - unfold rename. simpl.
     unfold tv in HXtvt. fold tv in HXtvt.
     apply in_app_or in HXtvt.
     destruct HXtvt.
@@ -231,7 +247,7 @@ Proof.
       contradiction.
     }
     subst.
-    unfold rename. unfold mren. simpl. rewrite <- String.eqb_neq in HXnotY.
+    unfold rename. simpl. rewrite <- String.eqb_neq in HXnotY.
     rewrite <- String.eqb_sym in HXnotY. rewrite HXnotY.
     unfold ftv.
     auto.
@@ -254,7 +270,7 @@ Proof.
     + rewrite ren_lam; auto.
       unfold ftv. fold ftv.
       apply Util.List.in_remove; auto.
-  - unfold rename. unfold mren. fold mren. simpl.
+  - unfold rename. simpl.
     unfold ftv in HXftvt. fold ftv in HXftvt.
     apply in_app_or in HXftvt.
     destruct HXftvt.
@@ -286,7 +302,7 @@ Proof.
   - unfold ftv in HXftvt.
     apply in_inv in HXftvt as [Hxs | HXinempty]; try contradiction.
     subst.
-    unfold rename. unfold mren. simpl.
+    unfold rename. simpl.
     rewrite String.eqb_refl.
     unfold ftv.
     apply in_eq.

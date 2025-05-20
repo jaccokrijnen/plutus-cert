@@ -102,20 +102,16 @@ Lemma fresh__T : forall X U T,
     ~ In (fresh X U T) (ftv T).
 Proof. Abort.
 
-(* TODO: REMOVE MREN, WE NEVER HAVE MULTIPLE RENAMINGS*)
-Fixpoint mren (rho : list (string * string)) (T : term) : term :=
+Fixpoint rename (X X' : string) (T : term) := 
   match T with
-  | tmvar Y => match lookup Y rho with
-              | Some Z => tmvar Z
-              | None => tmvar Y
-              end
-  | @tmabs B Y K1 T_body => let rho' := drop Y rho in (* What if Y in rhs of rho*)
-                        @tmabs B Y K1 (mren rho' T_body)
-  | @tmbin B T1 T2 => @tmbin B (mren rho T1) (mren rho T2)
+  | tmvar Y => if X =? Y then tmvar X' else tmvar Y
+  | @tmabs B Y K1 T_body => if X =? Y then
+                              @tmabs B Y K1 T_body
+                            else 
+                              @tmabs B Y K1 (rename X X' T_body)
+  | @tmbin B T1 T2 => @tmbin B (rename X X' T1) (rename X X' T2)
   | tmbuiltin d => tmbuiltin d
 end.
-
-Definition rename (X Y : string) (T : term) := mren [(X, Y)] T.
 
 (* Size of a term *)
 
@@ -127,15 +123,6 @@ Fixpoint size (T : term) : nat :=
   | tmbuiltin _ => 1
   end.
 
-Lemma mren_id s : mren nil s = s.
-Proof. 
-  induction s; simpl; eauto.
-  - rewrite IHs.
-    reflexivity.
-  - rewrite IHs1, IHs2.
-    reflexivity.
-Qed.
-
 Lemma rename_preserves_size : forall T X Y,
     size T = size (rename X Y T).
 Proof.
@@ -143,8 +130,6 @@ Proof.
   induction T; intros; simpl; eauto.
   - destruct (X =? s); eauto.
   - destruct (X =? s); simpl; eauto.
-    rewrite mren_id.
-    reflexivity.
 Qed.
 
 Equations? substituteTCA (X : string) (U T : term) : term by wf (size T) :=

@@ -117,7 +117,6 @@ src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC
 src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/GU_NC_BU.v
 src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/IdSubst.v
 src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/psubs.v
-src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/rename.v
 src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/SN_STLC_GU.v
 src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/step_gu.v
 src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/step_naive.v

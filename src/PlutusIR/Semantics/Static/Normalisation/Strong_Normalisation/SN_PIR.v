@@ -42,7 +42,7 @@ Lemma f_preserves_rename s fr T :
   rename s fr (f T) = f (TypeSubstitution.rename s fr T).
 Proof.
   unfold rename; unfold TypeSubstitution.rename.
-  apply PlutusIR.ty__ind with (P := fun T => mren [(s, fr)] (f T) = f (TypeSubstitution.substituteT s (PlutusIR.Ty_Var fr) T)); intros.
+  apply PlutusIR.ty__ind with (P := fun T => rename s fr (f T) = f (TypeSubstitution.substituteT s (PlutusIR.Ty_Var fr) T)); intros.
   all: try solve [simpl; f_equal; auto]. (* all cases without binders or lists *)
   all: try solve [simpl; destr_eqb_eq s X; try rewrite mren_id; simpl; f_equal; auto]. (* all cases with binders/vars *)
   induction H; auto.
