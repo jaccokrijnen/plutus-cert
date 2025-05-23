@@ -6,6 +6,7 @@ Import ListNotations.
 Require Import PlutusCert.PlutusIR.Semantics.Static.Theorems.ContextInvariance.AFI.
 Require Import PlutusCert.PlutusIR.Semantics.Static.Theorems.In_Auxiliary.
 Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.Typing.
+Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.drop_context.
 
 Require Import Coq.Program.Equality.
 

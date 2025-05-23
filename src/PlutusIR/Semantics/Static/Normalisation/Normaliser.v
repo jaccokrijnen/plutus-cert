@@ -1,5 +1,3 @@
-From Coq Require Extraction.
-
 From PlutusCert Require Import 
   PlutusIR 
   Normalisation.Normalisation 
@@ -49,6 +47,7 @@ Proof.
     now apply normalisation__stable'__normal.
 Defined.
 
+(* A gas powered normalizer that does not use the strong normalization result*)
 Fixpoint normaliser_gas (n : nat) {T Δ K} (Hwk : Δ |-* T : K) :=
   match n with
     | O => T
@@ -62,7 +61,6 @@ Fixpoint normaliser_gas (n : nat) {T Δ K} (Hwk : Δ |-* T : K) :=
   end.
 
 Definition normaliser_wk {T Δ K} (Hwk : Δ |-* T : K) : ty :=
-  (* normaliser_gas 100 Hwk. *)
   let HSN := plutus_ty_strong_normalization T Δ K Hwk in
   projT1 (SN_normalise T Δ K Hwk HSN).
 

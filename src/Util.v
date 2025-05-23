@@ -358,3 +358,32 @@ Definition flatmap2 {A B : Type} (f : A -> list B) (l : list (list A)) : list B 
 
 Definition fold_right2 {A B : Type} (f : A -> B -> B) (acc : B) (l : list (list A)) : B :=
   fold_right (fun (Ts : list A) (acc2 : B) => fold_right f acc2 Ts) acc l.
+
+
+(* Monad maybe*)
+(* Define the bind function for option type *)
+Definition bind {A B : Type} (xx : option A) (f : A -> option B) : option B :=
+  match xx with
+  | None => None
+  | Some a => f a
+  end.
+
+(* Define an infix operator for bind *)
+Infix ">>=" := bind (at level 50, left associativity).
+
+Definition inb_string (x : string) (xs : list string) : bool :=
+  if in_dec string_dec x xs then true else false.
+
+Lemma inb_string_true_iff (x : string) (xs : list string) :
+  inb_string x xs = true <-> In x xs.
+Proof.
+  unfold inb_string.
+  destruct (in_dec string_dec x xs); split; intro H; try easy; try congruence.
+Qed.
+
+Lemma inb_string_false_iff (x : string) (xs : list string) :
+  inb_string x xs = false <-> ~ In x xs.
+Proof.
+  unfold inb_string.
+  destruct (in_dec string_dec x xs); split; intro H; try easy; try congruence.
+Qed.

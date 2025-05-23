@@ -7,6 +7,7 @@ From PlutusCert Require Import Analysis.FreeVars.
 
 Require Export PlutusCert.PlutusIR.Semantics.Static.Auxiliary.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Typing.Typing.
+Require Export PlutusCert.PlutusIR.Semantics.Static.Typing.drop_context.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Kinding.Kinding.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Normalisation.Normalisation.
@@ -30,6 +31,49 @@ Open Scope list_scope.
 Opaque dtdecl_freshR.
 
 Local Open Scope list_scope.
+
+
+Lemma K_TyForalls_constructor : forall Δ T YKs,
+      (rev (map fromDecl YKs) ++ Δ) |-* T : Kind_Base ->
+      Δ |-* (Ty_Foralls YKs T) : Kind_Base.
+Proof.
+  intros.
+  generalize dependent Δ.
+  induction YKs; intros.
+  - simpl. auto.
+  - simpl. constructor.
+    apply IHYKs.
+    assert (Hr_rev: (rev
+        (map fromDecl (a :: YKs)) ++
+      Δ) = (rev (map fromDecl YKs) ++
+      (getTyname a, getKind a) :: Δ)).
+    {
+      simpl. unfold fromDecl. fold fromDecl. destruct a. simpl. intuition.
+    } 
+    rewrite <- Hr_rev.
+    auto.
+Qed.
+
+Definition notFun T1 := match T1 with | Ty_Fun _ _ => False | _ => True end.
+
+Lemma TyApps_replaceReturnTy' T1 T2s T3 : 
+  notFun T1 -> (replaceRetTy (Ty_Apps T1 T2s) T3) = T3.
+Proof.
+  intros.
+  unfold Ty_Apps.
+  rewrite <- fold_left_rev_right.
+  generalize dependent T1.
+  induction T2s; intros.
+  - simpl. unfold notFun in H. destruct T1; intuition.
+  - simpl. rewrite fold_right_app.
+    eapply IHT2s. simpl. auto.
+Qed.
+
+Lemma TyApps_replaceReturnTy x T2s T3 : 
+  (replaceRetTy (Ty_Apps (Ty_Var x) T2s) T3) = T3.
+Proof.
+  now apply TyApps_replaceReturnTy'.
+Qed.
 
 Lemma ni_map_tv_decl__ni_rev_map_fromdecl x YKs :
   ~ In x (map tvdecl_name YKs) -> ~ In x (map fst (rev (map fromDecl YKs))).

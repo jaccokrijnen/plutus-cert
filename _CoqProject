@@ -81,9 +81,9 @@ src/PlutusIR/Semantics/Static/Auxiliary.v
 src/PlutusIR/Semantics/Static/Context.v
 src/PlutusIR/Semantics/Static/Builtins/Arity.v
 src/PlutusIR/Semantics/Static/Builtins/Signatures.v
-src/PlutusIR/Semantics/Static/Util.v
 
 src/PlutusIR/Semantics/Static/Typing/Typing.v
+src/PlutusIR/Semantics/Static/Typing/drop_context.v
 src/PlutusIR/Semantics/Static/Typing/Typechecker.v
 src/PlutusIR/Semantics/Static/Typing/Binders_Wellkinded.v
 src/PlutusIR/Semantics/Static/Typing/Typing_sound_complete.v

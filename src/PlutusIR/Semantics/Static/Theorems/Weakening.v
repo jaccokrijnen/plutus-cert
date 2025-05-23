@@ -1,6 +1,7 @@
 Require Import PlutusCert.PlutusIR.
 
 Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.Typing.
+Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.drop_context.
 Require Import PlutusCert.Util.List.
 Require Import Lists.List.
 Import ListNotations.
