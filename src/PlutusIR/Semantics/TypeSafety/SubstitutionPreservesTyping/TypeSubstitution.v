@@ -63,4 +63,6 @@ Proof with eauto with typing.
         apply cons_permute...
       }
       idtac...
-Qed.
+  - (* Ty_SOP *)
+    admit.
+Admitted.
