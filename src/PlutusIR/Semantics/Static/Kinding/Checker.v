@@ -70,7 +70,7 @@ Proof.
     rewrite -> IHhas_kind_uni2.
     rewrite -> Kind_eqb_refl.
     reflexivity.
-Qed.
+Defined.
 
 Fixpoint kind_check (Delta : list (binderTyname * kind)) (ty : ty) : (option kind) :=
     match ty with
@@ -210,7 +210,7 @@ Proof.
         
         apply forallb_forall with (x := x1) in Heqb02; auto.
         repeat destruct_match; subst; auto.
-Qed.
+Defined.
 
 
 Section ty__ind_set.

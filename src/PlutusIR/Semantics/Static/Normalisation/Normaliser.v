@@ -61,6 +61,17 @@ Fixpoint normaliser_gas (n : nat) {T Δ K} (Hwk : Δ |-* T : K) :=
         end
   end.
 
+Require Import Strings.String.
+Open Scope string_scope.
+
+Lemma ex : ([("x", Kind_Base)] |-* (Ty_App (Ty_Lam "y" (Kind_Base) (Ty_Var "y")) (Ty_Var "x")) : Kind_Base).
+Proof.
+eauto using has_kind.
+Qed.
+
+
+Eval lazy in (normaliser_gas 1 ex).
+
 Definition normaliser_wk {T Δ K} (Hwk : Δ |-* T : K) : ty :=
   (* normaliser_gas 100 Hwk. *)
   let HSN := plutus_ty_strong_normalization T Δ K Hwk in
@@ -72,6 +83,8 @@ Definition normaliser Δ T : option ty :=
       Some (normaliser_wk (kind_checking_sound Δ T K Hkc))
   | None => fun _ => None
   end eq_refl.
+
+
 
 Theorem normaliser__well_kinded Δ T Tn :
   normaliser Δ T = Some Tn -> {K & Δ |-* T : K}.
