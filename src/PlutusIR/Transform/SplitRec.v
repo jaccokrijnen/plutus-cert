@@ -2,7 +2,7 @@ From PlutusCert Require Import
   PlutusIR
   Analysis.FreeVars
   Analysis.Equality
-  Analysis.UniqueBinders
+  Analysis.NoShadow
   Analysis.WellScoped
   Transform.Compat
   .
@@ -18,7 +18,7 @@ Import ListNotations.
 Definition binding_group := (recursivity * list binding)%type.
 
 (*
-Assuming globally unique_tm variables, the new binding groups much satisfy:
+Assuming no_shadow for the pre-term, the new binding groups much satisfy:
   - Well-scoped: each free variable in a binding RHS is bound
   - All bindings equals those in the let-rec before transformaton
 
@@ -67,7 +67,7 @@ Inductive split_syn : term -> term -> Prop :=
 
 Definition split_rec t t' :=
   split_syn t t' /\
-  unique_tm t /\
+  no_shadow [] [] t /\
   closed t'
 .
 

@@ -11,8 +11,6 @@ From PlutusCert Require Import
   Equality
   Util
   Util.List
-  UniqueBinders
-  UniqueBinders.DecOpt
 .
 
 Require Import Init.Datatypes.

@@ -9,6 +9,7 @@ Require Import PlutusCert.PlutusIR.Transform.DeadCode3.
 From PlutusCert Require Import Semantics.Dynamic.
 From PlutusCert Require Import Semantics.Static.
 From PlutusCert Require Import Analysis.WellScoped.
+From PlutusCert Require Import Analysis.NoShadow.
 From PlutusCert Require Import TypeSafety.TypeLanguage.Preservation.
 From PlutusCert Require Import SemanticEquivalence.LogicalRelation.
 From PlutusCert Require Import FreeVars.
@@ -17,29 +18,23 @@ From PlutusCert Require Import Substitution.Free.
 From PlutusCert Require Import Util.List.
 
 Import ListNotations.
-Import UniqueBinders.
 Import Utf8_core.
 
 Import FreeVars.Term.
 
 
 
-(* Uniqueness of binders for open terms *)
-Definition unique_open Δ Γ t :=
-  unique_tm t /\
-  Forall (fun X => ~ appears_bound_in_ann X t) Δ /\
-  Forall (fun v => ~ appears_bound_in_tm v t) Γ.
-
-
 Section TypingHelpers.
 
   Lemma lookup_app_r {A} k (v : A) xs xs' :
     lookup k xs = Some v -> lookup k (xs ++ xs') = Some v.
+  Proof.
   Admitted.
 
   Lemma lookup_app {A} k (v : A) xs xs' :
     lookup k (xs ++ xs') = Some v ->
     lookup k xs = Some v \/ lookup k xs' = Some v.
+  Proof.
   Admitted.
 
   Definition P_has_type Δ Γ t T :=
@@ -112,47 +107,19 @@ Section SubstitutionLemmas.
   (* Substituting type annotations will not change free term variables*)
   Lemma fv_msubstA_fv ρ t :
     fv (msubstA ρ t) = fv t.
+  Proof.
   Admitted.
 
 
   Import PlutusNotations.
 
-  (*
-  Lemma msubstA_LetNonRec ss bs t :
-    <{ /[[ ss /] {Let NonRec bs t} }>
-    = Let NonRec <{ /[[ ss /][bnr] bs }> <{/[[ ss /] t}>.
-  Admitted.
-
-  Lemma msubst_LetNonRec ss bs t : <{ /[ ss /] {Let NonRec bs t} }>
-    = Let NonRec <{ /[ ss /][bnr] bs }> <{/[ ss /] t}>.
-  Admitted.
-
-  Lemma msubst_bs_cons ss b bs : <{ /[ ss /][bnr] {b :: bs} }>
-    = <{ /[ ss /][b]b }> :: <{ /[ ss /][bnr]bs }>.
-  Admitted.
-
-  Lemma msubstA_bs_cons ss b bs : <{ /[[ ss /][bnr] {b :: bs} }>
-    = <{ /[[ ss /][b]b }> :: <{ /[[ ss /][bnr]bs }>.
-  Admitted.
-  *)
-
-  (*
-  Lemma msubst_TermBind ss s x t : msubst_b ss (TermBind s x t)
-    = TermBind s x (msubst ss t).
-  Admitted.
-
-  Lemma msubstA_TermBind ss s x t : msubstA_b ss (TermBind s x t)
-    = TermBind s x (msubstA ss t).
-  Admitted.
-  *)
-
   Lemma compose_subst_msubst : forall x tx γ t,
     subst x tx (msubst γ t) = msubst ((x, tx) :: γ) t.
-  Admitted.
+  Proof. Admitted.
 
   Lemma compose_subst_msubst_bindings_nonrec : forall x tx γ bs,
     <{ [ x := tx ]bnr ([γ]*bnr bs) }> = <{ [(x, tx) :: γ]*bnr bs }>.
-  Admitted.
+  Proof. Admitted.
 
   Lemma result_msubstA_result v δ :
     result v ->
@@ -172,7 +139,6 @@ Section SubstitutionLemmas.
 
 End SubstitutionLemmas.
 
-
 Section ScopingLemmas.
 
   Lemma well_scoped_bindings_Rec__Forall Δ Γ bs :
@@ -188,18 +154,22 @@ Section ScopingLemmas.
 
   Lemma append_distr_remove_many xs ys zs :
     (xs ++ ys) \ zs = (xs \ zs) ++ (ys \ zs).
+  Proof.
   Admitted.
 
   Lemma remove_assoc xs ys zs :
     (xs \ ys) \ zs = xs \ (ys ++ zs).
+  Proof.
   Admitted.
 
   Lemma remove_swap xs ys zs :
     (xs \ ys) \ zs = (xs \ zs) \ ys.
+  Proof.
   Admitted.
 
   Lemma remove_idemp xs ys :
     (xs \ ys) \ ys = xs \ ys.
+  Proof.
   Admitted.
 
   Lemma remove_many_nil xs :
@@ -410,31 +380,18 @@ Section ScopingLemmas.
   Admitted.
 
   Corollary well_scoped_fv_term t Δ Γ :
-    (Δ,, Γ |-+ t) ->
-    fv t ⊆ Γ.
+    (Δ,, Γ |-+ t) -> fv t ⊆ Γ.
+  Proof.
     revert Δ Γ.
     apply (proj1 well_scoped_fv t).
   Qed.
-
-
 
   (* The free type variables of a well-scoped term appear in Γ *)
   Lemma well_scoped_ftv {Δ Γ t}:
     well_scoped Δ Γ t ->
     ftv t ⊆ Δ.
-  Admitted.
-
-  Lemma well_scoped_unique { Δ Γ t } :
-    well_scoped Δ Γ t ->
-    unique_open Δ Γ t ->
-    disjoint Γ (bound_vars t).
   Proof.
-
-  (* Follows from unique_open:
-      Forall (λ v : string, ¬ Term.appears_bound_in v t) Γ
-  *)
   Admitted.
-
 
 End ScopingLemmas.
 
@@ -482,6 +439,7 @@ Section Purity.
         substitution ((x, T) :: Γ) ((x, t) :: γ).
 
   Lemma RG_substitution_1 : forall ρ k Γ γ γ', RG ρ k Γ γ γ' -> substitution Γ γ.
+  Proof.
   (* Should hold: substitution contains less information *)
   Admitted.
 
@@ -504,6 +462,7 @@ Section Purity.
   Lemma msubst_result t γ ρ:
     result t /\ ~ is_error t ->
     result (msubst γ (msubstA ρ t)) /\ ~ is_error (msubst γ (msubstA ρ t)).
+  Proof.
   Admitted.
 
   Lemma is_pure_nil_pure_open Δ Γ t τ:
@@ -536,17 +495,17 @@ Proof.
   - auto.
 Qed.
 
-Lemma disjoint_contradiction {A} {xs ys} {x : A} :
+Lemma disjoint_contradiction {A : Set} {xs ys} {x : A} :
   x ∈ xs ->
   x ∈ ys ->
   ¬ (disjoint xs ys).
+Proof.
 Admitted.
 
-Lemma unique_well_scoped_disjoint Δ Γ rec bs t Δ' Γ' t' :
+Lemma no_shadow_disjoint Δ Γ rec bs t Δ' Γ' t' :
 
   (* Properties on pre-term *)
-  well_scoped Δ Γ (Let rec bs t) ->
-  unique_open Δ Γ (Let rec bs t) ->
+  no_shadow Δ Γ (Let rec bs t) ->
 
   (* Properties on post-term *)
   well_scoped Δ' Γ' t' ->
@@ -561,7 +520,7 @@ Lemma unique_well_scoped_disjoint Δ Γ rec bs t Δ' Γ' t' :
     disjoint (bvb b) (fv t') /\
     disjoint (btvb b) (ftv t').
 Proof with eauto.
-  intros H_pre_ws H_pre_unique H_post_ws H_elim H_Δ_Δ' H_Γ_Γ'.
+  intros H_pre_ns H_post_ws H_elim H_Δ_Δ' H_Γ_Γ'.
   intros b H_in_b_bs .
 
   destruct b as [ s [x ty] t_rhs | | ].
@@ -585,7 +544,7 @@ Proof with eauto.
         (* TermBind s (VarDecl x ty) t_rhs ∈ bs *)
       }
 
-      assert (H_disjoint := well_scoped_unique H_pre_ws H_pre_unique).
+      apply Term.ns_disjoint in H_pre_ns as H_disjoint.
       assert (H_not_disjoint : ¬ (disjoint Γ (bound_vars (Let rec bs t)))). {
         eapply (disjoint_contradiction H_x_in_Γ H_x_in_bound_vars).
       }

@@ -62,7 +62,7 @@ Module Ty.
       (tyvar_dec : forall x y : tyvar, {x = y} + {x <> y})
       .
 
-    Fixpoint btv (T : ty) : list tyname :=
+    Function btv (T : ty) : list tyname :=
       match T with
       | Ty_Var X =>
           []

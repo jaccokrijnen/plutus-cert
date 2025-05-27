@@ -17,8 +17,7 @@ src/PlutusIR/Extract.v
 
 src/PlutusIR/Analysis/Equality.v
 src/PlutusIR/Analysis/FreeVars.v
-src/PlutusIR/Analysis/UniqueBinders.v
-src/PlutusIR/Analysis/UniqueBinders/DecOpt.v
+src/PlutusIR/Analysis/NoShadow.v
 src/PlutusIR/Analysis/Size.v
 src/PlutusIR/Analysis/BoundVars.v
 src/PlutusIR/Analysis/BoundVars/DecOpt.v

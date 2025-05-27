@@ -6,7 +6,6 @@ Require Import PlutusCert.PlutusIR.Transform.DeadCode.SSP.
 Require Import PlutusCert.PlutusIR.Semantics.Dynamic.
 Require Import PlutusCert.PlutusIR.Analysis.BoundVars.
 Require Import PlutusCert.PlutusIR.Analysis.Purity.
-Require Import PlutusCert.PlutusIR.Analysis.UniqueBinders.
 Require Import PlutusCert.PlutusIR.Semantics.Static.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.CompatibilityLemmas.
 Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.LogicalRelation.
@@ -15,7 +14,6 @@ Require Import PlutusCert.PlutusIR.Semantics.SemanticEquivalence.Auto.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.StrongNormalisation.
 
-Import UniqueBinders.
 
 Import PlutusNotations.
 

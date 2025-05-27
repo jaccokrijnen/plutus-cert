@@ -9,12 +9,10 @@ From PlutusCert Require Import
   PlutusIR.Analysis.FreeVars
   PlutusIR.Analysis.BoundVars
   PlutusIR.Analysis.Purity
-  PlutusIR.Analysis.UniqueBinders
   PlutusIR.Transform.Compat
   Util
 .
 
-Import UniqueBinders.
 Import ListNotations.
 
 Definition fv : term -> list string := Term.fv.

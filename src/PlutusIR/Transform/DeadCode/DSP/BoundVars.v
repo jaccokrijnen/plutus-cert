@@ -1,12 +1,9 @@
 From PlutusCert Require Import PlutusIR.
-From PlutusCert Require Import Analysis.UniqueBinders.
 From PlutusCert Require Import Semantics.Dynamic.Substitution.
 From PlutusCert Require Import Semantics.Dynamic.AnnotationSubstitution.
 From PlutusCert Require Import Multisubstitution.Congruence.
 From PlutusCert Require Import Util.List.
 
-
-Import UniqueBinders.
 
 Require Import Utf8_core.
 Require Import Lists.List.

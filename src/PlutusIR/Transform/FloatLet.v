@@ -6,7 +6,7 @@ From PlutusCert Require Import
   Transform.Compat
   Analysis.Equality
   Analysis.FreeVars
-  Analysis.UniqueBinders
+  Analysis.NoShadow
   Analysis.Purity
   Analysis.WellScoped
   Transform.SplitRec
@@ -130,7 +130,7 @@ Inductive LetReorder : term -> term -> Prop :=
   | LR_Compat : forall t t', Compat LetReorder t t' -> LetReorder t t'.
 
 
-(* This definition assumes global uniqueness *)
+(* This definition assumes no-shadowing *)
 Inductive let_reorder : term -> term -> Prop :=
 
   | lr_Let : forall r bs bs' t t',
@@ -240,7 +240,7 @@ Inductive transitive_closure (R : term -> term -> Prop) : term -> term -> Prop :
 
 
 Definition let_float t_pre t_post
-  := unique_tm t_pre
+  := no_shadow [] [] t_pre
   /\ closed t_post
   /\ exists t' t'',
     (  transitive_closure let_float_step t_pre t'

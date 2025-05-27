@@ -1,5 +1,4 @@
 From PlutusCert Require Import DeadCode.DecideBool.
-From PlutusCert Require Import UniqueBinders.DecOpt.
 
 
 From Coq Require Import Extraction.

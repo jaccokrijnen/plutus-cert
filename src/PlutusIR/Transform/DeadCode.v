@@ -14,12 +14,11 @@ From PlutusCert Require Import
   PlutusIR.Analysis.Equality
   PlutusIR.Analysis.Purity
   PlutusIR.Analysis.WellScoped
-  PlutusIR.Analysis.UniqueBinders
+  PlutusIR.Analysis.NoShadow
   PlutusIR.Transform.Compat
   PlutusIR.Semantics.Dynamic.Values
 .
 
-Import UniqueBinders.
 Import ListNotations.
 
 Set Implicit Arguments.
@@ -86,7 +85,7 @@ with elim_binding : binding -> binding -> Prop :=
       elim_binding b b
   .
 
-Definition dead_code t t' := elim t t' /\ unique_tm t /\ closed t'.
+Definition dead_code t t' := elim t t' /\ no_shadow [] [] t /\ closed t'.
 
 Lemma elim_sym : forall t, elim t t.
 Admitted.

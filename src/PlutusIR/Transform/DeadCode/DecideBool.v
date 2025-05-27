@@ -9,7 +9,6 @@ From Coq Require Import
 From PlutusCert Require Import
   Util
   Equality
-  UniqueBinders
   Purity
   PlutusIR
   PlutusIR.Analysis.Equality

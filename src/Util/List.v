@@ -287,14 +287,79 @@ Notation "xs \ ys" := (remove_many string_dec ys xs) (at level 10).
 
 Notation "xs ⊆  ys" := (subset xs ys) (at level 70).
 
+
+Section DISJOINT.
+
+Context {A : Set}.
+
+Definition disjoint (xs ys : list A) : Prop :=
+  Forall (fun v => ~ In v ys) xs.
+
+
+Lemma disjoint_nil_l ys :
+  disjoint ys [].
+Proof. Admitted.
+
+Lemma disjoint_nil_r ys :
+  disjoint ys [].
+Proof. Admitted.
+
+Lemma disjoint_cons_l x xs ys :
+  x ∉ ys ->
+  disjoint xs ys ->
+  disjoint (x::xs) ys
+.
+Proof. Admitted.
+
+Lemma disjoint_app_r xs ys zs :
+  disjoint xs ys ->
+  disjoint xs zs ->
+  disjoint xs (ys ++ zs)
+.
+Proof. Admitted.
+
+Lemma disjoint_app_l xs ys zs :
+  disjoint xs zs ->
+  disjoint ys zs ->
+  disjoint (xs ++ ys) zs
+.
+Proof. Admitted.
+
+Lemma disjoint_cons_r y xs ys :
+  y ∉ xs ->
+  disjoint xs ys ->
+  disjoint xs (y :: ys)
+.
+Proof.
+Admitted.
+
+
+Lemma disjoint_uncons_l x xs ys :
+  disjoint (x::xs) ys ->
+  disjoint xs ys
+.
+Proof. Admitted.
+
+
+Lemma disjoint_uncons_r y xs ys :
+  disjoint xs (y::ys) ->
+  disjoint xs ys
+.
+Proof. Admitted.
+
+Lemma disjoint_comm xs ys :
+  disjoint xs ys ->
+  disjoint ys xs
+.
+Proof.
+Admitted.
+
+End DISJOINT.
+
 Section Subset.
 
 (* TODO: This should subsume `inclusion` and its lemmas, see if they can be
    unified *)
-
-  Definition disjoint {A} (xs ys : list A) : Prop :=
-    Forall (fun v => ~ In v ys) xs.
-
 
   Lemma subset_refl {A} {xs : list A} :
     xs ⊆ xs.
