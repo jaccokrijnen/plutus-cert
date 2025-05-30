@@ -1,5 +1,5 @@
 From PlutusCert Require Import PlutusIR.
-From PlutusCert Require Import PlutusIR.Semantics.Static.Typing.
+From PlutusCert Require Import PlutusIR.Semantics.Static.Typing.Typing.
 From PlutusCert Require Import PlutusIR.Semantics.Dynamic.Bigstep.
 
 Require Import Lists.List.

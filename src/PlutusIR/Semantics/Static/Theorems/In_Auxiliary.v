@@ -2,7 +2,7 @@ Require Import PlutusCert.PlutusIR.
 
 Require Import PlutusCert.PlutusIR.Analysis.BoundVars.
 Require Import PlutusCert.PlutusIR.Semantics.Static.Auxiliary.
-Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.
+Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.Typing.
 
 Require Import Coq.Lists.List.
 

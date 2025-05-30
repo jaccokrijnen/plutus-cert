@@ -61,7 +61,7 @@ Notation "'[' γ ; ρ ']_b' t" := (msubst_b γ (msubstA_b ρ t)) (at level 10).
 
 Lemma elim_nonrec_approx : forall Δ Γ b bs t T t' Γ_b,
   disjoint (bvb b) (fv t') ->
-  disjoint (btvb b) (ftv t') ->
+  disjoint (btvb b) (Term.ftv t') ->
   map_normalise (binds_Gamma b) Γ_b ->
   binds_Delta b ++ Δ,, Γ_b ++ Γ |- (Let NonRec       bs  t) ≤ t' : T ->
   Δ                 ,, Γ        |- (Let NonRec (b :: bs) t) ≤ t' : T.
@@ -197,7 +197,7 @@ Proof.
     + rewrite flatten_app, app_assoc. reflexivity.
     + rewrite app_assoc. reflexivity.
 
-  - (* dc_NonRec_keep *)
+   - (* dc_NonRec_keep *)
     admit.
 
   - (* dc_NonRec_nil *)
@@ -214,9 +214,9 @@ Proof.
     admit.
 
   - (* dc_Rec_keep *)
-    admit.
+    admit. 
 
-  - (* dc_Rec_nil *)
+  (* dc_Rec_nil *)
 Admitted.
 
 Definition P_dc_rev t t' :=
@@ -226,7 +226,7 @@ Definition P_dc_rev t t' :=
 
 Lemma elim_nonrec_approx_rev : forall Δ Γ b bs t T t' Γ_b,
   disjoint (bvb b) (fv t') ->
-  disjoint (btvb b) (ftv t') ->
+  disjoint (btvb b) (Term.ftv t') ->
   pure_binding nil b ->
   map_normalise (binds_Gamma b) Γ_b ->
   binds_Delta b ++ Δ,, Γ_b ++ Γ |- t' ≤ (Let NonRec       bs  t)  : T ->
