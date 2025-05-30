@@ -13,7 +13,6 @@ From PlutusCert Require Import
     PlutusIR 
     Static.Typing.Typing
     Util.List
-    Static.Util
     Equality
     Kinding.Checker
     Util
