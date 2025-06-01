@@ -33,7 +33,7 @@ Fixpoint f (t : ty) : STLC.term :=
   (* Two fold rights instead of concat/map to help termination checking*)
       fold_right (fun Ts acc => 
         (fold_right (fun T acc2 => @tmbin Fun (f T) acc2) acc Ts))
-        (tmbuiltin PlutusIR.DefaultUniInteger) Tss
+        (tmbuiltin PlutusIR.DefaultUniUnit) Tss
       (* Instead of checking for the length, we just start with something of Base Kind*)
   | Ty_Builtin d => tmbuiltin d
   end.
@@ -246,7 +246,7 @@ Proof.
                 @tmbin Fun (f T) acc2)
                   acc
                   Ts)
-                  (tmbuiltin PlutusIR.DefaultUniInteger)
+                  (tmbuiltin PlutusIR.DefaultUniUnit)
                   (@TypeSubstitution.map' (list PlutusIR.ty)
                   (list PlutusIR.ty) l
                   (fun (y : list PlutusIR.ty) (_ : y ∈ l) =>
@@ -275,7 +275,7 @@ Proof.
           @tmbin Fun (f T) acc2)
             acc
             Ts)
-            (tmbuiltin PlutusIR.DefaultUniInteger)
+            (tmbuiltin PlutusIR.DefaultUniUnit)
             l)
             a0
          = f ((PlutusIR.Ty_SOP (a0::l)))).
