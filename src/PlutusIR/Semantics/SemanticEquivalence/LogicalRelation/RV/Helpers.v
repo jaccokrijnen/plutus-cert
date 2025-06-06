@@ -255,6 +255,7 @@ Lemma RV_condition : forall k T rho v v',
                 Rel T1 T2 Chi ->
                 forall i (Hlt_i : i < k),
                   RC i T ((bX, (Chi, T1, T2)) :: rho) <{ :[bX := T1] e_body }> <{ :[bX := T2] e'_body }>
+        | PlutusIR.Ty_SOP Tss => False (* TODO *)
         end
       ) \/ (
         is_error v /\

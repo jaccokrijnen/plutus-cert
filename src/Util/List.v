@@ -188,6 +188,10 @@ Proof with auto.
     rewrite H_eqb in *...
 Qed.
 
+Lemma inclusion_no_shadow {K} x k (xs ys : list (string * K)) :
+  inclusion xs ys -> ~ In x (map fst xs) -> inclusion xs ((x, k):: ys).
+Admitted.
+
 Lemma inclusion_contra {K} x (xs ys : list (string * K)) :
   inclusion xs ys ->
   lookup x ys = None ->
@@ -235,6 +239,10 @@ Lemma append_permute A (m : list (string * A)) k (v : A) xs ys:
   ~ (In k (map fst xs)) -> inclusion (xs ++ ((k, v) :: ys)) ((k, v) :: xs ++ ys) .
 Admitted.
 
+(* Like append_permute, but the rhs list may change up to inclusion *)
+Lemma append_permute__inclusion2 A k (v : A) xs ys ys':
+  List.inclusion ys ys' -> ~ (In k (map fst xs)) -> List.inclusion ((k, v) :: xs ++ ys) (xs ++ ((k, v)::ys')).
+Admitted.
 
 Definition equivalent {A : Type} (m m' : list (string * A)) :=
   inclusion m m' /\ inclusion m' m.

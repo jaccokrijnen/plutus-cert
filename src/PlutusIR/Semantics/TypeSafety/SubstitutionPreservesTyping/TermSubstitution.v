@@ -154,7 +154,7 @@ Proof with (eauto with typing).
            eapply notIn__map_normalise in H8...
            apply Typing.weakening in H9.
            apply H9.
-           all: auto using inclusion_refl, append_permute.
+           all: auto using inclusion_refl, append_permute. 
 Qed.
 
 Lemma SPT__Bindings_Rec : forall bs,

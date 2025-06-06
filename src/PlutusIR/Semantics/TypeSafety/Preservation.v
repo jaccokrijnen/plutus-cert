@@ -1,5 +1,5 @@
 Require Import PlutusCert.PlutusIR.Semantics.Dynamic.Bigstep.
-Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.
+Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.Typing.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
 Require Import PlutusCert.PlutusIR.Semantics.Static.Theorems.UniqueTypes.

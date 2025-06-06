@@ -245,7 +245,7 @@ Ltac prove_term beq_equation :=
 
 Lemma term_beq_eq : forall t, P_term t.
 Proof.
-  apply term_rect' with (P := P_term) (Q := P_binding) (R := P_bindings).
+  apply term_rect' with (P := P_term) (Q := P_binding) (R := P_bindings) (S := P_bindings).
   all: intros; unfold P_term, P_binding, P_bindings in *.
   + prove_term term_beq_equation.
   + prove_term term_beq_equation.
@@ -259,6 +259,7 @@ Proof.
   + prove_term term_beq_equation.
   + prove_term term_beq_equation.
   + prove_term term_beq_equation.
+  + prove_term term_beq_equation.
     admit.
   + prove_term term_beq_equation.
     admit.
@@ -266,12 +267,16 @@ Proof.
   + prove_term binding_beq_equation.
   + prove_term binding_beq_equation.
   + prove_term binding_beq_equation.
-
   + intro bs'.
     assert (exists b2 bs2, bs' = b2 :: bs2). admit.
     destruct H1 as [b2 [bs2 ?]]. subst.
     admit.
-
+  + simpl. split; destruct_match; intuition.
+  + intro bs'.
+    assert (exists b2 bs2, bs' = b2 :: bs2). admit.
+    destruct H1 as [b2 [bs2 ?]]. subst.
+    admit.
+  + simpl. split; destruct_match; intuition.
 Admitted.
 
 Definition rd_equal : rel_decidable :=

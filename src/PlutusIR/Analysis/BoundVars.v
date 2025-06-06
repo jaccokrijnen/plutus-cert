@@ -78,6 +78,8 @@ Module Ty.
           X :: btv T'
       | Ty_App T1 T2 =>
           btv T1 ++ btv T2
+      | Ty_SOP Tss =>
+        flatmap2 btv Tss
       end.
   End btv.
 
