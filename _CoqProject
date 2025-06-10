@@ -107,6 +107,8 @@ src/Language/STLC/STLC.v
 src/Language/STLC/Dynamics/SN_STLC_nd.v
 src/Language/STLC/Dynamics/step_gu.v
 src/Language/STLC/Dynamics/step_naive.v
+src/Language/STLC/Dynamics/IdSubst.v
+src/Language/STLC/Dynamics/psubs.v
 
 src/Language/STLC/Alpha/alpha_ctx_sub.v
 src/Language/STLC/Alpha/alpha_freshness.v
@@ -116,11 +118,10 @@ src/Language/STLC/Alpha/alpha_sub.v
 src/Language/STLC/Alpha/alpha_vacuous.v
 src/Language/STLC/Alpha/alpha.v
 
-src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/construct_GU.v
-src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/construct_GU_R.v
+src/Language/STLC/Rename/construct_GU.v
+src/Language/STLC/Rename/construct_GU_R.v
+
 src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/GU_NC_BU.v
-src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/IdSubst.v
-src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/psubs.v
 src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/SN_STLC_GU.v
 src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/util.v
 src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/variables.v
