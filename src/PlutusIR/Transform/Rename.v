@@ -57,6 +57,8 @@ forms of shadowing. For example:
 ** variables in the pre-term. However, since those free variables may have other
 ** names in the post-term, we need to take into account the context Γ (or Δ).
 *)
+
+(*
 Definition safe_var x (Γ : ctx) t_pre :=
   forall z, In (z, x) Γ -> ~ AFI.Term.appears_free_in z t_pre.
 
@@ -65,8 +67,19 @@ Definition safe_tyvarA α (Δ : ctx) t_pre :=
 
 Definition safe_tyvar α (Δ : ctx) τ_pre :=
   forall β, In (β, α) Δ -> ~ AFI.Ty.appears_free_in β τ_pre.
+  *)
 
 
+Inductive safe_rename : ctx -> string -> string -> Prop :=
+  | srn_head C x y :
+      safe_rename ((x, y) :: C) x y
+  | srn_tail C x y z w :
+      x <> z ->
+      y <> w ->
+      safe_rename ((z, w) :: C) x y
+.
+
+(*
 Inductive rename_tvs (Δ : ctx) (cs : list vdecl) : list tvdecl -> list tvdecl -> ctx -> Prop :=
 
   | rn_tvs_nil :
@@ -79,14 +92,26 @@ Inductive rename_tvs (Δ : ctx) (cs : list vdecl) : list tvdecl -> list tvdecl -
       rename_tvs ((α, β) :: Δ) cs tvs tvs' Δ_tvs ->
       rename_tvs Δ cs (TyVarDecl α k :: tvs) (TyVarDecl β k :: tvs') ((α, β) :: Δ_tvs)
 .
+*)
+
+(*
+Produce a renaming environment of renamed vdecl binders (i.e. the type parameters of ADTs
+constructed with DatatypeBind)
+*)
+Inductive tyvars_ctx : list tvdecl -> list tvdecl -> ctx -> Prop :=
+  | ctv_nil :
+      tyvars_ctx [] [] []
+  | ctv_cons α αs β βs Δ κ κ' :
+      tyvars_ctx αs βs Δ ->
+      tyvars_ctx (TyVarDecl α κ :: αs) (TyVarDecl β κ' :: βs) ((α, β) :: Δ)
+.
+
 
 Inductive rename_ty (Δ : ctx) : ty -> ty -> Prop :=
 
 
-   (* Note: it is important to use lookup, not In, since only the most recently
-      bound variable can be renamed *)
    | rn_Ty_Var : forall α α',
-      lookup α Δ = Some α' ->
+      safe_rename Δ α α' ->
       rename_ty Δ (Ty_Var α) (Ty_Var α')
 
    | rn_Ty_Fun : forall σ τ σ' τ',
@@ -101,7 +126,6 @@ Inductive rename_ty (Δ : ctx) : ty -> ty -> Prop :=
 
    | rn_Ty_Forall : forall α α' k τ τ',
       rename_ty ((α, α') :: Δ) τ τ' ->
-      safe_tyvar α Δ τ ->
       rename_ty Δ (Ty_Forall α k τ) (Ty_Forall α' k τ')
 
    | rn_Ty_Builtin : forall t,
@@ -109,7 +133,6 @@ Inductive rename_ty (Δ : ctx) : ty -> ty -> Prop :=
 
    | rn_Ty_Lam : forall α α' k τ τ',
       rename_ty ((α, α') :: Δ) τ τ' ->
-      safe_tyvar α Δ τ ->
       rename_ty Δ (Ty_Lam α k τ) (Ty_Lam α' k τ')
 
    | Ty_App : forall σ τ σ' τ',
@@ -120,25 +143,15 @@ Inductive rename_ty (Δ : ctx) : ty -> ty -> Prop :=
 
 Inductive rename (Δ Γ: ctx) : term -> term -> Prop :=
   | rn_Var : forall x x',
-      lookup x Γ = Some x' ->
+      safe_rename Γ x x' ->
       rename Δ Γ (Var x) (Var x')
 
   | rn_Let_Rec : forall bs bs' t t',
       forall Γ_bs Δ_bs,
       rename_bindings_Rec (Δ_bs ++ Δ) (Γ_bs ++ Γ) Δ_bs Γ_bs bs bs' ->
       rename (Δ_bs ++ Δ) (Γ_bs ++ Γ) t t' ->
-
-      (* All bound type- and term variables in the bindings should not capture _in the body_.
-
-         Alternatively, this could have been implemented by adding `Let NonRec bs t` as
-         an index in rename_binding and putting a simple safe_var at the actual binding *)
-      Forall (fun '(_, x') => safe_var x' Γ t) Γ_bs ->
-      Forall (fun '(_, α') => safe_tyvarA α' Δ t) Δ_bs ->
-
-      (* All bound (type) variables have to be unique in the binding group *)
-      NoDup (bvbs bs') ->
-      NoDup (btvbs bs') ->
-
+      (* no conditions like NoDup are required here, the relation preserves
+         well-scopedness (e.g. if NoDup (bvbs bs) then also NoDup (bvbs bs') *)
       rename Δ Γ (Let Rec bs t) (Let Rec bs' t')
 
   (* If the decision procedure becomes problematic because of not structurally smaller terms,
@@ -150,25 +163,15 @@ Inductive rename (Δ Γ: ctx) : term -> term -> Prop :=
   | rn_Let_NonRec_cons : forall Γ_b Δ_b b b' bs bs' t t',
       rename_binding Δ Γ Γ_b Δ_b b b' ->
       rename (Δ_b ++ Δ) (Γ_b ++ Γ) (Let NonRec bs t) (Let NonRec bs' t') ->
-
-      (* All bound (type) variables in the let should not capture.
-
-         Alternatively, add `Let NonRec bs t` as index in rename_binding
-         and put a simple safe_var at the actual binding *)
-      Forall (fun '(_, x') => safe_var x' Γ (Let NonRec bs t)) Γ_b ->
-      Forall (fun '(_, α') => safe_tyvarA α' Δ (Let NonRec bs t)) Δ_b ->
-
       rename Δ Γ (Let NonRec (b :: bs) t) (Let NonRec (b' :: bs') t')
 
   | rn_TyAbs : forall α α' k t t',
       rename ((α, α') :: Δ) Γ t t' ->
-      safe_tyvarA α' Δ t ->
       rename Δ Γ (TyAbs α k t) (TyAbs α' k t')
 
   | rn_LamAbs : forall x x' τ τ' t t',
       rename_ty Δ τ τ' ->
       rename Δ ((x, x') :: Γ) t t' ->
-      safe_var x' Γ t ->
       rename Δ Γ (LamAbs x τ t) (LamAbs x' τ' t')
 
   | rn_Apply : forall s t s' t',
@@ -216,7 +219,7 @@ with rename_binding (Δ Γ : ctx) : ctx -> ctx -> binding -> binding -> Prop :=
       forall Δ_tvs Γ_cs Γ_b Δ_b,
 
       (* Renamings of bound ty-vars, which may be used in constructor types *)
-      rename_tvs Δ cs' tvs tvs' Δ_tvs ->
+      tyvars_ctx tvs tvs' Δ_tvs ->
       (* Constructor types are renamed and return any renamed constructor names *)
       rename_constrs ((α, α') :: Δ_tvs ++ Δ) Γ cs cs' Γ_cs ->
 
@@ -284,18 +287,6 @@ Require Import PlutusCert.PlutusIR.
 Import PlutusNotations.
 
 (* safe_var facts *)
-
-Lemma safe_var__subst x Γ v y t :
-  closed v ->
-  safe_var x Γ <{ [y := v] t }>
-.
-Admitted.
-
-Lemma safe_tyvarA__subst α Γ v y t :
-  closed v ->
-  safe_tyvarA α Γ <{ [y := v] t }>
-.
-Admitted.
 
 
 (* rename facts *)
