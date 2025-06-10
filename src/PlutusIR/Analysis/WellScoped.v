@@ -97,6 +97,8 @@ Inductive well_scoped (Δ Γ: ctx) : term -> Prop :=
   | WS_LetRec : forall bs t Δ' Γ',
       Δ' = rev (btvbs bs) ++ Δ ->
       Γ' = rev (bvbs bs) ++ Γ ->
+      NoDup (bvbs bs) ->
+      NoDup (btvbs bs) ->
       Δ' ,, Γ' |-ws_oks_r bs ->
       Δ' ,, Γ' |-+ t ->
       Δ ,, Γ |-+ (Let Rec bs t)
