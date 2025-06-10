@@ -1,7 +1,7 @@
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
 Import ListNotations.
-From PlutusCert Require Import STLC alpha.alpha Util.List variables util.
+From PlutusCert Require Import STLC Alpha.alpha Util.List variables util.
 Local Open Scope string_scope.
 Local Open Scope list_scope.
 

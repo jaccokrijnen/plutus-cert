@@ -91,6 +91,7 @@ src/PlutusIR/Semantics/Static/Typing/Typing_sound_complete.v
 
 src/PlutusIR/Semantics/Static/Kinding/Checker.v
 src/PlutusIR/Semantics/Static/Kinding/Kinding.v
+src/PlutusIR/Semantics/Static/Kinding/STLC_Kinding.v
 
 src/PlutusIR/Semantics/Static/Normalisation/Normalisation.v
 src/PlutusIR/Semantics/Static/Normalisation/Normaliser_sound_complete.v
@@ -101,17 +102,19 @@ src/PlutusIR/Semantics/Static/Normalisation/Type_reduction.v
 
 src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_PIR.v
 
-src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_nd.v
-src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/STLC_Kinding.v
-src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/STLC.v
+src/Language/STLC/STLC.v
 
-src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/alpha/alpha_ctx_sub.v
-src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/alpha/alpha_freshness.v
-src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/alpha/alpha_rename.v
-src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/alpha/alpha_typing.v
-src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/alpha/alpha_sub.v
-src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/alpha/alpha_vacuous.v
-src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/alpha/alpha.v
+src/Language/STLC/Dynamics/SN_STLC_nd.v
+src/Language/STLC/Dynamics/step_gu.v
+src/Language/STLC/Dynamics/step_naive.v
+
+src/Language/STLC/Alpha/alpha_ctx_sub.v
+src/Language/STLC/Alpha/alpha_freshness.v
+src/Language/STLC/Alpha/alpha_rename.v
+src/Language/STLC/Alpha/alpha_typing.v
+src/Language/STLC/Alpha/alpha_sub.v
+src/Language/STLC/Alpha/alpha_vacuous.v
+src/Language/STLC/Alpha/alpha.v
 
 src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/construct_GU.v
 src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/construct_GU_R.v
@@ -119,8 +122,6 @@ src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC
 src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/IdSubst.v
 src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/psubs.v
 src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/SN_STLC_GU.v
-src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/step_gu.v
-src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/step_naive.v
 src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/util.v
 src/PlutusIR/Semantics/Static/Normalisation/Strong_Normalisation/SN_STLC/SN_STLC_GU/variables.v
 
