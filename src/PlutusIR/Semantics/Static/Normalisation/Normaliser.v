@@ -1,9 +1,9 @@
 From PlutusCert Require Import 
   PlutusIR 
-  Normalisation.Normalisation 
+  Normalisation.BigStep
   Kinding.Kinding
   Kinding.Checker
-  Type_reduction
+  Normalisation.SmallStep
   Util
   SubstituteTCA
   SN_PIR
@@ -30,7 +30,7 @@ Proof.
   + (* ADMIT: Unimplemented TY_SOP *) admit.
 Admitted.
 
-Definition SN := @sn ty Type_reduction.step.
+Definition SN := @sn ty SmallStep.step.
 
 (* Wouter's suggestion: do not use explicit normalizer in soundness proof*)
 Theorem SN_normalise t Δ K :

@@ -5,7 +5,7 @@ Require Import Coq.Lists.List.
 Import ListNotations.
 
 Require Import PlutusCert.PlutusIR.Semantics.Static.
-Require Import PlutusCert.PlutusIR.Semantics.Static.Normalisation.Normalisation.
+From PlutusCert Require Import Normalisation.BigStep.
 
 Import Utf8_core.
 

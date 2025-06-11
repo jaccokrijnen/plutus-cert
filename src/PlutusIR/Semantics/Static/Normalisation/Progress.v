@@ -1,6 +1,6 @@
 
 (* Progress of the reduction relation used in the normaliser *)
-From PlutusCert Require Import PlutusIR Normalisation.Normalisation Kinding.Kinding Type_reduction
+From PlutusCert Require Import PlutusIR Normalisation.BigStep Kinding.Kinding Normalisation.SmallStep
 Kinding.Checker.
 Require Import Coq.Lists.List.
 Import ListNotations.

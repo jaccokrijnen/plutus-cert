@@ -10,7 +10,7 @@ Local Open Scope list_scope.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From PlutusCert Require Import Free SN_STLC_GU step_naive GU_NC_BU step_gu STLC STLC_Kinding.
+From PlutusCert Require Import Free SN_STLC_GU step_naive GU_NC_BU step_gu STLC KindingSTLC.
 From PlutusCert Require Import alpha_typing Alpha.alpha alpha_rename util alpha_ctx_sub variables alpha_freshness.
 From PlutusCert Require Import alpha_sub alpha_vacuous construct_GU.
 
@@ -306,7 +306,7 @@ Proof.
   exact X.
 Qed.
 
-Theorem strong_normalization_nd Δ s T : STLC_Kinding.has_kind Δ s T -> (@sn term step_nd) s.
+Theorem strong_normalization_nd Δ s T : KindingSTLC.has_kind Δ s T -> (@sn term step_nd) s.
   intros.
   apply strong_normalization_gu in H. 
   apply SN_na_to_SN_nd.
