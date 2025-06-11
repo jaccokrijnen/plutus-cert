@@ -1,7 +1,7 @@
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
 Import ListNotations.
-From PlutusCert Require Import variables util alpha.alpha STLC STLC_Kinding Util.List alpha_freshness alpha_rename.
+From PlutusCert Require Import variables util Alpha.alpha STLC KindingSTLC Util.List alpha_freshness alpha_rename.
 Local Open Scope string_scope.
 Local Open Scope list_scope.
 
@@ -21,7 +21,7 @@ Set Printing Implicit.
 
 (* Exercise and possibly useful *)
 Lemma alpha_preserves_typing sigma s t A Gamma Gamma' :
-  Alpha sigma s t -> CAlpha sigma Gamma Gamma' -> STLC_Kinding.has_kind Gamma s A -> STLC_Kinding.has_kind Gamma' t A.
+  Alpha sigma s t -> CAlpha sigma Gamma Gamma' -> KindingSTLC.has_kind Gamma s A -> KindingSTLC.has_kind Gamma' t A.
 Proof.
   intros HAlpha Htype.
   generalize dependent A.

@@ -10,8 +10,8 @@ Local Open Scope list_scope.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From PlutusCert Require Import alpha_vacuous construct_GU_R alpha_sub psubs step_gu alpha_typing STLC STLC_Kinding SN_STLC_GU.GU_NC_BU SN_STLC_GU.construct_GU.
-From PlutusCert Require Import IdSubst step_naive alpha.alpha alpha_rename util alpha_ctx_sub variables alpha_freshness.
+From PlutusCert Require Import alpha_vacuous construct_GU_R alpha_sub psubs step_gu alpha_typing STLC KindingSTLC GU_NC_BU construct_GU.
+From PlutusCert Require Import IdSubst step_naive Alpha.alpha alpha_rename util alpha_ctx_sub variables alpha_freshness.
 
 Inductive sn {X : Type} {e : X -> X -> Type } x : Type :=
 | SNI : (forall y, e x y -> sn y) -> sn x.

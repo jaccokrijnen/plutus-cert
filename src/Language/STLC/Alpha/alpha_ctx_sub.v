@@ -1,7 +1,7 @@
 Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Strings.String.
-From PlutusCert Require Import STLC alpha.alpha Util.List util variables.
+From PlutusCert Require Import STLC Alpha.alpha Util.List util variables.
 Require Import Coq.Program.Equality.
 Require Import ssreflect.
 

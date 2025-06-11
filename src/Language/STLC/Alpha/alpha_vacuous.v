@@ -12,7 +12,7 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Arith.
 Require Import Coq.Bool.Bool.
 
-From PlutusCert Require Import construct_GU step_naive psubs util STLC SN_STLC_GU.GU_NC_BU alpha.alpha variables util alpha_ctx_sub alpha_freshness.
+From PlutusCert Require Import construct_GU step_naive psubs util STLC GU_NC_BU Alpha.alpha variables util alpha_ctx_sub alpha_freshness.
 
 Lemma not_ftv_to_not_tv {x s}:
   ~ (In x (ftv s)) -> prod (~ (In x (tv (to_GU'' x s)))) (Alpha [] s (to_GU'' x s)).

@@ -10,7 +10,7 @@ Require Import Lia.
 Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Arith.
 
-From PlutusCert Require Import STLC step_naive util alpha.alpha variables alpha_freshness alpha_ctx_sub.
+From PlutusCert Require Import STLC step_naive util Alpha.alpha variables alpha_freshness alpha_ctx_sub.
 
 
 
