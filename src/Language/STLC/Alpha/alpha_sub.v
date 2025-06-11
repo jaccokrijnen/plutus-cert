@@ -11,7 +11,7 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Arith.
 Require Import Coq.Bool.Bool.
 
-From PlutusCert Require Import construct_GU_R construct_GU psubs alpha_vacuous construct_GU step_naive psubs util STLC SN_STLC_GU.GU_NC_BU Alpha.alpha variables util alpha_ctx_sub alpha_freshness.
+From PlutusCert Require Import construct_GU_R construct_GU psubs alpha_vacuous construct_GU step_naive psubs util STLC GU_NC_BU Alpha.alpha variables util alpha_ctx_sub alpha_freshness.
 
 Require Import Coq.Program.Equality.
 
