@@ -1,6 +1,7 @@
 Require Import PlutusCert.PlutusIR.
 
-Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.
+Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.Typing.
+Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.drop_context.
 Require Import PlutusCert.Util.List.
 Require Import Lists.List.
 Import ListNotations.
@@ -17,7 +18,9 @@ Module Kinding.
     induction HT.
     all: intros Delta' Hincl.
     all: try solve [econstructor; eauto using inclusion_cons].
-  Qed.
+    (* Ty_SOP*)
+    admit.
+  Admitted.
 
   Lemma weakening_empty : forall Delta T K,
       [] |-* T : K ->
@@ -146,4 +149,4 @@ Module Typing.
     all: eassumption.
   Qed.
 
-End Typing.
+End Typing. 
