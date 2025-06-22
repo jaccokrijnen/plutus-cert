@@ -2,10 +2,10 @@ From Coq Require Extraction.
 
 From PlutusCert Require Import 
   PlutusIR 
-  Normalisation.Normalisation 
+  Normalisation.BigStep 
   Kinding.Kinding
   Kinding.Checker
-  Type_reduction
+  Normalisation.SmallStep
   Util
   SubstituteTCA
   SN_PIR

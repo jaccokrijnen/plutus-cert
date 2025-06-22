@@ -1,8 +1,8 @@
 From PlutusCert Require Import Util.List
   PlutusIR
   Kinding.Kinding
-  Normalisation.Normalisation
-  Type_reduction
+  Normalisation.BigStep
+  SmallStep
   TypeSafety.SubstitutionPreservesTyping.SubstituteTCA
   .
 

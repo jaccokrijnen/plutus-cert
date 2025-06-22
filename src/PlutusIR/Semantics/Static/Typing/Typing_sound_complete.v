@@ -7,7 +7,7 @@ Require Import Coq.Strings.String.
 Local Open Scope string_scope.
 
 From PlutusCert Require Import 
-    Normalisation.Normalisation 
+    Normalisation.BigStep 
     Normalisation.Normaliser_sound_complete
     Normalisation.Normaliser
     PlutusIR 

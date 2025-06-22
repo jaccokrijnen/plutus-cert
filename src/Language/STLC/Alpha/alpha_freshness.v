@@ -1,5 +1,5 @@
 
-From PlutusCert Require Import STLC alpha.alpha alpha_ctx_sub Util.List variables util alpha_rename.
+From PlutusCert Require Import STLC Alpha.alpha alpha_ctx_sub Util.List variables util alpha_rename.
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
 

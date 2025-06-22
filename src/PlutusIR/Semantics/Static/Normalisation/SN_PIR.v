@@ -14,9 +14,9 @@ Require Import Ascii.
 Require Import Coq.Program.Equality.
 Require Import Coq.Arith.Wf_nat.
 
-From PlutusCert Require Import SN_STLC_GU SN_STLC_nd util Util.List STLC STLC_Kinding. 
+From PlutusCert Require Import SN_STLC_GU SN_STLC_nd util Util.List STLC KindingSTLC.
 From PlutusCert Require Import PlutusIR Checker.
-From PlutusCert Require Static.TypeSubstitution Type_reduction.
+From PlutusCert Require Static.TypeSubstitution Normalisation.SmallStep.
 
 Set Printing Implicit.
 
@@ -333,7 +333,7 @@ Proof.
 Qed.
         
 Theorem f_preserves_step s s' :
-  Type_reduction.step s s' -> step_nd (f s) (f s').
+  SmallStep.step s s' -> step_nd (f s) (f s').
 Proof.
   intros H.
   induction H; simpl; eauto; try solve [constructor; eauto].
@@ -347,7 +347,7 @@ Proof.
 Defined.
 
 Theorem f_preserves_kind Δ s K :
-  Kinding.has_kind Δ s K -> STLC_Kinding.has_kind Δ (f s) K.
+  Kinding.has_kind Δ s K -> KindingSTLC.has_kind Δ (f s) K.
 Proof with subst; auto.
   intros.
   apply Checker.prop_to_type in H.
@@ -398,14 +398,14 @@ Proof.
   - reflexivity.
 Defined.
 
-Theorem sn_step_nd_to_sn_step : forall s, @sn STLC.term step_nd (f s) -> @sn PlutusIR.ty Type_reduction.step s.
+Theorem sn_step_nd_to_sn_step : forall s, @sn STLC.term step_nd (f s) -> @sn PlutusIR.ty SmallStep.step s.
 Proof.
   intros s.
-  eapply @sn_preimage2 with (h := f) (e2 := Type_reduction.step) (e := step_nd).
+  eapply @sn_preimage2 with (h := f) (e2 := SmallStep.step) (e := step_nd).
   apply f_preserves_step.
 Defined.
 
-Corollary plutus_ty_strong_normalization s Δ K : Kinding.has_kind Δ s K -> @sn PlutusIR.ty Type_reduction.step s.
+Corollary plutus_ty_strong_normalization s Δ K : Kinding.has_kind Δ s K -> @sn PlutusIR.ty SmallStep.step s.
 Proof.
   intros Hwk.
   apply f_preserves_kind in Hwk.

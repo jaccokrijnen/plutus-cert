@@ -1,7 +1,7 @@
 Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Strings.String.
-Require Import PlutusCert.PlutusIR.Semantics.Static.Normalisation.Strong_Normalisation.SN_STLC.SN_STLC_GU.psubs.
+From PlutusCert Require Import psubs.
 
 From PlutusCert Require Import GU_NC_BU STLC util variables.
 
