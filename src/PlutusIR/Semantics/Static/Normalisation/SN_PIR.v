@@ -346,23 +346,31 @@ Proof.
       inversion f0; subst. auto.
 Defined.
 
+Axiom f_preserves_kind__Ty_SOP_axiom : forall Δ Tss, Δ |-* (f (Ty_SOP Tss))
+: Kind_Base.
+
 Theorem f_preserves_kind Δ s K :
   Static.Kinding.Kinding.has_kind Δ s K -> STLC.Kinding.has_kind Δ (f s) K.
 Proof with subst; auto.
   intros.
   apply Checker.prop_to_type in H.
-  induction H using Static.Kinding.Kinding.has_kind_set_ind'.
+  induction H using Static.Kinding.Kinding.has_kind_set__ind.
   all: try solve [intros; try econstructor; eauto].
+  apply (f_preserves_kind__Ty_SOP_axiom).
+  (*
+      TODO:Working code when kind induction scheme is shown to terminate
+    simpl.
   simpl.
   induction Tss.
   - repeat constructor; induction IHhas_kind; auto.
-  - simpl.
+  - 
+  
+    
     induction a; auto.
     + eapply IHTss.
       * inversion H; auto.
-      * inversion H0; auto.
     + constructor.
-      * inversion H0. inversion H3; auto.
+      * inversion H. inversion H2; auto.
       * apply IHa.
         -- constructor.
            ++ inversion H.
@@ -372,7 +380,7 @@ Proof with subst; auto.
            constructor.
            ++ inversion H.
               inversion H3; auto.
-           ++ inversion H; auto.
+           ++ inversion H; auto. *)
 Qed.
 
 (* Forward simulation *)

@@ -137,6 +137,9 @@ Inductive has_kind_set : list (binderTyname * kind) -> ty -> kind -> Set :=
 where "Δ '|-*s' T ':' K" := (has_kind_set Δ T K).
 
 
+Scheme has_kind__ind := Minimality for has_kind Sort Prop.
+Scheme has_kind_set__ind := Minimality for has_kind_set Sort Set.
+
 Section has_kind_prop_induction.
 
 Variable P : list (binderTyname * kind) -> ty -> kind -> Prop.
@@ -176,6 +179,7 @@ Hypothesis K_SOP_case : forall Δ Tss,
   Forall (Forall (fun T => has_kind Δ T Kind_Base)) Tss ->
   Forall (Forall (fun T => P Δ T Kind_Base)) Tss ->
   P Δ (Ty_SOP Tss) Kind_Base.
+  
 
 Fixpoint has_kind_ind'
          (Δ : list (binderTyname * kind)) (T : ty) (K : kind)
