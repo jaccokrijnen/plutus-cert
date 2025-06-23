@@ -11,35 +11,72 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Arith.
 Require Import Coq.Bool.Bool.
 
-From PlutusCert Require Import alpha_vacuous construct_GU step_naive psubs util STLC GU_NC_BU Alpha.alpha variables util alpha_ctx_sub alpha_freshness.
+From PlutusCert Require Import 
+  alpha_vacuous 
+  construct_GU 
+  step_naive 
+  psubs 
+  util 
+  STLC GU_NC 
+  Alpha.alpha 
+  variables 
+  alpha_subs 
+  alpha_freshness.
 
 Require Import Coq.Program.Equality.
 
 
-(* forall ftvs in s, lookup that in R, to get (x, y) and add that to the new R*)
+(* Constructs an extended renaming context.
+  Does: Rename ftvs in t (that are not in s) in construction of new t' *)
 Definition a_R_constr R (s s' : term) t : list (string * string) :=
   let used := tv s ++ tv s' ++ tv t ++ (map fst R) ++ (map snd R) in
-
-  (* rename those ftvs in t, that are not ftvs in s to fresh stuff
-    all ftvs in s are already mapped by R to something else, t should follow the same 
-      behaviour for these ftvs, since they refer to the same ftv.
-
-      This also means we can easily add Rfr in front of R and still keep s-alpha
-  *)
   let to_freshen := list_diff string_dec (ftv t) (ftv s) in
   let Rfr := freshen2 used to_freshen in
   Rfr ++ R.
 
-  (*
-    Suppose we have s = x   s' = y
-    R = [x, y]
 
-                    t = y   t' = ?
-  *)
+(* If the new fresh variable is based on everything in original R, it will be genuinly "fresh"*)
+Lemma R_Well_formedFresh x R R' used : 
+  R_Well_formed R -> 
+  (forall y, In y (map fst R ++ map snd R) -> (In y used) \/ (In y (map fst R' ++ map snd R'))) -> 
+  R_Well_formed ((x, fresh_to_GU_ used R' x)::R).
+Proof.
+  intros.
+  unfold R_Well_formed in *.
+  intros.
+  destr_eqb_eq x0 x.
+  - simpl in H1.
+    rewrite String.eqb_refl in H1.
+    inv H1.
+    constructor.
+  - inv H1.
+    rewrite <- String.eqb_neq in H2.
+    rewrite String.eqb_sym in H2.
+    rewrite H2 in H4.
+    remember H4 as H4_lookup.
+    clear HeqH4_lookup.
+    apply lookup_some_then_in_values in H4.
+    assert (In y (map fst R ++ map snd R)).
+    {
+      apply in_app_iff. right. auto.
+    }
+    specialize (H0 y H1).
+    apply alpha_var_diff; auto.
+    + rewrite <- String.eqb_neq. auto.
+    + destruct H0.
+      * assert (~ In (fresh_to_GU_ used R' x) used) by apply fresh_to_GU__fresh_over_ftvs.
+        intros Hcontra.
+        subst.
+        contradiction.
+      * assert (~ In (fresh_to_GU_ used R' x) (map fst R' ++ map snd R')) by apply fresh_to_GU__fresh_over_binders.
+        intros Hcontra.
+        subst.
+        contradiction.
+Qed.
 
 
-Lemma KindOfUniqueRhsFreshMultiple used R l : 
-  KindOfUniqueRhs R -> KindOfUniqueRhs ((freshen2 (used ++ map fst R ++ map snd R) l ) ++ R).
+Lemma R_Well_formedFreshMultiple used R l : 
+  R_Well_formed R -> R_Well_formed ((freshen2 (used ++ map fst R ++ map snd R) l ) ++ R).
 Proof.
   unfold freshen2.
   remember ((used ++ map fst R ++ map snd R) ++ l) as used'.
@@ -70,7 +107,7 @@ Proof.
     specialize (IHl H).
     change ((a, fresh_to_GU_ ((used ++ map fst R ++ map snd R) ++ (a :: l)) R'' a) :: R'' ++ R) with ((a, fresh_to_GU_ ((used ++ map fst R ++ map snd R) ++ (a :: l)) R'' a) :: (R'' ++ R)).
 
-    eapply KindOfUniqueRhsFresh; auto.
+    eapply R_Well_formedFresh; auto.
     + intros.
       rewrite map_app in H0.
       apply in_app_iff in H0.
@@ -242,7 +279,7 @@ Proof.
   apply lookup_app_or_extended in H1 as [H_in_fresh | [H_ni_fresh H_in_strip] ].
   - assert (AlphaVar Rfr x y).
     {
-      assert (KindOfUniqueRhs (Rfr ++ nil)).
+      assert (R_Well_formed (Rfr ++ nil)).
       {
         subst.
         assert ((tv s ++
@@ -252,10 +289,10 @@ Proof.
             tv t ++ map fst R ++ map snd R) ++ (@map (string * string) string fst []) ++ (@map (string * string) string snd [])).
         { simpl. rewrite app_nil_r. auto. }
         rewrite H.
-        eapply KindOfUniqueRhsFreshMultiple.
-        unfold KindOfUniqueRhs. intros. inversion H1.
+        eapply R_Well_formedFreshMultiple.
+        unfold R_Well_formed. intros. inversion H1.
       }
-      unfold KindOfUniqueRhs in H1. repeat rewrite app_nil_r in H1.
+      unfold R_Well_formed in H1. repeat rewrite app_nil_r in H1.
       eapply H1; auto.
     }
   
@@ -560,7 +597,7 @@ Qed.
     (*
     THIS DOES NOT WORK, SOLUTION IS THE NEXT LIST OF POINTS AND T_CONSTR
       Doing an alpha argument on s itself does not work. It seems like we are then forced to still have NC s sigma
-    NOOOOO DOESNT WORK: we cannot know αCtxSub (X, y) sigma sigma'
+    NOOOOO DOESNT WORK: we cannot know alphaSubs (X, y) sigma sigma'
       So:
       1. We try to rename binders in s instead of in t. We need to rename all sorts of things then
       2. In the lam case we need to extend the subsitution with (X, t)  and (y, t').   and R = (X, y).
@@ -935,8 +972,8 @@ Proof.
     unfold R_constr in HeqR'.
     inv HeqR'.
     intros.
-    eapply KindOfUniqueRhsFreshMultiple; auto.
-    eapply IdCtx__KindOfUniqueRhs.
+    eapply R_Well_formedFreshMultiple; auto.
+    eapply IdCtx__R_Well_formed.
     apply map_creates_IdCtx.
   - intros.
     remember HeqR' as HeqR''.
@@ -1011,7 +1048,7 @@ Lemma R_constr__a_sigma {R1 R2 t s sigma X} :
   BU sigma s ->
   NC s sigma ->
   (R1, R2) = R_constr t s sigma X ->
-  αCtxSub (R1 ++ R2) sigma sigma.
+  alphaSubs (R1 ++ R2) sigma sigma.
 Proof.
   intros HBU Hnc HReq.
   destruct HBU as [ BU1 BU2].
@@ -1031,7 +1068,7 @@ Lemma t_constr__a_sigma {t t' R s sigma X} :
   BU sigma s ->
   NC s sigma ->
   (t', R) = t_constr t s sigma X ->
-  αCtxSub R sigma sigma.
+  alphaSubs R sigma sigma.
 Proof.
   unfold t_constr.
   destruct (R_constr t s sigma X) as [R1 R2] eqn:Rconstr.
@@ -1112,9 +1149,9 @@ Proof.
   simpl. eauto.
 Qed.
 
-(* fuck this shit... *)
+(* Helper lemma for reaching a contradiction *)
 Lemma ftv_helper_constr {t t' R  X X'} :
-  R ⊢ t ~ t' ->
+  Alpha R t t' ->
   ~ In X (map snd R) ->
   X <> X' ->
   AlphaVar R X X' ->
@@ -1123,7 +1160,7 @@ Lemma ftv_helper_constr {t t' R  X X'} :
   ~ In X (ftv t').
 Proof.
   intros.
-  assert (Hbinderchange: {t'' & R ⊢ t'' ~ t' * ~ In X (btv t'')}%type).
+  assert (Hbinderchange: {t'' & Alpha R t'' t' * ~ In X (btv t'')}%type).
   {
     exists (to_GU'' X t).
     split.
@@ -1442,7 +1479,7 @@ Proof.
   unfold s_constr in Heqs'.
   remember (map (fun x => (x, x)) (_)) as R.
   rewrite Heqs'.
-  assert (R ⊢ s ~ s').
+  assert (Alpha R s s').
   {
     rewrite Heqs'.
     eapply to_GU__alpha_'.

@@ -11,7 +11,18 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Arith.
 Require Import Coq.Bool.Bool.
 
-From PlutusCert Require Import construct_GU_R construct_GU psubs alpha_vacuous construct_GU step_naive psubs util STLC GU_NC_BU Alpha.alpha variables util alpha_ctx_sub alpha_freshness.
+From PlutusCert Require Import 
+  construct_GU_R 
+  construct_GU 
+  psubs 
+  alpha_vacuous 
+  step_naive 
+  util 
+  STLC GU_NC 
+  Alpha.alpha 
+  variables 
+  alpha_subs 
+  alpha_freshness.
 
 Require Import Coq.Program.Equality.
 
@@ -86,7 +97,7 @@ Lemma psubs__α s : forall R s' sigma sigma',
   NC s sigma ->
   NC s' sigma' ->
   Alpha R s s' ->
-  αCtxSub R sigma sigma' ->
+  alphaSubs R sigma sigma' ->
   Alpha R (psubs sigma s) (psubs sigma' s').
 Proof with eauto with gu_nc_db.
   induction s; intros; inv H1; simpl.
@@ -123,7 +134,7 @@ Qed.
 *)
 Lemma commute_sub_naive R x s t (sigma sigma' : list (string * term)) xtsAlpha:
   Alpha R (sub x t s) xtsAlpha ->
-  αCtxSub R sigma sigma' -> (* TODO: Vars in R not in sigma?*)
+  alphaSubs R sigma sigma' -> (* TODO: Vars in R not in sigma?*)
 
   (* these two just say: x not in key or ftv sigma*)
   ~ In x (map fst sigma) ->
@@ -140,8 +151,8 @@ Lemma commute_sub_naive R x s t (sigma sigma' : list (string * term)) xtsAlpha:
     But we can always choose an alpha equivalent xtsAlpha with 
     different binder names not occuring in the rhs of sigma
   *)
-  R ⊢ (sub x (psubs sigma t) (psubs sigma s))
-      ~ (psubs sigma' xtsAlpha).
+  Alpha R (sub x (psubs sigma t) (psubs sigma s))
+      (psubs sigma' xtsAlpha).
 Proof with eauto with gu_nc_db.
   intros Ha_sub Hctx_σ Hx_key Hx_value HNC_sub HNC_s_x HNC_s_σ HNC_t_σ HNC_subs.
   generalize dependent xtsAlpha.

@@ -12,7 +12,16 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Arith.
 Require Import Coq.Bool.Bool.
 
-From PlutusCert Require Import construct_GU step_naive psubs util STLC GU_NC_BU Alpha.alpha variables util alpha_ctx_sub alpha_freshness.
+From PlutusCert Require Import 
+  construct_GU 
+  step_naive 
+  psubs 
+  util 
+  STLC GU_NC 
+  Alpha.alpha 
+  variables 
+  alpha_subs 
+  alpha_freshness.
 
 Lemma not_ftv_to_not_tv {x s}:
   ~ (In x (ftv s)) -> prod (~ (In x (tv (to_GU'' x s)))) (Alpha [] s (to_GU'' x s)).
@@ -33,7 +42,7 @@ Proof.
   intros.
   apply not_ftv_to_not_tv in H as [Htv_s Ha_s].
   apply not_ftv_to_not_tv in H0 as [Htv_s' Ha_s'].
-  assert (R ⊢ (to_GU'' x s) ~ (to_GU'' x' s')). {
+  assert (Alpha R (to_GU'' x s) (to_GU'' x' s')). {
     apply @alpha_trans3 with (s' := s) (s'' := s'); auto.
     eapply @alpha_sym. constructor. auto.
   }
@@ -60,7 +69,7 @@ Qed.
 Require Import Coq.Program.Equality.
 
 Lemma αctx_vacuous_R R σ σ' :
-  (forall x, In x (map fst R) -> (~ In x (ftv_keys_env σ))) -> (forall x', In x' (map snd R) -> ~ In x' (ftv_keys_env σ')) -> αCtxSub [] σ σ' -> αCtxSub R σ σ'.
+  (forall x, In x (map fst R) -> (~ In x (ftv_keys_env σ))) -> (forall x', In x' (map snd R) -> ~ In x' (ftv_keys_env σ')) -> alphaSubs [] σ σ' -> alphaSubs R σ σ'.
 Proof.
   intros Hvac1 Hvac2 Ha.
   dependent induction σ.
@@ -85,7 +94,7 @@ Proof.
         apply Hvac2 in Hcontra. simpl in Hcontra. 
         apply de_morgan2 in Hcontra as [Hcontra _].
         contradiction.
-    + assert ((R ++ nil) ⊢ t ~ t').
+    + assert (Alpha (R ++ nil) t t').
       { apply alpha_vacuous_R.
         - intros.
         apply Hvac1 in H. simpl in H. apply de_morgan2 in H as [_ H].
@@ -154,7 +163,7 @@ Proof.
   intros H_nxt H_nx't' Ha_t.
   remember (to_GU'' x t) as tgu.
   remember (to_GU'' x' t') as t'gu.
-  assert (ren ⊢ tgu ~ t'gu) as Ht.
+  assert (Alpha ren tgu t'gu) as Ht.
   {
     eapply @alpha_trans with (t := t) (ren := ctx_id_left ren); eauto.
     eapply id_left_trans.
@@ -193,7 +202,7 @@ Proof.
       apply to_GU''__btv.
   }
 
-  assert (((x, x')::ren) ⊢ tgu ~ t'gu).
+  assert (Alpha ((x, x')::ren) tgu t'gu).
   {
     apply alpha_extend_fresh_tv; auto.
 
@@ -213,13 +222,13 @@ Qed.
 
   (*
 
-  We know αCtxSub ren sigma sigma'.
+  We know alphaSubs ren sigma sigma'.
   g2 and g3 are both fresh over sigma and sigma', so no issue.
 
   But what if g2 and g3 not fresh over ren?
 
   well, let's look at a simpler case where sigma = [Z := t] and sigma' = [Z' := t']
-  Suppose now g2 in ren. We have αCtxSub ren sigma sigma'. Since g2 not in Z or t, we cannot have that there is a (g2, B) term with B in Z or t.
+  Suppose now g2 in ren. We have alphaSubs ren sigma sigma'. Since g2 not in Z or t, we cannot have that there is a (g2, B) term with B in Z or t.
   Hence it is a vacuous one, and we can remove it.
   Do this for every g2 or g3 and we are left with a ren that does not contain any g2 or g3.
   Now we can add it and it does nott break shadowing :)
@@ -227,8 +236,8 @@ Qed.
 Lemma alpha_ctx_ren_extend_fresh_ftv sigma sigma' x x' ren:
   ~ In x (ftv_keys_env sigma) ->
   ~ In x' (ftv_keys_env sigma') ->
-  αCtxSub ren sigma sigma' ->
-  αCtxSub ((x, x')::ren) sigma sigma'.
+  alphaSubs ren sigma sigma' ->
+  alphaSubs ((x, x')::ren) sigma sigma'.
 Proof.
   intros H_nxσ H_nx'σ' H_α.
   induction H_α.

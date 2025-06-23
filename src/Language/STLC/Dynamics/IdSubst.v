@@ -1,9 +1,13 @@
 Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Strings.String.
-From PlutusCert Require Import psubs.
 
-From PlutusCert Require Import GU_NC_BU STLC util variables.
+From PlutusCert Require Import 
+  GU_NC 
+  STLC 
+  util 
+  variables
+  psubs.
 
 
 Inductive IdSubst : list (string * term) -> Set :=

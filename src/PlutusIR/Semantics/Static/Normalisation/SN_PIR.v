@@ -14,7 +14,7 @@ Require Import Ascii.
 Require Import Coq.Program.Equality.
 Require Import Coq.Arith.Wf_nat.
 
-From PlutusCert Require Import SN_STLC_GU SN_STLC_nd util Util.List STLC KindingSTLC.
+From PlutusCert Require Import SN_STLC_GU SN_STLC_nd util Util.List STLC STLC.Kinding.
 From PlutusCert Require Import PlutusIR Checker.
 From PlutusCert Require Static.TypeSubstitution Normalisation.SmallStep.
 
@@ -347,11 +347,11 @@ Proof.
 Defined.
 
 Theorem f_preserves_kind Δ s K :
-  Kinding.has_kind Δ s K -> KindingSTLC.has_kind Δ (f s) K.
+  Static.Kinding.Kinding.has_kind Δ s K -> STLC.Kinding.has_kind Δ (f s) K.
 Proof with subst; auto.
   intros.
   apply Checker.prop_to_type in H.
-  induction H using Kinding.has_kind_set_ind'.
+  induction H using Static.Kinding.Kinding.has_kind_set_ind'.
   all: try solve [intros; try econstructor; eauto].
   simpl.
   induction Tss.
@@ -405,7 +405,7 @@ Proof.
   apply f_preserves_step.
 Defined.
 
-Corollary plutus_ty_strong_normalization s Δ K : Kinding.has_kind Δ s K -> @sn PlutusIR.ty SmallStep.step s.
+Corollary plutus_ty_strong_normalization s Δ K : Kinding.Kinding.has_kind Δ s K -> @sn PlutusIR.ty SmallStep.step s.
 Proof.
   intros Hwk.
   apply f_preserves_kind in Hwk.

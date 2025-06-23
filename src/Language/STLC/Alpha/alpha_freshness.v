@@ -1,5 +1,12 @@
 
-From PlutusCert Require Import STLC Alpha.alpha alpha_ctx_sub Util.List variables util alpha_rename.
+From PlutusCert Require Import 
+  STLC
+  Alpha.alpha 
+  alpha_subs 
+  Util.List 
+  variables 
+  util 
+  alpha_rename.
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
 
@@ -74,7 +81,7 @@ Lemma alpha_preserves_no_ftv {x x' s s' ren} :
 Proof.
   intros Hnotin Halphas Halphax.
   intros Hcontra.
-  assert (sym_alpha_ctx ren ⊢ s' ~ s).
+  assert (Alpha (sym_alpha_ctx ren) s' s).
   {
     eapply alpha_sym; eauto.
     apply sym_alpha_ctx_is_sym.

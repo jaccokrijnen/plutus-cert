@@ -13,8 +13,20 @@ Require Import Coq.Arith.Arith.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From PlutusCert Require Import STLC KindingSTLC GU_NC_BU construct_GU construct_GU_R.
-From PlutusCert Require Import alpha_sub step_naive Alpha.alpha alpha_rename util alpha_ctx_sub variables alpha_freshness.
+From PlutusCert Require Import 
+  STLC 
+  STLC.Kinding 
+  GU_NC 
+  construct_GU 
+  construct_GU_R
+  alpha_sub 
+  step_naive 
+  Alpha.alpha 
+  alpha_rename 
+  util 
+  alpha_subs 
+  variables 
+  alpha_freshness.
 
 
 
@@ -239,7 +251,7 @@ Lemma step_gu_na_appl_fold {B s1 s2 t1 }:
 Proof.
   intros Hstep_gu.
   inversion Hstep_gu; subst.
-  assert (Hgu_a: nil ⊢ (@tmbin B s1 t1) ~ (to_GU (@tmbin B s1 t1))) by apply to_GU__alpha.
+  assert (Hgu_a: Alpha nil (@tmbin B s1 t1) (to_GU (@tmbin B s1 t1))) by apply to_GU__alpha.
   inversion Hgu_a; subst.
 
   assert (Hstep_na': {s2' & step_naive s3 s2' * Alpha [] s2 s2'}%type).
@@ -266,7 +278,7 @@ Lemma step_gu_na_appr_fold {B s1 t1 t2 } :
 Proof.
   intros Hstep_gu.
   inversion Hstep_gu; subst.
-  assert (Hgu_a: nil ⊢ (@tmbin B s1 t1) ~ (to_GU (@tmbin B s1 t1))) by apply to_GU__alpha.
+  assert (Hgu_a: Alpha nil (@tmbin B s1 t1) (to_GU (@tmbin B s1 t1))) by apply to_GU__alpha.
   inversion Hgu_a; subst.
 
   assert (Hstep_na': {t2' & step_naive t3 t2' * Alpha [] t2 t2'}%type).

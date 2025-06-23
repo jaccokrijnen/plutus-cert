@@ -10,10 +10,26 @@ Local Open Scope list_scope.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From PlutusCert Require Import Free SN_STLC_GU step_naive GU_NC_BU step_gu STLC KindingSTLC.
-From PlutusCert Require Import alpha_typing Alpha.alpha alpha_rename util alpha_ctx_sub variables alpha_freshness.
-From PlutusCert Require Import alpha_sub alpha_vacuous construct_GU.
+From PlutusCert Require Import 
+  Free 
+  SN_STLC_GU 
+  step_naive 
+  GU_NC 
+  step_gu 
+  STLC 
+  STLC.Kinding
+  alpha_kinding 
+  Alpha.alpha 
+  alpha_rename 
+  util 
+  alpha_subs 
+  variables 
+  alpha_freshness
+  alpha_sub 
+  alpha_vacuous 
+  construct_GU.
 
+(* non-deterministic STLC reduction relation using naive beta reduction*)
 Inductive step_nd : term -> term -> Type :=
 | step_beta_nd (x : string) (A : PlutusIR.kind) (s t : term) :
     step_nd (@tmbin App (@tmabs Lam x A s) t) (substituteTCA x t s) 
@@ -24,7 +40,8 @@ Inductive step_nd : term -> term -> Type :=
 | step_abs_nd B x A s1 s2 :
     step_nd s1 s2 -> step_nd (@tmabs B x A s1) (@tmabs B x A s2).
 
-Lemma GU_substituteTCA_sub x t s : 
+(* No-capture during substitution implies equivalence of naive and capture-avoiding substitutions*)
+Lemma NC__substituteTCA_is_sub x t s : 
     NC s ((x, t)::nil) -> substituteTCA x t s = sub x t s.
 Proof.
   intros.
@@ -69,20 +86,64 @@ Proof.
     (* we can be sure that no binder in s appears in t by global uniqueness*)
     assert (substituteTCA x t s = sub x t s) as Hsub.
     { 
-        eapply GU_substituteTCA_sub.
+        eapply NC__substituteTCA_is_sub.
         eapply gu_applam_to_nc. eauto.
       }
     rewrite Hsub.
     apply step_beta.
 Qed.
 
+Lemma substituteTCA_vacuous : forall R X U T T',
+    Alpha R T T' ->
+    ~ In X (ftv T) ->
+    Alpha R (substituteTCA X U T) T'.
+Proof.
+  intros.
+  generalize dependent T.
+  generalize dependent R.
+  induction T'; intros.
+  all: inversion H; subst.
+  all: autorewrite with substituteTCA.
+  - apply not_in_ftv_var in H0.
+    rewrite <- String.eqb_neq in H0.
+    now rewrite H0.
+  - destr_eqb_eq X x; [now constructor|].
+    assert (~ In X (ftv s1)) by now apply ftv_lam_negative in H0.
+    destruct (existsb (eqb x) (ftv U)) eqn:sinU.
+    + simpl.
+      remember (fresh2 _ s1) as Y.
+      constructor.
+      eapply IHT'.
+      * eapply alpha_trans_rename_left; eauto.
+      * apply ftv_not_in_rename; auto.
+        eapply fresh2_over_key_sigma in HeqY. symmetry. eauto.
+        apply in_eq.
+    + constructor; auto.
+  - constructor.
+    + eapply IHT'1; eauto. 
+      now apply not_ftv_app_not_left in H0.
+    + eapply IHT'2; eauto.
+      now apply not_ftv_app_not_right in H0.
+  - auto.
+Qed.
+
+Corollary substituteTCA_vacuous_specialized X U T:  
+  ~ In X (ftv T) ->
+  Alpha nil (substituteTCA X U T) T.
+Proof.
+  eapply substituteTCA_vacuous; try apply alpha_ids; auto; repeat constructor.
+Qed.
+
+(* α-preservation of substitution with capture-avoiding substitutions
+  requires transtitivity arguments because of renamings in each substitution
+  this is what we prevent by using globally unique reductions later on*)
 Lemma substituteTCA_preserves_alpha' X T i : forall s s' R1 R2 R,
-  R ⊢ (tmvar X) ~ (tmvar X) ->
-  R ⊢ T ~ T ->
+  Alpha R (tmvar X) (tmvar X) ->
+  Alpha R T T ->
   αCtxTrans R1 R2 R ->
-  R1 ⊢ s ~ i ->
-  R2 ⊢ i ~ s' ->
-  R ⊢ substituteTCA X T s ~ substituteTCA X T s'.
+  Alpha R1 s i ->
+  Alpha R2 i s' ->
+  Alpha R (substituteTCA X T s) (substituteTCA X T s').
 Proof.
   induction i as [xi | B xi ? bi | B i1 IHi1 i2 IHi2|d];
   intros s s' R1 R2 R Ha_X Ha_T Htrans Hαs Hαs';
@@ -208,18 +269,18 @@ Proof.
     constructor.
 Qed.
 
-Lemma substituteTCA_preserves_alpha s s' ren X U:
-  ren ⊢ (tmvar X) ~ (tmvar X) ->
-  (ren ⊢ U ~ U) ->
-  (ren ⊢ s ~ s') ->
-  Alpha ren (substituteTCA X U s) (substituteTCA X U s').
+Lemma substituteTCA_preserves_alpha s s' R X U:
+  Alpha R (tmvar X) (tmvar X) ->
+  Alpha R U U ->
+  Alpha R s s' ->
+  Alpha R (substituteTCA X U s) (substituteTCA X U s').
 Proof.
   intros.
-  apply (@substituteTCA_preserves_alpha' X U s s s' (nil ++ ctx_id_left ren) ren ren); auto.
+  apply (@substituteTCA_preserves_alpha' X U s s s' (nil ++ ctx_id_left R) R R); auto.
   - apply id_left_trans; auto.
   - apply alpha_extend_ids_right.
     + apply ctx_id_left_is_id.
-    + apply alpha_refl. apply alpha_refl_nil.
+    + apply alpha_refl. apply id_ctx_nil.
 Qed.
 
 Lemma alpha_substituteTCA_sub X U T:
@@ -231,7 +292,7 @@ Proof.
   - eapply @alpha_trans with (t := substituteTCA X U (to_GU' X U T)).
     constructor.
     + eapply substituteTCA_preserves_alpha. eapply alpha_refl. constructor. eapply alpha_refl. constructor. apply to_GU'__alpha.
-    + erewrite GU_substituteTCA_sub.
+    + erewrite NC__substituteTCA_is_sub.
       * apply alpha_refl. constructor.
       * apply to_GU'__NC.
   - apply to_GU'__NC.
@@ -270,7 +331,7 @@ Qed.
 
 Lemma step_nd_implies_step_gu t t' : 
     step_nd t t' ->  
-    {t_α & step_gu t t_α * (nil ⊢ t' ~ t_α)}%type.
+    {t_α & step_gu t t_α * (Alpha [] t' t_α)}%type.
 Proof.
     intros.
     remember (step_nd_preserves_alpha) as Hstep_GU.
@@ -306,7 +367,7 @@ Proof.
   exact X.
 Qed.
 
-Theorem strong_normalization_nd Δ s T : KindingSTLC.has_kind Δ s T -> (@sn term step_nd) s.
+Theorem strong_normalization_nd Δ s T : STLC.Kinding.has_kind Δ s T -> (@sn term step_nd) s.
   intros.
   apply strong_normalization_gu in H. 
   apply SN_na_to_SN_nd.

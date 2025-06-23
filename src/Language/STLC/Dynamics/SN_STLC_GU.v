@@ -10,8 +10,25 @@ Local Open Scope list_scope.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From PlutusCert Require Import alpha_vacuous construct_GU_R alpha_sub psubs step_gu alpha_typing STLC KindingSTLC GU_NC_BU construct_GU.
-From PlutusCert Require Import IdSubst step_naive Alpha.alpha alpha_rename util alpha_ctx_sub variables alpha_freshness.
+From PlutusCert Require Import 
+  alpha_vacuous 
+  construct_GU_R 
+  alpha_sub 
+  psubs 
+  step_gu
+  alpha_kinding
+  STLC
+  STLC.Kinding
+  GU_NC
+  construct_GU
+  IdSubst 
+  step_naive 
+  Alpha.alpha 
+  alpha_rename 
+  util 
+  alpha_subs 
+  variables 
+  alpha_freshness.
 
 Inductive sn {X : Type} {e : X -> X -> Type } x : Type :=
 | SNI : (forall y, e x y -> sn y) -> sn x.
@@ -32,7 +49,7 @@ Proof.
 Qed.
 
 Lemma sn_preimage_α' (h : term -> term) x v :
-  (forall x y, step_gu x y -> {y_h & prod (step_gu (h x) y_h) (nil ⊢ y_h ~ (h y))}) -> @sn term step_gu v -> nil ⊢ v ~ h x -> @sn term step_gu x.
+  (forall x y, step_gu x y -> {y_h & prod (step_gu (h x) y_h) (Alpha nil y_h (h y))}) -> @sn term step_gu v -> Alpha nil v (h x) -> @sn term step_gu x.
 Proof.
   intros A B Halpha.
   generalize dependent h.
@@ -45,7 +62,7 @@ Proof.
 Qed.
 
 Lemma sn_preimage_α (h : term -> term) x :
-  (forall x y, step_gu x y -> {y_h & prod (step_gu (h x) y_h) (nil ⊢ y_h ~ (h y))}) -> @sn term step_gu (h x) -> @sn term step_gu x.
+  (forall x y, step_gu x y -> {y_h & prod (step_gu (h x) y_h) (Alpha nil y_h (h y))}) -> @sn term step_gu (h x) -> @sn term step_gu x.
 Proof.
   intros.
   eapply sn_preimage_α'; eauto with α_eq_db.
@@ -103,7 +120,7 @@ Lemma step_subst_single R {x p s t t' } :
   GU s -> 
   NC s [(x, p)] -> 
   Alpha R t t' -> 
-  αCtxSub R [(x, p)] [(x, p)] -> 
+  alphaSubs R [(x, p)] [(x, p)] -> 
   NC t' [(x, p)] ->
   {aT : term & 
   (step_gu (psubs ((x, p)::nil) s) aT) * (Alpha R aT (psubs ((x, p)::nil) t'))}%type.
@@ -246,7 +263,7 @@ Lemma red_beta x s t1 t2 :
   NC s ((x, t1)::nil) ->
   { a & prod 
     ( red_gu_na (sub x t1 s) a) 
-    ( nil ⊢ a ~ sub x t2 s) }. 
+    ( Alpha nil a (sub x t2 s)) }. 
 Proof with eauto with α_eq_db. 
   intros Hstep HNC_t1.
   induction s.
@@ -257,13 +274,13 @@ Proof with eauto with α_eq_db.
     + rewrite <- String.eqb_neq in H; rewrite H; constructor.
   - specialize (IHs (nc_lam HNC_t1)) as [a [Hred_a Ha_a] ].
     assert ({a0 : term & (red_gu_na (@tmabs USort s k (sub x t1 s0)) a0 *
-                            (nil ⊢ a0 ~ @tmabs USort s k a))%type}) 
+                            (Alpha nil a0 (@tmabs USort s k a)))%type}) 
       as [a0 [Hred_a0 Ha_a0]] by apply (red_gu_na_lam_fold Hred_a).
     eexists; split...
   - specialize (IHs1 (nc_app_l HNC_t1) ) as [g1 [Hred_g1 ?] ].
     specialize (IHs2 (nc_app_r HNC_t1) ) as [g2 [Hred_g2 ?] ].
     assert ({a : term & (red_gu_na (@tmbin BSort (sub x t1 s1) (sub x t1 s2)) a *
-                          (nil ⊢ a ~ @tmbin BSort g1 g2))%type}) 
+                          (Alpha nil a (@tmbin BSort g1 g2)))%type}) 
       as [app [Hred Ha] ] by apply (red_gu_na_app_fold Hred_g1 Hred_g2).
     eexists; split...
   - eexists. split; constructor.
@@ -443,7 +460,7 @@ Proof with eauto with α_eq_db gu_nc_db.
     1: eapply @alpha_trans with (ren := (y, y)::nil) (ren' := (y, x)::nil) (t := x0)...
     eapply IH1 with (s := (to_GU' x x1 s'_a)); subst; eauto with to_GU'_db α_eq_db...
     + now constructor.
-    + assert ({α & (step_gu (sub x x1 s0) α) * (nil ⊢ α ~ sub x x1 (to_GU' x x1 s'_a))}%type) 
+    + assert ({α & (step_gu (sub x x1 s0) α) * (Alpha nil α (sub x x1 (to_GU' x x1 s'_a)))}%type) 
         as [alpha [Hred Halpha] ].
       {
         repeat rewrite <- single_subs_is_psub.
@@ -637,7 +654,7 @@ Corollary type_L Δ s T : Δ |-* s : T -> L T (psubs (id_subst Δ) s).
 Proof with eauto using id_subst__EL with s_constr_db id_subst_db.
   intros Hkind.
   remember (s_constr s (id_subst Δ)) as s'.
-  eapply alpha_preserves_typing with (t := s') (sigma := nil) (Gamma := Δ) in Hkind; eauto...
+  eapply alpha_preserves_kinding with (t := s') (sigma := nil) (Gamma := Δ) in Hkind; eauto...
   {
     eapply fundamental in Hkind; eauto...
     - rewrite id_subst__id in Hkind...

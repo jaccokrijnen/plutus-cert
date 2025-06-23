@@ -9,14 +9,14 @@ From PlutusCert Require Import
   SN_PIR
   SN_STLC_GU
   Progress
-  Normalisation.Preservation
-  .
+  Normalisation.Preservation.
 
 Require Import mathcomp.ssreflect.ssreflect.
 Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Strings.String.
 
+(* Adding a step in front does not change normal form*)
 Lemma normalise_extend T1 T2 T3 :
   step T1 T2 -> normalise T2 T3 -> normalise T1 T3.
 Proof.
@@ -32,7 +32,7 @@ Admitted.
 
 Definition SN := @sn ty SmallStep.step.
 
-(* Wouter's suggestion: do not use explicit normalizer in soundness proof*)
+(* Strong normalization implies existence of normal form *)
 Theorem SN_normalise t Δ K :
   Δ |-* t : K -> SN t -> {t' & normalise t t'}.
 Proof.
