@@ -25,13 +25,21 @@ From PlutusCert Require Import
 
 Require Import Coq.Program.Equality.
 
+(* Procedure that freshens all variables in to_freshen, not using names in used, and all being distinct *)
+Definition freshen used to_freshen :=
+  fold_right
+    (fun x acc =>
+      let fresh_var := fresh_to_GU_ (used ++ to_freshen) acc x in
+      (x, fresh_var) :: acc) (* New element is added at the front in `fold_right` *)
+    [] to_freshen.
+
 
 (* Constructs an extended renaming context.
   Does: Rename ftvs in t (that are not in s) in construction of new t' *)
 Definition a_R_constr R (s s' : term) t : list (string * string) :=
   let used := tv s ++ tv s' ++ tv t ++ (map fst R) ++ (map snd R) in
   let to_freshen := list_diff string_dec (ftv t) (ftv s) in
-  let Rfr := freshen2 used to_freshen in
+  let Rfr := freshen used to_freshen in
   Rfr ++ R.
 
 
@@ -74,11 +82,11 @@ Proof.
         contradiction.
 Qed.
 
-
+(* Analogous but for multiple renamings *)
 Lemma R_Well_formedFreshMultiple used R l : 
-  R_Well_formed R -> R_Well_formed ((freshen2 (used ++ map fst R ++ map snd R) l ) ++ R).
+  R_Well_formed R -> R_Well_formed ((freshen (used ++ map fst R ++ map snd R) l ) ++ R).
 Proof.
-  unfold freshen2.
+  unfold freshen.
   remember ((used ++ map fst R ++ map snd R) ++ l) as used'.
   (* I find this interesting. We are doing this to lose information, it is like we are weakening the induction hypothesis!*)
   assert ({l' &  (used ++ map fst R ++ map snd R) ++ l' = (used ++ map fst R ++ map snd R) ++ l}%type).
@@ -93,7 +101,7 @@ Proof.
   induction l.
   - simpl. auto.
   - intros.
-    unfold freshen2.
+    unfold freshen.
     change (a :: l) with ([a] ++ l).
     rewrite fold_right_app.
     simpl.
@@ -103,7 +111,7 @@ Proof.
       :: acc)
         []
         l)) as R''.
-    unfold freshen2 in IHl.
+    unfold freshen in IHl.
     specialize (IHl H).
     change ((a, fresh_to_GU_ ((used ++ map fst R ++ map snd R) ++ (a :: l)) R'' a) :: R'' ++ R) with ((a, fresh_to_GU_ ((used ++ map fst R ++ map snd R) ++ (a :: l)) R'' a) :: (R'' ++ R)).
 
@@ -121,9 +129,10 @@ Proof.
         left. apply in_app_iff. intuition.
 Qed.
 
-(* We have to prove over in l and in used simultaneously, because things move from l to used*)
+(* If x is banned (by being in used), or x is in the generator list l, then it will not be in the freshened list *)
+(* NOTE: We have to prove over in l and in used simultaneously, because things move from l to used*)
 Lemma freshen2__fresh_not_generator {used l } {x : string } :
-  (In x l \/ In x used) -> ~ In x (map snd (freshen2 used l)).
+  (In x l \/ In x used) -> ~ In x (map snd (freshen used l)).
 Proof.
   intros Hin.
   generalize dependent used.
@@ -135,7 +144,7 @@ Proof.
       *
       { 
         subst. 
-        unfold freshen2.
+        unfold freshen.
         simpl.
         apply de_morgan2.
         split.
@@ -197,7 +206,7 @@ Proof.
       intros Hcontra.
       subst.
       contradiction.
-    * unfold freshen2 in IHl.
+    * unfold freshen in IHl.
       assert (HChange: ((used ++ [a]) ++ l) = (used ++ a :: l)).
       { rewrite <- app_assoc. rewrite <- app_comm_cons. auto. }
       rewrite <- HChange.
@@ -205,8 +214,9 @@ Proof.
       right. apply in_app_iff. left. auto.
 Qed.
 
+(* If y is in the freshened list, then it cannot have been in the generator l*)
 Lemma freshen2__fresh_generator {used l } {y : string } :
-  In y (map snd (freshen2 used l)) -> ~ In y l.
+  In y (map snd (freshen used l)) -> ~ In y l.
 Proof.
   intros Hin Hcontra.
   eapply or_introl in Hcontra.
@@ -214,8 +224,9 @@ Proof.
   contradiction.
 Qed.
 
+(* If y is in the freshened list, then it cannot have been in the banned "used" context*)
 Lemma freshen2__fresh_map_snd {used l } {y : string } :
-  In y (map snd (freshen2 used l)) -> ~ In y used.
+  In y (map snd (freshen used l)) -> ~ In y used.
 Proof.
   intros Hin Hcontra.
   eapply or_intror in Hcontra.
@@ -223,8 +234,9 @@ Proof.
   contradiction.
 Qed.
 
+(* If x is a key in the list of fresh renamings, then x must be in the generator l*)
 Lemma in_freshen2_then_in_generator used l x :
-  In x (map fst (freshen2 used l)) -> In x l.
+  In x (map fst (freshen used l)) -> In x l.
 Proof.
   intros Hin.
   generalize dependent used.
@@ -233,7 +245,7 @@ Proof.
   - simpl in Hin.
     destruct Hin.
     + subst. simpl. auto.
-    + unfold freshen2 in IHl.
+    + unfold freshen in IHl.
       assert (Hchange: ((used ++ [a]) ++ l) = (used ++ a :: l)).
         { rewrite <- app_assoc. rewrite <- app_comm_cons. auto. }
       rewrite <- Hchange in H.
@@ -243,14 +255,15 @@ Proof.
       auto.
 Qed.
 
+(* If x is in the gnerator, then x will be renamed by the fresh renamings*)
 Lemma in_generator_then_in_freshen2 used l x :
-  In x l -> In x (map fst (freshen2 used l)).
+  In x l -> In x (map fst (freshen used l)).
 Proof.
   intros Hin.
   generalize dependent used.
   induction l; intros.
   - simpl in Hin. auto.
-  - unfold freshen2.
+  - unfold freshen.
     simpl.
     destruct Hin.
     + subst. simpl. auto.
@@ -259,11 +272,13 @@ Proof.
       { rewrite <- app_assoc. rewrite <- app_comm_cons. auto. }
       rewrite <- Hchange.
       eapply IHl in H.
-      unfold freshen2 in H.
+      unfold freshen in H.
       eauto.
 Qed.
 
-
+(* Strengthened statement: The constructed renaming context is well-formed for free type variables in t: if under R' we have left-sided lookup behaviour, then this is mirrored by right-sided lookup behaviour 
+Note: uses that R is used to relate s and s' to be able to case distinct on x in s or x not in s.
+*)
 Lemma a_R_constr_helper R R' s s' t x y :
   R' = @a_R_constr R s s' t ->
   
@@ -274,7 +289,7 @@ Lemma a_R_constr_helper R R' s s' t x y :
 Proof.
   intros.
   unfold a_R_constr in H.
-  remember (freshen2 _ _) as Rfr.
+  remember (freshen _ _) as Rfr.
   rewrite H in H1.
   apply lookup_app_or_extended in H1 as [H_in_fresh | [H_ni_fresh H_in_strip] ].
   - assert (AlphaVar Rfr x y).
@@ -377,18 +392,14 @@ Proof.
     eapply lookup_some_then_alphavar; eauto.
 Qed.
 
-(* Let t = Var x <*> Var y.     t' = Var v    [x, v] ⊢ t ~ t'
-   Let s = (λx. x) * y
-   Let s' = (λx. x) * z
-   Let R = [y, z].
-
-   Dan willen we vrije variabelen in t renamen.
+(* Using the construction for renaming contexts a_R_constr, we generate a globally unique type that has free variables renamed according to that renaming context
 *)
 Definition a_constr {R} {s s' : term} t : prod (list (string * string)) (term) :=
   let R' := @a_R_constr R s s' t in
   let used' := tv s ++ tv s' ++ tv t ++ (map fst R') ++ (map snd R') in 
   (R', snd (to_GU_ used' R' t)).
 
+(* In a_R_constr, α-equivalence of the original s and s' is preserved by the updated renaming context *)
 Lemma a_R_constr_alpha_s R s s' t R' :
   R' = a_R_constr R s s' t ->
   Alpha R s s' ->
@@ -396,7 +407,7 @@ Lemma a_R_constr_alpha_s R s s' t R' :
 Proof.
   intros.
   unfold a_R_constr in H.
-  remember (freshen2 _ _) as Rfr.
+  remember (freshen _ _) as Rfr.
   rewrite H.
   eapply alpha_vacuous_R.
   - intros. 
@@ -421,7 +432,7 @@ Proof.
   - auto.
 Qed.
 
-(* Useful helper lemma that captures the AlphaVar relation *)
+(* If x is not in R, it did not get renamed *)
 Lemma alphavar_id_helper {R x y} :
   AlphaVar R x y ->
   ~ In x (map fst R) ->
@@ -433,11 +444,10 @@ Proof.
   - eapply IHHa.
     simpl in Hno. intuition.
 Qed.
-(* suppose   that   (x'  x) in R
 
-suppose s = x. then s' = x. then s should be x' again. contradiction
-*)
-(* The crux of a_constr__t_alpha*)
+(* If x free in s, and x does not get renamed.
+  Then x must be free in s'.
+  If it would then be renamed from s' (by being in snd R), we would break alpha-equivalence by uniquess of alpha-equivalence *)
 Lemma alpha_contradiction_helper R s s' x :
   Alpha R s s' ->
   ~ In x (map fst R) ->
@@ -496,6 +506,7 @@ Proof.
   auto.
 Qed.
 
+(* a_constr construct an α-equivalent t' *)
 Lemma a_constr__t_alpha {R s s' t R' t'} :
   (R', t') = @a_constr R s s' t ->
   Alpha R s s' ->
@@ -518,7 +529,7 @@ Proof.
     assert (In x (ftv s)).
     {
       unfold a_R_constr in H3.
-      remember (freshen2 _ _) as frMap.
+      remember (freshen _ _) as frMap.
 
       destruct (in_dec string_dec x (ftv s)).
       - auto.
@@ -569,6 +580,7 @@ Proof.
     intuition.
 Qed.
 
+(* specialization of a_R_constr__s*)
 Lemma a_constr__s_alpha {R s s' t R' t'} :
   (R', t') = @a_constr R s s' t ->
   Alpha R s s' ->
@@ -582,65 +594,21 @@ Proof.
   eauto.
 Qed.
 
-(*
 
-  Forall x, y in R, we do lookup x R = Some y, then we prepend x, y to R.
-  Let R = (x, x'), (y, x')   and s = z   s' = z.
-
-  Now let t = tmbin y x' z. 
-
-
-
+(* Another construction R_constr that generates a renaming context that freshens all ftvs in t that are binders in s and sigma.
+NOTE: This is used in the generalized fundamental theorem
 *)
-
-
-    (*
-    THIS DOES NOT WORK, SOLUTION IS THE NEXT LIST OF POINTS AND T_CONSTR
-      Doing an alpha argument on s itself does not work. It seems like we are then forced to still have NC s sigma
-    NOOOOO DOESNT WORK: we cannot know AlphaSubs (X, y) sigma sigma'
-      So:
-      1. We try to rename binders in s instead of in t. We need to rename all sorts of things then
-      2. In the lam case we need to extend the subsitution with (X, t)  and (y, t').   and R = (X, y).
-      3. We have a problem if X free in sigma. And we do not have no_capture to stop this (by binder in s)...
-      4. What does this correspond to?: We would have capture.
-    
-    *)
-
-(* 1. First we change all binders in t to  fresh binders wrs all tv in sigma and s. This process also makes it GU.
-      - t' will be added to sigma, and we need to keep the 2nd BU property: hence fi all binders in t' are fresh, they cannot be tvs in s, and no issues
-
-   2. We collect all binders in s and in sigma into a list  bs
-      - we know these binders are not binders in t'. But they can be free variables.
-      - We can safely rename them to fresh variables (rename can safely fall through lambdas, because the lhs and rhs of rename are not equal to binder names by definiton)
-
-   3. R is then going from bs to fresh(bs). Is this problematic?
-
-    3.1  By GU s we have that nothing in R is an ftv in s, hence we have R ⊢ s ~ s.
-     .2  we rename binders in sigma, by 1st BU they are not free in s, so we can safely rename.
-     .3  By 2nd BU (GU BU), we know that binders in sigma are not free in sigma, so we safely get R ⊢ sigma ~ sigma
-     .4  what about binders in s that are free in sigma? If they are free in t we have a problem, becaue
-          then they will be renamed in sigma and no longer R ⊢ sigma ~ sigma.
-          - Not allowing this in the first place still allows identity subsitutions: they should only have to change ftvs
-          - Can we then still extend with (x, t')?
-            - x was a binder in (tmabs x A s), hence it is not a binder in s by GU so not problem
-            - t': we have to look at ftvs in t'. they cannot be binders in s. But we renamed all x that are btv in s in t. so this is ok!
-          - IN CONCLUSION: we need a third BU property: Already added!
-*)
-
-
-
 Definition R_constr (t : term) (s : term) (sigma : list (string * term)) (X : string) : prod (list (string * string)) (list (string * string)) :=
     let tvs := tv s ++ tv_keys_env sigma in
   let btvs := btv s ++ btv_env sigma in
   let tv_t := tv t in
   let used := tv_t ++ tvs ++ [X] in
-  (* a little problematic, this can construct the same ones. We need to fold instead, moving along the fresh vars in new fresh var generation*)
-  (* we should nto add duplicates!*)
   let R2 := map (fun x => (x, x)) (list_diff string_dec (ftv t) btvs) in
-  let R1 := freshen2 (used ++ map fst R2 ++ map snd R2) btvs in (* Mar 18: Added map fst R2 ++ map snd R2 for easier proving*)
+  let R1 := freshen (used ++ map fst R2 ++ map snd R2) btvs in (* Added map fst R2 ++ map snd R2 for easier proving*)
   (* we rename those ftvs in t that are binders in s and sigma*)
   (R1, R2). 
 
+(* All elements in the rhs of R are distinct *)
 Inductive UniqueRhs : list (string * string) -> Prop :=
 | uniqueRhs_nil : UniqueRhs nil
 | uniqueRhs_cons : forall x y l,
@@ -648,24 +616,29 @@ Inductive UniqueRhs : list (string * string) -> Prop :=
     UniqueRhs l ->
     UniqueRhs ((x, y) :: l).
 
+(* All variables generated by freshen2 are distinct*)
 Lemma freshen2__uniqueRHs {used l} :
-  UniqueRhs (freshen2 used l).
+  UniqueRhs (freshen used l).
 Proof.
   generalize dependent used.
   induction l; intros.
-  - unfold freshen2. simpl. constructor.
-  - unfold freshen2.
+  - unfold freshen. simpl. constructor.
+  - unfold freshen.
     simpl.
     constructor.
     + remember (fold_right _ _ _) as fld.
       apply fresh_to_GU__fresh_over_snd_binders.
-    + unfold freshen2 in IHl.
+    + unfold freshen in IHl.
       assert (Hchange: ((used ++ [a]) ++ l) = (used ++ a :: l)).
       { rewrite <- app_assoc. rewrite <- app_comm_cons. auto. }
       rewrite <- Hchange.
       eapply IHl.
 Qed.
 
+(* If all rhs elements are distinct and we lookup x in l to get y,
+  this is the only y in the rhs of l. Hence lookup_r y must return x.
+  If it were to return x' <> x, then there must exist (x', y) breaking the uniqueness
+*)
 Lemma lookup_Some__uniqueRhs__lookup_r {l x y} :
   lookup x l = Some y ->
   UniqueRhs l ->
@@ -695,31 +668,33 @@ Proof.
       * auto.
 Qed.
 
+(* Freshen creates unique rhs renaming contexts, hence we have similar bothsided lookup behaviour*)
 Lemma freshen2_lookup__lookup_r {used l x x'} :
-  lookup x (freshen2 used l) = Some x' ->
-  lookup_r x' (freshen2 used l) = Some x.
+  lookup x (freshen used l) = Some x' ->
+  lookup_r x' (freshen used l) = Some x.
 Proof.
   intros Hlookup.
   eapply lookup_Some__uniqueRhs__lookup_r; auto.
   apply freshen2__uniqueRHs.
 Qed.
 
+(* Alpha models lookup *)
 Lemma freshen2_alpha_lookup {used l x x'} :
-  lookup x (freshen2 used l) = Some x' ->
-  AlphaVar (freshen2 used l) x x'.
+  lookup x (freshen used l) = Some x' ->
+  AlphaVar (freshen used l) x x'.
 Proof.
   intros Hlookup.
   remember (freshen2_lookup__lookup_r Hlookup) as Hlookup'; clear HeqHlookup'.
   apply lookup_some_then_alphavar; eauto.
 Qed.
 
-(* By rhs of freshen2 is unique ( each rhs element gets uniqued/freshened)*)
+(* By rhs of freshen is unique ( each rhs element gets uniqued/freshened)*)
 Lemma freshen2_alpha {used l x} :
   In x l ->
-  {x' & AlphaVar (freshen2 used l) x x' * (x <> x')}%type.
+  {x' & AlphaVar (freshen used l) x x' * (x <> x')}%type.
 Proof.
   intros Hin.
-  assert (Hex: {x' & lookup x (freshen2 used l) = Some x'}).
+  assert (Hex: {x' & lookup x (freshen used l) = Some x'}).
   {
     eapply in_generator_then_in_freshen2 in Hin.
     apply in_map_iff_sigma in Hin.
@@ -732,7 +707,7 @@ Proof.
   exists x'.
   split.
   - apply freshen2_alpha_lookup; auto.
-  - assert (In x' (map snd (freshen2 used l))).
+  - assert (In x' (map snd (freshen used l))).
     { apply lookup_some_then_in_values in Hax. auto. }
     eapply freshen2__fresh_generator in H.
     intros Hcontra.
@@ -740,6 +715,7 @@ Proof.
     contradiction.
 Qed.
 
+(* R_constr's second renaming context is an identity renaming*)
 Lemma R_constr_R2_IdCtx {t s sigma X R1 R2} :
   (R1, R2) = R_constr t s sigma X ->
   IdCtx R2.
@@ -758,7 +734,7 @@ Proof.
   intros Hconstr x Hin_btvs.
   assert (Hconstr' : ((R1, R2) = R_constr t s sigma X)) by auto.
   unfold R_constr in Hconstr.
-  remember (freshen2 _ _) as frs.
+  remember (freshen _ _) as frs.
   remember  ((tv t ++ (tv s ++ tv_keys_env sigma) ++ [X]) ++
       map fst
         (map (fun x0 : string => (x0, x0))
@@ -899,7 +875,7 @@ Proof.
       (* eapply map_pair_helper in i. *)
       eapply in_generator_then_in_freshen2 in i.
       rewrite map_app. apply in_app_iff. left. rewrite H4. auto.
-      unfold freshen2 in Heqp.
+      unfold freshen in Heqp.
       eauto.
 
 
@@ -1077,7 +1053,6 @@ Proof.
   eapply R_constr__a_sigma; eauto.
 Qed.
 
-(* TODO: very similar to the ones about ftv s and ftv sigma *)
 Lemma t_constr__fresh_X_btv_t' {t t' R s sigma X} :
   (t', R) = t_constr t s sigma X ->
   ~ In X (btv t').
@@ -1087,7 +1062,7 @@ Proof.
   inversion Hconstr.
   clear H1 Hconstr.
   remember ((tv t ++ (tv s ++ tv_keys_env sigma) ++ [X])) as used.
-  remember ((freshen2 _ _) ++ _) as binders; clear Heqbinders.
+  remember ((freshen _ _) ++ _) as binders; clear Heqbinders.
   remember ((to_GU_ used binders t)) as p.
   destruct p as [[used' binders'] t''].
   subst.
@@ -1109,7 +1084,7 @@ Proof.
   inversion Hconstr.
   clear H1 Hconstr.
   remember (tv t ++ (tv s ++ tv_keys_env sigma) ++ [X]) as used.
-  remember ((freshen2 _ _) ++ _) as binders; clear Heqbinders.
+  remember ((freshen _ _) ++ _) as binders; clear Heqbinders.
   remember ((to_GU_ used binders t)) as p.
   destruct p as [[used' binders'] t''].
   subst.
@@ -1132,7 +1107,7 @@ Proof.
   inversion Hconstr.
   clear H1 Hconstr.
   remember (tv t ++ (tv s ++ tv_keys_env sigma) ++ [X]) as used.
-  remember ((freshen2 _ _) ++ _) as binders; clear Heqbinders.
+  remember ((freshen _ _) ++ _) as binders; clear Heqbinders.
   remember ((to_GU_ used binders t)) as p.
   destruct p as [[used' binders'] t''].
   subst.
@@ -1149,7 +1124,7 @@ Proof.
   simpl. eauto.
 Qed.
 
-(* Helper lemma for reaching a contradiction *)
+(* Cumbersome, uninsightful helper lemma for reaching a contradiction *)
 Lemma ftv_helper_constr {t t' R  X X'} :
   Alpha R t t' ->
   ~ In X (map snd R) ->
@@ -1246,7 +1221,7 @@ Proof.
     inversion Hcontra.
 Qed.
 
-
+(* Renaming contexts generated by R_constr are well-formed*)
 Lemma R_constr_lookup_alpha {R1 R2 t s sigma X} :
   (R1, R2) = R_constr t s sigma X ->
   forall x X', lookup x (R1 ++ R2) = Some X' -> AlphaVar (R1 ++ R2) x X'.
@@ -1456,21 +1431,13 @@ Qed.
 Opaque t_constr.
 
 
-(* defined for arbitrary substitution, while below we only need it for identity substituiosn
-  maybe we can then reuse this in other parts of the code. 
-  
-  this is simply to_GU', but with more subsitutions.
-  *)
+(*  to_GU' with more subsitutions. *)
 
 Definition s_constr (s : term) (sigma : list (string * term)) : term := 
-  (* By adding tvs in X and T, no binders in the resulting term can be equal to tvs in X and T.
-    We do tv, because mostly tv is easier to reason about than ftv*)
+  (* By adding tvs in X and T, no binders in the resulting term can be equal to tvs in X and T. We do tv, because mostly tv is easier to reason about than ftv*)
   let tvs := tv_keys_env sigma ++ tv s in
-  (* again we need to remove duplicates *)
   snd (to_GU_ tvs (map (fun x => (x, x)) tvs) s).
 
-
-(* Only need to rename binders*)
 Lemma s_constr__a_s {s s' sigma} :
   s' = s_constr s sigma ->
   Alpha [] s s'.

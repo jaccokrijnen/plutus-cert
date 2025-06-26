@@ -31,7 +31,6 @@ Proof.
   - inversion Hl.
   - simpl.
     destruct a as [a1 a2].
-    (* TODO: destr_eqb_eq tactic *)
     destruct (string_dec a1 x); subst.
     + rewrite String.eqb_refl.
       f_equal.

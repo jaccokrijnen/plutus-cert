@@ -19,13 +19,15 @@ From PlutusCert Require Import
   GU_NC 
   Alpha.alpha 
   variables 
-  alpha_subs 
-  alpha_freshness.
+  alpha_freshness
+.
 
+(* Procedure for generating fresh variables based on concatenating all inputs *)
 Definition fresh_to_GU_ (ftvs : list string) (binders : list (string * string)) (x : string) := 
   String.concat "" (ftvs ++ map fst binders ++ map snd binders ++ x::nil ++ "a"::nil).
 (* a is necessary for empty ftvs and binders*)
 
+(* Fresh variables are fresh over the inputs *)
 Lemma fresh_to_GU__fresh_over_ftvs ftvs binders x : ~ In (fresh_to_GU_ ftvs binders x) ftvs.
 Admitted.
 
@@ -36,6 +38,9 @@ Lemma fresh_to_GU__fresh_over_binders ftvs binders x : ~ In (fresh_to_GU_ ftvs b
 Admitted.
 
 (* Helper procedure for all globally uniquifying procedures*)
+(* Uses two contexts to keep track
+    what binders we are under: binders, 
+    and what names may not be used: used*)
 Fixpoint to_GU_ (used : list string) (binders : list (string * string)) (s : term) :=
   match s with
   | tmvar x => match lookup x binders with
@@ -53,12 +58,6 @@ Fixpoint to_GU_ (used : list string) (binders : list (string * string)) (s : ter
   | tmbuiltin d => (used, binders, tmbuiltin d)
   end.
 
-(* Compute (to_GU_ nil nil (tmabs "x" PlutusIR.Kind_Base (tmvar "x"))). (* should be λxa . xa*)
-Compute (to_GU_ nil nil (tmbin (tmvar "x") (tmvar "y"))). (* should be xy*)
-Compute (to_GU_ nil nil (tmbin (tmabs "y" PlutusIR.Kind_Base (tmbin (tmvar "x") (tmvar "y"))) (tmvar "y"))). 
-Compute (to_GU_ nil nil (tmbin (tmabs "y" PlutusIR.Kind_Base (tmvar "y")) (tmvar "y"))). (* should be x(λya . ya)*)
-Compute (to_GU_ nil nil (tmbin (tmabs "y" PlutusIR.Kind_Base (tmbin (tmvar "x") (tmvar "y"))) (tmvar "x"))).
-Compute (to_GU_ nil nil (tmabs "x" PlutusIR.Kind_Base (tmbin (tmabs "y" PlutusIR.Kind_Base (tmbin (tmvar "x") (tmvar "y"))) (tmvar "x")))). *)
 
 
 (* Constructs an α-equivalent globally unique representative 
@@ -68,20 +67,20 @@ Definition to_GU (s : term) :=
 let tvs := tv s in (* tvs instead of ftvs: easier proofs*)
 snd (to_GU_ tvs  (map (fun x => (x, x)) tvs) s).
 
-(* Compute (to_GU (tmbin (tmabs "y" PlutusIR.Kind_Base (tmvar "y")) (tmvar "ya"))). 
-Compute (to_GU (tmbin (tmvar "ya") (tmabs "y" PlutusIR.Kind_Base (tmvar "y")))).  *)
 
 (* A renaming context is well formed if 
   lookup x R = Some y => lookup_r y R = Some x *)
 Definition R_Well_formed (R : list (string * string))  := 
   forall x y, lookup x R = Some y -> AlphaVar R x y.
 
+(* Alpha equivalence with an identity renaming context implies syntactic equality*)
 Lemma IdCtx__alphavar_refl {R x y} : IdCtx R -> AlphaVar R x y -> x = y.
 Proof.
   intros.
   induction H; inv H0; auto.
 Qed.
 
+(* Identity renaming contexts are well-forrmed *)
 Lemma IdCtx__R_Well_formed R : IdCtx R -> R_Well_formed R.
 Proof.
   intros.
@@ -108,7 +107,7 @@ Proof.
       * rewrite <- String.eqb_neq. auto.
 Qed.
 
-(* Globally uniquifying only ever extends the used context *)
+(* Globally uniquifying returns an updated used' list that is a superset of used *)
 Lemma used_never_removed s : forall used binders s' used' binders',
   ((used', binders'), s') = to_GU_ used binders s -> forall x, In x used -> In x used'.
 Proof.
@@ -237,6 +236,7 @@ Proof.
     constructor.
 Qed.
 
+(* to_GU_ produces α-equivalent types *)
 Lemma to_GU__alpha_ s R used : 
   (forall x y, In x (ftv s) -> lookup x R = Some y -> AlphaVar R x y) ->
   (forall x, In x (ftv s) -> {y & In (x, y) R}) -> 
@@ -326,11 +326,13 @@ Proof.
   - simpl. constructor.
 Qed.   
 
+(* Identity function mapped over list of strings generates IdCtx*)
 Lemma map_creates_IdCtx l : IdCtx (map (fun x => (x, x)) l).
 Proof.
   induction l; simpl; constructor; auto.
 Qed.
 
+(* to_GU creates α-equivalent types *)
 Lemma to_GU__alpha s : Alpha [] s (to_GU s).
 Proof.
   remember (to_GU s) as s'.
@@ -414,7 +416,7 @@ Proof.
     auto.
 Qed.
 
-(* to_GU_ creates binders that are not in used*)
+(* to_GU_ only creates new binder names that are not in used*)
 Lemma no_binder_used_contrapositive used binders s s' used' binders' :
   ((used', binders'), s') = to_GU_ used binders s -> (forall x,  In x used -> ~ In x (btv s')).
 Proof.
@@ -465,7 +467,8 @@ Proof.
 Qed.
 
 
-(* to_GU_ returns the used' context containing all tvs in constructed type *)
+(* to_GU_ returns the used' context containing all tvs in constructed type: *)
+(* This guarantees they cannot be used in a type "surrounding" s*)
 Lemma tvs_remembered used binders s s' used' binders' :
   ((used', binders'), s') = to_GU_ used binders s -> (forall x, In x (tv s') -> In x used').
 Proof.
@@ -639,7 +642,7 @@ Proof.
     inversion H1.
 Qed.
 
-(* constructed type does not contain bound names equal to any original bound name *)
+(* All binders are fresh: constructed type does not contain bound names equal to any original bound name *)
 Lemma no_btv_in_binders' used binders s s' used' binders' :
   ((used', binders'), s') = to_GU_ used binders s -> (forall x, In x (map fst binders ++ map snd binders) -> ~ In x (btv s')).
 Proof.
@@ -686,6 +689,10 @@ Proof.
     auto.
 Qed.
 
+(* No binder in the constructed type occurs in the binders context: rhs
+  The binders context is used to keep track of what binders we have already (virtually) moved under: they are now free.
+  Hence new binder names may not be equal to that: then we would have duplicate ftv and btv
+*)
 Lemma no_btv_in_binders used binders s s' used' binders' :
   ((used', binders'), s') = to_GU_ used binders s -> (forall x, In x (btv s') -> ~ In x (map snd binders)).
 Proof.
@@ -700,6 +707,7 @@ Proof.
   eapply no_btv_in_binders' in H_all_binders; eauto.
 Qed.
 
+(* No binder in the constructed type occurs in the binders context: lhs*)
 Lemma no_btv_in_binders_fst used binders s s' used' binders' :
   ((used', binders'), s') = to_GU_ used binders s -> (forall x, In x (btv s') -> ~ In x (map fst binders)).
 Proof.
@@ -839,6 +847,7 @@ Proof.
   split; auto.
 Qed.
 
+(* to_GU procedure produces globally unique types*)
 Lemma to_GU__GU s : GU (to_GU s).
 Proof.
   intros.
@@ -864,7 +873,7 @@ Definition to_GU' (X : string) (T : term) (s : term) :=
   (* again we need to remove duplicates *)
   snd (to_GU_ tvs (map (fun x => (x, x)) tvs) s).
 
-
+(* to_GU' produces α-equivalent types*)
 Lemma to_GU'__alpha X T s : Alpha [] s (to_GU' X T s).
 Proof.
     remember (to_GU' X T s) as s'.
@@ -891,6 +900,7 @@ Proof.
   - assumption.
 Qed.
 
+(* to_GU' produces globally unique types*)
 Lemma to_GU'__GU X T s : GU (to_GU' X T s).
 Proof.
   intros.
@@ -910,6 +920,7 @@ Proof.
     intuition.
 Qed.
 
+(* to_GU' creates a type that would not cause capture when substituting X for T (which are arguments to the construction)*)
 Lemma to_GU'__NC X T s : NC (to_GU' X T s) ((X, T)::nil).
 Proof.
   unfold to_GU'.
@@ -928,8 +939,7 @@ Proof.
 Qed.
 
 
-
-
+(* Globally uniquifying an application, again creates an α-equivalent application: its "form" does not change*)
 Lemma to_GU_app_unfold {B s t st} :
   st = to_GU (@tmbin B s t) -> {s' & { t' & (st = @tmbin B s' t') * Alpha [] s s' * Alpha [] t t'} }%type.
 Proof.
@@ -974,21 +984,22 @@ Qed.
 
 
 
-
-
 (* Procedure for globally uniquifying, but wihout using X as btv name*)
 Definition to_GU'' (X : string) (s : term) := to_GU' X (tmvar X) s.
 
+(* to_GU'' creates an α-equivalent type*)
 Lemma to_GU''__alpha X s : Alpha [] s (to_GU'' X s).
 Proof.
   apply to_GU'__alpha.
 Qed.
 
+(* to_GU'' creates a globally unique type *)
 Lemma to_GU''__GU X s : GU (to_GU'' X s).
 Proof.
   apply to_GU'__GU.
 Qed.
 
+(* to_GU'' does not have a btv equal to the X argument *)
 Lemma to_GU''__btv X s : ~ In X (btv (to_GU'' X s)).
 Proof.
   unfold to_GU''.
@@ -1001,6 +1012,7 @@ Proof.
   specialize (H5 X Hcontra). intuition.
 Qed.
 
+(* Use case for to_GU'': we can globally uniquify a lambda abstraction without changing the binder name X*)
 Lemma to_GU''__GU_lam {B} X A s : GU (@tmabs B X A (to_GU'' X s)).
 Proof.
   constructor.
@@ -1021,17 +1033,22 @@ Qed.
 
 
 
-
-(* We first generate p. Then we can generate t with (ftv info on p).
+(* Globally uniquifying three types with respect to each other *)
+(* How: We first generate p. Then we can generate t with (ftv info on p).
   then we generate s with ftv info on t and p.
-    This creates the required NC properties.
+    This creates the required NC properties: 
+    - subsituting x for p' in s' does not cause capture
+    - NC s' [(x0, t')].
+    - NC t' [(x, p')].
+    - NC (psubs [(x, p')] s') [(x0, (psubs [(x, p')] t'))].
   *)
 Definition sconstr2 (x0 : string) (t : term) (x : string) (p s : term) :=
   let ftvs := ftv t ++ ftv p ++ ftv s ++ (x0::x::nil) in
-  let R := (map (fun x => (x, x)) ftvs) in (* For to_GU_ we need that all ftvs appear in R. TODO: abstract that away*)
+  let R := (map (fun x => (x, x)) ftvs) in (* For to_GU_ we need that all ftvs appear in R *)
   (snd (to_GU_ ftvs R s) , snd (to_GU_ ftvs R t), snd (to_GU_ ftvs R p)).
 (* Now s t and p all get binders not equal to any of the free variables in the other*)
 
+(* All three types are α-equivalent to the inputs *)
 Lemma sconstr2_alpha_s x0 t x p s s' t' p':
   (s', t', p') = sconstr2 x0 t x p s ->
   Alpha [] s s'.
@@ -1104,19 +1121,6 @@ Proof.
     + right. apply IHl. auto.
 Qed.
 
-
-Lemma in_generator_then_in_id_map (x : string) l :
-  In x l -> In (x, x) (map (fun x => (x, x)) l).
-Proof.
-  intros.
-  induction l.
-  - inversion H.
-  - simpl.
-    destruct H.
-    + subst. left. reflexivity.
-    + right. apply IHl. auto.
-Qed.
-
 Lemma in_id_map_then_id (x y : string) l :
   In (x, y) (map (fun x => (x, x)) l) -> x = y.
 Proof.
@@ -1129,6 +1133,7 @@ Proof.
     + apply IHl. auto.
 Qed.
 
+(* The constructed s' and p' types will not cause capture *)
 Lemma sconstr2_nc_s x0 t x p s s' t' p' :
   (s', t', p') = sconstr2 x0 t x p s ->
   NC s' ((x, p')::nil).
@@ -1152,9 +1157,6 @@ Proof.
     + contradiction H.
       apply in_app_iff. right. apply in_app_iff. right. apply in_app_iff. right. apply in_cons. apply in_eq.
     + simpl. split; auto.
-
-      (* todo, we could maybe better use no_ftvs_preserved_id*)
-      
       
       remember (map
         (fun x1 : string =>
@@ -1167,7 +1169,7 @@ Proof.
         intros.
         exists y0.
         subst.
-        apply in_generator_then_in_id_map. auto.
+        apply id_map_helper. auto.
         apply in_app_iff. right. apply in_app_iff. left. auto.
       }
       
@@ -1198,6 +1200,7 @@ ftv s ++ [x0; x]))).
       contradiction.
 Qed.
 
+(* sconstr2 preserves ftv of the t type *)
 Lemma sconstr2_preserves_ftv_t x0 t x p s s' t' p' :
   (s', t', p') = sconstr2 x0 t x p s ->
   forall y, In y (ftv t') -> In y (ftv t).
@@ -1219,7 +1222,7 @@ Proof.
     + intros.
       exists x1.
       subst.
-      apply in_generator_then_in_id_map. auto.
+      apply id_map_helper. auto.
       apply in_app_iff. left. auto.
   - assert (Alpha [] t t').
     {
@@ -1230,6 +1233,7 @@ Proof.
     eapply alpha_preserves_ftv; eauto with α_eq_db.
 Qed.
 
+(* sconstr2 preserves ftv of the p type *)
 Lemma sconstr2_preserves_ftv_p x0 t x p s s' t' p' :
   (s', t', p') = sconstr2 x0 t x p s ->
   forall y, In y (ftv p') -> In y (ftv p).
@@ -1251,7 +1255,7 @@ Proof.
     + intros.
       exists x1.
       subst.
-      apply in_generator_then_in_id_map. auto.
+      apply id_map_helper. auto.
       apply in_app_iff. right. apply in_app_iff. left. auto.
   - assert (Alpha [] p p').
     {
@@ -1262,6 +1266,7 @@ Proof.
     eapply alpha_preserves_ftv; eauto with α_eq_db.
 Qed.
 
+(* sconstr2 does not use x0 or x as btv in s',t',p'*)
 Lemma sconstr2_fresh_over_x0 y x0 t x p s s' t' p' :
   (s', t', p') = sconstr2 x0 t x p s ->
   ((In y (btv s')) \/  In y (btv t') \/ In y (btv p')) ->
@@ -1308,6 +1313,7 @@ Proof.
   }
 Qed.
 
+(* sconstr2 does not cause capture when substituting x0 for t' in s' *)
 Lemma sconstr2_nc_s_t x0 t x p s s' t' p' :
   (s', t', p') = sconstr2 x0 t x p s ->
   NC s' ((x0, t')::nil).
@@ -1328,6 +1334,7 @@ Proof.
     apply in_app_iff. left. auto.
 Qed.
 
+(* sconstr2 does not cause capture when substituting p' for x in t' *)
 Lemma sconstr2_nc_t x0 t x p s s' t' p' :
   (s', t', p') = sconstr2 x0 t x p s ->
   NC t' ((x, p')::nil).
@@ -1348,6 +1355,7 @@ Proof.
     apply in_app_iff. right. apply in_app_iff. left. auto.
 Qed.
 
+(* sconstr2 does not cause capture when doing this nested substitution *)
 (* We have control over all binders in s' and p' and subs does not introduce new binders,
   hence we can create a construction that satisfies this*)
 Lemma sconstr2_nc_sub x0 t x p s s' t' p' :
@@ -1412,34 +1420,6 @@ Create HintDb sconstr2_db.
 Hint Resolve sconstr2_alpha_s sconstr2_alpha_t sconstr2_nc_sub 
   sconstr2_nc_s sconstr2_nc_t sconstr2_nc_s_t
   sconstr2_alpha_p : sconstr2_db.
-
-Require Import List.
-Import ListNotations.
-
-
-Definition string_pair_dec (p1 p2 : string * string) : {p1 = p2} + {p1 <> p2}.
-Proof.
-  decide equality; apply string_dec.
-Defined.
-
-Require Import Coq.Lists.List.
-Require Import Coq.Lists.ListDec.
-Import ListNotations.
-
-
-Definition freshen2 used to_freshen :=
-  fold_right
-    (fun x acc =>
-      let fresh_var := fresh_to_GU_ (used ++ to_freshen) acc x in
-      (x, fresh_var) :: acc) (* New element is added at the front in `fold_right` *)
-    [] to_freshen.
-
-
-Definition freshen used to_freshen := fold_left
-      (fun acc x =>
-        let fresh_var := fresh_to_GU_ used acc x in
-        (x, fresh_var) :: acc) to_freshen [].
-
 
 
 Create HintDb to_GU'_db.

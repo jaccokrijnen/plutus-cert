@@ -318,8 +318,7 @@ Proof.
     * subst.
       autorewrite with substituteTCA.
       simpl. auto.
-    * (* todo: inversion stuff, should be possible to automate, or at least to do that not in this function *)
-      induction l; subst; inversion HeqfT.
+    * induction l; subst; inversion HeqfT.
       - autorewrite with substituteTCA. simpl. auto.
       - induction a; subst; inversion H2.
         
@@ -369,7 +368,7 @@ Proof with subst; auto.
   all: try solve [intros; try econstructor; eauto].
   apply (f_preserves_kind__Ty_SOP_axiom).
   (*
-      TODO:Working code when kind induction scheme is shown to terminate. For now replaced with the SOP axiom.
+      NOTE: Working code when kind induction scheme is shown to terminate. For now replaced with the SOP axiom.
 
 
     simpl.

@@ -85,7 +85,7 @@ where "Δ '|-*' T ':' K" := (has_kind Δ T K).
 
 Local Open Scope string_scope.
 
-(* TODO: there is probably a higher order thing to create stuff like this *)
+(* List of well-kinded types, all with the same renaming contex*)
 Inductive map_wk : list (string * ty * list (string * kind)) -> Prop :=
   | MW_nil :
       map_wk nil
@@ -94,7 +94,7 @@ Inductive map_wk : list (string * ty * list (string * kind)) -> Prop :=
       has_kind Δ T K ->
       map_wk ((X, T, Δ) :: xs).
 
-(* TODO: Is this what we usually call app? *)
+(* map_wk is preserved by concatenation *)
 Lemma map_wk_app : forall xs ys,
   map_wk xs ->
   map_wk ys ->

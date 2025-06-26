@@ -97,7 +97,7 @@ Proof with eauto_LR.
     eapply RG_monotone; eauto.
     rewrite Nat.sub_0_r in Hlt_i.
 
-    (* TODO: see #91 (weakening for logical approximation) *)
+    (* NOTE: see #91 (weakening for logical approximation) *)
 
     (* apply Nat.lt_le_incl.
     assumption. *)

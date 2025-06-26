@@ -45,7 +45,7 @@ Theorem normalizer_sound Δ T Tn :
 Proof.
   unfold normalizer.
   move: eq_refl.
-  case: {2 3}(kind_check Δ T) => // a e H. (* TODO: I don't understand (all of) this ssreflect stuff, see https://stackoverflow.com/questions/47345174/using-destruct-on-pattern-match-expression-with-convoy-pattern*)
+  case: {2 3}(kind_check Δ T) => // a e H. (* TBased on https://stackoverflow.com/questions/47345174/using-destruct-on-pattern-match-expression-with-convoy-pattern*)
   inversion H.
   eapply norm_sound; eauto.
 Qed.

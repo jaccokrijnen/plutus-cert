@@ -169,7 +169,6 @@ Proof.
       simpl in Happ. rewrite H in Happ. auto.
 Qed.
 
-(* TODO: Use more general lemma without mentioning ftv*)
 Lemma not_existsb_not_in y U' : 
   existsb (eqb y) U' = false -> ~ In y (U').
 Proof.
@@ -331,7 +330,6 @@ Lemma list_diff_got_filtered l1 l2 x :
   ~ In x (list_diff string_dec l1 l2) -> In x l1 -> In x l2.
 Admitted.
 
-(* TODO: We already have these two I think*)
 Lemma lookup_In {A} k (v : A) xs :
   lookup k xs = Some v ->
   In (k, v) xs
@@ -339,7 +337,6 @@ Lemma lookup_In {A} k (v : A) xs :
 Proof.
 Admitted.
 
-(* TODO: We already have these two I think*)
 Lemma lookup_not_In {A} k (v : A) xs :
   lookup k xs = None ->
   ~ In (k, v) xs.

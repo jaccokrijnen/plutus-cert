@@ -50,7 +50,7 @@ Proof.
     - (* E_Constr_cons *)
       
       admit.
-      (* TODO: No typing rules for constr?*)
+      (* TODO: No typing rules for constr yet*)
     - (* E_Builtin *)
       left.
       exact Ht.

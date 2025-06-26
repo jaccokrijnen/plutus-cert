@@ -437,7 +437,7 @@ Proof.
     subst.
     eapply normalizer_complete in n.
     rewrite n. simpl. reflexivity.
-    apply lookupBuiltinTy__well_kinded. (* TODO: Is this true?*)
+    apply lookupBuiltinTy__well_kinded. 
   - (* Case: T_Error *)
     unfold bind.
     apply (normalizer_complete h) in n; rewrite n.
