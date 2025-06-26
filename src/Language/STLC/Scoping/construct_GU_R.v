@@ -597,7 +597,7 @@ Qed.
     (*
     THIS DOES NOT WORK, SOLUTION IS THE NEXT LIST OF POINTS AND T_CONSTR
       Doing an alpha argument on s itself does not work. It seems like we are then forced to still have NC s sigma
-    NOOOOO DOESNT WORK: we cannot know alphaSubs (X, y) sigma sigma'
+    NOOOOO DOESNT WORK: we cannot know AlphaSubs (X, y) sigma sigma'
       So:
       1. We try to rename binders in s instead of in t. We need to rename all sorts of things then
       2. In the lam case we need to extend the subsitution with (X, t)  and (y, t').   and R = (X, y).
@@ -1048,27 +1048,27 @@ Lemma R_constr__a_sigma {R1 R2 t s sigma X} :
   BU sigma s ->
   NC s sigma ->
   (R1, R2) = R_constr t s sigma X ->
-  alphaSubs (R1 ++ R2) sigma sigma.
+  AlphaSubs (R1 ++ R2) sigma sigma.
 Proof.
   intros HBU Hnc HReq.
   destruct HBU as [ BU1 BU2].
-  apply αctx_sub_extend_ids_right.
+  apply AlphaSubs_sub_extend_ids_right.
   + eapply R_constr_R2_IdCtx; eauto.
-  + apply αctx_vacuous_R.
+  + apply AlphaSubs_vacuous_R.
     * intros.
       apply R_constr_freshen_helper with (x := x) in HReq; auto.
       destruct HReq as [H01 | H02]; auto. 
       eapply nc_ftv_env in Hnc; eauto.
     * intros.
       apply R_constr_freshen_fresh_over_sigma with (x := x') in HReq; auto.
-    * apply alpha_ctx_R_nil.
+    * apply AlphaSubs_R_nil.
 Qed.
 
 Lemma t_constr__a_sigma {t t' R s sigma X} :
   BU sigma s ->
   NC s sigma ->
   (t', R) = t_constr t s sigma X ->
-  alphaSubs R sigma sigma.
+  AlphaSubs R sigma sigma.
 Proof.
   unfold t_constr.
   destruct (R_constr t s sigma X) as [R1 R2] eqn:Rconstr.

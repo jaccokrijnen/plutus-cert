@@ -120,7 +120,7 @@ Lemma step_subst_single R {x p s t t' } :
   GU s -> 
   NC s [(x, p)] -> 
   Alpha R t t' -> 
-  alphaSubs R [(x, p)] [(x, p)] -> 
+  AlphaSubs R [(x, p)] [(x, p)] -> 
   NC t' [(x, p)] ->
   {aT : term & 
   (step_gu (psubs ((x, p)::nil) s) aT) * (Alpha R aT (psubs ((x, p)::nil) t'))}%type.
@@ -165,7 +165,7 @@ Proof with eauto with sconstr2_db gu_nc_db α_eq_db to_GU_db to_GU''_db.
            eapply ctx_id_left_is_id.
            repeat rewrite <- single_subs_is_psub.
            eapply psubs__α with (R := nil)...
-        -- eapply αctx_trans with (R1 := ctx_id_left R) (R2 := R) (R := R) (σ' := ((x, p)::nil)); auto; eauto with α_eq_db_trans.
+        -- eapply AlphaSubs_trans with (R1 := ctx_id_left R) (R2 := R) (R := R) (σ' := ((x, p)::nil)); auto; eauto with α_eq_db_trans.
            constructor. constructor. 
            ++ apply alphavar_extend_ids. apply ctx_id_left_is_id. constructor.
            ++ apply alpha_extend_ids... apply ctx_id_left_is_id. 
@@ -175,7 +175,7 @@ Proof with eauto with sconstr2_db gu_nc_db α_eq_db to_GU_db to_GU''_db.
            rewrite <- H in *.
            apply nc_ftv_env with (x := x0) in H1; simpl; auto with *.
            destruct H1.
-           apply @alpha_preserves_ftv with (ren := nil) (x' := x0) (s' := p) in Hcontra...
+           apply @alpha_preserves_ftv with (R := nil) (x' := x0) (s' := p) in Hcontra...
            right; auto with *.
   - inversion H2; subst.
     edestruct IHHstep as [sigS1 [HstepS1 HalphaS1] ]...
@@ -217,7 +217,7 @@ Proof with eauto with sconstr2_db gu_nc_db α_eq_db to_GU_db to_GU''_db.
         eapply psubs__α; eauto...
   - inversion H2; subst.
     edestruct IHHstep with (t' := s3) (R := ((x0, y)::R)) as [subSigmaS2 [Hsteps1 Halpha] ]...
-    + apply alpha_ctx_ren_extend_fresh_ftv.
+    + apply AlphaSubs_extend_fresh.
       * apply nc_ftv_env with (x := x0) in H1. auto. simpl. auto.
       * apply nc_ftv_env with (x := y) in H4. auto. simpl. auto.
       * assumption.
@@ -654,7 +654,7 @@ Corollary type_L Δ s T : Δ |-* s : T -> L T (psubs (id_subst Δ) s).
 Proof with eauto using id_subst__EL with s_constr_db id_subst_db.
   intros Hkind.
   remember (s_constr s (id_subst Δ)) as s'.
-  eapply alpha_preserves_kinding with (t := s') (sigma := nil) (Gamma := Δ) in Hkind; eauto...
+  eapply alpha_preserves_kinding with (t := s') (R := nil) (Γ := Δ) in Hkind; eauto...
   {
     eapply fundamental in Hkind; eauto...
     - rewrite id_subst__id in Hkind...

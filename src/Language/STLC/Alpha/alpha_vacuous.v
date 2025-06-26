@@ -11,6 +11,7 @@ Require Import Lia.
 Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Arith.
 Require Import Coq.Bool.Bool.
+Require Import Coq.Program.Equality.
 
 From PlutusCert Require Import 
   construct_GU 
@@ -23,6 +24,7 @@ From PlutusCert Require Import
   alpha_subs 
   alpha_freshness.
 
+(* If x is not free in s, we can construct an α-equivalent representative that also does not have x as binder *)
 Lemma not_ftv_to_not_tv {x s}:
   ~ (In x (ftv s)) -> prod (~ (In x (tv (to_GU'' x s)))) (Alpha [] s (to_GU'' x s)).
 Proof.
@@ -35,6 +37,7 @@ Proof.
   - apply to_GU''__alpha.
 Qed.
 
+(* We can append a vacuous renaming: it doesn't do anything by the ~ftv premises*)
 Lemma alpha_extend_vacuous_ftv {x x' s s' R}:
   ~ (In x (ftv s)) -> ~ (In x' (ftv s')) -> Alpha R s s' -> Alpha ((x, x')::R) s s'.
 Proof.
@@ -50,6 +53,7 @@ Proof.
   - eapply @alpha_sym. constructor. auto.
 Qed.
 
+(* Appending multiple vacuous renamings *)
 Lemma alpha_vacuous_R {s s' R1 R2}:
   (forall x, In x (map fst R1) -> (~ In x (ftv s))) -> (forall x', In x' (map snd R1) -> ~ In x' (ftv s')) -> Alpha R2 s s' -> Alpha (R1 ++ R2) s s'.
 Proof.
@@ -65,10 +69,9 @@ Proof.
       * intros. eapply H0. apply in_cons. auto.
 Qed.
 
-Require Import Coq.Program.Equality.
-
-Lemma αctx_vacuous_R R σ σ' :
-  (forall x, In x (map fst R) -> (~ In x (ftv_keys_env σ))) -> (forall x', In x' (map snd R) -> ~ In x' (ftv_keys_env σ')) -> alphaSubs [] σ σ' -> alphaSubs R σ σ'.
+(* Appending multiple vacuous renaming to α-equivalence of substitutions *)
+Lemma AlphaSubs_vacuous_R R σ σ' :
+  (forall x, In x (map fst R) -> (~ In x (ftv_keys_env σ))) -> (forall x', In x' (map snd R) -> ~ In x' (ftv_keys_env σ')) -> AlphaSubs [] σ σ' -> AlphaSubs R σ σ'.
 Proof.
   intros Hvac1 Hvac2 Ha.
   dependent induction σ.
@@ -106,13 +109,13 @@ Proof.
       rewrite app_nil_r in H.
       auto.
 Qed.
-(* END OF THAT*)
 
-Lemma alpha_ctx_ren_extend_fresh_ftv sigma sigma' x x' ren:
+(* The freshness premises make this a vacuous additional renaming*)
+Lemma AlphaSubs_extend_fresh sigma sigma' x x' R:
   ~ In x (ftv_keys_env sigma) ->
   ~ In x' (ftv_keys_env sigma') ->
-  alphaSubs ren sigma sigma' ->
-  alphaSubs ((x, x')::ren) sigma sigma'.
+  AlphaSubs R sigma sigma' ->
+  AlphaSubs ((x, x')::R) sigma sigma'.
 Proof.
   intros H_nxσ H_nx'σ' H_α.
   induction H_α.
@@ -133,16 +136,16 @@ Proof.
         apply not_in_app in H_nx'σ' as [H_nx'σ' _]. auto.
 Qed.
 
-(* Extending with identity is allowed if we relate identical terms: then ren only contains vacuous and identity renamings *)
-Lemma alpha_extend_id__refl {s z ren}:
-  Alpha ren s s -> Alpha ((z, z)::ren ) s s.
+(* Extending with identity is allowed if we relate identical terms: then R only contains vacuous and identity renamings *)
+Lemma alpha_extend_id__refl {s z R}:
+  Alpha R s s -> Alpha ((z, z)::R ) s s.
 Proof.
   destruct (in_dec string_dec z (ftv s)).
   - intros.
 
-    (* By contradiction: If z breaks shadowing in ren, then there is a (z, z') in there with z' <> z. 
-    Then not ren ⊢ s ~ s*)
-    assert (NotBreakShadowing z ren).
+    (* By contradiction: If z breaks shadowing in R, then there is a (z, z') in there with z' <> z. 
+    Then not R ⊢ s ~ s*)
+    assert (NotBreakShadowing z R).
     {
       dependent induction H.
       - apply ftv_var in i; subst.

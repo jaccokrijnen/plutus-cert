@@ -27,7 +27,7 @@ Hint Resolve alpha_refl : α_eq_db.
 Hint Resolve alpha_sym : α_eq_db.
 Hint Resolve alpha_trans : α_eq_db.
 Hint Constructors AlphaVar : α_eq_db.
-Hint Constructors alphaSubs : α_eq_db.
+Hint Constructors AlphaSubs : α_eq_db.
 Hint Constructors AlphaCtxSym : α_eq_db.
 Hint Constructors αCtxTrans : α_eq_db.
 Hint Resolve alpha_extend_ids : α_eq_db.

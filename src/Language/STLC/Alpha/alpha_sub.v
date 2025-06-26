@@ -26,6 +26,7 @@ From PlutusCert Require Import
 
 Require Import Coq.Program.Equality.
 
+(* Renaming the name that we substitute. *)
 (* We need a legal ren swap because the new binders get in front of the (x, y) in the inductive step of the lambda*)
 Lemma alpha_rename_binder_stronger x y s t t' : forall Rt s' Rs,
   Alpha Rs s s' ->
@@ -90,67 +91,46 @@ Qed.
 
 
 
-(* May also work on sequential substiutions with additional assumptions.
-  For now only needed for parallel substitutions
-*)
+(* Parallel substitutions preserve α-equivalence *)
 Lemma psubs__α s : forall R s' sigma sigma',
   NC s sigma ->
   NC s' sigma' ->
   Alpha R s s' ->
-  alphaSubs R sigma sigma' ->
+  AlphaSubs R sigma sigma' ->
   Alpha R (psubs sigma s) (psubs sigma' s').
 Proof with eauto with gu_nc_db.
   induction s; intros; inv H1; simpl.
   all: try constructor...
   - destruct (lookup s sigma) eqn:Hl_x_σ.
-    + destruct (alpha_ctx_right_ex H2 H5 Hl_x_σ) as [t' [Hl_x_σ' Ht'_a] ].
+    + destruct (AlphaSubs_right_ex H2 H5 Hl_x_σ) as [t' [Hl_x_σ' Ht'_a] ].
       now rewrite Hl_x_σ'.
-    + rewrite (alpha_ctx_right_nex H2 H5 Hl_x_σ).
+    + rewrite (AlphaSubs_right_nex H2 H5 Hl_x_σ).
       constructor. assumption.
   - eapply IHs...
-    * eapply alpha_ctx_ren_extend_fresh_ftv; auto;
+    * eapply AlphaSubs_extend_fresh; auto;
       eapply nc_ftv_env; eauto; apply btv_lam.
 Qed.
 
 
 
 
-(* I want to be in a position where the binders are chosen thus that I can do substitueT
-  without checking if we are tyring to substitute a binder:
-    i.e. no checks in substituteT 
-    Then we ahve the property:
-    subsT x t (tmabs y T s) = tmabs y T (subsT x t s) even if x = y (because that cannot happen anymore)
-      Then also NC can go into the lambda
-    this can be put into the NC property?
-    *)
-  (* Maybe we can leave out the R by switching to a renaming approach? *)
 
-(* TODO: These sigma's can be single substitutions I think!
-  - Used in step_subst, there it can be single substs
-    - Used in beta_expansion: single substs *)
-
-(*
+(* Commutativity of substitutions. *)
+(* Intuitively:
   [x := σ(t)] σ(s)  =   σ([x := t] s)
 *)
 Lemma commute_sub_naive R x s t (sigma sigma' : list (string * term)) xtsAlpha:
   Alpha R (sub x t s) xtsAlpha ->
-  alphaSubs R sigma sigma' -> (* TODO: Vars in R not in sigma?*)
+  AlphaSubs R sigma sigma' -> 
 
   (* these two just say: x not in key or ftv sigma*)
-  ~ In x (map fst sigma) ->
-  (forall ftvs, In ftvs (map snd sigma) -> ~ In x (ftv ftvs)) -> 
+  ~ In x (map fst sigma) -> (* Hx_key *)
+  (forall ftvs, In ftvs (map snd sigma) -> ~ In x (ftv ftvs)) -> (* Hx_values*)
   NC xtsAlpha sigma' ->
   NC s [(x, t)] ->
   NC s sigma ->
   NC t sigma ->
   NC (psubs sigma s) [(x, psubs sigma t)] ->
-  (* s.t. substituteTs sigma xtsAlpha does not capture 
-    e.g. suppose sigma:= [y := x]
-    and xtsAlpha = λx. y.
-    then substituting would capture.
-    But we can always choose an alpha equivalent xtsAlpha with 
-    different binder names not occuring in the rhs of sigma
-  *)
   Alpha R (sub x (psubs sigma t) (psubs sigma s))
       (psubs sigma' xtsAlpha).
 Proof with eauto with gu_nc_db.
@@ -158,13 +138,12 @@ Proof with eauto with gu_nc_db.
   generalize dependent xtsAlpha.
   generalize dependent R.
   induction s; intros.
-  - (* We need to have that x does not occur in lhs or rhs of sigma! We have control over x
-    when calling this function, so we should be good.*)
+  - (* Here we need to have that x does not occur in lhs or rhs of sigma! *)
     destr_eqb_eq x s.
     + simpl in Ha_sub. rewrite String.eqb_refl in Ha_sub.
       destruct (in_dec String.string_dec s (map fst sigma)).
-      * contradiction. (* Uses Hx_key *)      
-      * assert (Hsub_vac: psubs sigma (tmvar s) = tmvar s) by now apply psubs_vac_var. (* DONE: s not in sigma*)
+      * contradiction.   (* Uses Hx_key*)
+      * assert (Hsub_vac: psubs sigma (tmvar s) = tmvar s) by now apply psubs_vac_var. 
         rewrite Hsub_vac.
         simpl. 
         rewrite String.eqb_refl.
@@ -174,21 +153,18 @@ Proof with eauto with gu_nc_db.
       rewrite H in Ha_sub.
       inversion Ha_sub; subst.
       destruct (in_dec String.string_dec s (map fst sigma)).
-      (* 
-        by s in keys, ther emust be a value. Hmm. But these are sequential substs...
-      *)
       * rewrite sub_vac; auto.
         {
           eapply psubs__α; eauto.
         }
         apply psubs_no_ftv.
-        -- apply ftv_keys_env_helper; auto. (* uses Hx_value *) 
+        -- apply ftv_keys_env_helper; auto. (* uses Hx_values *) 
         -- apply String.eqb_neq. assumption.
         -- intros Hcontra.
            apply nc_ftv_env with (x := x) in HNC_subs; eauto.
            apply ftv_keys_env__no_keys in HNC_subs; eauto.
            simpl in HNC_subs. intuition.
-      * assert (Hsub_vac: psubs sigma (tmvar s) = tmvar s) by now apply psubs_vac_var. (* DONE : s not in fst sigma *)
+      * assert (Hsub_vac: psubs sigma (tmvar s) = tmvar s) by now apply psubs_vac_var.
         rewrite Hsub_vac.
         unfold sub.
         rewrite H.
@@ -198,7 +174,7 @@ Proof with eauto with gu_nc_db.
   - inversion Ha_sub; subst.
     constructor.
     eapply IHs; try eapply nc_lam; eauto.
-    apply alpha_ctx_ren_extend_fresh_ftv; eauto.
+    apply AlphaSubs_extend_fresh; eauto.
     + eapply nc_ftv_env in HNC_s_σ; eauto. apply btv_lam.
     + eapply nc_ftv_env in HNC_sub; eauto. apply btv_lam.
   - simpl in Ha_sub.

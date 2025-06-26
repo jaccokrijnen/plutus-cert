@@ -1,32 +1,18 @@
 
 From PlutusCert Require Import 
   STLC
-  Alpha.alpha 
-  alpha_subs 
+  Alpha.alpha
   Util.List 
   variables 
-  util 
-  alpha_rename.
+  util. 
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
 
 Require Import Coq.Program.Equality.
 
-Lemma alpha_not_in_tv_helper {X X' ren t} :
-  ~ In X (tv t) -> ~ In X' (tv t) -> Alpha ren t t -> Alpha ((X, X')::ren) t t.
-Proof.
-Admitted.
-
-Lemma alpha_not_in_ftv_helper2 {X X' ren t t'} :
-  ~ In X (ftv t) -> Alpha ((X, X')::ren) t t' -> ~ In X' (ftv t') .
-Admitted.
-
-Lemma alpha_in_ftv_helper2 {X X' ren t t'} :
-  In X (ftv t) -> Alpha ((X, X')::ren) t t' -> In X' (ftv t') .
-Admitted.
-
-Lemma alpha_preserves_ftv' {x s s' ren} :
-  In x (ftv s) -> Alpha ren s s' -> { x' & prod (AlphaVar ren x x') (In x' (ftv s')) }.
+(* Strengthened statement of alpha_preserves_ftv *)
+Lemma alpha_preserves_ftv' {x s s' R} :
+  In x (ftv s) -> Alpha R s s' -> { x' & prod (AlphaVar R x x') (In x' (ftv s')) }.
 Proof.
   intros Hxins Halphas.
   induction Halphas.
@@ -61,10 +47,11 @@ Proof.
   - inversion Hxins.
 Qed.
 
-Lemma alpha_preserves_ftv {x x' s s' ren } :
+(* Free type variables are preserved by and up to alpha equivalence *)
+Lemma alpha_preserves_ftv {x x' s s' R } :
   In x (ftv s) ->
-  Alpha ren s s' ->
-  AlphaVar ren x x' ->
+  Alpha R s s' ->
+  AlphaVar R x x' ->
   In x' (ftv s').
 Proof.
   intros Hxins Halphas Halphax.
@@ -73,20 +60,21 @@ Proof.
   assumption.
 Qed.
 
-Lemma alpha_preserves_no_ftv {x x' s s' ren} :
+(* Not occuring free is also preserved under alpha equivalence*)
+Lemma alpha_preserves_no_ftv {x x' s s' R} :
   ~ In x (ftv s) ->
-  Alpha ren s s' ->
-  AlphaVar ren x x' ->
+  Alpha R s s' ->
+  AlphaVar R x x' ->
   ~ In x' (ftv s').
 Proof.
   intros Hnotin Halphas Halphax.
   intros Hcontra.
-  assert (Alpha (sym_alpha_ctx ren) s' s).
+  assert (Alpha (sym_alpha_ctx R) s' s).
   {
     eapply alpha_sym; eauto.
     apply sym_alpha_ctx_is_sym.
   }
-  assert (AlphaVar (sym_alpha_ctx ren) x' x).
+  assert (AlphaVar (sym_alpha_ctx R) x' x).
   {
     eapply alphavar_sym; eauto.
     apply sym_alpha_ctx_is_sym.
@@ -95,38 +83,3 @@ Proof.
   contradiction.
 Qed.
 
-(* Uses stronger assumption that x notin tv s instead of ftv s
-  Makes life easier for not having to deal with binders 
-  Example: x notin ftv (tmabs x. x), but x in ftv x, which is its body.
-          However x in tv (tmabs x. x), as well as in tmabs x. y. easier.
-   *)
-Lemma alpha_preserves_ftv_from_tv {x x' s s' ren} :
-  ~ In x (tv s) ->
-  Alpha ren s s' ->
-  AlphaVar ren x x' ->
-  ~ In x' (ftv s').
-Proof.
-  intros.
-  eapply alpha_preserves_no_ftv; eauto.
-  intros Hcontra.
-  apply extend_ftv_to_tv in Hcontra.
-  contradiction.
-Qed.
-
-Lemma alpha_preserves_ftv_tv_right {x x' s s' ren} :
-  ~ In x' (tv s') ->
-  Alpha ren s s' ->
-  AlphaVar ren x x' ->
-  ~ In x (ftv s).
-Proof.
-  intros.
-  eapply alpha_preserves_no_ftv; eauto.
-  - intros Hcontra.
-    apply extend_ftv_to_tv in Hcontra.
-    now apply H in Hcontra.
-  - eapply alpha_sym.
-    + apply sym_alpha_ctx_is_sym.
-    + eauto.
-  - eapply alphavar_sym; eauto.
-    apply sym_alpha_ctx_is_sym.
-Qed.
