@@ -35,5 +35,7 @@ Extract Constant show_Z => "show".
    A working extraction (with minor manual work already performed) is found in TypeCheckTest.hs
 *)
 Extraction Language Haskell.
-Redirect "TypeCheckTest.hs" Recursive Extraction t_type.
+
+(* Uncomment this for extraction *)
+(* Redirect "TypeCheckTest.hs" Recursive Extraction t_type. *)
 

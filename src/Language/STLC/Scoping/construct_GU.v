@@ -350,7 +350,7 @@ Proof.
       eapply lookup_some_IdCtx_then_alphavar; eauto.
 
     - intros.
-      apply id_ctx_alphavar_refl; auto.
+      apply alphavar_refl; auto.
     - intros. auto.
   }
   eapply alpha_weaken_ids with (idCtx := R).
@@ -879,7 +879,7 @@ Proof.
       rewrite HeqR.
       apply map_creates_IdCtx.
     - intros.
-      apply id_ctx_alphavar_refl; auto.
+      apply alphavar_refl; auto.
       subst. apply map_creates_IdCtx.
     - intros.
       intuition.

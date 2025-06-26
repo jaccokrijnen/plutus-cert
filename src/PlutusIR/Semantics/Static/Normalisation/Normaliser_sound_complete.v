@@ -1,5 +1,3 @@
-From Coq Require Extraction.
-
 From PlutusCert Require Import 
   PlutusIR 
   Normalisation.BigStep 

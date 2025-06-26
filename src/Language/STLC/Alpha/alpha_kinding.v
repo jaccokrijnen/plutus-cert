@@ -66,7 +66,7 @@ Proof.
   - intros Gamma' Gamma HCAlpha A0 HType.
     inversion HType; subst;
     specialize (IHHAlpha ((y, A)::Gamma') ((x, A)::Gamma)
-      (calpha_cons x y A sigma Gamma Gamma' HCAlpha) _ H5); constructor; auto.
+      (calpha_cons x y A R Gamma Gamma' HCAlpha) _ H5); constructor; auto.
   - intros Gamma' Gamma HCAlpha A HType. 
     inversion HType; subst; econstructor; eauto.
   - intros.

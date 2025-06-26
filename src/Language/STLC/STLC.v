@@ -17,6 +17,7 @@ From PlutusCert Require Import Util.List Kinding.Kinding. (* I don't understand 
 Inductive USort := Lam | ForAll.
 Inductive BSort := App | IFix | Fun.
 
+(* Note: In the thesis, this relation is used both for the subset of PIR in the strong normalization proof (without annotations) and for the embedding argument*)
 (** Types, maybe rename app and lam, since they are now generic *)
 Inductive term :=
   | tmvar : string -> term

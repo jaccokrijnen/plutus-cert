@@ -12,6 +12,8 @@ Import ListNotations.
 From QuickChick Require Import QuickChick.
 From QuickChick Require Import CheckerProofs.
 
+From PlutusCert Require Import Util.Tactics.
+
 Require Import Utf8_core.
 
 Notation "x ∈ xs" := (In x xs) (at level 40).

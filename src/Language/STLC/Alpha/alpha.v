@@ -10,93 +10,50 @@ Local Open Scope string_scope.
 Local Open Scope list_scope.
 Require Import Lia.
 Require Import Coq.Program.Basics.
+Require Import Coq.Program.Equality.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 From PlutusCert Require Import STLC util.
 
+(* Helper inductive for alpha equivalent variables *)
 Inductive AlphaVar : list (string * string) -> string -> string -> Set :=
 | alpha_var_refl x : AlphaVar [] x x
-| alpha_var_cons z w sigma :
-    AlphaVar ((z, w) :: sigma) z w
-| alpha_var_diff x y z w sigma :
+| alpha_var_cons z w R :
+    AlphaVar ((z, w) :: R) z w
+| alpha_var_diff x y z w R :
     x <> z -> 
     y <> w -> 
-    AlphaVar sigma z w -> 
-    AlphaVar ((x, y) :: sigma) z w.
+    AlphaVar R z w -> 
+    AlphaVar ((x, y) :: R) z w.
 
+(* Alpha equivalence with a renaming context *)
 Inductive Alpha : list (string * string) -> term -> term -> Set :=
-| alpha_var x y sigma : 
-    AlphaVar sigma x y -> 
-    Alpha sigma (tmvar x) (tmvar y)
-| alpha_lam B x y A s1 s2 sigma :
-    Alpha ((x, y) :: sigma) s1 s2 -> 
-    Alpha sigma (@tmabs B x A s1) (@tmabs B y A s2)
-| alpha_app B s1 s2 t1 t2 sigma :
-    Alpha sigma s1 s2 -> 
-    Alpha sigma t1 t2 -> 
-    Alpha sigma (@tmbin B s1 t1) (@tmbin B s2 t2)
+| alpha_var x y R : 
+    AlphaVar R x y -> 
+    Alpha R (tmvar x) (tmvar y)
+| alpha_lam B x y A s1 s2 R :
+    Alpha ((x, y) :: R) s1 s2 -> 
+    Alpha R (@tmabs B x A s1) (@tmabs B y A s2)
+| alpha_app B s1 s2 t1 t2 R :
+    Alpha R s1 s2 -> 
+    Alpha R t1 t2 -> 
+    Alpha R (@tmbin B s1 t1) (@tmbin B s2 t2)
 | alpha_builtin R d :
     Alpha R (tmbuiltin d) (tmbuiltin d).
 
-Lemma alpha_exampl x y y' A :
-  x <> y -> y <> y' -> x <> y' -> 
-  Alpha [] (@tmabs Lam x A (@tmabs Lam y A (@tmbin App (tmvar x) (tmvar y)))) (@tmabs Lam y A (@tmabs Lam y' A (@tmbin App (tmvar y) (tmvar y')))).
-Proof.
-  intros Hxy Hyy' Hxy'.
-  apply alpha_lam.
-  apply alpha_lam.
-  apply alpha_app.
-  - apply alpha_var. apply alpha_var_diff; try symmetry; try assumption.
-    apply alpha_var_cons; reflexivity.
-  - apply alpha_var. apply alpha_var_cons; reflexivity.
-Qed.
-
-(* Showcasing shadowing behaviour is right *)
-Lemma alpha_counterexample x y z A :
-  x <> y -> x <> z -> y <> z -> 
-  (Alpha [] (@tmabs Lam x A (@tmabs Lam y A (@tmbin App (tmvar x) (tmvar y)))) 
-    (@tmabs Lam z A (@tmabs Lam z A (@tmbin App (tmvar z) (tmvar z)))) -> False).
-Proof.
-  intros Hxy Hxz Hyz Halpha.
-  inversion Halpha; subst.
-  inversion H1; subst.
-  inversion H2; subst.
-  inversion H4; subst.
-  inversion H5; subst.
-  - contradiction Hxy. subst. reflexivity. 
-  - contradiction.
-Qed.
-
-Lemma alpha_var_id {x y z}:
-  AlphaVar [] x y -> AlphaVar [(z, z)] x y.
-Proof.
-  intros HalphaVar.
-  inversion HalphaVar. subst... (* x = y*)
-  case (y =? z) eqn:yz.
-  - apply String.eqb_eq in yz. subst.
-    apply  alpha_var_cons; reflexivity.
-  - apply alpha_var_diff. 
-    + apply String.eqb_neq in yz. symmetry. assumption.
-    + apply String.eqb_neq in yz. symmetry. assumption.
-    + assumption.
-Qed.
-
-Require Import Coq.Program.Equality.
-
-(* ******
-  Alpha is a contextual equivalence relation *)
+(* ****** Alpha is a contextual equivalence relation *)
 
 Inductive IdCtx : list (string * string) -> Set :=
 | id_ctx_nil : IdCtx []
-| id_ctx_cons x ren :
-    IdCtx ren -> 
-    IdCtx ((x, x) :: ren).
+| id_ctx_cons x R :
+    IdCtx R -> 
+    IdCtx ((x, x) :: R).
 
 (* Identity alphavar context *)
-Lemma alphavar_refl {s ren }:
-  IdCtx ren -> AlphaVar ren s s.
+Lemma alphavar_refl {s R }:
+  IdCtx R -> AlphaVar R s s.
 Proof.
   intros Halphactx.
   induction Halphactx.
@@ -105,32 +62,33 @@ Proof.
     now constructor.
 Qed.
 
-(* Identity alpha context *)
-Lemma alpha_refl {s ren}:
-  IdCtx ren -> Alpha ren s s.
+(* Contextual reflexivity *)
+Lemma alpha_refl {s R}:
+  IdCtx R -> Alpha R s s.
 Proof.
-  generalize dependent ren.
-  induction s; intros ren Hid;
+  generalize dependent R.
+  induction s; intros R Hid;
   constructor; auto.
   - now apply alphavar_refl.
-  - apply (IHs ((s, s) :: ren)).
+  - apply (IHs ((s, s) :: R)).
     now apply id_ctx_cons.
 Qed.
 
-
+(* Symmetric alpha renaming contexts*)
 Inductive AlphaCtxSym : list (string * string) -> list (string * string) -> Set :=
 | alpha_sym_nil : AlphaCtxSym [] []
-| alpha_sym_cons x y ren ren' :
-    AlphaCtxSym ren ren' -> 
-    AlphaCtxSym ((x, y) :: ren) ((y, x) :: ren').
+| alpha_sym_cons x y R R1 :
+    AlphaCtxSym R R1 -> 
+    AlphaCtxSym ((x, y) :: R) ((y, x) :: R1).
 
-Lemma alpha_sym {s t ren ren'}: 
-  AlphaCtxSym ren ren' -> Alpha ren s t -> Alpha ren' t s.
+(* Contextual symmetry*)
+Lemma alpha_sym {s t R R1}: 
+  AlphaCtxSym R R1 -> Alpha R s t -> Alpha R1 t s.
 Proof with auto. 
   intros Hsym Halpha.
-  generalize dependent ren'.
+  generalize dependent R1.
   induction Halpha; 
-  intros ren' Hsym;
+  intros R1 Hsym;
   constructor...
   - generalize dependent x.
     generalize dependent y.
@@ -144,31 +102,33 @@ Proof with auto.
     now apply alpha_sym_cons.
 Qed.
 
-Lemma alphavar_sym {s t ren ren'}:
-  AlphaCtxSym ren ren' -> AlphaVar ren s t -> AlphaVar ren' t s.
+(* Var specialization for contextual symmetry*)
+Lemma alphavar_sym {s t R R'}:
+  AlphaCtxSym R R' -> AlphaVar R s t -> AlphaVar R' t s.
 Proof.
   intros.
-  assert (Alpha ren (tmvar s) (tmvar t)) by now apply alpha_var.
+  assert (Alpha R (tmvar s) (tmvar t)) by now apply alpha_var.
   eapply alpha_sym in H1; eauto.
   inversion H1; subst; auto.
 Qed.
 
-
+(* Transtitive alpha renaming contexts*)
 Inductive αCtxTrans : list (string * string) -> list (string * string) -> list (string * string) -> Set :=
 | alpha_trans_nil : αCtxTrans [] [] []
-| alpha_trans_cons x y z ren ren' ren'' :
-    αCtxTrans ren ren' ren'' -> 
-    αCtxTrans ((x, y) :: ren) ((y, z) :: ren') ((x, z) :: ren'').
+| alpha_trans_cons x y z R R1 R2 :
+    αCtxTrans R R1 R2 -> 
+    αCtxTrans ((x, y) :: R) ((y, z) :: R1) ((x, z) :: R2).
 
-Lemma alpha_var_trans {s t u ren ren' ren''}:
-  αCtxTrans ren ren' ren'' -> AlphaVar ren s t -> AlphaVar ren' t u -> AlphaVar ren'' s u.
+(* Contextual transitivity for variables*)
+Lemma alpha_var_trans {s t u R R1 R2}:
+  αCtxTrans R R1 R2 -> AlphaVar R s t -> AlphaVar R1 t u -> AlphaVar R2 s u.
 Proof.
   intros Htrans Halpha1 Halpha2.
-  generalize dependent ren'.
-  generalize dependent ren''.
+  generalize dependent R1.
+  generalize dependent R2.
   generalize dependent u.
   induction Halpha1; 
-  intros u ren'' ren' Htrans Halpha2.
+  intros u R2 R1 Htrans Halpha2.
   + inversion Htrans; subst; auto.
   + inversion Htrans; subst.
     inversion Halpha2; subst; intuition.
@@ -178,35 +138,38 @@ Proof.
     constructor; intuition.
 Qed.
 
-Lemma alpha_trans {s t u ren ren' ren''}: 
-  αCtxTrans ren ren' ren'' -> Alpha ren s t -> Alpha ren' t u -> Alpha ren'' s u.
+(* Contextual transitivity *)
+Lemma alpha_trans {s t u R R1 R2}: 
+  αCtxTrans R R1 R2 -> Alpha R s t -> Alpha R1 t u -> Alpha R2 s u.
 Proof with auto. 
   intros Htrans Halpha1 Halpha2.
-  generalize dependent ren'.
-  generalize dependent ren''.
+  generalize dependent R1.
+  generalize dependent R2.
   generalize dependent u.
   induction Halpha1; 
-  intros u ren'' ren' Htrans Halpha2;
+  intros u R2 R1 Htrans Halpha2;
   inversion Halpha2; subst;
   constructor.
   - eapply alpha_var_trans; eauto.
-  - apply (IHHalpha1 s3 ((x, y0)::ren'') ((y, y0)::ren')).
+  - apply (IHHalpha1 s3 ((x, y0)::R2) ((y, y0)::R1)).
     + now apply alpha_trans_cons.
     + now inversion Halpha2.
-  - now apply (IHHalpha1_1 s3 ren'' ren').
-  - now apply (IHHalpha1_2 t3 ren'' ren').
+  - now apply (IHHalpha1_1 s3 R2 R1).
+  - now apply (IHHalpha1_2 t3 R2 R1).
 Qed.
 
-Fixpoint sym_alpha_ctx (ren : list (string * string)) :=
-  match ren with
+(* Generate symmetric version of given renaming context*)
+Fixpoint sym_alpha_ctx (R : list (string * string)) :=
+  match R with
   | nil => nil
-  | (x, y) :: ren' => ((y, x) :: (sym_alpha_ctx ren'))
+  | (x, y) :: R1 => ((y, x) :: (sym_alpha_ctx R1))
   end.
 
-Lemma sym_alpha_ctx_is_sym ren :
-  AlphaCtxSym ren (sym_alpha_ctx ren).
+(* Generated renaming context is symmetric: right*)
+Lemma sym_alpha_ctx_is_sym R :
+  AlphaCtxSym R (sym_alpha_ctx R).
 Proof.
-  induction ren.
+  induction R.
   - simpl.
     constructor.
   - simpl.
@@ -215,10 +178,11 @@ Proof.
     assumption.
 Qed.
 
-Lemma sym_alpha_ctx_left_is_sym ren :
-  AlphaCtxSym (sym_alpha_ctx ren) ren.
+(* Generated renaming context is symmetric: left*)
+Lemma sym_alpha_ctx_left_is_sym R :
+  AlphaCtxSym (sym_alpha_ctx R) R.
 Proof.
-  induction ren.
+  induction R.
   - simpl.
     constructor.
   - simpl.
@@ -227,6 +191,7 @@ Proof.
     assumption.
 Qed.
 
+(* Identity renamings have identity left and right lookup behaviour*)
 Lemma lookup_id_then_lookup_r (x x' : string) (l : list (string * string)) :
   IdCtx l ->
   lookup x l = Some x ->
@@ -242,63 +207,68 @@ Proof.
       rewrite lookup_r_neq; auto.
 Qed.
 
-Lemma alphavar_unique_right X Y Y' ren :
-  AlphaVar ren X Y -> AlphaVar ren X Y' -> Y = Y'.
+(* Alpha equivalence is unique: variables, right *)
+Lemma alphavar_unique_right X Y Y' R :
+  AlphaVar R X Y -> AlphaVar R X Y' -> Y = Y'.
 Proof with subst; auto; try contradiction.
   intros Halpha1 Halpha2.
-  induction ren.
+  induction R.
   all: inversion Halpha2...
   all: inversion Halpha1...
 Qed.
 
-Lemma alphavar_unique_left X X' Y ren :
-  AlphaVar ren X Y -> AlphaVar ren X' Y -> X = X'.
+(* Alpha equivalence is unique: variables, left *)
+Lemma alphavar_unique_left X X' Y R :
+  AlphaVar R X Y -> AlphaVar R X' Y -> X = X'.
 Proof with subst; auto; try contradiction.
   intros Halpha1 Halpha2.
-  induction ren.
+  induction R.
   all: inversion Halpha2...
   all: inversion Halpha1...
 Qed.
 
-Lemma alphavar_unique_not_left X X' Y Y' ren :
-  X <> X' -> AlphaVar ren X Y -> AlphaVar ren X' Y' -> Y <> Y'.
+(* Alpha equivalence is unique: left variable not identical, then right neither *)
+Lemma alphavar_unique_not_left X X' Y Y' R :
+  X <> X' -> AlphaVar R X Y -> AlphaVar R X' Y' -> Y <> Y'.
 Proof with subst; auto.
   intros Hneq Halpha1 Halpha2.
-  induction ren.
+  induction R.
   all: inversion Halpha2... 
   all: inversion Halpha1... 
 Qed.
 
-Lemma alphavar_unique_not_right X X' Y Y' ren :
-  Y <> Y' -> AlphaVar ren X Y -> AlphaVar ren X' Y' -> X <> X'.
+(* Alpha equivalence is unique: right variable not identical, then left neither *)
+Lemma alphavar_unique_not_right X X' Y Y' R :
+  Y <> Y' -> AlphaVar R X Y -> AlphaVar R X' Y' -> X <> X'.
 Proof with subst; auto.
   intros Hneq Halpha1 Halpha2.
-  induction ren.
+  induction R.
   all: inversion Halpha2... 
   all: inversion Halpha1... 
 Qed.
 
 
-(* Does adding the name to the context shadow illegally existing renamings?
-  For example: We cannot add (x, x) in front of [(x, y)]
-  pairs that "break" shadowing (i.e., they shadow),
-  e.g. if we have (x,x);(x, y),
-  We can add (x,x) to the front without adding any more "breaking", it behaves the same. *)
+(* Inductive that models whether adding an identity renaming to the context shadow (illegally) existing renamings?
+  This checks if adding a new renaming "breaks" it, not whether the renaming as a whole is valid.
+
+  - For example: We cannot add (x, x) in front of [(x, y)] -> Then left and right lookup     behaviour is not identical.
+  - But: If we already have (x,x);(x, y), We can add (x,x) to the front without adding any more "breaking", it behaves the same. *)
 Inductive NotBreakShadowing : string -> list (string * string) -> Set :=
 | not_break_shadow_nil x : NotBreakShadowing x []
-| not_break_shadow_cons z x x' ren :
+| not_break_shadow_cons z x x' R :
     z <> x -> 
     z <> x' -> 
-    NotBreakShadowing z ren -> 
-    NotBreakShadowing z ((x, x') :: ren)
-| not_break_shadow_id z ren :
-    NotBreakShadowing z ((z, z) :: ren).
+    NotBreakShadowing z R -> 
+    NotBreakShadowing z ((x, x') :: R)
+| not_break_shadow_id z R :
+    NotBreakShadowing z ((z, z) :: R).
 
-Lemma idCtxNotBreakShadowing {x ren}:
-  IdCtx ren -> NotBreakShadowing x ren.
+(* An identity context can always be extended without shadowing *)
+Lemma idCtxNotBreakShadowing {x R}:
+  IdCtx R -> NotBreakShadowing x R.
 Proof.
   intros Hid.
-  induction ren.
+  induction R.
       * apply not_break_shadow_nil.
       * destruct a as [ax ay].
         assert (ax = ay). { inversion Hid. reflexivity. }
@@ -306,58 +276,60 @@ Proof.
         destr_eqb_eq x ay.
         -- apply not_break_shadow_id.
         -- apply not_break_shadow_cons; try assumption.
-           inversion Hid. apply IHren. assumption.
+           inversion Hid. apply IHR. assumption.
 Qed.
 
-(* A ren swap is legal if we swap a pair where their elements are not equal *)
+(* A swap of a renaming is legal if we swap a two renamings (x1, y1),(x2,y2) with all distinct elements: then it has the same effect *)
 Inductive LegalRenSwap : list (string * string) -> list (string * string) -> Set :=
 | lrs_nil : LegalRenSwap [] []
-| lrs_cons x y ren1 ren1' :
-    LegalRenSwap ren1 ren1' ->
-    LegalRenSwap ((x, y)::ren1) (((x, y)::ren1'))
-| lrs_start x y v w ren1 ren1' :
+| lrs_cons x y R1 R1' :
+    LegalRenSwap R1 R1' ->
+    LegalRenSwap ((x, y)::R1) (((x, y)::R1'))
+| lrs_start x y v w R1 R1' :
     x <> v ->
     y <> w ->
-    LegalRenSwap ren1 ren1' -> (* Not important whether x, y, v, w in this, because the two were before them and they still are*)
-    LegalRenSwap ((x, y) :: (v, w) :: ren1) ((v, w) :: (x, y) :: ren1').
+    LegalRenSwap R1 R1' -> (* Not important whether x, y, v, w in this, because the two were before them and they still are*)
+    LegalRenSwap ((x, y) :: (v, w) :: R1) ((v, w) :: (x, y) :: R1').
 
 
-(* A sequence of legal ren swaps*)
+(* A sequence of legal R swaps*)
 Definition LegalRenSwaps := @util.star (list (string * string)) LegalRenSwap.
 
-Lemma legalRenSwap_id {ren}:
-  LegalRenSwap ren ren.
+(**** LegalRenSwap has identity and symmetry *)
+Lemma lrs_id {R}:
+  LegalRenSwap R R.
 Proof.
-  induction ren.
+  induction R.
   - apply lrs_nil.
   - destruct a as [x y].
     apply lrs_cons.
     assumption.
 Qed.
 
-Lemma lrs_sym ren1 ren2 :
-  LegalRenSwap ren1 ren2 -> LegalRenSwap ren2 ren1.
+Lemma lrs_sym R1 R2 :
+  LegalRenSwap R1 R2 -> LegalRenSwap R2 R1.
 Proof.
   intros Hlrs.
   induction Hlrs.
-  - apply legalRenSwap_id.
+  - apply lrs_id.
   - apply lrs_cons. assumption.
   - apply lrs_start; auto.
 Qed.
 
 
-Lemma lrss_cons x y ren1 ren2 :
-  LegalRenSwaps ren1 ren2 ->
-  LegalRenSwaps ((x, y)::ren1) ((x, y)::ren2).
+(***** LegalRenSwaps is an equivalence relation *)
+Lemma lrss_cons x y R1 R2 :
+  LegalRenSwaps R1 R2 ->
+  LegalRenSwaps ((x, y)::R1) ((x, y)::R2).
 Proof.
   induction 1.
   all: econstructor; eauto.
   constructor; auto.
 Qed.
 
-Lemma lrss_intro ren1 ren2 :
-  LegalRenSwap ren1 ren2 -> 
-  LegalRenSwaps ren1 ren2.
+Lemma lrss_intro R1 R2 :
+  LegalRenSwap R1 R2 -> 
+  LegalRenSwaps R1 R2.
 Proof.
   intros.
   econstructor.
@@ -365,8 +337,8 @@ Proof.
   - auto.
 Qed.
 
-Lemma lrss_left ren1 ren2 ren3 :
-  LegalRenSwap ren1 ren2 -> LegalRenSwaps ren2 ren3 ->  LegalRenSwaps ren1 ren3.
+Lemma lrss_left R1 R2 ren3 :
+  LegalRenSwap R1 R2 -> LegalRenSwaps R2 ren3 ->  LegalRenSwaps R1 ren3.
 Proof.
   intros Hlrs Hlrss.
   induction Hlrss.
@@ -374,18 +346,18 @@ Proof.
   - econstructor. eauto. auto.
 Qed.
 
-Lemma lrss_sym ren1 ren2 :
-  LegalRenSwaps ren1 ren2 -> LegalRenSwaps ren2 ren1.
+Lemma lrss_sym R1 R2 :
+  LegalRenSwaps R1 R2 -> LegalRenSwaps R2 R1.
 Proof.
   induction 1.
   - constructor.
   - eapply lrss_left; eauto. apply lrs_sym. auto.
 Qed.
 
-Lemma lrss_trans ren1 ren2 ren3 : 
-  LegalRenSwaps ren1 ren2 -> 
-  LegalRenSwaps ren2 ren3 -> 
-  LegalRenSwaps ren1 ren3.
+Lemma lrss_trans R1 R2 ren3 : 
+  LegalRenSwaps R1 R2 -> 
+  LegalRenSwaps R2 ren3 -> 
+  LegalRenSwaps R1 ren3.
 Proof.
   intros Hlrs12 Hlrs23.
   generalize dependent ren3.
@@ -399,17 +371,18 @@ Proof.
 Qed.
 
 
-(* Removing a renaming from the renaming context*)
-Lemma alphavar_weaken {v w ren s t} :
-  v <> s -> w <> t -> AlphaVar ((v, w)::ren) s t -> AlphaVar ren s t.
+(* Removing an unused renaming from the renaming context*)
+Lemma alphavar_weaken {v w R s t} :
+  v <> s -> w <> t -> AlphaVar ((v, w)::R) s t -> AlphaVar R s t.
 Proof.
   intros Hvs Hwt Halpha.
   inversion Halpha; auto; subst.
   contradiction Hvs. reflexivity.
 Qed.
 
-Lemma alphavar_cons_helper { v w w' ren } :
-  AlphaVar ((v, w)::ren) v w' -> w = w'.
+(* Helper function for the alphavar cons rule*)
+Lemma alphavar_cons_helper { v w w' R } :
+  AlphaVar ((v, w)::R) v w' -> w = w'.
 Proof.
   intros Halpha.
   inversion Halpha; subst.
@@ -417,8 +390,9 @@ Proof.
   - contradiction H2. reflexivity.
 Qed.
 
-Lemma alphavar_diff_helper { v z w w' ren } :
-  v <> z -> AlphaVar ((v, w)::ren) z w' -> w <> w'.
+(* Helper function for the alphavar diff rule*)
+Lemma alphavar_diff_helper { v z w w' R } :
+  v <> z -> AlphaVar ((v, w)::R) z w' -> w <> w'.
 Proof.
   intros Hvz Halpha.
   inversion Halpha; subst.
@@ -426,14 +400,14 @@ Proof.
   - assumption.
 Qed.
 
-(* We can swap a renaming context if we have LegalRenSwap*)
-Lemma alphavar_swap {s t ren ren'} :
-  LegalRenSwap ren ren' ->
-  AlphaVar ren s t -> AlphaVar ren' s t.
+(* We can swap a renaming context if we have LegalRenSwap: variable case *)
+Lemma alphavar_swap {s t R R1} :
+  LegalRenSwap R R1 ->
+  AlphaVar R s t -> AlphaVar R1 s t.
 Proof.
   intros Hswap Halpha.
-  generalize dependent ren'.
-  dependent induction Halpha; intros ren' Hswap. subst.
+  generalize dependent R1.
+  dependent induction Halpha; intros R1 Hswap. subst.
   - inversion Hswap.
     apply alpha_var_refl.
   - subst.
@@ -472,79 +446,68 @@ Proof.
         }
         apply alpha_var_diff; try auto.
         apply alpha_var_diff; try auto.
-        specialize (IHHalpha ((v, w0)::ren1') (lrs_cons v w0 Hswap)).
+        specialize (IHHalpha ((v, w0)::R1') (lrs_cons v w0 Hswap)).
         exact (alphavar_weaken H H0 IHHalpha).
 Qed.
 
-Lemma alpha_swap {s t ren'} ren :
-  LegalRenSwap ren ren' ->
-  Alpha ren s t -> Alpha ren' s t.
+(* Fundamental property of LegalRenSwap:
+   We can swap a renaming context
+*)
+Lemma alpha_swap {s t R1} R :
+  LegalRenSwap R R1 ->
+  Alpha R s t -> Alpha R1 s t.
 Proof.
   intros Hswap Halpha.
-  generalize dependent ren'.
-  induction Halpha; intros ren'; intros lrs.
+  generalize dependent R1.
+  induction Halpha; intros R1; intros lrs.
   - apply alpha_var.
     apply (alphavar_swap lrs a).
   - apply alpha_lam.
-    assert (LegalRenSwap ((x, y)::sigma) ((x, y)::ren')) as Hlrs_xy.
+    assert (LegalRenSwap ((x, y)::R) ((x, y)::R1)) as Hlrs_xy.
     {
       apply lrs_cons.
       assumption.
     }
-    specialize (IHHalpha ((x, y) :: ren') Hlrs_xy).
+    specialize (IHHalpha ((x, y) :: R1) Hlrs_xy).
     assumption.
   - apply alpha_app.
-    + exact (IHHalpha1 ren' lrs).
-    + exact (IHHalpha2 ren' lrs).
+    + exact (IHHalpha1 R1 lrs).
+    + exact (IHHalpha2 R1 lrs).
   - constructor.
 Qed.
 
-Lemma alpha_swaps { s t ren'} ren :
-  LegalRenSwaps ren ren' ->
-  Alpha ren s t -> Alpha ren' s t.
+(* We can swap renaming contexts with multiple renaming pairs swapped*)
+Lemma alpha_swaps { s t R1} R :
+  LegalRenSwaps R R1 ->
+  Alpha R s t -> Alpha R1 s t.
 Proof.
   intros Hlrss Ha.
   induction Hlrss; auto.
   eapply alpha_swap; eauto.
 Qed.
 
-(* In particular we can now swap identity renamings *)
-Lemma alpha_swap_example x y s t :
-  Alpha ((x, x)::(y, y)::nil) s t ->
-  Alpha ((y, y)::(x, x)::nil) s t.
-Proof.
-  intros Halpha.
-  destruct (x =? y) eqn:xy.
-  + apply String.eqb_eq in xy. subst.
-    assumption.
-  + apply String.eqb_neq in xy.
-    apply alpha_swap with (ren := ((x, x)::(y, y)::nil)); [|assumption].
-    apply lrs_start; auto.
-    apply lrs_nil.
-Qed.
-
 (* ******************
          Alpha identity renamings 
    ***************** *)
 
-
-Import Coq.Program.Equality.
-
-Fixpoint ctx_id_left (ren : list (string * string)) : list (string * string) :=
-  match ren with
+(* Create identity renaming based on left element of another context *)
+Fixpoint ctx_id_left (R : list (string * string)) : list (string * string) :=
+  match R with
     | nil => nil
-    | (x, y)::ren' => (x, x)::(ctx_id_left ren')  
+    | (x, y)::R1 => (x, x)::(ctx_id_left R1)  
   end.
 
-Fixpoint ctx_id_right (ren : list (string * string)) : list (string * string) :=
-  match ren with
+(* Create identity renaming based on right element of another context *)
+Fixpoint ctx_id_right (R : list (string * string)) : list (string * string) :=
+  match R with
     | nil => nil
-    | (x, y)::ren' => (y, y)::(ctx_id_right ren')  
+    | (x, y)::R1 => (y, y)::(ctx_id_right R1)  
   end.
 
-Lemma ctx_id_left_is_id ren : IdCtx (ctx_id_left ren).
+(* Left identity renaming context is an identity context *)
+Lemma ctx_id_left_is_id R : IdCtx (ctx_id_left R).
 Proof.
-  induction ren.
+  induction R.
   - simpl. apply id_ctx_nil.
   - destruct a.
     simpl.
@@ -552,9 +515,10 @@ Proof.
     assumption.
 Qed.
 
-Lemma ctx_id_right_is_id ren : IdCtx (ctx_id_right ren).
+(* Right identity renaming context is an identity context *)
+Lemma ctx_id_right_is_id R : IdCtx (ctx_id_right R).
 Proof.
-  induction ren.
+  induction R.
   - simpl. apply id_ctx_nil.
   - destruct a.
     simpl.
@@ -562,10 +526,11 @@ Proof.
     assumption.
 Qed.
 
-Lemma id_left_trans (ren : list (string * string)) :
-  αCtxTrans (ctx_id_left ren) ren ren.
+(* Left identity renaming context followed by the context R it was generated from is transitive to that R *)
+Lemma id_left_trans (R : list (string * string)) :
+  αCtxTrans (ctx_id_left R) R R.
 Proof.
-  induction ren.
+  induction R.
   - simpl. apply alpha_trans_nil.
   - destruct a as [ax ay].
     unfold ctx_id_left. fold ctx_id_left.
@@ -573,10 +538,11 @@ Proof.
     assumption.
 Qed.
 
-Lemma id_right_trans (ren : list (string * string)) :
-  αCtxTrans ren (ctx_id_right ren) ren.
+(* Analogous for right *)
+Lemma id_right_trans (R : list (string * string)) :
+  αCtxTrans R (ctx_id_right R) R.
 Proof.
-  induction ren.
+  induction R.
   - simpl. constructor.
   - destruct a as [ax ay].
     unfold ctx_id_right. fold ctx_id_right.
@@ -584,25 +550,8 @@ Proof.
     assumption.
 Qed.
 
-Lemma cons_split_helper {x y ren1 ren2} (sigma : list (string * string)) :
-  ((x, y):: sigma) = ren1 ++ ren2 -> 
-    sum ( {ren1' & ren1 = ((x, y)::ren1')}) (
-    (prod (ren1 = nil) (ren2 = ((x, y)::sigma)))).
-Proof.
-  intros HrenAdd.
-  destruct ren1.
-  - simpl in HrenAdd.
-    right. split.
-    + reflexivity.
-    + symmetry.
-      assumption.
-  - simpl in HrenAdd.
-    inversion HrenAdd; subst.
-    left. exists ren1. reflexivity.
-Qed.
-
-Lemma shadow_helper_not_break {z x y ren } :
-  NotBreakShadowing z ((x, y)::ren) -> sum 
+Lemma NotBreakShadowing__not_break {z x y R } :
+  NotBreakShadowing z ((x, y)::R) -> sum 
   (prod (z = x) (z = y)) (prod(z <> x) (z <> y)).
 Proof.
   intros Hshadow.
@@ -611,8 +560,9 @@ Proof.
   - left. split; reflexivity.
 Qed.
 
-Lemma alphaVar_then_no_shadow {x y ren} :
-  x <> y -> AlphaVar ren x y -> prod (NotBreakShadowing x ren -> False) (NotBreakShadowing y ren -> False).
+(* Alpha equivalence of two non-distinct variables means we cannot add those variables as identity renamings: this would shadow the renaming of x to y *)
+Lemma alphaVar__NotBreakShadowing {x y R} :
+  x <> y -> AlphaVar R x y -> prod (NotBreakShadowing x R -> False) (NotBreakShadowing y R -> False).
 Proof.
   intros Hxy Halpha.
   split; induction Halpha; intros Hshadow; inversion Hshadow; subst; try contradiction.
@@ -620,13 +570,13 @@ Proof.
   - specialize (IHHalpha Hxy H5). contradiction.
 Qed.
 
-Require Import Coq.Init.Specif.
+
 
 (* If we remove a pair from a NotBreakingShadowing environment, it could be an identity pair
   then by not_break_shadow_id we do not necessarily have that 
-  ren is a notbreakingshadowing environemnt anymore*)
-Lemma weaken_not_break_shadowing {x y z ren} :
-  NotBreakShadowing z ((x, y)::ren) -> sum (NotBreakShadowing z ren) (prod (x = z) (y = z)).
+  R is a notbreakingshadowing environemnt anymore*)
+Lemma weaken_not_break_shadowing {x y z R} :
+  NotBreakShadowing z ((x, y)::R) -> sum (NotBreakShadowing z R) (prod (x = z) (y = z)).
 Proof.
   intros Hshadow.
   inversion Hshadow; subst.
@@ -634,25 +584,28 @@ Proof.
   - right. split; reflexivity.
 Qed.
 
-Lemma alphavar_extend_id_split {x y z} ren :
-  AlphaVar ren x y -> 
-  forall ren1 ren2, 
-    ren = ren1 ++ ren2 -> 
-    (* Not break shadowing allows cases like ren2=[(z, z);(z,u)]*)
-    NotBreakShadowing z ren2 -> 
-    AlphaVar (ren1 ++ ((z, z)::nil) ++ ren2) x y.
+(***** Extending renaming contexts with non-breaking identity renamings ******)
+
+(* Strengthened helper: identity renaming in the middle. For variables*)
+Lemma alphavar_extend_id_split {x y z} R :
+  AlphaVar R x y -> 
+  forall R1 R2, 
+    R = R1 ++ R2 -> 
+    (* Not break shadowing allows cases like R2=[(z, z);(z,u)]*)
+    NotBreakShadowing z R2 -> 
+    AlphaVar (R1 ++ ((z, z)::nil) ++ R2) x y.
 Proof.
   intros Halpha.
-  dependent induction Halpha; intros ren1 ren2 HrenAdd Hshadow.
-  - assert (ren1 = nil).
+  dependent induction Halpha; intros R1 R2 HrenAdd Hshadow.
+  - assert (R1 = nil).
     {
-      destruct ren1.
+      destruct R1.
       - reflexivity.
       - simpl in HrenAdd.
         inversion HrenAdd.
     }
-    assert (ren2 = nil). {
-      destruct ren2.
+    assert (R2 = nil). {
+      destruct R2.
       - reflexivity.
       - simpl in HrenAdd.
         subst.
@@ -672,28 +625,28 @@ Proof.
   - subst.
     remember (HrenAdd) as HrenAdd'. clear HeqHrenAdd'.
     apply cons_split_helper in HrenAdd.
-    destruct HrenAdd as [ [ren1' H ] | [Hren1Empty Hren2Full] ]; subst.
+    destruct HrenAdd as [ [R1' H ] | [Hren1Empty Hren2Full] ]; subst.
     + apply alpha_var_cons; reflexivity.
     + rewrite app_nil_l.
-      apply shadow_helper_not_break in Hshadow.
+      apply NotBreakShadowing__not_break in Hshadow.
       destruct Hshadow as [ [Hzz0 Hzw] | [HzNotz0 HzNotw] ]; subst.
       * apply alpha_var_cons; reflexivity.
       * apply alpha_var_diff; try assumption.
         apply alpha_var_cons; reflexivity.
   - remember (HrenAdd) as HrenAdd'. clear HeqHrenAdd'.
     apply cons_split_helper in HrenAdd.
-    destruct HrenAdd as [ [ren1' H1] | [ Hren1Empty Hren2Full] ].
+    destruct HrenAdd as [ [R1' H1] | [ Hren1Empty Hren2Full] ].
     + 
       subst.
       simpl in HrenAdd'.
       apply alpha_var_diff; [assumption|assumption|].
-      assert (Hsigmaren1'ren2: sigma = ren1' ++ ren2).
+      assert (HRren1'R2: R = R1' ++ R2).
       {
         simpl in HrenAdd'.
         inversion HrenAdd'.
         reflexivity.
       }
-      apply (IHHalpha ren1' ren2 Hsigmaren1'ren2 Hshadow).
+      apply (IHHalpha R1' R2 HRren1'R2 Hshadow).
     + 
       subst.
       rewrite app_nil_l.
@@ -704,7 +657,7 @@ Proof.
       * 
         apply String.eqb_eq in Hzx. subst.
         apply String.eqb_neq in Hzw.
-        apply (alphaVar_then_no_shadow Hzw) in Halpha.
+        apply (alphaVar__NotBreakShadowing Hzw) in Halpha.
         destruct Halpha as [Halpha _].
         (* Remove (x, y) from NotShadowing*)
         apply (weaken_not_break_shadowing) in Hshadow.
@@ -715,7 +668,7 @@ Proof.
       * exfalso.
         apply String.eqb_eq in Hzw. subst.
         apply String.eqb_neq in Hzx. apply (not_eq_sym) in Hzx.
-        apply (alphaVar_then_no_shadow Hzx) in Halpha.
+        apply (alphaVar__NotBreakShadowing Hzx) in Halpha.
         destruct Halpha as [_ Halpha].
         apply Halpha.
         apply (weaken_not_break_shadowing) in Hshadow.
@@ -729,54 +682,58 @@ Proof.
         apply alpha_var_diff; auto.
 Qed.
 
-Lemma alpha_extend_id_split {s t z} ren :
-  Alpha ren s t -> 
-  forall ren1 ren2, 
-    ren = ren1 ++ ren2 -> 
-    NotBreakShadowing z ren2 ->
-    Alpha (ren1 ++ ((z, z)::nil) ++ ren2) s t.
+
+(* Strengthened helper: identity renaming in the middle. *)
+Lemma alpha_extend_id_split {s t z} R :
+  Alpha R s t -> 
+  forall R1 R2, 
+    R = R1 ++ R2 -> 
+    NotBreakShadowing z R2 ->
+    Alpha (R1 ++ ((z, z)::nil) ++ R2) s t.
 Proof.
   intros Halpha.
-  dependent induction Halpha; intros ren1 ren2 HrenAdd Hshadow.
+  dependent induction Halpha; intros R1 R2 HrenAdd Hshadow.
   - apply alpha_var.
-    apply (alphavar_extend_id_split a) with (ren1 := ren1) (ren2 := ren2); eauto.
+    apply (alphavar_extend_id_split a) with (R1 := R1) (R2 := R2); eauto.
   - apply alpha_lam.
-    assert (HxySum: (x, y) :: sigma = ((x, y)::ren1) ++ ren2).
+    assert (HxySum: (x, y) :: R = ((x, y)::R1) ++ R2).
     {
       rewrite HrenAdd.
       reflexivity.
     }
-    apply (IHHalpha ((x, y)::ren1) ren2 HxySum Hshadow).
+    apply (IHHalpha ((x, y)::R1) R2 HxySum Hshadow).
   - apply alpha_app.
     + apply IHHalpha1; auto.
     + apply IHHalpha2; auto.
   - constructor.
 Qed.
 
-Lemma alpha_extend_ids_right s t ren idCtx:
+(* Identity renamings can always be added on the right (they cannot shadow anything)*)
+Lemma alpha_extend_ids_right s t R idCtx:
   IdCtx idCtx ->
-  Alpha ren s t -> Alpha (ren ++ idCtx) s t.
+  Alpha R s t -> Alpha (R ++ idCtx) s t.
 Proof.
   intros Hid Halpha.
   induction Hid.
   - rewrite app_nil_r. assumption.
   - simpl. 
-    assert (ren ++ (x, x) :: ren0 = (ren ++ ((x, x)::nil) ++ ren0)).
+    assert (R ++ (x, x) :: R0 = (R ++ ((x, x)::nil) ++ R0)).
     {
       rewrite app_assoc. reflexivity.
     }
     rewrite H.
-    apply alpha_extend_id_split with (ren1 := ren) (ren2 := ren0) (ren := ren ++ ren0).
+    apply alpha_extend_id_split with (R1 := R) (R2 := R0) (R := R ++ R0).
     + assumption.
     + reflexivity.
     + now apply @idCtxNotBreakShadowing with (x := x) in Hid. 
 Qed.
 
-Lemma alphavar_extend_ids_right {s t ren idCtx}:
-  IdCtx idCtx -> AlphaVar ren s t -> AlphaVar (ren ++ idCtx) s t.
+(* Specialization of the above for variables *)
+Lemma alphavar_extend_ids_right {s t R idCtx}:
+  IdCtx idCtx -> AlphaVar R s t -> AlphaVar (R ++ idCtx) s t.
 Proof.
   intros Hid Ha.
-  assert (Alpha (ren ++ idCtx) (tmvar s) (tmvar t)).
+  assert (Alpha (R ++ idCtx) (tmvar s) (tmvar t)).
   {
     apply alpha_extend_ids_right; auto.
     constructor. auto.
@@ -784,6 +741,7 @@ Proof.
   inversion H; auto.
 Qed.
 
+(* Specialization of identity renaming extension for empty contexts: variable case*)
 Lemma alphavar_extend_ids idCtx s t:
   IdCtx idCtx -> AlphaVar nil s t -> AlphaVar idCtx s t.
 Proof.
@@ -796,26 +754,15 @@ Proof.
     + constructor; auto.
 Qed.
 
+(* Specialization of identity renaming extension for empty contexts *)
 Lemma alpha_extend_ids idCtx s t:
   IdCtx idCtx -> Alpha nil s t -> Alpha idCtx s t.
 Proof.
   eapply alpha_extend_ids_right.
 Qed.
 
-Lemma id_ctx_alphavar_refl R x : IdCtx R -> AlphaVar R x x.
-Proof.
-  intros.
-  assert (Alpha R (tmvar x) (tmvar x)).
-  {
-    apply alpha_extend_ids; auto.
-    apply alpha_refl. constructor.
-  }
-  inversion H0.
-  auto.
-Qed.
-
 (* Alpha equivalence models consistent left and right lookup*)
-Lemma alphavar_lookup_helper R s s' :
+Lemma alphavar_models_lookup R s s' :
   AlphaVar R s s' -> (((lookup s R = Some s') * (lookup_r s' R = Some s)) + ((lookup s R = None) * (lookup_r s' R = None) * (s = s')))%type.
 Proof.
   intros.
@@ -834,6 +781,20 @@ Proof.
       * auto.
 Qed.
 
+(* Specialization *)
+Lemma av_lookup_implies_right R x y :
+  AlphaVar R x y -> (lookup x R = Some y -> lookup_r y R = Some x).
+Proof.
+  intros.
+  apply alphavar_models_lookup in H.
+  destruct H as [Hyes | Hno].
+  - intuition.
+  - destruct Hno as [[Hno _] _ ].
+    rewrite Hno in H0.
+    inversion H0.
+Qed.
+
+(* Identity renaming contexts imply identity lookup *)
 Lemma lookup_idctx_refl R s t:
   IdCtx R -> lookup s R = Some t -> s = t.
 Proof.
@@ -848,7 +809,7 @@ Proof.
     + apply IHR; auto.
 Qed.
 
-(* Utility lemma (By idctx, we know s = s') *)
+(* Lookup implies alpha equivalence for identity renamings *)
 Lemma lookup_some_IdCtx_then_alphavar R s s' :
   IdCtx R -> lookup s R = Some s' -> AlphaVar R s s'.
 Proof.
@@ -865,6 +826,7 @@ Proof.
       apply lookup_idctx_refl in H1; subst; auto.
 Qed.
 
+(* Bothsided lookup models alpha equivalence: Some *)
 Lemma lookup_some_then_alphavar R s s' :
   lookup s R = Some s' -> lookup_r s' R = Some s -> AlphaVar R s s'.
 Proof.
@@ -892,24 +854,7 @@ Proof.
       * apply lookup_r_cons_helper in H0; auto.
 Qed.
 
-Lemma lookup_cons_None_helper (R : list (string * string)) s x y :
-  lookup s ((x, y)::R) = None -> lookup s R = None.
-Proof.
-  intros.
-  simpl in H.
-  destruct_match.
-  auto.
-Qed.
-
-Lemma lookup_r_cons_None_helper (R : list (string * string)) s' x y :
-  lookup_r s' ((x, y)::R) = None -> lookup_r s' R = None.
-Proof.
-  intros.
-  simpl in H.
-  destruct_match.
-  auto.
-Qed.
-
+(* Bothsided lookup models alpha equivalence: None *)
 Lemma lookup_none_then_alpharefl R s :
   lookup s R = None -> lookup_r s R = None -> AlphaVar R s s.
 Proof.
@@ -925,6 +870,7 @@ Proof.
       * eapply lookup_r_cons_None_helper. eauto.
 Qed.
 
+(* If s in an identity map on the left, then bothsided lookup finds it as an identity*)
 Lemma lookup_id_exists_then_refl R s:
   IdCtx R -> In s (map fst R) ->
   ((lookup s R = Some s) * (lookup_r s R = Some s))%type.
@@ -946,6 +892,7 @@ Proof.
       contradiction.
 Qed.
 
+(* If s not in an identity map on the left, then neither on the right *)
 Lemma lookup_id_nex_then_not R s:
   IdCtx R -> ~ In s (map fst R) ->
   ((lookup s R = None) * (lookup_r s R = None))%type.
@@ -962,11 +909,12 @@ Proof.
     apply IHHid; auto.
 Qed.
 
+(* Removing an identity renaming is allowed if it is only followed by other identity renamings: variable case *)
 Lemma alphavar_weaken_id R idCtx1 s t x :
   IdCtx ((x, x)::idCtx1) -> AlphaVar (R ++ (x, x)::idCtx1) s t -> AlphaVar (R ++ idCtx1) s t.
 Proof.
   intros Hid Ha.
-  apply alphavar_lookup_helper in Ha.
+  apply alphavar_models_lookup in Ha.
   destruct Ha as [[Hl_some H_lr_some] | [[Hl_none Hlr_none] Heq]].
   - destruct (lookup_split_app_helper _ _ _ _ Hl_some H_lr_some) as [[Hl_R1_some Hlr_R1_some] | [[[Hl_R1_none Hlr_R1_none] Hl_R2_some] Hlr_R2_some]].
     + apply lookup_some_then_alphavar.
@@ -1053,7 +1001,9 @@ Proof.
 Qed.
 
 
-(* Difficult lemma, because when going under binder, we lose the IdCtx "invariant"*)
+(* Removing an identity renaming is allowed if it is only followed by other identity renamings.
+
+Technically difficult lemma, because when going under binder, we lose the IdCtx "invariant"*)
 Lemma alpha_weaken_id R idCtx1 s t x y :
   IdCtx ((x, y)::idCtx1) -> Alpha (R ++ (x, y)::idCtx1) s t -> Alpha (R ++ idCtx1) s t.
 Proof.
@@ -1077,6 +1027,7 @@ Proof.
   - constructor.
 Qed.
 
+(* Removing identity renamings is allowed *)
 Lemma alpha_weaken_ids idCtx s t:
   IdCtx idCtx -> Alpha idCtx s t -> Alpha nil s t.
 Proof.
@@ -1095,32 +1046,14 @@ Proof.
       eapply alpha_weaken_id; eauto.
 Qed.
 
-Lemma alpha_ids s idCtx :
-  IdCtx idCtx -> Alpha idCtx s s.
-Proof.
-  intros Hid.
-  change (idCtx) with (nil ++ idCtx).
-  apply alpha_extend_ids_right; auto.
-  apply alpha_refl.
-  apply id_ctx_nil.
-Qed.
-
-Lemma alpha_extend_id' {s t z ren}:
-  Alpha ren s t -> NotBreakShadowing z ren -> Alpha ((z, z)::ren ) s t.
+(* Extending with identity is allowed if it does not do a breaking shadowing *)
+Lemma alpha_extend_id {s t z R}:
+  Alpha R s t -> NotBreakShadowing z R -> Alpha ((z, z)::R ) s t.
 Proof.
   intros Halpha.
   intros Hren.
-  apply alpha_extend_id_split with (ren := ren) (ren1 := nil); eauto.
+  apply alpha_extend_id_split with (R := R) (R1 := nil); eauto.
 Qed. 
-
-(* We can extend alpha context by a non-shadowing identity substitution *)
-Lemma alpha_extend_id {s z ren}:
-  NotBreakShadowing z ren -> Alpha ren s s -> Alpha ((z, z)::ren ) s s.
-Proof.
-  intros Hren.
-  intros Halpha.
-  apply alpha_extend_id'; assumption.
-Qed.
 
 (* Identity substitution from lambda abstraction preserves α-equivalence*)
 Lemma freshVarAlpha B x s t A :
@@ -1128,11 +1061,12 @@ Lemma freshVarAlpha B x s t A :
 Proof. 
   intros Halpha.
   apply alpha_lam.
-  apply alpha_extend_id'.
+  apply alpha_extend_id.
   - assumption.
   - apply not_break_shadow_nil.
 Qed.   
 
+(* Names that are not free or bound can be added: they are vacuous renamings *)
 Lemma alpha_extend_vacuous {x x' s s' R}:
   ~ (In x (tv s)) -> ~ (In x' (tv s')) -> Alpha R s s' -> Alpha ((x, x')::R) s s'.
 Proof.
@@ -1142,11 +1076,11 @@ Proof.
     + simpl in Hftv_s. auto.
     + simpl in Hftv_s'. auto.
   - constructor; auto.
-    apply alpha_swap with (ren := ((x, x')::(x0, y)::sigma)).
+    apply alpha_swap with (R := ((x, x')::(x0, y)::R)).
     + constructor; auto.
       * simpl in Hftv_s. auto.
       * simpl in Hftv_s'. auto.
-      * apply legalRenSwap_id.
+      * apply lrs_id.
     + eapply IHHa_s.
       * eapply not_tv_dc_lam; eauto.
       * eapply not_tv_dc_lam; eauto.
@@ -1158,6 +1092,7 @@ Proof.
   - constructor.
 Qed.
 
+(* If a name x does not occur in R, then R does not rename x *)
 Lemma alphavar_refl_weaken_vacuouss {x R} :
   ~ In x (map fst R) -> ~ In x (map snd R) -> AlphaVar R x x.
 Proof.
@@ -1177,16 +1112,9 @@ Qed.
 
 
 (*
-  Suppose x in tv s.
-  Then Alpha [(x, x); (x, x')] s s
-  => (alpha_cons)
-    Alpha [(x, x)] x x
-
-  Otherwise it is not in s, and so the (x, x') is vacuous.
-We need the freshness condition since we do not have:
-  Alpha [(x, x); (x, x')] x' x'
+  If x' is not in s, then we may shadow the renaming since it is vacuous
   *)
-Lemma alphaIdShadowsVacuous x x' s :
+Lemma alpha_id_shadows_vacuous x x' s :
   ~ (In x' (tv s)) -> Alpha [(x, x); (x, x')] s s.
 Proof.
   intros Hfresh.
@@ -1205,8 +1133,8 @@ Proof.
     destr_eqb_eq x s.
     all: 
         apply alpha_extend_id;
-        [ repeat try constructor; now try assumption
-        | now apply IHs ].
+        [now apply IHs | repeat try constructor; now try assumption
+         ].
   - (* Case: app *)
     apply alpha_app;
     [apply IHs1 | apply IHs2]; 
@@ -1214,7 +1142,7 @@ Proof.
   - constructor.
 Qed.
 
-
+(* Prepending vacuous renamings *)
 Lemma alphavar_vacuous_prepend R1 R2 s s' :
   AlphaVar R2 s s' -> lookup s R1 = None -> lookup_r s' R1 = None -> AlphaVar (R1 ++ R2) s s'.
 Proof.
@@ -1240,28 +1168,15 @@ Proof.
 Qed.
 
 
-Lemma av_lookup_implies_right R x y :
-  AlphaVar R x y -> (lookup x R = Some y -> lookup_r y R = Some x).
-Proof.
-  intros.
-  apply alphavar_lookup_helper in H.
-  destruct H as [Hyes | Hno].
-  - intuition.
-  - destruct Hno as [[Hno _] _ ].
-    rewrite Hno in H0.
-    inversion H0.
-Qed.
-
-
 (* Threefold transitivity helper*)
 Lemma alpha_trans3 {R s s' s'' s'''}:
   Alpha [] s s' -> Alpha R s' s'' -> Alpha [] s'' s''' -> Alpha R s s'''.
 Proof.
   intros.
-  eapply @alpha_trans with (ren := ctx_id_left R) (ren' := R).
+  eapply @alpha_trans with (R := ctx_id_left R) (R1 := R).
   - { apply id_left_trans. } 
   - apply alpha_extend_ids. apply ctx_id_left_is_id. eauto.
-  - eapply @alpha_trans with (ren := R) (ren' := ctx_id_right R).
+  - eapply @alpha_trans with (R := R) (R1 := ctx_id_right R).
     + apply id_right_trans.
     + eauto.
     + apply alpha_extend_ids. apply ctx_id_right_is_id. eauto.

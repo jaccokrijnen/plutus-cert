@@ -54,7 +54,7 @@ Proof.
       }
       rewrite HignoreRename.
       apply alpha_lam.
-      apply alphaIdShadowsVacuous.
+      apply alpha_id_shadows_vacuous.
       unfold tv in Hfresh; fold tv in Hfresh.
       apply not_in_cons in Hfresh.
       destruct Hfresh as [_ Hfresh].
@@ -78,7 +78,7 @@ Proof.
         assumption.
       }
       
-      apply alpha_extend_id'.
+      apply alpha_extend_id.
       * apply IHs.
         (* We know tv (tmabs s t s0) = s :: tv s0*)
         (* Hence we make a superset argument: *)
@@ -110,41 +110,41 @@ Qed.
  Stronger result where s and s' not syntactically equal
   New idea! Finally work with high-level ideas instead of induction on terms!
 *)
-Lemma alphaRenameStronger x x' s s' ren :
+Lemma alphaRenameStronger x x' s s' R :
   ~ (In x' (tv s')) -> 
-  NotBreakShadowing x ren ->
-  Alpha ren s s' -> Alpha ((x, x')::ren) s (rename x x' s').
+  NotBreakShadowing x R ->
+  Alpha R s s' -> Alpha ((x, x')::R) s (rename x x' s').
 Proof.
   intros HnotIns' Hshadow Halpha.
-  eapply @alpha_trans with (ren := (x, x)::ren) (ren' := (x, x')::nil ++ ctx_id_right ren).
+  eapply @alpha_trans with (R := (x, x)::R) (R1 := (x, x')::nil ++ ctx_id_right R).
   - apply alpha_trans_cons.
     apply id_right_trans.
-  - apply alpha_extend_id'; eauto.
-  - apply alpha_extend_ids_right with (ren := (x, x')::nil).
+  - apply alpha_extend_id; eauto.
+  - apply alpha_extend_ids_right with (R := (x, x')::nil).
     + apply ctx_id_right_is_id.
     + now apply alphaRename.
 Qed.
 
-Lemma alpha_trans_rename_right u v b'' s'' s ren sigma :
+Lemma alpha_trans_rename_right u v b'' s'' s R sigma :
   b'' = fresh2 sigma v ->
-  Alpha ((s, s'')::ren) u v ->
-  Alpha ((s, b'')::ren) u (rename s'' b'' v).
+  Alpha ((s, s'')::R) u v ->
+  Alpha ((s, b'')::R) u (rename s'' b'' v).
 Proof.
   intros.
-  eapply @alpha_trans with (ren' := ((s'', b'')::nil) ++ (ctx_id_right ren)); eauto.
+  eapply @alpha_trans with (R1 := ((s'', b'')::nil) ++ (ctx_id_right R)); eauto.
   - apply alpha_trans_cons. apply id_right_trans.
   - apply alpha_extend_ids_right; [apply ctx_id_right_is_id |].
     apply alphaRename.
     now apply fresh2_over_tv_term in H.
 Qed.
 
-Lemma alpha_trans_rename_left u v b' s' s ren sigma :
+Lemma alpha_trans_rename_left u v b' s' s R sigma :
   b' = fresh2 sigma u ->
-  Alpha ((s', s)::ren) u v ->
-  Alpha ((b', s)::ren) (rename s' b' u) v.
+  Alpha ((s', s)::R) u v ->
+  Alpha ((b', s)::R) (rename s' b' u) v.
 Proof.
   intros.
-  eapply @alpha_trans with (ren := ((b', s')::nil) ++ (ctx_id_left ren)); eauto.
+  eapply @alpha_trans with (R := ((b', s')::nil) ++ (ctx_id_left R)); eauto.
   - apply alpha_trans_cons. apply id_left_trans.
   - apply alpha_extend_ids_right; [apply ctx_id_left_is_id |].
     eapply alpha_sym; [repeat constructor|].

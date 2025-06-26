@@ -209,3 +209,5 @@ src/PlutusIR/Cert/Relation/LetNonRec.v
 src/PlutusIR/Cert/Relation/Equal.v
 
 src/PlutusIR/Cert/Claim.v
+
+Examples/alpha_def.v

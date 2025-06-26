@@ -140,7 +140,7 @@ Proof.
   inversion H0; subst.
   assert (Alpha [(x, y)] sgu s2).
   {
-    eapply @alpha_trans with (t := s) (ren := ((x, x)::nil)) (ren' := ((x, y)::nil)).
+    eapply @alpha_trans with (t := s) (R := ((x, x)::nil)) (R1 := ((x, y)::nil)).
     - constructor. constructor.
     - apply alpha_extend_ids. constructor. constructor. eauto with α_eq_db.
     - rewrite <- H10 in H0. inversion H0; subst. eauto.
@@ -177,12 +177,12 @@ Proof.
   {
     eapply step_naive_preserves_alpha2; eauto.
     + apply to_GU__GU.
-    + eapply @alpha_trans with (ren := ctx_id_left R) (ren' := R); eauto with α_eq_db.
+    + eapply @alpha_trans with (R := ctx_id_left R) (R1 := R); eauto with α_eq_db.
       * eapply id_left_trans.
       * eapply alpha_extend_ids.
         eapply ctx_id_left_is_id.
         eapply @alpha_sym. constructor. exact H1.
-      * eapply @alpha_trans with (ren := R) (ren' := ctx_id_right R).
+      * eapply @alpha_trans with (R := R) (R1 := ctx_id_right R).
         -- eapply id_right_trans.
         -- eauto.
         -- eapply alpha_extend_ids.

@@ -322,7 +322,7 @@ Proof.
       } 
       clear HeqRfr H0 H H_ni_fresh.
       apply (alpha_preserves_ftv' H1) in H2 as [y' [H2_a H2_fr]].
-      destruct (alphavar_lookup_helper H2_a) as [[H2_a' _] | [[H2_a' _] _]].
+      destruct (alphavar_models_lookup H2_a) as [[H2_a' _] | [[H2_a' _] _]].
       + rewrite H_in_strip in H2_a'. congruence.
       + rewrite H2_a' in H_in_strip. congruence.
     }
@@ -369,7 +369,7 @@ Proof.
       rewrite H.
       eapply lookup_r__extend.
       + auto.
-      + apply alphavar_lookup_helper in H1.
+      + apply alphavar_models_lookup in H1.
         destruct H1.
         * destruct p. auto.
         * destruct p. destruct p. rewrite e0 in H_in_strip. inversion H_in_strip.
@@ -459,7 +459,7 @@ Proof.
       eapply IHa; eauto.
       simpl in H0. apply de_morgan2 in H0. destruct H0; auto.
 
-  - assert (~ In x (map snd ((x0, y)::sigma))).
+  - assert (~ In x (map snd ((x0, y)::R))).
     {
       eapply IHAlpha.
       assert (x <> x0).
@@ -1061,7 +1061,7 @@ Proof.
       eapply nc_ftv_env in Hnc; eauto.
     * intros.
       apply R_constr_freshen_fresh_over_sigma with (x := x') in HReq; auto.
-    * apply alpha_ctx_ren_nil.
+    * apply alpha_ctx_R_nil.
 Qed.
 
 Lemma t_constr__a_sigma {t t' R s sigma X} :
@@ -1164,7 +1164,7 @@ Proof.
   {
     exists (to_GU'' X t).
     split.
-    - eapply @alpha_trans with (t := t) (ren := ctx_id_left R) (ren' := R); eauto with α_eq_db.
+    - eapply @alpha_trans with (t := t) (R := ctx_id_left R) (R1 := R); eauto with α_eq_db.
       + apply id_left_trans.
       + apply alpha_extend_ids. apply ctx_id_left_is_id. eapply @alpha_sym. constructor. apply to_GU''__alpha.
     - apply to_GU''__btv.
@@ -1362,7 +1362,7 @@ Proof.
       (binders := R1 ++ R2) in Hcontra; eauto.
     + rewrite <- H3 in Hcontra.
       subst.
-      apply alphavar_lookup_helper in HAx.
+      apply alphavar_models_lookup in HAx.
       destruct HAx as [HAx1 | HAx2].
       * destruct HAx1 as [HAx1].
         apply lookup_then_in_map_fst in HAx1. contradiction.
@@ -1381,7 +1381,7 @@ Proof.
     eapply no_btv_in_binders with (binders := R1 ++ R2) in Hcontra; eauto.
     rewrite <- H3 in Hcontra.
     subst.
-    apply alphavar_lookup_helper in HAx.
+    apply alphavar_models_lookup in HAx.
     destruct HAx as [HAx1 | HAx2].
     + 
       destruct HAx1 as [HAx1].
@@ -1488,7 +1488,7 @@ Proof.
       rewrite HeqR.
       apply map_creates_IdCtx.
     - intros.
-      apply id_ctx_alphavar_refl; auto.
+      apply alphavar_refl; auto.
       subst. apply map_creates_IdCtx.
     - intros.
       intuition.

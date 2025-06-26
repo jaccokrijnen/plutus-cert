@@ -3,7 +3,6 @@ Local Open Scope string_scope.
 Require Import Coq.Lists.List.
 From PlutusCert Require Import Util.List.
 
-(* TODO: Also defined in kind checker.*)
 (* Tactic to simplify proofs containing hypotheses of the form
 match x with
 | A => Some alpha
@@ -353,3 +352,39 @@ Lemma lookup_app_r {A} k (v : A) xs xs' :
 Lemma lookup_none_app {A} k (v : A) xs xs' :
     lookup k xs = None -> lookup k xs' = Some v -> lookup k (xs ++ xs') = Some v.
 Admitted.
+
+Lemma cons_split_helper {x y R1 R2} (R : list (string * string)) :
+  ((x, y):: R) = R1 ++ R2 -> 
+    sum ( {R1' & R1 = ((x, y)::R1')}) (
+    (prod (R1 = nil) (R2 = ((x, y)::R)))).
+Proof.
+  intros HrenAdd.
+  destruct R1.
+  - simpl in HrenAdd.
+    right. split.
+    + reflexivity.
+    + symmetry.
+      assumption.
+  - simpl in HrenAdd.
+    inversion HrenAdd; subst.
+    left. exists R1. reflexivity.
+Qed.
+
+
+Lemma lookup_cons_None_helper (R : list (string * string)) s x y :
+  lookup s ((x, y)::R) = None -> lookup s R = None.
+Proof.
+  intros.
+  simpl in H.
+  destruct_match.
+  auto.
+Qed.
+
+Lemma lookup_r_cons_None_helper (R : list (string * string)) s' x y :
+  lookup_r s' ((x, y)::R) = None -> lookup_r s' R = None.
+Proof.
+  intros.
+  simpl in H.
+  destruct_match.
+  auto.
+Qed.

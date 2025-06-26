@@ -57,7 +57,7 @@ Proof with eauto with gu_nc_db.
       inversion H9; subst.
       contradiction H4; auto.
       contradiction H13; auto.
-    + eapply @alpha_swaps with (ren' := ((x, y)::Rt)) in H.
+    + eapply @alpha_swaps with (R1 := ((x, y)::Rt)) in H.
       inversion H; subst.
       inversion H10; subst; try contradiction.
       apply alpha_var.
@@ -73,7 +73,7 @@ Proof with eauto with gu_nc_db.
         simpl in H3.
         intuition. apply btv_lam.
       * assumption.
-    + eapply @lrss_trans with (ren2 := ((s, y0)::(x, y)::Rt)).
+    + eapply @lrss_trans with (R2 := ((s, y0)::(x, y)::Rt)).
       * eapply starSE.
         -- apply starR.
         -- 
@@ -82,7 +82,7 @@ Proof with eauto with gu_nc_db.
               simpl in H2. intuition. apply btv_lam.
             ** apply nc_ftv_env with (x := y0) in H3.
               simpl in H3. intuition. apply btv_lam.
-            ** apply legalRenSwap_id.
+            ** apply lrs_id.
       * apply lrss_cons. auto.
   - constructor; eauto with gu_nc_db.
   - constructor.

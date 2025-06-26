@@ -29,6 +29,8 @@ From PlutusCert Require Import
   alpha_vacuous 
   construct_GU.
 
+(* NOTE: In the codebase there is no step_d, instead we address going from step_nd to a deterministic reduction for the whole of PIR later in the embedding argument.
+In the thesis we postulate a step_d for readability.*)
 (* non-deterministic STLC reduction relation using naive beta reduction*)
 Inductive step_nd : term -> term -> Type :=
 | step_beta_nd (x : string) (A : PlutusIR.kind) (s t : term) :
@@ -131,7 +133,7 @@ Corollary substituteTCA_vacuous_specialized X U T:
   ~ In X (ftv T) ->
   Alpha nil (substituteTCA X U T) T.
 Proof.
-  eapply substituteTCA_vacuous; try apply alpha_ids; auto; repeat constructor.
+  eapply substituteTCA_vacuous; try apply alpha_refl; auto; repeat constructor.
 Qed.
 
 (* α-preservation of substitution with capture-avoiding substitutions
@@ -169,7 +171,7 @@ Proof.
     + rewrite substituteTCA_equation_2.
       remember (fresh2 _ s1) as b; rewrite cons_to_append in Heqb.
       rewrite String.eqb_refl.
-      eapply @alpha_sym with (ren := sym_alpha_ctx R); eauto with α_eq_db.
+      eapply @alpha_sym with (R := sym_alpha_ctx R); eauto with α_eq_db.
       eapply substituteTCA_vacuous; eauto with α_eq_db.
       eapply @alpha_preserves_no_ftv with (x := X) (s := tmabs X k s1).
       * apply ftv_lam_no_binder.
@@ -187,7 +189,7 @@ Proof.
         eapply @alpha_preserves_no_ftv with (x := X) (s := tmabs X k s2).
         -- apply ftv_lam_no_binder.
         -- eauto with α_eq_db.
-        -- inversion Ha_X; eauto. eapply @alphavar_sym with (ren := R); eauto with α_eq_db.
+        -- inversion Ha_X; eauto. eapply @alphavar_sym with (R := R); eauto with α_eq_db.
       * autorewrite with substituteTCA.
         rewrite <- String.eqb_neq in H1. rewrite String.eqb_sym in H1. rewrite H1.
         rewrite <- String.eqb_neq in H2. rewrite String.eqb_sym in H2. rewrite H2.
@@ -198,14 +200,14 @@ Proof.
            remember (fresh2 _ s2) as Y''.
            constructor.
            eapply IHbi; eauto.
-           ++ eapply alpha_extend_fresh; auto.
+           ++ eapply alpha_extend_vacuous_ftv; auto.
               ** eapply fresh2_over_key_sigma with (X := X) in HeqY'.
                  intros Hcontra. apply ftv_var in Hcontra.  subst. contradiction.
                  apply in_eq.
               ** eapply fresh2_over_key_sigma with (X := X) in HeqY''.
                  intros Hcontra. apply ftv_var in Hcontra.  subst. contradiction.
                  apply in_eq.
-           ++ eapply alpha_extend_fresh; auto.
+           ++ eapply alpha_extend_vacuous_ftv; auto.
               ** eapply fresh2_over_tv_value_sigma with (X := X) (s := T) in HeqY'.
                  intros Hcontra. apply extend_ftv_to_tv in Hcontra. contradiction.
                  apply in_eq.
@@ -219,13 +221,13 @@ Proof.
            remember (fresh2 _ s1) as Y'.
            constructor.
             eapply IHbi; eauto.
-            ++ eapply alpha_extend_fresh; auto.
+            ++ eapply alpha_extend_vacuous_ftv; auto.
               ** eapply fresh2_over_key_sigma with (X := X) in HeqY'.
                  intros Hcontra. apply ftv_var in Hcontra.  subst. contradiction.
                  apply in_eq.
               ** intros Hcontra. apply ftv_var in Hcontra. subst.
                  rewrite String.eqb_neq in H2. contradiction.
-            ++ eapply alpha_extend_fresh; auto.
+            ++ eapply alpha_extend_vacuous_ftv; auto.
               ** eapply fresh2_over_tv_value_sigma with (X := X) (s := T) in HeqY'.
                  intros Hcontra. apply extend_ftv_to_tv in Hcontra. contradiction.
                  apply in_eq.
@@ -236,7 +238,7 @@ Proof.
            remember (fresh2 _ s2) as Y'.
            constructor.
            eapply IHbi; eauto. 
-           ++ eapply alpha_extend_fresh; auto.
+           ++ eapply alpha_extend_vacuous_ftv; auto.
               ** intros Hcontra. apply ftv_var in Hcontra; subst.
                   rewrite String.eqb_neq in H1. contradiction.
               **  
@@ -244,7 +246,7 @@ Proof.
                  intros Hcontra. apply ftv_var in Hcontra.  subst. contradiction.
                  apply in_eq.
 
-           ++ eapply alpha_extend_fresh; auto.
+           ++ eapply alpha_extend_vacuous_ftv; auto.
               eapply not_in_existsb. auto.
               eapply fresh2_over_tv_value_sigma with (X := X) (s := T) in HeqY'.
               intros Hcontra. apply extend_ftv_to_tv in Hcontra. contradiction.
@@ -252,12 +254,12 @@ Proof.
            ++ constructor; eauto.
            ++ eapply alpha_trans_rename_right; eauto.
         -- constructor; eapply IHbi; eauto.
-           ++ apply alpha_extend_fresh; auto.
+           ++ apply alpha_extend_vacuous_ftv; auto.
               ** intros Hcontra. apply ftv_var in Hcontra; subst.
                   rewrite String.eqb_neq in H1. contradiction.
               ** intros Hcontra. apply ftv_var in Hcontra; subst.
                   rewrite String.eqb_neq in H2. contradiction.
-           ++ eapply alpha_extend_fresh; auto.
+           ++ eapply alpha_extend_vacuous_ftv; auto.
               eapply not_in_existsb. auto.
               eapply not_in_existsb. auto.
            ++ eauto with α_eq_db.  
@@ -309,11 +311,11 @@ Proof.
     destruct (alpha_substituteTCA_sub x t s) as [s' [ [Halpha1 Halpha2] Halpha3] ].
     eexists.
     split; try constructor.
-    eapply @alpha_trans with (t := sub x t s') (ren := ctx_id_left ren) (ren' := ren); eauto with α_eq_db α_eq_db_trans.
+    eapply @alpha_trans with (t := sub x t s') (R := ctx_id_left ren) (R1 := ren); eauto with α_eq_db α_eq_db_trans.
     destruct (alpha_substituteTCA_sub y t2 s0) as [t' [ [Halpha1' Halpha2'] Halpha3' ] ].
     eapply @alpha_trans with (t := sub y t2 t'); eauto with α_eq_db α_eq_db_trans.
     eapply alpha_rename_binder_stronger with (Rs := ((x, y)::ren)); eauto with α_eq_db.
-    + eapply @alpha_trans with (t := s) (ren := ctx_id_left ((x, y)::ren)) (ren' := ((x, y)::ren)); eauto with α_eq_db α_eq_db_trans.
+    + eapply @alpha_trans with (t := s) (R := ctx_id_left ((x, y)::ren)) (R1 := ((x, y)::ren)); eauto with α_eq_db α_eq_db_trans.
     + constructor.
   - destruct (IHHstep ren s3 H4) as [t1_α [Hstep' Halpha'] ].
     exists (@tmbin B t1_α t2); split.

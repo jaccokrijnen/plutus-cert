@@ -146,13 +146,13 @@ Proof with eauto with sconstr2_db gu_nc_db α_eq_db to_GU_db to_GU''_db.
       remember (sconstr2 x0 t x p s ) as sconstr2_.
       destruct sconstr2_ as [ [s' t'0] p'].
 
-      eapply @alpha_trans with (ren := ctx_id_left R) (ren' := R) 
+      eapply @alpha_trans with (R := ctx_id_left R) (R1 := R) 
           (t := sub x0 (psubs ([(x, p')]) t'0) (psubs ([(x, p')]) s')); eauto with α_eq_db_trans...
       * eapply alpha_extend_ids.
         eapply ctx_id_left_is_id.
 
         eapply alpha_rename_binder_stronger with (Rs := ((x0', x0)::nil)); eauto...
-        -- eapply @alpha_trans with (t := psubs ((x, p)::nil) s) (ren := ((x0', x0)::nil)); eauto with α_eq_db.
+        -- eapply @alpha_trans with (t := psubs ((x, p)::nil) s) (R := ((x0', x0)::nil)); eauto with α_eq_db.
            eapply alpha_extend_ids. constructor. constructor.
            eapply psubs__α; eauto with gu_nc_db sconstr2_db α_eq_db.
         -- eapply @alpha_trans with (t := psubs ((x, p)::nil) t); eauto with α_eq_db.
@@ -160,7 +160,7 @@ Proof with eauto with sconstr2_db gu_nc_db α_eq_db to_GU_db to_GU''_db.
         -- constructor.
         -- eapply gu_applam_to_nc. rewrite <- pr_eq. apply to_GU__GU.
       * eapply commute_sub_naive; eauto...
-        -- eapply @alpha_trans with (ren := ctx_id_left R) (ren' := R) (t := sub x0 t s); eauto with α_eq_db_trans.
+        -- eapply @alpha_trans with (R := ctx_id_left R) (R1 := R) (t := sub x0 t s); eauto with α_eq_db_trans.
            eapply alpha_extend_ids.
            eapply ctx_id_left_is_id.
            repeat rewrite <- single_subs_is_psub.
@@ -191,7 +191,7 @@ Proof with eauto with sconstr2_db gu_nc_db α_eq_db to_GU_db to_GU''_db.
     + apply step_gu_intro with (s' := (@tmbin B sigS1Alpha sigtalpha )); auto...
       * subst. rewrite <- Happ. apply to_GU__GU.
       * constructor. eauto.
-    + eapply @alpha_trans with (ren := ctx_id_left R) (ren' := R). 
+    + eapply @alpha_trans with (R := ctx_id_left R) (R1 := R). 
       * eapply id_left_trans. 
       * apply alpha_extend_ids. apply ctx_id_left_is_id. constructor. eapply alpha_sym. constructor. eauto. eapply alpha_sym. constructor. eauto.
       * constructor. eauto. 
@@ -210,7 +210,7 @@ Proof with eauto with sconstr2_db gu_nc_db α_eq_db to_GU_db to_GU''_db.
     + apply step_gu_intro with (s' :=  (@tmbin B sigtalpha sigS1Alpha))...
       * apply gu_app_st__gu_app_ts. rewrite <- Happ. apply to_GU__GU.
       * constructor; auto.
-    + eapply @alpha_trans with (ren := ctx_id_left R) (ren' := R) (t := tmbin (psubs ((x, p)::nil) s) (sigS1)).
+    + eapply @alpha_trans with (R := ctx_id_left R) (R1 := R) (t := tmbin (psubs ((x, p)::nil) s) (sigS1)).
       * eapply id_left_trans. 
       * apply alpha_extend_ids... apply ctx_id_left_is_id. 
       * constructor; auto.
@@ -230,7 +230,7 @@ Proof with eauto with sconstr2_db gu_nc_db α_eq_db to_GU_db to_GU''_db.
         -- subst. eapply to_GU''__GU_lam.
         -- constructor; assumption.
       * constructor.
-        eapply @alpha_trans with (ren := ctx_id_left ((x0, y)::R)) (ren' := ((x0, y)::R))...
+        eapply @alpha_trans with (R := ctx_id_left ((x0, y)::R)) (R1 := ((x0, y)::R))...
         -- eapply id_left_trans.
         -- apply alpha_extend_ids... apply ctx_id_left_is_id. 
 Qed.
@@ -254,7 +254,7 @@ Proof with eauto with to_GU'_db.
     in H1 as [t'' [Hstep_t'' Ha_t''] ]; eauto with α_eq_db...
   2: eapply @alpha_trans with (t := x); eauto with α_eq_db...
   eapply @step_subst_single with (s := (to_GU' X T x)) (t := t''); eauto with α_eq_db...
-  apply @alpha_trans with (t := y) (ren := nil) (ren' := nil); repeat constructor...
+  apply @alpha_trans with (t := y) (R := nil) (R1 := nil); repeat constructor...
   eauto with α_eq_db.  
 Qed.
 
@@ -449,7 +449,7 @@ Proof with eauto with α_eq_db gu_nc_db.
     {
       eapply step_naive_preserves_alpha2 with (s := s4) (t:=s5) (s' := (to_GU x0))...
       apply to_GU__GU.
-      eapply @alpha_trans with (ren' := (y, y)::nil) (t := x0)...
+      eapply @alpha_trans with (R1 := (y, y)::nil) (t := x0)...
       apply alpha_extend_ids; eauto with to_GU_db. repeat constructor.
     }
     eapply step_gu_intro in Hstep_na_s5'; eauto with to_GU_db...
@@ -457,7 +457,7 @@ Proof with eauto with α_eq_db gu_nc_db.
     specialize (IH1 _ Hstep_na_s5').
     inv Hstep_na_s5'.
     edestruct step_naive_preserves_alpha2 with (R := [(y, x)]) (s' := s0) (t := s5') as [s'_a [Hstep_s'_a Ha_s'_a] ]...
-    1: eapply @alpha_trans with (ren := (y, y)::nil) (ren' := (y, x)::nil) (t := x0)...
+    1: eapply @alpha_trans with (R := (y, y)::nil) (R1 := (y, x)::nil) (t := x0)...
     eapply IH1 with (s := (to_GU' x x1 s'_a)); subst; eauto with to_GU'_db α_eq_db...
     + now constructor.
     + assert ({α & (step_gu (sub x x1 s0) α) * (Alpha nil α (sub x x1 (to_GU' x x1 s'_a)))}%type) 
@@ -617,11 +617,11 @@ Proof with eauto using L_sn with gu_nc_db bu_db.
     (* **** ih is now fully applied ********************** *)
     eapply beta_expansion_subst in ih; auto.
     + eapply α_preserves_L_R with (s' := tmbin (psubs sigma (tmabs X A s)) t) (R := sym_alpha_ctx R) in ih; eauto. constructor.
-      * eapply @alpha_sym with (ren := R). apply sym_alpha_ctx_is_sym.
+      * eapply @alpha_sym with (R := R). apply sym_alpha_ctx_is_sym.
         repeat rewrite psubs_to_subs; auto.
         apply (BU_smaller) in HBU.
         eapply psubs__α; eauto; [|apply (t_constr__a_sigma HBU (nc_lam nc) Heqt'R)].
-        constructor. eapply alpha_extend_id''. auto; apply (t_constr__a_s (gu_lam gu) HBU Heqt'R).
+        constructor. eapply alpha_extend_id__refl. auto; apply (t_constr__a_s (gu_lam gu) HBU Heqt'R).
       * eapply @alpha_sym; eauto. apply sym_alpha_ctx_is_sym.   
         apply (t_constr__a_t Heqt'R).
     + eapply t_constr__nc_subs; eauto.

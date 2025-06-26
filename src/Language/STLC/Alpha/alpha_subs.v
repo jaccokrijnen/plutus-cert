@@ -25,11 +25,11 @@ Proof.
   - eapply alpha_sym; eauto. apply sym_alpha_ctx_is_sym.
 Qed.
 
-Lemma alpha_ctx_right_ex {ren sigma sigma' x x' t }:
-  alphaSubs ren sigma sigma' ->
-  AlphaVar ren x x' ->
+Lemma alpha_ctx_right_ex {R sigma sigma' x x' t }:
+  alphaSubs R sigma sigma' ->
+  AlphaVar R x x' ->
   lookup x sigma = Some t ->
-  {t' & prod (lookup x' sigma' = Some t') (Alpha ren t t')}.
+  {t' & prod (lookup x' sigma' = Some t') (Alpha R t t')}.
 Proof.
   intros.
   induction H; try inversion H1.
@@ -46,25 +46,25 @@ Proof.
     simpl. rewrite <- String.eqb_neq in H0. rewrite H0. auto.
 Qed.
 
-Lemma alpha_ctx_left_ex {ren sigma sigma' x x' t' }:
-  alphaSubs ren sigma sigma' ->
-  AlphaVar ren x x' ->
+Lemma alpha_ctx_left_ex {R sigma sigma' x x' t' }:
+  alphaSubs R sigma sigma' ->
+  AlphaVar R x x' ->
   lookup x' sigma' = Some t' ->
-  { t & prod (lookup x sigma = Some t) (Alpha ren t t')}.
+  { t & prod (lookup x sigma = Some t) (Alpha R t t')}.
 Proof.
   intros Hctx HA_x Hl.
-  eapply @alphavar_sym with (ren' := sym_alpha_ctx ren) in HA_x; auto.
+  eapply @alphavar_sym with (R' := sym_alpha_ctx R) in HA_x; auto.
   2: { apply sym_alpha_ctx_is_sym. }
-  apply @αctx_sym with (R := ren) in Hctx; auto.
+  apply @αctx_sym with (R := R) in Hctx; auto.
   eapply alpha_ctx_right_ex in Hl as [t'' [Hl_t'' Ha_t']]; eauto.
   exists t''. split; auto.
-  eapply @alpha_sym with (ren := (sym_alpha_ctx ren)); auto.
+  eapply @alpha_sym with (R := (sym_alpha_ctx R)); auto.
   apply sym_alpha_ctx_left_is_sym.
 Qed.
 
-Lemma alpha_ctx_left_nex {ren sigma sigma' x x'}:
-  alphaSubs ren sigma sigma' ->
-  AlphaVar ren x x' ->
+Lemma alpha_ctx_left_nex {R sigma sigma' x x'}:
+  alphaSubs R sigma sigma' ->
+  AlphaVar R x x' ->
   lookup x' sigma' = None ->
   lookup x sigma = None.
 Proof.
@@ -78,9 +78,9 @@ Proof.
   congruence.
 Qed.
 
-Lemma alpha_ctx_right_nex {ren sigma sigma' x x'}:
-  alphaSubs ren sigma sigma' ->
-  AlphaVar ren x x' ->
+Lemma alpha_ctx_right_nex {R sigma sigma' x x'}:
+  alphaSubs R sigma sigma' ->
+  AlphaVar R x x' ->
   lookup x sigma = None ->
   lookup x' sigma' = None.
 Proof.
@@ -94,7 +94,7 @@ Proof.
   congruence.
 Qed.
 
-Lemma alpha_ctx_ren_nil {sigma }:
+Lemma alpha_ctx_R_nil {sigma }:
   alphaSubs [] sigma sigma.
 Proof.
   induction sigma.
