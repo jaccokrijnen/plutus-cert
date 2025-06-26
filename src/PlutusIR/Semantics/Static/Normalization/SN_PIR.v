@@ -16,11 +16,11 @@ Require Import Coq.Arith.Wf_nat.
 
 From PlutusCert Require Import SN_STLC_GU SN_STLC_nd util Util.List STLC STLC.Kinding.
 From PlutusCert Require Import PlutusIR Checker.
-From PlutusCert Require Static.TypeSubstitution Normalisation.SmallStep.
+From PlutusCert Require Static.TypeSubstitution Normalization.SmallStep.
 
 Set Printing Implicit.
 
-(* from PIR to annotated stlc*)
+(* An embedding from PIR to annotated STLC *)
 Fixpoint f (t : ty) : STLC.term :=
   match t with
   | Ty_Var x => tmvar x
@@ -38,6 +38,7 @@ Fixpoint f (t : ty) : STLC.term :=
   | Ty_Builtin d => tmbuiltin d
   end.
 
+(* The embedding preserves renaming behaviour *)
 Lemma f_preserves_rename s fr T :
   rename s fr (f T) = f (TypeSubstitution.rename s fr T).
 Proof.
@@ -51,6 +52,7 @@ Proof.
   apply IHForall0.
 Qed.
 
+(* The embedding preserves free type variable calculation *)
 Lemma f_preserves_ftv T :
   ftv (f T) = TypeSubstitution.ftv T.
 Proof.
@@ -62,10 +64,11 @@ Proof.
   f_equal; auto.
 Qed.
 
+(* The embedding preserves type variable calculation *)
 Lemma f_preserves_tv T :
-  tv (f T) = TypeSubstitution.plutusTv T.
+  tv (f T) = TypeSubstitution.tv T.
 Proof.
-  apply PlutusIR.ty__ind with (P := fun T => tv (f T) = TypeSubstitution.plutusTv T); intros.
+  apply PlutusIR.ty__ind with (P := fun T => tv (f T) = TypeSubstitution.tv T); intros.
   all: try solve [simpl; f_equal; auto]. 
   induction H; auto; subst.
   induction H; auto; subst; simpl.
@@ -73,6 +76,7 @@ Proof.
   f_equal; auto.
 Qed.
 
+(* The embedding preserves fresh variable generation *)
 Lemma f_preserves_fresh2 y s' T :
   fresh2 ((y, f s')::nil) (f T) = TypeSubstitution.fresh y s' T.
 Proof.
@@ -81,7 +85,7 @@ Proof.
   unfold TypeSubstitution.fresh.
   rewrite f_preserves_tv.
   assert (Htv_keys_env: (tv_keys_env
-    [(y, f s')] = (y :: (TypeSubstitution.plutusTv s')))).
+    [(y, f s')] = (y :: (TypeSubstitution.tv s')))).
   {
     unfold tv_keys_env.
     f_equal.
@@ -97,6 +101,8 @@ Proof.
   auto.
 Qed.
 
+(* The embedding preserves capture-avoiding substitution behaviour*)
+(* NOTE: Requires strong induction on the size of terms (as opposed to using α-equivalence)*)
 Lemma f_preserves_substituteTCA X U T :
   (f (TypeSubstitution.substituteTCA X U T)) = (substituteTCA X (f U) (f T)).
 Proof.
@@ -156,7 +162,7 @@ Proof.
     }
 
 
-  (* TODO: EXACTLY IDENTICAL TO ABOVE*)
+  (* Analogous to above *)
 
      {
       autorewrite with substituteTCA.
@@ -331,7 +337,10 @@ Proof.
         eapply IHl; intros; auto.
         eapply H; eauto.
 Qed.
-        
+
+(* The embedding preserves reduction *)
+(* NOTE: this also goes from deterministic to non-deterministic reduction.
+*)
 Theorem f_preserves_step s s' :
   SmallStep.step s s' -> step_nd (f s) (f s').
 Proof.
@@ -346,9 +355,11 @@ Proof.
       inversion f0; subst. auto.
 Defined.
 
+(* ADMITTED: Unimplemented kind-preservatino of the embedding for SOP *)
 Axiom f_preserves_kind__Ty_SOP_axiom : forall Δ Tss, Δ |-* (f (Ty_SOP Tss))
 : Kind_Base.
 
+(* The embedding preserves kinding behaviour *)
 Theorem f_preserves_kind Δ s K :
   Static.Kinding.Kinding.has_kind Δ s K -> STLC.Kinding.has_kind Δ (f s) K.
 Proof with subst; auto.
@@ -358,7 +369,9 @@ Proof with subst; auto.
   all: try solve [intros; try econstructor; eauto].
   apply (f_preserves_kind__Ty_SOP_axiom).
   (*
-      TODO:Working code when kind induction scheme is shown to terminate
+      TODO:Working code when kind induction scheme is shown to terminate. For now replaced with the SOP axiom.
+
+
     simpl.
   simpl.
   induction Tss.
@@ -383,7 +396,7 @@ Proof with subst; auto.
            ++ inversion H; auto. *)
 Qed.
 
-(* Forward simulation *)
+(* Forward simulatio for different languages *)
 Lemma sn_preimage2 {e2 : PlutusIR.ty -> PlutusIR.ty -> Type} {e : STLC.term -> STLC.term -> Type} 
   (h : PlutusIR.ty -> STLC.term) (x : PlutusIR.ty) :
   (forall x y, e2 x y -> e (h x) (h y)) -> @sn STLC.term e (h x) -> @sn PlutusIR.ty e2 x.
@@ -406,6 +419,7 @@ Proof.
   - reflexivity.
 Defined.
 
+(* Forward simulation argument to go from strong normalization of non-deterministic reductions for ASTLC to strong normalization of deterministic reductions for PIR *)
 Theorem sn_step_nd_to_sn_step : forall s, @sn STLC.term step_nd (f s) -> @sn PlutusIR.ty SmallStep.step s.
 Proof.
   intros s.
@@ -413,7 +427,8 @@ Proof.
   apply f_preserves_step.
 Defined.
 
-Corollary plutus_ty_strong_normalization s Δ K : Kinding.Kinding.has_kind Δ s K -> @sn PlutusIR.ty SmallStep.step s.
+(* Strong normalization of PIR's type language with a deterministic capture-avoiding reduction relation *)
+Corollary strong_normalization_PIR s Δ K : Kinding.Kinding.has_kind Δ s K -> @sn PlutusIR.ty SmallStep.step s.
 Proof.
   intros Hwk.
   apply f_preserves_kind in Hwk.

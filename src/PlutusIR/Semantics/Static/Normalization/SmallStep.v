@@ -1,4 +1,4 @@
-From PlutusCert Require Import PlutusIR Normalisation.BigStep Util.
+From PlutusCert Require Import PlutusIR Normalization.BigStep Util.
 
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
@@ -9,7 +9,7 @@ Inductive step : ty -> ty -> Set :=
     | step_beta (X : string) (K : kind) (S T : ty) :
         normal_Ty S ->
         normal_Ty T ->
-        step (Ty_App (Ty_Lam X K S) T) (substituteTCA X T S) (* conservative substitutions *)
+        step (Ty_App (Ty_Lam X K S) T) (substituteTCA X T S) 
     | step_appL S1 S2 T :
         step S1 S2 -> step (Ty_App S1 T) (Ty_App S2 T)
     | step_appR S T1 T2 :

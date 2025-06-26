@@ -1,7 +1,7 @@
 From PlutusCert Require Import
   PlutusIR.Semantics.Dynamic
   PlutusIR.Semantics.SemanticEquivalence.LogicalRelation
-  Normalisation.BigStep
+  Normalization.BigStep
   Util.Map
   CompatibilityLemmas.LamAbs
   Kinding.Kinding

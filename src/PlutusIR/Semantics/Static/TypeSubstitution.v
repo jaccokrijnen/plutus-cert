@@ -42,45 +42,28 @@ Fixpoint msubstT (ss : list (string * ty)) (T : ty) : ty :=
 Require Import Lia.
 Import ListNotations.
 
-(* Moved from analysis.freevars*)
-  Function ftv (T : ty) : list string :=
-    match T with
-    | Ty_Var X =>
-        [X]
-    | Ty_Fun T1 T2 =>
-        ftv T1 ++ ftv T2
-    | Ty_IFix F T =>
-        ftv F ++ ftv T
-    | Ty_Forall X K T' =>
-        remove string_dec X (ftv T')
-    | Ty_Builtin u =>
-        []
-    | Ty_Lam X K1 T' =>
-        remove string_dec X (ftv T')
-    | Ty_App T1 T2 =>
-        ftv T1 ++ ftv T2
-    | Ty_SOP Tss =>
-        flatmap2 ftv Tss
-    end.
+From PlutusCert Require Import Analysis.FreeVars.
 
+(* In this file we only talk about type variables in types *)
+Definition ftv := Ty.ftv.
 
-Fixpoint plutusTv (t : ty) : list string :=
+Fixpoint tv (t : ty) : list string :=
   match t with
   | Ty_Var x => [x]
-  | Ty_Lam x A t => x :: (plutusTv t)
-  | Ty_Forall x A t => x :: (plutusTv t)
-  | Ty_Fun t1 t2 => plutusTv t1 ++ plutusTv t2
-  | Ty_App t1 t2 => plutusTv t1 ++ plutusTv t2
-  | Ty_IFix f1 t1 => plutusTv f1 ++ plutusTv t1
+  | Ty_Lam x A t => x :: (tv t)
+  | Ty_Forall x A t => x :: (tv t)
+  | Ty_Fun t1 t2 => tv t1 ++ tv t2
+  | Ty_App t1 t2 => tv t1 ++ tv t2
+  | Ty_IFix f1 t1 => tv f1 ++ tv t1
   | Ty_Builtin d => []
   | Ty_SOP Tss => 
-      flatmap2 plutusTv Tss
+      flatmap2 tv Tss
   end.
 
-Compute (plutusTv (Ty_SOP [[Ty_Var "a"; Ty_Var "b"]; [Ty_Var "c"; Ty_Var "d"]])).
+(* Compute (tv (Ty_SOP [[Ty_Var "a"; Ty_Var "b"]; [Ty_Var "c"; Ty_Var "d"]])). *)
 
-Lemma weaken_not_plutusTv_to_not_ftv : forall X T,
-  ~ In X (plutusTv T) -> ~ In X (ftv T).
+Lemma weaken_not_tv_to_not_ftv : forall X T,
+  ~ In X (tv T) -> ~ In X (ftv T).
 Admitted.
 
 
@@ -101,7 +84,7 @@ Admitted.
     formally as well.
 *)
 Definition fresh (X : string) (U T : ty) : string :=
-  "a" ++ X ++ (Coq.Strings.String.concat EmptyString (plutusTv U)) ++ (Coq.Strings.String.concat EmptyString (plutusTv T)).
+  "a" ++ X ++ (Coq.Strings.String.concat EmptyString (tv U)) ++ (Coq.Strings.String.concat EmptyString (tv T)).
 
 Lemma fresh__X : forall X U T,
     X <> fresh X U T.
@@ -113,11 +96,11 @@ Proof with eauto.
 Qed.
 
 Lemma fresh__S : forall X U T,
-    ~ In (fresh X U T) (plutusTv U).
+    ~ In (fresh X U T) (tv U).
 Proof. Admitted.
 
 Lemma fresh__T : forall X U T,
-    ~ In (fresh X U T) (plutusTv T).
+    ~ In (fresh X U T) (tv T).
 Proof. Admitted.
 
 Definition rename (X Y : string) (T : ty) := substituteT X (Ty_Var Y) T.
@@ -153,8 +136,6 @@ Proof.
   induction T; simpl; auto.
   lia.
 Qed. 
-
-
 
 Lemma size_list_smaller : forall (T : ty) (Ts : list ty) (Tss : list (list ty)),
   In T Ts -> In Ts Tss -> size T < size (Ty_SOP Tss).

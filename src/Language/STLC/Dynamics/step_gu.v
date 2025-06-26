@@ -15,57 +15,33 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 From PlutusCert Require Import 
   STLC 
-  STLC.Kinding 
   GU_NC 
   construct_GU 
   construct_GU_R
   alpha_sub 
   step_naive 
-  Alpha.alpha 
-  alpha_rename 
-  util 
-  alpha_subs 
-  variables 
-  alpha_freshness.
+  Alpha.alpha
+  .
 
-
-
-(* Examples
-λ x. x is GU_vars
-λ x. y is GU_vars
-λ x. λ y. x is GU_vars
-
-(λ x. x) y is GU_vars
-(λ x. x) x is not GU_vars (* free var is equal to a bound var*)
-(λ y. x) x is GU_vars (* all vars with the same name refer to the same term*)
-*)
-
-(* If a term has globally unique binders, then it has unique binders*)
-
+(* Globally uniquifying step function *)
 Inductive step_gu : term -> term -> Type :=
 | step_gu_intro s s' t : 
     Alpha [] s s' ->
     GU s' ->
     step_naive s' t ->
     step_gu s t.
-(*     
-    Alpha [] t' t ->
-    GU_vars t ->
-    step_gu s t. *)
 
-(** **** Many-Step Reduction 
-TODO: See if we can use the star from autosubst ARS again. (uses Prop instead of Set)
-*)
-Inductive red_gu_na : term -> term -> Type :=
-| red_gu_na_star s t t':
+(** **** Many-Step Reduction *)
+Inductive red_gu : term -> term -> Type :=
+| red_gu_star s t t':
      step_gu s t -> 
-     red_gu_na t t' ->
-     red_gu_na s t' 
-| red_gu_na_nil s :
-     red_gu_na s s.
+     red_gu t t' ->
+     red_gu s t' 
+| red_gu_nil s :
+     red_gu s s.
 
-
-Lemma step_naive_preserves_alpha2 s t s' R:
+(* Globally unique and alpha equivalent types can step naively to alpha equivalent types*)
+Lemma step_naive_preserves_alpha s t s' R:
   GU s -> GU s' -> Alpha R s s' -> step_naive s t -> {t' & step_naive s' t' * Alpha R t t'}%type.
 Proof.
   intros.
@@ -93,10 +69,11 @@ Proof.
     split; constructor; auto.
 Qed.
 
-(* We need alpha here because global unique can create different terms depending on input:
-  global unique does not compose
-  suppose there is a free var in s2, then that must be renamed when doing step_gu (tmbin s1 s2)
-  while that is not the case in step_gu s1 t1 (there s2 does not need to be taken into account)
+(* If s1 -> t1, then (s1 s2) -> (t1 s2), up to α-equivalence *)
+(* Note: We need alpha here because global unique can create different terms depending on input:
+    global unique does not compose
+    suppose there is a free var in s2, then that must be renamed when doing step_gu (tmbin s1 s2)
+    while that is not the case in step_gu s1 t1 (there s2 does not need to be taken into account)
   *)
 Lemma step_gu_app_l {B} s1 s2 t1 :
   step_gu s1 t1 -> 
@@ -113,7 +90,7 @@ Proof.
   inv H.
 
   (* From step_naive s' t1, it then also follows that there must exist a t1' s.t. step_naive s1' t1'.*)
-  apply step_naive_preserves_alpha2 with (s' := s1') (R := nil) in H2 as [t1' [Hstep_s1' Ha_t1] ].
+  apply step_naive_preserves_alpha with (s' := s1') (R := nil) in H2 as [t1' [Hstep_s1' Ha_t1] ].
   - exists t1'.
     split; auto.
     exists s2'.
@@ -127,7 +104,8 @@ Proof.
   - eauto with α_eq_db.
 Qed.
 
-Lemma step_gu_na_lam_fold {B} x A s s' :
+(* If s -> s', then also λx.s -> λx.s', up to α-equivalence *)
+Lemma step_gu_abs {B} x A s s' :
   step_gu s s' -> {lams' & step_gu (@tmabs B x A s) lams' * Alpha [] lams' (@tmabs B x A s')}%type.
 Proof.
   intros.
@@ -148,7 +126,7 @@ Proof.
   (* sgu and slam are both GU, so we can do step preserves 2*)
   assert ({t' & step_naive s2 t' * Alpha [(x, y)] s' t'}%type).
   {
-    eapply step_naive_preserves_alpha2.
+    eapply step_naive_preserves_alpha.
     - exact H2.
     - assert (GU (to_GU (@tmabs B x A s))) by apply to_GU__GU.
       rewrite <- H10 in H5. auto.
@@ -167,7 +145,7 @@ Proof.
   - eapply @alpha_sym. constructor. constructor. eauto.
 Qed.
 
-
+(* Globally uniquifying step is preserved under α-equivalence *)
 Lemma step_gu_preserves_alpha {s} {s'} {t} R :
   Alpha R s t -> step_gu s s' -> {t' & prod (step_gu t t') (Alpha R s' t')}.
 Proof.
@@ -175,7 +153,7 @@ Proof.
   inversion H0; subst.
   assert ({t' & step_naive (to_GU t) t' * Alpha R s' t'}%type).
   {
-    eapply step_naive_preserves_alpha2; eauto.
+    eapply step_naive_preserves_alpha; eauto.
     + apply to_GU__GU.
     + eapply @alpha_trans with (R := ctx_id_left R) (R1 := R); eauto with α_eq_db.
       * eapply id_left_trans.
@@ -198,10 +176,9 @@ Proof.
   - auto.
 Qed.
 
-
-
-Lemma red_gu_naive_preserves_alpha {s} {s'} {t} R :
-  Alpha R s t -> red_gu_na s s' -> {t' & prod (red_gu_na t t') (Alpha R s' t')}.
+(* Globally uniquifying multi-step is preserved under α-equivalence*)
+Lemma red_gu_preserves_alpha {s} {s'} {t} R :
+  Alpha R s t -> red_gu s s' -> {t' & prod (red_gu t t') (Alpha R s' t')}.
 Proof.
   intros.
   generalize dependent R.
@@ -209,44 +186,45 @@ Proof.
   induction H0; intros.
   - apply (step_gu_preserves_alpha H) in s0.
     destruct s0 as [t'0 [Hstept'0 Ha_t'0] ].
-    specialize (IHred_gu_na t'0 R Ha_t'0).
-    destruct IHred_gu_na as [t'1 [Hred_t'1 Ha_t'1] ].
+    specialize (IHred_gu t'0 R Ha_t'0).
+    destruct IHred_gu as [t'1 [Hred_t'1 Ha_t'1] ].
     exists t'1.
     split; auto.
-    apply red_gu_na_star with (t := t'0); auto.
+    apply red_gu_star with (t := t'0); auto.
   - exists t.
     split; auto.
     constructor.
 Qed.
 
-(* step_gu/red_gu always freshens binders, hence we need to work up to alpha*)
-Lemma red_gu_na_lam_fold {B x A s s'} :
-  red_gu_na s s' -> {lams' & red_gu_na (@tmabs B x A s) lams' * Alpha [] lams' (@tmabs B x A s')}%type.
+(* s -->* s', then λx.s -->* λx.s' up to α-equivalence *)
+Lemma red_gu_abs {B x A s s'} :
+  red_gu s s' -> {lams' & red_gu (@tmabs B x A s) lams' * Alpha [] lams' (@tmabs B x A s')}%type.
 Proof.
   intros.
   induction H.
-  - destruct IHred_gu_na as [lams' [Hred Halpha] ].
+  - destruct IHred_gu as [lams' [Hred Halpha] ].
 
-    apply (@step_gu_na_lam_fold B x A) in s0.
+    apply (@step_gu_abs B x A) in s0.
     destruct s0 as [lams'' [Hstep'' Halpha''] ].
-    assert ({lams''' & red_gu_na lams'' lams''' * Alpha [] lams' lams'''}%type).
+    assert ({lams''' & red_gu lams'' lams''' * Alpha [] lams' lams'''}%type).
     {
-      apply @red_gu_naive_preserves_alpha with (t := lams'') (s := @tmabs B x A t); eauto with α_eq_db.
+      apply @red_gu_preserves_alpha with (t := lams'') (s := @tmabs B x A t); eauto with α_eq_db.
     }
     destruct H0 as [lams''' [Hred' Halpha'] ].
     exists lams'''.
     split.
-    + eapply red_gu_na_star.
+    + eapply red_gu_star.
       * exact Hstep''.
       * eauto.
     + eauto with α_eq_db.
   - exists (@tmabs B x A s).
     split.
-    + apply red_gu_na_nil.
+    + apply red_gu_nil.
     + apply alpha_refl. constructor.
 Qed.
 
-Lemma step_gu_na_appl_fold {B s1 s2 t1 }:
+(* s1 -> s2  -->  s1 t1 --> s2 t2 up to α-equivalence. Freedom in form of app, compared to step_gu_app_l *)
+Lemma step_gu_app_l' {B s1 s2 t1 }:
   step_gu s1 s2 -> {app & step_gu (@tmbin B s1 t1) app * Alpha [] app (@tmbin B s2 t1)}%type.
 Proof.
   intros Hstep_gu.
@@ -256,7 +234,7 @@ Proof.
 
   assert (Hstep_na': {s2' & step_naive s3 s2' * Alpha [] s2 s2'}%type).
   {
-    eapply step_naive_preserves_alpha2; eauto.
+    eapply step_naive_preserves_alpha; eauto.
     - assert (Hgu_app: GU (to_GU (@tmbin B s1 t1))) by apply to_GU__GU.
       rewrite <- H7 in Hgu_app.
       eapply gu_app_l. eauto.
@@ -273,7 +251,8 @@ Proof.
   - constructor; eauto with α_eq_db.
 Qed.
 
-Lemma step_gu_na_appr_fold {B s1 t1 t2 } : 
+(* Analogous to step_gu_app_l' *)
+Lemma step_gu_app_r' {B s1 t1 t2 } : 
   step_gu t1 t2 -> {app & step_gu (@tmbin B s1 t1) app * Alpha [] app (@tmbin B s1 t2)}%type.
 Proof.
   intros Hstep_gu.
@@ -283,7 +262,7 @@ Proof.
 
   assert (Hstep_na': {t2' & step_naive t3 t2' * Alpha [] t2 t2'}%type).
   {
-    eapply step_naive_preserves_alpha2; eauto.
+    eapply step_naive_preserves_alpha; eauto.
     - assert (Hgu_app: GU (to_GU (@tmbin B s1 t1))) by apply to_GU__GU.
       rewrite <- H7 in Hgu_app.
       eapply gu_app_r. eauto.
@@ -300,8 +279,9 @@ Proof.
   - constructor; eauto with α_eq_db.
 Qed.
 
-Lemma red_gu_na_trans s t u :
-  red_gu_na s t -> red_gu_na t u -> red_gu_na s u.
+(* Transitivity of globally uniquifying multi-step *)
+Lemma red_gu_trans s t u :
+  red_gu s t -> red_gu t u -> red_gu s u.
 Proof.
   intros.
   generalize dependent u.
@@ -309,86 +289,89 @@ Proof.
   - generalize dependent s.
     generalize dependent t.
     induction H0; intros.
-    + eapply IHred_gu_na with (t := t0).
-      * eapply IHred_gu_na0.
-        eapply red_gu_na_star; eauto. constructor.
+    + eapply IHred_gu with (t := t0).
+      * eapply IHred_gu0.
+        eapply red_gu_star; eauto. constructor.
       * intros.
-        eapply IHred_gu_na0.
-        eapply red_gu_na_star; eauto.
+        eapply IHred_gu0.
+        eapply red_gu_star; eauto.
       * auto.
-    + eapply red_gu_na_star; eauto.
+    + eapply red_gu_star; eauto.
   - induction H0.
-    + eapply red_gu_na_star; eauto.
+    + eapply red_gu_star; eauto.
     + constructor.
 Qed.
 
-Lemma red_gu_na_appl_fold {B s1 s2 t} :
-  red_gu_na s1 s2 -> {app & red_gu_na (@tmbin B s1 t) app * Alpha [] app (@tmbin B s2 t)}%type.
+(* Analogous to app_l' for multi-step*)
+Lemma red_gu_app_l {B s1 s2 t} :
+  red_gu s1 s2 -> {app & red_gu (@tmbin B s1 t) app * Alpha [] app (@tmbin B s2 t)}%type.
 Proof.
   intros H0.
   induction H0.
-    + destruct IHred_gu_na as [app [Hred Halpha] ].
-      eapply (@step_gu_na_appl_fold) with (s1 := s) (t1 := t) in s0.
+    + destruct IHred_gu as [app [Hred Halpha] ].
+      eapply (@step_gu_app_l') with (s1 := s) (t1 := t) in s0.
       destruct s0 as [app' [Hred' Halpha'] ].
-      assert ({app'' & red_gu_na app' app'' * Alpha [] app app''}%type).
+      assert ({app'' & red_gu app' app'' * Alpha [] app app''}%type).
       {
-        eapply @red_gu_naive_preserves_alpha with (s := tmbin t0 t); eauto with α_eq_db.
+        eapply @red_gu_preserves_alpha with (s := tmbin t0 t); eauto with α_eq_db.
       }
       destruct H as [app'' [Hred'' Halpha'' ] ].
       exists app''.
       split.
-      * eapply red_gu_na_star.
+      * eapply red_gu_star.
         -- exact Hred'.
         -- eauto.
       * eauto with α_eq_db.
     + exists (@tmbin B s t).
       split.
-      * apply red_gu_na_nil.
+      * apply red_gu_nil.
       * apply alpha_refl. constructor. 
 Qed.
 
-Lemma red_gu_na_appr_fold {B s1 t1 t2} :
-  red_gu_na t1 t2 -> {app & red_gu_na (@tmbin B s1 t1) app * Alpha [] app (@tmbin B s1 t2)}%type.
+(* Analogous to app_l *)
+Lemma red_gu_app_r {B s1 t1 t2} :
+  red_gu t1 t2 -> {app & red_gu (@tmbin B s1 t1) app * Alpha [] app (@tmbin B s1 t2)}%type.
 Proof.
   intros H0.
   induction H0.
-    + destruct IHred_gu_na as [app [Hred Halpha] ].
-      eapply (@step_gu_na_appr_fold) with (s1 := s1) (t1 := s) (t2 := t) in s0.
+    + destruct IHred_gu as [app [Hred Halpha] ].
+      eapply (@step_gu_app_r') with (s1 := s1) (t1 := s) (t2 := t) in s0.
       destruct s0 as [app' [Hred' Halpha'] ].
-      assert ({app'' & red_gu_na app' app'' * Alpha [] app app''}%type).
+      assert ({app'' & red_gu app' app'' * Alpha [] app app''}%type).
       {
-        eapply @red_gu_naive_preserves_alpha with (s := tmbin s1 t); eauto with α_eq_db.
+        eapply @red_gu_preserves_alpha with (s := tmbin s1 t); eauto with α_eq_db.
       }
       destruct H as [app'' [Hred'' Halpha'' ] ].
       exists app''.
       split.
-      * eapply red_gu_na_star.
+      * eapply red_gu_star.
         -- exact Hred'.
         -- eauto.
       * eauto with α_eq_db.
     + exists (@tmbin B s1 s).
       split.
-      * apply red_gu_na_nil.
+      * apply red_gu_nil.
       * apply alpha_refl. constructor.
 Qed.
 
-Lemma red_gu_na_app_fold {B s1 s2 t1 t2} :
-  red_gu_na s1 s2 -> red_gu_na t1 t2 -> {app & red_gu_na (@tmbin B s1 t1) app * Alpha [] app (@tmbin B s2 t2)}%type.
+(* s1 -->* s2   and   t1 -->* t2,   then  s1 t1 -->* s2 t2, up to α-equivalence *)
+Lemma red_gu_app {B s1 s2 t1 t2} :
+  red_gu s1 s2 -> red_gu t1 t2 -> {app & red_gu (@tmbin B s1 t1) app * Alpha [] app (@tmbin B s2 t2)}%type.
 Proof.
   intros.
-  eapply @red_gu_na_appl_fold with (t := t1) in H.
+  eapply @red_gu_app_l with (t := t1) in H.
   destruct H as [app [Hred Halpha] ].
 
-  eapply @red_gu_na_appr_fold with (s1 := s2) in H0.
+  eapply @red_gu_app_r with (s1 := s2) in H0.
   destruct H0 as [app' [Hred' Halpha'] ].
 
-  assert ({app'' & red_gu_na app app'' * Alpha [] app' app''}%type).
+  assert ({app'' & red_gu app app'' * Alpha [] app' app''}%type).
   {
-    eapply @red_gu_naive_preserves_alpha with (s := tmbin s2 t1); eauto with α_eq_db.
+    eapply @red_gu_preserves_alpha with (s := tmbin s2 t1); eauto with α_eq_db.
   }
   destruct H as [app'' [Hred'' Halpha'' ] ].
   exists app''.
   split.
-  - eapply red_gu_na_trans; eauto.
+  - eapply red_gu_trans; eauto.
   - eauto with α_eq_db.
 Qed.

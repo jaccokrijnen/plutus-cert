@@ -30,11 +30,14 @@ From PlutusCert Require Import
   variables 
   alpha_freshness.
 
+(* Strong normalization with implicit values *)
 Inductive sn {X : Type} {e : X -> X -> Type } x : Type :=
 | SNI : (forall y, e x y -> sn y) -> sn x.
 
+(* Strong normalization using the globally uniquifying step function *)
 Notation SN_gu := (@sn term step_gu).
 
+(* α-equivalence preserves strong normalization *)
 Theorem α_preserves_SN_R s s' R :
   Alpha R s s' -> SN_gu s -> SN_gu s'.
 Proof.
@@ -48,6 +51,7 @@ Proof.
   eapply X; eauto with α_eq_db.
 Qed.
 
+(* Strengthened: Forward simulation argument up to α-equivalence*)
 Lemma sn_preimage_α' (h : term -> term) x v :
   (forall x y, step_gu x y -> {y_h & prod (step_gu (h x) y_h) (Alpha nil y_h (h y))}) -> @sn term step_gu v -> Alpha nil v (h x) -> @sn term step_gu x.
 Proof.
@@ -61,6 +65,7 @@ Proof.
   eapply (step_gu_preserves_alpha) in ehy as [yh' [ehy' yh_alpha']]; eauto with α_eq_db.
 Qed.
 
+(* Forward simulation argument up to α-equivalence *)
 Lemma sn_preimage_α (h : term -> term) x :
   (forall x y, step_gu x y -> {y_h & prod (step_gu (h x) y_h) (Alpha nil y_h (h y))}) -> @sn term step_gu (h x) -> @sn term step_gu x.
 Proof.
@@ -68,6 +73,7 @@ Proof.
   eapply sn_preimage_α'; eauto with α_eq_db.
 Qed.
 
+(* Strong normalization is preserved by wrapping it in Fun or IFix*)
 (* This would NOT work for app because of beta reduction*)
 Lemma sn_ty_fun {B s t} : B <> App -> SN_gu s -> SN_gu t -> SN_gu (@tmbin B s t).
 Proof with eauto with gu_nc_db α_eq_db to_GU_db.
@@ -83,17 +89,18 @@ Proof with eauto with gu_nc_db α_eq_db to_GU_db.
   inversion H2; subst.
   - (* B not App : contradiction *)
     contradiction.
-  - eapply step_naive_preserves_alpha2 with (s' := to_GU x) (R := nil) in H7 as [C [Hstep_C Ha_C] ]...
+  - eapply step_naive_preserves_alpha with (s' := to_GU x) (R := nil) in H7 as [C [Hstep_C Ha_C] ]...
     eapply α_preserves_SN_R with (R := []) (s := @tmbin B C t2)...
     eapply X with (y := C).
     + apply step_gu_intro with (s' := to_GU x)...
     + eapply α_preserves_SN_R... constructor; auto.
-  - eapply step_naive_preserves_alpha2 with (s' := to_GU x0) (R := nil) in H7 as [C [Hstep_C Ha_C] ]...
+  - eapply step_naive_preserves_alpha with (s' := to_GU x0) (R := nil) in H7 as [C [Hstep_C Ha_C] ]...
     eapply α_preserves_SN_R with (R := []) (s := @tmbin B x C)...
     eapply X0 with (y := C).
     apply step_gu_intro with (s' := to_GU x0)...
 Qed.
 
+(* Strong normalization is preserved by wrapping in TyForall (or TyLam)*)
 Lemma sn_ty_forall {B X K T} : SN_gu T -> SN_gu (@tmabs B X K T).
 Proof with eauto with α_eq_db gu_nc_db to_GU_db.
   induction 1.
@@ -101,12 +108,13 @@ Proof with eauto with α_eq_db gu_nc_db to_GU_db.
   inversion Hstep; subst.
   inversion H; subst.
   inversion H1; subst.
-  eapply step_naive_preserves_alpha2 with (s' := to_GU x) (R := ((y0, X)::nil)) in H7 as [C [Hstep_C Hα_C] ]...
+  eapply step_naive_preserves_alpha with (s' := to_GU x) (R := ((y0, X)::nil)) in H7 as [C [Hstep_C Hα_C] ]...
   - eapply α_preserves_SN_R with (R := []) (s := @tmabs B X K C) in X0...
     apply step_gu_intro with (s' := (to_GU x))...
   - eapply @alpha_trans with (t := x)...
 Qed.
 
+(* Strong normalization of application implies strong normalization of function position *)
 Lemma sn_closedL {B} t s : SN_gu (@tmbin B s t) -> SN_gu s.
 Proof.
   apply: (sn_preimage_α (h := tmbin^~t)) => x y H.
@@ -114,7 +122,7 @@ Proof.
   eexists; eauto with *.
 Qed.
 
-(* s -> t   ==>  [p/x] s -> [p/x] t*)
+(* s -> t   ==>  [p/x] s -> [p/x] t, up to α-equivalence *)
 Lemma step_subst_single R {x p s t t' } :
   step_naive s t -> 
   GU s -> 
@@ -127,7 +135,7 @@ Lemma step_subst_single R {x p s t t' } :
 Proof with eauto with sconstr2_db gu_nc_db α_eq_db to_GU_db to_GU''_db.
   intros. rename H into Hstep. generalize dependent t'. generalize dependent R. induction Hstep; intros.
   - (* The difficult case. The whole reason we need to do global uniqueness every step *)
-    (* Globally uniquified version of the termt to step is of the same shape: tmbin (tmabs ...) ...*)
+    (* Globally uniquified version of the term to step is of the same shape: tmbin (tmabs ...) ...*)
     assert ({x' : string & {s' & { t' & 
       ((to_GU (@tmbin App (@tmabs Lam x0 A (psubs [(x, p)] s)) (psubs [(x, p)] t))) = @tmbin App (@tmabs Lam x' A s') t') 
         * Alpha ((x0, x')::nil) (psubs [(x, p)] s) s' * Alpha [] (psubs [(x, p)] t) t'} } }%type).
@@ -182,7 +190,7 @@ Proof with eauto with sconstr2_db gu_nc_db α_eq_db to_GU_db to_GU''_db.
     inv HstepS1.
     remember (to_GU (@tmbin B s' (psubs ((x, p)::nil) t))) as st_gu.
     destruct (to_GU_app_unfold Heqst_gu) as [sigS1Alpha [sigtalpha [ [Happ Ha_s] Ha_t ] ] ]; subst.
-    eapply step_naive_preserves_alpha2 with (s := s') (s' := sigS1Alpha) (t := sigS1) 
+    eapply step_naive_preserves_alpha with (s := s') (s' := sigS1Alpha) (t := sigS1) 
       in H6 as [s''step [Halpha_s'' Hstep_s'' ] ]...
     2: eapply gu_app_l; eauto; rewrite <- Happ; apply to_GU__GU.
 
@@ -196,13 +204,13 @@ Proof with eauto with sconstr2_db gu_nc_db α_eq_db to_GU_db to_GU''_db.
       * apply alpha_extend_ids. apply ctx_id_left_is_id. constructor. eapply alpha_sym. constructor. eauto. eapply alpha_sym. constructor. eauto.
       * constructor. eauto. 
         eapply psubs__α; eauto...
-  - (* TODO: cleanup, because this is completely analogous to case above*) 
+  - (* Analogous to case above *)
     inversion H2; subst.
     edestruct IHHstep as [sigS1 [HstepS1 HalphaS1] ]...
     inv HstepS1.
     remember (to_GU (@tmbin B s' (psubs ((x, p)::nil) s))) as st_gu.
     destruct (to_GU_app_unfold Heqst_gu) as [sigS1Alpha [sigtalpha [ [Happ Ha_s] Ha_t ] ] ]; subst.
-    eapply step_naive_preserves_alpha2 with (s := s') (s' := sigS1Alpha) (t := sigS1) 
+    eapply step_naive_preserves_alpha with (s := s') (s' := sigS1Alpha) (t := sigS1) 
       in H6 as [s''step [Halpha_s'' Hstep_s'' ] ]...
     2: eapply gu_app_l; eauto; rewrite <- Happ; apply to_GU__GU.
 
@@ -223,7 +231,7 @@ Proof with eauto with sconstr2_db gu_nc_db α_eq_db to_GU_db to_GU''_db.
       * assumption.
     + inversion Hsteps1 as [? ? ? ? ? Hstep_na]; subst.
       (* Uniquify s' s.t. x0 not used as binder: Composability: GU composes up to alpha *)
-      eapply step_naive_preserves_alpha2 with (s' := to_GU'' x0 s') in Hstep_na as [s''step [Halpha_s'' Hstep_s'' ] ]; eauto...
+      eapply step_naive_preserves_alpha with (s' := to_GU'' x0 s') in Hstep_na as [s''step [Halpha_s'' Hstep_s'' ] ]; eauto...
       exists (@tmabs B x0 A s''step).
       split.
       * apply step_gu_intro with (s' := @tmabs B x0 A (to_GU'' x0 s')); eauto...
@@ -237,6 +245,7 @@ Qed.
 
 Definition sub_gu (X : string) (T : term) (s : term) := sub X T (to_GU' X T s).
 
+(* If there was no capture, a strongly normalizing substitution result implies that the original type was also strongly normalizing *)
 Lemma sn_subst X T s : NC s ((X, T)::nil) -> SN_gu (sub X T s) -> SN_gu s.
 Proof with eauto with to_GU'_db.
   intros Hnc HSN_sub.
@@ -250,7 +259,7 @@ Proof with eauto with to_GU'_db.
   unfold sub_gu.
   repeat rewrite <- single_subs_is_psub.
   inversion Hstep; subst.
-  eapply step_naive_preserves_alpha2 with (R := nil) (t:= y) (s' := to_GU' X T x) 
+  eapply step_naive_preserves_alpha with (R := nil) (t:= y) (s' := to_GU' X T x) 
     in H1 as [t'' [Hstep_t'' Ha_t''] ]; eauto with α_eq_db...
   2: eapply @alpha_trans with (t := x); eauto with α_eq_db...
   eapply @step_subst_single with (s := (to_GU' X T x)) (t := t''); eauto with α_eq_db...
@@ -258,11 +267,14 @@ Proof with eauto with to_GU'_db.
   eauto with α_eq_db.  
 Qed.
 
+(* t1 -> t2  =>   [x/t1] s  -->*  [x/t2] s, up to α-equivalence 
+  x can occur zero or moer times in s, hence multi-step.
+*)
 Lemma red_beta x s t1 t2 : 
   step_gu t1 t2 ->
   NC s ((x, t1)::nil) ->
   { a & prod 
-    ( red_gu_na (sub x t1 s) a) 
+    ( red_gu (sub x t1 s) a) 
     ( Alpha nil a (sub x t2 s)) }. 
 Proof with eauto with α_eq_db. 
   intros Hstep HNC_t1.
@@ -270,43 +282,47 @@ Proof with eauto with α_eq_db.
   - eexists; split...
     destr_eqb_eq x s; simpl.
     + rewrite String.eqb_refl.
-      apply red_gu_na_star with (t := t2); auto; constructor.
+      apply red_gu_star with (t := t2); auto; constructor.
     + rewrite <- String.eqb_neq in H; rewrite H; constructor.
   - specialize (IHs (nc_lam HNC_t1)) as [a [Hred_a Ha_a] ].
-    assert ({a0 : term & (red_gu_na (@tmabs USort s k (sub x t1 s0)) a0 *
+    assert ({a0 : term & (red_gu (@tmabs USort s k (sub x t1 s0)) a0 *
                             (Alpha nil a0 (@tmabs USort s k a)))%type}) 
-      as [a0 [Hred_a0 Ha_a0]] by apply (red_gu_na_lam_fold Hred_a).
+      as [a0 [Hred_a0 Ha_a0]] by apply (red_gu_abs Hred_a).
     eexists; split...
   - specialize (IHs1 (nc_app_l HNC_t1) ) as [g1 [Hred_g1 ?] ].
     specialize (IHs2 (nc_app_r HNC_t1) ) as [g2 [Hred_g2 ?] ].
-    assert ({a : term & (red_gu_na (@tmbin BSort (sub x t1 s1) (sub x t1 s2)) a *
+    assert ({a : term & (red_gu (@tmbin BSort (sub x t1 s1) (sub x t1 s2)) a *
                           (Alpha nil a (@tmbin BSort g1 g2)))%type}) 
-      as [app [Hred Ha] ] by apply (red_gu_na_app_fold Hred_g1 Hred_g2).
+      as [app [Hred Ha] ] by apply (red_gu_app Hred_g1 Hred_g2).
     eexists; split...
   - eexists. split; constructor.
 Qed.
 
 Definition cand := term -> Type.
 
-(* Note: This is different then neutral_Ty*)
+(* Note: This is different from neutral_Ty*)
 Definition neutral (s : term) : bool :=
   match s with
     | tmabs _ _ _ => false
     | _ => true
   end.
 
+(* Tait's reducibility candidates *)
 Record reducible (P : cand) : Type := {
   p_sn : forall s, P s -> SN_gu s;
   p_cl : forall s t, P s -> step_gu s t -> P t;
   p_nc : forall s, neutral s -> (forall t, step_gu s t -> P t) -> P s
 }.
 
+(* Logical relation used in the Strong Normalization proof *)
 Fixpoint L (T : PlutusIR.kind) : cand :=
 match T with
   | PlutusIR.Kind_Base => SN_gu 
   | PlutusIR.Kind_Arrow A B => fun s => forall t, L A t -> L B (@tmbin App s t)
 end.
 
+(* α-equivalence preserves the logical relation *)
+(* Note: Requires a construction argument also renaming free variables. *)
 Lemma α_preserves_L_R A s s' R :
   Alpha R s s' -> L A s -> L A s'.
 Proof with eauto with α_eq_db a_constr_db.
@@ -328,17 +344,20 @@ Proof with eauto with α_eq_db a_constr_db.
     + eapply X. eapply (IHA1 R_ t t'); eauto...
 Qed.
 
+(* Strong normalization is reducible *)
 Lemma reducible_sn : reducible SN_gu.
 Proof. 
   constructor; eauto. by move=> s t [f] /f. 
   intros s.  elim: s => //.
 Qed.
 
+(* Variables are always in P, for every reducible predicate P*)
 Lemma reducible_var P x : reducible P -> P (tmvar x).
 Proof. move/p_nc. apply=> // t st.
   inv st. inv H. inv H1.
 Qed.
 
+(* Variables are strongly normalizing *)
 Lemma SN_var x : SN_gu (tmvar x).
 Proof. 
   econstructor.
@@ -348,6 +367,7 @@ Proof.
   inversion H2; subst.
 Qed.
 
+(* L is reducible *)
 Lemma L_reducible A :
   reducible (L A).
 Proof with eauto using step_gu.
@@ -381,6 +401,7 @@ Proof with eauto using step_gu.
         eapply p_cl in H; eauto.
 Qed.
 
+(* Adequacy *)
 Corollary L_sn A s : L A s -> SN_gu s.
 Proof. intros Las. assert (reducible (L A)) by apply (L_reducible A).
    apply (p_sn X). assumption.
@@ -401,21 +422,24 @@ Proof.
   apply (p_nc H); assumption.
 Qed.
 
+(* Variables are always in the logical relation *)
+(* NOTE: there is no kinding context, so the type T and variable x are completely unrelated *)
 Corollary L_var T x : L T (tmvar x).
 Proof.
   apply L_nc; first by []. intros t st. inversion st. subst.
   inversion H. subst. inversion H1.
 Qed.
 
+(* L is closed under multi-step *)
 Corollary L_cl_star T s t :
-  L T s -> red_gu_na s t -> L T t.
+  L T s -> red_gu s t -> L T t.
 Proof.
   intros Ls red_st. induction red_st.
   - eapply IHred_st. eapply L_cl; eauto.
   - assumption.
 Qed.
 
-(* Reverse of beta reduction. *)
+(* Reverse of beta reduction. Restrictive formulation allows naive substitutions. *)
 Lemma beta_expansion' {BA BL} A B x y s s' t :
   Alpha [(y, x)] s' s -> 
   GU s ->
@@ -447,7 +471,7 @@ Proof with eauto with α_eq_db gu_nc_db.
     assert ({s5' & step_naive (to_GU x0) s5' * Alpha [(y0, y)] s5 s5'}%type)
       as [s5' [Hstep_na_s5' Ha_s5'] ].
     {
-      eapply step_naive_preserves_alpha2 with (s := s4) (t:=s5) (s' := (to_GU x0))...
+      eapply step_naive_preserves_alpha with (s := s4) (t:=s5) (s' := (to_GU x0))...
       apply to_GU__GU.
       eapply @alpha_trans with (R1 := (y, y)::nil) (t := x0)...
       apply alpha_extend_ids; eauto with to_GU_db. repeat constructor.
@@ -456,7 +480,7 @@ Proof with eauto with α_eq_db gu_nc_db.
     eapply α_preserves_L_R with (s := tmbin (tmabs y B s5') x1) (R := nil)...
     specialize (IH1 _ Hstep_na_s5').
     inv Hstep_na_s5'.
-    edestruct step_naive_preserves_alpha2 with (R := [(y, x)]) (s' := s0) (t := s5') as [s'_a [Hstep_s'_a Ha_s'_a] ]...
+    edestruct step_naive_preserves_alpha with (R := [(y, x)]) (s' := s0) (t := s5') as [s'_a [Hstep_s'_a Ha_s'_a] ]...
     1: eapply @alpha_trans with (R := (y, y)::nil) (R1 := (y, x)::nil) (t := x0)...
     eapply IH1 with (s := (to_GU' x x1 s'_a)); subst; eauto with to_GU'_db α_eq_db...
     + now constructor.
@@ -479,11 +503,13 @@ Proof with eauto with α_eq_db gu_nc_db.
         eapply α_preserves_L_R with (R := nil); eauto.
 Qed.
 
+(* Tait's semantic substitutions *)
 Definition EL (Δ : list (string * PlutusIR.kind)) 
           (sigma : list (string * term)) : Type :=
   forall x T, lookup x Δ = Some T ->
     { t & prod (lookup x sigma = Some t) (L T t)}.
 
+(* Extending a semantic multi-substitution with another semantic substitution *)
 Lemma extend_EL (Δ : list (string * PlutusIR.kind)) (sigma : list (string * term)) x T t :
   EL Δ sigma -> L T t -> EL ((x, T) :: Δ) ((x, t) :: sigma).
 Proof.
@@ -504,6 +530,7 @@ Proof.
     simpl. rewrite H. assumption.
 Qed.
 
+(* Beta expansion for multiple substitutions. Uses the sequential nature of ParSeq substitutions *)
 Lemma beta_expansion_subst {BA BL} X t sigma s A B :
   ParSeq ((X, t)::sigma) ->
   NC (psubs sigma s) [(X, t)] -> (* so the substitution makes sense after "breaking"  it open*)
@@ -520,7 +547,7 @@ Proof with eauto with α_eq_db to_GU'_db.
       apply psubs__α; auto...
 Qed.
 
-(* The fundamental theorem of L. *)
+(* The generalized fundamental theorem of L. *)
 Theorem fundamental Δ s A :
   Δ |-* s : A -> 
   GU s -> (* So that we know GU_vars (tmabs x A s) -> ~ In x (btv s), and btv s ∩ ftv s = ∅, important for dealing with vars in `t` that roll out of LR*)
@@ -638,7 +665,7 @@ Proof with eauto using L_sn with gu_nc_db bu_db.
     apply ih1; eauto with gu_nc_db bu_db.
 Qed.
 
-(* The identity substitution is in the EL relation *)
+(* The identity substitution is a semantic substitution *)
 Lemma id_subst__EL Δ :
   EL Δ (id_subst Δ).
 Proof.
@@ -664,6 +691,7 @@ Proof with eauto using id_subst__EL with s_constr_db id_subst_db.
   constructor.
 Qed.
 
+(* STLC with the globally uniquifying step function is strongly normalizing *)
 Theorem strong_normalization_gu Δ s T : Δ |-* s : T -> @sn term step_gu s.
   intros Hkind.
   eapply type_L in Hkind.

@@ -190,7 +190,7 @@ Definition dtd_either :=
     ]
 .
 
-Compute (matchTy dtd_either).
+(* Compute (matchTy dtd_either). *)
 
 Example either_matchTy : matchTy dtd_either =
   Ty_Forall "a" Kind_Base

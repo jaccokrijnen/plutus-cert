@@ -15,9 +15,7 @@ Require Import Coq.Arith.Wf_nat.
 
 Require Import Coq.Program.Equality.
 
-(* 
-  Trivial cases with copilot    
-*)
+(* Appending an entry to a kinding context with a name that does not occur is vacuous *)
 Lemma kinding_weakening_fresh : forall X T L K Δ,
   ~ In X (ftv T) ->
   Δ |-* T : K -> ((X, L) :: Δ) |-* T : K.
@@ -124,10 +122,11 @@ Proof.
     (* ADMIT: Ty_SOP: Unimplemented *)
 Admitted.
 
+(* Renaming (without causing capture) preserves kinding *)
 (* Note: Not strictly necessary to work with tv,
     but easier to prove than with ftv *)
 Lemma rename_preserves_kinding X Y K L Δ T:
-  ~ In Y (plutusTv T) ->
+  ~ In Y (tv T) ->
   ((X, L) :: Δ) |-* T : K -> 
   ((Y, L) :: Δ) |-* (rename X Y T) : K.
 Proof.
@@ -197,7 +196,7 @@ Proof.
         eapply inclusion_swap; auto.
         apply kinding_weakening_fresh; auto.
         {          
-          apply weaken_not_plutusTv_to_not_ftv.
+          apply weaken_not_tv_to_not_ftv.
           simpl in Hfresh; intuition.
         }
         simpl in Hfresh; intuition.
@@ -239,7 +238,7 @@ Proof.
         eapply inclusion_swap; auto.
         apply kinding_weakening_fresh; auto.
         {          
-          apply weaken_not_plutusTv_to_not_ftv.
+          apply weaken_not_tv_to_not_ftv.
           simpl in Hfresh; intuition.
         }
         simpl in Hfresh; intuition.
@@ -277,7 +276,7 @@ Proof.
     (* ADMIT: Ty_SOP: Unimplemented *)
 Admitted.
 
-(* See PR92 *)
+(* Capture-avoiding substitutions preserve kinding *)
 Theorem substituteTCA_preserves_kinding : forall T Delta X K U L,
     ((X, L) :: Delta) |-* T : K ->
     Delta |-* U : L ->
@@ -341,7 +340,7 @@ Proof with eauto with typing.
               apply fresh__T.
         -- apply kinding_weakening_fresh; auto.
            subst.
-           apply weaken_not_plutusTv_to_not_ftv.
+           apply weaken_not_tv_to_not_ftv.
            apply fresh__S.
       * constructor.
         eapply H; eauto.
@@ -376,7 +375,7 @@ Proof with eauto with typing.
               apply fresh__T.
         -- apply kinding_weakening_fresh; auto.
            subst.
-           apply weaken_not_plutusTv_to_not_ftv.
+           apply weaken_not_tv_to_not_ftv.
            apply fresh__S.
       * constructor.
         eapply H; eauto.

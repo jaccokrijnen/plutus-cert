@@ -1,5 +1,3 @@
-(* Note: This is maybe useful for Basekindedness proof*)
-
 Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.Util.List.
 From PlutusCert Require Import Analysis.BoundVars.
@@ -10,12 +8,13 @@ Require Export PlutusCert.PlutusIR.Semantics.Static.Typing.Typing.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Typing.drop_context.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Kinding.Kinding.
-Require Export PlutusCert.PlutusIR.Semantics.Static.Normalisation.BigStep.
+Require Export PlutusCert.PlutusIR.Semantics.Static.Normalization.BigStep.
 Require Export PlutusCert.PlutusIR.Semantics.Static.TypeSubstitution.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Builtins.Signatures.
 Require Import PlutusCert.PlutusIR.Analysis.BoundVars.
 Require Export PlutusCert.PlutusIR.Analysis.FreeVars.
 Require Export PlutusCert.PlutusIR.Semantics.TypeSafety.BaseKindedness.
+Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.SubstituteTCA.
 From PlutusCert Require Import Weakening.
 
 
@@ -32,7 +31,7 @@ Opaque dtdecl_freshR.
 
 Local Open Scope list_scope.
 
-
+(* Ty_Foralls helper for well-kindedness *)
 Lemma K_TyForalls_constructor : forall Δ T YKs,
       (rev (map fromDecl YKs) ++ Δ) |-* T : Kind_Base ->
       Δ |-* (Ty_Foralls YKs T) : Kind_Base.
@@ -54,8 +53,10 @@ Proof.
     auto.
 Qed.
 
+(* Helper for determingin a type is not Ty_Fun *)
 Definition notFun T1 := match T1 with | Ty_Fun _ _ => False | _ => True end.
 
+(* If T1 is not a Ty_Fun, then replaceReturnType replaces the whole type*)
 Lemma TyApps_replaceReturnTy' T1 T2s T3 : 
   notFun T1 -> (replaceRetTy (Ty_Apps T1 T2s) T3) = T3.
 Proof.
@@ -69,12 +70,14 @@ Proof.
     eapply IHT2s. simpl. auto.
 Qed.
 
+(* Specialization for a Ty_Apps *)
 Lemma TyApps_replaceReturnTy x T2s T3 : 
   (replaceRetTy (Ty_Apps (Ty_Var x) T2s) T3) = T3.
 Proof.
   now apply TyApps_replaceReturnTy'.
 Qed.
 
+(* Identical behaviour of tvdecl_name and fromDecl with respect to parametric type names *)
 Lemma ni_map_tv_decl__ni_rev_map_fromdecl x YKs :
   ~ In x (map tvdecl_name YKs) -> ~ In x (map fst (rev (map fromDecl YKs))).
 Proof.
@@ -92,19 +95,14 @@ Proof.
       destruct Hcontra; auto.
 Qed.
 
-(* Proved in PR90 in SubstituteTCA.v*)
-Lemma kinding_weakening_fresh : forall X T L K Δ,
-  ~ In X (ftv T) ->
-  Δ |-* T : K -> ((X, L) :: Δ) |-* T : K.
-Proof.
-Admitted.
-
+(* Motivation: Given a list of types that are introduced in a recursive let binding, they should all be well-kinded in the same context Δ. *)
 Fixpoint insert_deltas_rec (xs : list (string * ty)) (Δ : list (string * kind)) := 
 match xs with
   | nil => nil
   | (X, T):: xs' => (X, T, Δ) :: insert_deltas_rec xs' Δ
 end.
 
+(* Insert_deltas_rec distributes over ++ *)
 Lemma insert_deltas_rec_app xs ys Δ :
   insert_deltas_rec (xs ++ ys) Δ = insert_deltas_rec xs Δ ++ insert_deltas_rec ys Δ.
 Proof.
@@ -115,6 +113,7 @@ Proof.
     reflexivity.
 Qed.
 
+(* Introduced term variables in a recursive binding are well-kinded *)
 Lemma b_r_wf__wk Δ Γ b :
   Δ ,, Γ |-ok_b Rec # b -> forall T _x, In (_x, T) (binds_Gamma b) -> (Δ |-* T : Kind_Base ).
 Proof.
@@ -252,6 +251,7 @@ Proof.
       apply in_cons; assumption.
 Qed.
 
+(* Introduced term variables in a non-recursive binding are well-kinded *)
 Lemma b_nr_wf__wk Δ Γ b:
   Δ ,, Γ |-ok_b NonRec # b -> forall T _x, In (_x, T) (binds_Gamma b) 
     -> ((binds_Delta b ++ Δ) |-* T : Kind_Base ).
@@ -414,7 +414,8 @@ Proof.
          apply in_cons; assumption.
 Qed.
 
-(* Insert_deltas_rec because only one binder: have the same Delta *)
+(* All term variables introduced in a non-recursive binding are well-kinded *)
+(* NOTE: Insert_deltas_rec because there is only one binder: have the same Delta *)
 Lemma b_nr_wf__map_wk Δ Γ b :
   Δ ,, Γ |-ok_b NonRec # b -> 
     map_wk (insert_deltas_rec (binds_Gamma b) (binds_Delta b ++ Δ)).
@@ -443,6 +444,7 @@ Proof.
     + eauto.
 Qed.
 
+(* All term variables introduced in a recursive binding are well-kinded *)
 Lemma b_r_wf__map_wk Δ Γ b :
   Δ ,, Γ |-ok_b Rec # b ->
     map_wk (insert_deltas_rec (binds_Gamma b) (Δ)).
@@ -471,6 +473,8 @@ Proof.
     + eauto.
 Qed.
 
+(* All term variables introduced in a recursive list of bindings are well-kinded. *)
+(* NOTE: All well-kinded with the same Δ *)
 Lemma bs_r_wf__map_wk (Δ : list (string * kind)) Γ bs :
   Δ ,, Γ |-oks_r bs  -> map_wk (insert_deltas_rec (flatten (map (binds_Gamma) bs)) Δ).
 Proof.
@@ -484,6 +488,7 @@ Proof.
     all: apply b_r_wf__map_wk in H; eauto.
 Qed.
 
+(* Motivation: Each binding should have well-kinded types in a different Δ, just like the relational version *)
 Fixpoint insert_deltas_bind_Gamma_nr (bs : list binding) (Δ : list (binderTyname * kind)) : 
       list (binderName * ty * list (binderTyname * kind)) :=
   match bs with
@@ -492,6 +497,8 @@ Fixpoint insert_deltas_bind_Gamma_nr (bs : list binding) (Δ : list (binderTynam
   (* we do it in reverse to match the "flatten" from the definition of T_Let*)
   end.
 
+(* All term variables introduced in a non-recursive list of bindigns are well-kinded, where the kinding context depends on the position in the list.
+*)
 Lemma bs_nr_wf__map_wk Δ Γ bs :
   Δ ,, Γ |-oks_nr bs -> map_wk (insert_deltas_bind_Gamma_nr bs Δ). 
 Proof.

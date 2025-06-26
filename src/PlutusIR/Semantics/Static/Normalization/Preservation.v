@@ -1,16 +1,16 @@
 From PlutusCert Require Import Util.List
   PlutusIR
   Kinding.Kinding
-  Normalisation.BigStep
+  Normalization.BigStep
   SmallStep
   TypeSafety.SubstitutionPreservesTyping.SubstituteTCA
   .
 
-(* Preservation of the reduction relation used in the normaliser *)
+(* ADMITTED: Time constraints *)
 Axiom step_preserves_kinding_SOP_axiom : forall l Δ,
   Δ |-* (Ty_SOP l) : Kind_Base.
 
-(* TODO: We ended up not needing it for normalisation_preserves_kinding because we moved through normalise instead of normaliser*)
+(* Preservation of PIR type system's small step reduction relation. *)
 Theorem step_preserves_kinding {T T'} : forall Δ K,
   Δ |-* T : K -> step T T' -> Δ |-* T' : K.
 Proof.
@@ -24,9 +24,7 @@ Proof.
   - apply step_preserves_kinding_SOP_axiom.
 Qed.
 
-
-
-(* TODO: See also TypeLanguage/Preservation *)
+(* Normalization preserves kinds and contexts *)
 Theorem normalisation_preserves_kinding {Δ T Tn K } :
   Δ |-* T : K -> normalise T Tn -> Δ |-* Tn : K.
 Proof.

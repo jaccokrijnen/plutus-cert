@@ -79,10 +79,10 @@ Some untrivial facts unproved: Admits explain why.
 
 #### `/Kinding/` Improved kinding relation and checker
 
-#### `/Normalisation/` - Normalizer and strong normalization for PIR
+#### `/Normalization/` - Normalizer and strong normalization for PIR
 - `BigStep`
   Big step normalization relation `normalise`
-- `Normaliser_sound_complete`
+- `Normalizer_sound_complete`
   Sound and completeness proof of the normalizer
 - `Normalizer`
   The terminating normalizer

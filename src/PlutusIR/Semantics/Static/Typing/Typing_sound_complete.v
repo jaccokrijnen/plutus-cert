@@ -7,9 +7,9 @@ Require Import Coq.Strings.String.
 Local Open Scope string_scope.
 
 From PlutusCert Require Import 
-    Normalisation.BigStep 
-    Normalisation.Normaliser_sound_complete
-    Normalisation.Normaliser
+    Normalization.BigStep 
+    Normalization.Normalizer_sound_complete
+    Normalization.Normalizer
     PlutusIR 
     Static.Typing.Typing
     Util.List
@@ -28,14 +28,19 @@ From Coq Require Import Program.Equality.
 Require Import Coq.Strings.String.
 Open Scope string_scope.
 
+(* Soundness of no duplication*)
 Lemma no_dup_fun_sound : forall xs, no_dup_fun xs = true -> NoDup xs.
 Proof.
+(* ADMITTED: Time constraints *)
 Admitted.
 
+(* Completeness of no duplication *)
 Lemma no_dup_fun_complete : forall xs, NoDup xs -> no_dup_fun xs = true.
 Proof.
+(* ADMITTED: Time constraints *)
 Admitted.
 
+(* Soudness of well-formedness of constructors *)
 Lemma constructor_well_formed_sound : 
   forall Δ c T, constructor_well_formed_check Δ c T = true -> Δ |-ok_c c : T.
 Proof. 
@@ -58,6 +63,7 @@ Proof.
   now apply kind_checking_sound in Heqo.
 Qed.
 
+(* Completeness of well-formedness of constructors *)
 Lemma constructor_well_formed_complete : 
   forall Δ c T, Δ |-ok_c c : T -> constructor_well_formed_check Δ c T = true.
 Proof.
@@ -81,7 +87,8 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma insert_remove_deltas_id xs Δ :
+(* Recursively inserting deltas and then removing them is the identity*)
+Lemma insert_remove_deltas_id (xs : list (string * ty)) Δ :
   xs = remove_deltas (insert_deltas_rec xs Δ).
 Proof.
   induction xs.
@@ -93,11 +100,12 @@ Proof.
     assumption.
 Qed.
 
-Lemma insert_remove_deltas_nr_id xs Δ :
-  flatten (map binds_Gamma xs) = remove_deltas (insert_deltas_bind_Gamma_nr xs Δ).
+(* Non-recursively inserting deltas based on list of binders, then removing them is the same as using binds_Gamma, up to flattening *)
+Lemma insert_remove_deltas_nr_id bs Δ :
+  flatten (map binds_Gamma bs) = remove_deltas (insert_deltas_bind_Gamma_nr bs Δ).
 Proof.
   generalize dependent Δ.
-  induction xs; intros.
+  induction bs; intros.
   - reflexivity.
   - simpl.
     rewrite flatten_cons.
@@ -107,9 +115,11 @@ Proof.
     f_equal; auto.
 Qed.
 
+(* Type checking is sound *)
+(* Mutually defined with soudness of binders and list of binders *)
 Theorem type_checking_sound : 
  forall Δ Γ t ty, type_check Δ Γ t = Some ty -> (Δ ,, Γ |-+ t : ty).
-Proof with (try apply kind_checking_sound; try eapply normaliser_sound; eauto).
+Proof with (try apply kind_checking_sound; try eapply normalizer_sound; eauto).
   intros Δ Γ t ty.
   revert Δ Γ ty.
   eapply term_rect' with 
@@ -130,10 +140,10 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_sound; eauto).
     eapply T_LetRec; auto.
     + apply no_dup_fun_sound. auto.
     + apply no_dup_fun_sound. auto.
-    + eapply map_normaliser_sound in Heqo.
+    + eapply map_normalizer_sound in Heqo.
       rewrite <- insert_remove_deltas_id in Heqo.
       eauto.
-    + apply (map_normaliser_sound) in Heqo; eauto.
+    + apply (map_normalizer_sound) in Heqo; eauto.
     + eapply Ptype; eauto.
     + now apply kind_checking_sound in Heqo1.
   - (* Case Let NONRec *)
@@ -147,7 +157,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_sound; eauto).
       repeat destruct_match.
       inversion H1; subst.
       eapply T_Let with (Δ' := (flatten (map binds_Delta bs) ++ Δ)%list); auto.      
-      * apply (map_normaliser_sound) in Heqo. 
+      * apply (map_normalizer_sound) in Heqo. 
         rewrite <- insert_remove_deltas_nr_id in Heqo.
         exact Heqo.
       * eapply Q. auto.
@@ -159,7 +169,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_sound; eauto).
     remember H1 as H1_copy; clear HeqH1_copy.
     apply T_Var with (T := t0); auto.
     eapply kind_checking_sound in Heqo0; auto.
-    now apply normaliser_sound in H1_copy.
+    now apply normalizer_sound in H1_copy.
   - intros. 
     inversion H0.
     unfold bind in H0.
@@ -194,7 +204,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_sound; eauto).
     unfold bind in H1.
     repeat destruct_match.
     inversion H1; subst.
-    apply normaliser_sound in Heqo.
+    apply normalizer_sound in Heqo.
     now apply T_Builtin with (T := lookupBuiltinTy d).
   - intros. inversion H0. unfold bind in H2. repeat destruct_match.
     inversion H2. subst.
@@ -202,8 +212,8 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_sound; eauto).
     subst.
     apply T_TyInst with (X := b) (K2 := k0) (T1n := t3) (T2n := t4); eauto.
     + apply kind_checking_sound. auto.
-    + apply normaliser_sound in Heqo1. auto.
-    + apply normaliser_sound in Heqo2. auto.
+    + apply normalizer_sound in Heqo1. auto.
+    + apply normalizer_sound in Heqo2. auto.
   - intros.
     unfold type_check in H.
     
@@ -214,7 +224,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_sound; eauto).
     subst.
     apply T_Error.
     + now apply kind_checking_sound.
-    + apply normaliser_sound in Heqo. 
+    + apply normalizer_sound in Heqo. 
       assumption.
   - intros.
     inversion H0.
@@ -246,7 +256,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_sound; eauto).
     apply W_Term with (Tn := t3).
     + apply kind_checking_sound in Heqo.
       assumption.
-    + now apply normaliser_sound in Heqo1.
+    + now apply normalizer_sound in Heqo1.
     + apply Ty_eqb_eq in H2.
       subst.
       eapply H; eauto.
@@ -330,7 +340,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_sound; eauto).
     eapply W_ConsB_NonRec.
     + apply H.
       assumption.
-    + apply map_normaliser_sound in Heqo.
+    + apply map_normalizer_sound in Heqo.
       eauto.
       rewrite <- insert_remove_deltas_id in Heqo.
       exact Heqo.
@@ -340,6 +350,7 @@ Proof with (try apply kind_checking_sound; try eapply normaliser_sound; eauto).
     apply W_NilB_NonRec.
 Qed.
 
+(* Type checking is complete *)
 Theorem type_checking_complete : forall Δ Γ t ty,
     (Δ ,, Γ |-+ t : ty) -> type_check Δ Γ t = Some ty.
 Proof.
@@ -354,10 +365,10 @@ Proof.
     rewrite e. simpl. 
     eapply kind_checking_complete in h.
     rewrite h.
-    eapply normaliser_complete; eauto.
+    eapply normalizer_complete; eauto.
     eapply kind_checking_sound; eauto.
   - (* Case: T_LamAbs *)
-    eapply (normaliser_complete h) in n.
+    eapply (normalizer_complete h) in n.
     rewrite n. simpl.
     apply kind_checking_complete in h; rewrite h.
     rewrite H0; auto.
@@ -369,7 +380,7 @@ Proof.
     rewrite H0; auto.
   - (* Case: T_Inst *)
     rewrite H0.
-    apply (normaliser_complete h0) in n; rewrite n; simpl.
+    apply (normalizer_complete h0) in n; rewrite n; simpl.
     apply kind_checking_complete in h0; rewrite h0.
     rewrite -> Kind_eqb_refl.
     
@@ -382,26 +393,26 @@ Proof.
         assumption.
       }
       eapply substituteTCA_preserves_kinding; eauto.
-      eapply normaliser_preserves_kinding; eauto.
+      eapply normalizer_preserves_kinding; eauto.
       eapply kind_checking_sound; eauto.
     }
     unfold bind.
-    now apply (normaliser_complete Hwk_subst) in n0; rewrite n0; simpl.
+    now apply (normalizer_complete Hwk_subst) in n0; rewrite n0; simpl.
   - (* Case T_IWrap *)
-    apply (normaliser_complete h) in n; rewrite n; simpl.
-    apply (normaliser_complete h0) in n0; rewrite n0; simpl.
+    apply (normalizer_complete h) in n; rewrite n; simpl.
+    apply (normalizer_complete h0) in n0; rewrite n0; simpl.
 
     assert (Δ0 |-* (unwrapIFix Fn K Tn) : Kind_Base).
     {
       eapply unwrapIFix__well_kinded; eauto.
-      - eapply normaliser_preserves_kinding; eauto.
-      - eapply normaliser_preserves_kinding; eauto.
+      - eapply normalizer_preserves_kinding; eauto.
+      - eapply normalizer_preserves_kinding; eauto.
     }
 
     apply kind_checking_complete in h; rewrite h.
     apply kind_checking_complete in h0; rewrite h0.
     (* apply kind_checking_complete in H1. *)
-    apply (normaliser_complete H1) in n1; rewrite n1; simpl.
+    apply (normalizer_complete H1) in n1; rewrite n1; simpl.
 
     rewrite H0.
     rewrite Kind_eqb_refl; simpl.
@@ -420,16 +431,16 @@ Proof.
 
     apply kind_checking_complete in h0; rewrite h0.
     unfold bind.
-    apply (normaliser_complete H1) in n; rewrite n.
+    apply (normalizer_complete H1) in n; rewrite n.
     reflexivity.
   - (* Case: T_Builtin*)
     subst.
-    eapply normaliser_complete in n.
+    eapply normalizer_complete in n.
     rewrite n. simpl. reflexivity.
     apply lookupBuiltinTy__well_kinded. (* TODO: Is this true?*)
   - (* Case: T_Error *)
     unfold bind.
-    apply (normaliser_complete h) in n; rewrite n.
+    apply (normalizer_complete h) in n; rewrite n.
     apply kind_checking_complete in h; rewrite h.
     reflexivity.
   - (* Case: T_Let (NonRec)*)
@@ -437,14 +448,14 @@ Proof.
     unfold bind.
 
     apply bs_nr_wf__map_wk in b.
-    assert (map_normaliser (insert_deltas_bind_Gamma_nr bs Δ0) = Some bsGn).
+    assert (map_normalizer (insert_deltas_bind_Gamma_nr bs Δ0) = Some bsGn).
     {
       assert (flatten (map binds_Gamma bs) = remove_deltas (insert_deltas_bind_Gamma_nr bs Δ0)).
       { 
         apply insert_remove_deltas_nr_id.
       }
       rewrite H2 in m.
-      apply (map_normaliser_complete b) in m.
+      apply (map_normalizer_complete b) in m.
       assumption.
     }
     unfold bind.
@@ -466,7 +477,7 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
           apply insert_remove_deltas_id.
         }
         rewrite H2 in m.
-        apply (map_normaliser_complete b) in m.
+        apply (map_normalizer_complete b) in m.
         unfold bind.
         rewrite m.
         rewrite H0.
@@ -489,7 +500,7 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
       apply insert_remove_deltas_id.
     }
     rewrite H2 in m.
-    apply (map_normaliser_complete) in m.
+    apply (map_normalizer_complete) in m.
     + unfold bind.
       rewrite m.
       apply andb_true_iff.
@@ -499,7 +510,7 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
     + apply b_nr_wf__map_wk in b0; auto.
 
   - intros. simpl. rewrite H0.
-    apply (normaliser_complete h) in n; rewrite n.
+    apply (normalizer_complete h) in n; rewrite n.
     rewrite Ty_eqb_refl.
     apply kind_checking_complete in h; rewrite h.
     auto.

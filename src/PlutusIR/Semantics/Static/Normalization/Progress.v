@@ -1,13 +1,15 @@
 
-(* Progress of the reduction relation used in the normaliser *)
-From PlutusCert Require Import PlutusIR Normalisation.BigStep Kinding.Kinding Normalisation.SmallStep
+(* Progress of the reduction relation used in the normalizer *)
+From PlutusCert Require Import PlutusIR Normalization.BigStep Kinding.Kinding Normalization.SmallStep
 Kinding.Checker.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
+(* ADMITTED: Time constraints *)
 Axiom step_dec_SOP : forall l,
   normal_Ty (Ty_SOP l).
 
+(* Progress of PIR's type language *)
 (* Need kinding because of e.g.
   T = Ty_App (Ty_Fun Int Int) Int.
   This is not normal (Ty_Fun is not neutral), and it also does not step (Ty_Fun not a Ty_lam)
@@ -117,6 +119,6 @@ Proof.
           + assumption.
         - apply Checker.prop_to_type in Heqo. inversion Heqo.
         }
-  - right. apply step_dec_SOP. (* TODO: Different induction prniciple! *)
+  - right. apply step_dec_SOP. 
 Defined.
 

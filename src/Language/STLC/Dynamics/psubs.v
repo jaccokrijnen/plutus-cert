@@ -399,57 +399,34 @@ Proof.
 Qed.
 
 
-(***** ParSeq *)
-
-
-
+(* Substitutions that have identical results when applied sequentially or parallelly*)
 Inductive ParSeq : list (string * term) -> Set :=
 | ParSeq_nil : ParSeq []
 | ParSeq_cons x t sigma :
     ParSeq sigma -> 
-    (* ~ In x (List.concat (map ftv (map snd sigma))) ->  *)
-
-    (* we do remove_ids, since identity substitutions have no effect 
-      (and can thus not break par <=> seq)
-      hence if we have x => t, and there was an x => x before, then in tha par case
-        this is ignored of course,
-        and in the seq case, it is applied, but since it is id, it is like not applying.
-      *)
-    ~ In x (ftv_keys_env (remove_ids sigma)) -> (* UPDATE Feb 27: we cannot have that x is a key in sigma either
+    (* we do remove_ids, since identity substitutions have no effect *)
+    ~ In x (ftv_keys_env (remove_ids sigma)) -> (* We cannot have that x is a key in sigma either
       look e.g. at (x, a)::(x, b). As a sequential sub applied to tmvar x, we get b.
                                     As a parallel, we get a.
 
     *)
-    ~ In x (btv_env sigma) -> (* Update Mar 6: OTHERWISE WE CAN GET CAPTURE IN sigma *)
+    ~ In x (btv_env sigma) -> 
     ParSeq ((x, t)::sigma).
-(* This says that one subsitutions does not have effect on the next one
-  In other word, no substiutions chains, where x -> t, and then t -> y, etc.
 
-  This also means that if we define lookup as right oriented, that
-    lookup_left x sigma = Some T   -> subs sigma (tmvar x) = T
-*)
-
-(* Say (x, t)::sig2, and sigma =sig1++sig2
-  Say y in ftv t. Then we have a problem if y in lhs sig1.
-  But, this cannot happen by blabla.
-
-  Also, we will use right-biased lookup.
-
-  TODO: Do we need to enforce that we cannot have twice the same key? 
-  For now: righthanded lookup will do the job
-*)
+(* ParSeq can be reduced *)
 Lemma parseq_smaller {sigma x t} :
   ParSeq ((x, t)::sigma) -> ParSeq sigma.
 Proof.
   now inversion 1.
 Qed.
 
+(* Any single substitution is ParSeq *)
 Lemma single_parseq x t : ParSeq [(x, t)].
 Proof.
   now repeat constructor.
 Qed.
 
-
+(* Substitutions can be performed sequentially if they are ParSeq*)
 Lemma psubs_unfold sigma X T s :
   ParSeq ((X, T)::sigma) -> psubs ((X, T)::sigma) s = psubs [(X, T)] (psubs sigma s).
 Proof.

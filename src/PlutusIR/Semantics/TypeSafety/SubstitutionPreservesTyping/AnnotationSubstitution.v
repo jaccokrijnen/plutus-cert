@@ -69,6 +69,7 @@ Definition P_Binding (b : binding) : Prop :=
   P_Binding
   : core.
 
+(* Annotation substitutions preserve typing *)
 Theorem substA_preserves_typing :
   forall t, P_Term t.
 Proof with (eauto using substituteT_preserves_kinding with typing).
@@ -79,7 +80,7 @@ Proof with (eauto using substituteT_preserves_kinding with typing).
   all: unfold P_Binding.
   all: try (intros Delta Gamma X K U Htyp__b Hkind__U).
   all: try (inversion Htyp__t; subst).
-(* ADMIT: I had no time to finish this. Should follow from uniqueness property, amongst others. *)
+(* ADMIT: Must be proved up to α-equivalence. See thesis Richard *)
 Admitted.
 
 Corollary substA_preserves_typing__Term : 

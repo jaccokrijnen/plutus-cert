@@ -238,7 +238,7 @@ Lemma normalisation__complete : forall S T Sn,
     normalise T Sn.
 Proof. Abort.
 
-(** Normalisation of lists of types*)
+(** Normalization of lists of types*)
 (* Added well-kinded proofs as this is necessary for completeness of normalisation *)
 Inductive map_normalise : list (string * ty) -> list (string * ty) -> Prop :=
   | MN_nil :

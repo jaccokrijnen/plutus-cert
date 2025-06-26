@@ -11,46 +11,17 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Arith.
 
 From PlutusCert Require Import 
-STLC 
-step_naive 
-util 
-Alpha.alpha 
-variables 
-alpha_freshness 
-alpha_subs.
+  STLC 
+  step_naive 
+  util 
+  Alpha.alpha 
+  variables 
+  alpha_freshness 
+.
 
-
-
-Create HintDb α_eq_db.
-Hint Constructors Alpha : α_eq_db.
-Hint Resolve alpha_refl : α_eq_db.
-Hint Resolve alpha_sym : α_eq_db.
-Hint Resolve alpha_trans : α_eq_db.
-Hint Constructors AlphaVar : α_eq_db.
-Hint Constructors AlphaSubs : α_eq_db.
-Hint Constructors AlphaCtxSym : α_eq_db.
-Hint Constructors αCtxTrans : α_eq_db.
-Hint Resolve alpha_extend_ids : α_eq_db.
-Hint Constructors IdCtx : α_eq_db.
-Hint Resolve sym_alpha_ctx_is_sym : α_eq_db.
-Hint Resolve sym_alpha_ctx_is_sym : α_eq_db.
-Hint Resolve sym_alpha_ctx_left_is_sym  : α_eq_db.
-Hint Constructors LegalRenSwap : α_eq_db.
-Hint Unfold LegalRenSwaps : α_eq_db.
-
-Create HintDb α_eq_db_trans.
-Hint Resolve id_left_trans : α_eq_db_trans.
-Hint Resolve id_right_trans : α_eq_db_trans.
-Hint Resolve alpha_extend_ids : α_eq_db_trans.
-Hint Resolve ctx_id_left_is_id : α_eq_db_trans.
-Hint Resolve ctx_id_right_is_id : α_eq_db_trans.
-
-(* So sub is also rewritten when rewriting subs *)
-Hint Extern 1 => simpl sub : subs_db.
-
+(* Global unique predicate*)
 Inductive GU : term -> Set :=
 | GU_var x : GU (tmvar x)
-(* in app, if s and t do not share GU_vars: *)
 | GU_app {B} s t : 
     GU s -> 
     GU t -> 
@@ -64,12 +35,8 @@ Inductive GU : term -> Set :=
 | GU_builtin d :
     GU (tmbuiltin d).
 
-(* Not sure how to call this yet.
-if we have NC t sigma
-We want to have unique binders elementwise in sigma.
-No binder in t can occur as free or bound variable in sigma,
-  thus substituting sigma in t will not cause unwanted capture.
-*)
+(*No-capture predicate: Substitution into a type does not cause capture *)
+(* NOTE: Also ahs a no-shadow premise (y <> x). Future research to check if this is necessary. *)
 Inductive NC : term -> list (string * term) -> Set :=
 | nc_nil s :
     NC s []
@@ -78,6 +45,7 @@ Inductive NC : term -> list (string * term) -> Set :=
     (forall y, In y (btv s) -> ((y <> x) * (~ In y (ftv t)))) -> (* no capturing *)
     NC s ((x, t) :: sigma).
 
+(* No-capture reduces *)
 Lemma nc_smaller {s sigma x t} : NC s ((x, t)::sigma) -> NC s sigma.
 Proof.
   intros.
@@ -85,10 +53,7 @@ Proof.
   auto.
 Qed.
 
-(* why doesnt sigma grow???
-  NC: forall btv in s, not in sigma
-  we remove a binder, thenw e should still have that all remaining btvs are not in the original sigma.
-*)
+(* NC decomposes over app and abs *)
 Lemma nc_lam {B x s A sigma} : 
   NC (@tmabs B x A s) sigma -> NC s sigma.
 Proof.
@@ -122,7 +87,7 @@ Proof.
     eapply btv_c_appr in H_btvs; eauto.
 Qed.
 
-(* No free vars are changed *)
+(* NC preserved under alpha-equivalence of subsitutions*)
 Lemma alpha_preserves_nc_ctx s x t t':
    Alpha [] t t' -> NC s ((x, t)::nil) -> NC s ((x, t')::nil).
 Proof.
@@ -137,6 +102,7 @@ Proof.
   constructor.
 Qed.
 
+(* GU decomposes *)
 Lemma gu_app_l {B s t} :
   GU (@tmbin B s t) -> GU s.
 Proof.
@@ -155,6 +121,7 @@ Proof.
   inversion 1; auto.
 Qed.
 
+(* A globally unique application can be rearranged and remain globally unique *)
 Lemma gu_app_st__gu_app_ts {B} s1 s2 :
   GU (@tmbin B s1 s2) -> GU (@tmbin B s2 s1).
 Proof.
@@ -163,6 +130,7 @@ Proof.
   constructor; auto.
 Qed.
 
+(* A globally unique application with an abstraction in function position cannot cause capture when beta reducing *)
 Lemma gu_applam_to_nc {BA} {BL} s t x A :
   GU (@tmbin BA (@tmabs BL x A s) t) -> NC s [(x, t)].
 Proof.
@@ -192,7 +160,7 @@ Proof.
     split; auto.
 Qed.
 
-(* Fundamental property NC is trying to capture *)
+(* Fundamental property, other way *)
 Lemma nc_helper {s sigma} :
   (forall x, In x (btv s) -> ~ In x (ftv_keys_env sigma)) ->
   NC s sigma.
@@ -220,6 +188,7 @@ Proof.
       auto.
 Qed.
 
+(* GU: ftvs and btvs are distinct *)
 Lemma gu_ftv_then_no_btv s x :
   GU s -> In x (ftv s) -> ~ In x (btv s).
 Proof.
@@ -258,6 +227,7 @@ Proof.
 Qed.
 
 
+(* Naive step of substitutee preserves no-capture*)
 Lemma step_naive_preserves_nc_ctx s t1 t2 x :
   step_naive t1 t2 -> NC s ((x, t1)::nil) -> NC s ((x, t2)::nil).
 Proof.
@@ -272,37 +242,11 @@ Proof.
     eapply step_naive_preserves_no_ftv. eauto. auto.
 Qed.
 
-
-(* Two properties: stopping clash between sigma and s:
-  forall x binder in sigma, we rename it in t, hence we need to add that name to R.
-  Hence it cannot be free in s, otherwise we no longer have R ⊢ s ~ s.
-  We use tv instead of ftv because that decomposes over lam, while we still allow identity substitutions
-
-  Second property: when x is a btv in sigma, then it is not an ftv in sigma.
-    e.g. if x is a binder, then we need to rename that in t.
-      so then we dont want that same x to also occur free (or as key) in sigma, because then we no longer have
-      R ⊢ sigma ~ sigma
-
-    Since identity substitutions have no binders, this still allows for identity substitutions.
-    In the lam case we extend sigma with (X, t').
-      - X: X was a binder in s, hence a tv in s. So it was not in btv_env_sigma by first condition
-      - t': we have control over binders in t', so that is no problem. But for all other binders already in sigma,
-            we also need that they don't clash with ftvs in t'. But this is exactly what we are renaming in t':
-              those ftv in t' that are binders in sigma! 
-
-    This argument is tooooo subtle, need to formalise.
-    What about ftv in t that are also ftv in s? they are not renamed and thus in t'.
-     Can they be btv in sigma? No by the first argument
-
-*)
-
-(* Property that allows to add binder names (a, b, c,...) to alpha context R, and keeping the property that
+(* Binders Unique Property that allows to add binder names (a, b, c,...) to alpha context R, and keeping the property that
     R ⊢ s ~ s, and R ⊢ sigma ~ sigma
    - binders in sigma are not free in s
    - binders in sigma are not free in sigma
-   - binders in s are not free in sigma, exactly NC s sigma: so moved out of this
 *)
-(* Binders Unique, in the sense that they do not occur in ftvs sigma or tvs s*)
 Definition BU sigma s := ((forall x, In x (btv_env sigma) -> ~ In x (tv s)) 
   * (forall x, In x (btv_env sigma) -> ~ In x (ftv_keys_env sigma)))%type.
 
@@ -322,7 +266,7 @@ Proof.
     intuition.
 Qed.
 
-
+(* BU decomposes over app *)
 Lemma BU_appl {B s t sigma} :
   BU sigma (@tmbin B s t) -> BU sigma s.
 Proof.
@@ -349,10 +293,9 @@ Proof.
   - specialize (BU2 x H). auto.
 Qed.
 
-(* x not in btv s, hence we can add it freely as ftv to sigma*)
+(* BU decomposes over abs for globally unique types only: x not in btv s, hence we can add it freely as ftv to sigma *)
 Lemma BU_lam_id {B x A s sigma} :
   GU (@tmabs B x A s) ->
-  (* cannot combine BU3 and BU1: free vars in t can still be free vars in s*)
   BU sigma (@tmabs B x A s) -> BU ((x, tmvar x)::sigma) s.
 Proof.
   intros Hgu HBU.

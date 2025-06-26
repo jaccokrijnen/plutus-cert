@@ -141,3 +141,5 @@ Proof.
     + apply alphavar_extend_ids_right; auto.
     + apply alpha_extend_ids_right; auto.
 Qed.
+
+Hint Constructors AlphaSubs : α_eq_db.

@@ -11,12 +11,13 @@ Lemma closed__substituteT_CA :
     Ty.closed U ->
     substituteTCA X U T = substituteT X U T.
 Proof.
+(* ADMITTED: Time constraints *)
 Admitted.
 
 Require Import Coq.Program.Equality.
 
-(* Term language type preservation of closed terms under evaluation/reduction
-   Per issue 83, errors are not preserved.
+(* Term language type preservation of closed terms under evaluation/reduction, ignoring error terms.
+   Per issue 92: Not provable. Must be proved up to α-equivalence. See thesis Richard
 *)
 Theorem eval__type_preservation : forall t T v k,
     nil ,, nil |-+ t : T ->

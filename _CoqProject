@@ -93,13 +93,13 @@ src/PlutusIR/Semantics/Static/Typing/Typing_sound_complete.v
 src/PlutusIR/Semantics/Static/Kinding/Checker.v
 src/PlutusIR/Semantics/Static/Kinding/Kinding.v
 
-src/PlutusIR/Semantics/Static/Normalisation/BigStep.v
-src/PlutusIR/Semantics/Static/Normalisation/Normaliser_sound_complete.v
-src/PlutusIR/Semantics/Static/Normalisation/Normaliser.v
-src/PlutusIR/Semantics/Static/Normalisation/Preservation.v
-src/PlutusIR/Semantics/Static/Normalisation/Progress.v
-src/PlutusIR/Semantics/Static/Normalisation/SmallStep.v
-src/PlutusIR/Semantics/Static/Normalisation/SN_PIR.v
+src/PlutusIR/Semantics/Static/Normalization/BigStep.v
+src/PlutusIR/Semantics/Static/Normalization/Normalizer_sound_complete.v
+src/PlutusIR/Semantics/Static/Normalization/Normalizer.v
+src/PlutusIR/Semantics/Static/Normalization/Preservation.v
+src/PlutusIR/Semantics/Static/Normalization/Progress.v
+src/PlutusIR/Semantics/Static/Normalization/SmallStep.v
+src/PlutusIR/Semantics/Static/Normalization/SN_PIR.v
 
 src/Language/STLC/STLC.v
 

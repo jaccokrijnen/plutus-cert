@@ -1,8 +1,9 @@
-(* Lemmas about
+(* Many small lemmas about
   - freshness of fresh2
   - ftv, tv, btv
     - with respect to renaming
   - ftv_keys_env, btv_env, tv_keys_env
+  Admitted: All admits here are because of time constraints.
 *)
 
 From PlutusCert Require Import STLC util Util Util.List.
@@ -29,6 +30,7 @@ Proof.
   reflexivity.
 Qed.
 
+(* Axiomatized freshness properties of the fresh2 procedure *)
 Lemma fresh2_over_tv_term {Y t sigma} :
   Y = fresh2 sigma t ->
   ~ In Y (tv t).
@@ -94,7 +96,6 @@ the lhs is non-sensical and always false *)
 Lemma ftv_lam_helper {B : USort} X Y A t :
    In X (ftv (@tmabs B Y A t)) -> In X (ftv t).
 Proof.
-  (* intros HXnotY. *)
   intros Hftvlam.
   unfold ftv in Hftvlam.
   fold ftv in Hftvlam.
@@ -233,8 +234,6 @@ Lemma tv_not_after_rename x y z s :
 Proof.
 Admitted.
 
-
-
 Lemma ftv_rename_vacuous_helper {X Y Y' t} :
   X <> Y -> In X (ftv t) -> In X (ftv (rename Y Y' t)).
 Proof.
@@ -290,9 +289,7 @@ Lemma ftv_not_in_after_rename Y Y' t:
 Admitted.
 
 (* If there is a free X in t, then renaming replaces this by Y.
-
 This Y is now in t, but it could be capture by a binder that coincidentally is Y
-
 Luckily we only need to knnow Y in the tv (not necessarily Y in the ftv)*)
 Lemma ftv_tv_rename_helper X Y t :
   In X (ftv t) -> In Y (tv (rename X Y t)).
@@ -333,9 +330,6 @@ Proof.
   - inversion HXftvt.
 Qed.
 
-
-
-(* Idk, but must be true. *)
 Lemma tv_keys_env_helper y s sigma sigma_:
   y = fresh2 (sigma_ ++ sigma) s ->
   ~ In y (tv_keys_env sigma).
@@ -351,12 +345,9 @@ Lemma in_tv_value_then_in_tv_keys_env y y1 t (sigma : list (string * term)) :
 Proof.
 Admitted.
 
-(* BTV *)
-
 Lemma btv_var_contradiction {x x'} :
   In x (btv (tmvar x')) -> False.
 Admitted.
-
 
 Lemma btv_lam {B X A t} :
   In X (btv (@tmabs B X A t)).
@@ -427,7 +418,6 @@ Admitted.
 Lemma ftv_c_appr {B X t1 t2} :
   In X (ftv t2) -> In X (ftv (@tmbin B t1 t2)).
 Admitted.
-
 
 
 Fixpoint btv_env (sigma : list (string * term)) : list string :=

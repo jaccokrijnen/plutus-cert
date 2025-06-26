@@ -18,20 +18,19 @@ From PlutusCert Require Import
   step_gu 
   STLC 
   STLC.Kinding
-  alpha_kinding 
   Alpha.alpha 
   alpha_rename 
   util 
-  alpha_subs 
   variables 
   alpha_freshness
   alpha_sub 
   alpha_vacuous 
-  construct_GU.
+  construct_GU
+.
 
+(* Non-deterministic STLC reduction relation using naive beta reduction *)
 (* NOTE: In the codebase there is no step_d, instead we address going from step_nd to a deterministic reduction for the whole of PIR later in the embedding argument.
 In the thesis we postulate a step_d for readability.*)
-(* non-deterministic STLC reduction relation using naive beta reduction*)
 Inductive step_nd : term -> term -> Type :=
 | step_beta_nd (x : string) (A : PlutusIR.kind) (s t : term) :
     step_nd (@tmbin App (@tmabs Lam x A s) t) (substituteTCA x t s) 
@@ -42,7 +41,7 @@ Inductive step_nd : term -> term -> Type :=
 | step_abs_nd B x A s1 s2 :
     step_nd s1 s2 -> step_nd (@tmabs B x A s1) (@tmabs B x A s2).
 
-(* No-capture during substitution implies equivalence of naive and capture-avoiding substitutions*)
+(* No-capture during substitution implies equivalence of naive and capture-avoiding substitutions *)
 Lemma NC__substituteTCA_is_sub x t s : 
     NC s ((x, t)::nil) -> substituteTCA x t s = sub x t s.
 Proof.
@@ -95,7 +94,8 @@ Proof.
     apply step_beta.
 Qed.
 
-Lemma substituteTCA_vacuous : forall R X U T T',
+(* A vacuous capture-avoiding substitution can still rename binders to fresh variables, hence we need α-equivalence here. *)
+Lemma substituteTCA_vacuous' : forall R X U T T',
     Alpha R T T' ->
     ~ In X (ftv T) ->
     Alpha R (substituteTCA X U T) T'.
@@ -129,13 +129,14 @@ Proof.
   - auto.
 Qed.
 
-Corollary substituteTCA_vacuous_specialized X U T:  
+Corollary substituteTCA_vacuous X U T:  
   ~ In X (ftv T) ->
   Alpha nil (substituteTCA X U T) T.
 Proof.
-  eapply substituteTCA_vacuous; try apply alpha_refl; auto; repeat constructor.
+  eapply substituteTCA_vacuous'; try apply alpha_refl; auto; repeat constructor.
 Qed.
 
+(* Strengthened version of: α-equivalence preserves capture-avoiding substitutions*)
 (* α-preservation of substitution with capture-avoiding substitutions
   requires transtitivity arguments because of renamings in each substitution
   this is what we prevent by using globally unique reductions later on*)
@@ -172,7 +173,7 @@ Proof.
       remember (fresh2 _ s1) as b; rewrite cons_to_append in Heqb.
       rewrite String.eqb_refl.
       eapply @alpha_sym with (R := sym_alpha_ctx R); eauto with α_eq_db.
-      eapply substituteTCA_vacuous; eauto with α_eq_db.
+      eapply substituteTCA_vacuous'; eauto with α_eq_db.
       eapply @alpha_preserves_no_ftv with (x := X) (s := tmabs X k s1).
       * apply ftv_lam_no_binder.
       * eauto with α_eq_db.
@@ -185,7 +186,7 @@ Proof.
           reflexivity.
         }
         rewrite Hvac_sub.
-        eapply substituteTCA_vacuous; eauto with α_eq_db.
+        eapply substituteTCA_vacuous'; eauto with α_eq_db.
         eapply @alpha_preserves_no_ftv with (x := X) (s := tmabs X k s2).
         -- apply ftv_lam_no_binder.
         -- eauto with α_eq_db.
@@ -271,6 +272,7 @@ Proof.
     constructor.
 Qed.
 
+(* α-equivalence preserves capture-avoiding substitutions*)
 Lemma substituteTCA_preserves_alpha s s' R X U:
   Alpha R (tmvar X) (tmvar X) ->
   Alpha R U U ->
@@ -285,6 +287,7 @@ Proof.
     + apply alpha_refl. apply id_ctx_nil.
 Qed.
 
+(* There always exists an α-equivalent representative such that naive and capture-avoiding substitutions coincide. *)
 Lemma alpha_substituteTCA_sub X U T:
   {T' & Alpha [] T T' * Alpha [] (substituteTCA X U T) (sub X U T') * NC T' ((X, U)::nil)}%type.
 Proof.
@@ -300,6 +303,7 @@ Proof.
   - apply to_GU'__NC.
 Qed.
 
+(* Non-deterministic step preserves α-equivalence *)
 Lemma step_nd_preserves_alpha ren s t s' :
   Alpha ren s t -> step_nd s s' -> {t' & (step_nd t t') * (Alpha ren s' t')}%type.
 Proof.
@@ -331,6 +335,7 @@ Proof.
     + apply alpha_lam; assumption.    
 Qed.
 
+(* Non-deterministic step is globally unique step up to α-equivalence *)
 Lemma step_nd_implies_step_gu t t' : 
     step_nd t t' ->  
     {t_α & step_gu t t_α * (Alpha [] t' t_α)}%type.
@@ -344,6 +349,7 @@ Proof.
     eapply step_gu_intro; eauto with to_GU_db.
 Qed.
 
+(* Strong normalization using step_nd is preserved under α-equivalence *)
 Theorem α_preserves_sn_nd s s' :
   Alpha [] s s' -> (@sn term step_nd) s -> (@sn term step_nd) s'.
 Proof.
@@ -355,6 +361,7 @@ Proof.
   edestruct step_nd_preserves_alpha with (s := s') (t := x) as [y1_α [Hstep' Hα']]; eauto with α_eq_db.
 Qed.
 
+(* Forward simulatino argument to go from globally uniquifying strong normalization, to non-deterministic step strong normalization *)
 Lemma SN_na_to_SN_nd t : (@sn term step_gu) t -> (@sn term step_nd) t.
 Proof.
   intros Hsn_nd.
@@ -369,6 +376,7 @@ Proof.
   exact X.
 Qed.
 
+(* STLC with a non-deterministic capture-avoiding step relation is strongly normalizing *)
 Theorem strong_normalization_nd Δ s T : STLC.Kinding.has_kind Δ s T -> (@sn term step_nd) s.
   intros.
   apply strong_normalization_gu in H. 
