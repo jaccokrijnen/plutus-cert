@@ -884,7 +884,7 @@ Proof.
       rewrite map_app. apply in_app_iff. right.
       apply in_map_iff.
       exists (x, x); intuition.
-      apply in_generator_then_in_id_map.
+      apply id_map_helper.
       apply list_diff_helper; eauto.
   - intros.
     apply in_app_iff.
@@ -928,7 +928,7 @@ Proof.
     }
     apply in_map_iff.
     exists ((x, x)); split; auto.
-    apply in_generator_then_in_id_map; auto.
+    apply id_map_helper; auto.
 Qed.
 
 Lemma t_constr__a_t {t t' R s sigma X }:
