@@ -8,13 +8,15 @@ Note: This repository is a fork of The Plutus Certification project at https://g
 
 ## Setup
 ### Setup (Nix)
-Run `nix develop`.
+1. Run `nix develop`.
+2. Run `make`
 
 ### Setup (Nix + coq-lsp + vs-code)
 1. Run `nix develop` in a shell.
-2. Run `code` in that same shell
-3. Run `which coq-lsp`
-4. Enter this path in vscode coq-lsp plugin settings.
+2. Run `make`
+3. Run `code` in that same shell
+4. Run `which coq-lsp`
+5. Enter this path in vscode coq-lsp plugin settings.
 
 ## Directory Structure & Contributions
 
