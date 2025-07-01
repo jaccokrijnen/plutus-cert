@@ -28,6 +28,32 @@ Definition remove_many {A} (A_dec : forall x y : A, {x = y} + {x <> y}) : list A
   fun xs ys => fold_right (remove A_dec) ys xs.
 
 
+Definition in_str (x : string) (xs : list string) : bool :=
+  if find (eqb x) xs then true else false
+.
+
+Lemma in_str__In {x xs} : in_str x xs = true <-> In x xs.
+Proof.
+  split.
+  - induction xs.
+    + unfold in_str, find.
+      inversion 1.
+    + destruct (string_dec x a) as [H_eq | H_neq].
+      * subst x. intros. simpl. auto.
+      * unfold in_str, find. rewrite <- eqb_neq in H_neq. rewrite H_neq.
+        intros H_true. right. auto.
+  - induction xs.
+    + inversion 1.
+    + destruct 1 as [H_eq | H_neq].
+      * apply eq_sym in H_eq. rewrite <- eqb_eq in H_eq.
+        unfold in_str; simpl.
+        rewrite H_eq.
+        reflexivity.
+      * unfold in_str; simpl.
+        destruct (x =? a); auto.
+Qed.
+
+
 Lemma app_cons_app_app {A} xs ys (x : A) :
   xs ++ x :: ys = xs ++ [x] ++ ys.
 Proof.

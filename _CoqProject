@@ -36,6 +36,7 @@ src/PlutusIR/Transform/Compat.v
 src/PlutusIR/Transform/Compose.v
 src/PlutusIR/Transform/Functional.v
 src/PlutusIR/Transform/FloatLet.v
+src/PlutusIR/Transform/LetMergeNR.v
 src/PlutusIR/Transform/LetNonStrict.v
 src/PlutusIR/Transform/LetRec.v
 src/PlutusIR/Transform/LetNonRec/Spec.v
