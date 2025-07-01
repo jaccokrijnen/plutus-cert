@@ -29,6 +29,9 @@ let nonrec x = t₁
            z = t₃
 in t
 
+Has to avoid capture: e.g. t₂ may not have a free variable `x` as it would be captured
+by the first binding
+
 *)
 
 
