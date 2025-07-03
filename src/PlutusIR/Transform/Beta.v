@@ -290,37 +290,6 @@ Lemma dec_sound C s t :
   dec C s t = true ->
   betas (map fst C) s t.
 Proof.
-  intros H_C H_dec.
-  induction s.
-  - admit.
-  - destruct t.
-    + simpl in H_dec.
-      apply orb_prop in H_dec.
-      destruct H_dec.
-      * unfold dec_LamAbs in H.
-        destruct C. inversion H.
-        destruct p; inversion H.
-      * admit.
-    + (* Var, Var case compatibility *)
-      simpl in H_dec.
-      repeat rewrite orb_true_iff in H_dec.
-      repeat destruct H_dec as [H_dec | ?].
-      * unfold dec_compat in H_dec; destruct C.
-        ** unfold Compat.dec_compat in H_dec.
-           rewrite string_eqb_eq in H_dec.
-           subst n0.
-           constructor.
-           constructor.
-        ** inversion H_dec.
-      * inversion H.
-      * unfold dec_LamAbs in H; simpl. destruct C; inversion H; destruct p;
-      inversion H.
-      * admit.
-    + simpl in H_dec.
-  (* Needs stronger IH for terms inside Let *)
-  (* Perhaps there is a simpler IH possible that follows the function structure
-     of dec
-  *)
 Abort.
 
 Module Example.
