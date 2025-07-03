@@ -1079,19 +1079,19 @@ Module PIRNotations.
 
     Notation "vd '~=' t" :=
       (TermBind NonStrict vd t)
-      (at level 200, t at level 0, no associativity)
+      (at level 70, t at next level, no associativity)
       : pir_scope
       .
 
     Notation "'type' tvd '=' T" :=
       (TypeBind tvd T)
-      (at level 200, tvd at level 0, T at level 0, no associativity)
+      (at level 70, tvd at next level, T at next level, no associativity)
       : pir_scope
       .
 
     Notation "data tvd '=' T" :=
       (DatatypeBind Strict tvd T)
-      (at level 200, tvd at level 0, T at level 0, no associativity)
+      (at level 70, tvd at next level, T at next level, no associativity)
       : pir_scope
       .
 
@@ -1123,9 +1123,9 @@ Module PIRNotations.
       (at level 200, x at level 0, ty at level 0, t at level 0, no associativity)
       : pir_scope
     .
-    Notation "'Λ' X K , t" :=
+    Notation "'Λ' X K t" :=
       (TyAbs X K t)
-      (at level 51, right associativity)
+      (at level 200, X at level 0, K at level 0, t at level 0, no associativity)
       : pir_scope
       .
     Notation "t1 ⋅ t2" :=
@@ -1190,6 +1190,9 @@ Module PIRNotations.
 
     Definition s :=
       (λ "x" ty_unit (`"x" + `"x")).
+
+    Definition u :=
+      (Λ "x" Kind_Base (`"x" + `"x")) @ ty_unit.
 
     Definition t :=
       let_
