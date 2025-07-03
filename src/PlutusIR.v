@@ -381,12 +381,12 @@ Fixpoint context_comp (C C' : context) : context :=
   #[local]
   Notation "C ∘ C'" := (context_comp C C') (at level 60) : contexts.
   #[local]
-  Notation "C @ t  " := (context_fill C t) (at level 65, right associativity) : contexts .
+  Notation "C @@ t  " := (context_fill C t) (at level 65, right associativity) : contexts .
 
   #[local]
   Open Scope contexts.
 
-  Lemma context_comp_fill C C' t : (C ∘ C' @ t) = (C @ C' @ t).
+  Lemma context_comp_fill C C' t : (C ∘ C' @@ t) = (C @@ C' @@ t).
   Admitted.
 
 
@@ -1034,3 +1034,169 @@ Module PlutusNotations.
   String Notation bytes parse_bytes print_bytes : plutus_scope.
 
 End PlutusNotations.
+
+Module PIRNotations.
+
+
+  Declare Scope pir_scope.
+  Delimit Scope pir_scope with pir.
+
+
+  Module Kinds.
+
+    Notation "★" := Kind_Base
+      : pir_scope.
+
+    Notation "⇒" := Kind_Arrow
+      : pir_scope.
+
+  End Kinds.
+
+  Module Decls.
+
+    Notation "x : T" :=
+      (VarDecl x T)
+      (at level 50, no associativity)
+      : pir_scope
+    .
+
+    Notation "X :* K" :=
+      (TyVarDecl X K)
+      (at level 50, no associativity)
+      : pir_scope
+    .
+
+  End Decls.
+
+
+  Module Bindings.
+
+    Notation "vd '=' t" :=
+      (TermBind Strict vd t)
+      (at level 70, t at next level, no associativity)
+      : pir_scope
+      .
+
+    Notation "vd '~=' t" :=
+      (TermBind NonStrict vd t)
+      (at level 200, t at level 0, no associativity)
+      : pir_scope
+      .
+
+    Notation "'type' tvd '=' T" :=
+      (TypeBind tvd T)
+      (at level 200, tvd at level 0, T at level 0, no associativity)
+      : pir_scope
+      .
+
+    Notation "data tvd '=' T" :=
+      (DatatypeBind Strict tvd T)
+      (at level 200, tvd at level 0, T at level 0, no associativity)
+      : pir_scope
+      .
+
+
+  End Bindings.
+
+  Module Terms.
+
+    Notation "'let_' bs t" :=
+      (Let NonRec bs t)
+      (at level 200, bs at level 0, t at level 0, no associativity)
+      : pir_scope
+    .
+
+    Notation "'letrec' bs t" :=
+      (Let Rec bs t)
+      (at level 200, bs at level 0, t at level 0, no associativity)
+      : pir_scope
+    .
+
+    Notation "'`' x" :=
+      (Var x)
+      (at level 35, x at next level )
+      : pir_scope
+      .
+
+    Notation "'λ' x ty t" :=
+      (LamAbs x ty t)
+      (at level 200, x at level 0, ty at level 0, t at level 0, no associativity)
+      : pir_scope
+    .
+    Notation "'Λ' X K , t" :=
+      (TyAbs X K t)
+      (at level 51, right associativity)
+      : pir_scope
+      .
+    Notation "t1 ⋅ t2" :=
+      (Apply t1 t2)
+      (at level 50, left associativity)
+      : pir_scope
+      .
+    Notation "t @ T" :=
+      (TyInst t T)
+      (at level 50, left associativity)
+      : pir_scope
+      .
+
+  End Terms.
+
+  Module Builtins.
+
+    Import Terms.
+
+    Notation "t1 '==' t2" :=
+      (Builtin EqualsInteger ⋅ t1 ⋅ t2)%pir
+      (in custom plutus_term at level 50, no associativity)
+      : pir_scope
+    .
+
+    Notation "(+)" :=
+      (Builtin AddInteger)
+      : pir_scope.
+
+    Notation "'ifthenelse'" :=
+      (Builtin IfThenElse)
+      : pir_scope.
+
+    Notation "t1 '+' t2" :=
+      (Builtin AddInteger ⋅ t1 ⋅ t2 )%pir
+      (at level 50, left associativity)
+      : pir_scope
+    .
+    Notation "t1 '-' t2" :=
+      (Builtin SubtractInteger ⋅ t1 ⋅ t2)%pir
+      (at level 50, left associativity)
+      : pir_scope
+    .
+
+    Notation "t1 '*' t2" :=
+      (Builtin MultiplyInteger ⋅ t1 ⋅ t2)%pir
+      (at level 40, left associativity)
+      : pir_scope
+      .
+
+  End Builtins.
+
+  Export Kinds Decls Bindings Terms Builtins.
+
+  Module Examples.
+
+    Open Scope string_scope.
+    Open Scope pir_scope.
+
+
+    Definition tvd : tvdecl := "x" :* ★.
+
+    Definition s :=
+      (λ "x" ty_unit (`"x" + `"x")).
+
+    Definition t :=
+      let_
+        [ type ("X" :* ★) = ty_unit;
+          ("y" : ty_unit) = `"x"
+        ]
+        s.
+  End Examples.
+
+End PIRNotations.
