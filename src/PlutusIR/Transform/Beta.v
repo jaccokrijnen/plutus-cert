@@ -162,11 +162,128 @@ Fixpoint dec (C : list (term * (term -> bool))) (t t' : term) : bool :=
 .
 
 
+Section SOUND.
+
+  (* Defines when an argument in the (extended) application context has a
+     sound decision procedure
+  *)
+  Definition arg_sound '(t, dec_t) :=
+    forall t', dec_t t' = true -> betas [] t t'.
+
+  Lemma Forall_map_fst {A} (f : term -> Prop) (l : list (term * A)):
+    Forall (fun '(t, _) => f t) l ->
+    Forall (fun t => f t) (map fst l).
+  Proof.
+    induction l.
+    - auto.
+    - inversion 1; subst.
+      destruct a.
+      constructor; auto.
+  Qed.
+
+
+  (* TODO move to List.Util *)
+  Lemma negb_iff b :
+    negb b = true <-> b = false.
+  Proof. destruct b; intuition. Qed.
+
+  Lemma negb_in_str__NotIn x xs :
+    negb (in_str x xs) = true ->
+    x ∉ xs
+  .
+  Proof.
+    induction xs.
+    - simpl. auto.
+    - intros.
+      rewrite negb_iff in *.
+      admit.
+  Admitted.
+
+  Context
+    (dec_sound : forall C s t,
+      Forall arg_sound C ->
+      dec C s t = true ->
+      betas (map fst C) s t)
+    (C : list (term * (term -> bool)))
+    (C_sound : Forall arg_sound C)
+    (t t' : term)
+  .
+
+  Lemma dec_sound_Apply : dec_Apply dec C t t' = true -> betas (map fst C) t t'.
+  Proof.
+    unfold dec_Apply.
+    destruct t; try solve [inversion 1].
+    clear t.
+    rename t0_1 into s.
+    rename t0_2 into t.
+    intros H_dec.
+    apply dec_sound in H_dec.
+    - auto using betas.
+    - constructor; try assumption.
+      unfold arg_sound.
+      intros.
+      specialize (dec_sound []).
+      apply dec_sound;auto.
+  Defined.
+
+  Lemma dec_sound_LamAbs : dec_LamAbs dec C t t' = true -> betas (map fst C) t t'.
+  Proof.
+    unfold dec_LamAbs.
+    destruct C; try solve [inversion 1].
+    destruct p.
+    destruct t; try solve [inversion 1].
+    destruct t'; try solve [inversion 1].
+    destruct r; try solve [inversion 1].
+    destruct l0; try solve [inversion 1].
+    destruct b1; try solve [inversion 1].
+    destruct s; try solve [inversion 1].
+    destruct v; try solve [inversion 1].
+    destruct l0; try solve [inversion 1].
+    intros H_dec.
+    repeat apply andb_and in H_dec as [H_dec ?].
+    simpl.
+
+    (* Todo, use apply that leaves equality goals *)
+    rewrite string_eqb_eq in H_dec; subst b0.
+    rewrite Ty_eqb_eq in H2; subst t1.
+
+    apply beta_LamAbs.
+    - eauto using Forall_inv_tail.
+    - unfold arg_sound in C_sound. apply Forall_inv in C_sound.
+      auto.
+    - 
+      apply Forall_map_fst.
+      rewrite forallb_forall in H.
+      rewrite Forall_forall.
+      intros.
+      specialize (H x H2).
+      destruct x.
+      apply negb_in_str__NotIn.
+      assumption.
+  Defined.
+
+  Lemma dec_sound_compat :
+    dec_compat dec C t t' = true ->
+    betas (map fst C) t t'.
+  Proof.
+    unfold dec_compat.
+    destruct C; try solve [inversion 1].
+    intros H.
+    constructor.
+    specialize (dec_sound []); simpl in dec_sound.
+    eapply sound_dec_compat.
+    - intros t0 t0'.
+      specialize (dec_sound t0 t0' C_sound).
+      eauto.
+    - eauto.
+  Defined.
+
+End SOUND.
+
+
 (* Defines when an argument in the (extended) application context has a
    sound decision procedure
 *)
-Definition arg_sound '(t, dec_t) :=
-  forall t', dec_t t' = true -> betas [] t t'.
 
 Lemma dec_sound C s t :
   Forall arg_sound C ->
@@ -253,19 +370,16 @@ Proof.
   reflexivity.
 Qed.
 
+Import PIRNotations.
+Import ListNotations.
+Open Scope pir_scope.
 
-Definition u :=
-  (TyInst
-    (TyAbs "X" Kind_Base unit)
-    ty_unit
-  )
-.
+Definition u := (Λ "X" ★ unit) @ ty_unit.
 
 Definition v :=
-  (Let NonRec
-    [TypeBind (TyVarDecl "X" Kind_Base) ty_unit]
+  let_
+    [type ("X" :* ★) = ty_unit]
     unit
-  )
 .
 
 Goal betas [] u v.
@@ -280,26 +394,17 @@ Qed.
 
 (* Multi type lets is not allowed *)
 Definition w :=
-  (Apply
-    (TyInst
-      (TyAbs "X" Kind_Base
-        (LamAbs "y" (Ty_Var "X") (Var "y"))
-      )
-      ty_unit
-    )
-    unit
-  )
-.
+  (Λ "X" ★ (λ "y" (Ty_Var "X") `"y")) @ ty_unit ⋅ unit.
 
 Definition x :=
-  (Let NonRec
-    [TypeBind (TyVarDecl "X" Kind_Base) ty_unit]
-    (Let NonRec
-      [TermBind Strict (VarDecl "y" (Ty_Var "X")) unit]
-      (Var "y")
-    )
-  )
+  let_
+    [type "X" :* ★ = ty_unit]
+    let_
+      ["y" : (Ty_Var "X") = unit]
+      `"y"
 .
+
+Unset Printing Notations.
 
 Goal betas [] w x.
   unfold w, x.
