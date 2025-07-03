@@ -280,20 +280,20 @@ Section ScopingLemmas.
       + (* Rec *)
         apply subset_append.
         * apply fv_binding_Rec__fv_bindings_Rec.
-          apply well_scoped_bindings_Rec__Forall in H4.
+          apply well_scoped_bindings_Rec__Forall in H6.
 
           rewrite Util.ForallP_Forall in IH_bs.
           rewrite Forall_forall in *.
           intros b H_b_bs.
 
-          specialize (H4 b H_b_bs).
-          eapply IH_bs with (rec := Rec) in H4.
-          ** apply subset_rev_append_l in H4.
+          specialize (H6 b H_b_bs).
+          eapply IH_bs with (rec := Rec) in H6.
+          ** apply subset_rev_append_l in H6.
              apply subset_remove_many.
              assumption.
           ** assumption.
-        * apply IH_t in H5.
-          apply subset_rev_append_l in H5.
+        * apply IH_t in H7.
+          apply subset_rev_append_l in H7.
           apply subset_remove_many.
           assumption.
 

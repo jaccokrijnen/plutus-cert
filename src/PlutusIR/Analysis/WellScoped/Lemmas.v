@@ -211,6 +211,12 @@ Proof.
         induction bs as [ | b bs].
         all: subst Δ Γ.
         { constructor. }
+        { admit. }
+      }
+      { admit. }
+      { admit. }
+      { admit. }
+     (*
         { constructor.
           {
             clear IHbs.
@@ -271,8 +277,9 @@ Proof.
 
       unfold P_Term in H0.
       admit. (* Similar reasoning to above admit *)
-      }
 
+  *)
+      }
   }
 
   (* Var *)
