@@ -33,39 +33,6 @@ Context
 
 Definition dec_compat : bool :=
   match C, t, t' with
-  | [], (Let r bs t), (Let r' bs' t')      =>
-                                    recursivity_eqb r r'
-                                    && (fix f bs bs' :=
-                                        (match bs, bs' with
-                                          | []       , []        => true
-                                          | (b :: bs), (b' :: bs') =>
-                                            (
-                                              match b, b' with
-                                                | (TermBind s v t), (TermBind s' v' t') => strictness_eqb s s' && VDecl_eqb v v' && dec [] t t'
-                                                | (TypeBind v T), (TypeBind v' T') => TVDecl_eqb v v'  && Ty_eqb T T'
-                                                | (DatatypeBind d), (DatatypeBind d') => DTDecl_eqb d d'
-                                                | _, _                               => false
-                                              end
-                                            && f bs bs')%bool
-                                          | _        , _         => false
-                                        end)) bs bs'
-                                    && dec [] t t'
-  | [], (Var n), (Var n')                  => String.eqb n n'
-  | [], (TyAbs n k t), (TyAbs n' k' t')    => String.eqb n n' && Kind_eqb k k' && dec [] t t'
-  | [], (LamAbs n T t), (LamAbs n' T' t')  => String.eqb n n'&& Ty_eqb T T' && dec [] t t'
-  | [], (Apply s t), (Apply s' t')         => dec [] s s' && dec [] t t'
-  | [], (Constant c), (Constant c')        => constant_eqb c c'
-  | [], (Builtin f), (Builtin f')          => func_eqb f f'
-  | [], (TyInst t T), (TyInst t' T')       => Ty_eqb T T' && dec [] t t'
-  | [], (Error T), (Error T')              => Ty_eqb T T'
-  | [], (IWrap T1 T2 t), (IWrap T1' T2' t') => Ty_eqb T1 T1' && Ty_eqb T2 T2' && dec [] t t'
-  | [], (Unwrap t), (Unwrap t')            => dec [] t t'
-  | _, _, _                               => false
-  end
-  .
-
-Definition dec_compat' : bool :=
-  match C, t, t' with
   | [], t, t' => Compat.dec_compat (dec []) t t'
   | _, _, _ => false
   end
@@ -275,12 +242,15 @@ Section SOUND.
           ** inversion H_dec.
           ** constructor.
             *** 
+                unfold forall2b, dec_compat_binding in H_dec.
                 destruct a, b; destruct_hypos; try solve [inversion H1].
                 destruct_hypos.
                 ++ eauto with compat reflection.
                 ++ eauto with compat reflection.
                 ++ eauto with compat reflection.
-            *** destruct_hypos.
+            ***
+                unfold forall2b, dec_compat_binding in H_dec.
+            destruct_hypos.
               auto.
   Defined.
 
