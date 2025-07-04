@@ -16,3 +16,8 @@ Ltac destruct_match :=
       | |- context[match ?X with | _ => _ end] => destruct X eqn:?
       end.
 
+Ltac split_hypos :=
+  match goal with
+  | H : (?x && ?y)%bool = true |- _ => apply andb_true_iff in H; destruct H; split_hypos
+  | _ => idtac
+  end.

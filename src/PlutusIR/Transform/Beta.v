@@ -9,6 +9,7 @@ From PlutusCert Require Import
   LetMergeNR
   FreeVars
   Util.List
+  Util.Tactics
   Size
 .
 
@@ -104,13 +105,48 @@ Arguments failure {_} _.
 
 Section DEC.
 
+Definition app_ctx_dec := list (term * (term -> bool)).
+
 Context
-  (dec : list (term * (term -> bool)) -> term -> term -> bool)
-  (C : list (term * (term -> bool)))
+  (dec : app_ctx_dec -> term -> term -> bool)
+  (C : app_ctx_dec)
   (t t' : term)
 .
 
 Definition dec_compat : bool :=
+  match C, t, t' with
+  | [], (Let r bs t), (Let r' bs' t')      =>
+                                    recursivity_eqb r r'
+                                    && (fix f bs bs' :=
+                                        (match bs, bs' with
+                                          | []       , []        => true
+                                          | (b :: bs), (b' :: bs') =>
+                                            (
+                                              match b, b' with
+                                                | (TermBind s v t), (TermBind s' v' t') => strictness_eqb s s' && VDecl_eqb v v' && dec [] t t'
+                                                | (TypeBind v T), (TypeBind v' T') => TVDecl_eqb v v'  && Ty_eqb T T'
+                                                | (DatatypeBind d), (DatatypeBind d') => DTDecl_eqb d d'
+                                                | _, _                               => false
+                                              end
+                                            && f bs bs')%bool
+                                          | _        , _         => false
+                                        end)) bs bs'
+                                    && dec [] t t'
+  | [], (Var n), (Var n')                  => String.eqb n n'
+  | [], (TyAbs n k t), (TyAbs n' k' t')    => String.eqb n n' && Kind_eqb k k' && dec [] t t'
+  | [], (LamAbs n T t), (LamAbs n' T' t')  => String.eqb n n'&& Ty_eqb T T' && dec [] t t'
+  | [], (Apply s t), (Apply s' t')         => dec [] s s' && dec [] t t'
+  | [], (Constant c), (Constant c')        => constant_eqb c c'
+  | [], (Builtin f), (Builtin f')          => func_eqb f f'
+  | [], (TyInst t T), (TyInst t' T')       => Ty_eqb T T' && dec [] t t'
+  | [], (Error T), (Error T')              => Ty_eqb T T'
+  | [], (IWrap T1 T2 t), (IWrap T1' T2' t') => Ty_eqb T1 T1' && Ty_eqb T2 T2' && dec [] t t'
+  | [], (Unwrap t), (Unwrap t')            => dec [] t t'
+  | _, _, _                               => false
+  end
+  .
+
+Definition dec_compat' : bool :=
   match C, t, t' with
   | [], t, t' => Compat.dec_compat (dec []) t t'
   | _, _, _ => false
@@ -154,12 +190,24 @@ Definition dec_LamAbs : bool :=
 
 End DEC.
 
-Fixpoint dec (C : list (term * (term -> bool))) (t t' : term) : bool :=
+Fixpoint dec (C : app_ctx_dec) (t t' : term) : bool :=
      dec_compat dec C t t'
   || dec_Apply dec C t t'
   || dec_LamAbs dec C t t'
   || dec_TyAbs_TyInst dec C t t'
 .
+
+Definition dec_unfold C t t' :
+  dec C t t' =
+     dec_compat dec C t t'
+  || dec_Apply dec C t t'
+  || dec_LamAbs dec C t t'
+  || dec_TyAbs_TyInst dec C t t'
+.
+Proof.
+  destruct C, t, t'; reflexivity.
+Qed.
+
 
 
 Section SOUND.
@@ -200,6 +248,7 @@ Section SOUND.
   Admitted.
 
   Context
+    (dec : app_ctx_dec -> term -> term -> bool)
     (dec_sound : forall C s t,
       Forall arg_sound C ->
       dec C s t = true ->
@@ -251,7 +300,7 @@ Section SOUND.
     - eauto using Forall_inv_tail.
     - unfold arg_sound in C_sound. apply Forall_inv in C_sound.
       auto.
-    - 
+    -
       apply Forall_map_fst.
       rewrite forallb_forall in H.
       rewrite Forall_forall.
@@ -262,20 +311,65 @@ Section SOUND.
       assumption.
   Defined.
 
+  Lemma dec_sound_TyBeta :
+    dec_TyAbs_TyInst dec C t t' = true ->
+    betas (map fst C) t t'.
+  Proof.
+    unfold dec_TyAbs_TyInst.
+    destruct t, C; try solve [inversion 1].
+    destruct t0; try solve [inversion 1].
+    destruct t'; try solve [inversion 1].
+    destruct r; try solve [inversion 1].
+    destruct l; try solve [inversion 1].
+    destruct b0; try solve [inversion 1].
+    destruct t3; try solve [inversion 1].
+    destruct l; try solve [inversion 1].
+    intros H_dec.
+    destruct_hypos.
+    rewrite String.eqb_eq in H.
+    rewrite Kind_eqb_eq in H2.
+    rewrite Ty_eqb_eq in H1.
+    subst.
+    simpl.
+    apply beta_TyInst_TyAbs.
+    specialize (dec_sound []).
+    auto.
+  Defined.
+
+
+  Definition P_term t := forall C t',
+    dec_compat dec C t t' = true ->
+    betas (map fst C) t t'
+  .
+
   Lemma dec_sound_compat :
     dec_compat dec C t t' = true ->
     betas (map fst C) t t'.
   Proof.
-    unfold dec_compat.
+    specialize (dec_sound []). (* usable IH for auto due to map fst *)
     destruct C; try solve [inversion 1].
-    intros H.
-    constructor.
-    specialize (dec_sound []); simpl in dec_sound.
-    eapply sound_dec_compat.
-    - intros t0 t0'.
-      specialize (dec_sound t0 t0' C_sound).
-      eauto.
-    - eauto.
+    destruct t, t'.
+    all: try solve [unfold dec_compat; inversion 1].
+    all: intros H_dec; simpl in H_dec; try discriminate H_dec.
+    all: split_hypos.
+    all: try (constructor; (eauto with compat reflection)).
+    - (* Let *)
+      apply c_Let; try solve [eauto with compat reflection].
+      + revert dependent l0. induction l; intros l0 H_dec.
+        * destruct l0; simpl.
+          ** constructor.
+          ** inversion H_dec.
+        * destruct l0.
+          ** inversion H_dec.
+          ** constructor.
+            *** 
+                destruct a, b; destruct_hypos; try solve [inversion H1].
+                destruct_hypos.
+                ++ eauto with compat reflection.
+                ++ eauto with compat reflection.
+                ++ eauto with compat reflection.
+            *** destruct_hypos.
+              auto.
   Defined.
 
 End SOUND.
@@ -285,12 +379,34 @@ End SOUND.
    sound decision procedure
 *)
 
-Lemma dec_sound C s t :
+Fixpoint dec_sound C t t' {struct t} :
   Forall arg_sound C ->
-  dec C s t = true ->
-  betas (map fst C) s t.
+  dec C t t' = true ->
+  betas (map fst C) t t'.
 Proof.
-Abort.
+  setoid_rewrite dec_unfold.
+  setoid_rewrite orb_true_iff.
+  setoid_rewrite orb_true_iff.
+  setoid_rewrite orb_true_iff.
+  intros C_sound H_dec.
+  destruct H_dec as [[[H_dec | H_dec] | H_dec] | H_dec ].
+  - apply dec_sound_compat in H_dec.
+    destruct t; (* no need for induction since this is already a Fixpoint *)
+    assumption.
+    all: try assumption.
+  - apply dec_sound_Apply in H_dec.
+    destruct t; (* no need for induction since this is already a Fixpoint *)
+    assumption.
+    all: try assumption.
+  - apply dec_sound_LamAbs in H_dec.
+    destruct t; (* no need for induction since this is already a Fixpoint *)
+    assumption.
+    all: try assumption.
+  - apply dec_sound_TyBeta in H_dec.
+    destruct t; (* no need for induction since this is already a Fixpoint *)
+    assumption.
+    all: try assumption.
+Defined. 
 
 Module Example.
 

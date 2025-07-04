@@ -213,7 +213,7 @@ Section Compatibility.
     - assert (d = d0)...
       subst.
       apply C_DatatypeBind.
-  Qed.
+  Defined.
 
   Lemma dec_compat_Bindings_Compat_Bindings : ∀ bs bs',
       (∀ t t', dec_R t t' = true -> R t t') ->
@@ -230,8 +230,77 @@ Section Compatibility.
       apply Compat_Bindings_Cons.
       + apply dec_compat_Binding_Compat_Binding...
       + eauto.
-  Qed.
+  Defined.
 
+  Definition P_term t := forall t',
+    (∀ t t', dec_R t t' = true -> R t t') ->
+    dec_compat t t' = true -> Compat t t'
+  .
+  Definition P_binding b := forall b',
+    (∀ t t', dec_R t t' = true -> R t t') ->
+    dec_compat_binding b b' = true -> Compat_Binding b b'
+  .
+
+  Lemma sound_dec_compat :
+    forall t, P_term t.
+  Proof with eauto with reflection.
+    (* term__rect is definitely transparent *)
+    apply term__rect with (P := P_term) (Q := P_binding).
+    all:
+      intros;
+      unfold P_term;
+      intros t' H_sound_R H_dec.
+    all: destruct t'.
+    all: simpl in H_dec.
+    all: try discriminate H_dec.
+    all: split_hypos.
+    - apply H_sound_R in H1.
+      apply recursivity_eqb_eq in H0.
+      subst.
+      eapply C_Let...
+      apply dec_compat_Bindings_Compat_Bindings...
+    - apply String.eqb_eq in H_dec.
+      subst.
+      constructor.
+    - assert (s = b)...
+      assert (k = k0)...
+      subst.
+      eapply C_TyAbs...
+    - assert (s = b)...
+      assert (t = t1)...
+      subst.
+      apply C_LamAbs...
+    - apply C_Apply...
+    - assert (c = c0)...
+      subst.
+      apply C_Constant.
+    - assert (d = d0)... subst.
+      apply C_Builtin.
+    - assert (t0 = t1)... subst.
+      apply C_TyInst...
+    - assert (t = t0)... subst.
+      apply C_Error.
+    - assert (t = t2)...
+      assert (t0 = t3)...
+      subst.
+      apply C_IWrap...
+    - apply C_Unwrap...
+    - assert (s = s0)...
+      assert (v = v0)...
+      subst.
+      apply C_TermBind...
+    - assert (v = t)...
+      assert (ty = t0)...
+      subst.
+      apply C_TypeBind...
+    - assert (dtd = d)...
+      subst.
+      apply C_DatatypeBind.
+  Defined.
+
+
+
+(*
   Lemma sound_dec_compat t t' :
     (∀ t t', dec_R t t' = true -> R t t') ->
     dec_compat t t' = true -> Compat t t'.
@@ -276,6 +345,135 @@ Section Compatibility.
       subst.
       apply C_IWrap...
     - apply C_Unwrap...
-  Qed.
-
+  Defined.
+*)
 End Compatibility.
+
+
+Section CompatConstrs.
+
+Context {R : term -> term -> Prop}.
+
+Definition c_TermBind : forall s s' v v' t t',
+  s = s' ->
+  v = v' ->
+  R t t' -> Compat_Binding R (TermBind s v t) (TermBind s' v' t').
+Proof.
+intros; subst; auto using Compat_Binding.
+Defined.
+
+
+Definition c_TypeBind     : forall d d' T T',
+  d = d' ->
+  T = T' ->
+  Compat_Binding R (TypeBind d T) (TypeBind d' T').
+Proof.
+intros; subst; auto using Compat_Binding.
+Defined.
+
+Definition c_DatatypeBind : forall d d',
+  d = d' ->
+  Compat_Binding R (DatatypeBind d) (DatatypeBind d').
+Proof.
+intros; subst; auto using Compat_Binding.
+Defined.
+
+
+Definition c_Let r r' bs bs' t t' :
+  r = r' ->
+  Compat_Bindings R bs bs'-> R t t' -> Compat R (Let r bs t) (Let r' bs' t').
+Proof.
+intros; subst; auto using Compat.
+Defined.
+
+Definition c_Var n n' :
+  n = n' ->
+  Compat R (Var n) (Var n').
+Proof.
+intros; subst; auto using Compat.
+Defined.
+
+Definition c_TyAbs : forall n n' k k' t t',
+  n = n' ->
+  k = k' ->
+  R t t' -> Compat R (TyAbs n k t) (TyAbs n' k' t')
+.
+Proof.
+intros; subst; auto using Compat.
+Defined.
+
+Definition c_LamAbs : forall n n' T T' t t' ,
+  n = n' ->
+  T = T' ->
+  R t t' -> Compat R (LamAbs n T t) (LamAbs n' T' t').
+Proof.
+intros; subst; auto using Compat.
+Defined.
+
+Definition c_Apply : forall s s' t t' ,
+  R s s' -> R t t' -> Compat R (Apply s t) (Apply s' t') := C_Apply R.
+
+Definition c_Constant : forall v v',
+  v = v' ->
+  Compat R (Constant v) (Constant v').
+Proof.
+intros; subst; auto using Compat.
+Defined.
+
+Definition c_Builtin : forall f f',
+  f = f' ->
+  Compat R (Builtin f) (Builtin f').
+Proof.
+intros; subst; auto using Compat.
+Defined.
+
+Definition c_TyInst : forall t t' T T',
+  T = T' ->
+  R t t' -> Compat R (TyInst t T) (TyInst t' T').
+Proof.
+intros; subst; auto using Compat.
+Defined.
+
+Definition c_Error : forall T T',
+  T = T' ->
+  Compat R (Error T) (Error T').
+Proof.
+intros; subst; auto using Compat.
+Defined.
+
+Definition c_IWrap : forall T1 T1' T2 T2' t t',
+  T1 = T1' ->
+  T2 = T2' ->
+  R t t' -> Compat R (IWrap T1 T2 t) (IWrap T1' T2' t').
+Proof.
+intros; subst; auto using Compat.
+Defined.
+
+Definition c_Unwrap : forall t t',
+  R t t' -> Compat R (Unwrap t) (Unwrap t').
+Proof.
+intros; subst; auto using Compat.
+Defined.
+
+
+
+End CompatConstrs.
+
+Create HintDb compat.
+
+#[export] Hint Resolve
+c_TermBind
+c_TypeBind
+c_DatatypeBind
+c_Let
+c_Var
+c_TyAbs
+c_LamAbs
+c_Apply
+c_Constant
+c_Builtin
+c_TyInst
+c_Error
+c_IWrap
+c_Unwrap
+: compat.
