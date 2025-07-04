@@ -33,7 +33,7 @@ Section Bindings.
   Function dec_Bindings_NonRec (bs bs' : list binding) (t' : term) : bool :=
     match bs, bs' with
     | b :: bs, b' :: bs' =>
-        if dec_compat_binding dec_Term b b'
+        if Compat.dec_binding dec_Term b b'
         then dec_Bindings_NonRec bs bs' t'
         else
           dec_pure_binding [] b &&
@@ -56,7 +56,7 @@ Function dec_Term (t t' : term) {struct t} :=
       if dec_Bindings_NonRec dec_Term bs bs' t'
       then dec_Term t t'
       else false
-  | _, _ => dec_compat dec_Term t t'
+  | _, _ => Compat.dec dec_Term t t'
   end
 .
 
@@ -73,7 +73,7 @@ Lemma dec_Bindings_NonRec_sound bs bs' t'
 Admitted.
 
 Definition P_Term := fun t => forall t', dec_Term t t' = true -> dc t t'.
-Definition P_Binding := fun b => forall b', dec_compat_binding dec_Term b b' = true -> Compat_Binding dc b b'.
+Definition P_Binding := fun b => forall b', Compat.dec_binding dec_Term b b' = true -> Compat_Binding dc b b'.
 
 Lemma dec_Term_sound : forall t, P_Term t.
 Proof.

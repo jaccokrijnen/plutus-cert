@@ -160,7 +160,7 @@ Section Compatibility.
         R t t' -> Compat (Unwrap t) (Unwrap t')
   .
 
-  Definition dec_compat_binding  (b b' : binding) : bool :=
+  Definition dec_binding  (b b' : binding) : bool :=
     match b, b' with
       | (TermBind s v t), (TermBind s' v' t') => strictness_eqb s s' && VDecl_eqb v v' && dec_R t t'
       | (TypeBind v T), (TypeBind v' T') => TVDecl_eqb v v'  && Ty_eqb T T'
@@ -170,9 +170,9 @@ Section Compatibility.
   .
 
 
-  Definition dec_compat (t t' : term) : bool :=
+  Definition dec (t t' : term) : bool :=
     match t, t' with
-      | (Let r bs t), (Let r' bs' t')      => recursivity_eqb r r' && forall2b dec_compat_binding bs bs' && dec_R t t'
+      | (Let r bs t), (Let r' bs' t')      => recursivity_eqb r r' && forall2b dec_binding bs bs' && dec_R t t'
       | (Var n), (Var n')                  => String.eqb n n'
       | (TyAbs n k t), (TyAbs n' k' t')    => String.eqb n n' && Kind_eqb k k' && dec_R t t'
       | (LamAbs n T t), (LamAbs n' T' t')  => String.eqb n n'&& Ty_eqb T T' && dec_R t t'
@@ -194,9 +194,9 @@ Section Compatibility.
     end.
 
 
-  Lemma dec_compat_Binding_Compat_Binding : ∀ b b',
+  Lemma dec_Binding_Compat_Binding : ∀ b b',
       (∀ t t', dec_R t t' = true -> R t t') ->
-      dec_compat_binding b b' = true -> Compat_Binding b b'.
+      dec_binding b b' = true -> Compat_Binding b b'.
   Proof with eauto with reflection.
     intros b b' H_term_sound H_dec.
     destruct b, b'.
@@ -215,9 +215,9 @@ Section Compatibility.
       apply C_DatatypeBind.
   Defined.
 
-  Lemma dec_compat_Bindings_Compat_Bindings : ∀ bs bs',
+  Lemma dec_Bindings_Compat_Bindings : ∀ bs bs',
       (∀ t t', dec_R t t' = true -> R t t') ->
-      forall2b dec_compat_binding bs bs' = true -> Compat_Bindings bs bs'.
+      forall2b dec_binding bs bs' = true -> Compat_Bindings bs bs'.
   Proof with eauto.
     intros bs.
     induction bs.
@@ -228,20 +228,20 @@ Section Compatibility.
     - apply Compat_Bindings_Nil.
     - split_hypos.
       apply Compat_Bindings_Cons.
-      + apply dec_compat_Binding_Compat_Binding...
+      + apply dec_Binding_Compat_Binding...
       + eauto.
   Defined.
 
   Definition P_term t := forall t',
     (∀ t t', dec_R t t' = true -> R t t') ->
-    dec_compat t t' = true -> Compat t t'
+    dec t t' = true -> Compat t t'
   .
   Definition P_binding b := forall b',
     (∀ t t', dec_R t t' = true -> R t t') ->
-    dec_compat_binding b b' = true -> Compat_Binding b b'
+    dec_binding b b' = true -> Compat_Binding b b'
   .
 
-  Lemma sound_dec_compat :
+  Lemma sound_dec :
     forall t, P_term t.
   Proof with eauto with reflection.
     (* term__rect is definitely transparent *)
@@ -258,7 +258,7 @@ Section Compatibility.
       apply recursivity_eqb_eq in H0.
       subst.
       eapply C_Let...
-      apply dec_compat_Bindings_Compat_Bindings...
+      apply dec_Bindings_Compat_Bindings...
     - apply String.eqb_eq in H_dec.
       subst.
       constructor.
@@ -301,9 +301,9 @@ Section Compatibility.
 
 
 (*
-  Lemma sound_dec_compat t t' :
+  Lemma sound_dec t t' :
     (∀ t t', dec_R t t' = true -> R t t') ->
-    dec_compat t t' = true -> Compat t t'.
+    dec t t' = true -> Compat t t'.
   Proof with eauto with reflection.
     generalize t'.
     clear t'.
@@ -318,7 +318,7 @@ Section Compatibility.
       apply recursivity_eqb_eq in H.
       subst.
       eapply C_Let...
-      apply dec_compat_Bindings_Compat_Bindings...
+      apply dec_Bindings_Compat_Bindings...
     - apply String.eqb_eq in H_dec.
       subst.
       constructor.

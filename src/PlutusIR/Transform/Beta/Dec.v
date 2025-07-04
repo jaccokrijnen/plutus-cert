@@ -33,7 +33,7 @@ Context
 
 Definition dec_compat : bool :=
   match C, t, t' with
-  | [], t, t' => Compat.dec_compat (dec []) t t'
+  | [], t, t' => Compat.dec (dec []) t t'
   | _, _, _ => false
   end
   .
@@ -139,52 +139,38 @@ Section SOUND.
 
   Lemma dec_sound_Apply : dec_Apply dec C t t' = true -> betas (map fst C) t t'.
   Proof.
+    specialize (dec_sound []) as dec_sound_nil.
     unfold dec_Apply.
-    destruct t; try solve [inversion 1].
-    clear t.
-    rename t0_1 into s.
-    rename t0_2 into t.
+    destruct_match; try solve [inversion 1].
     intros H_dec.
     apply dec_sound in H_dec.
     - auto using betas.
     - constructor; try assumption.
-      unfold arg_sound.
+      simpl.
       intros.
-      specialize (dec_sound []).
-      apply dec_sound;auto.
+      apply dec_sound_nil;auto.
   Defined.
 
   Lemma dec_sound_LamAbs : dec_LamAbs dec C t t' = true -> betas (map fst C) t t'.
   Proof.
     unfold dec_LamAbs.
-    destruct C; try solve [inversion 1].
-    destruct p.
-    destruct t; try solve [inversion 1].
-    destruct t'; try solve [inversion 1].
-    destruct r; try solve [inversion 1].
-    destruct l0; try solve [inversion 1].
-    destruct b1; try solve [inversion 1].
-    destruct s; try solve [inversion 1].
-    destruct v; try solve [inversion 1].
-    destruct l0; try solve [inversion 1].
+    repeat (destruct_match; try solve [inversion 1]).
     intros H_dec.
     repeat apply andb_and in H_dec as [H_dec ?].
     simpl.
 
-    (* Todo, use apply that leaves equality goals *)
-    rewrite string_eqb_eq in H_dec; subst b0.
-    rewrite Ty_eqb_eq in H2; subst t1.
+    apply b_LamAbs; try solve [auto with reflection].
 
-    apply beta_LamAbs.
     - eauto using Forall_inv_tail.
-    - unfold arg_sound in C_sound. apply Forall_inv in C_sound.
+    - unfold arg_sound in C_sound. 
+      auto using Forall_inv.
+      apply Forall_inv in C_sound.
       auto.
-    -
-      apply Forall_map_fst.
+    - apply Forall_map_fst.
       rewrite forallb_forall in H.
       rewrite Forall_forall.
       intros.
-      specialize (H x H2).
+      specialize (H x H3).
       destruct x.
       apply negb_in_str__NotIn.
       assumption.
@@ -242,14 +228,14 @@ Section SOUND.
           ** inversion H_dec.
           ** constructor.
             *** 
-                unfold forall2b, dec_compat_binding in H_dec.
+                unfold forall2b, Compat.dec_binding in H_dec.
                 destruct a, b; destruct_hypos; try solve [inversion H1].
                 destruct_hypos.
                 ++ eauto with compat reflection.
                 ++ eauto with compat reflection.
                 ++ eauto with compat reflection.
             ***
-                unfold forall2b, dec_compat_binding in H_dec.
+                unfold forall2b, Compat.dec_binding in H_dec.
             destruct_hypos.
               auto.
   Defined.
