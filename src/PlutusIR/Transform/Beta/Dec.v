@@ -18,17 +18,12 @@ Require Import
 From PlutusCert Require Import
   Equality.
 
-Inductive result (A : Set) :=
-  | success
-  | failure : A -> result A
-.
-Arguments success {_}.
-Arguments failure {_} _.
 
+(* Defines when an argument in the (extended) application context has a
+   sound decision procedure *)
+Definition app_ctx_dec := list (term * (term -> bool)).
 
 Section DEC.
-
-Definition app_ctx_dec := list (term * (term -> bool)).
 
 Context
   (dec : app_ctx_dec -> term -> term -> bool)
@@ -131,8 +126,6 @@ Proof.
   destruct C, t, t'; reflexivity.
 Qed.
 
-
-
 Section SOUND.
 
   (* Defines when an argument in the (extended) application context has a
@@ -153,10 +146,6 @@ Section SOUND.
   Qed.
 
 
-  (* TODO move to List.Util *)
-  Lemma negb_iff b :
-    negb b = true <-> b = false.
-  Proof. destruct b; intuition. Qed.
 
   Lemma negb_in_str__NotIn x xs :
     negb (in_str x xs) = true ->
@@ -275,7 +264,7 @@ Section SOUND.
     all: try solve [unfold dec_compat; inversion 1].
     all: intros H_dec; simpl in H_dec; try discriminate H_dec.
     all: split_hypos.
-    all: try (constructor; (eauto with compat reflection)).
+    all: try (constructor; (auto with compat reflection)).
     - (* Let *)
       apply c_Let; try solve [eauto with compat reflection].
       + revert dependent l0. induction l; intros l0 H_dec.
@@ -297,10 +286,16 @@ Section SOUND.
 
 End SOUND.
 
+Create HintDb beta_sound.
+#[export] Hint Resolve
+  dec_sound_compat
+  dec_sound_Apply
+  dec_sound_LamAbs
+  dec_sound_TyBeta
+: beta_sound
+.
 
-(* Defines when an argument in the (extended) application context has a
-   sound decision procedure
-*)
+
 
 Fixpoint dec_sound C t t' {struct t} :
   Forall arg_sound C ->
@@ -308,26 +303,11 @@ Fixpoint dec_sound C t t' {struct t} :
   betas (map fst C) t t'.
 Proof.
   setoid_rewrite dec_unfold.
-  setoid_rewrite orb_true_iff.
-  setoid_rewrite orb_true_iff.
-  setoid_rewrite orb_true_iff.
+  repeat rewrite orb_true_iff.
   intros C_sound H_dec.
   destruct H_dec as [[[H_dec | H_dec] | H_dec] | H_dec ].
-  - apply dec_sound_compat in H_dec.
-    destruct t; (* no need for induction since this is already a Fixpoint *)
-    assumption.
-    all: try assumption.
-  - apply dec_sound_Apply in H_dec.
-    destruct t; (* no need for induction since this is already a Fixpoint *)
-    assumption.
-    all: try assumption.
-  - apply dec_sound_LamAbs in H_dec.
-    destruct t; (* no need for induction since this is already a Fixpoint *)
-    assumption.
-    all: try assumption.
-  - apply dec_sound_TyBeta in H_dec.
-    destruct t; (* no need for induction since this is already a Fixpoint *)
-    assumption.
-    all: try assumption.
-Defined. 
-
+  - apply dec_sound_compat in H_dec; auto with beta.
+  - apply dec_sound_Apply in H_dec; auto with beta.
+  - apply dec_sound_LamAbs in H_dec; auto with beta.
+  - apply dec_sound_TyBeta in H_dec; auto with beta.
+Defined.

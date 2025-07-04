@@ -34,10 +34,6 @@ Has to avoid capture: e.g. t₂ may not have a free variable `x` as it would be 
 by the first binding
 
 *)
-
-
-
-
 Definition app_ctx := list term.
 
 Inductive betas : app_ctx -> term -> term -> Prop :=
@@ -81,4 +77,50 @@ Admitted.
 
 Definition spec s t := betas [] (split s) (split t).
 
+Section EqConstrs.
 
+  Definition b_Compat s t :
+     Compat (betas []) s t ->
+     betas [] s t := beta_Compat s t.
+
+  Definition b_Apply C s t r :
+     betas (t :: C) s           r ->
+     betas C        (Apply s t) r := beta_Apply C s t r.
+
+  Definition b_LamAbs C x x' T T' t t' t0 t0' :
+    x = x' ->
+    T = T' ->
+    betas C t t' ->
+    betas [] t0 t0' ->
+    (Forall (fun t => x ∉ Term.fv t) C) ->
+    betas (t0 :: C)
+     (LamAbs x T t)
+     (Let NonRec [TermBind Strict (VarDecl x' T') t0'] t').
+  Proof.
+    intros; subst; auto using betas.
+  Defined.
+
+  Definition b_TyInst_TyAbs X X' K K' t T T' t' :
+      X = X' ->
+      K = K' ->
+      T = T' ->
+      betas [] t t' ->
+      betas []
+        (TyInst (TyAbs X K t) T)
+        (Let NonRec [TypeBind (TyVarDecl X' K') T'] t')
+  .
+  Proof.
+    intros; subst; auto using betas.
+  Defined.
+
+
+End EqConstrs.
+
+Create HintDb beta.
+
+#[export] Hint Resolve
+  b_Compat
+  b_Apply
+  b_LamAbs
+  b_TyInst_TyAbs
+  : beta.

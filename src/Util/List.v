@@ -18,6 +18,11 @@ Notation "x ∈ xs" := (In x xs) (at level 40).
 Notation "x ∉ xs" := (~ (In x xs)) (at level 40).
 
 
+Lemma negb_iff b :
+  negb b = true <-> b = false.
+Proof. destruct b; intuition. Qed.
+
+
 Fixpoint lookup {X:Type} (k : string) (l : list (string * X)) : option X :=
   match l with
   | nil => None

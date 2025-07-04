@@ -1,27 +1,15 @@
 From Coq Require Import
   Lists.List
   Strings.String.
-Import ListNotations.
 From PlutusCert Require Import
   PlutusIR
-  Util
   Compat
   LetMergeNR
-  FreeVars
-  Util.List
-  Util.Tactics
-  Size
   Beta.Spec
   Beta.Dec
 .
-Require Import
-  Bool.Bool.
-From PlutusCert Require Import
-  Equality.
 
-Module Example.
-
-
+Import ListNotations.
 Open Scope string.
 
 Definition ty_unit := (Ty_Builtin DefaultUniUnit).
@@ -111,6 +99,3 @@ Abort.
 Goal dec [] w x = false.
 reflexivity.
 Qed.
-
-
-End Example.
