@@ -56,7 +56,9 @@ src/PlutusIR/Transform/DeadCode/Decide2.v
 src/PlutusIR/Transform/DeadCode/DSP/TermBind.v
 src/PlutusIR/Transform/DeadCode/DSP/Lemmas.v
 src/PlutusIR/Transform/DeadCode/DSP/BoundVars.v
-src/PlutusIR/Transform/Beta.v
+src/PlutusIR/Transform/Beta/Spec.v
+src/PlutusIR/Transform/Beta/Dec.v
+src/PlutusIR/Transform/Beta/Examples.v
 src/PlutusIR/Transform/Unwrap.v
 src/PlutusIR/Transform/SplitRec.v
 src/PlutusIR/Transform.v
