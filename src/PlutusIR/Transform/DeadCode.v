@@ -1,3 +1,17 @@
+(*
+
+This version of dead code elimination:
+
+  [x] removes empty lets
+  [x] let rec
+  [x] re-ordering bindings in let group
+        (but this is not needed for the compiler spec)
+
+implementation
+  - uses Compat
+  - uses pre-post conditions to ensure code was actually dead
+
+*)
 From Coq Require Import
   Strings.String
   Lists.List
@@ -85,7 +99,10 @@ with elim_binding : binding -> binding -> Prop :=
       elim_binding b b
   .
 
-Definition dead_code t t' := elim t t' /\ no_shadow [] [] t /\ closed t'.
+Definition dead_code t t' :=
+  no_shadow [] [] t /\
+  elim t t' /\
+  well_scoped [] [] t'.
 
 Lemma elim_sym : forall t, elim t t.
 Admitted.

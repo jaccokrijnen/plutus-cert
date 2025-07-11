@@ -1,3 +1,19 @@
+(*
+
+This version of dead code does not use Compat, but rather individual
+compatibility rules, to avoid having more than one way of building a proof.
+
+
+  [x] removes empty lets
+  [x] let rec
+  [x] re-ordering bindings in let group
+        (but this is not needed for the compiler spec)
+
+implementation
+  - uses individual compatibility rules (no overlap like Compat)
+  - checks directly for if a variable is actually dead
+
+*)
 From Coq Require Import
   Strings.String
   Lists.List
@@ -81,11 +97,6 @@ Inductive dc : term -> term -> Prop :=
   | dc_Case_cons T d d' t t' ts ts' :
       dc (Case T d ts) (Case T d' ts) ->
       dc (Case T d (t :: ts)) (Case T d' (t' :: ts'))
-
-    (* Note: This compat case includes a case for Let, which are already
-    covered by the following four constructors (e.g. there is more than one way
-    to prove compatibility with let). If we change this, there should be `compat`
-    constructors for each of the other AST constructor *)
 
   | dc_Let_NonRec
       bs bs' t t'

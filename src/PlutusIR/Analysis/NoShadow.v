@@ -184,10 +184,6 @@ Definition multind P_ns P_ns_nonrec P_ns_rec P_ns_bind :=
 .
 
 
-Definition closed := no_shadow [] [].
-
-
-
 Module Ty.
 
   Import FreeVars.Ty.
