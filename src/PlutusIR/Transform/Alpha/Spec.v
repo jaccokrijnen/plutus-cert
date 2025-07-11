@@ -9,6 +9,8 @@ Import ListNotations.
 
 Definition ctx := list (string * string).
 
+
+Reserved Notation "Γ ⊢ s '=-α' t" (at level 40).
 Inductive alpha_var : ctx -> string -> string -> Prop :=
   | AV_refl x : alpha_var [] x x
   | AV_cons x y xs :
@@ -23,14 +25,16 @@ Inductive alpha_var : ctx -> string -> string -> Prop :=
 Inductive alpha : list (string * string) -> term -> term -> Prop :=
   | A_Var x x' xs :
       alpha_var xs x x' ->
-      alpha xs (Var x) (Var x')
-  | A_LamAbs x x' T t t' sigma :
-      alpha ((x, x') :: sigma) t t' ->
-      alpha sigma (LamAbs x T t) (LamAbs x' T t')
-  | A_Apply t1 t2 t1' t2' sigma :
-      alpha sigma t1 t1' ->
-      alpha sigma t2 t2' ->
-      alpha sigma (Apply t1 t2) (Apply t1' t2')
+      xs ⊢ Var x =-α Var x'
+  | A_LamAbs x x' T t t' Γ :
+      ((x, x') :: Γ) ⊢ t =-α t' ->
+      Γ ⊢ LamAbs x T t =-α LamAbs x' T t'
+  | A_Apply t1 t2 t1' t2' Γ :
+      Γ ⊢ t1 =-α t1' ->
+      Γ ⊢ t2 =-α t2' ->
+      Γ ⊢ Apply t1 t2 =-α Apply t1' t2'
+
+  where "Γ ⊢ s '=-α' t" := (alpha Γ s t)
 .
 
 Section Reflexivity.

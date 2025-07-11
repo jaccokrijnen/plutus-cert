@@ -22,6 +22,15 @@ Lemma negb_iff b :
   negb b = true <-> b = false.
 Proof. destruct b; intuition. Qed.
 
+Function find_index (x : string) (xs : list string) : option nat :=
+  match xs with
+  | [] => None
+  | y :: xs => if x =? y then Some 0 else match find_index x xs with
+    | None => None
+    | Some y => Some (y + 1)
+    end
+  end
+.
 
 Fixpoint lookup {X:Type} (k : string) (l : list (string * X)) : option X :=
   match l with
