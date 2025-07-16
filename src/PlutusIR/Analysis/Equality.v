@@ -35,9 +35,11 @@ Ltac solveEq :=
 (* work-around to let auto convert between
   EqDec A and its definition forall x y : A, {x = y} + {x <> y} := id.
 *)
-Definition conv A : EqDec A -> forall x y : A, {x = y} + {x <> y} := id.
-Definition conv' A : (forall x y : A, {x = y} + {x <> y}) -> EqDec A := id.
-  #[export] Hint Resolve 10 conv conv' : Eqs.
+Definition conv A : EqDec A -> forall x y : A, {x = y} + {x <> y} := fun x => x.
+Definition conv' A : (forall x y : A, {x = y} + {x <> y}) -> EqDec A := fun x => x.
+
+#[export]
+Hint Resolve conv conv' : Eqs.
 
 
 Definition prod_dec A B : EqDec A -> EqDec B -> EqDec (A * B).
