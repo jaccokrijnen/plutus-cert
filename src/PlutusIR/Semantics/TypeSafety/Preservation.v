@@ -1,5 +1,5 @@
 Require Import PlutusCert.PlutusIR.Semantics.Dynamic.Bigstep.
-Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.
+Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.Typing.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
 Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.TypeLanguage.Preservation.
 Require Import PlutusCert.PlutusIR.Semantics.Static.Theorems.UniqueTypes.
@@ -11,12 +11,13 @@ Lemma closed__substituteT_CA :
     Ty.closed U ->
     substituteTCA X U T = substituteT X U T.
 Proof.
+(* ADMITTED: Time constraints *)
 Admitted.
 
 Require Import Coq.Program.Equality.
 
-(* Term language type preservation of closed terms under evaluation/reduction
-   Per issue 83, errors are not preserved.
+(* Term language type preservation of closed terms under evaluation/reduction, ignoring error terms.
+   Per issue 92: Not provable. Must be proved up to α-equivalence. See thesis Richard
 *)
 Theorem eval__type_preservation : forall t T v k,
     nil ,, nil |-+ t : T ->
@@ -49,7 +50,7 @@ Proof.
     - (* E_Constr_cons *)
       
       admit.
-      (* TODO: No typing rules for constr?*)
+      (* TODO: No typing rules for constr yet*)
     - (* E_Builtin *)
       left.
       exact Ht.

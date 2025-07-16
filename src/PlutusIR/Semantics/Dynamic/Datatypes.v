@@ -133,5 +133,5 @@ Section Test.
 
   (* TODO: placeholder until Ty_SOP is part of type language *)
   Definition ty_fake := Ty_Builtin DefaultUniInteger.
-  Compute (mk_poly 3 ty_fake [] (Ty_Fun (Ty_Var "a") (Ty_Fun (Ty_Var "b") (Ty_Var "c")))).
+  (* Compute (mk_poly 3 ty_fake [] (Ty_Fun (Ty_Var "a") (Ty_Fun (Ty_Var "b") (Ty_Var "c")))). *)
 End Test.

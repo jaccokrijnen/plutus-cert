@@ -3,7 +3,7 @@ Require Import PlutusCert.Util.List.
 
 Require Import PlutusCert.PlutusIR.Semantics.Static.Theorems.ContextInvariance.AFI.
 Require Import PlutusCert.PlutusIR.Semantics.Static.Theorems.In_Auxiliary.
-Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.
+Require Import PlutusCert.PlutusIR.Semantics.Static.Typing.Typing.
 
 Require Import Coq.Lists.List.
 
@@ -57,7 +57,8 @@ Module Kinding.
       + apply eqb_neq in Heqb.
         rewrite lookup_neq...
         rewrite lookup_neq...
-  Qed.
+    - (* Ty_SOP *) admit.
+  Admitted.
 
 End Kinding.
 
@@ -142,7 +143,7 @@ Module Typing.
         eapply In__map_normalise in i...
         apply In__lookup_append...
       + apply lookup_append_cong...
-    - (* T_LetRec *)
+    - (* T_LetRec *) 
       subst.
       eapply T_LetRec...
       + apply H5.

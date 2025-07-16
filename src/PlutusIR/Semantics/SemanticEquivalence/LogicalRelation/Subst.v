@@ -225,7 +225,7 @@ Proof. auto. Qed.
 
 (** ** Multi-substitutions preserve typing *)
 
-Fixpoint mgsubst (xts : tass) (Gamma : list (string * ty)) : list (string * ty) :=
+Fixpoint mgsubst (xts : tass) (Gamma : list (binderName * ty)) : list (binderName * ty) :=
   match xts with
   | nil => Gamma
   | ((a, T) :: xts') => mgsubst xts' (gsubst a T Gamma)
@@ -451,6 +451,7 @@ Corollary closing_preserves_typing_1 : forall Gamma T t rho k e1 e2,
 Proof with eauto.
   intros.
   rewrite <- app_nil_r with (l := Gamma) in H1.
+  
   replace [] with (mgsubst (msyn1 rho) []).
   eapply msubst_preserves_typing_1...
   rewrite mgsubst_empty...

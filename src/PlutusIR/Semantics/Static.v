@@ -1,10 +1,11 @@
 (** The static semantics *)
 Require Export PlutusCert.PlutusIR.Semantics.Static.Auxiliary.
 Require Export PlutusCert.PlutusIR.Semantics.Static.Context.
-Require Export PlutusCert.PlutusIR.Semantics.Static.Kinding.
-Require Export PlutusCert.PlutusIR.Semantics.Static.Normalisation.
+Require Export PlutusCert.PlutusIR.Semantics.Static.Kinding.Kinding.
+Require Export PlutusCert.PlutusIR.Semantics.Static.Normalization.BigStep.
 Require Export PlutusCert.PlutusIR.Semantics.Static.TypeSubstitution.
-Require Export PlutusCert.PlutusIR.Semantics.Static.Typing.
+Require Export PlutusCert.PlutusIR.Semantics.Static.Typing.Typing.
+Require Export PlutusCert.PlutusIR.Semantics.Static.Typing.drop_context.
 
 (** Important theorems *)
 Require Export PlutusCert.PlutusIR.Semantics.Static.Theorems.ContextInvariance.

@@ -61,7 +61,7 @@ Section TypingHelpers.
       Γ = Γ1 ++ (x, Tx) :: Γ2 ->
       Δ,, (Γ1 ++ Γ2) |-ok_b rec # b.
 
-  From PlutusCert Require Import Static.Typing.
+  From PlutusCert Require Import Static.Typing.Typing.
   Lemma strengthen_Γ Δ Γ t T :
     has_type Δ Γ t T ->
     forall Γ1 Γ2 x Tx,

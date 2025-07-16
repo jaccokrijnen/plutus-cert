@@ -1,6 +1,6 @@
 Require Import Lists.List.
 From PlutusCert Require Import PlutusIR.
-From PlutusCert Require Import PlutusIR.Semantics.Static.Typing.
+From PlutusCert Require Import PlutusIR.Semantics.Static.Typing.Typing.
 
 Import ListNotations.
 

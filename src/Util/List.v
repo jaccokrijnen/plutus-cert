@@ -12,6 +12,8 @@ Import ListNotations.
 From QuickChick Require Import QuickChick.
 From QuickChick Require Import CheckerProofs.
 
+From PlutusCert Require Import Util.Tactics.
+
 Require Import Utf8_core.
 
 Notation "x ∈ xs" := (In x xs) (at level 40).
@@ -228,6 +230,10 @@ Proof with auto.
     rewrite H_eqb in *...
 Qed.
 
+Lemma inclusion_no_shadow {K} x k (xs ys : list (string * K)) :
+  inclusion xs ys -> ~ In x (map fst xs) -> inclusion xs ((x, k):: ys).
+Admitted.
+
 Lemma inclusion_contra {K} x (xs ys : list (string * K)) :
   inclusion xs ys ->
   lookup x ys = None ->
@@ -240,6 +246,21 @@ Proof.
     discriminate.
   - reflexivity.
 Qed.
+
+Lemma inclusion_swap {A} (x y : string) (K L : A) m  :
+  x <> y -> 
+  inclusion ((x, K) :: (y, L) :: m) ((y, L) :: (x, K) :: m).
+Admitted.
+
+(* Second element is shadowed and hence ignored by lookup *)
+Lemma inclusion_shadow_left {A} (x : string) (K L : A) m  :
+  inclusion ((x, K) :: (x, L) :: m) ((x, K) :: m).
+Admitted.
+
+(* Second element is shadowed and hence ignored by lookup *)
+Lemma inclusion_shadow_right {A} (x : string) (K L : A) m  :
+  inclusion ((x, K) :: m) ((x, K) :: (x, L) :: m).
+Admitted.
 
 Lemma cons_shadow {A} k (x y : A) xs:
   inclusion ((k, x) :: (k, y) :: xs) ((k, x) :: xs).
@@ -275,6 +296,10 @@ Lemma append_permute A (m : list (string * A)) k (v : A) xs ys:
   ~ (In k (map fst xs)) -> inclusion (xs ++ ((k, v) :: ys)) ((k, v) :: xs ++ ys) .
 Admitted.
 
+(* Like append_permute, but the rhs list may change up to inclusion *)
+Lemma append_permute__inclusion2 A k (v : A) xs ys ys':
+  List.inclusion ys ys' -> ~ (In k (map fst xs)) -> List.inclusion ((k, v) :: xs ++ ys) (xs ++ ((k, v)::ys')).
+Admitted.
 
 Definition equivalent {A : Type} (m m' : list (string * A)) :=
   inclusion m m' /\ inclusion m' m.
@@ -820,4 +845,92 @@ Proof with auto using NameIn.
     - destruct (string_dec x a); subst...
       apply NI_There...
       apply IHxs...
+Qed.
+
+
+(***** Set/prop trick for In ******)
+Inductive InSet {A : Type} (x : A) : list A -> Type :=
+| InSet_head : forall l, InSet x (x :: l)
+| InSet_tail : forall y l, InSet x l -> InSet x (y :: l).
+
+Lemma in_app_or_set {A} (x : A) (l1 l2 : list A) :
+  InSet x (l1 ++ l2) -> sum (InSet x l1) (InSet x l2).
+Proof.
+    induction l1 as [|h t IH]; simpl; intros H.
+  - right; exact H.
+  - inversion H; subst; clear H.
+    + left; apply InSet_head.
+    + destruct (IH X) as [H'|H'].
+      * left; apply InSet_tail; exact H'.
+      * right; exact H'.
+Qed.
+
+Definition in_dec_set {A} (eq_dec : forall x y : A, {x = y} + {x <> y}) (x : A) (l : list A) :
+  sum (InSet x l) ((InSet x l) -> False).
+Proof.
+  induction l as [|h t IH].
+  - right; intros H; inversion H.
+  - destruct (eq_dec x h) as [-> | Hneq].
+    + left; apply InSet_head.
+    + destruct IH as [Hin | Hnin].
+      * left; apply InSet_tail; exact Hin.
+      * right; intros H; inversion H; subst; [contradiction | apply Hnin; assumption].
+Defined.
+
+Theorem in_set_to_prop {A} {x : A} {l : list A} :
+  InSet x l -> In x l.
+Proof.
+  intros.
+  induction l as [|h t IH]; simpl in *.
+  - inversion X.
+  - inversion X; subst.
+    + left; reflexivity.
+    + right; apply IH; assumption.
+Qed.
+
+Fixpoint in_dec_f {A} (eq_dec : forall x y : A, {x = y} + {x <> y}) (x : A) (l : list A) :
+  bool:=
+  match l with
+  | [] => false
+  | h :: hs =>
+      match eq_dec x h with
+      | left _ => true
+      | right _ => in_dec_f eq_dec x hs
+      end
+  end.
+
+Theorem in_dec_f_sound {A} {eq_dec : forall x y : A, {x = y} + {x <> y}} {x : A} {l : list A} :
+  in_dec_f eq_dec x l = true -> InSet x l.
+Proof.
+  induction l as [|h t IH]; simpl; intros H.
+  - discriminate H.
+  - destruct (eq_dec x h) as [-> | Hneq].
+    + apply InSet_head.
+    + apply InSet_tail.
+      apply IH.
+      auto.
+Qed.
+
+Theorem in_prop_to_set {x : string} {l : list string} :
+  In x l -> InSet x l.
+Proof.
+  intros.
+  destruct (in_dec_f string_dec x l) eqn:BU.
+  - eapply in_dec_f_sound; eauto.
+  - exfalso.
+    induction l.
+    + inversion H.
+    + inversion H; subst.
+      simpl in BU.
+      destruct (string_dec x x).
+      * discriminate BU.
+      * contradiction.
+      * assert (in_dec_f string_dec x l = false).
+        {
+          simpl in BU.
+          destruct (string_dec x a).
+          - discriminate BU.
+          - auto.
+        }
+        eapply IHl; auto.
 Qed.

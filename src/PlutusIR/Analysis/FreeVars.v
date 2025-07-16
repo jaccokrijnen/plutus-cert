@@ -30,6 +30,8 @@ Module Ty.
         remove string_dec X (ftv T')
     | Ty_App T1 T2 =>
         ftv T1 ++ ftv T2
+    | Ty_SOP Tss =>
+        flatmap2 ftv Tss
     end.
 
 End Ty.

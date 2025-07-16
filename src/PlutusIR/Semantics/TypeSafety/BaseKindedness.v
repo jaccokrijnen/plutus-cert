@@ -15,8 +15,10 @@ Require Import Coq.Lists.List.
 *)
 Lemma weaken_fresh Δ F K K1 :
   Δ |-* F : K -> ((freshUnwrapIFix F, K1)::Δ) |-* F : K.
+  (* ADMITTED: Time constraints. See also kinding_weakening_fresh in substituteTCA_preserves_kinding *)
 Admitted.
 
+(* unwrapIFix is well kinded if its ingredients are *)
 Lemma unwrapIFix__well_kinded F K T Δ :
   Δ |-* F : (Kind_Arrow (Kind_Arrow K Kind_Base) (Kind_Arrow K Kind_Base)) ->
   Δ |-* T : K ->
@@ -49,6 +51,7 @@ Proof.
   destruct f; repeat constructor.
 Qed.
 
+(* Any well-typed (open) term has a basedkinded type *)
 Lemma has_type__basekinded : forall Delta Gamma t T,
     Delta ,, Gamma |-+ t : T ->
     Delta |-* T : Kind_Base.

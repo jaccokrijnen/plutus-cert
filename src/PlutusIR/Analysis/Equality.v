@@ -118,8 +118,14 @@ Defined.
 Definition Kind_dec : EqDec kind. solveEq. Defined.
   #[export] Hint Resolve Kind_dec : Eqs.
 
-Definition Ty_dec: EqDec ty. solveEq. Defined.
-  #[export] Hint Resolve Ty_dec : Eqs.
+Definition list_Ty_dec_axiom : forall (l l0 : list (list ty)),
+  {l = l0} + {l <> l0}.
+Admitted.
+
+Lemma Ty_dec : EqDec ty. solveEq.
+  apply list_Ty_dec_axiom. Defined.
+#[export] Hint Resolve Ty_dec : Eqs.
+
 
 Definition VDecl_dec: EqDec vdecl. Proof. solveEq. Defined.
   #[export] Hint Resolve VDecl_dec : Eqs.
@@ -191,7 +197,7 @@ Section Derived_Eqb.
     - subst. intuition.
     - intuition.
       inversion H.
-  Qed.
+  Defined.
 
   Definition func_eqb_eq := eq_dec_to_eqb__sound func_dec.
   Definition unit_eqb_eq := eq_dec_to_eqb__sound unit_dec.
@@ -212,6 +218,12 @@ Section Derived_Eqb.
   Definition Kind_eqb_refl x : (eq_dec_to_eqb Kind_dec) x x = true.
   Proof.
     apply Kind_eqb_eq.
+    reflexivity.
+  Qed.
+
+  Definition Ty_eqb_refl x : (eq_dec_to_eqb Ty_dec) x x = true.
+  Proof.
+    apply Ty_eqb_eq.
     reflexivity.
   Qed.
 

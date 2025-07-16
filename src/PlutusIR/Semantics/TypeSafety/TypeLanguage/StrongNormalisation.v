@@ -1,10 +1,21 @@
 Require Import PlutusCert.PlutusIR.Semantics.Static.
-Require Import PlutusCert.PlutusIR.Semantics.Dynamic.
-Require Import PlutusCert.PlutusIR.Semantics.TypeSafety.SubstitutionPreservesTyping.
+Require Import PlutusCert.PlutusIR.Semantics.Static.Kinding.Checker.
 
-Theorem strong_normalisation : forall Delta T K,
-    Delta |-* T : K ->
+Require Import PlutusCert.PlutusIR.Semantics.Static.Normalization.Normalizer_sound_complete.
+
+From PlutusCert Require Import SN_PIR Normalizer.
+
+Theorem strong_normalisation Δ T K :
+    Δ |-* T : K ->
     exists Tn, normalise T Tn.
 Proof.
-(* ADMIT: I had no time to finish this. Should hold according to papers. *)
-Admitted.
+    intros Hkind.
+    remember Hkind as Hkind'. clear HeqHkind'.
+    apply strong_normalization_PIR in Hkind.
+    assert ({Tn & normalise T Tn}) as [Tn Hnorm].
+    {
+        eapply SN_normalise; eauto.
+    }
+    exists Tn.
+    assumption.
+Qed.

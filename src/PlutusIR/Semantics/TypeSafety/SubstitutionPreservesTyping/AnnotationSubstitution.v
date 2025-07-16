@@ -69,6 +69,7 @@ Definition P_Binding (b : binding) : Prop :=
   P_Binding
   : core.
 
+(* Annotation substitutions preserve typing *)
 Theorem substA_preserves_typing :
   forall t, P_Term t.
 Proof with (eauto using substituteT_preserves_kinding with typing).
@@ -79,5 +80,37 @@ Proof with (eauto using substituteT_preserves_kinding with typing).
   all: unfold P_Binding.
   all: try (intros Delta Gamma X K U Htyp__b Hkind__U).
   all: try (inversion Htyp__t; subst).
-(* ADMIT: I had no time to finish this. Should follow from uniqueness property, amongst others. *)
+(* ADMIT: Must be proved up to α-equivalence. See thesis Richard *)
 Admitted.
+
+Corollary substA_preserves_typing__Term : 
+  forall Delta Gamma X K U t T Tn,
+    ((X, K) :: Delta) ,, Gamma |-+ t : T ->
+    [] |-* U : K ->
+    normalise (substituteT X U T) Tn ->
+    Delta ,, (gsubst X U Gamma) |-+ <{ :[X := U] t }> : Tn.
+Proof.
+  intros.
+  eapply substA_preserves_typing; eauto.
+Qed.
+
+Corollary substA_preserves_typing__Term__value : 
+  forall X K U t T Tn,
+    ((X, K) :: nil) ,, nil |-+ t : T ->
+    [] |-* U : K -> (* 
+    
+      So.. no capture?
+      No free vars in U, hence a binder in T cannot capture that
+
+    *)
+    normalise (substituteT X U T) Tn ->
+    nil ,, nil |-+ <{ :[X := U] t }> : Tn.
+Proof.
+  intros.
+  assert (nil ,, (gsubst X U nil) |-+ <{ :[X := U] t }> : Tn).
+  {
+    eapply substA_preserves_typing__Term; eauto.
+  }
+  simpl in H2.
+  auto.
+Qed.

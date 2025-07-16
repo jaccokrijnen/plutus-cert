@@ -81,8 +81,20 @@ Definition dtdecl_freshR (d : dtdecl) : string :=
   end
 .
 
+(* The freshness property *)
+Lemma dtdecl_freshR__fresh x x_k YKs mF cs:
+~ In (dtdecl_freshR (Datatype (TyVarDecl x x_k) YKs mF cs))
+   (map getTyname YKs ++ x :: flat_map (fun c : vdecl => Ty.ftv (vdecl_ty c)) cs).
+Proof.
+Admitted.
+
 (* The expected return type of a constructor, i.e. the Datatype applied to all
  * its type parameters. For example: Either a b
+
+ Richard: All constructors should end with the same type! That is what we use this for
+ in the case of List, this will be
+   Ty_Apps (Ty_Var (getTyName ("List", * -> * )) (Ty_Var (getTyName ("T", * )))
+   which is just List T
  *)
 Definition constrLastTyExpected dtd : ty :=
   match dtd with
@@ -178,7 +190,7 @@ Definition dtd_either :=
     ]
 .
 
-Compute (matchTy dtd_either).
+(* Compute (matchTy dtd_either). *)
 
 Example either_matchTy : matchTy dtd_either =
   Ty_Forall "a" Kind_Base
