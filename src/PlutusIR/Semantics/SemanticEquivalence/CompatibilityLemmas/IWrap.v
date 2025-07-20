@@ -186,10 +186,10 @@ Proof with eauto_LR.
         split. eapply N_TyIFix...
         eapply T_Error.
         (* ADMIT: This is not provable in the current formulation of RC.
-          This subproof is not necessary in the new formulation of RC: R. 
+          This subproof is not necessary in the new formulation of RC: R.
          *)
         admit. admit.
-      } 
+      }
 
       split. {
         rewrite msubstT_IFix.
@@ -204,7 +204,7 @@ Proof with eauto_LR.
         split. eapply N_TyIFix...
         eapply T_Error.
         (* ADMIT: This is not provable in the current formulation of RC.
-          This subproof is not necessary in the new formulation of RC: R. 
+          This subproof is not necessary in the new formulation of RC: R.
          *)
         admit. admit.
       }

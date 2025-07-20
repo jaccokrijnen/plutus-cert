@@ -8,7 +8,7 @@ Proof.
   intros d K K' Hkind1.
   generalize dependent K'.
   induction Hkind1; intros K' Hkind2; inversion Hkind2; try reflexivity.
-  - (* DefaultUni_App*) 
+  - (* DefaultUni_App*)
     subst.
     apply IHHkind1_2 in H3.
     subst.

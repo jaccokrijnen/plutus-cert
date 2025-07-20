@@ -179,7 +179,7 @@ Hypothesis K_SOP_case : forall Δ Tss,
   Forall (Forall (fun T => has_kind Δ T Kind_Base)) Tss ->
   Forall (Forall (fun T => P Δ T Kind_Base)) Tss ->
   P Δ (Ty_SOP Tss) Kind_Base.
-  
+
 
 Fixpoint has_kind_ind'
          (Δ : list (binderTyname * kind)) (T : ty) (K : kind)

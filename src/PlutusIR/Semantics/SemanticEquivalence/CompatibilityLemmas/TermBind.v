@@ -352,14 +352,14 @@ Proof with eauto_LR.
         inversion Htyp__ih. subst.
         simpl in H10.
         apply Kinding.drop_Δ__kinding in H10.
-        
+
         eapply closing_preserves_kinding_1 in H10 as H11...
         eapply strong_normalisation in H11 as H12...
         destruct H12.
 
         eexists. split...
         (* ADMIT: This is not provable in the current formulation of RC.
-          This subproof is not necessary in the new formulation of RC: R. 
+          This subproof is not necessary in the new formulation of RC: R.
          *)
         admit.
       }
@@ -375,7 +375,7 @@ Proof with eauto_LR.
 
         eexists. split...
         (* ADMIT: This is not provable in the current formulation of RC.
-          This subproof is not necessary in the new formulation of RC: R. 
+          This subproof is not necessary in the new formulation of RC: R.
          *)
         admit.
       }

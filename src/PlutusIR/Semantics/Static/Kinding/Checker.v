@@ -12,14 +12,14 @@ From PlutusCert Require Import Util.
 
 Fixpoint kind_check_default_uni (d : DefaultUni) : option kind :=
   match d with
-  | DefaultUniInteger 
-  | DefaultUniByteString 
-  | DefaultUniString 
-  | DefaultUniUnit 
-  | DefaultUniBool 
-  | DefaultUniData 
-  | DefaultUniBLS12_381_G1_Element 
-  | DefaultUniBLS12_381_G2_Element 
+  | DefaultUniInteger
+  | DefaultUniByteString
+  | DefaultUniString
+  | DefaultUniUnit
+  | DefaultUniBool
+  | DefaultUniData
+  | DefaultUniBLS12_381_G1_Element
+  | DefaultUniBLS12_381_G2_Element
   | DefaultUniBLS12_381_MlResult => Some Kind_Base
   | DefaultUniApply t t' =>
       match (kind_check_default_uni t, kind_check_default_uni t') with
@@ -47,7 +47,7 @@ Lemma kind_checking_default_uni_sound : forall d k,
 Proof with eauto.
   intros d k H. generalize dependent k.
   induction d; intros k H; inversion H; try constructor.
-  - (* DefaultUniApply*) 
+  - (* DefaultUniApply*)
     repeat destruct_match.
     apply Kind_eqb_eq in Heqb.
     subst.
@@ -57,7 +57,7 @@ Proof with eauto.
       reflexivity.
     + apply IHd2.
       inversion H1.
-      reflexivity. 
+      reflexivity.
 Defined.
 
 Lemma kind_checking_default_uni_complete : forall d k,
@@ -65,7 +65,7 @@ Lemma kind_checking_default_uni_complete : forall d k,
 Proof.
   intros d k H.
   induction H; simpl; try reflexivity.
-  - (* DefaultUniApply *) 
+  - (* DefaultUniApply *)
     rewrite -> IHhas_kind_uni1.
     rewrite -> IHhas_kind_uni2.
     rewrite -> Kind_eqb_refl.
@@ -74,14 +74,14 @@ Qed.
 
 Fixpoint kind_check (Delta : list (binderTyname * kind)) (ty : ty) : (option kind) :=
     match ty with
-    | Ty_Var X => 
+    | Ty_Var X =>
         lookup X Delta
-    | Ty_Fun T1 T2 => 
+    | Ty_Fun T1 T2 =>
         match (kind_check Delta T1, kind_check Delta T2) with
         | (Some Kind_Base, Some Kind_Base) => Some Kind_Base
         | (_, _) => None
         end
-    | Ty_IFix F T => 
+    | Ty_IFix F T =>
         match kind_check Delta T with
         | Some K => match kind_check Delta F with
             | Some (Kind_Arrow (Kind_Arrow K1 Kind_Base) (Kind_Arrow K2 Kind_Base)) =>
@@ -100,23 +100,23 @@ Fixpoint kind_check (Delta : list (binderTyname * kind)) (ty : ty) : (option kin
         | Some Kind_Base => Some Kind_Base
         | _ => None
         end
-    | Ty_Lam X K1 T => 
+    | Ty_Lam X K1 T =>
         match kind_check ((X, K1) :: Delta) T with
         | Some K2 => Some (Kind_Arrow K1 K2)
         | _ => None
         end
-    | Ty_App T1 T2 => 
+    | Ty_App T1 T2 =>
         match (kind_check Delta T1, kind_check Delta T2) with
         | (Some (Kind_Arrow K11 K2), Some K12) =>
             if Kind_eqb K11 K12 then Some K2 else None
         | (_, _) => None
         end
-    | Ty_SOP Tss => 
-      if (forallb (fun Ts => 
-              (forallb (fun T => match kind_check Delta T with 
+    | Ty_SOP Tss =>
+      if (forallb (fun Ts =>
+              (forallb (fun T => match kind_check Delta T with
                                       | Some Kind_Base => true
                                       | _ => false
-                                end) Ts)) 
+                                end) Ts))
                 Tss) then Some Kind_Base else None
     end.
 
@@ -125,22 +125,22 @@ Theorem kind_checking_sound : forall Delta ty kind,
 Proof.
     intros Delta ty. generalize dependent Delta.
     induction ty using ty__ind; intros Delta kind Htc; inversion Htc.
-    - (* Var *) 
+    - (* Var *)
       apply K_Var.
       assumption.
-    - (* Ty_Fun *) 
+    - (* Ty_Fun *)
       repeat destruct_match.
       inversion H0.
       subst kind.
-      apply K_Fun; 
-      [apply IHty1| apply IHty2]; 
+      apply K_Fun;
+      [apply IHty1| apply IHty2];
       assumption.
-    - (* Ty_IFix *) 
+    - (* Ty_IFix *)
       repeat destruct_match.
       inversion H0.
       subst kind.
       remember (kind_check Delta ty2) as K.
-      apply K_IFix with (K := k). 
+      apply K_IFix with (K := k).
       + apply IHty2.
         rewrite <- HeqK.
         assumption.
@@ -154,7 +154,7 @@ Proof.
     - (* Ty_Forall *)
       repeat destruct_match.
       inversion H0.
-      
+
       apply K_Forall.
       apply IHty.
       assumption.
@@ -167,13 +167,13 @@ Proof.
     - (* Ty_Lam *)
       destruct_match.
       inversion H0.
-      apply K_Lam. 
+      apply K_Lam.
       apply IHty.
       assumption.
-    - (* Ty_App *) 
+    - (* Ty_App *)
       remember (kind_check Delta ty2) as K1.
       destruct K1 as [k1|]; repeat destruct_match.
-      apply K_App with (K1 := k1).  
+      apply K_App with (K1 := k1).
         + apply IHty1.
           inversion H0.
           apply Kind_eqb_eq in Heqb.
@@ -181,7 +181,7 @@ Proof.
           assumption.
         + apply IHty2.
           rewrite HeqK1.
-          reflexivity. 
+          reflexivity.
     - destruct_match.
       inversion H1; subst.
       eapply K_SOP.
@@ -207,7 +207,7 @@ Proof.
         destruct_match; subst; auto.
         apply andb_true_iff in Heqb0 as [Heqb01 Heqb02].
         apply forallb_forall with (x :=x0) in Heqb02; auto.
-        
+
         apply forallb_forall with (x := x1) in Heqb02; auto.
         repeat destruct_match; subst; auto.
 Defined.
@@ -249,7 +249,7 @@ Section ty__ind_set.
                 ((fix list_ind (ts : list ty) : ForallT P ts :=
                    match ts with
                    | nil => ForallT_nil
-                   | t :: ts' => 
+                   | t :: ts' =>
                        ForallT_cons (ty__ind_set t) (list_ind ts')
                    end) ts)
                 (list_list_ind tss')
@@ -271,22 +271,22 @@ Theorem kind_checking_sound_set : forall Delta ty kind,
 Proof.
     intros Delta ty. generalize dependent Delta.
     induction ty using ty__ind_set; intros Delta kind Htc; inversion Htc.
-    - (* Var *) 
+    - (* Var *)
       apply K_Var_set.
       assumption.
-    - (* Ty_Fun *) 
+    - (* Ty_Fun *)
       repeat destruct_match.
       inversion H0.
       subst kind.
-      apply K_Fun_set; 
-      [apply IHty1| apply IHty2]; 
+      apply K_Fun_set;
+      [apply IHty1| apply IHty2];
       assumption.
-    - (* Ty_IFix *) 
+    - (* Ty_IFix *)
       repeat destruct_match.
       inversion H0.
       subst kind.
       remember (kind_check Delta ty2) as K.
-      apply K_IFix_set with (K := k). 
+      apply K_IFix_set with (K := k).
       + apply IHty2.
         rewrite <- HeqK.
         assumption.
@@ -300,7 +300,7 @@ Proof.
     - (* Ty_Forall *)
       repeat destruct_match.
       inversion H0.
-      
+
       apply K_Forall_set.
       apply IHty.
       assumption.
@@ -313,13 +313,13 @@ Proof.
     - (* Ty_Lam *)
       destruct_match.
       inversion H0.
-      apply K_Lam_set. 
+      apply K_Lam_set.
       apply IHty.
       assumption.
-    - (* Ty_App *) 
+    - (* Ty_App *)
       remember (kind_check Delta ty2) as K1.
       destruct K1 as [k1|]; repeat destruct_match.
-      apply K_App_set with (K1 := k1).  
+      apply K_App_set with (K1 := k1).
         + apply IHty1.
           inversion H0.
           apply Kind_eqb_eq in Heqb.
@@ -327,7 +327,7 @@ Proof.
           assumption.
         + apply IHty2.
           rewrite HeqK1.
-          reflexivity. 
+          reflexivity.
     - (* Ty_SOP *)
       destruct_match.
       inversion H1; subst.
@@ -339,7 +339,7 @@ Proof.
       (* ADMIT: Ty_SOP ForallT_Forall necessary? Prop vs Type *)
 Qed.
 
-Lemma kind_checking_complete_TYSOP Tss Δ : 
+Lemma kind_checking_complete_TYSOP Tss Δ :
         Forall
           (Forall
           (fun T : ty => kind_check Δ T = Some Kind_Base))
@@ -368,7 +368,7 @@ Proof.
         end)
           a0 = true).
     {  clear H H2 H3 H4 IHa IHTss.
-      induction a0; simpl; auto. 
+      induction a0; simpl; auto.
       inversion H5; subst; auto. rewrite H1. simpl.
       auto. }
     rewrite H0. simpl.
@@ -399,17 +399,17 @@ Proof.
       rewrite IHHkind.
       auto.
     - (* Ty_Builtin *)
-      
+
       apply kind_checking_default_uni_complete in H.
       rewrite H.
       reflexivity.
     - (* Ty_Lam *)
       rewrite IHHkind.
       auto.
-    - (* Ty_App *) 
-      rewrite -> IHHkind1. 
-      rewrite -> IHHkind2. 
-      rewrite -> Kind_eqb_refl. 
+    - (* Ty_App *)
+      rewrite -> IHHkind1.
+      rewrite -> IHHkind2.
+      rewrite -> Kind_eqb_refl.
       reflexivity.
     - (* Ty_SOP *)
       apply kind_checking_complete_TYSOP.

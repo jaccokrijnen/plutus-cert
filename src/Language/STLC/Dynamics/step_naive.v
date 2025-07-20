@@ -126,6 +126,6 @@ Proof.
       apply ftv_lam_helper in Hcontra.
       apply ftv_lam_negative in Hftv_t1.
       specialize (IHHstep Hftv_t1).
-      contradiction. auto.   
+      contradiction. auto.
 Qed.
 

@@ -11,19 +11,19 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Arith.
 Require Import Coq.Bool.Bool.
 
-From PlutusCert Require Import 
-  step_naive 
-  psubs 
-  util 
-  STLC 
-  GU_NC 
-  Alpha.alpha 
-  variables 
+From PlutusCert Require Import
+  step_naive
+  psubs
+  util
+  STLC
+  GU_NC
+  Alpha.alpha
+  variables
   alpha_freshness
 .
 
 (* Procedure for generating fresh variables based on concatenating all inputs *)
-Definition fresh_to_GU_ (ftvs : list string) (binders : list (string * string)) (x : string) := 
+Definition fresh_to_GU_ (ftvs : list string) (binders : list (string * string)) (x : string) :=
   String.concat "" (ftvs ++ map fst binders ++ map snd binders ++ x::nil ++ "a"::nil).
 (* a is necessary for empty ftvs and binders*)
 
@@ -39,7 +39,7 @@ Admitted.
 
 (* Helper procedure for all globally uniquifying procedures*)
 (* Uses two contexts to keep track
-    what binders we are under: binders, 
+    what binders we are under: binders,
     and what names may not be used: used*)
 Fixpoint to_GU_ (used : list string) (binders : list (string * string)) (s : term) :=
   match s with
@@ -60,7 +60,7 @@ Fixpoint to_GU_ (used : list string) (binders : list (string * string)) (s : ter
 
 
 
-(* Constructs an α-equivalent globally unique representative 
+(* Constructs an α-equivalent globally unique representative
 By precalculating ftvs, we cannot get that a binder is accidentally renamed to an ftv later in the term
 *)
 Definition to_GU (s : term) :=
@@ -68,9 +68,9 @@ let tvs := tv s in (* tvs instead of ftvs: easier proofs*)
 snd (to_GU_ tvs  (map (fun x => (x, x)) tvs) s).
 
 
-(* A renaming context is well formed if 
+(* A renaming context is well formed if
   lookup x R = Some y => lookup_r y R = Some x *)
-Definition R_Well_formed (R : list (string * string))  := 
+Definition R_Well_formed (R : list (string * string))  :=
   forall x y, lookup x R = Some y -> AlphaVar R x y.
 
 (* Alpha equivalence with an identity renaming context implies syntactic equality*)
@@ -101,7 +101,7 @@ Proof.
       remember IHIdCtx as IHIdCtx'.
       clear HeqIHIdCtx'.
       eapply (IdCtx__alphavar_refl H) in IHIdCtx. subst.
-      
+
       constructor; auto.
       * rewrite <- String.eqb_neq. auto.
       * rewrite <- String.eqb_neq. auto.
@@ -135,10 +135,10 @@ Proof.
 Qed.
 
 (* Stengthened induction for proving globally uniquifying produces α-equivalent representatives *)
-Lemma to_GU__alpha_' s R used : 
+Lemma to_GU__alpha_' s R used :
   (forall x y, In x (ftv s) -> lookup x R = Some y -> AlphaVar R x y) ->
-  (forall x, In x (ftv s) -> lookup x R = None -> AlphaVar R x x) -> 
-  (forall x, In x (tv s) -> In x used) -> 
+  (forall x, In x (ftv s) -> lookup x R = None -> AlphaVar R x x) ->
+  (forall x, In x (tv s) -> In x used) ->
   Alpha R s (snd (to_GU_ used R s)).
 Proof.
   generalize dependent R.
@@ -162,7 +162,7 @@ Proof.
     simpl.
     constructor.
     specialize (IHs used ((s, fresh_to_GU_ used R s) :: R)).
-    rewrite <- Heqp in IHs. 
+    rewrite <- Heqp in IHs.
     simpl in IHs.
     eapply IHs.
     + intros.
@@ -171,7 +171,7 @@ Proof.
         constructor.
       * constructor; auto.
         -- apply lookup_some_then_in_values in H3.
-           
+
            assert (~ In (fresh_to_GU_ used R s) (map snd R)).
            { eapply fresh_to_GU__fresh_over_snd_binders. }
            intros Hcontra.
@@ -184,7 +184,7 @@ Proof.
       assert (Hftvlam: In x (ftv (@tmabs USort s k s0))).
       {
         apply ftv_c_lam. auto. rewrite <- String.eqb_neq. auto.
-      } 
+      }
       apply alpha_var_diff. auto.
       {
         rewrite <- String.eqb_neq. auto.
@@ -200,10 +200,10 @@ Proof.
     + intros.
       eapply H1.
       apply tv_c_lam. auto.
-  - simpl. 
+  - simpl.
     remember (to_GU_ used R s1) as p1.
     destruct p1 as [ [used1 binders] s1'].
-    simpl. 
+    simpl.
     remember (to_GU_ used1 R s2) as p2.
     destruct p2 as [ [used2 binders'] s2'].
     simpl.
@@ -216,7 +216,7 @@ Proof.
       * intros. apply H. simpl. apply in_app_iff. left. auto. auto.
       * intros.
         eapply H0.
-        apply ftv_c_appl. auto. 
+        apply ftv_c_appl. auto.
         auto.
       * intros. eapply H1. apply tv_c_appl. auto.
     + specialize (IHs2 used1 R).
@@ -232,21 +232,21 @@ Proof.
         eapply used_never_removed; eauto.
         eapply H1.
         apply tv_c_appr. auto.
-  - simpl. 
+  - simpl.
     constructor.
 Qed.
 
 (* to_GU_ produces α-equivalent types *)
-Lemma to_GU__alpha_ s R used : 
+Lemma to_GU__alpha_ s R used :
   (forall x y, In x (ftv s) -> lookup x R = Some y -> AlphaVar R x y) ->
-  (forall x, In x (ftv s) -> {y & In (x, y) R}) -> 
+  (forall x, In x (ftv s) -> {y & In (x, y) R}) ->
   Alpha R s (snd (to_GU_ used R s)).
 Proof.
   generalize dependent R.
   generalize dependent used.
   induction s; intros.
   - simpl. destruct (lookup s R) eqn:lookup_x_R.
-    + constructor. 
+    + constructor.
       apply H. simpl. left. auto. auto.
     + constructor.
       specialize (H0 s).
@@ -264,7 +264,7 @@ Proof.
     simpl.
     constructor.
     specialize (IHs used ((s, fresh_to_GU_ used R s) :: R)).
-    rewrite <- Heqp in IHs. 
+    rewrite <- Heqp in IHs.
     simpl in IHs.
     eapply IHs.
     + intros.
@@ -274,7 +274,7 @@ Proof.
         constructor.
       * constructor; auto.
         -- apply lookup_some_then_in_values in H2.
-           
+
            assert (~ In (fresh_to_GU_ used R s) (map snd R)).
            { eapply fresh_to_GU__fresh_over_snd_binders. }
            intros Hcontra.
@@ -290,16 +290,16 @@ Proof.
         assert (In x (ftv (@tmabs USort s k s0))).
         {
           apply ftv_c_lam; auto.
-        } 
+        }
         specialize (H0 H3).
         destruct H0 as [y H4].
         exists y.
         right.
         assumption.
-  - simpl. 
+  - simpl.
     remember (to_GU_ used R s1) as p1.
     destruct p1 as [ [used1 binders] s1'].
-    simpl. 
+    simpl.
     remember (to_GU_ used1 R s2) as p2.
     destruct p2 as [ [used2 binders'] s2'].
     simpl.
@@ -324,7 +324,7 @@ Proof.
         specialize (H0 x H2).
         assumption.
   - simpl. constructor.
-Qed.   
+Qed.
 
 (* Identity function mapped over list of strings generates IdCtx*)
 Lemma map_creates_IdCtx l : IdCtx (map (fun x => (x, x)) l).
@@ -366,7 +366,7 @@ Qed.
 (* Bound names constructed in s' must always be different from the ones in binders. Otherwise we have repeated binder names.
   This is because the binders list is seen as which binders have already occurred "surrounding" the type we are dealing with now.
 *)
-Lemma no_repeated_binder used' binders' s' used binders s : 
+Lemma no_repeated_binder used' binders' s' used binders s :
   ((used', binders'), s') = to_GU_ used binders s -> (forall x, In x (map snd binders) -> ~ In x (btv s')).
 Proof.
   intros.
@@ -440,7 +440,7 @@ Proof.
     + rewrite <- H1 in H0.
       eapply fresh_to_GU__fresh_over_ftvs. eauto.
     + eapply IHs with (s' := s1) (used := used); eauto.
-  - simpl in H. 
+  - simpl in H.
     remember (to_GU_ used binders s1) as p1.
     destruct p1 as [ [used1 binders1] s1'].
     remember (to_GU_ (fst (used1, binders1)) binders s2) as p2.
@@ -462,7 +462,7 @@ Lemma no_binder_used used binders s s' used' binders' :
 Proof.
   intros.
   intros Hcontra.
-  
+
   eapply no_binder_used_contrapositive in Hcontra; eauto.
 Qed.
 
@@ -513,13 +513,13 @@ Proof.
 Qed.
 
 
-(* Invariant that all ftvs are mapped using the binding context 
+(* Invariant that all ftvs are mapped using the binding context
    Assumption is aways met since we initialize to_GU_ with all ftvs mapped to themselves.
 *)
 Lemma ftvs_mapped_by_R used binders s s' used' binders' :
 (* This is an invariant we want to enforce on construction and in each lemma that we want to use this lemma*)
-  (forall y, In y (ftv s) -> {x & (In (y, x) binders)}) -> 
-  
+  (forall y, In y (ftv s) -> {x & (In (y, x) binders)}) ->
+
   ((used', binders'), s') = to_GU_ used binders s -> (forall x, In x (ftv s') -> (exists y, (In (y, x) binders))).
 Proof.
   intros.
@@ -576,7 +576,7 @@ Proof.
         {
           apply ftv_c_lam. auto.
           auto.
-        } 
+        }
         specialize (H H7).
         destruct H as [x0 H].
         exists x0.
@@ -599,9 +599,9 @@ Proof.
     rewrite H5 in H1.
     unfold ftv in H1; fold ftv in H1.
     apply in_app_iff in H1.
-    
+
     destruct H1.
-    + 
+    +
       specialize (IHs1 s1' H1 binders1 used1 binders).
       assert (forall y : string, y ∈ ftv s1 -> {x0 : string & (y, x0) ∈ binders}).
       {
@@ -616,7 +616,7 @@ Proof.
         exists x0.
         assumption.
       }
-      
+
       specialize (IHs1 H2 used Heqp1).
       destruct IHs1 as [y IHs1].
       eauto.
@@ -674,10 +674,10 @@ Proof.
       apply in_app_iff in H0. destruct H0.
       * apply in_app_iff. left. auto.
       * apply in_app_iff. right. apply in_cons. auto.
-  - simpl in H. 
+  - simpl in H.
     remember (to_GU_ used binders s1) as p1.
     destruct p1 as [ [used1 binders1] s1'].
-    simpl in H. 
+    simpl in H.
     remember (to_GU_ used1 binders s2) as p2.
     destruct p2 as [ [used2 binders2] s2'].
     inv H.
@@ -740,7 +740,7 @@ Proof.
       rewrite <- Heqp in IHs.
       simpl in IHs.
       eapply IHs.
-      * intros. 
+      * intros.
         destr_eqb_eq s x.
         -- left. reflexivity.
         -- specialize (H x).
@@ -758,10 +758,10 @@ Proof.
       simpl.
       left. reflexivity.
 
-  - simpl. 
+  - simpl.
     remember (to_GU_ used R s1) as p1.
     destruct p1 as [ [used1 binders] s1'].
-    simpl. 
+    simpl.
     remember (to_GU_ used1 R s2) as p2.
     destruct p2 as [ [used2 binders'] s2'].
     simpl.
@@ -803,7 +803,7 @@ Proof.
         assert (In x (tv s1')).
         {
           apply extend_btv_to_tv. auto.
-        } 
+        }
         eapply tvs_remembered; eauto. eauto.
       }
 
@@ -811,7 +811,7 @@ Proof.
       {
         intros Hcontra.
         eapply ftvs_mapped_by_R with (binders := R) (s := s2) in Hcontra.
-        - 
+        -
           destruct Hcontra as [y Hcontra].
           eapply no_btv_in_binders with (x := x) in Heqp1.
           assert (In x (map snd R)).
@@ -833,9 +833,9 @@ Proof.
           assumption.
         - eauto.
       }
-      
+
       apply not_ftv_btv_then_not_tv; auto.
-    - simpl. 
+    - simpl.
       constructor.
 Qed.
 
@@ -866,7 +866,7 @@ Qed.
 
 
 (* to_GU_NC from thesis: adds a no-capture property to restult type *)
-Definition to_GU' (X : string) (T : term) (s : term) := 
+Definition to_GU' (X : string) (T : term) (s : term) :=
   (* By adding tvs in X and T, no binders in the resulting term can be equal to tvs in X and T.
     We do tv, because mostly tv is easier to reason about than ftv*)
   let tvs := X :: tv T ++ tv s in
@@ -1036,7 +1036,7 @@ Qed.
 (* Globally uniquifying three types with respect to each other *)
 (* How: We first generate p. Then we can generate t with (ftv info on p).
   then we generate s with ftv info on t and p.
-    This creates the required NC properties: 
+    This creates the required NC properties:
     - subsituting x for p' in s' does not cause capture
     - NC s' [(x0, t')].
     - NC t' [(x, p')].
@@ -1057,7 +1057,7 @@ Proof.
   unfold sconstr2 in H.
   inv H.
   eapply @alpha_weaken_ids.
-  2: { eapply to_GU__alpha_. 
+  2: { eapply to_GU__alpha_.
       - intros.
         eapply lookup_some_IdCtx_then_alphavar; eauto.
         apply map_creates_IdCtx.
@@ -1077,7 +1077,7 @@ Proof.
   unfold sconstr2 in H.
   inv H.
   eapply @alpha_weaken_ids.
-  2: { eapply to_GU__alpha_. 
+  2: { eapply to_GU__alpha_.
       - intros.
         eapply lookup_some_IdCtx_then_alphavar; eauto.
         apply map_creates_IdCtx.
@@ -1097,7 +1097,7 @@ Proof.
   unfold sconstr2 in H.
   inv H.
   eapply @alpha_weaken_ids.
-  2: { eapply to_GU__alpha_. 
+  2: { eapply to_GU__alpha_.
       - intros.
         eapply lookup_some_IdCtx_then_alphavar; eauto.
         apply map_creates_IdCtx.
@@ -1151,13 +1151,13 @@ Proof.
   - intros.
     eapply no_binder_used in H; eauto.
 
-    
+
 
     destr_eqb_eq y x.
     + contradiction H.
       apply in_app_iff. right. apply in_app_iff. right. apply in_app_iff. right. apply in_cons. apply in_eq.
     + simpl. split; auto.
-      
+
       remember (map
         (fun x1 : string =>
       (x1, x1))
@@ -1172,10 +1172,10 @@ Proof.
         apply id_map_helper. auto.
         apply in_app_iff. right. apply in_app_iff. left. auto.
       }
-      
+
       assert (forall x, In x (ftv p') -> exists y, In (y, x) binders).
       {
-        
+
         eapply (ftvs_mapped_by_R  (ftv t ++
             ftv p ++
             ftv s ++ [x0; x]) binders p p' used_p binders_p Hftvs_mapped_pre).
@@ -1190,7 +1190,7 @@ Proof.
         remember Hyy0 as Hyy0'.
         clear HeqHyy0'.
         apply in_id_map_then_id in Hyy0. subst. auto.
-      } 
+      }
       assert (In y ((ftv t ++
 ftv p ++
 ftv s ++ [x0; x]))).
@@ -1210,11 +1210,11 @@ Proof.
   inv H.
   remember (map (fun x1 : string => (x1, x1))
     (ftv t ++ ftv p ++ ftv s ++ [x0; x])) as R.
-  remember ((to_GU_ (ftv t ++ ftv p ++ ftv s ++ [x0; x]) R t).2 
+  remember ((to_GU_ (ftv t ++ ftv p ++ ftv s ++ [x0; x]) R t).2
     ) as t'.
   assert (Alpha R t t').
   - rewrite Heqt'.
-    eapply to_GU__alpha_. 
+    eapply to_GU__alpha_.
     + intros.
       eapply lookup_some_IdCtx_then_alphavar; eauto.
       rewrite HeqR.
@@ -1243,11 +1243,11 @@ Proof.
   inv H.
   remember (map (fun x1 : string => (x1, x1))
     (ftv t ++ ftv p ++ ftv s ++ [x0; x])) as R.
-  remember ((to_GU_ (ftv t ++ ftv p ++ ftv s ++ [x0; x]) R p).2 
+  remember ((to_GU_ (ftv t ++ ftv p ++ ftv s ++ [x0; x]) R p).2
     ) as p'.
   assert (Alpha R p p').
   - rewrite Heqp'.
-    eapply to_GU__alpha_. 
+    eapply to_GU__alpha_.
       + intros.
         eapply lookup_some_IdCtx_then_alphavar; eauto.
         rewrite HeqR.
@@ -1417,7 +1417,7 @@ Qed.
 Opaque sconstr2.
 
 Create HintDb sconstr2_db.
-Hint Resolve sconstr2_alpha_s sconstr2_alpha_t sconstr2_nc_sub 
+Hint Resolve sconstr2_alpha_s sconstr2_alpha_t sconstr2_nc_sub
   sconstr2_nc_s sconstr2_nc_t sconstr2_nc_s_t
   sconstr2_alpha_p : sconstr2_db.
 

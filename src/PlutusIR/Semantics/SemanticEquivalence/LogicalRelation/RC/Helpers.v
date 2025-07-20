@@ -27,7 +27,7 @@ Qed.
 * binds the resulting
 *    r' : result
 *    j' : nat
-*    H_eval' : eval e' ... 
+*    H_eval' : eval e' ...
 *    H_res' : V(r, r')
 *)
 Ltac run_C H_RC r' j' H_eval' H_res':=

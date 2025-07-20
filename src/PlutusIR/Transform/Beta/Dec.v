@@ -162,7 +162,7 @@ Section SOUND.
     apply b_LamAbs; try solve [auto with reflection].
 
     - eauto using Forall_inv_tail.
-    - unfold arg_sound in C_sound. 
+    - unfold arg_sound in C_sound.
       auto using Forall_inv.
       apply Forall_inv in C_sound.
       auto.
@@ -227,7 +227,7 @@ Section SOUND.
         * destruct l0.
           ** inversion H_dec.
           ** constructor.
-            *** 
+            ***
                 unfold forall2b, Compat.dec_binding in H_dec.
                 destruct a, b; destruct_hypos; try solve [inversion H1].
                 destruct_hypos.

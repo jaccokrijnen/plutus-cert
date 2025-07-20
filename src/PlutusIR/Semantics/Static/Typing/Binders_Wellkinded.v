@@ -48,7 +48,7 @@ Proof.
       (getTyname a, getKind a) :: Δ)).
     {
       simpl. unfold fromDecl. fold fromDecl. destruct a. simpl. intuition.
-    } 
+    }
     rewrite <- Hr_rev.
     auto.
 Qed.
@@ -57,7 +57,7 @@ Qed.
 Definition notFun T1 := match T1 with | Ty_Fun _ _ => False | _ => True end.
 
 (* If T1 is not a Ty_Fun, then replaceReturnType replaces the whole type*)
-Lemma TyApps_replaceReturnTy' T1 T2s T3 : 
+Lemma TyApps_replaceReturnTy' T1 T2s T3 :
   notFun T1 -> (replaceRetTy (Ty_Apps T1 T2s) T3) = T3.
 Proof.
   intros.
@@ -71,7 +71,7 @@ Proof.
 Qed.
 
 (* Specialization for a Ty_Apps *)
-Lemma TyApps_replaceReturnTy x T2s T3 : 
+Lemma TyApps_replaceReturnTy x T2s T3 :
   (replaceRetTy (Ty_Apps (Ty_Var x) T2s) T3) = T3.
 Proof.
   now apply TyApps_replaceReturnTy'.
@@ -96,7 +96,7 @@ Proof.
 Qed.
 
 (* Motivation: Given a list of types that are introduced in a recursive let binding, they should all be well-kinded in the same context Δ. *)
-Fixpoint insert_deltas_rec (xs : list (string * ty)) (Δ : list (string * kind)) := 
+Fixpoint insert_deltas_rec (xs : list (string * ty)) (Δ : list (string * kind)) :=
 match xs with
   | nil => nil
   | (X, T):: xs' => (X, T, Δ) :: insert_deltas_rec xs' Δ
@@ -108,7 +108,7 @@ Lemma insert_deltas_rec_app xs ys Δ :
 Proof.
   induction xs.
   - reflexivity.
-  - simpl. rewrite IHxs. 
+  - simpl. rewrite IHxs.
     destruct a.
     reflexivity.
 Qed.
@@ -129,17 +129,17 @@ Proof.
     inversion Hm_bind; subst.
     clear Hm_bind.
     destruct XK as [x x_k].
-    
+
     apply K_TyForalls_constructor.
     simpl.
     remember (dtdecl_freshR (Datatype (TyVarDecl x x_k) YKs _x cs)) as fr.
-      
+
     constructor; auto.
     constructor.
 
     (* We prove the lemma for all strings that are fresh, (not this specific one)
       because for that we can do induction. (equality of fresh vars stopped us before from using the IH.) *)
-    assert (Hif_fresh: forall fr', 
+    assert (Hif_fresh: forall fr',
       (~ In fr' ((map getTyname YKs) ++ x :: flat_map (fun c => Ty.ftv (vdecl_ty c)) cs))
       -> ((fr', Kind_Base) :: (rev (map fromDecl YKs)) ++ Δ) |-* (fold_right Ty_Fun (Ty_Var fr')
             (map (fun c : vdecl => replaceRetTy (vdecl_ty c) (Ty_Var fr')) cs)) : Kind_Base).
@@ -154,8 +154,8 @@ Proof.
       induction cs; intros.
       - simpl. constructor. simpl. rewrite String.eqb_refl. auto.
       - simpl.
-      
-        assert (Hfr': fr' ∉ ((map getTyname YKs) ++ 
+
+        assert (Hfr': fr' ∉ ((map getTyname YKs) ++
           x :: flat_map (fun c : vdecl => Ty.ftv (vdecl_ty c)) (cs))).
         {
           intros Hcontra.
@@ -180,12 +180,12 @@ Proof.
           eapply Hc_wf. apply in_cons. auto.
         }
         assert (Hno_dup_smaller: NoDup (map vdecl_name cs)) by now inversion H3; auto.
-         
+
         specialize (IHcs Hno_dup_smaller Hc_wk Hc_wf_smaller fr' Hfr').
         clear Hno_dup_smaller Hc_wf_smaller.
         simpl.
         constructor; eauto. (* RHS of Fun with IH*)
-        
+
         specialize (Hc_wf a).
         assert (In a (a :: cs)) by now apply in_eq.
         specialize (Hc_wf H0).
@@ -223,20 +223,20 @@ Proof.
                apply in_app_iff in Hcontra as [Hcontra | Hcontra]; try contradiction; clear H11.
                apply not_in_app in H as [_ H].
                contradiction.
-            -- intros. apply H4. apply in_cons. auto. 
+            -- intros. apply H4. apply in_cons. auto.
     }
     eapply Hif_fresh; subst.
-    apply dtdecl_freshR__fresh.      
+    apply dtdecl_freshR__fresh.
   - (*Case: constr bind*)
     unfold constrBinds in Hc_bind.
     rewrite <- in_rev in Hc_bind.
     apply in_map_iff in Hc_bind as [c [HconstrBind Hxincs]].
     specialize (Hc_wf c Hxincs).
-    
+
     unfold constrBind in HconstrBind.
     destruct_match; subst. simpl in HconstrBind.
     inversion HconstrBind; subst.
-    
+
     inversion Hc_wf; subst.
     apply splitTy__inversion in H1; simpl.
     apply K_TyForalls_constructor; subst.
@@ -253,7 +253,7 @@ Qed.
 
 (* Introduced term variables in a non-recursive binding are well-kinded *)
 Lemma b_nr_wf__wk Δ Γ b:
-  Δ ,, Γ |-ok_b NonRec # b -> forall T _x, In (_x, T) (binds_Gamma b) 
+  Δ ,, Γ |-ok_b NonRec # b -> forall T _x, In (_x, T) (binds_Gamma b)
     -> ((binds_Delta b ++ Δ) |-* T : Kind_Base ).
 Proof.
   intros Hb_wf T _x Hin_b.
@@ -271,7 +271,7 @@ Proof.
     apply K_TyForalls_constructor.
     simpl.
     remember (dtdecl_freshR (Datatype (TyVarDecl x x_k) YKs _x cs)) as fr.
-    
+
     simpl in Hc_wf.
     constructor.
     {
@@ -282,7 +282,7 @@ Proof.
       - simpl in H2.
         inversion H2; subst.
         now apply ni_map_tv_decl__ni_rev_map_fromdecl.
-    } 
+    }
     constructor.
 
     assert ( forall fr', (~ In fr' ((map getTyname YKs) ++ x :: flat_map (fun c => Ty.ftv (vdecl_ty c)) cs))
@@ -372,12 +372,12 @@ Proof.
     apply in_map_iff in Hc_bind.
     destruct Hc_bind as [c [HconstrBind Hxincs]].
     specialize (Hc_wf c Hxincs).
-    
+
     unfold constrBind in HconstrBind.
     destruct_match; subst. simpl in HconstrBind.
-  
+
     inversion HconstrBind; subst.
-    
+
     inversion Hc_wf; subst.
     remember (Datatype XK YKs matchFunc cs) as d.
 
@@ -417,7 +417,7 @@ Qed.
 (* All term variables introduced in a non-recursive binding are well-kinded *)
 (* NOTE: Insert_deltas_rec because there is only one binder: have the same Delta *)
 Lemma b_nr_wf__map_wk Δ Γ b :
-  Δ ,, Γ |-ok_b NonRec # b -> 
+  Δ ,, Γ |-ok_b NonRec # b ->
     map_wk (insert_deltas_rec (binds_Gamma b) (binds_Delta b ++ Δ)).
 Proof.
   intros.
@@ -489,7 +489,7 @@ Proof.
 Qed.
 
 (* Motivation: Each binding should have well-kinded types in a different Δ, just like the relational version *)
-Fixpoint insert_deltas_bind_Gamma_nr (bs : list binding) (Δ : list (binderTyname * kind)) : 
+Fixpoint insert_deltas_bind_Gamma_nr (bs : list binding) (Δ : list (binderTyname * kind)) :
       list (binderName * ty * list (binderTyname * kind)) :=
   match bs with
   | [] => []
@@ -500,7 +500,7 @@ Fixpoint insert_deltas_bind_Gamma_nr (bs : list binding) (Δ : list (binderTynam
 (* All term variables introduced in a non-recursive list of bindigns are well-kinded, where the kinding context depends on the position in the list.
 *)
 Lemma bs_nr_wf__map_wk Δ Γ bs :
-  Δ ,, Γ |-oks_nr bs -> map_wk (insert_deltas_bind_Gamma_nr bs Δ). 
+  Δ ,, Γ |-oks_nr bs -> map_wk (insert_deltas_bind_Gamma_nr bs Δ).
 Proof.
   intros H.
   induction H.

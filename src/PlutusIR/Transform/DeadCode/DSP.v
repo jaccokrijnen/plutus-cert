@@ -214,7 +214,7 @@ Proof.
     admit.
 
   - (* dc_Rec_keep *)
-    admit. 
+    admit.
 
   (* dc_Rec_nil *)
 Admitted.

@@ -25,7 +25,7 @@ Proof.
       dependent destruction Hkind_T; subst.
       econstructor.
       + eapply IHHnorm1; eauto.
-      + eapply IHHnorm2; eauto. 
+      + eapply IHHnorm2; eauto.
     - (* N_TyFun *)
       dependent destruction Hkind_T; subst.
       econstructor.
@@ -52,7 +52,7 @@ Proof.
         dependent destruction Hkind_T; subst.
         constructor.
         assumption.
-    - (* N_TySOP *) 
+    - (* N_TySOP *)
        (* ADMIT: TySOP unimplemented *)
        admit.
 Admitted.

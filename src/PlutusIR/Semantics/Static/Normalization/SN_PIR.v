@@ -29,9 +29,9 @@ Fixpoint f (t : ty) : STLC.term :=
   | Ty_Fun t1 t2 => @tmbin Fun (f t1) (f t2)
   | Ty_App t1 t2 => @tmbin App (f t1) (f t2)
   | Ty_IFix f1 t1 => @tmbin IFix (f f1) (f t1)
-  | Ty_SOP Tss => 
+  | Ty_SOP Tss =>
   (* Two fold rights instead of concat/map to help termination checking*)
-      fold_right (fun Ts acc => 
+      fold_right (fun Ts acc =>
         (fold_right (fun T acc2 => @tmbin Fun (f T) acc2) acc Ts))
         (tmbuiltin PlutusIR.DefaultUniUnit) Tss
       (* Instead of checking for the length, we just start with something of Base Kind*)
@@ -57,7 +57,7 @@ Lemma f_preserves_ftv T :
   ftv (f T) = TypeSubstitution.ftv T.
 Proof.
   apply PlutusIR.ty__ind with (P := fun T => ftv (f T) = TypeSubstitution.ftv T); intros.
-  all: try solve [simpl; f_equal; auto]. 
+  all: try solve [simpl; f_equal; auto].
   induction H; auto; simpl.
   induction H; auto; simpl.
   rewrite <- app_assoc.
@@ -69,7 +69,7 @@ Lemma f_preserves_tv T :
   tv (f T) = TypeSubstitution.tv T.
 Proof.
   apply PlutusIR.ty__ind with (P := fun T => tv (f T) = TypeSubstitution.tv T); intros.
-  all: try solve [simpl; f_equal; auto]. 
+  all: try solve [simpl; f_equal; auto].
   induction H; auto; subst.
   induction H; auto; subst; simpl.
   rewrite <- app_assoc.
@@ -128,7 +128,7 @@ Proof.
       -- eapply IHa; inversion HeqfT; auto.
   + (* tmabs *)
     induction T; subst; inversion HeqfT; subst.
-    
+
     {
       autorewrite with substituteTCA.
       destr_eqb_eq X b; eauto.
@@ -169,7 +169,7 @@ Proof.
       destr_eqb_eq X b; eauto.
       rewrite <- (f_preserves_ftv).
       destruct (existsb (String.eqb b) (ftv (f U))) eqn:Heq.
-      -- 
+      --
           simpl.
           remember (fresh2 _ _) as fr.
           remember (TypeSubstitution.fresh _ _ _) as fr'.
@@ -215,12 +215,12 @@ Proof.
     * rewrite <- IHfT; auto.
   + (* tmbin *)
     induction T; subst; inversion HeqfT; subst.
-    * autorewrite with substituteTCA; simpl; f_equal; eauto; eapply H; auto; simpl; lia. 
-    * autorewrite with substituteTCA; simpl; f_equal; eauto; eapply H; auto; simpl; lia. 
-    * autorewrite with substituteTCA; simpl; f_equal; eauto; eapply H; auto; simpl; lia. 
+    * autorewrite with substituteTCA; simpl; f_equal; eauto; eapply H; auto; simpl; lia.
+    * autorewrite with substituteTCA; simpl; f_equal; eauto; eapply H; auto; simpl; lia.
+    * autorewrite with substituteTCA; simpl; f_equal; eauto; eapply H; auto; simpl; lia.
     * (* The interesting SOP case*)
        induction l; subst.
-       -- inversion HeqfT. 
+       -- inversion HeqfT.
        -- induction a; subst.
           ++ simpl.
              assert (f
@@ -235,7 +235,7 @@ Proof.
             }
             rewrite H0.
             eapply IHl; intros; eauto.
-            subst. 
+            subst.
             rewrite <- H0.
             eapply IHfT1.
             assert (f (Ty_SOP l) = f (Ty_SOP ([] :: l))).
@@ -253,7 +253,7 @@ Proof.
               simpl.
               auto.
             }
-            rewrite <- H2. 
+            rewrite <- H2.
             assumption.
 
           ++ autorewrite with substituteTCA.
@@ -290,7 +290,7 @@ Proof.
       auto.
     }
     rewrite H0.
-             
+
         assert  (@fold_right STLC.term PlutusIR.ty
             (fun (T : PlutusIR.ty) (acc2 : STLC.term) =>
           @tmbin Fun (f T) acc2)
@@ -321,7 +321,7 @@ Proof.
     * induction l; subst; inversion HeqfT.
       - autorewrite with substituteTCA. simpl. auto.
       - induction a; subst; inversion H2.
-        
+
         assert (f
           (TypeSubstitution.substituteTCA X U
           (PlutusIR.Ty_SOP ([] :: l))) = f
@@ -375,9 +375,9 @@ Proof with subst; auto.
   simpl.
   induction Tss.
   - repeat constructor; induction IHhas_kind; auto.
-  - 
-  
-    
+  -
+
+
     induction a; auto.
     + eapply IHTss.
       * inversion H; auto.
@@ -396,7 +396,7 @@ Proof with subst; auto.
 Qed.
 
 (* Forward simulatio for different languages *)
-Lemma sn_preimage2 {e2 : PlutusIR.ty -> PlutusIR.ty -> Type} {e : STLC.term -> STLC.term -> Type} 
+Lemma sn_preimage2 {e2 : PlutusIR.ty -> PlutusIR.ty -> Type} {e : STLC.term -> STLC.term -> Type}
   (h : PlutusIR.ty -> STLC.term) (x : PlutusIR.ty) :
   (forall x y, e2 x y -> e (h x) (h y)) -> @sn STLC.term e (h x) -> @sn PlutusIR.ty e2 x.
 Proof.
@@ -409,7 +409,7 @@ Proof.
   apply SNI.
   intros y C.
   apply A in C.
-  
+
   specialize (X (h y)).
   rewrite <- eqn in C.
   eapply X.

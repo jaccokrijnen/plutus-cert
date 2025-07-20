@@ -451,7 +451,7 @@ Corollary closing_preserves_typing_1 : forall Gamma T t rho k e1 e2,
 Proof with eauto.
   intros.
   rewrite <- app_nil_r with (l := Gamma) in H1.
-  
+
   replace [] with (mgsubst (msyn1 rho) []).
   eapply msubst_preserves_typing_1...
   rewrite mgsubst_empty...

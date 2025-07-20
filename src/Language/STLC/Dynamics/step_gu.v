@@ -13,19 +13,19 @@ Require Import Coq.Arith.Arith.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From PlutusCert Require Import 
-  STLC 
-  GU_NC 
-  construct_GU 
+From PlutusCert Require Import
+  STLC
+  GU_NC
+  construct_GU
   construct_GU_R
-  alpha_sub 
-  step_naive 
+  alpha_sub
+  step_naive
   Alpha.alpha
   .
 
 (* Globally uniquifying step function *)
 Inductive step_gu : term -> term -> Type :=
-| step_gu_intro s s' t : 
+| step_gu_intro s s' t :
     Alpha [] s s' ->
     GU s' ->
     step_naive s' t ->
@@ -34,9 +34,9 @@ Inductive step_gu : term -> term -> Type :=
 (** **** Many-Step Reduction *)
 Inductive red_gu : term -> term -> Type :=
 | red_gu_star s t t':
-     step_gu s t -> 
+     step_gu s t ->
      red_gu t t' ->
-     red_gu s t' 
+     red_gu s t'
 | red_gu_nil s :
      red_gu s s.
 
@@ -49,7 +49,7 @@ Proof.
   generalize dependent s'.
   induction H2; subst; intros.
   - inversion H1; subst. inversion H7; subst.
-    
+
     exists (sub y t2 s0).
     split.
     + constructor.
@@ -76,7 +76,7 @@ Qed.
     while that is not the case in step_gu s1 t1 (there s2 does not need to be taken into account)
   *)
 Lemma step_gu_app_l {B} s1 s2 t1 :
-  step_gu s1 t1 -> 
+  step_gu s1 t1 ->
   {t1' & Alpha [] t1 t1' * {s2' & Alpha [] s2 s2' * step_gu (@tmbin B s1 s2) (@tmbin B t1' s2')}%type }%type.
 Proof.
   intros.
@@ -122,7 +122,7 @@ Proof.
     - constructor. constructor.
     - apply alpha_extend_ids. constructor. constructor. eauto with α_eq_db.
     - rewrite <- H10 in H0. inversion H0; subst. eauto.
-  } 
+  }
   (* sgu and slam are both GU, so we can do step preserves 2*)
   assert ({t' & step_naive s2 t' * Alpha [(x, y)] s' t'}%type).
   {
@@ -182,7 +182,7 @@ Lemma red_gu_preserves_alpha {s} {s'} {t} R :
 Proof.
   intros.
   generalize dependent R.
-  generalize dependent t.  
+  generalize dependent t.
   induction H0; intros.
   - apply (step_gu_preserves_alpha H) in s0.
     destruct s0 as [t'0 [Hstept'0 Ha_t'0] ].
@@ -252,7 +252,7 @@ Proof.
 Qed.
 
 (* Analogous to step_gu_app_l' *)
-Lemma step_gu_app_r' {B s1 t1 t2 } : 
+Lemma step_gu_app_r' {B s1 t1 t2 } :
   step_gu t1 t2 -> {app & step_gu (@tmbin B s1 t1) app * Alpha [] app (@tmbin B s1 t2)}%type.
 Proof.
   intros Hstep_gu.
@@ -325,7 +325,7 @@ Proof.
     + exists (@tmbin B s t).
       split.
       * apply red_gu_nil.
-      * apply alpha_refl. constructor. 
+      * apply alpha_refl. constructor.
 Qed.
 
 (* Analogous to app_l *)

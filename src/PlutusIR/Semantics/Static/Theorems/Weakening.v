@@ -154,4 +154,4 @@ Module Typing.
     all: eassumption.
   Qed.
 
-End Typing. 
+End Typing.

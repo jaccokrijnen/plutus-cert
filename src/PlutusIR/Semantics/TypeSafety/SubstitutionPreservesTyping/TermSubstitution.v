@@ -154,7 +154,7 @@ Proof with (eauto with typing).
            eapply notIn__map_normalise in H8...
            apply Typing.weakening in H9.
            apply H9.
-           all: auto using inclusion_refl, append_permute. 
+           all: auto using inclusion_refl, append_permute.
 Qed.
 
 Lemma SPT__Bindings_Rec : forall bs,
@@ -215,10 +215,10 @@ Proof with eauto.
             apply Typing.weakening in H13.
             apply H13.
             all: auto using inclusion_refl, append_shadow.
-        -- simpl. 
+        -- simpl.
            erewrite btvbs_eq__drop_Δ_eq; eauto.
            rewrite subst_bnr'__preserves__btvbs; eauto.
-            
+
       * eapply T_Let...
         -- rewrite subst_bnr__preserves_bindsG...
         -- eapply SPT__Bindings_NonRec...

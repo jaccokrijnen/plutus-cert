@@ -112,7 +112,7 @@ Qed.
 
 (* Transitivity of α-equivalent substitutions*)
 Lemma AlphaSubs_trans R1 R2 R σ σ' σ'' :
-  αCtxTrans R1 R2 R -> 
+  αCtxTrans R1 R2 R ->
   AlphaSubs R1 σ σ' -> AlphaSubs R2 σ' σ'' -> AlphaSubs R σ σ''.
 Proof.
   intros.

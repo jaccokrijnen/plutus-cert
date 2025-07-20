@@ -2,10 +2,10 @@ Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Strings.String.
 
-From PlutusCert Require Import 
-  GU_NC 
-  STLC 
-  util 
+From PlutusCert Require Import
+  GU_NC
+  STLC
+  util
   variables
   psubs.
 
@@ -16,7 +16,7 @@ Inductive IdSubst : list (string * term) -> Set :=
 
 (* Identity substitutions have no effect *)
 Lemma id_subst__id s σ :
-  IdSubst σ -> 
+  IdSubst σ ->
   psubs σ s = s. (* No need for a no-capture premise: even when this "captures", it doesnt matter, since it captures something and then substiutes it for the same name*)
 Proof.
   intros.
@@ -87,7 +87,7 @@ Proof.
   intros.
   induction σ.
   - constructor.
-  - simpl. destruct a as [x1 x2]. constructor. 
+  - simpl. destruct a as [x1 x2]. constructor.
     + apply IHσ. inversion H. assumption.
     + inversion H; subst.
       rewrite (remove_ids_IdSubst_is_nil _ H1). auto.

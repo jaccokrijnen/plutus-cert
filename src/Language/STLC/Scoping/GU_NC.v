@@ -10,26 +10,26 @@ Require Import Lia.
 Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Arith.
 
-From PlutusCert Require Import 
-  STLC 
-  step_naive 
-  util 
-  Alpha.alpha 
-  variables 
-  alpha_freshness 
+From PlutusCert Require Import
+  STLC
+  step_naive
+  util
+  Alpha.alpha
+  variables
+  alpha_freshness
 .
 
 (* Global unique predicate*)
 Inductive GU : term -> Set :=
 | GU_var x : GU (tmvar x)
-| GU_app {B} s t : 
-    GU s -> 
-    GU t -> 
+| GU_app {B} s t :
+    GU s ->
+    GU t ->
     forall (H_btv_btv_empty : forall x, In x (btv t) -> ~ In x (tv s)),
     forall (H_btv_ftv_empty : forall x, In x (btv s) -> ~ In x (tv t)),
     GU (@tmbin B s t)
-| GU_lam {B} x A s : 
-    GU s -> 
+| GU_lam {B} x A s :
+    GU s ->
     ~ In x (btv s) ->
     GU (@tmabs B x A s)
 | GU_builtin d :
@@ -54,7 +54,7 @@ Proof.
 Qed.
 
 (* NC decomposes over app and abs *)
-Lemma nc_lam {B x s A sigma} : 
+Lemma nc_lam {B x s A sigma} :
   NC (@tmabs B x A s) sigma -> NC s sigma.
 Proof.
   induction sigma; [constructor|]; intros Hnc.
@@ -218,7 +218,7 @@ Proof.
     split.
     + intros Hcontra.
       subst.
-      apply ftv_lam_no_binder in Hins. 
+      apply ftv_lam_no_binder in Hins.
       auto.
     + apply IHHgu.
       apply ftv_lam_helper in Hins.
@@ -247,7 +247,7 @@ Qed.
    - binders in sigma are not free in s
    - binders in sigma are not free in sigma
 *)
-Definition BU sigma s := ((forall x, In x (btv_env sigma) -> ~ In x (tv s)) 
+Definition BU sigma s := ((forall x, In x (btv_env sigma) -> ~ In x (tv s))
   * (forall x, In x (btv_env sigma) -> ~ In x (ftv_keys_env sigma)))%type.
 
 Lemma BU_smaller {sigma s x t} : BU ((x, t)::sigma) s -> BU sigma s.

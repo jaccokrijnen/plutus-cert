@@ -56,7 +56,7 @@ Fixpoint tv (t : ty) : list string :=
   | Ty_App t1 t2 => tv t1 ++ tv t2
   | Ty_IFix f1 t1 => tv f1 ++ tv t1
   | Ty_Builtin d => []
-  | Ty_SOP Tss => 
+  | Ty_SOP Tss =>
       flatmap2 tv Tss
   end.
 
@@ -135,13 +135,13 @@ Proof.
   intros. simpl. simpl.
   induction T; simpl; auto.
   lia.
-Qed. 
+Qed.
 
 Lemma size_list_smaller : forall (T : ty) (Ts : list ty) (Tss : list (list ty)),
   In T Ts -> In Ts Tss -> size T < size (Ty_SOP Tss).
 Proof.
-  intros T Ts Tss Hin_Ts Hin_Tss. 
-  
+  intros T Ts Tss Hin_Ts Hin_Tss.
+
   induction Tss.
   - inversion Hin_Tss.
   - destruct Hin_Tss.
@@ -217,7 +217,7 @@ Equations? substituteTCA (X : string) (U T : ty) : ty by wf (size T) :=
   substituteTCA X U (Ty_App T1 T2) =>
       Ty_App (substituteTCA X U T1) (substituteTCA X U T2);
   substituteTCA X U (Ty_SOP Tss) => Ty_SOP (map' Tss
-         (fun (Ts : list ty) (Hin' : In Ts Tss) => 
+         (fun (Ts : list ty) (Hin' : In Ts Tss) =>
             map' Ts
             (fun T Hin => substituteTCA X U T)
           )

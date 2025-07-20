@@ -13,15 +13,15 @@ Require Import Coq.Arith.Arith.
 Require Import Coq.Bool.Bool.
 Require Import Coq.Program.Equality.
 
-From PlutusCert Require Import 
-  construct_GU 
-  step_naive 
-  psubs 
-  util 
-  STLC GU_NC 
-  Alpha.alpha 
-  variables 
-  alpha_subs 
+From PlutusCert Require Import
+  construct_GU
+  step_naive
+  psubs
+  util
+  STLC GU_NC
+  Alpha.alpha
+  variables
+  alpha_subs
   alpha_freshness.
 
 (* If x is not free in s, we can construct an α-equivalent representative that also does not have x as binder *)
@@ -79,7 +79,7 @@ Proof.
   - inversion Ha; subst.
     constructor.
     + eapply IHσ; eauto; intros.
-      * 
+      *
         specialize (Hvac1 x0 H).
         simpl in Hvac1. apply de_morgan2 in Hvac1 as [_ Hvac1].
         apply not_in_app in Hvac1 as [_ Hvac1]. auto.
@@ -87,13 +87,13 @@ Proof.
         simpl in Hvac2. apply de_morgan2 in Hvac2 as [_ Hvac2].
           apply not_in_app in Hvac2 as [_ Hvac2]. auto.
     + inversion H3; subst.
-      apply alphavar_refl_weaken_vacuouss. 
+      apply alphavar_refl_weaken_vacuouss.
       * intros Hcontra.
-        apply Hvac1 in Hcontra. simpl in Hcontra. 
+        apply Hvac1 in Hcontra. simpl in Hcontra.
         apply de_morgan2 in Hcontra as [Hcontra _].
         contradiction.
       * intros Hcontra.
-        apply Hvac2 in Hcontra. simpl in Hcontra. 
+        apply Hvac2 in Hcontra. simpl in Hcontra.
         apply de_morgan2 in Hcontra as [Hcontra _].
         contradiction.
     + assert (Alpha (R ++ nil) t t').
@@ -121,7 +121,7 @@ Proof.
   induction H_α.
   - constructor.
   - constructor.
-    + apply IHH_α. auto. simpl in H_nxσ. 
+    + apply IHH_α. auto. simpl in H_nxσ.
       * apply de_morgan2 in H_nxσ. destruct H_nxσ as [_ H_nxσ].
         apply not_in_app in H_nxσ as [_ H_nxσ]. auto.
       * apply de_morgan2 in H_nx'σ'. destruct H_nx'σ' as [_ H_nx'σ'].
@@ -143,7 +143,7 @@ Proof.
   destruct (in_dec string_dec z (ftv s)).
   - intros.
 
-    (* By contradiction: If z breaks shadowing in R, then there is a (z, z') in there with z' <> z. 
+    (* By contradiction: If z breaks shadowing in R, then there is a (z, z') in there with z' <> z.
     Then not R ⊢ s ~ s*)
     assert (NotBreakShadowing z R).
     {
@@ -155,7 +155,7 @@ Proof.
           inversion a; subst.
           * apply not_break_shadow_id.
           * apply not_break_shadow_cons; auto.
-      - 
+      -
          assert (z <> x).
         {
           apply ftv_lam_in_no_binder in i. auto.
@@ -165,7 +165,7 @@ Proof.
         inversion IHAlpha; subst.
         + auto.
         + contradiction.
-      - simpl in i. 
+      - simpl in i.
         apply in_prop_to_set in i.
         apply in_app_or_set in i.
         destruct i.

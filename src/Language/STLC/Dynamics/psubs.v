@@ -136,13 +136,13 @@ Proof.
       destr_eqb_eq x y.
       * rewrite <- String.eqb_neq in Hftv_s. rewrite Hftv_s. simpl in IHsigma.
         assumption.
-      * 
+      *
         (* This should be its own lemma, since it is about sub now, not subs*)
         {
         destr_eqb_eq y s; auto.
 
         }
-        
+
 
 
   -
@@ -153,7 +153,7 @@ Proof.
       apply ftv_lam_negative in Hftv_s.
       specialize (IHs Hftv_s).
       contradiction. auto.
-  - 
+  -
     simpl.
     apply not_in_app. split.
     + apply IHs1. auto. eapply not_ftv_app_not_left; eauto.
@@ -175,7 +175,7 @@ Proof.
     specialize (IHsigma H2).
     simpl.
 
-    
+
     rewrite <- String.eqb_neq in H1.
     simpl.
     rewrite H1.
@@ -211,7 +211,7 @@ Proof.
   - simpl. reflexivity.
 Qed.
 
-(* substitutions do not introduce new free variables 
+(* substitutions do not introduce new free variables
 *)
 Lemma psubs_no_ftv x sigma y:
   ~ In x (ftv_keys_env sigma) -> x <> y -> ~ In x (ftv (psubs sigma (tmvar y))).
@@ -229,7 +229,7 @@ Qed.
 (**************** Remove ids, necessary for ParSeq*)
 
 Fixpoint remove_ids (sigma : list (string * term)) : list (string * term) :=
-  match sigma with 
+  match sigma with
   | nil => nil
   | (x, tmvar y)::sigma' => if String.eqb x y then remove_ids sigma' else (x, tmvar y)::(remove_ids sigma')
   | (x, t)::sigma' => (x, t)::(remove_ids sigma')
@@ -255,7 +255,7 @@ Proof.
       simpl in H0.
       induction a2; try solve [simpl in H0; apply de_morgan2 in H0 as [_ H0]; auto ].
       destr_eqb_eq a1 s0; auto.
-      apply de_morgan2 in H0 as [H0_]; auto.      
+      apply de_morgan2 in H0 as [H0_]; auto.
 Qed.
 
 
@@ -280,7 +280,7 @@ Proof.
       destr_eqb_eq s X.
       left. auto.
       right. simpl. intuition.
-      destr_eqb_eq X s. 
+      destr_eqb_eq X s.
       simpl in H. intuition.
       right. simpl. intuition.
     + right.
@@ -303,7 +303,7 @@ Proof.
       * destr_eqb_eq a1 s.
         -- apply remove_ids_helper4 in H.
           destruct a as [a1 a2].
-          apply remove_ids_helper4 in H. 
+          apply remove_ids_helper4 in H.
           auto.
         -- simpl.
             apply de_morgan2.
@@ -403,14 +403,14 @@ Qed.
 Inductive ParSeq : list (string * term) -> Set :=
 | ParSeq_nil : ParSeq []
 | ParSeq_cons x t sigma :
-    ParSeq sigma -> 
+    ParSeq sigma ->
     (* we do remove_ids, since identity substitutions have no effect *)
     ~ In x (ftv_keys_env (remove_ids sigma)) -> (* We cannot have that x is a key in sigma either
       look e.g. at (x, a)::(x, b). As a sequential sub applied to tmvar x, we get b.
                                     As a parallel, we get a.
 
     *)
-    ~ In x (btv_env sigma) -> 
+    ~ In x (btv_env sigma) ->
     ParSeq ((x, t)::sigma).
 
 (* ParSeq can be reduced *)
@@ -432,7 +432,7 @@ Lemma psubs_unfold sigma X T s :
 Proof.
   intros.
   induction s.
-  - simpl. 
+  - simpl.
     destr_eqb_eq X s.
     + inversion H; subst.
       destruct (lookup s sigma) eqn:Hl.
@@ -458,7 +458,7 @@ Proof.
             destr_eqb_eq s a1.
             + rewrite lookup_eq in Hl.
               inversion Hl; subst; clear Hl.
-              
+
               simpl in H6.
               apply remove_ids_helper3 in H5.
               destruct H5 as [[H5 H7] | H5].

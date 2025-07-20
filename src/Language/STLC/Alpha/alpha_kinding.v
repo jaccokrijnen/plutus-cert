@@ -7,7 +7,7 @@ Local Open Scope list_scope.
 
 (* Alpha equivalence of kinding contexts *)
 Inductive CAlpha : list (string * string) -> list (string * PlutusIR.kind) -> list (string * PlutusIR.kind) -> Prop :=
-  | calpha_nil D : CAlpha [] D D 
+  | calpha_nil D : CAlpha [] D D
   | calpha_cons x y K R Γ Γ' :
     CAlpha R Γ Γ' ->
     CAlpha ((x, y)::R) ((x, K)::Γ) ((y, K)::Γ').
@@ -61,7 +61,7 @@ Proof.
     inversion HType; subst;
     specialize (IHHAlpha ((y, A)::Γ') ((x, A)::Γ)
       (calpha_cons x y A R Γ Γ' HCAlpha) _ H5); constructor; auto.
-  - intros Γ' Γ HCAlpha A HType. 
+  - intros Γ' Γ HCAlpha A HType.
     inversion HType; subst; econstructor; eauto.
   - intros.
     inversion H; subst.

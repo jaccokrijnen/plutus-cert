@@ -1,7 +1,7 @@
 Require Import PlutusCert.PlutusIR.
 Require Import PlutusCert.Util.List.
-From PlutusCert Require Import 
-  Kinding.Kinding 
+From PlutusCert Require Import
+  Kinding.Kinding
   util
   Free
   Weakening
@@ -127,7 +127,7 @@ Admitted.
     but easier to prove than with ftv *)
 Lemma rename_preserves_kinding X Y K L Δ T:
   ~ In Y (tv T) ->
-  ((X, L) :: Δ) |-* T : K -> 
+  ((X, L) :: Δ) |-* T : K ->
   ((Y, L) :: Δ) |-* (rename X Y T) : K.
 Proof.
   intros Hfresh Hkind.
@@ -195,7 +195,7 @@ Proof.
       * eapply Kinding.weakening.
         eapply inclusion_swap; auto.
         apply kinding_weakening_fresh; auto.
-        {          
+        {
           apply weaken_not_tv_to_not_ftv.
           simpl in Hfresh; intuition.
         }
@@ -212,7 +212,7 @@ Proof.
         eapply Kinding.weakening with (Delta := ((Y, L) :: (Z, K1) :: Δ)).
         eapply inclusion_swap; auto.
         eapply IHT; auto.
-        {          
+        {
           simpl in Hfresh; intuition.
         }
         simpl in Hfresh; intuition.
@@ -237,7 +237,7 @@ Proof.
       * eapply Kinding.weakening.
         eapply inclusion_swap; auto.
         apply kinding_weakening_fresh; auto.
-        {          
+        {
           apply weaken_not_tv_to_not_ftv.
           simpl in Hfresh; intuition.
         }
@@ -254,7 +254,7 @@ Proof.
         eapply Kinding.weakening with (Delta := ((Y, L) :: (Z, K1) :: Δ)).
         eapply inclusion_swap; auto.
         eapply IHT; auto.
-        {          
+        {
           simpl in Hfresh; intuition.
         }
         simpl in Hfresh; intuition.

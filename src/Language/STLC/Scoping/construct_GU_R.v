@@ -11,16 +11,16 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Arith.
 Require Import Coq.Bool.Bool.
 
-From PlutusCert Require Import 
-  alpha_vacuous 
-  construct_GU 
-  step_naive 
-  psubs 
-  util 
-  STLC GU_NC 
-  Alpha.alpha 
-  variables 
-  alpha_subs 
+From PlutusCert Require Import
+  alpha_vacuous
+  construct_GU
+  step_naive
+  psubs
+  util
+  STLC GU_NC
+  Alpha.alpha
+  variables
+  alpha_subs
   alpha_freshness.
 
 Require Import Coq.Program.Equality.
@@ -44,9 +44,9 @@ Definition a_R_constr R (s s' : term) t : list (string * string) :=
 
 
 (* If the new fresh variable is based on everything in original R, it will be genuinly "fresh"*)
-Lemma R_Well_formedFresh x R R' used : 
-  R_Well_formed R -> 
-  (forall y, In y (map fst R ++ map snd R) -> (In y used) \/ (In y (map fst R' ++ map snd R'))) -> 
+Lemma R_Well_formedFresh x R R' used :
+  R_Well_formed R ->
+  (forall y, In y (map fst R ++ map snd R) -> (In y used) \/ (In y (map fst R' ++ map snd R'))) ->
   R_Well_formed ((x, fresh_to_GU_ used R' x)::R).
 Proof.
   intros.
@@ -83,7 +83,7 @@ Proof.
 Qed.
 
 (* Analogous but for multiple renamings *)
-Lemma R_Well_formedFreshMultiple used R l : 
+Lemma R_Well_formedFreshMultiple used R l :
   R_Well_formed R -> R_Well_formed ((freshen (used ++ map fst R ++ map snd R) l ) ++ R).
 Proof.
   unfold freshen.
@@ -142,8 +142,8 @@ Proof.
     + (* In x l case*)
       destruct H.
       *
-      { 
-        subst. 
+      {
+        subst.
         unfold freshen.
         simpl.
         apply de_morgan2.
@@ -177,10 +177,10 @@ Proof.
         (* x not in ftvs of fresh_to_GU, but also x in l, which is in ftvs/used *)
         assert (~ In (fresh_to_GU_ (used ++ a :: l)
             (fold_right (fun (x0 : string) (acc : list (string * string)) =>
-            (x0, fresh_to_GU_ (used ++ a :: l) acc x0) :: acc) [] l) a ) 
-            
+            (x0, fresh_to_GU_ (used ++ a :: l) acc x0) :: acc) [] l) a )
+
             (used ++ a :: l)).
-        { 
+        {
           apply fresh_to_GU__fresh_over_ftvs.
         }
         intros Hcontra.
@@ -276,12 +276,12 @@ Proof.
       eauto.
 Qed.
 
-(* Strengthened statement: The constructed renaming context is well-formed for free type variables in t: if under R' we have left-sided lookup behaviour, then this is mirrored by right-sided lookup behaviour 
+(* Strengthened statement: The constructed renaming context is well-formed for free type variables in t: if under R' we have left-sided lookup behaviour, then this is mirrored by right-sided lookup behaviour
 Note: uses that R is used to relate s and s' to be able to case distinct on x in s or x not in s.
 *)
 Lemma a_R_constr_helper R R' s s' t x y :
   R' = @a_R_constr R s s' t ->
-  
+
   In x (ftv t) ->
   lookup x R' = Some y ->
   Alpha R s s' ->
@@ -310,7 +310,7 @@ Proof.
       unfold R_Well_formed in H1. repeat rewrite app_nil_r in H1.
       eapply H1; auto.
     }
-  
+
     assert (lookup_r y (Rfr ++ R) = Some x).
     {
       apply lookup_r__app.
@@ -318,9 +318,9 @@ Proof.
     }
     rewrite H.
     eapply lookup_some_then_alphavar; eauto.
-    + apply lookup_app_r; auto. 
+    + apply lookup_app_r; auto.
 
-  - 
+  -
     assert (AlphaVar R x y).
     {
       assert (In x (ftv s)).
@@ -334,7 +334,7 @@ Proof.
           contradiction.
         }
         eapply list_diff_got_filtered; eauto.
-      } 
+      }
       clear HeqRfr H0 H H_ni_fresh.
       apply (alpha_preserves_ftv' H1) in H2 as [y' [H2_a H2_fr]].
       destruct (alphavar_models_lookup H2_a) as [[H2_a' _] | [[H2_a' _] _]].
@@ -345,7 +345,7 @@ Proof.
     {
       rewrite H.
       apply lookup_none_app; auto.
-      
+
     }
     assert (lookup_r y R' = Some x).
     {
@@ -357,7 +357,7 @@ Proof.
           apply in_map_iff.
           exists ((x, y)). simpl. split; auto.
         }
-        
+
         assert (In y ((tv s ++
             tv s' ++
             tv t ++
@@ -396,7 +396,7 @@ Qed.
 *)
 Definition a_constr {R} {s s' : term} t : prod (list (string * string)) (term) :=
   let R' := @a_R_constr R s s' t in
-  let used' := tv s ++ tv s' ++ tv t ++ (map fst R') ++ (map snd R') in 
+  let used' := tv s ++ tv s' ++ tv t ++ (map fst R') ++ (map snd R') in
   (R', snd (to_GU_ used' R' t)).
 
 (* In a_R_constr, α-equivalence of the original s and s' is preserved by the updated renaming context *)
@@ -410,7 +410,7 @@ Proof.
   remember (freshen _ _) as Rfr.
   rewrite H.
   eapply alpha_vacuous_R.
-  - intros. 
+  - intros.
     remember ((tv s ++
         tv s' ++
         tv t ++
@@ -534,19 +534,19 @@ Proof.
       destruct (in_dec string_dec x (ftv s)).
       - auto.
       - exfalso.
-      
+
          assert (In x  (list_diff string_dec
   (ftv t) (ftv s))).
         {
           apply list_diff_helper.
           auto. auto.
-        } 
+        }
         exfalso.
 
         assert (In x (map fst frMap)).
       {
 
-      
+
         subst.
         remember (list_diff _ _ _) as l.
         eapply in_generator_then_in_freshen2.
@@ -562,7 +562,7 @@ Proof.
 
     }
 
-    
+
     assert (~ In x (map snd R')).
     {
       (* Then there exists x' s.t. (x', x) in (strip_R R)*)
@@ -606,7 +606,7 @@ Definition R_constr (t : term) (s : term) (sigma : list (string * term)) (X : st
   let R2 := map (fun x => (x, x)) (list_diff string_dec (ftv t) btvs) in
   let R1 := freshen (used ++ map fst R2 ++ map snd R2) btvs in (* Added map fst R2 ++ map snd R2 for easier proving*)
   (* we rename those ftvs in t that are binders in s and sigma*)
-  (R1, R2). 
+  (R1, R2).
 
 (* All elements in the rhs of R are distinct *)
 Inductive UniqueRhs : list (string * string) -> Prop :=
@@ -821,7 +821,7 @@ Proof.
   subst.
   apply in_freshen2_then_in_generator in Hin.
   apply in_prop_to_set in Hin.
-  apply in_app_or_set in Hin as [Hin | Hin].  
+  apply in_app_or_set in Hin as [Hin | Hin].
   + left.
     apply in_set_to_prop. auto.
   + right.
@@ -853,7 +853,7 @@ Definition t_constr (t : term) (s : term) (sigma : list (string * term)) (X : st
   let tv_t := tv t in
   let used := tv_t ++ tvs ++ [X] in
   let (R1, R2) := R_constr t s sigma X in
-  (snd (to_GU_ used (R1 ++ R2) t), R1 ++ R2). 
+  (snd (to_GU_ used (R1 ++ R2) t), R1 ++ R2).
 
 Lemma t_constr__GU {t t' R s sigma X} :
   (t', R) = t_constr t s sigma X ->
@@ -879,7 +879,7 @@ Proof.
       eauto.
 
 
-      
+
     + inversion Heqp.
       rewrite map_app. apply in_app_iff. right.
       apply in_map_iff.
@@ -985,7 +985,7 @@ Proof.
     apply in_app_or in H1.
     destruct H1.
     * apply gu_ftv_then_no_btv in H. contradiction. auto. auto.
-    * auto. 
+    * auto.
    - (* x' is specifically in R1, which only contains fresh vars (over s)*)
        unfold R_constr in H0.
       inv H0. intros.
@@ -1033,7 +1033,7 @@ Proof.
   + apply AlphaSubs_vacuous_R.
     * intros.
       apply R_constr_freshen_helper with (x := x) in HReq; auto.
-      destruct HReq as [H01 | H02]; auto. 
+      destruct HReq as [H01 | H02]; auto.
       eapply nc_ftv_env in Hnc; eauto.
     * intros.
       apply R_constr_freshen_fresh_over_sigma with (x := x') in HReq; auto.
@@ -1153,7 +1153,7 @@ Proof.
   generalize dependent R.
   induction t'; intros.
   - inversion Ha_t''; subst.
-    
+
     intros Hcontra.
     inversion Hcontra; eauto. subst. clear Hcontra.
     destr_eqb_eq x X.
@@ -1190,12 +1190,12 @@ Proof.
       exists (x, X). split; auto.
   - destr_eqb_eq X s.
     + intros Hcontra. simpl in Hcontra. apply in_remove in Hcontra. destruct Hcontra as [_ snots]. contradiction.
-    + 
+    +
       assert (~ In X (ftv t')).
       {
         inversion Ha_t''; subst.
         eapply IHt' with (t'' := s1) (R := ((x, s)::R)); eauto.
-        - eapply not_btv_dc_lam; eauto. 
+        - eapply not_btv_dc_lam; eauto.
         - eapply not_btv_dc_lam; eauto.
         - simpl.
           intuition.
@@ -1244,7 +1244,7 @@ Proof.
     {
       inversion Hconstr. clear H1 Hconstr. subst.
       apply freshen2_alpha_lookup; auto.
-    } 
+    }
     eapply alphavar_extend_ids_right in H; eauto.
     eapply R_constr_R2_IdCtx in Hconstr'; eauto.
   + remember Hconstr' as Hconstr''. clear HeqHconstr''.
@@ -1314,13 +1314,13 @@ Proof.
     inversion H.
     eapply R_constr__BU3; eauto.
   }
-  
+
   eapply ftv_helper_constr.
   - eapply t_constr__a_t; eauto.
   - auto.
   - eauto.
   - eauto.
-  - 
+  -
     intros Hcontra. simpl in H.
     unfold t_constr in H.
     remember (R_constr t s sigma X) as p.
@@ -1358,7 +1358,7 @@ Proof.
     subst.
     apply alphavar_models_lookup in HAx.
     destruct HAx as [HAx1 | HAx2].
-    + 
+    +
       destruct HAx1 as [HAx1].
       apply lookup_r_then_in_map_snd in e. contradiction.
     + destruct HAx2 as [[_ _] HAx2].
@@ -1433,7 +1433,7 @@ Opaque t_constr.
 
 (*  to_GU' with more subsitutions. *)
 
-Definition s_constr (s : term) (sigma : list (string * term)) : term := 
+Definition s_constr (s : term) (sigma : list (string * term)) : term :=
   (* By adding tvs in X and T, no binders in the resulting term can be equal to tvs in X and T. We do tv, because mostly tv is easier to reason about than ftv*)
   let tvs := tv_keys_env sigma ++ tv s in
   snd (to_GU_ tvs (map (fun x => (x, x)) tvs) s).
@@ -1500,7 +1500,7 @@ Proof.
   subst.
   apply nc_helper.
   intros.
- 
+
   apply no_binder_used with (x := x) in Heqp; auto.
   intros Hcontra. apply extend_ftv_keys_env_to_tv in Hcontra.
   apply not_in_app in Heqp.
@@ -1527,7 +1527,7 @@ Proof.
     + apply BU1 in Hinbtvsigma. apply not_tv_dc_lam in Hinbtvsigma; auto.
   - simpl in H.
     apply in_app_iff in H as [Hinbtvt' | Hinbtvsigma].
-    + 
+    +
       simpl.
       apply de_morgan2.
       split.

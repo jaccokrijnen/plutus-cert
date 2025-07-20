@@ -23,7 +23,7 @@ Ltac destr_eqb_eq x y :=
 
 Lemma de_morgan2 : forall P Q : Prop, ~ (P \/ Q) <-> ~ P /\ ~ Q.
 Proof.
-  
+
   intros P Q. split.
   - intros H. split; auto.
   - intros [H1 H2] [HP | HQ]; auto.
@@ -84,7 +84,7 @@ Proof. reflexivity. Qed.
 Lemma in_cons_sum {A : Type} (x y : A) (l : list A) :
   In x (y :: l) -> sum (x = y) (In x l).
 Proof.
-Admitted. 
+Admitted.
 
 (* I really do not understand universes*)
 Lemma in_map_iff_sigma {A : Type} (x : string) (sigma : list (string * A)) :
@@ -169,7 +169,7 @@ Proof.
       simpl in Happ. rewrite H in Happ. auto.
 Qed.
 
-Lemma not_existsb_not_in y U' : 
+Lemma not_existsb_not_in y U' :
   existsb (eqb y) U' = false -> ~ In y (U').
 Proof.
 Admitted.
@@ -278,13 +278,13 @@ Admitted.
 
 (* NOT DIFFICULT *)
 Lemma lookup_some_extend_helper R1 R2 s s' :
-  ((lookup s R1 = Some s') * (lookup_r s' R1 = Some s)) -> 
+  ((lookup s R1 = Some s') * (lookup_r s' R1 = Some s)) ->
   ((lookup s (R1 ++ R2) = Some s') * (lookup_r s' (R1 ++ R2) = Some s))%type.
 Proof.
 Admitted.
 
 Lemma lookup_none_extend_helper {R1 R2 s} :
-  (lookup s R1 = None) -> (lookup_r s R1 = None) -> 
+  (lookup s R1 = None) -> (lookup_r s R1 = None) ->
     (lookup s (R1 ++ R2) = lookup s R2 ) * (lookup_r s (R1 ++ R2) = lookup_r s R2)%type.
 Proof.
 Admitted.
@@ -310,8 +310,8 @@ Lemma lookup_r_then_in_map_snd (x x' : string) (l : list (string * string)) :
 Admitted.
 
 (* all elements in l1 not in l2*)
-Definition list_diff {A : Type} (eq_dec : forall x y : A, {x = y} + {x <> y})  
-  (l1 l2 : list A) : list A :=  
+Definition list_diff {A : Type} (eq_dec : forall x y : A, {x = y} + {x <> y})
+  (l1 l2 : list A) : list A :=
   filter (fun x => if in_dec eq_dec x l2 then false else true) l1.
 
 Lemma list_diff_helper x l1 l2 :
@@ -351,7 +351,7 @@ Lemma lookup_none_app {A} k (v : A) xs xs' :
 Admitted.
 
 Lemma cons_split_helper {x y R1 R2} (R : list (string * string)) :
-  ((x, y):: R) = R1 ++ R2 -> 
+  ((x, y):: R) = R1 ++ R2 ->
     sum ( {R1' & R1 = ((x, y)::R1')}) (
     (prod (R1 = nil) (R2 = ((x, y)::R)))).
 Proof.

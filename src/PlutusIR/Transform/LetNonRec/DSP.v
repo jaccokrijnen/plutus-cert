@@ -250,7 +250,7 @@ Proof with eauto_LR.
 
         eexists. split...
         (* ADMIT: This is not provable in the current formulation of RC.
-          This subproof is not necessary in the new formulation of RC: R. 
+          This subproof is not necessary in the new formulation of RC: R.
          *)
         admit.
       }
@@ -265,7 +265,7 @@ Proof with eauto_LR.
 
         eexists. split...
         (* ADMIT: This is not provable in the current formulation of RC.
-          This subproof is not necessary in the new formulation of RC: R. 
+          This subproof is not necessary in the new formulation of RC: R.
          *)
         admit.
       }
@@ -377,10 +377,10 @@ Proof with (eauto_LR || eauto with DSP_compatibility_lemmas).
   - (* W_NilB_NonRec *)
     split. all: intros. all: subst.
     + apply drop_Δ_nil__kinding in H4.
-    
+
       inv_Compat.
       inversion H1...
-      
+
     + inv_CNR.
       match goal with
         | H : map_normalise _ _ |- _ => inversion H; subst; simpl in H

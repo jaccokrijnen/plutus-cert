@@ -10,21 +10,21 @@ Local Open Scope list_scope.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From PlutusCert Require Import 
-  Free 
-  SN_STLC_GU 
-  step_naive 
-  GU_NC 
-  step_gu 
-  STLC 
+From PlutusCert Require Import
+  Free
+  SN_STLC_GU
+  step_naive
+  GU_NC
+  step_gu
+  STLC
   STLC.Kinding
-  Alpha.alpha 
-  alpha_rename 
-  util 
-  variables 
+  Alpha.alpha
+  alpha_rename
+  util
+  variables
   alpha_freshness
-  alpha_sub 
-  alpha_vacuous 
+  alpha_sub
+  alpha_vacuous
   construct_GU
 .
 
@@ -33,7 +33,7 @@ From PlutusCert Require Import
 In the thesis we postulate a step_d for readability.*)
 Inductive step_nd : term -> term -> Type :=
 | step_beta_nd (x : string) (A : PlutusIR.kind) (s t : term) :
-    step_nd (@tmbin App (@tmabs Lam x A s) t) (substituteTCA x t s) 
+    step_nd (@tmbin App (@tmabs Lam x A s) t) (substituteTCA x t s)
 | step_appL_nd B s1 s2 t :
     step_nd s1 s2 -> step_nd (@tmbin B s1 t) (@tmbin B s2 t)
 | step_appR_nd B s t1 t2 :
@@ -42,7 +42,7 @@ Inductive step_nd : term -> term -> Type :=
     step_nd s1 s2 -> step_nd (@tmabs B x A s1) (@tmabs B x A s2).
 
 (* No-capture during substitution implies equivalence of naive and capture-avoiding substitutions *)
-Lemma NC__substituteTCA_is_sub x t s : 
+Lemma NC__substituteTCA_is_sub x t s :
     NC s ((x, t)::nil) -> substituteTCA x t s = sub x t s.
 Proof.
   intros.
@@ -52,8 +52,8 @@ Proof.
     + autorewrite with substituteTCA. rewrite <- String.eqb_neq in H0. rewrite H0. reflexivity.
   - assert (x =? s = false).
     {
-      apply nc_ftv_env with (x := s) in H. 
-      - unfold ftv_keys_env in H. apply not_in_cons in H.  destruct H as [H _]. rewrite <- String.eqb_sym. 
+      apply nc_ftv_env with (x := s) in H.
+      - unfold ftv_keys_env in H. apply not_in_cons in H.  destruct H as [H _]. rewrite <- String.eqb_sym.
         rewrite <- String.eqb_neq in H. assumption.
       - apply btv_lam.
     }
@@ -61,11 +61,11 @@ Proof.
     rewrite H0.
     assert (existsb (eqb s) (ftv t) = false).
     {
-      apply nc_ftv_env with (x := s) in H. 
+      apply nc_ftv_env with (x := s) in H.
       - unfold ftv_keys_env in H. apply not_in_cons in H.  destruct H as [_ H]. apply not_in_app in H as [H _].
         apply not_in_existsb. assumption.
       - apply btv_lam.
-    } 
+    }
     rewrite H1.
     f_equal.
     apply IHs.
@@ -78,7 +78,7 @@ Qed.
 
 (* If t has globally unique binders (and free variables to make it easier)
     then deterministic step and naive step coincide*)
-Lemma GU_step_d_implies_step_na t t' : 
+Lemma GU_step_d_implies_step_na t t' :
     GU t -> step_nd t t' -> step_naive t t'.
 Proof.
     intros HGU_vars Hstep.
@@ -86,7 +86,7 @@ Proof.
     all: try solve [constructor; auto; inversion HGU_vars; auto].
     (* we can be sure that no binder in s appears in t by global uniqueness*)
     assert (substituteTCA x t s = sub x t s) as Hsub.
-    { 
+    {
         eapply NC__substituteTCA_is_sub.
         eapply gu_applam_to_nc. eauto.
       }
@@ -122,14 +122,14 @@ Proof.
         apply in_eq.
     + constructor; auto.
   - constructor.
-    + eapply IHT'1; eauto. 
+    + eapply IHT'1; eauto.
       now apply not_ftv_app_not_left in H0.
     + eapply IHT'2; eauto.
       now apply not_ftv_app_not_right in H0.
   - auto.
 Qed.
 
-Corollary substituteTCA_vacuous X U T:  
+Corollary substituteTCA_vacuous X U T:
   ~ In X (ftv T) ->
   Alpha nil (substituteTCA X U T) T.
 Proof.
@@ -151,20 +151,20 @@ Proof.
   induction i as [xi | B xi ? bi | B i1 IHi1 i2 IHi2|d];
   intros s s' R1 R2 R Ha_X Ha_T Htrans Hαs Hαs';
     inversion Hαs as [xs ? ? Hαvs | xs ? ? bs ? ? Hαbs | s1 ? s2 ? ? Hαs1 Hαs2 |]; subst;
-    inversion Hαs' as [? xs' ? Hαvs' |? xs' ? ? bs' ? Hαbs' | ? s1' ? s2' ? Hαs1' Hαs2'|]; 
+    inversion Hαs' as [? xs' ? Hαvs' |? xs' ? ? bs' ? Hαbs' | ? s1' ? s2' ? Hαs1' Hαs2'|];
     subst; simpl.
   - (* Case: tmvar *)
     repeat rewrite substituteTCA_equation_1.
     assert (Hαv: AlphaVar R xs xs'). { eapply alpha_var_trans; eauto. }
     destr_eqb_eq X xs.
     + inversion Ha_X; subst.
-      apply (alphavar_unique_right H2) in Hαv. subst. rewrite String.eqb_refl. 
+      apply (alphavar_unique_right H2) in Hαv. subst. rewrite String.eqb_refl.
       assumption.
     + inversion Ha_X; subst.
       remember (Hαv) as Hαv'. clear HeqHαv'.
       apply (alphavar_unique_not_left H H3) in Hαv.
       rewrite <- String.eqb_neq in Hαv.
-      rewrite Hαv. 
+      rewrite Hαv.
       constructor.
       auto.
   - (* Case: tmabs *)
@@ -238,11 +238,11 @@ Proof.
         -- simpl.
            remember (fresh2 _ s2) as Y'.
            constructor.
-           eapply IHbi; eauto. 
+           eapply IHbi; eauto.
            ++ eapply alpha_extend_vacuous_ftv; auto.
               ** intros Hcontra. apply ftv_var in Hcontra; subst.
                   rewrite String.eqb_neq in H1. contradiction.
-              **  
+              **
                 eapply fresh2_over_key_sigma with (X := X) in HeqY'.
                  intros Hcontra. apply ftv_var in Hcontra.  subst. contradiction.
                  apply in_eq.
@@ -263,7 +263,7 @@ Proof.
            ++ eapply alpha_extend_vacuous_ftv; auto.
               eapply not_in_existsb. auto.
               eapply not_in_existsb. auto.
-           ++ eauto with α_eq_db.  
+           ++ eauto with α_eq_db.
   - autorewrite with substituteTCA.
     constructor.
     + eapply IHi1; eauto.
@@ -332,12 +332,12 @@ Proof.
   - destruct (IHHstep ((x, y)::ren) s3 H5) as [tα [Hstep' Halpha'] ].
     exists (@tmabs B y A tα); split.
     + apply step_abs_nd. assumption.
-    + apply alpha_lam; assumption.    
+    + apply alpha_lam; assumption.
 Qed.
 
 (* Non-deterministic step is globally unique step up to α-equivalence *)
-Lemma step_nd_implies_step_gu t t' : 
-    step_nd t t' ->  
+Lemma step_nd_implies_step_gu t t' :
+    step_nd t t' ->
     {t_α & step_gu t t_α * (Alpha [] t' t_α)}%type.
 Proof.
     intros.
@@ -379,7 +379,7 @@ Qed.
 (* STLC with a non-deterministic capture-avoiding step relation is strongly normalizing *)
 Theorem strong_normalization_nd Δ s T : STLC.Kinding.has_kind Δ s T -> (@sn term step_nd) s.
   intros.
-  apply strong_normalization_gu in H. 
+  apply strong_normalization_gu in H.
   apply SN_na_to_SN_nd.
   assumption.
 Qed.

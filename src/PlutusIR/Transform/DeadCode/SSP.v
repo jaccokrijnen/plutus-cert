@@ -352,7 +352,7 @@ Proof with (eauto with typing).
       try (solve [eassumption | reflexivity]).
     eapply IH_Rec in H6.
     econstructor; eauto.
-    eauto using has_type, bindings_well_formed_rec. 
+    eauto using has_type, bindings_well_formed_rec.
 
     all: admit.
   - admit.

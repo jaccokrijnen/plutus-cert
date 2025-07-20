@@ -234,11 +234,11 @@ Definition ctx_bound__term (Δ Γ : ctx) t :=
   (∀ X, X ∈ Δ -> X ∉ btv t).
 
 (* reused for let and letrec: bound_vars and btv make no distinction between recursive and non-recursive lets *)
-Definition ctx_bound__let (Δ Γ : ctx) bs := 
+Definition ctx_bound__let (Δ Γ : ctx) bs :=
   (∀ x, x ∈ Γ -> x ∉ concat (map bound_vars_binding bs)) /\
   (∀ X, X ∈ Δ -> X ∉ concat (map btv_binding bs)).
 
-Definition ctx_bound__bind (Δ Γ : ctx) b := 
+Definition ctx_bound__bind (Δ Γ : ctx) b :=
   (∀ x, x ∈ Γ -> x ∉ bound_vars_binding b) /\
   (∀ x, x ∈ Δ -> x ∉ btv_binding b).
 

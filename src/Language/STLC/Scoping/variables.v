@@ -91,7 +91,7 @@ Lemma ftv_lam_rename_helper {B : USort} X Y Y' A t :
    In X (ftv (@tmabs B Y A t)) -> In X (ftv (rename Y Y' t)).
 Admitted.
 
-(* We don't need the X <> Y condition, because if X = Y, 
+(* We don't need the X <> Y condition, because if X = Y,
 the lhs is non-sensical and always false *)
 Lemma ftv_lam_helper {B : USort} X Y A t :
    In X (ftv (@tmabs B Y A t)) -> In X (ftv t).
@@ -453,7 +453,7 @@ Admitted.
 
 (* If x not a key or value, then not both*)
 Lemma ftv_keys_env_helper sigma x :
-  ~ In x (map fst sigma) -> (forall ftvs, In ftvs (map snd sigma) -> ~ In x (ftv ftvs)) 
+  ~ In x (map fst sigma) -> (forall ftvs, In ftvs (map snd sigma) -> ~ In x (ftv ftvs))
     -> ~ In x (ftv_keys_env sigma).
 Admitted.
 
@@ -466,7 +466,7 @@ Proof.
   - destruct a as [a1 a2].
     simpl in HIn.
     apply in_app_or in HIn as [HIn | HIn].
-    + exists a2. simpl. split. left. reflexivity. assumption. 
+    + exists a2. simpl. split. left. reflexivity. assumption.
     + apply IHsigma in HIn as [t [HIn_t Hbtv_t]].
       exists t. split. simpl. right. auto. auto.
 Qed.

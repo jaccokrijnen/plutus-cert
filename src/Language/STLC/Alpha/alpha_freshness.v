@@ -1,10 +1,10 @@
 
-From PlutusCert Require Import 
+From PlutusCert Require Import
   STLC
   Alpha.alpha
-  Util.List 
-  variables 
-  util. 
+  Util.List
+  variables
+  util.
 Require Import Coq.Lists.List.
 Require Import Coq.Strings.String.
 
@@ -24,7 +24,7 @@ Proof.
       intros Hcontra; subst.
       apply ftv_lam_no_binder in Hxins.
       contradiction.
-    } 
+    }
     apply ftv_lam_helper in Hxins.
     destruct (IHHalphas Hxins) as [x' [Halphax Hx'ins'] ].
     exists x'; split.

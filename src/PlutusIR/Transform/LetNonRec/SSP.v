@@ -124,7 +124,7 @@ Theorem CNR_Term__SSP : ∀ t t',
 
     inversion H_typing_let using inv_T_Let. intros ? ? ? ? ? ? ? ? H_t_body ? ?.
     apply IH_t_body in H_t_body as H_t_body'; clear H_t_body IH_t_body.
-    subst. 
+    subst.
     apply IH_bs in H_t_body'; assumption.
 
   - (* CNR_LetRec *)
@@ -135,13 +135,13 @@ Theorem CNR_Term__SSP : ∀ t t',
     destruct IH_bs as [H_bs' [H_eq_Gamma H_eq_Delta]].
     rewrite H_eq_Gamma in H_mn_bs.
     rewrite H_eq_Delta in *...
-    
+
     econstructor...
     + assert (H_eq : btvbs bs' = btvbs bs) by eauto using binds_Delta__btvbs.
       rewrite H_eq...
     + assert (H_eq : bvbs bs' = bvbs bs) by eauto using binds_Gamma__bvbs.
       rewrite H_eq...
-    + subst. 
+    + subst.
       apply binds_Delta__btvbs in H_eq_Delta.
       erewrite btvbs_eq__drop_Δ_eq; eauto.
 

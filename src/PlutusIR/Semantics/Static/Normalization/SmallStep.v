@@ -9,7 +9,7 @@ Inductive step : ty -> ty -> Set :=
     | step_beta (X : string) (K : kind) (S T : ty) :
         normal_Ty S ->
         normal_Ty T ->
-        step (Ty_App (Ty_Lam X K S) T) (substituteTCA X T S) 
+        step (Ty_App (Ty_Lam X K S) T) (substituteTCA X T S)
     | step_appL S1 S2 T :
         step S1 S2 -> step (Ty_App S1 T) (Ty_App S2 T)
     | step_appR S T1 T2 :
@@ -34,7 +34,7 @@ Inductive step : ty -> ty -> Set :=
         ForallSet2 normal_Ty Tss_normal ->  (* Tss_normal can be empty, so this allows all reductions*)
         ForallSet normal_Ty Tss_sub_normal -> (* The inner list should also have normal types before the type that is stepping*)
         step Tss_sub1 Tss_sub2 ->
-        step (Ty_SOP (Tss_normal ++ (Tss_sub_normal ++ Tss_sub1 :: Tss_sub_remainder) :: Tss_remainder)) 
+        step (Ty_SOP (Tss_normal ++ (Tss_sub_normal ++ Tss_sub1 :: Tss_sub_remainder) :: Tss_remainder))
              (Ty_SOP (Tss_normal ++ (Tss_sub_normal ++ Tss_sub2 :: Tss_sub_remainder) :: Tss_remainder))
     .
-    
+

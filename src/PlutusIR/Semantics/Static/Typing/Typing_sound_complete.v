@@ -6,11 +6,11 @@ Require Import Coq.Strings.String.
 
 Local Open Scope string_scope.
 
-From PlutusCert Require Import 
-    Normalization.BigStep 
+From PlutusCert Require Import
+    Normalization.BigStep
     Normalization.Normalizer_sound_complete
     Normalization.Normalizer
-    PlutusIR 
+    PlutusIR
     Static.Typing.Typing
     Util.List
     Equality
@@ -41,9 +41,9 @@ Proof.
 Admitted.
 
 (* Soudness of well-formedness of constructors *)
-Lemma constructor_well_formed_sound : 
+Lemma constructor_well_formed_sound :
   forall Δ c T, constructor_well_formed_check Δ c T = true -> Δ |-ok_c c : T.
-Proof. 
+Proof.
   intros.
   destruct c.
   inversion H.
@@ -64,7 +64,7 @@ Proof.
 Qed.
 
 (* Completeness of well-formedness of constructors *)
-Lemma constructor_well_formed_complete : 
+Lemma constructor_well_formed_complete :
   forall Δ c T, Δ |-ok_c c : T -> constructor_well_formed_check Δ c T = true.
 Proof.
   intros.
@@ -117,12 +117,12 @@ Qed.
 
 (* Type checking is sound *)
 (* Mutually defined with soudness of binders and list of binders *)
-Theorem type_checking_sound : 
+Theorem type_checking_sound :
  forall Δ Γ t ty, type_check Δ Γ t = Some ty -> (Δ ,, Γ |-+ t : ty).
 Proof with (try apply kind_checking_sound; try eapply normalizer_sound; eauto).
   intros Δ Γ t ty.
   revert Δ Γ ty.
-  eapply term_rect' with 
+  eapply term_rect' with
     (P := fun t => forall Δ Γ ty, type_check Δ Γ t = Some ty -> Δ,, Γ |-+ t : ty)
     (Q := fun b => forall Δ Γ rec, binding_well_formed_check type_check Δ Γ rec b = true -> binding_well_formed Δ Γ rec b)
     (R := fun bs => forall Δ Γ, bindings_well_formed_rec_check (binding_well_formed_check type_check Δ Γ Rec) bs = true -> bindings_well_formed_rec Δ Γ bs)
@@ -156,13 +156,13 @@ Proof with (try apply kind_checking_sound; try eapply normalizer_sound; eauto).
       destruct_match.
       repeat destruct_match.
       inversion H1; subst.
-      eapply T_Let with (Δ' := (flatten (map binds_Delta bs) ++ Δ)%list); auto.      
-      * apply (map_normalizer_sound) in Heqo. 
+      eapply T_Let with (Δ' := (flatten (map binds_Delta bs) ++ Δ)%list); auto.
+      * apply (map_normalizer_sound) in Heqo.
         rewrite <- insert_remove_deltas_nr_id in Heqo.
         exact Heqo.
       * eapply Q. auto.
       * apply kind_checking_sound in Heqo1.  auto.
-  - intros. 
+  - intros.
     inversion H; subst.
     unfold bind in H1.
     repeat destruct_match; subst.
@@ -170,7 +170,7 @@ Proof with (try apply kind_checking_sound; try eapply normalizer_sound; eauto).
     apply T_Var with (T := t0); auto.
     eapply kind_checking_sound in Heqo0; auto.
     now apply normalizer_sound in H1_copy.
-  - intros. 
+  - intros.
     inversion H0.
     unfold bind in H0.
     repeat destruct_match.
@@ -216,15 +216,15 @@ Proof with (try apply kind_checking_sound; try eapply normalizer_sound; eauto).
     + apply normalizer_sound in Heqo2. auto.
   - intros.
     unfold type_check in H.
-    
-    
+
+
     unfold bind in H.
     repeat destruct_match.
     inversion H.
     subst.
     apply T_Error.
     + now apply kind_checking_sound.
-    + apply normalizer_sound in Heqo. 
+    + apply normalizer_sound in Heqo.
       assumption.
   - intros.
     inversion H0.
@@ -274,7 +274,7 @@ Proof with (try apply kind_checking_sound; try eapply normalizer_sound; eauto).
     repeat destruct_match; subst.
     + (* NonRec *)
       apply andb_true_iff in Heqb0 as [Hdup1 Hdup2].
-      
+
       repeat destruct_match; subst.
       eapply W_Data.
       * eauto.
@@ -291,7 +291,7 @@ Proof with (try apply kind_checking_sound; try eapply normalizer_sound; eauto).
         simpl.
         eauto.
         assert (constructor_well_formed_check (rev (map fromDecl l) ++ (drop_Δ' Δ [tvdecl_name t0])) c (Ty_Apps (Ty_Var (tvdecl_name t0)) (map Ty_Var (map tvdecl_name l))) = true).
-        { 
+        {
             eapply (forallb_forall) in Heqb1.
           - exact Heqb1.
           - assumption.
@@ -355,14 +355,14 @@ Theorem type_checking_complete : forall Δ Γ t ty,
     (Δ ,, Γ |-+ t : ty) -> type_check Δ Γ t = Some ty.
 Proof.
   intros.
-  apply has_type_mut_ind with         
+  apply has_type_mut_ind with
         (P := fun Δ Γ t T _ => type_check Δ Γ t = Some T)
-        (P0 := fun Δ Γ l _ => bindings_well_formed_rec_check (binding_well_formed_check type_check Δ Γ Rec) l = true) 
+        (P0 := fun Δ Γ l _ => bindings_well_formed_rec_check (binding_well_formed_check type_check Δ Γ Rec) l = true)
         (P1 := fun Δ Γ l _ => bindings_well_formed_nonrec_check (binding_well_formed_check type_check) Δ Γ l = true )
-        (P2 := fun Δ Γ rec b  _ => binding_well_formed_check type_check Δ Γ rec b = true) 
+        (P2 := fun Δ Γ rec b  _ => binding_well_formed_check type_check Δ Γ rec b = true)
         ; simpl; auto; intros.
   - (*Case T_Var *)
-    rewrite e. simpl. 
+    rewrite e. simpl.
     eapply kind_checking_complete in h.
     rewrite h.
     eapply normalizer_complete; eauto.
@@ -376,14 +376,14 @@ Proof.
     rewrite H0.
     rewrite H1.
     now rewrite -> Ty_eqb_refl.
-  - (* Case: T_TyAbs *) 
+  - (* Case: T_TyAbs *)
     rewrite H0; auto.
   - (* Case: T_Inst *)
     rewrite H0.
     apply (normalizer_complete h0) in n; rewrite n; simpl.
     apply kind_checking_complete in h0; rewrite h0.
     rewrite -> Kind_eqb_refl.
-    
+
     assert (Δ0 |-* (substituteTCA X T2n T1n) : Kind_Base) as Hwk_subst.
     {
       assert (((X, K2)::Δ0) |-* T1n : Kind_Base).
@@ -437,7 +437,7 @@ Proof.
     subst.
     eapply normalizer_complete in n.
     rewrite n. simpl. reflexivity.
-    apply lookupBuiltinTy__well_kinded. 
+    apply lookupBuiltinTy__well_kinded.
   - (* Case: T_Error *)
     unfold bind.
     apply (normalizer_complete h) in n; rewrite n.
@@ -451,7 +451,7 @@ Proof.
     assert (map_normalizer (insert_deltas_bind_Gamma_nr bs Δ0) = Some bsGn).
     {
       assert (flatten (map binds_Gamma bs) = remove_deltas (insert_deltas_bind_Gamma_nr bs Δ0)).
-      { 
+      {
         apply insert_remove_deltas_nr_id.
       }
       rewrite H2 in m.
@@ -462,7 +462,7 @@ Proof.
     rewrite H2.
     rewrite H0.
     rewrite H1.
-    
+
     apply kind_checking_complete in h0; rewrite h0; auto.
   - (* Case: T_LetRec *)
     destruct (no_dup_fun (btvbs bs) &&
@@ -482,11 +482,11 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
         rewrite m.
         rewrite H0.
         rewrite H1.
-        
+
         apply kind_checking_complete in h0; rewrite h0; reflexivity.
     }
     apply andb_false_iff in no_dup_eqn. exfalso.
-    
+
     destruct no_dup_eqn.
     + apply no_dup_fun_complete in n. rewrite n in H2. discriminate H2.
     + apply no_dup_fun_complete in n0. rewrite n0 in H2. discriminate H2.
@@ -494,7 +494,7 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
     intros. simpl. rewrite H0. auto.
   - (* Case: ? *)
 
-    
+
     assert (binds_Gamma b = remove_deltas (insert_deltas_rec (binds_Gamma b) (binds_Delta b ++ Δ0))).
     {
       apply insert_remove_deltas_id.
@@ -538,7 +538,7 @@ no_dup_fun (bvbs bs)) eqn:no_dup_eqn.
       subst.
       clear e. clear n. clear n0. clear no_dup.
       induction cs; intros.
-      -- simpl. 
+      -- simpl.
          apply kind_checking_complete in y.
          simpl in y.
          rewrite y. reflexivity.

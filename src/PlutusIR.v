@@ -305,7 +305,7 @@ Section ty__ind.
                 ((fix list_ind (ts : list ty) : Forall P ts :=
                    match ts with
                    | nil => Forall_nil _
-                   | t :: ts' => 
+                   | t :: ts' =>
                        Forall_cons _ (ty__ind t) (list_ind ts')
                    end) ts)
                 (list_list_ind tss')
@@ -761,7 +761,7 @@ Section ty_fold.
     | Ty_Builtin b    => f_Builtin b
     | Ty_Lam v k t    => f_Lam v k (fold t)
     | Ty_App t1 t2    => f_App (fold t1) (fold t2)
-    | Ty_SOP xs       => f_SOP (fold_SOP fold xs) 
+    | Ty_SOP xs       => f_SOP (fold_SOP fold xs)
     end
 .
 
@@ -988,7 +988,7 @@ Fixpoint splitTy (T : ty) : list ty * ty :=
   end.
 
 Lemma splitTy__inversion Targs Tr T:
-    (Targs, Tr) = splitTy T -> 
+    (Targs, Tr) = splitTy T ->
     T = fold_right (fun targ acc => Ty_Fun targ acc) Tr Targs.
 Proof.
   generalize dependent Targs.

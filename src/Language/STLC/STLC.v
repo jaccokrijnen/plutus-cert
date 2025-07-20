@@ -103,12 +103,12 @@ Lemma fresh__T : forall X U T,
     ~ In (fresh X U T) (ftv T).
 Proof. Abort.
 
-Fixpoint rename (X X' : string) (T : term) := 
+Fixpoint rename (X X' : string) (T : term) :=
   match T with
   | tmvar Y => if X =? Y then tmvar X' else tmvar Y
   | @tmabs B Y K1 T_body => if X =? Y then
                               @tmabs B Y K1 T_body
-                            else 
+                            else
                               @tmabs B Y K1 (rename X X' T_body)
   | @tmbin B T1 T2 => @tmbin B (rename X X' T1) (rename X X' T2)
   | tmbuiltin d => tmbuiltin d

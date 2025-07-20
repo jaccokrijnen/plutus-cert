@@ -17,7 +17,7 @@ Proof.
   intros.
   generalize dependent K.
   generalize dependent Δ.
-  induction H0; intros Δ K0 Hkind_T; 
+  induction H0; intros Δ K0 Hkind_T;
     inversion Hkind_T; subst; try solve [econstructor; eauto].
   - inversion H2; subst.
     eapply substituteTCA_preserves_kinding; eauto.

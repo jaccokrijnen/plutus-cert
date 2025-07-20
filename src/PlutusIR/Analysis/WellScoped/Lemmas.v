@@ -77,8 +77,8 @@ Proof with auto with weakening.
   induction τ using ty__ind.
   all: rewrite Ty.ftv_equation.
   all: try (eauto 10 using well_scoped_Ty, weaken_well_scoped_Ty, subset_append_l, subset_append_r, subset_cons_remove, In_singleton, subset_refl).
-  
-  (*ADMIT: TY_SOP 
+
+  (*ADMIT: TY_SOP
     (* By Weaken_well_scoped_ty this should hold *)
   *)
   admit.

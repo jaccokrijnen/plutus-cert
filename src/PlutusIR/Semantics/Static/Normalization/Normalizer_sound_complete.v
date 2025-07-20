@@ -1,6 +1,6 @@
-From PlutusCert Require Import 
-  PlutusIR 
-  Normalization.BigStep 
+From PlutusCert Require Import
+  PlutusIR
+  Normalization.BigStep
   Kinding.Kinding
   Kinding.Checker
   Normalization.SmallStep
@@ -71,7 +71,7 @@ Qed.
 (* Remove kinding contexts from a triple *)
 Fixpoint remove_deltas  {A B C : Type} (xs : list (A * B * C)) :=
   match xs with
-  | nil => nil 
+  | nil => nil
   | (X, T, _) :: xs' => (X, T) :: (remove_deltas xs')
   end.
 
@@ -87,7 +87,7 @@ Proof.
     rewrite IHxs.
     reflexivity.
 Qed.
-    
+
 (* Normalization sound for list of (X, T, Δ) triples*)
 Lemma map_normalizer_sound xs xs' :
   map_normalizer xs = Some xs' -> map_normalise (remove_deltas xs) xs'.
@@ -125,16 +125,16 @@ Proof.
     reflexivity.
   - simpl.
     unfold bind.
-    
+
     inversion H.
     + subst.
       simpl in x.
       inversion x.
-    + assert (T = T0). 
+    + assert (T = T0).
       {
         unfold remove_deltas in x.
         destruct xs; [inversion H4 |].
-        fold (@remove_deltas string) in x. 
+        fold (@remove_deltas string) in x.
         destruct p as [p0 pff].
         destruct p0 as [X1 T1].
         inversion x.

@@ -1,5 +1,5 @@
-From PlutusCert Require Import 
-  PlutusIR 
+From PlutusCert Require Import
+  PlutusIR
   Normalization.BigStep
   Kinding.Kinding
   Kinding.Checker
@@ -51,9 +51,9 @@ Defined.
 Fixpoint normalizer_gas (n : nat) {T Δ K} (Hwk : Δ |-* T : K) :=
   match n with
     | O => T
-    | S n' => 
+    | S n' =>
         match step_dec T Δ K Hwk with
-        | inl (existT _ T' P) => 
+        | inl (existT _ T' P) =>
             let Hwk' := @step_preserves_kinding T T' Δ K Hwk P in
             normalizer_gas n' Hwk'
         | inr _ => T
@@ -92,7 +92,7 @@ Qed.
 Fixpoint map_normalizer (xs : list (string * ty * (list (string * kind)))) :=
   match xs with
   | nil => Some nil
-  | ((X, T, Δ) :: xs') => normalizer Δ T >>= fun Tn => 
+  | ((X, T, Δ) :: xs') => normalizer Δ T >>= fun Tn =>
                      map_normalizer xs' >>= fun xs'' =>
                      Some ((X, Tn) ::xs'')
   end.

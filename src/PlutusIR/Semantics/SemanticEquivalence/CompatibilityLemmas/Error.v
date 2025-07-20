@@ -46,7 +46,7 @@ Proof with eauto_LR.
     exists Tn0.
     split...
     (* ADMIT: This is not provable in the current formulation of RC.
-      This subproof is not necessary in the new formulation of RC: R. 
+      This subproof is not necessary in the new formulation of RC: R.
       *)
     admit.
   }
@@ -58,7 +58,7 @@ Proof with eauto_LR.
     exists Tn0.
     split...
     (* ADMIT: This is not provable in the current formulation of RC.
-      This subproof is not necessary in the new formulation of RC: R. 
+      This subproof is not necessary in the new formulation of RC: R.
       *)
     admit.
   }

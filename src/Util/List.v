@@ -248,7 +248,7 @@ Proof.
 Qed.
 
 Lemma inclusion_swap {A} (x y : string) (K L : A) m  :
-  x <> y -> 
+  x <> y ->
   inclusion ((x, K) :: (y, L) :: m) ((y, L) :: (x, K) :: m).
 Admitted.
 

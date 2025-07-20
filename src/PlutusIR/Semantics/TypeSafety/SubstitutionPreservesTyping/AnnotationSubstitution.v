@@ -83,7 +83,7 @@ Proof with (eauto using substituteT_preserves_kinding with typing).
 (* ADMIT: Must be proved up to α-equivalence. See thesis Richard *)
 Admitted.
 
-Corollary substA_preserves_typing__Term : 
+Corollary substA_preserves_typing__Term :
   forall Delta Gamma X K U t T Tn,
     ((X, K) :: Delta) ,, Gamma |-+ t : T ->
     [] |-* U : K ->
@@ -94,11 +94,11 @@ Proof.
   eapply substA_preserves_typing; eauto.
 Qed.
 
-Corollary substA_preserves_typing__Term__value : 
+Corollary substA_preserves_typing__Term__value :
   forall X K U t T Tn,
     ((X, K) :: nil) ,, nil |-+ t : T ->
-    [] |-* U : K -> (* 
-    
+    [] |-* U : K -> (*
+
       So.. no capture?
       No free vars in U, hence a binder in T cannot capture that
 

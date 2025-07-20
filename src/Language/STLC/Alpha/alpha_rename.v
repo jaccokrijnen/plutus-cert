@@ -40,8 +40,8 @@ Proof.
         assumption.
       * apply alpha_var_refl.
   - destr_eqb_eq s x.
-    + 
-    
+    +
+
       assert (HignoreRename: forall B, rename x x' (@tmabs B x k s0) = @tmabs B x k s0).
       {
         unfold rename.
@@ -64,7 +64,7 @@ Proof.
         rewrite <- String.eqb_neq in H.
         rewrite String.eqb_sym in H.
         rewrite H.
-        auto.        
+        auto.
       }
       rewrite H1.
       apply alpha_lam.
@@ -75,7 +75,7 @@ Proof.
         symmetry.
         assumption.
       }
-      
+
       apply alpha_extend_id.
       * apply IHs.
         (* We know tv (tmabs s t s0) = s :: tv s0*)
@@ -101,14 +101,14 @@ Proof.
       assumption.
   - unfold rename.
     constructor.
-Qed.  
+Qed.
 
 
 (*
   Strengthened renaming lemma for alpha-equivalent terms (rather than syntactically equal terms like above).
 *)
 Lemma alpha_rename' x x' s s' R :
-  ~ (In x' (tv s')) -> 
+  ~ (In x' (tv s')) ->
   NotBreakShadowing x R ->
   Alpha R s s' -> Alpha ((x, x')::R) s (rename x x' s').
 Proof.

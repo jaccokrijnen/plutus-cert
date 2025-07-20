@@ -34,7 +34,7 @@ Proof.
     destruct (string_dec a1 x); subst.
     + rewrite String.eqb_refl.
       f_equal.
-      (* ADMITTED: 
+      (* ADMITTED:
         Suppose X in a2. Then by Hl
         we have that a2 <> v
 
@@ -47,7 +47,7 @@ Proof.
       admit.
     + rewrite <- String.eqb_neq in n.
       rewrite n.
-      (* ADMITTED: 
+      (* ADMITTED:
         a1 <> x
         lookup x (drop ((a1, a2)::Γ) = Some v)
         Well, it is not the first one (a1), and the result is Some v.
@@ -182,7 +182,7 @@ Proof.
         {
           rewrite btvbs_cons in Heqn1.
           rewrite inb_string_true_iff in Heqn1.
-          rewrite in_app_iff in Heqn1. 
+          rewrite in_app_iff in Heqn1.
           destruct Heqn1 as [Heqn1 | Heqn1].
           - rewrite <- inb_string_true_iff in Heqn1.
             unfold btvbs; simpl.
@@ -233,7 +233,7 @@ Proof.
   rewrite drop_Δ_nil in H.
   assumption.
 Qed.
-    
+
 (* drop_Δ' drops everything in the list *)
 Lemma drop_Δ'__lookup_None : forall Δ xs x,
   In x (xs) -> lookup x (drop_Δ' Δ xs) = None.
@@ -301,7 +301,7 @@ Proof.
         reflexivity.
       * rewrite <- String.eqb_neq in n.
         rewrite n.
-        rewrite IHΔ; auto. 
+        rewrite IHΔ; auto.
 Qed.
 
 (* drop_Δ only drops introduced binders *)

@@ -237,7 +237,7 @@ Proof.
     + destruct t. inversion H0; subst.
       simpl.
       reflexivity.
-    + destruct d. destruct t. 
+    + destruct d. destruct t.
       inversion H0; subst.
       simpl.
       reflexivity.
@@ -275,7 +275,7 @@ Proof.
     simpl.
     reflexivity.
   - destruct bs'.
-    + inversion HbindsD. 
+    + inversion HbindsD.
     + repeat rewrite btvbs_cons.
       inversion HbindsD; subst.
       f_equal.

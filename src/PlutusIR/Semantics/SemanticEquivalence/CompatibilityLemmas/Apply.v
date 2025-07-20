@@ -141,7 +141,7 @@ Proof with eauto_LR.
         split...
         admit.
         (* ADMIT: This is not provable in the current formulation of RC.
-          This subproof is not necessary in the new formulation of RC: R. 
+          This subproof is not necessary in the new formulation of RC: R.
          *)
       }
 
@@ -155,7 +155,7 @@ Proof with eauto_LR.
         split...
         admit.
         (* ADMIT: This is not provable in the current formulation of RC.
-          This subproof is not necessary in the new formulation of RC: R. 
+          This subproof is not necessary in the new formulation of RC: R.
          *)
       }
 
@@ -192,7 +192,7 @@ Proof with eauto_LR.
         split...
         admit.
         (* ADMIT: This is not provable in the current formulation of RC.
-          This subproof is not necessary in the new formulation of RC: R. 
+          This subproof is not necessary in the new formulation of RC: R.
          *)
       }
 
@@ -205,7 +205,7 @@ Proof with eauto_LR.
         exists x.
         split...
         (* ADMIT: This is not provable in the current formulation of RC.
-          This subproof is not necessary in the new formulation of RC: R. 
+          This subproof is not necessary in the new formulation of RC: R.
          *)
         admit.
       }
@@ -376,7 +376,7 @@ Proof.
     + inversion H2; subst.
       inversion H3.
     + inversion H4; subst.
-    + 
+    +
       specialize (eval_value _ H_val) as H_e_v.
       assert (H_det : v = Error T0 /\ 0 = j2) by (eapply eval__deterministic; eauto).
       destruct H_det.

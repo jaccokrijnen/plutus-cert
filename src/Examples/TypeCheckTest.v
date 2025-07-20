@@ -20,7 +20,7 @@ From PlutusCert Require Import
 Import Parser.DumpNotations.
 Open Scope pir_dump_scope.
 From PlutusCert Require Import Typing.Typechecker.
- 
+
 Require Import ExtrHaskellZInteger.
 (* For strings and chars *)
 Require Import ExtrHaskellString.    (* string -> Haskell String, ascii -> Char *)

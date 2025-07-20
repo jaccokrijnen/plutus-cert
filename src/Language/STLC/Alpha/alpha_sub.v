@@ -11,17 +11,17 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Arith.
 Require Import Coq.Bool.Bool.
 
-From PlutusCert Require Import 
-  construct_GU_R 
-  construct_GU 
-  psubs 
-  alpha_vacuous 
-  step_naive 
-  util 
-  STLC GU_NC 
-  Alpha.alpha 
-  variables 
-  alpha_subs 
+From PlutusCert Require Import
+  construct_GU_R
+  construct_GU
+  psubs
+  alpha_vacuous
+  step_naive
+  util
+  STLC GU_NC
+  Alpha.alpha
+  variables
+  alpha_subs
   alpha_freshness.
 
 Require Import Coq.Program.Equality.
@@ -31,7 +31,7 @@ Require Import Coq.Program.Equality.
 Lemma alpha_rename_binder_stronger x y s t t' : forall Rt s' Rs,
   Alpha Rs s s' ->
   Alpha Rt t t' ->
-  LegalRenSwaps ((x, y)::Rt) Rs -> 
+  LegalRenSwaps ((x, y)::Rt) Rs ->
   NC s [(x, t)] ->
   NC s' [(y, t')] ->
   Alpha Rt (sub x t s) (sub y t' s').
@@ -77,8 +77,8 @@ Proof with eauto with gu_nc_db.
     + eapply @lrss_trans with (R2 := ((s, y0)::(x, y)::Rt)).
       * eapply starSE.
         -- apply starR.
-        -- 
-          ++ constructor. 
+        --
+          ++ constructor.
             ** apply nc_ftv_env with (x := s) in H2.
               simpl in H2. intuition. apply btv_lam.
             ** apply nc_ftv_env with (x := y0) in H3.
@@ -121,7 +121,7 @@ Qed.
 *)
 Lemma commute_sub_naive R x s t (sigma sigma' : list (string * term)) xtsAlpha:
   Alpha R (sub x t s) xtsAlpha ->
-  AlphaSubs R sigma sigma' -> 
+  AlphaSubs R sigma sigma' ->
 
   (* these two just say: x not in key or ftv sigma*)
   ~ In x (map fst sigma) -> (* Hx_key *)
@@ -143,12 +143,12 @@ Proof with eauto with gu_nc_db.
     + simpl in Ha_sub. rewrite String.eqb_refl in Ha_sub.
       destruct (in_dec String.string_dec s (map fst sigma)).
       * contradiction.   (* Uses Hx_key*)
-      * assert (Hsub_vac: psubs sigma (tmvar s) = tmvar s) by now apply psubs_vac_var. 
+      * assert (Hsub_vac: psubs sigma (tmvar s) = tmvar s) by now apply psubs_vac_var.
         rewrite Hsub_vac.
-        simpl. 
+        simpl.
         rewrite String.eqb_refl.
         eapply psubs__α; eauto.
-    + simpl in Ha_sub. 
+    + simpl in Ha_sub.
       rewrite <- String.eqb_neq in H.
       rewrite H in Ha_sub.
       inversion Ha_sub; subst.
@@ -158,7 +158,7 @@ Proof with eauto with gu_nc_db.
           eapply psubs__α; eauto.
         }
         apply psubs_no_ftv.
-        -- apply ftv_keys_env_helper; auto. (* uses Hx_values *) 
+        -- apply ftv_keys_env_helper; auto. (* uses Hx_values *)
         -- apply String.eqb_neq. assumption.
         -- intros Hcontra.
            apply nc_ftv_env with (x := x) in HNC_subs; eauto.

@@ -70,7 +70,7 @@ Fixpoint drop_ty_var' X (Γ : list (string * ty)) (acc : list string): list (str
   match Γ with
   | nil => nil
   | (x, T) :: Γ' =>
-      if (in_dec string_dec X (Ty.ftv T)) then 
+      if (in_dec string_dec X (Ty.ftv T)) then
         drop_ty_var' X Γ' (x::acc)
       else if in_dec string_dec x acc then
         drop_ty_var' X Γ' acc
@@ -168,7 +168,7 @@ Inductive has_type : list (binderTyname * kind) -> list (binderName * ty) -> ter
       NoDup (bvbs bs) ->
 
       Δ' = flatten (map binds_Delta bs) ++ Δ ->
-      map_normalise (flatten (map binds_Gamma bs)) bsGn -> 
+      map_normalise (flatten (map binds_Gamma bs)) bsGn ->
       Γ' = bsGn ++ Γ->
       Δ' ,, Γ' |-oks_r bs ->
       Δ' ,, Γ' |-+ t : Tn ->
@@ -226,19 +226,19 @@ with binding_well_formed : list (binderTyname * kind) -> list (binderName * ty) 
       NoDup (map vdecl_name cs) ->
 
       (* Well-formedness of constructors *)
-      (* Constructor argument types may not use type variable with 
+      (* Constructor argument types may not use type variable with
       datatype's name in NonRec case*)
       Δ_ns = match rec with
             | NonRec => drop_Δ' Δ [X]
             | Rec => Δ
             end ->
       Δ' = rev (map fromDecl YKs) ++ Δ_ns ->
-      (* The constructor types are well-kinded *) 
+      (* The constructor types are well-kinded *)
       Tres = constrLastTyExpected dtd -> (* The expected result type for each constructor *)
       (forall c, In c cs -> Δ' |-ok_c c : Tres) ->
 
       (* The expected result type is well-kinded *)
-      (* In the case that this DatatypeBind is in a let-nonrec, 
+      (* In the case that this DatatypeBind is in a let-nonrec,
          we must add X to the kinding context to type the return type (its name is not yet available in Delta')
        *)
        match rec with
@@ -257,7 +257,7 @@ with binding_well_formed : list (binderTyname * kind) -> list (binderName * ty) 
 Scheme has_type_mut_ind := Induction for has_type Sort Prop
   with bs_wf_mut_ind := Induction for bindings_well_formed_rec Sort Prop
   with bs_wf_nonrec_mut_ind := Induction for bindings_well_formed_nonrec Sort Prop
-  with b_wf_mut_ind := Induction for binding_well_formed Sort Prop.  
+  with b_wf_mut_ind := Induction for binding_well_formed Sort Prop.
 
 Scheme has_type__ind := Minimality for has_type Sort Prop
   with constructor_well_formed__ind := Minimality for constructor_well_formed Sort Prop
@@ -329,7 +329,7 @@ Proof.
     rewrite <- app_assoc.
     rewrite <- app_assoc.
     assumption.
-  - eauto. 
+  - eauto.
   - eauto.
 Qed.
 

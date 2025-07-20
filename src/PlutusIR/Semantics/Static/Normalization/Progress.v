@@ -25,7 +25,7 @@ Proof.
     apply kind_checking_sound in Heqo.
     apply kind_checking_sound in Heqo0.
     edestruct IHT1; eauto.
-    + left. 
+    + left.
       destruct s as [t1' Ht1].
       exists (Ty_Fun t1' T2).
       now constructor.
@@ -34,7 +34,7 @@ Proof.
         destruct s as [t2' Ht2].
         exists (Ty_Fun T1 t2').
         now constructor.
-  
+
   - apply kind_checking_complete in H.
     inversion H.
     repeat destruct_match.
@@ -61,7 +61,7 @@ Proof.
       now constructor.
     + right.
       apply NO_TyForall; assumption.
-  - right. apply NO_TyBuiltin. 
+  - right. apply NO_TyBuiltin.
   - apply kind_checking_complete in H. (* Note: Move to kind_checker world to fix not being able to `inversion` on `has_kind`*)
     inversion H.
     repeat destruct_match.
@@ -92,7 +92,7 @@ Proof.
         destruct s as [t2' Ht2].
         exists (Ty_App T1 t2').
         now constructor.
-      * 
+      *
         {
         induction T1.
         - right. constructor. constructor.
@@ -103,13 +103,13 @@ Proof.
           exfalso.
           (* it must be ill-kinded *)
           inversion Heqo.
-        - exfalso. 
+        - exfalso.
           inversion Heqo.
         - exfalso.
           inversion Heqo.
-        - exfalso. 
+        - exfalso.
           inversion Heqo.
-        - left. 
+        - left.
           exists (substituteTCA b T2 T1).
           constructor.
           + inversion n. assumption. inversion H0.
@@ -119,6 +119,6 @@ Proof.
           + assumption.
         - apply Checker.prop_to_type in Heqo. inversion Heqo.
         }
-  - right. apply step_dec_SOP. 
+  - right. apply step_dec_SOP.
 Defined.
 

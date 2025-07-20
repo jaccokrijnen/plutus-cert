@@ -14,14 +14,14 @@ Open Scope string.
 Definition program : term :=
   Let Rec
     [ DatatypeBind (Datatype
-        (TyVarDecl 
+        (TyVarDecl
           "List"
           (Kind_Arrow Kind_Base Kind_Base)
         )
         [ TyVarDecl "a" Kind_Base ]
         "matchList"
         [ VarDecl "nil" (Ty_App (Ty_Var "List") (Ty_Var "a"))
-        ; VarDecl "cons" 
+        ; VarDecl "cons"
             (Ty_Fun (Ty_Var "a")
               (Ty_Fun (Ty_App (Ty_Var "List") (Ty_Var "a")) (Ty_App (Ty_Var "List") (Ty_Var "a"))))
         ]
