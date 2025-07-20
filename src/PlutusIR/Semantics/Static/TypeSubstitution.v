@@ -230,4 +230,4 @@ Proof.
     ].
 
     eapply size_list_smaller; eauto.
-Qed.
+Defined.

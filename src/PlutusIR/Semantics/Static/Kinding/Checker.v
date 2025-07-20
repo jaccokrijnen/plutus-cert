@@ -210,7 +210,7 @@ Proof.
         
         apply forallb_forall with (x := x1) in Heqb02; auto.
         repeat destruct_match; subst; auto.
-Qed.
+Defined.
 
 
 Section ty__ind_set.

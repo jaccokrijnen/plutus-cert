@@ -8,6 +8,12 @@ Import ListNotations.
 
 Module Kinding.
 
+  (* TODO *)
+  Axiom weakening_SOP : forall Δ Δ' Tss,
+  Forall (Forall (fun T : ty => Δ |-* T : Kind_Base)) Tss ->
+  inclusion Δ Δ'->
+  Δ' |-* (Ty_SOP Tss) : Kind_Base.
+
   Lemma weakening : forall Delta Delta' T K,
       inclusion Delta Delta' ->
       Delta |-* T : K ->
@@ -18,9 +24,8 @@ Module Kinding.
     induction HT.
     all: intros Delta' Hincl.
     all: try solve [econstructor; eauto using inclusion_cons].
-    (* Ty_SOP*)
-    admit.
-  Admitted.
+    eauto using weakening_SOP.
+  Defined.
 
   Lemma weakening_empty : forall Delta T K,
       [] |-* T : K ->

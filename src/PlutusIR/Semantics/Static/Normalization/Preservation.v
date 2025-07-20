@@ -22,7 +22,7 @@ Proof.
   - inversion H2; subst.
     eapply substituteTCA_preserves_kinding; eauto.
   - apply step_preserves_kinding_SOP_axiom.
-Qed.
+Defined.
 
 (* Normalization preserves kinds and contexts *)
 Theorem normalisation_preserves_kinding {Δ T Tn K } :

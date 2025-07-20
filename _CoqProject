@@ -12,6 +12,7 @@ src/Examples/TimelockDumps.v
 src/Examples/ListSpec.v
 src/Examples/MaybeFun.v
 src/Examples/TypeCheckTest.v
+src/Examples/TypeChecker/NormalizerGas.v
 src/PlutusIR.v
 src/PlutusIR/Folds.v
 src/PlutusIR/Extract.v

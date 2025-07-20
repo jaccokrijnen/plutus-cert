@@ -1120,10 +1120,33 @@ Module PIRNotations.
     Notation "★" := Kind_Base
       : pir_scope.
 
-    Notation "⇒" := Kind_Arrow
+    Notation "K1 ⇒ K2" := (Kind_Arrow K1 K2)
+    (at level 49, right associativity)
       : pir_scope.
 
   End Kinds.
+
+  Module Types.
+
+    Notation "'λ*' X K T" :=
+      (Ty_Lam X K T)
+      (at level 200, X at level 0, K at level 0, T at level 0, no associativity)
+      : pir_scope
+    .
+
+    Notation "T1 '⋅*' T2" :=
+      (Ty_App T1 T2)
+      (at level 50, left associativity)
+      : pir_scope
+    .
+
+    Notation "'`*' X" :=
+      (Ty_Var X)
+      (at level 35, X at next level )
+      : pir_scope
+      .
+
+  End Types.
 
   Module Decls.
 
@@ -1251,7 +1274,7 @@ Module PIRNotations.
 
   End Builtins.
 
-  Export Kinds Decls Bindings Terms Builtins.
+  Export Kinds Types Decls Bindings Terms Builtins.
 
   Module Examples.
 

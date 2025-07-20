@@ -276,6 +276,12 @@ Proof.
     (* ADMIT: Ty_SOP: Unimplemented *)
 Admitted.
 
+Lemma substituteTCA_preserves_kinding__SOP : forall Ts Δ X K U L,
+    ((X, L) :: Δ) |-* (Ty_SOP Ts) : K ->
+    Δ |-* U : L ->
+    Δ |-* (substituteTCA X U (Ty_SOP Ts)) : K.
+Admitted.
+
 (* Capture-avoiding substitutions preserve kinding *)
 Theorem substituteTCA_preserves_kinding : forall T Delta X K U L,
     ((X, L) :: Delta) |-* T : K ->
@@ -392,5 +398,7 @@ Proof with eauto with typing.
         simpl. lia.
     - (* Ty_SOP *)
       (* ADMIT: Ty_SOP Unimplemented *)
-      admit.
-Admitted.
+      specialize (substituteTCA_preserves_kinding__SOP _ _ _ _ U _ Hkind__T) as H_admitted.
+      autorewrite with substituteTCA in H_admitted.
+      auto.
+Defined.
