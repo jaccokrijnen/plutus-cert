@@ -19,6 +19,9 @@ Defined.
 Goal normalizer_gas 99999999 ty1_kinding = Ty_Var "y".
 Proof. reflexivity. Qed.
 
+Goal normalizer_gas' 99999999 ty1 = Some (Ty_Var "y").
+Proof. reflexivity. Qed.
+
 Import PIRNotations.
 Open Scope pir_scope.
 (* More advanced beta reduction that requires capture avoidance *)
@@ -34,7 +37,12 @@ Proof.
 Defined.
 
 
-(* Does not fully reduce because substituteTCA_preserves_kinding relies on admitted
- * lemmas. *)
+(* Does not fully reduce because the kinding preservation lemmas do not compute
+ * due to admits
+ *)
 Goal normalizer_gas 2 ty2_kinding = λ* "aXYX" ★ (`* "Y").
 Abort.
+
+(* With a simpler gas-powered normalizer, it computes *)
+Goal normalizer_gas' 2 ty2 = Some (λ* "aXYX" ★ (`* "Y")).
+Proof. reflexivity. Qed.

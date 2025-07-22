@@ -60,6 +60,18 @@ Fixpoint normalizer_gas (n : nat) {T Δ K} (Hwk : Δ |-* T : K) :=
         end
   end.
 
+(* Gas powered normalizer that does not use a well-kindedness proof *)
+Fixpoint normalizer_gas' (n : nat) (T : ty) : option ty :=
+  match n with
+  | 0   => None
+  | S n =>
+    match stepf T with
+    | Some T' => normalizer_gas' n T'
+    | None => Some T
+    end
+  end
+.
+
 (* Return for any well-typed input a normal form *)
 Definition normalizer_wk {T Δ K} (Hwk : Δ |-* T : K) : ty :=
   let HSN := strong_normalization_PIR T Δ K Hwk in

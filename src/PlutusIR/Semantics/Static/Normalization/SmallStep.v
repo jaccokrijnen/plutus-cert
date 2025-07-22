@@ -38,3 +38,122 @@ Inductive step : ty -> ty -> Set :=
              (Ty_SOP (Tss_normal ++ (Tss_sub_normal ++ Tss_sub2 :: Tss_sub_remainder) :: Tss_remainder))
     .
 
+(* step as a partial function *)
+Function stepf (U : ty) : option ty :=
+  match U with
+  | Ty_Var _ => None
+  | Ty_Builtin _ => None
+
+  | Ty_App T U =>
+    match stepf T with
+    | Some T' => Some (Ty_App T' U)
+    | None =>
+      match stepf U with
+      | Some U' => Some (Ty_App T U')
+      | None =>
+        match T with
+        | Ty_Lam X _ T => Some (substituteTCA X U T)
+        | _ => None (* normal (neutral) *)
+        end
+      end
+    end
+
+  | Ty_Fun T U =>
+    match stepf T with
+    | Some T' => Some (Ty_Fun T' U)
+    | None =>
+      match stepf U with
+      | Some U' => Some (Ty_Fun T U')
+      | None => None (* normal *)
+      end
+    end
+
+  | Ty_Forall X K T =>
+    match stepf T with
+    | Some T' => Some (Ty_Forall X K T')
+    | None => None (* normal *)
+    end
+
+  | Ty_Lam X K T =>
+    match stepf T with
+    | Some T' => Some (Ty_Lam X K T')
+    | None => None (* normal *)
+    end
+
+  | Ty_IFix T U =>
+    match stepf T with
+    | Some T' => Some (Ty_IFix T' U)
+    | None =>
+      match stepf U with
+      | Some U' => Some (Ty_IFix T U')
+      | None => None (* normal *)
+      end
+    end
+
+
+  | Ty_SOP Tss => None (* TODO *)
+
+  end
+.
+
+From PlutusCert Require Import Util.Tactics Kinding.Kinding.
+
+(* If T is well-kinded and stepf returns None, then it was a normal type *)
+Lemma stepf_normal T : (exists Δ K, has_kind Δ T K) -> stepf T = None -> normal_Ty T.
+Proof.
+  destruct 1 as [? [? HWK]]. induction HWK; rewrite stepf_equation; repeat destruct_match.
+  all: try now (inversion 1).
+  all: try auto using normal_Ty.
+  - (* neutral case:
+         step (Ty_App (Ty_App _ _) _) _
+    *)
+    specialize (IHHWK1 eq_refl).
+    inversion IHHWK1.
+    auto using normal_Ty.
+  - admit.
+    (* TODO, does not hold yet: implement that case in stepf *)
+Admitted.
+
+(* Boiler-plate tactic for passing around well_kinded proofs. Using exists to
+ * avoid scoping issues in eapply. This was particularly tricky because step
+ * is in Set, whereas has_kind is in Prop.
+ *)
+Ltac inv_well_kinded :=
+  match goal with
+  | H : exists _ _, has_kind _ _ _ |- exists _ _, has_kind _ _ _ =>
+      now ( destruct H as [? [? H_WK]]
+          ; inversion H_WK
+          ; repeat eexists
+          ; eassumption )
+  end.
+
+
+(* Let eauto use tactic when encoutering well-kinded proof *)
+Hint Extern 10 (exists _ _, has_kind _ _ _) => inv_well_kinded : core.
+
+(* stepf is sound with respect to step.
+
+   Since this proof is in Set it is impossible to use inversion on Props, which
+   the proof depends on (has_kind and normal_Ty). The way to do this is by using
+   specific inversion lemmas, which make it clear that the outcome of the lemma
+   will not depend on computation on Prop.
+*)
+Lemma stepf_sound (T T' : ty) : (exists Δ K, has_kind Δ T K) -> stepf T = Some T' -> step T T'.
+Proof.
+  revert T'. induction T; intros T' H_WK;
+  rewrite stepf_equation; repeat destruct_match.
+  all: try now (inversion 1).
+  all: intros H; inversion H; subst T'; clear H.
+  all: try now eauto using step, stepf_normal.
+
+  (* step_beta *)
+  apply step_beta.
+  - apply stepf_normal in Heqo.
+    inversion Heqo.
+    + assumption.
+    + inversion H.
+    + inv_well_kinded.
+  - apply stepf_normal.
+    + inv_well_kinded.
+    + assumption.
+Qed.
